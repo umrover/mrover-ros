@@ -7,7 +7,7 @@
 <!-- <script src="../../../streaming/embuild/stream_client.js"></script> -->
 
 <script lang="ts">
-import { defineComponent } from 'vue'
+import { defineComponent, nextTick } from 'vue'
 import '/streaming/stream_client.js?url'
 
 export default defineComponent({
@@ -15,11 +15,12 @@ export default defineComponent({
     return {}
   },
   mounted: function () {
-    const canvas: HTMLCanvasElement = document.getElementById('canvas') as HTMLCanvasElement
-
-    const context = canvas.getContext('2d') ?? new CanvasRenderingContext2D()
-    context.fillStyle = 'black'
-    context.fillRect(0, 0, canvas.width, canvas.height)
+    this.$nextTick(() => {
+      const canvas: HTMLCanvasElement = document.getElementById('canvas') as HTMLCanvasElement
+      const context = canvas.getContext('2d') ?? new CanvasRenderingContext2D()
+      context.fillStyle = 'black'
+      context.fillRect(0, 0, canvas.width, canvas.height)
+    })
   }
 })
 </script>

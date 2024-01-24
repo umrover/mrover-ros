@@ -64,7 +64,7 @@ export default {
   watch: {
     message(msg) {
       if (msg.type == "max_streams") {
-        this.streamOrder = new Array(msg.max_streams).fill(-1);
+        this.streamOrder = new Array(msg.streams).fill(-1);
       }
     },
     capacity: function (newCap, oldCap) {
@@ -81,7 +81,9 @@ export default {
   },
 
   created: function () {
-    this.sendMessage({ "type": "max_streams" });
+    window.setTimeout(() => {
+      this.sendMessage({ "type": "max_streams" });
+    }, 250)
   },
 
   methods: {
@@ -112,7 +114,8 @@ export default {
 
     swapStream({ prev, newest }) {
       var temp = this.streamOrder[prev];
-      this.streamOrder[prev] = this.streamOrder[newest];
+      Vue.set(this.streamOrder, prev, this.streamOrder[newest]);
+      //this.streamOrder[prev] = this.streamOrder[newest];
       this.streamOrder[newest] = temp;
     },
 
@@ -123,10 +126,13 @@ export default {
         this.streamOrder.push(-1);
         this.qualities[index] = -1; //close the stream when sending it to comms
       } else this.streamOrder[this.streamOrder.indexOf(-1)] = index;
+      console.log(this.streamOrder);
       this.sendCameras(index);
     },
 
     getStreamNum(index: number) {
+      console.log("streamOrder Index", this.streamOrder.indexOf(index));
+      console.log("streamOrder Array", this.streamOrder, "index", index);
       return this.streamOrder.indexOf(index);
     }
 

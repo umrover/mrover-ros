@@ -143,6 +143,9 @@ find_package(OpenCV REQUIRED)
 find_package(ZED 2 QUIET)
 find_package(gazebo REQUIRED)
 find_package(Eigen3 REQUIRED)
+find_package(PkgConfig REQUIRED)
+pkg_search_module(NetLink REQUIRED libnl-3.0)
+pkg_search_module(NetLinkRoute REQUIRED libnl-route-3.0)
 if (ZED_FOUND)
     # Anything newer than C++17 combined with libstdc++13 is not supported just yet by NVCC (the CUDA compiler)
     set(CMAKE_CUDA_STANDARD 17)
@@ -200,12 +203,39 @@ catkin_package()
 
 ## Libraries
 
-mrover_add_header_only_library(moteus deps/moteus/lib/cpp/mjbots)
 mrover_add_library(lie src/util/lie/*.cpp src/util/lie)
 
 ## ESW
 
-mrover_add_node(sim_arm_bridge src/simulator/arm_bridge/*.cpp)
+mrover_add_header_only_library(moteus deps/moteus/lib/cpp/mjbots)
+mrover_add_header_only_library(moteus_fw deps/moteus)
+mrover_add_header_only_library(can_device src/esw/can_device)
+mrover_add_library(motor_library src/esw/motor_library/*.cpp src/esw/motor_library)
+target_link_libraries(motor_library PUBLIC can_device moteus moteus_fw)
+
+# TODO(quintin) Fix this CMake hard coding
+mrover_add_nodelet(can_driver src/esw/can_driver/*.cpp src/esw/can_driver src/esw/can_driver/pch.hpp)
+mrover_nodelet_link_libraries(can_driver nl-3 nl-route-3)
+#mrover_nodelet_link_libraries(can ${NetLink_LIBRARIES} ${NetLinkRoute_LIBRARIES}})
+mrover_nodelet_include_directories(can_driver /usr/include/libnl3)
+
+macro(mrover_add_esw_bridge_node name sources)
+    mrover_add_node(${name} ${sources})
+    target_link_libraries(${name} PRIVATE can_device motor_library)
+endmacro()
+
+mrover_add_esw_bridge_node(arm_hw_bridge src/esw/arm_hw_bridge/*.cpp)
+mrover_add_esw_bridge_node(arm_translator_bridge src/esw/arm_translator_bridge/*.cpp src/esw/arm_translator_bridge/*.hpp)
+mrover_add_esw_bridge_node(cache_bridge src/esw/cache_bridge/*.cpp)
+mrover_add_esw_bridge_node(drive_bridge src/esw/drive_bridge/*.cpp)
+mrover_add_esw_bridge_node(led_hw_bridge src/esw/led_hw_bridge/*.cpp)
+mrover_add_esw_bridge_node(mast_gimbal_bridge src/esw/mast_gimbal_bridge/*.cpp)
+mrover_add_esw_bridge_node(pdb_bridge src/esw/pdb_bridge/*.cpp)
+mrover_add_esw_bridge_node(sa_bridge src/esw/sa_bridge/*.cpp)
+mrover_add_esw_bridge_node(science_bridge src/esw/science_bridge/*.cpp)
+mrover_add_esw_bridge_node(brushless_test_bridge src/esw/brushless_test_bridge/*.cpp motor_library)
+mrover_add_esw_bridge_node(brushed_test_bridge src/esw/brushed_test_bridge/*.cpp)
+mrover_add_esw_bridge_node(test_arm_bridge src/esw/test_arm_bridge/*.cpp)
 
 ## Perception
 
@@ -229,6 +259,8 @@ if (ZED_FOUND)
 endif ()
 
 ## Simulator
+
+mrover_add_node(sim_arm_bridge src/simulator/arm_bridge/*.cpp)
 
 mrover_add_gazebo_plugin(differential_drive_plugin_6w src/simulator/differential_drive_6w.cpp src)
 

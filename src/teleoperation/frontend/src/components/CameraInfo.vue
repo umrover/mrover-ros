@@ -46,6 +46,7 @@ export default {
       }
     },
     stream: function () {
+      console.log("changed");
       this.prevStream = this.stream;
       this.selectedStream = this.stream;
     },
@@ -56,7 +57,9 @@ export default {
   },
 
   created: function () {
-    this.sendMessage({ "type": "num_resolutions" });
+    window.setTimeout(() => {
+      this.sendMessage({ "type": "num_resolutions" });
+    }, 250)
   },
 
   methods: {

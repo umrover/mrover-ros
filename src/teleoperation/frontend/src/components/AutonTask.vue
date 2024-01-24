@@ -10,23 +10,22 @@
             </div>
             <div class="helpscreen"></div>
             <div class="helpimages" style="
-                display: flex;
-                align-items: center;
-                justify-content: space-evenly;
-                ">
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-evenly;
+                    ">
                 <img src="joystick.png" alt="Joystick" title="Joystick Controls"
                     style="width: auto; height: 70%; display: inline-block" />
             </div>
         </div>
-        <!-- <div class="shadow p-3 rounded data" :style="`background-color: {{nav_state_color}}`"> -->
         <div :class="['shadow p-3 rounded data', ledColor]">
-            <h2>Nav State: {{ nav_state }}</h2>
+            <h2>Nav State: {{ navState }}</h2>
             <div style="display: inline-block;">
                 <CameraFeed></CameraFeed>
             </div>
             <div style="display: inline-block; vertical-align: top;">
-            <p style="margin-top: 6px">Joystick Values</p>
-            <JoystickValues />
+                <p style="margin-top: 6px">Joystick Values</p>
+                <JoystickValues />
             </div>
             <OdometryReading :odom="odom" />
         </div>
@@ -34,19 +33,12 @@
             <AutonRoverMap :odom="odom" />
         </div>
         <div class="shadow p-3 rounded waypoints">
-        <AutonWaypointEditor
-        :odom="odom"
-        @toggleTeleop="teleopEnabledCheck = $event"
-        />
+            <AutonWaypointEditor :odom="odom" @toggleTeleop="teleopEnabledCheck = $event" />
         </div>
         <!--Enable the drive controls if auton is off-->
-        <div
-        v-if="!autonEnabled && teleopEnabledCheck"
-        v-show="false"
-        class="driveControls"
-    >
-        <DriveControls />
-    </div>
+        <div v-if="!autonEnabled && teleopEnabledCheck" v-show="false" class="driveControls">
+            <DriveControls />
+        </div>
         <!-- <div v-show="false">
         <MastGimbalControls></MastGimbalControls>
     </div> -->
@@ -82,6 +74,8 @@ import DriveControls from "./DriveControls.vue";
 import { quaternionToMapAngle } from "../utils.js";
 import { defineComponent } from "vue";
 
+let interval: number;
+
 export default defineComponent({
     components: {
         DriveMoteusStateTable,
@@ -97,8 +91,6 @@ export default defineComponent({
 
     data() {
         return {
-            // websocket: new WebSocket("ws://localhost:8000/ws/gui"),
-
             // Default coordinates are at MDRS
             odom: {
                 latitude_deg: 38.4060250,
@@ -111,7 +103,9 @@ export default defineComponent({
             ledColor: "bg-danger", //red
 
             stuck_status: false,
-            
+
+            navState: "OffState",
+
             moteusState: {
                 name: [] as string[],
                 error: [] as string[],
@@ -134,15 +128,6 @@ export default defineComponent({
             autonEnabled: "autonEnabled",
             teleopEnabled: "teleopEnabled"
         }),
-
-        nav_state: function() {
-            if(this.ledColor == "bg-success" || this.ledColor == "bg-white") {
-                return "DoneState";
-            }
-            else {
-                return "Not In DoneState";
-            }
-        } 
     },
 
     watch: {
@@ -153,9 +138,9 @@ export default defineComponent({
                 this.jointState.velocity = msg.velocity;
                 this.jointState.effort = msg.effort;
             }
-            else if(msg.type == "drive_moteus") {
+            else if (msg.type == "drive_moteus") {
                 let index = this.moteusState.name.findIndex((n) => n === msg.name);
-                if(this.moteusState.name.length == 6 || index != -1) {
+                if (this.moteusState.name.length == 6 || index != -1) {
                     //if all motors are in table or there's an update to one before all are in
                     if (index !== -1) {
                         this.moteusState.state[index] = msg.state;
@@ -171,56 +156,34 @@ export default defineComponent({
                     this.moteusState.error.push(msg.error);
                 }
             }
-            else if(msg.type == "led") {
-                if(msg.red) this.ledColor = "bg-danger"; //red
-                else if(msg.green) this.ledColor = "blink"; //blinking green
-                else if(msg.blue) this.ledColor = "bg-primary"; //blue
+            else if (msg.type == "led") {
+                if (msg.red) this.ledColor = "bg-danger"; //red
+                else if (msg.green) this.ledColor = "blink"; //blinking green
+                else if (msg.blue) this.ledColor = "bg-primary"; //blue
+            }
+            else if (msg.type == "nav_state") {
+                this.navState = msg.state;
+            }
+            else if (msg.type == "nav_sat_fix") {
+                this.odom.latitude_deg = msg.latitude;
+                this.odom.longitude_deg = msg.longitude;
+            }
+            else if (msg.type == "auton_tfclient") {
+                this.odom.bearing_deg = quaternionToMapAngle(msg.rotation);
             }
         }
     },
 
     beforeUnmount: function () {
         this.ledColor = "bg-white";
+        window.clearInterval(interval);
     },
 
-    mounted() {
-        this.$store.dispatch('websocket/setupWebSocket');
-    },
-
-    // created: function () {
-    //     this.websocket.onmessage = (event) => {
-    //         const msg = JSON.parse(event.data)
-    //         if (msg.type == "joint_state") {
-    //             this.jointState.name = msg.name;
-    //             this.jointState.position = msg.position;
-    //             this.jointState.velocity = msg.velocity;
-    //             this.jointState.effort = msg.effort;
-    //         }
-    //         else if(msg.type == "drive_moteus") {
-    //             let index = this.moteusState.name.findIndex((n) => n === msg.name);
-    //             if(this.moteusState.name.length == 6 || index != -1) {
-    //                 //if all motors are in table or there's an update to one before all are in
-    //                 if (index !== -1) {
-    //                     this.moteusState.state[index] = msg.state;
-    //                     this.moteusState.error[index] = msg.error;
-    //                 }
-    //                 else {
-    //                     console.log("Invalid arm moteus name: " + msg.name);
-    //                 }
-    //             }
-    //             else {
-    //                 this.moteusState.name.push(msg.name);
-    //                 this.moteusState.state.push(msg.state);
-    //                 this.moteusState.error.push(msg.error);
-    //             }
-    //         }
-    //         else if(msg.type == "led") {
-    //             if(msg.red) this.ledColor = "bg-danger"; //red
-    //             else if(msg.green) this.ledColor = "blink"; //blinking green
-    //             else if(msg.blue) this.ledColor = "bg-primary"; //blue
-    //         }
-    //     }
-    // },
+    created() {
+        // interval = setInterval(() => {
+        //     this.$websocket.send({type: "auton_tfclient"});
+        // }, 1000);
+    }
 });
 </script>
   
@@ -229,7 +192,7 @@ export default defineComponent({
     display: grid;
     grid-gap: 10px;
     grid-template-columns: 40% 20% auto;
-    grid-template-rows: auto 40% auto auto auto;
+    grid-template-rows: auto 40vh auto auto auto;
     grid-template-areas:
         "header header header"
         "map map waypoints"
@@ -243,16 +206,20 @@ export default defineComponent({
 }
 
 .blink {
-    animation: blinkAnimation 1s infinite; /* Blinks green every second */
+    animation: blinkAnimation 1s infinite;
+    /* Blinks green every second */
 }
 
 @keyframes blinkAnimation {
-  0%, 100% {
-    background-color: var(--bs-success);
-  }
-  50% {
-    background-color: var(--bs-white);
-  }
+
+    0%,
+    100% {
+        background-color: var(--bs-success);
+    }
+
+    50% {
+        background-color: var(--bs-white);
+    }
 }
 
 .rover-stuck {
@@ -264,17 +231,17 @@ export default defineComponent({
 }
 
 .header {
-  grid-area: header;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px;
+    grid-area: header;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
 }
 
 .logo {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
 }
 
 h2 {

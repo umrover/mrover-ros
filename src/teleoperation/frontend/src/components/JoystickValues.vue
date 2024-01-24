@@ -32,11 +32,8 @@ interface JoystickValues {
 }
 
 export default {
-  // inject: ['websocket'],
   data() {
     return {
-      // websocket: inject("webSocketService") as WebSocket,
-      // websocket: new WebSocket('ws://localhost:8000/ws/gui'),
       joystick_mappings: {},
       joystick_values: {
         left_right: 0,
@@ -47,6 +44,10 @@ export default {
         tilt: 0,
       } as JoystickValues,
     };
+  },
+
+  computed: {
+    ...mapState('websocket', ['message'])
   },
 
   // created: function () {
@@ -71,9 +72,6 @@ export default {
   // //   });
 
   // },
-  computed: {
-    ...mapState('websocket', ['message'])
-  },
 
   watch: {
     message(msg) {
