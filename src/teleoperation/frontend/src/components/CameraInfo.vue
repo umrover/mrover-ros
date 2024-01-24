@@ -1,5 +1,5 @@
 <template>
-  <div class="wrap box">
+  <div>
     <p>{{ name }} ID: {{ id }}</p>
     Stream:
     <input v-model="selectedStream" class="box" type="Number" min="0" max="3" />
@@ -10,80 +10,78 @@
     </select>
   </div>
 </template>
-
+  
 <script lang="ts">
+
+import { mapActions, mapState } from "vuex";
+
 export default {
   props: {
     name: {
       type: String,
-      required: true
+      required: true,
     },
     id: {
       type: Number,
-      required: true
+      required: true,
     },
     stream: {
       type: Number,
-      required: true
-    }
+      required: true,
+    },
   },
   data() {
     return {
-      selectedQuality: '2',
+      selectedQuality: "2",
       selectedStream: this.stream,
       prevStream: this.stream,
       numQuality: 5
-    }
+    };
   },
 
   watch: {
+    message(msg) {
+      if (msg.type == "max_resolution") {
+        this.numQuality = msg.res;
+      }
+    },
     stream: function () {
-      this.prevStream = this.stream
-      this.selectedStream = this.stream
-    }
+      console.log("changed");
+      this.prevStream = this.stream;
+      this.selectedStream = this.stream;
+    },
+  },
+
+  computed: {
+    ...mapState('websocket', ['message'])
   },
 
   created: function () {
-    //   var arg = new ROSLIB.Param({
-    //     ros: this.$ros,
-    //     name: "cameras/max_num_resolutions"
-    //   });
-    //   arg.get((value) => {
-    //     this.numQuality = value;
-    //   });
+    window.setTimeout(() => {
+      this.sendMessage({ "type": "num_resolutions" });
+    }, 250)
   },
 
   methods: {
+
+    ...mapActions('websocket', ['sendMessage']),
+
     changeQuality: function () {
-      this.$emit('newQuality', {
+      this.$emit("newQuality", {
         index: this.id,
-        value: parseInt(this.selectedQuality)
-      })
+        value: parseInt(this.selectedQuality),
+      });
     },
 
     swapStream() {
-      this.$emit('swapStream', {
+      this.$emit("swapStream", {
         prev: this.prevStream,
-        newest: this.selectedStream
-      })
-      this.prevStream = this.selectedStream
-    }
-  }
-}
+        newest: this.selectedStream,
+      });
+      this.prevStream = this.selectedStream;
+    },
+  },
+};
 </script>
-
-<style scoped>
-/* .box {
-    border-radius: 5px;
-    padding: 10px;
-    border: 1px solid black;
-  }
-  .wrap {
-    margin: 10px;
-    padding: 10px;
-  }
   
-  .wrap > * {
-    margin: 5px 0 5px 0;
-  } */
-</style>
+<style scoped></style>

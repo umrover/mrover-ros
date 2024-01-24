@@ -1,40 +1,38 @@
 <template>
   <div class="wrap">
     <h3>Cameras ({{ num_available }} available)</h3>
-    <div class="input">
-      Camera name:
-      <input v-model="cameraName" type="message" /> Camera number:
-      <input v-model="cameraIdx" type="Number" min="0" max="8" />
-      <button class="btn btn-primary mx-2" @click="addCameraName()">Change name</button>
+    <div class="row justify-content-md-left">
+      <div class="form-group col-md-4">
+        <label for="Camera Name">Camera name</label>
+        <input v-model="cameraName" type="message" class="form-control" id="CameraName" placeholder="Enter Camera Name">
+        <small id="cameraDescrip" class="form-text text-muted"></small>
+      </div>
+      <div class="form-group col-md-4">
+        <label for="Camera ID">Camera ID</label>
+        <input v-model="cameraIdx" type="Number" min="0" max="8" class="form-control" id="CameraIdx"
+          placeholder="Camera ID">
+      </div>
+      <button class="btn btn-primary custom-btn" @click="addCameraName()">
+        Change Name
+      </button>
     </div>
     <div class="cameraselection">
-      <CameraSelection
-        :cams-enabled="camsEnabled"
-        :names="names"
-        :capacity="capacity"
-        @cam_index="setCamIndex($event)"
-      />
+      <CameraSelection :cams-enabled="camsEnabled" :names="names" :capacity="capacity" @cam_index="setCamIndex($event)" />
     </div>
     <h3>All Cameras</h3>
     Capacity:
-    <input v-model="capacity" type="Number" min="2" max="4" />
+    <input v-model="capacity" type="Number" min="2" :max="streamOrder.length" />
     <div v-for="i in camsEnabled.length" :key="i">
-      <CameraInfo
-        v-if="camsEnabled[i - 1]"
-        :id="i - 1"
-        :name="names[i - 1]"
-        :stream="getStreamNum(i - 1)"
-        @newQuality="changeQuality($event)"
-        @swapStream="swapStream($event)"
-      ></CameraInfo>
+      <CameraInfo v-if="camsEnabled[i - 1]" :id="i - 1" :name="names[i - 1]" :stream="getStreamNum(i - 1)"
+        @newQuality="changeQuality($event)" @swapStream="swapStream($event)"></CameraInfo>
     </div>
   </div>
 </template>
-
+  
 <script lang="ts">
-import CameraSelection from '../components/CameraSelection.vue'
-import CameraInfo from '../components/CameraInfo.vue'
-//   import { mapGetters, mapMutations } from "vuex";
+import CameraSelection from "../components/CameraSelection.vue";
+import CameraInfo from "../components/CameraInfo.vue";
+import { mapActions, mapState } from "vuex";
 
 export default {
   components: {
@@ -51,119 +49,104 @@ export default {
   data() {
     return {
       camsEnabled: new Array(9).fill(false),
-      names: Array.from({ length: 9 }, (_, i) => 'Camera: ' + i),
-      cameraIdx: 1,
-      cameraName: '',
+      names: Array.from({ length: 9 }, (_, i) => "Camera: " + i),
+      cameraIdx: 0,
+      cameraName: "",
       capacity: 2,
       qualities: new Array(9).fill(-1),
-      streamOrder: [-1, -1, -1, -1],
+      streamOrder: [],
 
       available_sub: null,
       num_available: -1
-    }
+    };
   },
 
   watch: {
+    message(msg) {
+      if (msg.type == "max_streams") {
+        this.streamOrder = new Array(msg.streams).fill(-1);
+      }
+    },
     capacity: function (newCap, oldCap) {
       if (newCap < oldCap) {
-        var numStreaming = this.streamOrder.filter((index) => index != -1)
-        var ind = numStreaming.length - 1
-        this.setCamIndex(numStreaming[ind])
+        var numStreaming = this.streamOrder.filter((index) => index != -1);
+        var ind = numStreaming.length - 1;
+        this.setCamIndex(numStreaming[ind]);
       }
     }
   },
 
+  computed: {
+    ...mapState('websocket', ['message'])
+  },
+
   created: function () {
-    //   var resetService = new ROSLIB.Service({
-    //     ros: this.$ros,
-    //     name: "reset_cameras",
-    //     serviceType: "ResetCameras"
-    //   });
-    //   var request = new ROSLIB.ServiceRequest({
-    //     primary: this.primary
-    //   });
-    //   resetService.callService(request, (result) => {});
-    //   this.available_sub = new ROSLIB.Topic({
-    //     ros: this.$ros,
-    //     name: "available_cameras",
-    //     messageType: "mrover/AvailableCameras"
-    //   });
-    //   this.available_sub.subscribe((msg) => {
-    //     this.num_available = msg.num_available;
-    //   });
+    window.setTimeout(() => {
+      this.sendMessage({ "type": "max_streams" });
+    }, 250)
   },
 
   methods: {
+    ...mapActions('websocket', ['sendMessage']),
+
     setCamIndex: function (index: number) {
-      //     //every time a button is pressed, it changes cam status and adds/removes from stream
-      //     Vue.set(this.camsEnabled, index, !this.camsEnabled[index]);
-      //     if (this.camsEnabled[index]) this.qualities[index] = 2; //if enabling camera, turn on medium quality
-      //     this.changeStream(index);
+      // every time a button is pressed, it changes cam status and adds/removes from stream
+      this.camsEnabled[index] = !this.camsEnabled[index];
+      if (this.camsEnabled[index]) this.qualities[index] = 2; //if enabling camera, turn on medium quality
+      this.changeStream(index);
     },
 
-    sendCameras: function (inde: number) {
-      //     //sends cameras to a service to display on screen
-      //     var res = this.qualities[index];
-      //     var msg = new ROSLIB.Message({ device: index, resolution: res }); //CameraCmd msg
-      //     var changeCamsService = new ROSLIB.Service({
-      //       ros: this.$ros,
-      //       name: "change_cameras",
-      //       serviceType: "ChangeCameras"
-      //     });
-      //     var request = new ROSLIB.ServiceRequest({
-      //       primary: this.primary,
-      //       camera_cmd: msg
-      //     });
-      //     changeCamsService.callService(request, (result) => {});
+    sendCameras: function (index: number) {
+      this.sendMessage({
+        type: "sendCameras", primary: this.primary,
+        device: index, resolution: this.qualities[index]
+      });
     },
 
     addCameraName: function () {
-      //     Vue.set(this.names, this.cameraIdx, this.cameraName);
+      this.names[this.cameraIdx] = this.cameraName;
     },
 
     changeQuality({ index, value }) {
-      //     Vue.set(this.qualities, index, value);
-      //     this.sendCameras(index);
+      this.qualities[index] = value;
+      this.sendCameras(index);
     },
 
     swapStream({ prev, newest }) {
-      //     var temp = this.streamOrder[prev];
-      //     Vue.set(this.streamOrder, prev, this.streamOrder[newest]);
-      //     Vue.set(this.streamOrder, newest, temp);
+      var temp = this.streamOrder[prev];
+      Vue.set(this.streamOrder, prev, this.streamOrder[newest]);
+      //this.streamOrder[prev] = this.streamOrder[newest];
+      this.streamOrder[newest] = temp;
     },
 
     changeStream(index: number) {
-      //     const found = this.streamOrder.includes(index);
-      //     if (found) {
-      //       this.streamOrder.splice(this.streamOrder.indexOf(index), 1);
-      //       this.streamOrder.push(-1);
-      //       this.qualities[index] = -1; //close the stream when sending it to comms
-      //     } else Vue.set(this.streamOrder, this.streamOrder.indexOf(-1), index);
-      //     this.sendCameras(index);
+      const found = this.streamOrder.includes(index);
+      if (found) {
+        this.streamOrder.splice(this.streamOrder.indexOf(index), 1);
+        this.streamOrder.push(-1);
+        this.qualities[index] = -1; //close the stream when sending it to comms
+      } else this.streamOrder[this.streamOrder.indexOf(-1)] = index;
+      console.log(this.streamOrder);
+      this.sendCameras(index);
     },
 
     getStreamNum(index: number) {
-      return this.streamOrder.indexOf(index)
+      console.log("streamOrder Index", this.streamOrder.indexOf(index));
+      console.log("streamOrder Array", this.streamOrder, "index", index);
+      return this.streamOrder.indexOf(index);
     }
+
   }
-}
+};
 </script>
-
-<style scoped>
-/* .rounded {
-    border: 1px solid black;
-    border-radius: 5px;
-  }
   
-  .button {
-    height: 25px;
-  } */
-
-/* .input > * {
-    margin: 5px 0 5px 0;
-  } */
-
+<style scoped>
 .cameraselection {
   margin: 10px;
+}
+
+.custom-btn {
+  width: 150px;
+  height: 50px;
 }
 </style>

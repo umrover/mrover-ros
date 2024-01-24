@@ -49,6 +49,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
         self.enable_auton = rospy.ServiceProxy("enable_auton", EnableAuton)
+        self.change_cameras_srv = rospy.ServiceProxy("change_cameras", ChangeCameras)
 
         # Services
         self.laser_service = rospy.ServiceProxy("enable_mosfet_device", SetBool)
@@ -94,6 +95,8 @@ class GUIConsumer(JsonWebsocketConsumer):
                 self.auton_bearing()
             elif message["type"] == "mast_gimbal":
                 self.mast_gimbal(message)
+            elif message["type"] == "num_resolutions" or message["type"] == "max_streams":
+                self.send_res_streams()
         except Exception as e:
             rospy.logerr(e)
 
@@ -257,3 +260,16 @@ class GUIConsumer(JsonWebsocketConsumer):
         rot_pwr = msg["throttles"][0] * pwr["rotation_pwr"]
         up_down_pwr = msg["throttles"][1] * pwr["up_down_pwr"]
         self.mast_gimbal_pub.publish(Throttle(["mast_gimbal_x", "mast_gimbal_y"], [rot_pwr, up_down_pwr]))
+
+    def change_cameras(self, msg):
+        try:
+            camera_cmd = CameraCmd(msg["device"], msg["res"])
+            result = self.change_cameras_srv(primary=msg["primary"], camera_cmd=camera_cmd)
+        except rospy.ServiceException as e:
+            print(f"Service call failed: {e}")
+
+    def send_res_streams(self):
+        res = rospy.get_param("cameras/max_num_resolutions")
+        streams = rospy.get_param("cameras/max_streams")
+        self.send(text_data=json.dumps({"type": "max_resolution", "res": res}))
+        self.send(text_data=json.dumps({"type": "max_streams", "streams": streams}))
