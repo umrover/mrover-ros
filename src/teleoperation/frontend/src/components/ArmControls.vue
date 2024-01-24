@@ -11,13 +11,21 @@
             IK
             <input ref="position" v-model="arm_mode" type="radio" name="'arm_mode'" value="position" />
             Position
+          
             <input ref="velocity" v-model="arm_mode" type="radio" name="'arm_mode'" value="velocity" />
             Velocity
             <input ref="throttle" v-model="arm_mode" type="radio" name="'arm_mode'" value="throttle" />
             Throttle
            
         </div>
+        <div class ="controls-flex" v-if="arm_mode ==='position'"> 
+           <div v-for="(value, key) in temp_positions" :key="key">
+            <label>{{ key }}</label>
+            <input class="position-box"  type="text" v-model="temp_positions[key]" >
+            </div>
+            <button @click="submit_positions">submit</button>
        
+      </div>
         <div class="controls-flex">
             <h4>Misc. Controls</h4>
             <ToggleButton id="arm_laser" :current-state="laser_enabled" label-enable-text="Arm Laser On"
@@ -65,7 +73,11 @@ export default defineComponent({
             websocket: new WebSocket("ws://localhost:8000/ws/gui"),
             arm_mode: "arm_disabled",
             joints_array: [false, false, false, false, false, false],
-            laser_enabled: false
+            laser_enabled: false,
+            temp_positions:{
+                joint_a:'', joint_b:'', joint_c:'', joint_de_pitch:'', joint_de_yaw:'', allen_key:'', gripper:''
+            },
+            positions: []
         };
     },
 
@@ -91,6 +103,7 @@ export default defineComponent({
             }
         };
         interval = window.setInterval(() => {
+            
             const gamepads = navigator.getGamepads();
             for (let i = 0; i < 4; i++) {
                 const gamepad = gamepads[i];
@@ -105,16 +118,19 @@ export default defineComponent({
                         let buttons = gamepad.buttons.map((button) => {
                             return button.value;
                         });
-                        this.publishJoystickMessage(gamepad.axes, buttons, this.arm_mode);
+               
+                        this.publishJoystickMessage(gamepad.axes, buttons, this.arm_mode, this.positions);
                     }
                 }
             }
         }, updateRate * 1000);
+       
         // this.updateArmMode("arm_disabled", this.arm_mode);
         // const jointData = {
         // //publishes array of all falses when refreshing the page
         // joints: this.joints_array
         // };
+    
     },
 
     
@@ -164,18 +180,29 @@ export default defineComponent({
     //         this.jointlock_pub.publish(jointlockMsg);
     //     },
 
-        publishJoystickMessage: function (axes: any, buttons: any, arm_mode: any) {
+        publishJoystickMessage: function (axes: any, buttons: any, arm_mode: any, positions:any) {
             const joystickData = {
                 axes: axes,
                 buttons: buttons
             };
-            this.sendMessage({type:"arm_values", data:joystickData, arm_mode: arm_mode})
+            if (arm_mode != "arm_disabled")
+            {
+                this.sendMessage({type:"arm_values", data:joystickData, arm_mode: arm_mode, positions: positions})
+            }
         },
         toggleArmLaser: function () {
             this.laser_enabled = !this.laser_enabled;
             this.sendMessage({type:"laser_service", data:this.laser_enabled})
             
-         }
+         },
+
+        submit_positions: function (){
+            this.positions = []
+            for (let key in this.temp_positions) {
+                        this.positions.push(Number(this.temp_positions[key]));
+                    }
+        }
+
     }
 });
 </script>
@@ -202,6 +229,7 @@ export default defineComponent({
 }
 
 .controls-flex {
+    flex-wrap: wrap;
     display: flex;
     align-items: center;
     width: 100%;
@@ -219,5 +247,9 @@ export default defineComponent({
 
 .limit-switch h4 {
     margin-bottom: 5px;
+}
+
+.position-box {
+    width: 50px;
 }
   </style>

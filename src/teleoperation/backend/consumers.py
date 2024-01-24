@@ -158,15 +158,14 @@ class GUIConsumer(JsonWebsocketConsumer):
     def handle_arm_message(self, msg):
         RA_NAMES = ["joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_yaw", "allen_key", "gripper"]
         ra_slow_mode = False
-        if msg["arm_mode"] == "arm_disabled":
-            x = 1
-        elif msg["arm_mode"] == "ik":
+        if msg["arm_mode"] == "ik":
             x = 1
         elif msg["arm_mode"] == "position":
             self.arm_position_cmd = Position(
                 names=RA_NAMES,
-                positions=[nan for _ in RA_NAMES],
+                positions=msg["positions"],
             )
+           
             self.arm_position_cmd_pub.publish(self.arm_position_cmd)
 
         elif msg["arm_mode"] == "velocity":
