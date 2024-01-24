@@ -14,7 +14,8 @@ namespace mrover {
         float mResolution{};    // Cells per meter
         int mDimension{};       // Dimensions of the square costmap in meters
         float mNormalThreshold = 0.5;
-        const tf2_ros::Buffer tf_buffer = tf2_ros::Buffer();
+        tf2_ros::Buffer tf_buffer;
+        tf2_ros::TransformListener tf_listener{tf_buffer};
 
         std::optional<SE3> mPreviousPose;
         nav_msgs::OccupancyGrid mGlobalGridMsg;
