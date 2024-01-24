@@ -73,24 +73,38 @@ namespace mrover {
 
                     model.waitMeshes();
 
-                    if (model.meshes.size() != 1) throw std::invalid_argument{"Mesh collider must be constructed from exactly one mesh"};
+                    // Colliders with non-zero mass must be convex
+                    // This is a limitation of most physics engines
+                    if (link->inertial->mass > std::numeric_limits<float>::epsilon()) {
+                        auto* convexHullShape = simulator.makeBulletObject<btConvexHullShape>(simulator.mCollisionShapes);
+                        for (Model::Mesh const& meshData: model.meshes) {
+                            for (Eigen::Vector3f const& point: meshData.vertices.data) {
+                                convexHullShape->addPoint(btVector3{point.x(), point.y(), point.z()}, false);
+                            }
+                        }
+                        convexHullShape->recalcLocalAabb();
+                        shapes.emplace_back(convexHullShape, urdfPoseToBtTransform(collision->origin));
+                        simulator.mMeshToUri.emplace(convexHullShape, fileUri);
+                    } else {
+                        auto* triangleMesh = new btTriangleMesh{};
+                        triangleMesh->preallocateVertices(static_cast<int>(model.meshes.front().vertices.data.size()));
+                        triangleMesh->preallocateIndices(static_cast<int>(model.meshes.front().indices.data.size()));
 
-                    Model::Mesh const& meshData = model.meshes.front();
+                        for (Model::Mesh const& meshData: model.meshes) {
+                            for (std::size_t i = 0; i < meshData.indices.data.size(); i += 3) {
+                                Eigen::Vector3f v0 = meshData.vertices.data[meshData.indices.data[i + 0]];
+                                Eigen::Vector3f v1 = meshData.vertices.data[meshData.indices.data[i + 1]];
+                                Eigen::Vector3f v2 = meshData.vertices.data[meshData.indices.data[i + 2]];
+                                triangleMesh->addTriangle(btVector3{v0.x(), v0.y(), v0.z()}, btVector3{v1.x(), v1.y(), v1.z()}, btVector3{v2.x(), v2.y(), v2.z()});
+                            }
+                        }
 
-                    auto* triangleMesh = new btTriangleMesh{};
-                    triangleMesh->preallocateVertices(static_cast<int>(meshData.vertices.data.size()));
-                    triangleMesh->preallocateIndices(static_cast<int>(meshData.indices.data.size()));
-                    for (std::size_t i = 0; i < meshData.indices.data.size(); i += 3) {
-                        Eigen::Vector3f v0 = meshData.vertices.data[meshData.indices.data[i + 0]];
-                        Eigen::Vector3f v1 = meshData.vertices.data[meshData.indices.data[i + 1]];
-                        Eigen::Vector3f v2 = meshData.vertices.data[meshData.indices.data[i + 2]];
-                        triangleMesh->addTriangle(btVector3{v0.x(), v0.y(), v0.z()}, btVector3{v1.x(), v1.y(), v1.z()}, btVector3{v2.x(), v2.y(), v2.z()});
+                        auto* meshShape = simulator.makeBulletObject<btBvhTriangleMeshShape>(simulator.mCollisionShapes, triangleMesh, true);
+                        // TODO(quintin): Configure this in the URDF
+                        meshShape->setMargin(0.01);
+                        shapes.emplace_back(meshShape, urdfPoseToBtTransform(collision->origin));
+                        simulator.mMeshToUri.emplace(meshShape, fileUri);
                     }
-                    auto* meshShape = simulator.makeBulletObject<btBvhTriangleMeshShape>(simulator.mCollisionShapes, triangleMesh, true);
-                    // TODO(quintin): Configure this in the URDF
-                    meshShape->setMargin(0.01);
-                    shapes.emplace_back(meshShape, urdfPoseToBtTransform(collision->origin));
-                    simulator.mMeshToUri.emplace(meshShape, fileUri);
                     break;
                 }
                 default:

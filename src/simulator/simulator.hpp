@@ -203,6 +203,7 @@ namespace mrover {
         ros::Publisher mGroundTruthPub;
         ros::Publisher mGpsPub;
         ros::Publisher mImuPub;
+        ros::Publisher mMotorStatusPub;
 
         tf2_ros::Buffer mTfBuffer;
         tf2_ros::TransformListener mTfListener{mTfBuffer};
@@ -263,7 +264,7 @@ namespace mrover {
         std::vector<std::unique_ptr<btMultiBodyLinkCollider>> mMultibodyCollider;
         std::vector<std::unique_ptr<btMultiBodyConstraint>> mMultibodyConstraints;
 
-        std::unordered_map<btBvhTriangleMeshShape*, std::string> mMeshToUri;
+        std::unordered_map<btCollisionShape*, std::string> mMeshToUri;
 
         struct SaveData {
             struct LinkData {
@@ -315,6 +316,8 @@ namespace mrover {
         auto computeStereoCamera(StereoCamera& stereoCamera, wgpu::CommandEncoder& encoder) -> void;
 
         auto gpsAndImusUpdate(Clock::duration dt) -> void;
+
+        auto motorStatusUpdate() -> void;
 
         auto linksToTfUpdate() -> void;
 

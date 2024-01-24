@@ -41,6 +41,7 @@ class StateMachine(Generic[ContextType]):
         self,
         initial_state: State,
         name: str,
+        context: ContextType,
         log_level: LogLevel = LogLevel.DEBUG,
         logger: Callable[[str], None] = print,
     ):
@@ -49,7 +50,7 @@ class StateMachine(Generic[ContextType]):
         self.state_transitions = defaultdict(set)
         self.state_transitions[type(self.current_state)] = set()
         self.transition_log: List[TransitionRecord] = []
-        self.context = None
+        self.context = context
         self.name = name
         self.off_lamdba = None
         self.off_state = None
@@ -112,9 +113,6 @@ class StateMachine(Generic[ContextType]):
         self.add_transition(state_from, state_from)
         if self.off_state is not None:
             self.add_transition(state_from, self.off_state)
-
-    def set_context(self, context: ContextType):
-        self.context = context
 
     def configure_off_switch(self, off_state: State, off_lambda: Callable[[ContextType], bool]):
         if type(off_state) not in self.state_transitions:
