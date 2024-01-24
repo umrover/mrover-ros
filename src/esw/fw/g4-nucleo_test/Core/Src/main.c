@@ -83,6 +83,12 @@ int main(void)
 
   /* USER CODE BEGIN SysInit */
 
+#ifdef VECT_TAB_SRAM
+  SCB->VTOR = SRAM_BASE;
+#else
+  SCB->VTOR = FLASH_BASE;
+#endif
+
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
@@ -146,12 +152,12 @@ int main(void)
 //		HAL_GPIO_WritePin(GPIOA, 13, GPIO_PIN_SET);
 //		for (int i = 0; i < 1; ++i) {
 			HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, GPIO_PIN_RESET);
-			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_SET);
-			TIM15->CCR1 = 50;
-			HAL_Delay(100);
+//			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_SET);
+			TIM15->CCR1 = 100;
+			HAL_Delay(250);
 			HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, GPIO_PIN_SET);
-			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_RESET);
-			HAL_Delay(100);
+//			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_RESET);
+			HAL_Delay(250);
 //		}
   }
   /* USER CODE END 3 */
