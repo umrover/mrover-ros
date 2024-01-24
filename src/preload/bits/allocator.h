@@ -48,6 +48,8 @@
  *  Do not attempt to use it directly. @headername{memory}
  */
 
+#if defined(__linux__) && defined(__GNUC__)
+
 #ifndef _ALLOCATOR_H
 #define _ALLOCATOR_H 1
 
@@ -280,5 +282,7 @@ namespace std _GLIBCXX_VISIBILITY(default) {
 
     _GLIBCXX_END_NAMESPACE_VERSION
 } // namespace std _GLIBCXX_VISIBILITY(default)
+
+#endif
 
 #endif
