@@ -1,1 +1,1 @@
-bool[6] state
+bool[] state
