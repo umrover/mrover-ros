@@ -1,18 +1,22 @@
 import json
 from math import copysign
+from math import pi
+from tf.transformations import euler_from_quaternion
+import threading
 
 from channels.generic.websocket import JsonWebsocketConsumer
 
 import rospy
 import tf2_ros
 from geometry_msgs.msg import Twist
-from mrover.msg import PDLB, ControllerState, GPSWaypoint, WaypointType, LED, StateMachineStateUpdate, Throttle
+from mrover.msg import PDLB, ControllerState, GPSWaypoint, WaypointType, LED, StateMachineStateUpdate, Throttle, CalibrationStatus
 from mrover.srv import EnableAuton
 from sensor_msgs.msg import JointState, NavSatFix
 from std_msgs.msg import String, Bool
 from std_srvs.srv import SetBool, Trigger
 from util.SE3 import SE3
 
+from backend.models import Waypoint
 
 # If below threshold, make output zero
 def deadzone(magnitude: float, threshold: float) -> float:
@@ -47,13 +51,13 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.joint_state_sub = rospy.Subscriber("/drive_joint_data", JointState, self.joint_state_callback)
         self.led_sub = rospy.Subscriber("/led", LED, self.led_callback)
         self.nav_state_sub = rospy.Subscriber("/nav_state", StateMachineStateUpdate, self.nav_state_callback)
-        self.tf_buffer = tf2_ros.Buffer()
-        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
-        self.enable_auton = rospy.ServiceProxy("enable_auton", EnableAuton)
+        self.imu_calibration = rospy.Subscriber('imu/calibration', CalibrationStatus, self.imu_calibration_callback)
+
 
         # Services
         self.laser_service = rospy.ServiceProxy("enable_mosfet_device", SetBool)
         self.calibrate_service = rospy.ServiceProxy("arm_calibrate", Trigger)
+        self.enable_auton = rospy.ServiceProxy("enable_auton", EnableAuton)
 
         # ROS Parameters
         self.mappings = rospy.get_param("teleop/joystick_mappings")
@@ -61,6 +65,14 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.max_wheel_speed = rospy.get_param("rover/max_speed")
         self.wheel_radius = rospy.get_param("wheel/radius")
         self.max_angular_speed = self.max_wheel_speed / self.wheel_radius
+
+        # self.flight_tf_listener = threading.Thread(target=self.flight_attitude_listener)
+        # self.flight_tf_listener.start()
+        # self.flight_tf_listener.join()
+        self.tf_buffer = tf2_ros.Buffer()
+        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
+
+
 
     def disconnect(self, close_code):
         self.pdb_sub.unregister()
@@ -70,6 +82,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.gps_fix.unregister()
         self.led_sub.unregister()
         self.nav_state_sub.unregister()
+        self.imu_calibration.unregister()
 
     def receive(self, text_data):
         """
@@ -95,6 +108,10 @@ class GUIConsumer(JsonWebsocketConsumer):
                 self.auton_bearing()
             elif message["type"] == "mast_gimbal":
                 self.mast_gimbal(message)
+            elif message["type"] == "save_waypoint_list":
+                self.save_waypoint_list(message)
+            elif message["type"] == "get_waypoint_list":
+                self.get_waypoint_list(message)
         except Exception as e:
             rospy.logerr(e)
 
@@ -258,3 +275,72 @@ class GUIConsumer(JsonWebsocketConsumer):
         rot_pwr = msg["throttles"][0] * pwr["rotation_pwr"]
         up_down_pwr = msg["throttles"][1] * pwr["up_down_pwr"]
         self.mast_gimbal_pub.publish(Throttle(["mast_gimbal_x", "mast_gimbal_y"], [rot_pwr, up_down_pwr]))
+
+    def save_waypoint_list(self, msg):
+        rospy.logerr(msg)
+        Waypoint.objects.all().delete()
+        waypoints = []
+        for w in msg["data"]:
+            waypoints.append(
+                Waypoint(tag_id=w["id"], type=w["type"], latitude=w["lat"], longitude=w["lon"], name=w["name"])
+            )
+        Waypoint.objects.bulk_create(waypoints)
+        self.send(text_data=json.dumps({"type": "save_waypoint_list", "success": True}))
+        # Print out all of the waypoints
+        for w in Waypoint.objects.all():
+            rospy.logerr(str(w.name) + " " + str(w.latitude) + " " + str(w.longitude))
+
+    def get_waypoint_list(self, msg):
+        waypoints = []
+        for w in Waypoint.objects.all():
+            waypoints.append({"name": w.name, "id": w.tag_id, "lat": w.latitude, "lon": w.longitude, "type": w.type})
+        self.send(text_data=json.dumps({"type": "get_waypoint_list", "data": waypoints}))
+
+
+    def imu_calibration_callback(self, msg) -> None:
+        self.send(text_data=json.dumps({
+            'type': 'calibration_status',
+            'system_calibration': msg.system_calibration,
+            'gyroscope_calibration': msg.gyroscope_calibration,
+            'accelerometer_calibration': msg.accelerometer_calibration,
+            'magnetometer_calibration': msg.magnetometer_calibration
+        }))
+
+    def flight_attitude_listener(self):
+        tf_buffer = tf2_ros.Buffer()
+        tf_listener = tf2_ros.TransformListener(tf_buffer)
+
+        # threshold that must be exceeded to send JSON message
+        threshold = 0.1
+        map_to_baselink = SE3()
+
+        rate = rospy.Rate(10.0)
+        while not rospy.is_shutdown():
+            try:
+                tf_msg = SE3.from_tf_tree(tf_buffer, "map", "base_link")
+                
+                if tf_msg.is_approx(map_to_baselink, threshold):
+                    rate.sleep()
+                    continue
+            except (
+                tf2_ros.LookupException,
+                tf2_ros.ConnectivityException,
+                tf2_ros.ExtrapolationException,
+            ):
+                rate.sleep()
+                continue
+
+            map_to_baselink = tf_msg
+            rotation = map_to_baselink.rotation
+            euler = euler_from_quaternion(rotation.quaternion)
+            pitch = euler[0] * 180 / pi
+            roll = euler[1] * 180 / pi
+
+            self.send(text_data=json.dumps({
+                'type': 'flight_attitude',
+                'pitch': pitch,
+                'roll': roll
+            }))
+
+            rate.sleep()
+

@@ -10,6 +10,7 @@
           <div class="form-group col-md-6">
             <label for="waypointid">ID:</label>
             <input
+              v-if="type != 1"
               class="form-control"
               id="waypointid"
               v-model="id"
@@ -17,6 +18,15 @@
               max="249"
               min="0"
               step="1"
+            />
+            <input
+              v-else
+              class="form-control"
+              id="waypointid"
+              type="number"
+              placeholder="-1"
+              step="1"
+              disabled
             />
           </div>
         </div>
@@ -99,7 +109,8 @@
           <button class="btn btn-primary" @click="addWaypoint(formatted_odom)">
             Drop Waypoint
           </button>
-          <button class="btn btn-primary" @click="openModal">Competition Waypoint Entry</button>
+          <!-- Disabled until Competion entry modal is redone -->
+          <!-- <button class="btn btn-primary" @click="openModal">Competition Waypoint Entry</button> -->
         </div>
       </div>
       <div class="box">
@@ -403,12 +414,21 @@ export default {
       if (msg.type == 'nav_state') {
         // If still waiting for nav...
         if (
-          (msg.state == 'OffState' && this.autonEnabled) ||
-          (msg.state !== 'OffState' && !this.autonEnabled)
+          !(msg.state == 'OffState' && this.autonEnabled) &&
+          !(msg.state !== 'OffState' && !this.autonEnabled)
         ) {
-          return
+          this.autonButtonColor = this.autonEnabled ? 'btn-success' : 'btn-danger'
         }
-        this.autonButtonColor = this.autonEnabled ? 'btn-success' : 'btn-danger'
+      }
+      else if (msg.type == 'get_waypoint_list') {
+        // Get waypoints from server on page load
+        this.storedWaypoints = msg.data
+        const waypoints = msg.data.map((waypoint: { lat: any; lon: any; name: any }) => {
+          const lat = waypoint.lat
+          const lon = waypoint.lon
+          return { latLng: L.latLng(lat, lon), name: waypoint.name }
+        })
+        this.setWaypointList(waypoints)
       }
     },
 
@@ -432,6 +452,7 @@ export default {
         return { latLng: L.latLng(lat, lon), name: waypoint.name }
       })
       this.setWaypointList(waypoints)
+      this.sendMessage({ type: 'save_waypoint_list', data: newList })
     },
       deep: true
     },
@@ -458,20 +479,17 @@ export default {
     window.clearInterval(stuck_interval)
     window.clearInterval(intermediate_publish_interval)
     this.autonEnabled = false
-    // this.sendAutonCommand();
   },
 
   created: function () {
     // Make sure local odom format matches vuex odom format
     this.odom_format_in = this.odom_format
 
-    // this.sendAutonCommand();
+    window.setTimeout(() => {
+      // Timeout so websocket will be initialized
+      this.sendMessage({ type: 'get_waypoint_list', data: null })
+    }, 250)
   },
-
-  // mounted: function () {
-  //   //Send auton off if GUI is refreshed
-  //   this.sendAutonCommand();
-  // },
 
   methods: {
     ...mapActions('websocket', ['sendMessage']),
@@ -600,13 +618,22 @@ export default {
     },
 
     addWaypoint: function (coord: { lat: any; lon: any }) {
+      if (this.type != 1 && !this.checkWaypointIDUnique(this.id)) {
+        alert('Waypoint ID must be unique')
+        return
+      }
       this.storedWaypoints.push({
         name: this.name,
-        id: this.id,
+        id: this.type != 1 ? this.id : -1, // Check if type is post, if so, set id to -1
         lat: convertDMS(coord.lat, 'D').d,
         lon: convertDMS(coord.lon, 'D').d,
-        type: this.type
+        type: this.type,
+        post: false
       })
+    },
+
+    checkWaypointIDUnique: function (id: any) {
+      return this.storedWaypoints.every((waypoint: { id: any }) => waypoint.id != id)
     },
 
     clearWaypoint: function () {

@@ -1,7 +1,7 @@
 <template>
   <div class="shadow my-1 p-3 rounded waypoint-item">
     <div class="identification">
-      <p>{{ waypoint.name }}, ID: {{ waypoint.id }}</p>
+      <p>{{ waypoint.name }} | ID: {{ waypoint.id }} | Type: {{ WAYPOINT_TYPES[waypoint.type] }}</p>
     </div>
     <div class="location">
       <p>{{ output.lat.d }}º</p>
@@ -11,7 +11,7 @@
       <p>{{ output.lon.d }}º</p>
       <p v-if="min_enabled">{{ output.lon.m }}'</p>
       <p v-if="sec_enabled">{{ output.lon.s }}"</p>
-      W
+      E
     </div>
     <div class="row">
       <div class="col text-center">
@@ -33,7 +33,18 @@
 import { mapGetters } from 'vuex'
 import { convertDMS } from '../utils'
 
+const WAYPOINT_TYPES = {
+  0: 'No Search',
+  1: 'Post',
+  2: 'Mallet',
+  3: 'Water Bottle'
+}
+
 export default {
+  data() {
+    WAYPOINT_TYPES: WAYPOINT_TYPES
+  },
+
   props: {
     waypoint: {
       type: Object,

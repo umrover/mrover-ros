@@ -16,11 +16,11 @@ export default {
     },
     name: {
       type: String,
-      required: true
+      required: false
     },
     show_name: {
       type: Boolean,
-      required: true
+      required: false
     }
   },
   computed: {

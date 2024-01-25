@@ -145,7 +145,6 @@ export default {
           
           this.odomPath.push(latLng)
           this.odomCount = 0;
-          console.log(this.odomPath)
         }
         
       },
@@ -211,7 +210,7 @@ export default {
   height: 100%;
   display: grid;
   overflow: hidden;
-  min-height: 100%;
+  min-height: 40vh;
   grid-gap: 3px;
   grid-template-columns: auto;
   grid-template-rows: 94% 6%;
