@@ -17,7 +17,7 @@ namespace mrover {
             SET_BIT_AT_INDEX(mConfigCommand.limit_switch_info.enabled, i, xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, std::format("limit_{}_enable", i), false));
 
             mConfigCommand.limit_switch_info.active_high = xmlRpcValueToTypeOrDefault<bool>(
-                    brushedMotorData, std::format("limit_{}_active_high", i), false);
+                    brushedMotorData, std::format("limit_{}_is_active_high", i), false);
             mConfigCommand.limit_switch_info.limits_forward = xmlRpcValueToTypeOrDefault<bool>(
                     brushedMotorData, std::format("limit_{}_limits_fwd", i), false);
 
@@ -34,12 +34,12 @@ namespace mrover {
         mConfigCommand.quad_abs_enc_info.quad_present = xmlRpcValueToTypeOrDefault<bool>(
                 brushedMotorData, "quad_present", false);
         mConfigCommand.quad_abs_enc_info.quad_is_forward_polarity = xmlRpcValueToTypeOrDefault<bool>(
-                brushedMotorData, "quad_is_forward_polarity", false);
+                brushedMotorData, "quad_is_fwd_polarity", false);
         mConfigCommand.quad_abs_enc_info.abs_present = xmlRpcValueToTypeOrDefault<bool>(
                 brushedMotorData, "abs_present", false);
 
         mConfigCommand.quad_abs_enc_info.abs_is_forward_polarity = xmlRpcValueToTypeOrDefault<bool>(
-                brushedMotorData, "abs_is_forward_polarity", false);
+                brushedMotorData, "abs_is_fwd_polarity", false);
 
         mConfigCommand.quad_enc_out_ratio = xmlRpcValueToTypeOrDefault<double>(
                 brushedMotorData, "quad_ratio", 1.0);
