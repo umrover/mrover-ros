@@ -13,5 +13,5 @@ namespace std {
     }
 } // namespace std
 #else
-#include <format>
+#include_next <format>
 #endif
