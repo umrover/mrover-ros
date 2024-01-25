@@ -8,10 +8,10 @@ d = generate_distutils_setup(
     packages=[
         "localization",
         "util",
+        "util.state_lib",
         "navigation",
         "navigation.failure_identification",
         "esw",
-        "teleop",
         "teleoperation.teleoperation",
     ],
     package_dir={"": "src"},

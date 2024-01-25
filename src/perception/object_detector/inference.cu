@@ -1,8 +1,6 @@
 #include "inference.cuh"
 
 #include <NvInfer.h>
-#include <NvInferRuntime.h>
-#include <NvInferRuntimeBase.h>
 #include <NvOnnxParser.h>
 #include <cstdio>
 #include <cuda_runtime_api.h>
@@ -10,7 +8,8 @@
 
 #include "logger.cuh"
 
-using namespace nvinfer1;/**
+using namespace nvinfer1;
+/**
 * cudaMemcpys CPU memory in inputTensor to GPU based on bindings
 * Queues that tensor to be passed through model
 * cudaMemcpys the result back to CPU memory
@@ -20,50 +19,49 @@ using namespace nvinfer1;/**
 namespace mrover {
 
     //Create names for common model names
-    constexpr static const char * INPUT_BINDING_NAME = "images";
-    constexpr static const char * OUTPUT_BINDING_NAME = "output0";
+    constexpr static char const* INPUT_BINDING_NAME = "images";
+    constexpr static char const* OUTPUT_BINDING_NAME = "output0";
 
-    Inference::Inference(std::string const& onnxModelPath, cv::Size modelInputShape = {640, 640}, std::string const& classesTxtFile = "") {
+    Inference::Inference(std::filesystem::path const& onnxModelPath) {
         //Create the engine object from either the file or from onnx file
-        mEngine = std::unique_ptr<ICudaEngine, Destroy<ICudaEngine>>{createCudaEngine(onnxModelPath)};
+        mEngine = std::unique_ptr<ICudaEngine>{createCudaEngine(onnxModelPath)};
         if (!mEngine) throw std::runtime_error("Failed to create CUDA engine");
 
-        //Log the Engine was created
         mLogger.log(ILogger::Severity::kINFO, "Created CUDA Engine");
 
         //Check some assumptions about the model
-        if(mEngine->getNbIOTensors() != 2) throw std::runtime_error("Invalid Binding Count");
-        if(mEngine->getTensorIOMode(INPUT_BINDING_NAME) != TensorIOMode::kINPUT) throw std::runtime_error("Expected Input Binding 0 Is An Input");
-        if(mEngine->getTensorIOMode(OUTPUT_BINDING_NAME) != TensorIOMode::kOUTPUT) throw std::runtime_error("Expected Input Binding Input To Be 1");
+        if (mEngine->getNbIOTensors() != 2) throw std::runtime_error("Invalid Binding Count");
+        if (mEngine->getTensorIOMode(INPUT_BINDING_NAME) != TensorIOMode::kINPUT) throw std::runtime_error("Expected Input Binding 0 Is An Input");
+        if (mEngine->getTensorIOMode(OUTPUT_BINDING_NAME) != TensorIOMode::kOUTPUT) throw std::runtime_error("Expected Input Binding Input To Be 1");
 
         //Create the execution context
         setUpContext();
 
-        //Init the io tensors
+        //Init the io tensors on the GPU
         prepTensors();
     }
 
-    ICudaEngine* Inference::createCudaEngine(std::string const& onnxModelPath) {
-        // See link sfor additional context
+    ICudaEngine* Inference::createCudaEngine(std::filesystem::path const& onnxModelPath) {
+        //Define the size of Batches
         constexpr auto explicitBatch = 1U << static_cast<uint32_t>(NetworkDefinitionCreationFlag::kEXPLICIT_BATCH);
 
         //Init logger
-        std::unique_ptr<IBuilder, Destroy<IBuilder>> builder{createInferBuilder(mLogger)};
+        std::unique_ptr<IBuilder> builder{createInferBuilder(mLogger)};
         if (!builder) throw std::runtime_error("Failed to create Infer Builder");
         mLogger.log(ILogger::Severity::kINFO, "Created Infer Builder");
 
         //Init Network
-        std::unique_ptr<INetworkDefinition, Destroy<INetworkDefinition>> network{builder->createNetworkV2(explicitBatch)};
+        std::unique_ptr<INetworkDefinition> network{builder->createNetworkV2(explicitBatch)};
         if (!network) throw std::runtime_error("Failed to create Network Definition");
         mLogger.log(ILogger::Severity::kINFO, "Created Network Definition");
 
         //Init the onnx file parser
-        std::unique_ptr<nvonnxparser::IParser, Destroy<nvonnxparser::IParser>> parser{nvonnxparser::createParser(*network, mLogger)};
+        std::unique_ptr<nvonnxparser::IParser> parser{nvonnxparser::createParser(*network, mLogger)};
         if (!parser) throw std::runtime_error("Failed to create ONNX Parser");
         mLogger.log(ILogger::Severity::kINFO, "Created ONNX Parser");
 
         //Init the builder
-        std::unique_ptr<IBuilderConfig, Destroy<IBuilderConfig>> config{builder->createBuilderConfig()};
+        std::unique_ptr<IBuilderConfig> config{builder->createBuilderConfig()};
         if (!config) throw std::runtime_error("Failed to create Builder Config");
         mLogger.log(ILogger::Severity::kINFO, "Created Builder Config");
 
@@ -75,13 +73,14 @@ namespace mrover {
         //Create runtime engine
         IRuntime* runtime = createInferRuntime(mLogger);
 
-        //Engine file path
-        std::filesystem::path enginePath("./tensorrt-engine-best.engine");
+        //Define the engine file location relative to the mrover package
+        std::filesystem::path packagePath = ros::package::getPath("mrover");
+        std::filesystem::path enginePath = packagePath / "data" / "tensorrt-engine-best.engine";
 
         //Check if engine file exists
         if (exists(enginePath)) {
             //Load engine from file
-            std::ifstream inputFileStream("./tensorrt-engine-best.engine", std::ios::binary);
+            std::ifstream inputFileStream(enginePath, std::ios::binary);
             std::stringstream engineBuffer;
 
             //Stream in the engine file to the buffer
@@ -90,6 +89,8 @@ namespace mrover {
             //Deserialize the Cuda Engine file from the buffer
             return runtime->deserializeCudaEngine(enginePlan.data(), enginePlan.size());
         } else {
+            ROS_WARN_STREAM("Optimizing ONXX model for TensorRT. This make take a long time...");
+
             //Create the Engine from onnx file
             IHostMemory* serializedEngine = builder->buildSerializedNetwork(*network, *config);
             if (!serializedEngine) throw std::runtime_error("Failed to serialize engine");
@@ -100,8 +101,8 @@ namespace mrover {
 
             //Save Engine to File
             auto trtModelStream = tempEng->serialize();
-            std::ofstream outputFileStream("./tensorrt-engine-best.engine", std::ios::binary);
-            outputFileStream.write(static_cast<const char*>(trtModelStream->data()), trtModelStream->size());
+            std::ofstream outputFileStream(enginePath, std::ios::binary);
+            outputFileStream.write(static_cast<char const*>(trtModelStream->data()), trtModelStream->size());
             outputFileStream.close();
 
             return tempEng;
@@ -116,7 +117,7 @@ namespace mrover {
         mContext->setInputShape(INPUT_BINDING_NAME, mEngine->getTensorShape(INPUT_BINDING_NAME));
     }
 
-    void Inference::doDetections(const cv::Mat& img) const{
+    void Inference::doDetections(cv::Mat const& img) const {
         //Do the forward pass on the network
         launchInference(img, mOutputTensor);
     }
@@ -136,7 +137,7 @@ namespace mrover {
         assert(mContext);
 
         //Get the binding id for the input tensor
-        const int inputId = getBindingInputIndex(mContext.get());
+        int const inputId = getBindingInputIndex(mContext.get());
 
         //Memcpy the input tensor from the host to the gpu
         cudaMemcpy(mBindings[inputId], input.data, input.total() * input.elemSize(), cudaMemcpyHostToDevice);
@@ -157,29 +158,30 @@ namespace mrover {
     void Inference::prepTensors() {
         //Assign the properties to the input and output tensors
         for (int i = 0; i < mEngine->getNbIOTensors(); i++) {
-            const char* tensorName = mEngine->getIOTensorName(i);
+            char const* tensorName = mEngine->getIOTensorName(i);
             auto [rank, extents] = mEngine->getTensorShape(tensorName);
 
             // Multiply sizeof(float) by the product of the extents
             // This is essentially: element count * size of each element
-            const std::size_t size = std::reduce(extents, extents + rank, sizeof(float), std::multiplies<>());
+            std::size_t const size = std::reduce(extents, extents + rank, sizeof(float), std::multiplies<>());
             // Create GPU memory for TensorRT to operate on
             cudaMalloc(mBindings.data() + i, size);
         }
 
         assert(mContext);
         //Create an appropriately sized output tensor
-        const Dims outputTensorDims = mEngine->getTensorShape(OUTPUT_BINDING_NAME);
+        Dims const outputTensorDims = mEngine->getTensorShape(OUTPUT_BINDING_NAME);
         for (int i = 0; i < outputTensorDims.nbDims; i++) {
             char message[512];
             std::snprintf(message, sizeof(message), "size %d %d", i, outputTensorDims.d[i]);
             mLogger.log(nvinfer1::ILogger::Severity::kINFO, message);
         }
 
+        //Create the mat wrapper around the output matrix for ease of use
         mOutputTensor = cv::Mat::zeros(outputTensorDims.d[1], outputTensorDims.d[2], CV_MAKE_TYPE(CV_32F, 1));
     }
 
-    int Inference::getBindingInputIndex(const IExecutionContext* context) {
+    int Inference::getBindingInputIndex(IExecutionContext const* context) {
         //Returns the id for the input tensor
         return context->getEngine().getTensorIOMode(context->getEngine().getIOTensorName(0)) != TensorIOMode::kINPUT; // 0 (false) if bindingIsInput(0), 1 (true) otherwise
     }

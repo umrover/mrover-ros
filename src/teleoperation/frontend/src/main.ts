@@ -1,11 +1,10 @@
-import './assets/main.css'
-
 import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router'
+import { store } from './store'
 
-const app = createApp(App)
+import './app.scss' //custom CSS override file
 
-app.use(router)
-
-app.mount('#app')
+const app: App<Element> = createApp(App)
+app.use(router).use(store).mount('#app')
+store.dispatch('websocket/setupWebSocket')

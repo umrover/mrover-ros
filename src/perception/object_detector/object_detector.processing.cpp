@@ -6,6 +6,8 @@
 #include <random>
 #include "../point.hpp"
 #include <stdexcept>
+#include <algorithm>
+#include <math.h>
 
 
 namespace mrover {
@@ -51,6 +53,7 @@ namespace mrover {
         int rows = output.rows;
         int dimensions = output.cols;
         bool yolov8 = false;
+
         // yolov5 has an output of shape (batchSize, 25200, 85) (Num classes + box[x,y,w,h] + confidence[c])
         // yolov8 has an output of shape (batchSize, 84,  8400) (Num classes + box[x,y,w,h])
         if (dimensions > rows) // Check if the shape[2] is more than shape[1] (yolov8)
@@ -72,7 +75,7 @@ namespace mrover {
         float modelShapeHeight = 640;
 
         //Set model thresholds
-        float modelScoreThreshold = 0.90;
+        float modelScoreThreshold = 0.95;
         float modelNMSThreshold = 0.50;
 
         //Get x and y scale factors
@@ -109,7 +112,7 @@ namespace mrover {
                     float x = data[0];
                     float y = data[1];
                     float w = data[2];
-                    float h = data[3];
+                     float h = data[3];
 
                     //Cast the corners into integers to be used on pixels
                     int left = static_cast<int>((x - 0.5 * w) * x_factor);
@@ -121,7 +124,7 @@ namespace mrover {
                     boxes.emplace_back(left, top, width, height);
                 }
             } else { //YOLO V5
-                throw std::runtime_error("Something is wrong with interpretation"); 
+                throw std::runtime_error("Something is wrong Model with interpretation"); 
             }
 
             data += dimensions;
@@ -151,35 +154,29 @@ namespace mrover {
 
         //If there are detections locate them in 3D
         if (!detections.empty()) {
-            //Get the first detection to locate in 3D
             Detection firstDetection = detections[0];
 
-            //Get the associated confidence with the object
-            float classConfidence = firstDetection.confidence;
-
-            //Get the associated box with the object
             cv::Rect box = firstDetection.box;
 
-            //Fill out the msgData information to be published to the topic
-            DetectedObject msgData;
-            msgData.object_type = firstDetection.className;
-            msgData.detection_confidence = classConfidence;
-            msgData.width = static_cast<float>(box.width);
-            msgData.height = static_cast<float>(box.height);
-
-            //Calculate the center of the box
             std::pair center(box.x + box.width/2, box.y + box.height/2);
             
-            //Get the object's position in 3D from the point cloud
-            if (std::optional<SE3> objectLocation = getObjectInCamFromPixel(msg, center.first * static_cast<float>(msg->width) / sizedImage.cols, center.second * static_cast<float>(msg->height) / sizedImage.rows); objectLocation) {
-                // Publish tag to immediate
+            //Get the object's position in 3D from the point cloud and run this statement if the optional has a value
+            if (std::optional<SE3> objectLocation = getObjectInCamFromPixel(msg, center.first * static_cast<float>(msg->width) / sizedImage.cols, center.second * static_cast<float>(msg->height) / sizedImage.rows, box.width, box.height); objectLocation) {
                 try{
-                    std::string immediateFrameId = "detectedobject";
+                    //Publish Immediate
+                    std::string immediateFrameId = "immediateDetectedObject";
                     SE3::pushToTfTree(mTfBroadcaster, immediateFrameId, mCameraFrameId, objectLocation.value());
 
-                    SE3 tagInsideCamera = SE3::fromTfTree(mTfBuffer, mMapFrameId, immediateFrameId);
+                    //Since the object is seen we need to increment the hit counter
+                    mHitCount = std::min(mObjMaxHitcount, mHitCount + mObjIncrementWeight);
 
-                    SE3::pushToTfTree(mTfBroadcaster, "detectedobjectFR", mMapFrameId, tagInsideCamera);
+                    //Only publish to permament if we are confident in the object
+                    if(mHitCount > mObjHitThreshold){
+                        std::string permanentFrameId = "detectedObject";
+                        SE3::pushToTfTree(mTfBroadcaster, permanentFrameId, mCameraFrameId, objectLocation.value());
+                    }
+
+                    SE3 tagInsideCamera = SE3::fromTfTree(mTfBuffer, mMapFrameId, immediateFrameId);
                 } catch (tf2::ExtrapolationException const&) {
                     NODELET_WARN("Old data for immediate tag");
                 } catch (tf2::LookupException const&) {
@@ -191,16 +188,6 @@ namespace mrover {
                 }
             }
 
-            //Get the heading
-            float objectHeading;
-            float zedFOV = 54; //54 @ 720; 42 @ 1080
-            float fovPerPixel = (float) zedFOV / static_cast<float>(modelShapeWidth);
-            float xCenter = static_cast<float>(box.x) + (static_cast<float>(box.width) / 2) - (static_cast<float>(modelShapeWidth) / 2);
-            objectHeading = xCenter * fovPerPixel;
-            msgData.bearing = objectHeading;
-
-            //Publish the data to the topic
-            mDetectionData.publish(msgData);
 
             //Draw the detected object's bounding boxes on the image for each of the objects detected
             for (size_t i = 0; i < detections.size(); i++) {
@@ -218,28 +205,24 @@ namespace mrover {
                 int font_weight = 2;
                 putText(sizedImage, detections[i].className, text_position, cv::FONT_HERSHEY_COMPLEX, font_size, font_Color, font_weight); //Putting the text in the matrix//
             }
+        } else {
+            mHitCount = std::max(0, mHitCount - mObjDecrementWeight);
+            
         }
-        if (mDebugImgPub.getNumSubscribers() > 0 || true) {
-            ROS_INFO("Publishing Debug Img");
 
-            // Init sensor msg image
+        //We only want to publish the debug image if there is something lsitening, to reduce the operations going on
+        if (mDebugImgPub.getNumSubscribers() > 0 || true) {
             sensor_msgs::Image newDebugImageMessage;//I chose regular msg not ptr so it can be used outside of this process
 
             //Convert the image back to BGRA for ROS
             cv::cvtColor(sizedImage, sizedImage, cv::COLOR_BGR2BGRA);
 
-            //Fill in the msg image size
             newDebugImageMessage.height = sizedImage.rows;
             newDebugImageMessage.width = sizedImage.cols;
-
-            //Fill in the encoding type
             newDebugImageMessage.encoding = sensor_msgs::image_encodings::BGRA8;
-
-            //Calculate the step for the imgMsg
             newDebugImageMessage.step = sizedImage.channels() * sizedImage.cols;
             newDebugImageMessage.is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
 
-            //Pointer to the the image data
             auto imgPtr = sizedImage.data;
 
             //Calculate the image size
@@ -249,23 +232,56 @@ namespace mrover {
             //Copy the data to the image
             memcpy(newDebugImageMessage.data.data(), imgPtr, size);
 
-            //Publish the image to the topic
             mDebugImgPub.publish(newDebugImageMessage);
         }
     }
 
-    std::optional<SE3> ObjectDetectorNodelet::getObjectInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t u, size_t v) const {
+    std::optional<SE3> ObjectDetectorNodelet::getObjectInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t u, size_t v, size_t width, size_t height) {
         assert(cloudPtr);
-
         if (u >= cloudPtr->width || v >= cloudPtr->height) {
             NODELET_WARN("Tag center out of bounds: [%zu %zu]", u, v);
             return std::nullopt;
         }
 
-        Point point = reinterpret_cast<Point const*>(cloudPtr->data.data())[u + v * cloudPtr->width ];
-        if (!std::isfinite(point.x) || !std::isfinite(point.y) || !std::isfinite(point.z)) {
-            NODELET_WARN("Tag center point not finite: [%f %f %f]", point.x, point.y, point.z);
-            return std::nullopt;
+        //Search for the pnt in a spiral pattern
+        return spiralSearchInImg(cloudPtr, u, v, width, height);
+    }
+
+    std::optional<SE3> ObjectDetectorNodelet::spiralSearchInImg(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t xCenter, size_t yCenter, size_t width, size_t height){
+        size_t currX = xCenter;
+        size_t currY = yCenter;
+        size_t radius = 0;
+        int t = 0;
+        int numPts = 16;
+        bool isPointInvalid = true;
+        Point point;
+
+        //Find the smaller of the two box dimensions so we know the max spiral radius
+        size_t smallDim = std::min(width/2, height/2);
+
+
+        while(isPointInvalid){
+            //This is the parametric equation to spiral around the center pnt
+            currX = xCenter + std::cos(t * 1.0/numPts * 2 * M_PI) * radius;
+            currY = yCenter + std::sin(t * 1.0/numPts * 2 * M_PI) * radius;
+
+            //Grab the point from the pntCloud and determine if its a finite pnt
+            point = reinterpret_cast<Point const*>(cloudPtr->data.data())[currX + currY * cloudPtr->width];
+            isPointInvalid = (!std::isfinite(point.x) || !std::isfinite(point.y) || !std::isfinite(point.z));
+            if(isPointInvalid) NODELET_WARN("Tag center point not finite: [%f %f %f]", point.x, point.y, point.z);
+
+            //After a full circle increase the radius
+            if(static_cast<int>(t) % numPts == 0){
+                radius++;
+            }
+
+            //Increase the parameter
+            t++;
+
+            //If we reach the edge of the box we stop spiraling
+            if(radius >= smallDim){
+                return std::nullopt;
+            }
         }
 
         return std::make_optional<SE3>(R3{point.x, point.y, point.z}, SO3{});

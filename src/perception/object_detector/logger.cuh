@@ -1,6 +1,6 @@
 #pragma once
 
-#include <NvInferRuntimeBase.h>
+#include <NvInfer.h>
 
 namespace nvinfer1 {
 
