@@ -1,5 +1,3 @@
-#include <iostream>
-
 #include <ros/init.h>
 #include <ros/node_handle.h>
 

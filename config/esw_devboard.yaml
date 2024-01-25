@@ -19,14 +19,14 @@ brushed_motors:
   controllers:
     devboard:
       gear_ratio: 1.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
-      limit_0_present: false
-      limit_1_present: false
-      limit_2_present: false
+      limit_0_present: true
+      limit_1_present: true
+      limit_2_present: true
       limit_3_present: false
-      limit_0_default_enabled: false
-      limit_1_default_enabled: false
-      limit_2_default_enabled: false
-      limit_3_default_enabled: false
+      limit_0_enabled: true
+      limit_1_enabled: true
+      limit_2_enabled: true
+      limit_3_enabled: false
       limit_0_is_active_high: true
       limit_1_is_active_high: true
       limit_2_is_active_high: true
