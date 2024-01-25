@@ -1,7 +1,0 @@
-<launch>
-    <include file="$(find mrover)/launch/jetson.launch"/>
-    <include file="$(find mrover)/launch/zed.launch">
-        <arg name="use_builtin_visual_odom" value="true"/>
-    </include>
-    <include file="$(find mrover)/launch/auton.launch"/>
-</launch>

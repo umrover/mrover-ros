@@ -61,7 +61,7 @@ class SearchTrajectory(Trajectory):
         :param coverage_radius:     radius of the spiral search pattern (float)
         :param distance_between_spirals:    distance between each spiral (float)
         :param segments_per_rotation:     number of segments per spiral (int), for example, 4 segments per rotation would be a square spiral, 8 segments per rotation would be an octagonal spiral
-        :param fid_id:      fiducial id to associate with this trajectory (int)
+        :param fid_id:      tag id to associate with this trajectory (int)
         :return:    SearchTrajectory object
         """
         zero_centered_spiral_r2 = cls.gen_spiral_coordinates(
@@ -99,7 +99,7 @@ class SearchState(State):
                 self.SPIRAL_COVERAGE_RADIUS,
                 self.DISTANCE_BETWEEN_SPIRALS,
                 self.SEGMENTS_PER_ROTATION,
-                search_center.fiducial_id,
+                search_center.tag_id,
             )
             self.prev_target = None
 
