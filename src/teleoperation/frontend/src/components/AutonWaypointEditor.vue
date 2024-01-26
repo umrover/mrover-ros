@@ -100,7 +100,7 @@
             <span for="sec2" class="input-group-text">"</span>
           </div>
           <div class="col">
-              E
+              W
           </div>
         </div>
 
@@ -149,8 +149,8 @@
         @toggle="toggleTeleopMode($event)"
       />
       <Checkbox class="stuck-checkbox" name="Stuck" @toggle="roverStuck = !roverStuck"></Checkbox>
-      <div class="box">
-        <h4 class="waypoint-headers">Current Course</h4>
+      <h4 class="waypoint-headers">Current Course</h4>
+      <div class="route">
         <WaypointItem
           v-for="(waypoint, i) in route"
           :id="id"
@@ -316,7 +316,7 @@ export default {
     return {
       name: 'Waypoint',
       id: '0',
-      type: 0,
+      type: '0',
       odom_format_in: 'DM',
       input: {
         lat: {
@@ -513,7 +513,7 @@ export default {
           is_enabled: true,
           waypoints: _.map(
             this.route,
-            (waypoint: { lat: number; lon: number; id: string; type: number }) => {
+            (waypoint: { lat: number; lon: number; id: string; type: string }) => {
               const lat = waypoint.lat
               const lon = waypoint.lon
               // Return a GPSWaypoint.msg formatted object for each
@@ -521,7 +521,7 @@ export default {
                 latitude_degrees: lat,
                 longitude_degrees: lon,
                 tag_id: parseInt(waypoint.id),
-                type: waypoint.type
+                type: parseInt(waypoint.type)
               }
             }
           )
@@ -702,8 +702,13 @@ export default {
 }
 
 .waypoints {
-  height: 30%;
-  overflow-y: hidden;
+  height: 50vh;
+  overflow-y: auto;
+}
+
+.route {
+  height: 65vh;
+  overflow-y: auto;
 }
 
 .wp-input p {

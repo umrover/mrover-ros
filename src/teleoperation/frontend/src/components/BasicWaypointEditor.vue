@@ -65,7 +65,7 @@
           <input class="form-control" id="sec2" v-model.number="input.lon.s" />
           <span for="sec2" class="input-group-text">"</span>
         </div>
-        E
+        W
       </div>
 
       <div class="add-drop">
@@ -79,14 +79,16 @@
         <h4 class="waypoint-headers">Waypoints</h4>
         <button class="btn btn-primary" @click="clearWaypoint">Clear Waypoints</button>
       </div>
-      <WaypointItem
-        v-for="(waypoint, i) in storedWaypoints"
-        :key="i"
-        :waypoint="waypoint"
-        :index="i"
-        @delete="deleteItem($event)"
-        @find="findWaypoint($event)"
-      />
+      <div class="waypoints">
+        <WaypointItem
+          v-for="(waypoint, i) in storedWaypoints"
+          :key="i"
+          :waypoint="waypoint"
+          :index="i"
+          @delete="deleteItem($event)"
+          @find="findWaypoint($event)"
+        />
+      </div>
     </div>
   </div>
 </template>
@@ -266,6 +268,11 @@ export default {
 
 .all-waypoints button {
   margin: 5px;
+}
+
+.waypoints {
+  height: 30vh;
+  overflow-y: auto;;
 }
 
 .waypoint-headers {

@@ -140,10 +140,10 @@ export default {
         this.odomCount++
         if (this.odomCount % DRAW_FREQUENCY === 0) {
           if(this.odomPath.length > MAX_ODOM_COUNT) {
-            this.odomPath.splice(0, 1)
+            this.odomPath = [...this.odomPath.slice(1), latLng] //remove oldest element
           }
           
-          this.odomPath.push(latLng)
+          this.odomPath = [...this.odomPath, latLng]
           this.odomCount = 0;
         }
         

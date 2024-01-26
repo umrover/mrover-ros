@@ -66,11 +66,11 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.wheel_radius = rospy.get_param("wheel/radius")
         self.max_angular_speed = self.max_wheel_speed / self.wheel_radius
 
-        # self.flight_tf_listener = threading.Thread(target=self.flight_attitude_listener)
-        # self.flight_tf_listener.start()
-        # self.flight_tf_listener.join()
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
+        self.flight_thread = threading.Thread(target=self.flight_attitude_listener)
+        self.flight_thread.start()
+ 
 
 
 
@@ -277,7 +277,6 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.mast_gimbal_pub.publish(Throttle(["mast_gimbal_x", "mast_gimbal_y"], [rot_pwr, up_down_pwr]))
 
     def save_waypoint_list(self, msg):
-        rospy.logerr(msg)
         Waypoint.objects.all().delete()
         waypoints = []
         for w in msg["data"]:
@@ -288,7 +287,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.send(text_data=json.dumps({"type": "save_waypoint_list", "success": True}))
         # Print out all of the waypoints
         for w in Waypoint.objects.all():
-            rospy.logerr(str(w.name) + " " + str(w.latitude) + " " + str(w.longitude))
+            rospy.loginfo(str(w.name) + " " + str(w.latitude) + " " + str(w.longitude))
 
     def get_waypoint_list(self, msg):
         waypoints = []
@@ -300,16 +299,10 @@ class GUIConsumer(JsonWebsocketConsumer):
     def imu_calibration_callback(self, msg) -> None:
         self.send(text_data=json.dumps({
             'type': 'calibration_status',
-            'system_calibration': msg.system_calibration,
-            'gyroscope_calibration': msg.gyroscope_calibration,
-            'accelerometer_calibration': msg.accelerometer_calibration,
-            'magnetometer_calibration': msg.magnetometer_calibration
+            'system_calibration': msg.system_calibration
         }))
 
     def flight_attitude_listener(self):
-        tf_buffer = tf2_ros.Buffer()
-        tf_listener = tf2_ros.TransformListener(tf_buffer)
-
         # threshold that must be exceeded to send JSON message
         threshold = 0.1
         map_to_baselink = SE3()
@@ -317,7 +310,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         rate = rospy.Rate(10.0)
         while not rospy.is_shutdown():
             try:
-                tf_msg = SE3.from_tf_tree(tf_buffer, "map", "base_link")
+                tf_msg = SE3.from_tf_tree(self.tf_buffer, "map", "base_link")
                 
                 if tf_msg.is_approx(map_to_baselink, threshold):
                     rate.sleep()

@@ -71,16 +71,13 @@ export default {
 
 <style scoped>
 .odom-wrap {
-  padding: 0px;
   padding-left: 10px;
   padding-right: 0px;
-  border: none;
   margin-top: 0.5rem;
   display: grid;
   grid-gap: 10px;
-  grid-template-columns: 300px 2fr 1.25fr 0.75fr;
-  grid-template-rows: 140px 2fr;
-  flex-direction: row;
+  grid-template-columns: auto auto;
+  grid-template-rows: auto auto;
   gap: 10px;
   grid-template-areas:
     'odom flightIndicator'

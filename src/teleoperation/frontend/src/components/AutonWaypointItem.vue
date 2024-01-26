@@ -11,7 +11,7 @@
       <p>{{ output.lon.d }}º</p>
       <p v-if="min_enabled">{{ output.lon.m }}'</p>
       <p v-if="sec_enabled">{{ output.lon.s }}"</p>
-      E
+      W
     </div>
     <div class="row">
       <div class="col text-center">
@@ -42,7 +42,9 @@ const WAYPOINT_TYPES = {
 
 export default {
   data() {
-    WAYPOINT_TYPES: WAYPOINT_TYPES
+    return {
+      WAYPOINT_TYPES: WAYPOINT_TYPES
+    }
   },
 
   props: {
