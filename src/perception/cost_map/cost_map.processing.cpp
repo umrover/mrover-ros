@@ -26,11 +26,12 @@ namespace mrover {
                 int y_index = floor((y - mGlobalGridMsg.info.origin.position.y) / mGlobalGridMsg.info.resolution);
                 auto i = mGlobalGridMsg.info.width * y_index + x_index;
 
-                // dot unit normal with <0, 0, 1>
                 R3 normal{point->normal_x, point->normal_y, point->normal_z};
                 normal.normalize();
-                double dot_product = normal.z();
-                signed char cost = dot_product < mNormalThreshold ? 100 : 0;
+                // get vertical component of (unit) normal vector
+                double z_comp = normal.z();
+                // small z component indicates largely horizontal normal (surface is vertical)
+                signed char cost = z_comp < mNormalThreshold ? 100 : 0;
 
                 mGlobalGridMsg.data[i] = std::max(mGlobalGridMsg.data[i], cost);
             }

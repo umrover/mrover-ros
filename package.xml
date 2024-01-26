@@ -82,6 +82,7 @@
   <export>
     <nodelet plugin="${prefix}/plugins/tag_detector_plugin.xml" />
     <nodelet plugin="${prefix}/plugins/zed_plugin.xml" />
+    <nodelet plugin="${prefix}/plugins/costmap.xml" />
     <nodelet plugin="${prefix}/plugins/can.xml" />
     <nodelet plugin="${prefix}/plugins/simulator.xml" />
   </export>
