@@ -19,6 +19,8 @@ else ()
     link_libraries(TBB::tbb)
 endif ()
 
+include_directories(BEFORE SYSTEM src/preload)
+
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # Generate compile_commands.json for clangd
@@ -73,11 +75,21 @@ set(MROVER_CMAKE_INCLUDES
 ### ============ ###
 
 if (MROVER_BUILD_SIM)
-    include(cmake/webgpu.cmake)
-    add_subdirectory(deps/glfw3webgpu)
-    find_package(Assimp REQUIRED)
+    # Apparently Assimp has different names on different systems
+    # find_package is case-sensitive so try both
+    find_package(Assimp QUIET)
+    find_package(assimp QUIET)
+    if (NOT Assimp_FOUND AND NOT assimp_FOUND)
+        message(FATAL_ERROR "Assimp not found")
+    endif ()
+
     find_package(Bullet REQUIRED)
+
     find_package(glfw3 REQUIRED)
+
+    include(cmake/webgpu.cmake)
+
+    add_subdirectory(deps/glfw3webgpu)
 endif ()
 find_package(OpenCV REQUIRED)
 find_package(ZED QUIET)
@@ -188,13 +200,6 @@ if (ZED_FOUND)
     mrover_nodelet_defines(object_detector
             __CUDA_INCLUDE_COMPILER_INTERNAL_HEADERS__ # Eigen includes some files it should not, ignore
     )
-
-    #image_capture
-    mrover_add_nodelet(image_capture src/perception/image_capture/*.c* src/perception/image_capture src/perception/image_capture/pch.hpp )
-    mrover_nodelet_link_libraries(image_capture PRIVATE opencv_core opencv_dnn opencv_imgproc lie )
-    # Temporary
-    mrover_nodelet_link_libraries(image_capture PRIVATE opencv_imgcodecs)
-    mrover_nodelet_link_libraries(image_capture PRIVATE opencv_highgui)
 
     mrover_add_nodelet(zed src/perception/zed_wrapper/*.c* src/perception/zed_wrapper src/perception/zed_wrapper/pch.hpp)
     mrover_nodelet_include_directories(zed ${ZED_INCLUDE_DIRS} ${CUDA_INCLUDE_DIRS})

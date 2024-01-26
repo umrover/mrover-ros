@@ -12,6 +12,8 @@ import tf2_ros
 
 import cv2
 
+import datetime
+
 
 # ROS message types we need to use
 from sensor_msgs.msg import Image
@@ -72,7 +74,8 @@ class image_capturepy:
         image = np.reshape(data, [msg.height, msg.width, 4])
         print(image_capturepy.showcounter)
         if(image_capturepy.showcounter != 0):
-            print(cv2.imwrite('//home//john//Desktop//Rover//Images//image.jpg', image))
+            unique_id = "{date:%Y-%m-%d_%H:%M:%S}".format(date=datetime.datetime.now())
+            print(cv2.imwrite(f'//home//john//Desktop//Rover//Images//image_{unique_id}.jpg', image))
             image_capturepy.showcounter = 0
         
 

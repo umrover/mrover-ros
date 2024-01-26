@@ -153,40 +153,90 @@ namespace mrover {
         }
 
         //If there are detections locate them in 3D
-        if (!detections.empty()) {
-            Detection firstDetection = detections[0];
+        bool seenWaterBottle = false;
+        bool seenHammer = false;
+        std::pair<int, int> center ;
+        for(Detection detection : detections){
 
-            cv::Rect box = firstDetection.box;
+            Detection firstDetection = detection;
 
-            std::pair center(box.x + box.width/2, box.y + box.height/2);
-            
-            //Get the object's position in 3D from the point cloud and run this statement if the optional has a value
-            if (std::optional<SE3> objectLocation = getObjectInCamFromPixel(msg, center.first * static_cast<float>(msg->width) / sizedImage.cols, center.second * static_cast<float>(msg->height) / sizedImage.rows, box.width, box.height); objectLocation) {
-                try{
-                    //Publish Immediate
-                    std::string immediateFrameId = "immediateDetectedObject";
-                    SE3::pushToTfTree(mTfBroadcaster, immediateFrameId, mCameraFrameId, objectLocation.value());
+            if(firstDetection.class_id == 0 && !seenHammer){
+                seenHammer = true;
+                cv::Rect box = firstDetection.box;
+                center = std::pair<int, int>(box.x + box.width/2, box.y + box.height/2);
+                
+                //Get the object's position in 3D from the point cloud and run this statement if the optional has a value
+                if (std::optional<SE3> objectLocation = getObjectInCamFromPixel(msg, center.first * static_cast<float>(msg->width) / sizedImage.cols, center.second * static_cast<float>(msg->height) / sizedImage.rows, box.width, box.height); objectLocation) {
+                    try{
+                        //Publish Immediate
+                        std::string immediateFrameId = "immediateDetectedObjectHammer";
+                        SE3::pushToTfTree(mTfBroadcaster, immediateFrameId, mCameraFrameId, objectLocation.value());
 
-                    //Since the object is seen we need to increment the hit counter
-                    mHitCount = std::min(mObjMaxHitcount, mHitCount + mObjIncrementWeight);
+                        //Since the object is seen we need to increment the hit counter
+                        mHitCountHammer = std::min(mObjMaxHitcount, mHitCountHammer + mObjIncrementWeight);
 
-                    //Only publish to permament if we are confident in the object
-                    if(mHitCount > mObjHitThreshold){
-                        std::string permanentFrameId = "detectedObject";
-                        SE3::pushToTfTree(mTfBroadcaster, permanentFrameId, mCameraFrameId, objectLocation.value());
+                        //Only publish to permament if we are confident in the object
+                        if(mHitCountHammer > mObjHitThreshold){
+                            std::string permanentFrameId = "detectedObjectHammer";
+                            SE3::pushToTfTree(mTfBroadcaster, permanentFrameId, mCameraFrameId, objectLocation.value());
+                        }
+
+                        SE3 tagInsideCamera = SE3::fromTfTree(mTfBuffer, mMapFrameId, immediateFrameId);
+                    } catch (tf2::ExtrapolationException const&) {
+                        NODELET_WARN("Old data for immediate tag");
+                    } catch (tf2::LookupException const&) {
+                        NODELET_WARN("Expected transform for immediate tag");
+                    } catch (tf::ConnectivityException const&) {
+                        NODELET_WARN("Expected connection to odom frame. Is visual odometry running?");
+                    } catch (tf::LookupException const&) {
+                        NODELET_WARN("LOOK UP NOT FOUND");
                     }
-
-                    SE3 tagInsideCamera = SE3::fromTfTree(mTfBuffer, mMapFrameId, immediateFrameId);
-                } catch (tf2::ExtrapolationException const&) {
-                    NODELET_WARN("Old data for immediate tag");
-                } catch (tf2::LookupException const&) {
-                    NODELET_WARN("Expected transform for immediate tag");
-                } catch (tf::ConnectivityException const&) {
-                    NODELET_WARN("Expected connection to odom frame. Is visual odometry running?");
-                } catch (tf::LookupException const&) {
-                    NODELET_WARN("LOOK UP NOT FOUND");
                 }
             }
+
+            else if(firstDetection.class_id == 1 && !seenWaterBottle){
+                seenWaterBottle = true;
+                cv::Rect box = firstDetection.box;
+                center = std::pair<int, int>(box.x + box.width/2, box.y + box.height/2);
+                
+                //Get the object's position in 3D from the point cloud and run this statement if the optional has a value
+                if (std::optional<SE3> objectLocation = getObjectInCamFromPixel(msg, center.first * static_cast<float>(msg->width) / sizedImage.cols, center.second * static_cast<float>(msg->height) / sizedImage.rows, box.width, box.height); objectLocation) {
+                    try{
+                        //Publish Immediate
+                        std::string immediateFrameId = "immediateDetectedObjectBottle";
+                        SE3::pushToTfTree(mTfBroadcaster, immediateFrameId, mCameraFrameId, objectLocation.value());
+
+                        //Since the object is seen we need to increment the hit counter
+                        mHitCountBottle = std::min(mObjMaxHitcount, mHitCountBottle + mObjIncrementWeight);
+
+                        //Only publish to permament if we are confident in the object
+                        if(mHitCountBottle > mObjHitThreshold){
+                            std::string permanentFrameId = "detectedObjectBottle";
+                            SE3::pushToTfTree(mTfBroadcaster, permanentFrameId, mCameraFrameId, objectLocation.value());
+                        }
+
+                        SE3 tagInsideCamera = SE3::fromTfTree(mTfBuffer, mMapFrameId, immediateFrameId);
+                    } catch (tf2::ExtrapolationException const&) {
+                        NODELET_WARN("Old data for immediate tag");
+                    } catch (tf2::LookupException const&) {
+                        NODELET_WARN("Expected transform for immediate tag");
+                    } catch (tf::ConnectivityException const&) {
+                        NODELET_WARN("Expected connection to odom frame. Is visual odometry running?");
+                    } catch (tf::LookupException const&) {
+                        NODELET_WARN("LOOK UP NOT FOUND");
+                    }
+                }
+            }
+
+            if(!seenHammer){
+                mHitCountHammer = std::max(0, mHitCountHammer - mObjDecrementWeight);
+
+            }
+
+            if(!seenWaterBottle){
+                mHitCountBottle = std::max(0, mHitCountBottle - mObjDecrementWeight);
+            }
+            
 
 
             //Draw the detected object's bounding boxes on the image for each of the objects detected
@@ -205,10 +255,13 @@ namespace mrover {
                 int font_weight = 2;
                 putText(sizedImage, detections[i].className, text_position, cv::FONT_HERSHEY_COMPLEX, font_size, font_Color, font_weight); //Putting the text in the matrix//
             }
-        } else {
-            mHitCount = std::max(0, mHitCount - mObjDecrementWeight);
+        } 
+        
+        
+        // else {
+        //     mHitCount = std::max(0, mHitCount - mObjDecrementWeight);
             
-        }
+        // }
 
         //We only want to publish the debug image if there is something lsitening, to reduce the operations going on
         if (mDebugImgPub.getNumSubscribers() > 0 || true) {

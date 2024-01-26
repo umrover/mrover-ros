@@ -18,7 +18,7 @@ namespace mrover {
                                      0, 0, 1, 0,                       // WGPU y = +ROS z
                                      1, 0, 0, 0,                       // WGPU z = +ROS x
                                      0, 0, 0, 1)
-                                            .finished();
+            .finished();
 
     static auto const COLOR_FORMAT = wgpu::TextureFormat::BGRA8Unorm;
     static auto const DEPTH_FORMAT = wgpu::TextureFormat::Depth32Float;
@@ -203,6 +203,7 @@ namespace mrover {
         ros::Publisher mGroundTruthPub;
         ros::Publisher mGpsPub;
         ros::Publisher mImuPub;
+        ros::Publisher mMotorStatusPub;
 
         tf2_ros::Buffer mTfBuffer;
         tf2_ros::TransformListener mTfListener{mTfBuffer};
@@ -263,7 +264,7 @@ namespace mrover {
         std::vector<std::unique_ptr<btMultiBodyLinkCollider>> mMultibodyCollider;
         std::vector<std::unique_ptr<btMultiBodyConstraint>> mMultibodyConstraints;
 
-        std::unordered_map<btBvhTriangleMeshShape*, std::string> mMeshToUri;
+        std::unordered_map<btCollisionShape*, std::string> mMeshToUri;
 
         struct SaveData {
             struct LinkData {
@@ -316,6 +317,8 @@ namespace mrover {
 
         auto gpsAndImusUpdate(Clock::duration dt) -> void;
 
+        auto motorStatusUpdate() -> void;
+
         auto linksToTfUpdate() -> void;
 
         auto keyCallback(int key, int scancode, int action, int mods) -> void;
@@ -365,6 +368,15 @@ namespace mrover {
 
         auto armThrottlesCallback(Throttle::ConstPtr const& message) -> void;
 
+        // TODO(quintin): May want to restrucutre the names to all agree
+        std::unordered_map<std::string, std::string> armMsgToUrdf{
+                {"joint_a", "arm_a_link"},
+                {"joint_b", "arm_b_link"},
+                {"joint_c", "arm_c_link"},
+                {"joint_de_pitch", "arm_d_link"},
+                {"joint_de_yaw", "arm_e_link"},
+        };
+
         template<typename F, typename N, typename V>
         auto forEachWithMotor(N const& names, V const& values, F&& function) -> void {
             if (auto it = mUrdfs.find("rover"); it != mUrdfs.end()) {
@@ -372,12 +384,19 @@ namespace mrover {
 
                 for (auto const& combined: boost::combine(names, values)) {
                     std::string const& name = boost::get<0>(combined);
-                    int linkIndex = rover.linkNameToMeta.at(name).index;
                     float value = boost::get<1>(combined);
 
-                    auto* motor = std::bit_cast<btMultiBodyJointMotor*>(rover.physics->getLink(linkIndex).m_userPtr);
-                    assert(motor);
-                    function(motor, value);
+                    if (auto it = armMsgToUrdf.find(name); it != armMsgToUrdf.end()) {
+                        std::string const& name = it->second;
+
+                        int linkIndex = rover.linkNameToMeta.at(name).index;
+
+                        auto* motor = std::bit_cast<btMultiBodyJointMotor*>(rover.physics->getLink(linkIndex).m_userPtr);
+                        assert(motor);
+                        function(motor, value);
+                    } else {
+                        ROS_WARN_STREAM_THROTTLE(1, std::format("Unknown arm joint name: {}. Either the wrong name was sent OR the simulator does not yet support it", name));
+                    }
                 }
             }
         }

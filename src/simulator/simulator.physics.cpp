@@ -64,6 +64,8 @@ namespace mrover {
         linksToTfUpdate();
 
         gpsAndImusUpdate(dt);
+
+        motorStatusUpdate();
     }
 
     auto SimulatorNodelet::linksToTfUpdate() -> void {
