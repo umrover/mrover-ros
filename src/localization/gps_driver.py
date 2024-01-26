@@ -17,7 +17,6 @@ from std_msgs.msg import Header
 from sensor_msgs.msg import NavSatFix
 from rtcm_msgs.msg import Message
 
-
 class GPS_Driver():
 
     def __init__(self):
@@ -64,7 +63,6 @@ class GPS_Driver():
                 print("RTCM message successfully used by receiver\n")
 
 
-
             # rospy.loginfo(vars(rover_gps_data))
         
         if rover_gps_data.identity == "NAV-PVT":
@@ -72,7 +70,10 @@ class GPS_Driver():
             parsed_latitude = msg.lat
             parsed_longitude = msg.lon
             parsed_altitude = msg.hMSL
-            message_header = Header(stamp=rospy.Time.now(), frame_id="base_link")
+            time = msg.nano
+
+            message_header = Header(stamp=rospy.Time(nsecs=time), frame_id="base_link")
+
 
             self.gps_pub.publish(
                 NavSatFix(header=message_header, latitude=parsed_latitude, longitude=parsed_longitude, altitude=parsed_altitude)
