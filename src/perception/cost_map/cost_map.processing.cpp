@@ -26,10 +26,11 @@ namespace mrover {
                 int y_index = floor((y - mGlobalGridMsg.info.origin.position.y) / mGlobalGridMsg.info.resolution);
                 auto i = mGlobalGridMsg.info.width * y_index + x_index;
 
-                R3 normal{point->normal_x, point->normal_y, point->normal_z};
-                normal.normalize();
+                R3 normal_in_zed{point->normal_x, point->normal_y, point->normal_z};
+                R3 normal_in_map = zed_to_map.rotation().quaternion() * normal_in_zed;
+                normal_in_map.normalize();
                 // get vertical component of (unit) normal vector
-                double z_comp = normal.z();
+                double z_comp = normal_in_map.z();
                 // small z component indicates largely horizontal normal (surface is vertical)
                 signed char cost = z_comp < mNormalThreshold ? 100 : 0;
 
