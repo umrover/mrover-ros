@@ -17,6 +17,7 @@ import state
 from state import ApproachTargetBaseState
 from state import approach_post
 import numpy as np
+import math
 
 TAG_SEARCH_EXPIRATION = 3
 
@@ -40,10 +41,26 @@ class LongRangeState(ApproachTargetBaseState):
     def get_target_pos(self, context) -> Optional[int]:
         tag_id = context.current_waypoint()["tagid"]
         bearing = context.env.tag_data_dict[tag_id][2]
-        rover_position = context.rover.get_pose().position
-        target_pos_x = 90 - bearing
-        target_pos_y = bearing
-        target_pos_z = rover_position[2]
+        rover_position = context.rover.get_pose().rover_position
+        #target_pos = context.rover.get_target_pos().target_pos
+
+        #Get x and y coords from pose
+        rover_position_x = rover_position[1][0][0] #if not, try 0,0 on 2d coords
+        rover_position_y = rover_position[0][1][0]
+
+        #target_pos_x: target_pos[1][0][0]
+        #target_pos_y: target_pos[0][1][0]
+
+
+        target_position_x= math.sin(bearing)*25 + rover_position_x
+        target_position_y= math.cos(bearing)*25 + rover_position_y
+        target_pos = target_position_x,target_position_y
+        #Bearing and dist to coord: 
+
+        # target_pos_x = 90 - bearing
+        # target_pos_y = bearing
+        # target_pos_z = rover_position[2]
+
         target_coordinates = np.ndarray
         context.tag_data_callback()
         return target_pos
