@@ -14,7 +14,7 @@ namespace mrover {
 
         auto filterNormals(sensor_msgs::PointCloud2Ptr const& cloud, const int threshold) -> std::vector<Point*>;
 
-        auto ransac(const std::vector<Point*>& filteredPoints) -> Eigen::Vector3d;
+        auto ransac(const std::vector<Point*>& filteredPoints) -> Eigen::Vector3f;
     };
 
 } // namespace mrover
