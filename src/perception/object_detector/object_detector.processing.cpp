@@ -1,13 +1,13 @@
 #include "object_detector.hpp"
 
+#include "../point.hpp"
 #include "inference_wrapper.hpp"
+#include <algorithm>
+#include <math.h>
 #include <opencv2/core/mat.hpp>
 #include <opencv2/highgui.hpp>
 #include <random>
-#include "../point.hpp"
 #include <stdexcept>
-#include <algorithm>
-#include <math.h>
 
 
 namespace mrover {
@@ -75,7 +75,7 @@ namespace mrover {
         float modelShapeHeight = 640;
 
         //Set model thresholds
-        float modelScoreThreshold = 0.95;
+        float modelScoreThreshold = 0.50;
         float modelNMSThreshold = 0.50;
 
         //Get x and y scale factors
@@ -112,7 +112,7 @@ namespace mrover {
                     float x = data[0];
                     float y = data[1];
                     float w = data[2];
-                     float h = data[3];
+                    float h = data[3];
 
                     //Cast the corners into integers to be used on pixels
                     int left = static_cast<int>((x - 0.5 * w) * x_factor);
@@ -124,7 +124,7 @@ namespace mrover {
                     boxes.emplace_back(left, top, width, height);
                 }
             } else { //YOLO V5
-                throw std::runtime_error("Something is wrong Model with interpretation"); 
+                throw std::runtime_error("Something is wrong Model with interpretation");
             }
 
             data += dimensions;
@@ -136,7 +136,7 @@ namespace mrover {
 
         //Storage for the detection from the model
         std::vector<Detection> detections{};
-        for(int idx : nms_result) {
+        for (int idx: nms_result) {
             //Init the detection
             Detection result;
 
@@ -155,19 +155,20 @@ namespace mrover {
         //If there are detections locate them in 3D
         bool seenWaterBottle = false;
         bool seenHammer = false;
-        std::pair<int, int> center ;
-        for(Detection detection : detections){
+        std::pair<int, int> center;
+        ROS_INFO("NUM DETECTIONS: %d", detections.size());
+        for (Detection detection: detections) {
 
             Detection firstDetection = detection;
 
-            if(firstDetection.class_id == 0 && !seenHammer){
+            if (firstDetection.class_id == 1 && !seenHammer) {
                 seenHammer = true;
                 cv::Rect box = firstDetection.box;
-                center = std::pair<int, int>(box.x + box.width/2, box.y + box.height/2);
-                
+                center = std::pair<int, int>(box.x + box.width / 2, box.y + box.height / 2);
+
                 //Get the object's position in 3D from the point cloud and run this statement if the optional has a value
                 if (std::optional<SE3> objectLocation = getObjectInCamFromPixel(msg, center.first * static_cast<float>(msg->width) / sizedImage.cols, center.second * static_cast<float>(msg->height) / sizedImage.rows, box.width, box.height); objectLocation) {
-                    try{
+                    try {
                         //Publish Immediate
                         std::string immediateFrameId = "immediateDetectedObjectHammer";
                         SE3::pushToTfTree(mTfBroadcaster, immediateFrameId, mCameraFrameId, objectLocation.value());
@@ -176,7 +177,7 @@ namespace mrover {
                         mHitCountHammer = std::min(mObjMaxHitcount, mHitCountHammer + mObjIncrementWeight);
 
                         //Only publish to permament if we are confident in the object
-                        if(mHitCountHammer > mObjHitThreshold){
+                        if (mHitCountHammer > mObjHitThreshold) {
                             std::string permanentFrameId = "detectedObjectHammer";
                             SE3::pushToTfTree(mTfBroadcaster, permanentFrameId, mCameraFrameId, objectLocation.value());
                         }
@@ -194,14 +195,14 @@ namespace mrover {
                 }
             }
 
-            else if(firstDetection.class_id == 1 && !seenWaterBottle){
+            else if (firstDetection.class_id == 0 && !seenWaterBottle) {
                 seenWaterBottle = true;
                 cv::Rect box = firstDetection.box;
-                center = std::pair<int, int>(box.x + box.width/2, box.y + box.height/2);
-                
+                center = std::pair<int, int>(box.x + box.width / 2, box.y + box.height / 2);
+
                 //Get the object's position in 3D from the point cloud and run this statement if the optional has a value
                 if (std::optional<SE3> objectLocation = getObjectInCamFromPixel(msg, center.first * static_cast<float>(msg->width) / sizedImage.cols, center.second * static_cast<float>(msg->height) / sizedImage.rows, box.width, box.height); objectLocation) {
-                    try{
+                    try {
                         //Publish Immediate
                         std::string immediateFrameId = "immediateDetectedObjectBottle";
                         SE3::pushToTfTree(mTfBroadcaster, immediateFrameId, mCameraFrameId, objectLocation.value());
@@ -210,7 +211,7 @@ namespace mrover {
                         mHitCountBottle = std::min(mObjMaxHitcount, mHitCountBottle + mObjIncrementWeight);
 
                         //Only publish to permament if we are confident in the object
-                        if(mHitCountBottle > mObjHitThreshold){
+                        if (mHitCountBottle > mObjHitThreshold) {
                             std::string permanentFrameId = "detectedObjectBottle";
                             SE3::pushToTfTree(mTfBroadcaster, permanentFrameId, mCameraFrameId, objectLocation.value());
                         }
@@ -228,15 +229,13 @@ namespace mrover {
                 }
             }
 
-            if(!seenHammer){
+            if (!seenHammer) {
                 mHitCountHammer = std::max(0, mHitCountHammer - mObjDecrementWeight);
-
             }
 
-            if(!seenWaterBottle){
+            if (!seenWaterBottle) {
                 mHitCountBottle = std::max(0, mHitCountBottle - mObjDecrementWeight);
             }
-            
 
 
             //Draw the detected object's bounding boxes on the image for each of the objects detected
@@ -255,17 +254,17 @@ namespace mrover {
                 int font_weight = 2;
                 putText(sizedImage, detections[i].className, text_position, cv::FONT_HERSHEY_COMPLEX, font_size, font_Color, font_weight); //Putting the text in the matrix//
             }
-        } 
-        
-        
+        }
+
+
         // else {
         //     mHitCount = std::max(0, mHitCount - mObjDecrementWeight);
-            
+
         // }
 
         //We only want to publish the debug image if there is something lsitening, to reduce the operations going on
         if (mDebugImgPub.getNumSubscribers() > 0 || true) {
-            sensor_msgs::Image newDebugImageMessage;//I chose regular msg not ptr so it can be used outside of this process
+            sensor_msgs::Image newDebugImageMessage; //I chose regular msg not ptr so it can be used outside of this process
 
             //Convert the image back to BGRA for ROS
             cv::cvtColor(sizedImage, sizedImage, cv::COLOR_BGR2BGRA);
@@ -300,7 +299,7 @@ namespace mrover {
         return spiralSearchInImg(cloudPtr, u, v, width, height);
     }
 
-    std::optional<SE3> ObjectDetectorNodelet::spiralSearchInImg(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t xCenter, size_t yCenter, size_t width, size_t height){
+    std::optional<SE3> ObjectDetectorNodelet::spiralSearchInImg(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t xCenter, size_t yCenter, size_t width, size_t height) {
         size_t currX = xCenter;
         size_t currY = yCenter;
         size_t radius = 0;
@@ -310,21 +309,21 @@ namespace mrover {
         Point point;
 
         //Find the smaller of the two box dimensions so we know the max spiral radius
-        size_t smallDim = std::min(width/2, height/2);
+        size_t smallDim = std::min(width / 2, height / 2);
 
 
-        while(isPointInvalid){
+        while (isPointInvalid) {
             //This is the parametric equation to spiral around the center pnt
-            currX = xCenter + std::cos(t * 1.0/numPts * 2 * M_PI) * radius;
-            currY = yCenter + std::sin(t * 1.0/numPts * 2 * M_PI) * radius;
+            currX = xCenter + std::cos(t * 1.0 / numPts * 2 * M_PI) * radius;
+            currY = yCenter + std::sin(t * 1.0 / numPts * 2 * M_PI) * radius;
 
             //Grab the point from the pntCloud and determine if its a finite pnt
             point = reinterpret_cast<Point const*>(cloudPtr->data.data())[currX + currY * cloudPtr->width];
             isPointInvalid = (!std::isfinite(point.x) || !std::isfinite(point.y) || !std::isfinite(point.z));
-            if(isPointInvalid) NODELET_WARN("Tag center point not finite: [%f %f %f]", point.x, point.y, point.z);
+            if (isPointInvalid) NODELET_WARN("Tag center point not finite: [%f %f %f]", point.x, point.y, point.z);
 
             //After a full circle increase the radius
-            if(static_cast<int>(t) % numPts == 0){
+            if (static_cast<int>(t) % numPts == 0) {
                 radius++;
             }
 
@@ -332,7 +331,7 @@ namespace mrover {
             t++;
 
             //If we reach the edge of the box we stop spiraling
-            if(radius >= smallDim){
+            if (radius >= smallDim) {
                 return std::nullopt;
             }
         }

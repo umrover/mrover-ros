@@ -31,6 +31,5 @@ namespace mrover {
         //Initialize Object Hit Cout to Zeros
         mHitCountHammer = 0;
         mHitCountBottle = 0;
-
     }
 } // namespace mrover
