@@ -21,8 +21,8 @@ from util.SE3 import SE3
 class TipDetection:
     hit_count: int
     orientation_threshold: float
-    velocity_threshold_x: float
-    velocity_threshold_y: float
+    angular_velocity_threshold_x: float
+    angular_velocity_threshold_y: float
     time_threshold: float
     hit_count_threshold: int
 
@@ -31,18 +31,12 @@ class TipDetection:
         # read the orientation data from the given Imu message, store that value in `self.pose`, then publish that pose to the TF tree.
         self.hit_count = 0
         self.orientation_threshold = 0.5
-        # these velocity thresholds mean the rover's always gonna be "tipping" if it's moving, right ? -audrey
-        # so, need to change to something else? why are we testing velocity?
-        self.velocity_threshold_x = .025
-        self.velocity_threshold_y = .01
+        self.angular_velocity_threshold_x = .25 #pitch
+        self.angular_velocity_threshold_y = .25 #roll
         self.time_threshold = 1
         self.hit_count_threshold = 5
         odometry_sub = message_filters.Subscriber("global_ekf/odometry", Odometry)
         odometry_sub.registerCallback(self.odometry_callback)
-        # self.x = 0
-        # self.y = 0
-        # self.z = 0
-        # self.w = 0
 
 
     def imu_callback(self, msg: Imu):
@@ -74,12 +68,13 @@ class TipDetection:
         # checking if orientation exceeds orientation_threshold, then increment hit_count
         if self.w >= self.orientation_threshold:
             self.hit_count += 1
-        elif self.x >= self.orientation_threshold:
-            self.hit_count += 1
-        elif self.y >= self.orientation_threshold:
-            self.hit_count += 1
+        # elif self.x >= self.orientation_threshold:
+        #     self.hit_count += 1
+        # elif self.y >= self.orientation_threshold:
+        #     self.hit_count += 1
+        # commented this out- don't we only need w? - aud
 
-        # checking velocity of rover
+        # checking angular velocity of rover
 
         # create the separate angular velocity variables
         angular_velocity_x = abs(odometry.twist.twist.angular.x)
@@ -88,10 +83,10 @@ class TipDetection:
         # check angular velocity magnitudes of each axis to see if it's above the threshold
 
         # Tipping over (pitch)
-        if angular_velocity_x >= self.velocity_threshold_x:
+        if angular_velocity_x >= self.angular_velocity_threshold_x:
             self.hit_count += 1
         # Rolling over (roll)
-        elif angular_velocity_y >= self.velocity_threshold_y:
+        elif angular_velocity_y >= self.angular_velocity_threshold_y:
             self.hit_count += 1
 
 
