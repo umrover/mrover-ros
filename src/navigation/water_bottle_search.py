@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 import numpy as np
+import math 
 import rospy
 from mrover.msg import GPSPointList
 from util.ros_utils import get_rosparam
@@ -77,11 +78,28 @@ class WaterBottleSearchState(State):
         pass
     
     """
-    #TODO: Convert global to i and j (Occupancy grid)
+    #Convert global(Real World) to i and j (Occupancy grid)
+    cart_coord: These are the i and j coordinates 
+    width_height: These are the width and height list (m/cell)
+    floor(v - (WP + [-W/2, H/2]) / r)  [1, -1]
+    return: i and j coordinates for the occupancy grid
+    """
+    def cartesian_convert(self, cart_coord: np.ndarray) -> np.ndarray:
+        width_height  = [-self.width / 2, self.height / 2]
+        converted_coord = (cart_coord - (self.origin + (width_height) / self.resolution))* [1,-1]
+        return math.floor(converted_coord)
 
     """
-    #def cartesian_convert(self, cart_coord: np.ndarray) -> np.ndarray:
-        
+    #Convert Occupancy grid(i, j) to x and y coordinates
+    real_coord: These are the x and y coordinates
+    width_height: These are the width and height list (m/cell)
+    (WP - [W/2, H/2]) + [j x r, -i x r] + [r/2, -r/2]
+    """ 
+    def real_world_convert(self, real_coord : np.ndarray) -> np.ndarray: 
+        width_height = [self.width/2, self.height/2]
+        resolution_conversion = [-real_coord * self.resolution]
+        half_res = [self.resolution/2, -self.resolution/2]
+        return self.origin - width_height + resolution_conversion + half_res
 
 
     def on_enter(self, context) -> None:
@@ -96,6 +114,7 @@ class WaterBottleSearchState(State):
                 self.SEGMENTS_PER_ROTATION,
                 search_center.fiducial_id,
             )
+            self.origin = context.rover.get_pose().position[0:2]
             self.prev_target = None
 
     def on_exit(self, context) -> None:
