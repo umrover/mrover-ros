@@ -37,29 +37,58 @@ class WaterBottleSearchState(State):
 
     # TODO: Data Structure to store the information given from the map (Look at navigation)
 
-    # 2D list
+    # 2D list and map parts
     costMap = []
+    height = 0
+    width = 0
+    resolution = 0
+
+    #Shfited Center
+    origin = []
+    center = []
 
     # TODO: Make call_back function to push into data structure
 
     def costmap_callback(self, msg: OccupancyGrid):
         # update data structure
-        height = msg.info.height
-        width = msg.info.width
-        rospy.loginfo(f"height: {height}, width: {width}")
+        self.height = msg.info.height * msg.info.resolution
+        self.width = msg.info.width * msg.info.resolution
+        self.resolution = msg.info.resolution
+        rospy.loginfo(f"height: {self.height}, width: {self.width}")
         costmap2D = np.array(msg.data)
-        costmap2D.reshape(height, width)
+        costmap2D.reshape(self.height, self.width)
         rospy.loginfo(f"2D costmap: {costmap2D}")
-        
+        self.origin = self.center - [self.width/2, self.height/2]
         # Call A-STAR
 
-    # TODO: A-STAR Algorithm: f(n) = g(n) + h(n)
+    
+    """
+    # TODO: A-STAR Algorithm: f(n) = g(n) + h(n)  
     # def a_star():j
+    # start = rover pose (Cartesian)
+    # end = next point in the spiral
+    """
+    def a_star(self, costmap2d, start, end) -> list | None:
+        #Convert start and end to local cartesian coordinates 
+
+
+        #Do the check for high cost for the end point
+        
+        pass
+    
+    """
+    #TODO: Convert global to i and j (Occupancy grid)
+
+    """
+    #def cartesian_convert(self, cart_coord: np.ndarray) -> np.ndarray:
+        
+
 
     def on_enter(self, context) -> None:
         self.listener = rospy.Subscriber("costmap", OccupancyGrid, self.costmap_callback)
         search_center = context.course.current_waypoint()
         if not self.is_recovering:
+            self.center = context.rover.get_pose().position[0:2]
             self.traj = SearchTrajectory.spiral_traj(
                 context.rover.get_pose().position[0:2],
                 self.SPIRAL_COVERAGE_RADIUS,
