@@ -10,7 +10,7 @@ namespace mrover {
         mPnh = getMTPrivateNodeHandle();
 
         std::filesystem::path packagePath = ros::package::getPath("mrover");
-        std::filesystem::path modelPath = packagePath / "data" / "yolov8n_mallet_bottle.onnx";
+        std::filesystem::path modelPath = packagePath / "data" / "best.onnx";
 
         mInferenceWrapper = InferenceWrapper{modelPath};
 
@@ -29,6 +29,8 @@ namespace mrover {
         mNh.param<int>("obj_hitcount_max", mObjMaxHitcount, 60);
 
         //Initialize Object Hit Cout to Zeros
-        mHitCount = 0;
+        mHitCountHammer = 0;
+        mHitCountBottle = 0;
+
     }
 } // namespace mrover

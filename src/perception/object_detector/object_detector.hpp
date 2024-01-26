@@ -55,7 +55,8 @@ namespace mrover {
         std::string mMapFrameId;
 
         //Hit counter
-        int mHitCount;
+        int mHitCountHammer;
+        int mHitCountBottle;
 
         //Constants after initialization
         int mObjIncrementWeight;
