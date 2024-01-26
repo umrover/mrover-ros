@@ -11,9 +11,9 @@
 #include <pidf.hpp>
 #include <units/units.hpp>
 
-#include "testing.hpp"
 #include "encoders.hpp"
 #include "hbridge.hpp"
+#include "testing.hpp"
 
 namespace mrover {
 
@@ -82,9 +82,7 @@ namespace mrover {
 
             if (reading) {
                 auto const& [position, velocity] = reading.value();
-                if (m_state_after_calib) {
-                    m_position = position - m_state_after_calib->offset_position;
-                }
+                m_position = position - m_state_after_calib->offset_position;
                 m_velocity = velocity;
             } else {
                 m_position = std::nullopt;
@@ -165,11 +163,11 @@ namespace mrover {
                     m_limit_switches[i].initialize(enabled, active_high, used_for_readjustment, limits_forward, associated_position);
                 }
             }
-            for (std::size_t i = 0; i < m_limit_switches.size(); ++i) {
-                if (GET_BIT_AT_INDEX(message.limit_switch_info.present, i) && GET_BIT_AT_INDEX(message.limit_switch_info.enabled, i)) {
-                    m_limit_switches[i].enable();
-                }
-            }
+            //            for (std::size_t i = 0; i < m_limit_switches.size(); ++i) {
+            //                if (GET_BIT_AT_INDEX(message.limit_switch_info.present, i) && GET_BIT_AT_INDEX(message.limit_switch_info.enabled, i)) {
+            //                    m_limit_switches[i].enable();
+            //                }
+            //            }
 
             m_state_after_config = config;
 
@@ -242,7 +240,7 @@ namespace mrover {
         auto process_command(EnableLimitSwitchesCommand const&) -> void {
             // We are allowed to just enable all limit switches.
             // The valid bit is kept track of separately.
-            for (auto& m_limit_switche : m_limit_switches) {
+            for (auto& m_limit_switche: m_limit_switches) {
                 m_limit_switche.enable();
             }
         }
@@ -385,16 +383,15 @@ namespace mrover {
         }
 
 
-
         auto request_absolute_encoder_data() -> void {
             // Only read the encoder if we are configured
-            if(m_absolute_encoder) {
+            if (m_absolute_encoder) {
                 m_absolute_encoder->request_raw_angle();
             }
         }
 
         auto read_absolute_encoder_data() -> void {
-            if(m_absolute_encoder) {
+            if (m_absolute_encoder) {
                 m_absolute_encoder->read_raw_angle_into_buffer();
             }
         }

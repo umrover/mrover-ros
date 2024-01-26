@@ -65,8 +65,8 @@ void Error_Handler(void);
 #define LIMIT_0_1_GPIO_Port GPIOC
 #define LIMIT_0_2_Pin GPIO_PIN_15
 #define LIMIT_0_2_GPIO_Port GPIOC
-#define LIMIT_0_3_Pin GPIO_PIN_0
-#define LIMIT_0_3_GPIO_Port GPIOF
+#define LIMIT_0_3_Pin GPIO_PIN_10
+#define LIMIT_0_3_GPIO_Port GPIOC
 #define LPUART1_TX_Pin GPIO_PIN_2
 #define LPUART1_TX_GPIO_Port GPIOA
 #define LPUART1_RX_Pin GPIO_PIN_3
