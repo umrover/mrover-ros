@@ -36,11 +36,11 @@ class WaypointState(State):
 
         if context.course.look_for_post():
             if context.env.current_target_pos() is not None:
-                return approach_post.ApproachPostState() 
+                return approach_post.ApproachPostState()
         #   TODO: elif tag id has hit count > 3:
         #         return long_range.LongRangeState()
         elif context.course.look_for_object():
-            if context.env.current_target_pos() is not None: 
+            if context.env.current_target_pos() is not None:
                 return approach_object.ApproachObjectState()
 
         # Attempt to find the waypoint in the TF tree and drive to it
@@ -53,14 +53,14 @@ class WaypointState(State):
                 self.DRIVE_FWD_THRESH,
             )
             if arrived:
-                if not context.course.look_for_post():
+                if not context.course.look_for_post() and not context.course.look_for_object():
                     # We finished a regular waypoint, go onto the next one
                     context.course.increment_waypoint()
                 elif context.course.look_for_post() or context.course.look_for_object():
                     # We finished a waypoint associated with a post or mallet, but we have not seen it yet.
                     return search.SearchState()
                 # TODO elif looking for water bottle:
-	                # return water_bottle_search.WaterBottleSearchState()
+                # return water_bottle_search.WaterBottleSearchState()
 
             if context.rover.stuck:
                 context.rover.previous_state = self

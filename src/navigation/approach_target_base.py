@@ -46,10 +46,10 @@ class ApproachTargetBaseState(State):
                 self.DRIVE_FWD_THRESH,
                 in_odom=context.use_odom,
             )
-            next_state = self.determine_next(arrived)
+            next_state = self.determine_next(context, arrived)
             if arrived:
                 context.env.arrived_at_target = True
-                context.env.last_target_location = self.get_target_pos()
+                context.env.last_target_location = self.get_target_pos(context)
                 context.course.increment_waypoint()
             else:
                 context.rover.send_drive_command(cmd_vel)
