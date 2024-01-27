@@ -103,7 +103,7 @@ class Environment:
         elif current_waypoint.type.val == WaypointType.MALLET:
             return self.get_target_pos("hammer", in_odom)
         elif current_waypoint.type == WaypointType.WATER_BOTTLE:
-            return self.get_target_pos("water_bottle", in_odom)
+            return self.get_target_pos("bottle", in_odom)
         else:
             # print("CURRENT WAYPOINT IS NOT A POST OR OBJECT")
             return None
