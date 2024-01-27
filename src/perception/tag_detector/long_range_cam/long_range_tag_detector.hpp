@@ -32,6 +32,7 @@ namespace mrover {
         int mTagIncrementWeight{};
         int mTagDecrementWeight{};
         int mTagRemoveWeight{};
+        float mLongRangeFov{};
 
         cv::Ptr<cv::aruco::DetectorParameters> mDetectorParams;
         cv::Ptr<cv::aruco::Dictionary> mDictionary;
@@ -126,7 +127,7 @@ namespace mrover {
         * @param tagCorners reference to tag corners, passed to @see getTagCenterPixels
         * @return float of tag bearing
         */
-        float getTagBearing(std::vector<cv::Point2f>& tagCorners) const;
+        float getTagBearing(cv::Point2f& tagCenter) const;
 
         /**
         * @see updateHitCounts()
@@ -142,7 +143,7 @@ namespace mrover {
         * Publish the tags which have been detected for more than
         * mMinHitCountBeforePublish
         */
-        void publishThresholdTags();
+        void publishPermanentTags();
 
         /**
         * publishes the thresholded tags onto an image using OpenCV

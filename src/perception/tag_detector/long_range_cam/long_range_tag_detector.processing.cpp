@@ -1,5 +1,6 @@
 #include "long_range_tag_detector.hpp"
 #include <cstdint>
+#include <opencv2/core/types.hpp>
 #include <sensor_msgs/Image.h>
 
 namespace mrover {
@@ -28,7 +29,7 @@ namespace mrover {
         }
 
         //Publish all tags that meet threshold
-        //publishThresholdTags();
+        publishPermanentTags();
 
         //PUBLISH TAGS
     }
@@ -50,7 +51,7 @@ namespace mrover {
     }
 
     void LongRangeTagDetectorNodelet::runTagDetection() {
-        std::cout << mDetectorParams->adaptiveThreshConstant << std::endl;
+        // std::cout << mDetectorParams->adaptiveThreshConstant << std::endl;
         cv::aruco::detectMarkers(mImg, mDictionary, mImmediateCorners, mImmediateIds, mDetectorParams);
     }
 
@@ -59,7 +60,8 @@ namespace mrover {
         //loop through all identified IDs
         for (size_t i = 0; i < mImmediateIds.size(); i++) {
             updateNewlyIdentifiedTags(i);
-            std::cout << "bearing: " << getTagBearing(mImmediateCorners[i]) << "!!!" << std::endl;
+            cv::Point2f center = getTagCenterPixels(mImmediateCorners[i]);
+            // std::cout << "bearing: " << getTagBearing(center) << "!!!" << std::endl;
         }
 
         //Now decrement all the hitcounts for tags that were not updated
@@ -95,6 +97,7 @@ namespace mrover {
         lrt.updated = true;
 
         lrt.imageCenter = getNormedTagCenterOffset(tagCorners);
+        std::cout << "lrt image center " << lrt.imageCenter.x << std::endl;
 
         return lrt;
     }
@@ -152,18 +155,16 @@ namespace mrover {
         return offsetCenterPoint;
     }
 
-    float LongRangeTagDetectorNodelet::getTagBearing(std::vector<cv::Point2f>& tagCorners) const {
+    float LongRangeTagDetectorNodelet::getTagBearing(cv::Point2f& tagCenter) const {
         //for HD720 resolution
-        cv::Point2f center = getTagCenterPixels(tagCorners);
         auto imageWidth = (float) mImgMsg.width;
-        std::cout << "width: " << imageWidth << std::endl;
-        float angleOfFOV = 101;
-        float bearing = ((center.x - (imageWidth / 2)) / imageWidth) * angleOfFOV;
-
+        std::cout << "width: " << imageWidth << " tag center x: " << tagCenter.x << std::endl;
+        float bearing = -1 * ((float) tagCenter.x + 0.5) * mLongRangeFov;
+        std::cout << "bearing: " << bearing << std::endl;
         return bearing;
     }
 
-    void LongRangeTagDetectorNodelet::publishThresholdTags() {
+    void LongRangeTagDetectorNodelet::publishPermanentTags() {
         //Loop through all the tagsj
         LongRangeTags tagsMessage; //
 
@@ -174,9 +175,7 @@ namespace mrover {
 
                 //Fill in fields
                 newTagMessage.id = tag.second.id;
-                newTagMessage.xOffset = tag.second.imageCenter.x;
-                newTagMessage.yOffset = tag.second.imageCenter.y;
-
+                newTagMessage.bearing = getTagBearing(tag.second.imageCenter);
                 //Add to back of tagsMessage
                 tagsMessage.longRangeTags.push_back(newTagMessage);
             }
