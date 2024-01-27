@@ -13,11 +13,11 @@ namespace mrover {
         mConfigCommand.gear_ratio = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "gear_ratio");
 
         for (std::size_t i = 0; i < 4; ++i) {
-            SET_BIT_AT_INDEX(mConfigCommand.limit_switch_info.present, i, xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, std::format("limit_{}_present", i)));
-            SET_BIT_AT_INDEX(mConfigCommand.limit_switch_info.enabled, i, xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, std::format("limit_{}_enabled", i)));
-            SET_BIT_AT_INDEX(mConfigCommand.limit_switch_info.active_high, i, xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, std::format("limit_{}_is_active_high", i)));
-            SET_BIT_AT_INDEX(mConfigCommand.limit_switch_info.limits_forward, i, xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, std::format("limit_{}_limits_fwd", i)));
-            SET_BIT_AT_INDEX(mConfigCommand.limit_switch_info.use_for_readjustment, i, xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, std::format("limit_{}_used_for_readjustment", i)));
+            SET_BIT_AT_INDEX(mConfigCommand.limit_switch_info.present, i, xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, std::format("limit_{}_present", i), false));
+            SET_BIT_AT_INDEX(mConfigCommand.limit_switch_info.enabled, i, xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, std::format("limit_{}_enabled", i), false));
+            SET_BIT_AT_INDEX(mConfigCommand.limit_switch_info.active_high, i, xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, std::format("limit_{}_is_active_high", i), true)); // might switch default value to false depending on wiring
+            SET_BIT_AT_INDEX(mConfigCommand.limit_switch_info.limits_forward, i, xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, std::format("limit_{}_limits_fwd", i), true));
+            SET_BIT_AT_INDEX(mConfigCommand.limit_switch_info.use_for_readjustment, i, xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, std::format("limit_{}_used_for_readjustment", i), true));
             mConfigCommand.limit_switch_info.limit_readj_pos.at(i) = Radians{static_cast<double>(brushedMotorData[std::format("limit_{}_readjust_position", i)])};
         }
 

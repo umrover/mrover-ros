@@ -30,14 +30,16 @@ namespace mrover {
             updateLastConnection();
             mHeartbeatTimer = mNh.createTimer(ros::Duration(0.1), &Controller::heartbeatCallback, this);
             // Subscribe to the ROS topic for commands
-            mMoveThrottleSub = mNh.subscribe<Throttle>(std::format("{}_throttle_cmd", mName), 1, &Controller::moveMotorsThrottle, this);
-            mMoveVelocitySub = mNh.subscribe<Velocity>(std::format("{}_velocity_cmd", mName), 1, &Controller::moveMotorsVelocity, this);
-            mMovePositionSub = mNh.subscribe<Position>(std::format("{}_position_cmd", mName), 1, &Controller::moveMotorsPosition, this);
+            mMoveThrottleSub = mNh.subscribe<Throttle>(std::format("{}_throttle_cmd", mControllerName), 1, &Controller::moveMotorsThrottle, this);
+            mMoveVelocitySub = mNh.subscribe<Velocity>(std::format("{}_velocity_cmd", mControllerName), 1, &Controller::moveMotorsVelocity, this);
+            mMovePositionSub = mNh.subscribe<Position>(std::format("{}_position_cmd", mControllerName), 1, &Controller::moveMotorsPosition, this);
 
-            mJointDataPub = mNh.advertise<sensor_msgs::JointState>(std::format("{}_joint_data", mName), 1);
-            mControllerDataPub = mNh.advertise<ControllerState>(std::format("{}_controller_data", mName), 1);
+            mJointDataPub = mNh.advertise<sensor_msgs::JointState>(std::format("{}_joint_data", mControllerName), 1);
+            mControllerDataPub = mNh.advertise<ControllerState>(std::format("{}_controller_data", mControllerName), 1);
 
-            mPublishDataTimer = mNh.createTimer(ros::Duration(0.1), &Controller::publishDataCallback, this);
+            // mPublishDataTimer = mNh.createTimer(ros::Duration(0.1), &Controller::publishDataCallback, this);
+
+            ROS_INFO("instantiate %s", mControllerName.c_str());
         }
 
         virtual ~Controller() = default;
@@ -59,25 +61,32 @@ namespace mrover {
         }
 
         void moveMotorsThrottle(Throttle::ConstPtr const& msg) {
-            if (msg->names.size() != 1 || msg->names.at(0) != mName || msg->throttles.size() != 1) {
-                ROS_ERROR("Throttle request at topic for %s ignored!", mName.c_str());
+            if (msg->names.size() != 1 || msg->names.at(0) != mControllerName || msg->throttles.size() != 1) {
+                ROS_ERROR("Throttle request at topic for %s ignored!", msg->names.at(0).c_str());
                 return;
             }
+
+            if (mControllerName == "joint_de_0")
+                ROS_INFO("set throttle request %f", msg->throttles[0]);
+
             setDesiredThrottle(msg->throttles.at(0));
         }
 
 
         void moveMotorsVelocity(Velocity::ConstPtr const& msg) {
-            if (msg->names.size() != 1 || msg->names.at(0) != mName || msg->velocities.size() != 1) {
-                ROS_ERROR("Velocity request at topic for %s ignored!", mName.c_str());
+            if (msg->names.size() != 1 || msg->names.at(0) != mControllerName || msg->velocities.size() != 1) {
+                ROS_ERROR("Velocity request at topic for %s ignored!", msg->names.at(0).c_str());
                 return;
             }
+
+            if (mControllerName == "joint_de_0")
+                ROS_INFO("set velocity request %f", msg->velocities[0]);
             setDesiredVelocity(RadiansPerSecond{msg->velocities.at(0)});
         }
 
         void moveMotorsPosition(Position::ConstPtr const& msg) {
-            if (msg->names.size() != 1 || msg->names.at(0) != mName || msg->positions.size() != 1) {
-                ROS_ERROR("Position request at topic for %s ignored!", mName.c_str());
+            if (msg->names.size() != 1 || msg->names.at(0) != mControllerName || msg->positions.size() != 1) {
+                ROS_ERROR("Position request at topic for %s ignored!", msg->names.at(0).c_str());
                 return;
             }
             setDesiredPosition(Radians{msg->positions.at(0)});
