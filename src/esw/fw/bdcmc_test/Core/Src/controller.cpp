@@ -29,14 +29,17 @@ extern I2C_HandleTypeDef hi2c1;
  * You must also set auto reload to true so the interurpt gets called on a cycle.
  */
 
+extern TIM_HandleTypeDef htim2;  // Absolute encoder timer (currently at 20Hz)
 extern TIM_HandleTypeDef htim4;  // Quadrature encoder #1
 extern TIM_HandleTypeDef htim3;  // Quadrature encoder #2
 extern TIM_HandleTypeDef htim6;  // 10,000 Hz Update timer
 extern TIM_HandleTypeDef htim7;  // 100 Hz Send timer
 extern TIM_HandleTypeDef htim15; // H-Bridge PWM
 extern TIM_HandleTypeDef htim16; // Message watchdog timer
-extern TIM_HandleTypeDef htim2;  // Absolute encoder timer (currently at 20Hz)
+extern TIM_HandleTypeDef htim17; // Quadrature velocity timer (external)
+
 #define QUADRATURE_TIMER_1 &htim4
+#define QUADRATURE_VELOCITY_TIMER_1 &htim17
 #define QUADRATURE_TIMER_2 &htim3
 #define UPDATE_TIMER &htim6
 #define SEND_TIMER &htim7
@@ -64,6 +67,7 @@ namespace mrover {
                 fdcan_bus,
                 FDCAN_WATCHDOG_TIMER,
                 QUADRATURE_TIMER_1,
+                QUADRATURE_VELOCITY_TIMER_1,
                 ABSOLUTE_I2C,
                 {
                         LimitSwitch{Pin{LIMIT_0_0_GPIO_Port, LIMIT_0_0_Pin}},
@@ -120,6 +124,10 @@ namespace mrover {
         controller.receive_watchdog_expired();
     }
 
+    void calc_velocity() {
+        controller.calc_quadrature_velocity();
+    }
+
 } // namespace mrover
 
 // TOOD: is this really necesssary?
@@ -149,6 +157,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim) {
         mrover::fdcan_watchdog_expired();
     } else if (htim == ABSOLUTE_ENCODER_TIMER) {
         mrover::request_absolute_encoder_data_callback();
+    } else if (htim == QUADRATURE_VELOCITY_TIMER_1) {
+        mrover::calc_velocity();
     }
     // TODO: check for slow update timer and call on controller to send out i2c frame
 }

@@ -34,6 +34,7 @@ namespace mrover {
         TIM_HandleTypeDef* m_watchdog_timer{};
         bool m_watchdog_enabled{};
         TIM_HandleTypeDef* m_quadrature_encoder_timer{};
+        TIM_HandleTypeDef* m_quadrature_encoder_vel_timer{};
         I2C_HandleTypeDef* m_absolute_encoder_i2c{};
         std::optional<QuadratureEncoderReader> m_relative_encoder;
         // TODO: implement
@@ -141,7 +142,7 @@ namespace mrover {
             if (message.quad_abs_enc_info.quad_present) {
                 // TODO(quintin): Why TF does this crash without .get() ?
                 Ratio multiplier = (message.quad_abs_enc_info.quad_is_forward_polarity ? 1.0f : -1.0f) * message.quad_enc_out_ratio.get();
-                if (!m_relative_encoder) m_relative_encoder.emplace(m_quadrature_encoder_timer, multiplier);
+                if (!m_relative_encoder) m_relative_encoder.emplace(m_quadrature_encoder_timer, multiplier, m_quadrature_encoder_vel_timer);
             }
             if (message.quad_abs_enc_info.abs_present) {
                 Ratio multiplier = (message.quad_abs_enc_info.abs_is_forward_polarity ? 1 : -1) * message.abs_enc_out_ratio;
@@ -262,11 +263,12 @@ namespace mrover {
     public:
         Controller() = default;
 
-        Controller(TIM_HandleTypeDef* hbridge_output, Pin hbridge_forward_pin, Pin hbridge_backward_pin, FDCAN<InBoundMessage> const& fdcan, TIM_HandleTypeDef* watchdog_timer, TIM_HandleTypeDef* quadrature_encoder_timer, I2C_HandleTypeDef* absolute_encoder_i2c, std::array<LimitSwitch, 4> const& limit_switches)
+        Controller(TIM_HandleTypeDef* hbridge_output, Pin hbridge_forward_pin, Pin hbridge_backward_pin, FDCAN<InBoundMessage> const& fdcan, TIM_HandleTypeDef* watchdog_timer, TIM_HandleTypeDef* quadrature_encoder_timer, TIM_HandleTypeDef* quadrature_encoder_vel_timer, I2C_HandleTypeDef* absolute_encoder_i2c, std::array<LimitSwitch, 4> const& limit_switches)
             : m_motor_driver{HBridge(hbridge_output, hbridge_forward_pin, hbridge_backward_pin)},
               m_fdcan{fdcan},
               m_watchdog_timer{watchdog_timer},
               m_quadrature_encoder_timer{quadrature_encoder_timer},
+              m_quadrature_encoder_vel_timer{quadrature_encoder_vel_timer},
               m_absolute_encoder_i2c{absolute_encoder_i2c},
               m_limit_switches{limit_switches} {}
 
@@ -328,6 +330,15 @@ namespace mrover {
             // Make sure the motor stops
             m_inbound = IdleCommand{};
             process_command();
+        }
+
+        /**
+         * \brief Update the quadrature velocity measurement.
+         *
+         * \note Called more frequently than update position.
+         */
+        auto calc_quadrature_velocity() -> void {
+            m_relative_encoder->update_vel();
         }
 
         /**

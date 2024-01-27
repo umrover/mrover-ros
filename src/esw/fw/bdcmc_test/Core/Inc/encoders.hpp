@@ -13,10 +13,12 @@ namespace mrover {
     constexpr auto tau = 2 * std::numbers::pi_v<float>;
 
     // Counts (ticks) per radian (NOT per rotation)
-    using CPR = compound_unit<Ticks, inverse<Radians>>;
+    using CountsPerRad = compound_unit<Ticks, inverse<Radians>>;
 
-    constexpr auto RELATIVE_CPR = CPR{4096 / tau};
-    constexpr auto ABSOLUTE_CPR = CPR{1024 / tau};
+    constexpr auto RELATIVE_CPR = CountsPerRad{4096 / tau};
+    constexpr auto ABSOLUTE_CPR = CountsPerRad{1024 / tau};
+    constexpr auto MIN_MEASURABLE_VELOCITY = RadiansPerSecond{0.10472}; // Very thoroughly obtained number - Quintin Approves
+    constexpr auto CLOCK_FREQ = Hertz{144000000};
 
     struct EncoderReading {
         Radians position;
@@ -61,22 +63,25 @@ namespace mrover {
     public:
         QuadratureEncoderReader() = default;
 
-        QuadratureEncoderReader(TIM_HandleTypeDef* timer, Ratio multiplier);
+        QuadratureEncoderReader(TIM_HandleTypeDef* timer, Ratio multiplier, TIM_HandleTypeDef* vel_timer);
 
         [[nodiscard]] auto read() -> std::optional<EncoderReading>;
 
+        auto update_vel() -> void;
+
     private:
         TIM_HandleTypeDef* m_timer{};
+        TIM_HandleTypeDef* m_vel_timer{};
         std::int64_t m_counts_unwrapped_prev{};
+        std::int64_t m_vel_counts_unwrapped_prev{};
         std::uint32_t m_counts_raw_now{};
         std::uint32_t m_ticks_prev{};
         std::uint32_t m_ticks_now{};
         Ratio m_multiplier;
+        Seconds dt;
 
         Radians m_position;
         RadiansPerSecond m_velocity;
-
-        std::int64_t count_delta();
     };
 
 } // namespace mrover
