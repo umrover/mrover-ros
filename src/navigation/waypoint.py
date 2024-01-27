@@ -35,10 +35,11 @@ class WaypointState(State):
             return post_backup.PostBackupState()
 
         if context.course.look_for_post():
-            if context.env.current_target_pos() is not None:
-                return approach_post.ApproachPostState()
-        #   TODO: elif tag id has hit count > 3:
-        #         return long_range.LongRangeState()
+            # if context.env.current_target_pos() is not None:
+            #     return approach_post.ApproachPostState()
+            # if we see the tag in the long range camera, go to LongRangeState
+            if context.env.long_range_tags.get(current_waypoint.tag_id) is not None:
+                return approach_post.LongRangeState()
         elif context.course.look_for_object():
             if context.env.current_target_pos() is not None:
                 return approach_object.ApproachObjectState()

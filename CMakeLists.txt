@@ -178,16 +178,14 @@ endif ()
 
 ## Perception
 
-mrover_add_nodelet(tag_detector src/perception/tag_detector/*.cpp src/perception/tag_detector src/perception/tag_detector/pch.hpp)
-mrover_nodelet_link_libraries(tag_detector opencv_core opencv_objdetect opencv_aruco opencv_imgproc opencv_highgui lie)
+mrover_add_nodelet(zed_tag_detector src/perception/tag_detector/zed/*.cpp src/perception/tag_detector/zed src/perception/tag_detector/zed/pch.hpp)
+mrover_nodelet_link_libraries(zed_tag_detector opencv_core opencv_objdetect opencv_aruco opencv_imgproc tbb lie)
 
-# if (CUDA_FOUND)
-#     mrover_add_library(streaming src/esw/streaming/*.c* src/esw/streaming)
-#     #    target_link_libraries(streaming PUBLIC opencv_core opencv_cudacodec)
-#     target_link_libraries(streaming PUBLIC cuda nvidia-encode opencv_core)
-#     target_include_directories(streaming SYSTEM PUBLIC deps/nvenc)
-#     target_compile_definitions(streaming PUBLIC BOOST_ASIO_NO_DEPRECATED)
-# endif ()
+mrover_add_nodelet(long_range_tag_detector src/perception/tag_detector/long_range_cam/*.cpp src/perception/tag_detector/long_range_cam src/perception/tag_detector/long_range_cam/pch.hpp)
+mrover_nodelet_link_libraries(long_range_tag_detector opencv_core opencv_objdetect opencv_aruco opencv_imgproc tbb lie)
+
+mrover_add_nodelet(usb_camera src/perception/long_range_cam/*.cpp src/perception/long_range_cam src/perception/long_range_cam/pch.hpp)
+mrover_nodelet_link_libraries(usb_camera opencv_core opencv_objdetect opencv_aruco opencv_imgproc opencv_highgui tbb lie)
 
 if (ZED_FOUND)
     mrover_add_nodelet(zed src/perception/zed_wrapper/*.c* src/perception/zed_wrapper src/perception/zed_wrapper/pch.hpp)
