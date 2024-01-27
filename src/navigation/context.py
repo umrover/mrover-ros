@@ -9,7 +9,15 @@ import pymap3d
 import rospy
 import tf2_ros
 from geometry_msgs.msg import Twist
-from mrover.msg import Waypoint, GPSWaypoint, WaypointType, GPSPointList, Course as CourseMsg
+from mrover.msg import (
+    Waypoint,
+    GPSWaypoint,
+    WaypointType,
+    GPSPointList,
+    Course as CourseMsg,
+    LongRangeTag,
+    LongRangeTags,
+)
 from mrover.srv import EnableAuton, EnableAutonRequest, EnableAutonResponse
 from navigation.drive import DriveController
 from std_msgs.msg import Time, Bool
@@ -59,11 +67,10 @@ class Environment:
     """
 
     ctx: Context
+    long_range_tags: LongRangeTagStore
     NO_FIDUCIAL: ClassVar[int] = -1
     arrived_at_target: bool = None
     last_target_location: Optional[np.ndarray] = None
-    # TODO add dictionary for long range tag id : (time received, our hit counter, bearing)
-    # tag_data_dict = {}
 
     def get_target_pos(self, id: str, in_odom_frame: bool = True) -> Optional[np.ndarray]:
         """
@@ -106,6 +113,41 @@ class Environment:
             return self.get_target_pos("bottle", in_odom)
         else:
             # print("CURRENT WAYPOINT IS NOT A POST OR OBJECT")
+            return None
+
+
+class LongRangeTagStore:
+    @dataclass
+    class TagData:
+        hit_count: int
+        tag: LongRangeTag
+
+    ctx: Context
+    __data: dict[int, TagData]
+    min_hits: int
+
+    def __init__(self, ctx: Context, min_hits: int) -> None:
+        self.ctx = ctx
+        self.__data = {}
+        self.min_hits = min_hits
+
+    def push_frame(self, tags: List[LongRangeTag]) -> None:
+        for _, cur_tag in self.__data.items():
+            if cur_tag.tag.id not in tags:
+                cur_tag.hit_count -= 1
+                if cur_tag.hit_count <= 0:
+                    del self.__data[cur_tag.tag.id]
+            else:
+                cur_tag.hit_count += 1
+
+        for tag in tags:
+            if tag.id not in self.__data:
+                self.__data[tag.id] = self.TagData(hit_count=1, tag=tag)
+
+    def get(self, tag_id: int) -> Optional[LongRangeTag]:
+        if tag_id in self.__data and self.__data[tag_id].hit_count > self.min_hits:
+            return self.__data[tag_id].tag
+        else:
             return None
 
 
@@ -243,13 +285,14 @@ class Context:
         self.stuck_listener = rospy.Subscriber("nav_stuck", Bool, self.stuck_callback)
         self.course = None
         self.rover = Rover(self, False, "")
-        self.env = Environment(self)
+        # TODO update min_hits to be a param
+        self.env = Environment(self, long_range_tags=LongRangeTagStore(self, 3))
         self.disable_requested = False
         self.use_odom = rospy.get_param("use_odom_frame")
         self.world_frame = rospy.get_param("world_frame")
         self.odom_frame = rospy.get_param("odom_frame")
         self.rover_frame = rospy.get_param("rover_frame")
-        # self.tag_data_listener = rospy.Subscriber("tag_data", list, self.tag_data_callback)
+        self.tag_data_listener = rospy.Subscriber("tags", LongRangeTags, self.tag_data_callback)
 
     def recv_enable_auton(self, req: EnableAutonRequest) -> EnableAutonResponse:
         if req.enable:
@@ -261,10 +304,5 @@ class Context:
     def stuck_callback(self, msg: Bool):
         self.rover.stuck = msg.data
 
-    # def tag_data_callback(self, tags: list) -> None:
-    #     for tag in tags:
-    #         tag_id = tag["id"]
-    #         hit_count = tag["hitCount"]
-    #         bearing = tag["bearing"]
-    #         time_received = rospy.Time()
-    #         self.env.tag_data_dict[tag_id] = (time_received, hit_count, bearing)
+    def tag_data_callback(self, tags: LongRangeTags) -> None:
+        self.env.long_range_tags.push_frame(tags.longRangeTags)

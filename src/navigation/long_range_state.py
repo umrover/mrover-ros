@@ -6,6 +6,7 @@ from util.ros_utils import get_rosparam
 from context import Context
 from util.state_lib.state import State
 from util.state_lib.state_machine import StateMachine
+from util.np_utils import normalize
 from abc import ABC, abstractmethod
 from state import DoneState
 from search import SearchState
@@ -18,8 +19,6 @@ from state import ApproachTargetBaseState
 from state import approach_post
 import numpy as np
 import math
-
-TAG_SEARCH_EXPIRATION = 3
 
 
 class LongRangeState(ApproachTargetBaseState):
@@ -39,39 +38,33 @@ class LongRangeState(ApproachTargetBaseState):
         pass
 
     def get_target_pos(self, context) -> Optional[int]:
-        tag_id = context.current_waypoint()["tagid"]
-        bearing = context.env.tag_data_dict[tag_id][2]
-        rover_position = context.rover.get_pose().rover_position
-        #target_pos = context.rover.get_target_pos().target_pos
+        tag_id = context.course.get_current_waypoint().tag_id
+        tag = context.env.long_range_tags.get(tag_id)
+        if tag is None:
+            return None
+        pose = context.rover.get_pose()
+        if pose is None:
+            return None
 
-        #Get x and y coords from pose
-        rover_position_x = rover_position[1][0][0] #if not, try 0,0 on 2d coords
-        rover_position_y = rover_position[0][1][0]
+        rover_position = pose.position
+        rover_direction = pose.rotation.direction_vector()
 
-        #target_pos_x: target_pos[1][0][0]
-        #target_pos_y: target_pos[0][1][0]
+        bearing_to_tag = np.radians(tag.bearing)
 
+        # rover_direction rotated by bearing to tag
+        bearing_rotation_mat = np.array(
+            [[np.cos(bearing_to_tag), -np.sin(bearing_to_tag)], [np.sin(bearing_to_tag), np.cos(bearing_to_tag)]]
+        )
 
-        target_position_x= math.sin(bearing)*25 + rover_position_x
-        target_position_y= math.cos(bearing)*25 + rover_position_y
-        target_pos = target_position_x,target_position_y
-        #Bearing and dist to coord: 
+        direction_to_tag = bearing_rotation_mat @ rover_direction[:2]
 
-        # target_pos_x = 90 - bearing
-        # target_pos_y = bearing
-        # target_pos_z = rover_position[2]
-
-        target_coordinates = np.ndarray
-        context.tag_data_callback()
-        return target_pos
+        direction_to_tag = normalize(direction_to_tag)
+        distance = 20  # TODO replace with rosparam
+        tag_position = rover_position + direction_to_tag * distance
 
     def determine_next(self, context, finished: bool) -> State:
-        fid_pos = context.env.current_fid_pos()  # Need to pass in the fid_id
-        tag_time = context.env.tag_data_dict[context.current_tag_id][0]
+        fid_pos = context.env.current_fid_pos()
         if fid_pos is None:
-            if rospy.Time() - tag_time > TAG_SEARCH_EXPIRATION:
-                return state.SearchState()
-            else:
-                return state.LongRangeState()
+            return state.LongRangeState()
         else:
             return approach_post.ApproachPostState()
