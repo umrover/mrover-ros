@@ -13,9 +13,9 @@ namespace mrover {
         assert(brushlessMotorData.getType() == XmlRpc::XmlRpcValue::TypeStruct);
 
         mMinVelocity = RadiansPerSecond{xmlRpcValueToTypeOrDefault<double>(
-                brushlessMotorData, "min_velocity", -10.0)};
+                brushlessMotorData, "min_velocity", -1.0)};
         mMaxVelocity = RadiansPerSecond{xmlRpcValueToTypeOrDefault<double>(
-                brushlessMotorData, "max_velocity", 10.0)};
+                brushlessMotorData, "max_velocity", 1.0)};
 
         mMinPosition = Radians{xmlRpcValueToTypeOrDefault<double>(
                 brushlessMotorData, "min_position", -1.0)};
@@ -123,8 +123,6 @@ namespace mrover {
         std::clamp(throttle, -1_percent, 1_percent);
 
         // Map the throttle to the velocity range
-        auto fakeVel = (throttle.get() + 1.0f) / 2.0f * (mMaxVelocity.get() - mMinVelocity.get()) + mMinVelocity.get();
-        ROS_INFO("what mapper thinks velocity is (rad/sec): %f", fakeVel);
         return RadiansPerSecond{(throttle.get() + 1.0f) / 2.0f * (mMaxVelocity.get() - mMinVelocity.get()) + mMinVelocity.get()};
     }
 
