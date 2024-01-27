@@ -35,10 +35,10 @@ brushed_motors:
       limit_1_limits_fwd: true
       limit_2_limits_fwd: true
       limit_3_limits_fwd: true
-      limit_0_used_for_readjustment: false
-      limit_1_used_for_readjustment: false
-      limit_2_used_for_readjustment: false
-      limit_3_used_for_readjustment: false
+      limit_0_used_for_readjustment: true
+      limit_1_used_for_readjustment: true
+      limit_2_used_for_readjustment: true
+      limit_3_used_for_readjustment: true
       quad_present: true
       quad_is_fwd_polarity: true
       abs_present: false
@@ -46,7 +46,7 @@ brushed_motors:
       limit_0_readjust_position: 0.0 # radians
       limit_1_readjust_position: 0.0 # radians
       limit_2_readjust_position: 0.0 # radians
-      limit_3_readjust_position: 0.0 # radians
+      limit_3_readjust_position: 20.0 # radians
       quad_ratio: 1.0 # encoder ratio compared to motor
       abs_ratio: 1.0 # encoder ratio compared to motor
       abs_encoder_offset: 0.0 # 0 for joint position corresponds to this radians reading by absolute encoder

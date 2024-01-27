@@ -45,4 +45,5 @@ namespace mrover {
 
         return EncoderReading{m_position, m_velocity};
     }
+
 } // namespace mrover

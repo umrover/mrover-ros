@@ -71,7 +71,7 @@ static void MX_TIM16_Init(void);
 static void MX_TIM1_Init(void);
 static void MX_TIM3_Init(void);
 /* USER CODE BEGIN PFP */
-
+void HAL_PostInit();
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -688,17 +688,17 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(MOTOR_0_NDIR_GPIO_Port, MOTOR_0_NDIR_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : LIMIT_0_0_Pin LIMIT_0_1_Pin LIMIT_0_2_Pin PC10 */
-  GPIO_InitStruct.Pin = LIMIT_0_0_Pin|LIMIT_0_1_Pin|LIMIT_0_2_Pin|GPIO_PIN_10;
+  /*Configure GPIO pins : PC13 PC14 PC15 LIMIT_0_3_Pin */
+  GPIO_InitStruct.Pin = GPIO_PIN_13|GPIO_PIN_14|GPIO_PIN_15|LIMIT_0_3_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : LIMIT_0_3_Pin */
-  GPIO_InitStruct.Pin = LIMIT_0_3_Pin;
+  /*Configure GPIO pin : PF0 */
+  GPIO_InitStruct.Pin = GPIO_PIN_0;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
-  HAL_GPIO_Init(LIMIT_0_3_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOF, &GPIO_InitStruct);
 
   /*Configure GPIO pins : LPUART1_TX_Pin LPUART1_RX_Pin */
   GPIO_InitStruct.Pin = LPUART1_TX_Pin|LPUART1_RX_Pin;

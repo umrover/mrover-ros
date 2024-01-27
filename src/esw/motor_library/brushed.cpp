@@ -21,21 +21,15 @@ namespace mrover {
             mConfigCommand.limit_switch_info.limit_readj_pos.at(i) = Radians{static_cast<double>(brushedMotorData[std::format("limit_{}_readjust_position", i)])};
         }
 
-        mConfigCommand.quad_abs_enc_info.quad_present = xmlRpcValueToTypeOrDefault<bool>(
-                brushedMotorData, "quad_present", false);
-        mConfigCommand.quad_abs_enc_info.quad_is_forward_polarity = xmlRpcValueToTypeOrDefault<bool>(
-                brushedMotorData, "quad_is_fwd_polarity", false);
-        mConfigCommand.quad_abs_enc_info.abs_present = xmlRpcValueToTypeOrDefault<bool>(
-                brushedMotorData, "abs_present", false);
+        mConfigCommand.quad_abs_enc_info.quad_present = xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, "quad_present", false);
+        mConfigCommand.quad_abs_enc_info.quad_is_forward_polarity = xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, "quad_is_fwd_polarity", false);
+        mConfigCommand.quad_abs_enc_info.abs_present = xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, "abs_present", false);
 
-        mConfigCommand.quad_abs_enc_info.abs_is_forward_polarity = xmlRpcValueToTypeOrDefault<bool>(
-                brushedMotorData, "abs_is_fwd_polarity", false);
+        mConfigCommand.quad_abs_enc_info.abs_is_forward_polarity = xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, "abs_is_fwd_polarity", false);
 
-        mConfigCommand.quad_enc_out_ratio = xmlRpcValueToTypeOrDefault<double>(
-                brushedMotorData, "quad_ratio", 1.0);
+        mConfigCommand.quad_enc_out_ratio = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "quad_ratio", 1.0);
 
-        mConfigCommand.abs_enc_out_ratio = xmlRpcValueToTypeOrDefault<double>(
-                brushedMotorData, "abs_ratio", 1.0);
+        mConfigCommand.abs_enc_out_ratio = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "abs_ratio", 1.0);
 
         auto driver_voltage = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "driver_voltage");
         assert(driver_voltage > 0);
@@ -44,16 +38,12 @@ namespace mrover {
 
         mConfigCommand.max_pwm = motor_max_voltage / driver_voltage;
 
-        mConfigCommand.limit_switch_info.limit_max_forward_position = xmlRpcValueToTypeOrDefault<bool>(
-                brushedMotorData, "limit_max_forward_pos", false);
+        mConfigCommand.limit_switch_info.limit_max_forward_position = xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, "limit_max_forward_pos", false);
 
-        mConfigCommand.limit_switch_info.limit_max_backward_position = xmlRpcValueToTypeOrDefault<bool>(
-                brushedMotorData, "limit_max_backward_pos", false);
+        mConfigCommand.limit_switch_info.limit_max_backward_position = xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, "limit_max_backward_pos", false);
 
-        mConfigCommand.max_forward_pos = Radians{
-                xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "max_forward_pos", 0.0)};
-        mConfigCommand.max_backward_pos = Radians{
-                xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "max_backward_pos", 0.0)};
+        mConfigCommand.max_forward_pos = Radians{xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "max_forward_pos", 0.0)};
+        mConfigCommand.max_backward_pos = Radians{xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "max_backward_pos", 0.0)};
 
         mErrorState = "Unknown";
         mState = "Unknown";

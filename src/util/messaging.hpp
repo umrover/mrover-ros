@@ -72,10 +72,6 @@ namespace mrover {
         Radians max_backward_pos;
     };
 
-    struct EnableLimitSwitchesCommand : BaseCommand {
-        bool enable;
-    };
-
     struct IdleCommand : BaseCommand {
     };
 
@@ -99,7 +95,7 @@ namespace mrover {
     };
 
     using InBoundMessage = std::variant<
-            AdjustCommand, ConfigCommand, EnableLimitSwitchesCommand, IdleCommand, ThrottleCommand, VelocityCommand, PositionCommand>;
+            AdjustCommand, ConfigCommand, IdleCommand, ThrottleCommand, VelocityCommand, PositionCommand>;
 
     using OutBoundMessage = std::variant<
             ControllerDataState>;

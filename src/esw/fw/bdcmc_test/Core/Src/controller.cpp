@@ -35,7 +35,7 @@ extern TIM_HandleTypeDef htim6;  // 10,000 Hz Update timer
 extern TIM_HandleTypeDef htim7;  // 100 Hz Send timer
 extern TIM_HandleTypeDef htim15; // H-Bridge PWM
 extern TIM_HandleTypeDef htim16; // Message watchdog timer
-extern TIM_HandleTypeDef htim2; // Absolute encoder timer (currently at 20Hz)
+extern TIM_HandleTypeDef htim2;  // Absolute encoder timer (currently at 20Hz)
 #define QUADRATURE_TIMER_1 &htim4
 #define QUADRATURE_TIMER_2 &htim3
 #define UPDATE_TIMER &htim6
@@ -59,16 +59,19 @@ namespace mrover {
         fdcan_bus = FDCAN<InBoundMessage>{DEVICE_ID, DESTINATION_DEVICE_ID, &hfdcan1};
         controller = Controller{
                 PWM_TIMER,
-				Pin{GPIOB, GPIO_PIN_15},
-				Pin{GPIOC, GPIO_PIN_6},
+                Pin{GPIOB, GPIO_PIN_15},
+                Pin{GPIOC, GPIO_PIN_6},
                 fdcan_bus,
                 FDCAN_WATCHDOG_TIMER,
                 QUADRATURE_TIMER_1,
                 ABSOLUTE_I2C,
                 {
-                        LimitSwitch{Pin{LIMIT_0_0_GPIO_Port, LIMIT_0_0_Pin}},
-                        LimitSwitch{Pin{LIMIT_0_1_GPIO_Port, LIMIT_0_1_Pin}},
-                        LimitSwitch{Pin{LIMIT_0_2_GPIO_Port, LIMIT_0_2_Pin}},
+                        // LimitSwitch{Pin{LIMIT_0_0_GPIO_Port, LIMIT_0_0_Pin}},
+                        // LimitSwitch{Pin{LIMIT_0_1_GPIO_Port, LIMIT_0_1_Pin}},
+                        // LimitSwitch{Pin{LIMIT_0_2_GPIO_Port, LIMIT_0_2_Pin}},
+                        LimitSwitch{},
+                        LimitSwitch{},
+                        LimitSwitch{},
                         LimitSwitch{Pin{LIMIT_0_3_GPIO_Port, LIMIT_0_3_Pin}},
                 },
         };
@@ -171,7 +174,7 @@ void HAL_FDCAN_ErrorCallback(FDCAN_HandleTypeDef* hfdcan) {}
 
 void HAL_FDCAN_ErrorStatusCallback(FDCAN_HandleTypeDef* hfdcan, uint32_t ErrorStatusITs) {}
 
-    // TODO DMA receive callback, this should eventually call a function on the controller with most up to date info
+// TODO DMA receive callback, this should eventually call a function on the controller with most up to date info
 
 void HAL_I2C_SlaveRxCpltCallback(I2C_HandleTypeDef* hi2c) {}
 

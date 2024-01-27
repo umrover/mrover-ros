@@ -45,7 +45,7 @@ namespace mrover {
         // "Desired" since it may be overridden.
         // For example if we are trying to drive into a limit switch it will be overriden to zero.
         Percent m_desired_output;
-        std::optional<Radians> m_position;
+        std::optional<Radians> m_uncalib_position;
         std::optional<RadiansPerSecond> m_velocity;
         BDCMCErrorInfo m_error = BDCMCErrorInfo::DEFAULT_START_UP_NOT_CONFIGURED;
 
@@ -70,22 +70,21 @@ namespace mrover {
         OutBoundMessage m_outbound = ControllerDataState{.config_calib_error_data = {.error = m_error}};
 
         /**
-         * \brief Updates \link m_position and \link m_velocity based on the hardware
+         * \brief Updates \link m_uncalib_position and \link m_velocity based on the hardware
          */
         auto update_relative_encoder() -> void {
             std::optional<EncoderReading> reading;
 
-            // Only read the encoder if we are configured
             if (m_relative_encoder) {
                 reading = m_relative_encoder->read();
             }
 
             if (reading) {
                 auto const& [position, velocity] = reading.value();
-                m_position = position - m_state_after_calib->offset_position;
+                m_uncalib_position = position;
                 m_velocity = velocity;
             } else {
-                m_position = std::nullopt;
+                m_uncalib_position = std::nullopt;
                 m_velocity = std::nullopt;
             }
         }
@@ -96,9 +95,12 @@ namespace mrover {
                 limit_switch.update_limit_switch();
                 // Each limit switch may have a position associated with it
                 // If we reach there update our offset position since we know exactly where we are
-                if (limit_switch.pressed() && m_position && m_state_after_calib) {
+
+                if (limit_switch.pressed()) {
                     if (std::optional<Radians> readjustment_position = limit_switch.get_readjustment_position()) {
-                        m_state_after_calib->offset_position = m_position.value() - readjustment_position.value();
+                        if (!m_state_after_calib) m_state_after_calib.emplace();
+
+                        m_state_after_calib->offset_position = m_uncalib_position.value() - readjustment_position.value();
                     }
                 }
             }
@@ -125,9 +127,9 @@ namespace mrover {
             update_relative_encoder();
 
             // TODO: verify this is correct
-            if (m_position && m_state_after_config) {
+            if (m_uncalib_position && m_state_after_config) {
                 m_state_after_calib = StateAfterCalib{
-                        .offset_position = m_position.value() - message.position,
+                        .offset_position = m_uncalib_position.value() - message.position,
                 };
             }
         }
@@ -163,11 +165,11 @@ namespace mrover {
                     m_limit_switches[i].initialize(enabled, active_high, used_for_readjustment, limits_forward, associated_position);
                 }
             }
-            //            for (std::size_t i = 0; i < m_limit_switches.size(); ++i) {
-            //                if (GET_BIT_AT_INDEX(message.limit_switch_info.present, i) && GET_BIT_AT_INDEX(message.limit_switch_info.enabled, i)) {
-            //                    m_limit_switches[i].enable();
-            //                }
-            //            }
+            for (std::size_t i = 0; i < m_limit_switches.size(); ++i) {
+                if (GET_BIT_AT_INDEX(message.limit_switch_info.present, i) && GET_BIT_AT_INDEX(message.limit_switch_info.enabled, i)) {
+                    m_limit_switches[i].enable();
+                }
+            }
 
             m_state_after_config = config;
 
@@ -226,23 +228,15 @@ namespace mrover {
 
             update_relative_encoder();
 
-            if (!m_position) {
+            if (!m_uncalib_position) {
                 m_error = BDCMCErrorInfo::RECEIVING_PID_COMMANDS_WHEN_NO_READER_EXISTS;
                 return;
             }
 
             Radians target = message.position;
-            Radians input = m_position.value();
+            Radians input = m_uncalib_position.value();
             m_desired_output = mode.pidf.calculate(input, target);
             m_error = BDCMCErrorInfo::NO_ERROR;
-        }
-
-        auto process_command(EnableLimitSwitchesCommand const&) -> void {
-            // We are allowed to just enable all limit switches.
-            // The valid bit is kept track of separately.
-            for (auto& m_limit_switche: m_limit_switches) {
-                m_limit_switche.enable();
-            }
         }
 
         struct detail {
@@ -263,7 +257,7 @@ namespace mrover {
         };
 
         template<typename Command, typename T>
-        using command_to_mode_t = typename detail::template command_to_mode<Command, T>::type;
+        using command_to_mode_t = typename detail::command_to_mode<Command, T>::type;
 
     public:
         Controller() = default;
@@ -345,7 +339,12 @@ namespace mrover {
             ControllerDataState state{
                     // Encoding as NaN instead of an optional saves space in the message
                     // It also has a predictable memory layout
-                    .position = m_position.value_or(Radians{std::numeric_limits<float>::quiet_NaN()}),
+                    .position = [&] {
+                        if (m_uncalib_position && m_state_after_calib) {
+                            return m_uncalib_position.value() - m_state_after_calib->offset_position;
+                        }
+                        return Radians{std::numeric_limits<float>::quiet_NaN()};
+                    }(),
                     .velocity = m_velocity.value_or(RadiansPerSecond{std::numeric_limits<float>::quiet_NaN()}),
                     .config_calib_error_data = ConfigCalibErrorInfo{
                             .configured = m_state_after_config.has_value(),
@@ -397,23 +396,24 @@ namespace mrover {
         }
 
         auto update_absolute_encoder() -> void {
-            std::optional<EncoderReading> reading;
-
-            // Only read the encoder if we are configured
-            if (m_absolute_encoder) {
-                reading = m_absolute_encoder->read();
-            }
-
-            if (reading) {
-                auto const& [position, velocity] = reading.value();
-                if (m_state_after_calib) {
-                    m_position = position - m_state_after_calib->offset_position;
-                }
-                m_velocity = velocity;
-            } else {
-                m_position = std::nullopt;
-                m_velocity = std::nullopt;
-            }
+            // TODO: make this work
+            // std::optional<EncoderReading> reading;
+            //
+            // // Only read the encoder if we are configured
+            // if (m_absolute_encoder) {
+            //     reading = m_absolute_encoder->read();
+            // }
+            //
+            // if (reading) {
+            //     auto const& [position, velocity] = reading.value();
+            //     if (m_state_after_calib) {
+            //         m_uncalib_position = position - m_state_after_calib->offset_position;
+            //     }
+            //     m_velocity = velocity;
+            // } else {
+            //     m_uncalib_position = std::nullopt;
+            //     m_velocity = std::nullopt;
+            // }
         }
     };
 
