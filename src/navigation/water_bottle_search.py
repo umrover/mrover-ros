@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Optional
-
+import heapq
 import numpy as np
 import math 
 import rospy
@@ -21,6 +21,23 @@ from navigation.search import SearchTrajectory
 
 
 class WaterBottleSearchState(State):
+    class Node: 
+        def __init__(self, parent=None, position=None):
+            self.parent = parent
+            self.position = position
+
+            self.g = 0
+            self.h = 0
+            self.f = 0
+        def __eq__(self, other):
+            return self.position == other.position
+        # defining less than for purposes of heap queue
+        def __lt__(self, other):
+            return self.f < other.f
+        
+        # defining greater than for purposes of heap queue
+        def __gt__(self, other):
+            return self.f > other.f
     # Spiral
     traj: SearchTrajectory
     # when we are moving along the spiral
@@ -62,21 +79,6 @@ class WaterBottleSearchState(State):
         self.origin = self.center - [self.width/2, self.height/2]
         # Call A-STAR
 
-    
-    """
-    # TODO: A-STAR Algorithm: f(n) = g(n) + h(n)  
-    # def a_star():j
-    # start = rover pose (Cartesian)
-    # end = next point in the spiral
-    """
-    def a_star(self, costmap2d, start, end) -> list | None:
-        #Convert start and end to local cartesian coordinates 
-
-
-        #Do the check for high cost for the end point
-        
-        pass
-    
     """
     #Convert global(Real World) to i and j (Occupancy grid)
     cart_coord: These are the i and j coordinates 
@@ -100,6 +102,46 @@ class WaterBottleSearchState(State):
         resolution_conversion = [-real_coord * self.resolution]
         half_res = [self.resolution/2, -self.resolution/2]
         return self.origin - width_height + resolution_conversion + half_res
+    
+    """
+    # TODO: A-STAR Algorithm: f(n) = g(n) + h(n)  
+    # def a_star():j
+    # start = rover pose (Cartesian)
+    # end = next point in the spiral
+    """
+    def a_star(self, costmap2d, start: np.ndarray, end: np.ndarray) -> list | None:
+        #Convert start and end to local cartesian coordinates 
+        startij  = self.cartesian_convert(start) 
+        endij = self.cartesian_convert(end)
+        
+        #Do the check for high cost for the end point
+        if costmap2d[endij[0]][endij[1]] >= 100:
+            if not self.traj.increment_point(): 
+                end = self.traj.get_cur_pt
+            #TODO What do we do in this case where we don't have another point in da spiral
+            else: 
+                pass
+        
+        #Intialize nodes: 
+        start_node = self.Node(None, startij)
+        start_node.g = start_node.h = start_node.f = 0
+        end_node = self.Node(None, endij)
+        end_node.g = end_node.h = end_node.f = 0
+        
+        # Check if end node is within range, if it is, check cost. Return None for path so we can call astar with new incremented end goal
+        # if end_node.position[0] <= (len(self.width) - 1) and end_node.position[0] >= 0 and end_node.position[1] <= (self.height) and end_node.position[1] >= 0:
+        #     if costmap2d[end_node.position[0]][end_node.position[1]] == 100:
+        #         print("Target has high cost!")
+        #         return None
+        
+        # Initialize both open and closed list
+        open_list = []
+        closed_list = []
+
+        # Heapify the open_list and Add the start node
+        heapq.heapify(open_list) 
+        heapq.heappush(open_list, start_node)
+   
 
 
     def on_enter(self, context) -> None:
