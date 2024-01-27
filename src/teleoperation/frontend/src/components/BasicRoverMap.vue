@@ -170,9 +170,10 @@ export default {
         }
 
         // Update the rover marker using bearing angle
-        this.roverMarker.setRotationAngle(angle)
-
-        this.roverMarker.setLatLng(latLng)
+        if (this.roverMarker != null) {
+          this.roverMarker.setLatLng(latLng)
+          this.roverMarker.setRotationAngle(angle)
+        }
 
         // Update the rover path
         this.odomCount++

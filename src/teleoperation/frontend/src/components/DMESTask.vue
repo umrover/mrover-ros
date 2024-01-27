@@ -5,11 +5,11 @@
       <h1 v-else>DM GUI Dashboard</h1>
       <img class="logo" src="/mrover.png" alt="MRover" title="MRover" width="200" />
       <div class="help">
-        <img src="help.png" alt="Help" title="Help" width="48" height="48" />
+        <img src="/help.png" alt="Help" title="Help" width="48" height="48" />
       </div>
       <div class="helpscreen"></div>
       <div class="helpimages" style="display: flex; align-items: center; justify-content: space-evenly">
-        <img src="joystick.png" alt="Joystick" title="Joystick Controls"
+        <img src="/joystick.png" alt="Joystick" title="Joystick Controls"
           style="width: auto; height: 70%; display: inline-block" />
       </div>
     </div>

@@ -21,6 +21,8 @@ yarn.lock*
 yarn-error.log*
 bun.lock*
 package-lock.json*
+/src/teleoperation/backend/migrations
+db.sqlite3
 
 # Bag Files
 /bags/
