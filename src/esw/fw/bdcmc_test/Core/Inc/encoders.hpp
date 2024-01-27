@@ -15,9 +15,9 @@ namespace mrover {
     // Counts (ticks) per radian (NOT per rotation)
     using CountsPerRad = compound_unit<Ticks, inverse<Radians>>;
 
-    constexpr auto RELATIVE_CPR = CountsPerRad{4096 / tau};
+    constexpr auto RELATIVE_CPR = CountsPerRad{3355 / tau}; // Measured empirically
     constexpr auto ABSOLUTE_CPR = CountsPerRad{1024 / tau};
-    constexpr auto MIN_MEASURABLE_VELOCITY = RadiansPerSecond{0.10472}; // Very thoroughly obtained number - Quintin Approves
+    constexpr auto MIN_MEASURABLE_VELOCITY = RadiansPerSecond{0.05}; // Very thoroughly obtained number - Quintin Approves
     constexpr auto CLOCK_FREQ = Hertz{144000000};
 
     struct EncoderReading {
@@ -70,8 +70,8 @@ namespace mrover {
         auto update_vel() -> void;
 
     private:
-        TIM_HandleTypeDef* m_timer{};
-        TIM_HandleTypeDef* m_vel_timer{};
+        TIM_HandleTypeDef* m_position_timer{};
+        TIM_HandleTypeDef* m_velocity_timer{};
         std::int64_t m_counts_unwrapped_prev{};
         std::int64_t m_vel_counts_unwrapped_prev{};
         std::uint32_t m_counts_raw_now{};
