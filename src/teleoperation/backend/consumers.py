@@ -9,14 +9,24 @@ from channels.generic.websocket import JsonWebsocketConsumer
 import rospy
 import tf2_ros
 from geometry_msgs.msg import Twist
-from mrover.msg import PDLB, ControllerState, GPSWaypoint, WaypointType, LED, StateMachineStateUpdate, Throttle, CalibrationStatus
+from mrover.msg import (
+    PDLB,
+    ControllerState,
+    GPSWaypoint,
+    WaypointType,
+    LED,
+    StateMachineStateUpdate,
+    Throttle,
+    CalibrationStatus,
+)
 from mrover.srv import EnableAuton
 from sensor_msgs.msg import JointState, NavSatFix
 from std_msgs.msg import String, Bool
 from std_srvs.srv import SetBool, Trigger
 from util.SE3 import SE3
 
-from backend.models import Waypoint
+from backend.models import AutonWaypoint, BasicWaypoint
+
 
 # If below threshold, make output zero
 def deadzone(magnitude: float, threshold: float) -> float:
@@ -51,8 +61,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.joint_state_sub = rospy.Subscriber("/drive_joint_data", JointState, self.joint_state_callback)
         self.led_sub = rospy.Subscriber("/led", LED, self.led_callback)
         self.nav_state_sub = rospy.Subscriber("/nav_state", StateMachineStateUpdate, self.nav_state_callback)
-        self.imu_calibration = rospy.Subscriber('imu/calibration', CalibrationStatus, self.imu_calibration_callback)
-
+        self.imu_calibration = rospy.Subscriber("imu/calibration", CalibrationStatus, self.imu_calibration_callback)
 
         # Services
         self.laser_service = rospy.ServiceProxy("enable_mosfet_device", SetBool)
@@ -70,9 +79,6 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
         self.flight_thread = threading.Thread(target=self.flight_attitude_listener)
         self.flight_thread.start()
- 
-
-
 
     def disconnect(self, close_code):
         self.pdb_sub.unregister()
@@ -108,10 +114,14 @@ class GUIConsumer(JsonWebsocketConsumer):
                 self.auton_bearing()
             elif message["type"] == "mast_gimbal":
                 self.mast_gimbal(message)
-            elif message["type"] == "save_waypoint_list":
-                self.save_waypoint_list(message)
-            elif message["type"] == "get_waypoint_list":
-                self.get_waypoint_list(message)
+            elif message["type"] == "save_auton_waypoint_list":
+                self.save_auton_waypoint_list(message)
+            elif message["type"] == "get_auton_waypoint_list":
+                self.get_auton_waypoint_list(message)
+            elif message["type"] == "save_basic_waypoint_list":
+                self.save_basic_waypoint_list(message)
+            elif message["type"] == "get_basic_waypoint_list":
+                self.get_basic_waypoint_list(message)
         except Exception as e:
             rospy.logerr(e)
 
@@ -276,31 +286,44 @@ class GUIConsumer(JsonWebsocketConsumer):
         up_down_pwr = msg["throttles"][1] * pwr["up_down_pwr"]
         self.mast_gimbal_pub.publish(Throttle(["mast_gimbal_x", "mast_gimbal_y"], [rot_pwr, up_down_pwr]))
 
-    def save_waypoint_list(self, msg):
-        Waypoint.objects.all().delete()
+    def save_auton_waypoint_list(self, msg):
+        AutonWaypoint.objects.all().delete()
         waypoints = []
         for w in msg["data"]:
             waypoints.append(
-                Waypoint(tag_id=w["id"], type=w["type"], latitude=w["lat"], longitude=w["lon"], name=w["name"])
+                AutonWaypoint(tag_id=w["id"], type=w["type"], latitude=w["lat"], longitude=w["lon"], name=w["name"])
             )
-        Waypoint.objects.bulk_create(waypoints)
-        self.send(text_data=json.dumps({"type": "save_waypoint_list", "success": True}))
+        AutonWaypoint.objects.bulk_create(waypoints)
+        self.send(text_data=json.dumps({"type": "save_auton_waypoint_list", "success": True}))
         # Print out all of the waypoints
-        for w in Waypoint.objects.all():
+        for w in AutonWaypoint.objects.all():
             rospy.loginfo(str(w.name) + " " + str(w.latitude) + " " + str(w.longitude))
 
-    def get_waypoint_list(self, msg):
+    def get_auton_waypoint_list(self, msg):
         waypoints = []
-        for w in Waypoint.objects.all():
+        for w in AutonWaypoint.objects.all():
             waypoints.append({"name": w.name, "id": w.tag_id, "lat": w.latitude, "lon": w.longitude, "type": w.type})
-        self.send(text_data=json.dumps({"type": "get_waypoint_list", "data": waypoints}))
+        self.send(text_data=json.dumps({"type": "get_auton_waypoint_list", "data": waypoints}))
 
+    def save_basic_waypoint_list(self, msg):
+        BasicWaypoint.objects.all().delete()
+        waypoints = []
+        for w in msg["data"]:
+            waypoints.append(BasicWaypoint(drone=w["drone"], latitude=w["lat"], longitude=w["lon"], name=w["name"]))
+        BasicWaypoint.objects.bulk_create(waypoints)
+        self.send(text_data=json.dumps({"type": "save_basic_waypoint_list", "success": True}))
+        # Print out all of the waypoints
+        for w in BasicWaypoint.objects.all():
+            rospy.loginfo(str(w.name) + " " + str(w.latitude) + " " + str(w.longitude))
+
+    def get_basic_waypoint_list(self, msg):
+        waypoints = []
+        for w in BasicWaypoint.objects.all():
+            waypoints.append({"name": w.name, "drone": w.drone, "lat": w.latitude, "lon": w.longitude})
+        self.send(text_data=json.dumps({"type": "get_basic_waypoint_list", "data": waypoints}))
 
     def imu_calibration_callback(self, msg) -> None:
-        self.send(text_data=json.dumps({
-            'type': 'calibration_status',
-            'system_calibration': msg.system_calibration
-        }))
+        self.send(text_data=json.dumps({"type": "calibration_status", "system_calibration": msg.system_calibration}))
 
     def flight_attitude_listener(self):
         # threshold that must be exceeded to send JSON message
@@ -311,7 +334,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         while not rospy.is_shutdown():
             try:
                 tf_msg = SE3.from_tf_tree(self.tf_buffer, "map", "base_link")
-                
+
                 if tf_msg.is_approx(map_to_baselink, threshold):
                     rate.sleep()
                     continue
@@ -329,11 +352,6 @@ class GUIConsumer(JsonWebsocketConsumer):
             pitch = euler[0] * 180 / pi
             roll = euler[1] * 180 / pi
 
-            self.send(text_data=json.dumps({
-                'type': 'flight_attitude',
-                'pitch': pitch,
-                'roll': roll
-            }))
+            self.send(text_data=json.dumps({"type": "flight_attitude", "pitch": pitch, "roll": roll}))
 
             rate.sleep()
-

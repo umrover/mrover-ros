@@ -446,7 +446,7 @@ export default {
         }
         this.waitingForNavResponse = false
         this.autonButtonColor = this.autonEnabled ? 'btn-success' : 'btn-danger'
-      } else if (msg.type == 'get_waypoint_list') {
+      } else if (msg.type == 'get_auton_waypoint_list') {
         // Get waypoints from server on page load
         this.storedWaypoints = msg.data
         const waypoints = msg.data.map((waypoint: { lat: any; lon: any; name: any }) => {
@@ -466,7 +466,7 @@ export default {
           return { latLng: L.latLng(lat, lon), name: waypoint.name }
         })
         this.setWaypointList(waypoints)
-        this.sendMessage({ type: 'save_waypoint_list', data: newList })
+        this.sendMessage({ type: 'save_auton_waypoint_list', data: newList })
       },
       deep: true
     },
@@ -507,7 +507,7 @@ export default {
     }, 1000)
     window.setTimeout(() => {
       // Timeout so websocket will be initialized
-      this.sendMessage({ type: 'get_waypoint_list', data: null })
+      this.sendMessage({ type: 'get_auton_waypoint_list', data: null })
     }, 250)
   },
 
