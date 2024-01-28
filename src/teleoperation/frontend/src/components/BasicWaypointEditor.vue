@@ -272,7 +272,7 @@ export default {
 
 .waypoints {
   height: 30vh;
-  overflow-y: auto;;
+  overflow-y: auto;
 }
 
 .waypoint-headers {
