@@ -75,7 +75,7 @@ namespace mrover {
 
         //Define the engine file location relative to the mrover package
         std::filesystem::path packagePath = ros::package::getPath("mrover");
-        std::filesystem::path enginePath = packagePath / "data" / "tensorrt-engine-best.engine";
+        std::filesystem::path enginePath = packagePath / "data" / "tensorrt-engine-mallet_bottle_v2.engine";
 
         //Check if engine file exists
         if (exists(enginePath)) {

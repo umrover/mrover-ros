@@ -75,7 +75,7 @@ namespace mrover {
         float modelShapeHeight = 640;
 
         //Set model thresholds
-        float modelScoreThreshold = 0.70;
+        float modelScoreThreshold = 0.25;
         float modelNMSThreshold = 0.50;
 
         //Get x and y scale factors
