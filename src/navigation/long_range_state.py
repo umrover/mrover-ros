@@ -20,6 +20,8 @@ from state import approach_post
 import numpy as np
 import math
 
+DIST_AHEAD = get_rosparam("long_range/distance_ahead", 20)
+
 
 class LongRangeState(ApproachTargetBaseState):
     """
@@ -59,7 +61,7 @@ class LongRangeState(ApproachTargetBaseState):
         direction_to_tag = bearing_rotation_mat @ rover_direction[:2]
 
         direction_to_tag = normalize(direction_to_tag)
-        distance = 20  # TODO replace with rosparam
+        distance = DIST_AHEAD
         tag_position = rover_position + direction_to_tag * distance
         return tag_position
 

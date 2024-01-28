@@ -23,8 +23,11 @@ from navigation.drive import DriveController
 from std_msgs.msg import Time, Bool
 from util.SE3 import SE3
 from visualization_msgs.msg import Marker
+from util.ros_utils import get_rosparam
 
 TAG_EXPIRATION_TIME_SECONDS = 60
+
+TIME_THRESHOLD = get_rosparam("long_range/time_threshold", 5)
 
 REF_LAT = rospy.get_param("gps_linearization/reference_point_latitude")
 REF_LON = rospy.get_param("gps_linearization/reference_point_longitude")
@@ -148,7 +151,12 @@ class LongRangeTagStore:
                 self.__data[tag.id] = self.TagData(hit_count=1, tag=tag)
 
     def get(self, tag_id: int) -> Optional[LongRangeTag]:
-        if tag_id in self.__data and self.__data[tag_id].hit_count >= self.min_hits:
+        time_difference = rospy.get_time() - self.__data[tag_id].time
+        if (
+            tag_id in self.__data
+            and self.__data[tag_id].hit_count >= self.min_hits
+            and time_difference <= TIME_THRESHOLD
+        ):
             return self.__data[tag_id].tag
         else:
             return None
