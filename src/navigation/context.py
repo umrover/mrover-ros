@@ -72,7 +72,7 @@ class Environment:
     ctx: Context
     long_range_tags: LongRangeTagStore
     NO_FIDUCIAL: ClassVar[int] = -1
-    arrived_at_target: bool = None
+    arrived_at_target: bool = False
     last_target_location: Optional[np.ndarray] = None
 
     def get_target_pos(self, id: str, in_odom_frame: bool = True) -> Optional[np.ndarray]:
@@ -148,7 +148,7 @@ class LongRangeTagStore:
 
         for tag in tags:
             if tag.id not in self.__data:
-                self.__data[tag.id] = self.TagData(hit_count=1, tag=tag)
+                self.__data[tag.id] = self.TagData(hit_count=1, tag=tag, time=rospy.get_time())
 
     def get(self, tag_id: int) -> Optional[LongRangeTag]:
         time_difference = rospy.get_time() - self.__data[tag_id].time

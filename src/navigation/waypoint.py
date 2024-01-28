@@ -3,7 +3,7 @@ import tf2_ros
 from util.ros_utils import get_rosparam
 from util.state_lib.state import State
 
-from navigation import search, recovery, approach_post, post_backup, state, approach_object
+from navigation import search, recovery, approach_post, post_backup, state, approach_object, long_range
 
 
 class WaypointState(State):
@@ -39,7 +39,7 @@ class WaypointState(State):
             #     return approach_post.ApproachPostState()
             # if we see the tag in the long range camera, go to LongRangeState
             if context.env.long_range_tags.get(current_waypoint.tag_id) is not None:
-                return approach_post.LongRangeState()
+                return long_range.LongRangeState()
         elif context.course.look_for_object():
             if context.env.current_target_pos() is not None:
                 return approach_object.ApproachObjectState()

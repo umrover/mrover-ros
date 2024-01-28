@@ -10,7 +10,7 @@ from mrover.msg import GPSPointList, WaypointType
 from util.ros_utils import get_rosparam
 from util.state_lib.state import State
 
-from navigation import approach_post, approach_object, recovery, waypoint
+from navigation import approach_post, approach_object, recovery, waypoint, long_range
 from navigation.context import convert_cartesian_to_gps
 from navigation.trajectory import Trajectory
 
@@ -152,7 +152,7 @@ class SearchState(State):
             #     return approach_post.ApproachPostState()
             # if we see the tag in the long range camera, go to LongRangeState
             if context.env.long_range_tags.get(current_waypoint.tag_id) is not None:
-                return approach_post.LongRangeState()
+                return long_range.LongRangeState()
         else:
             if context.env.current_target_pos() is not None and context.course.look_for_object():
                 return approach_object.ApproachObjectState()  # if we see the object
