@@ -19,6 +19,7 @@ from util.SE3 import SE3
 
 DEFAULT_ARM_DEADZONE = 0.15
 
+
 # If below threshold, make output zero
 def deadzone(magnitude: float, threshold: float) -> float:
     temp_mag = abs(magnitude)
@@ -125,7 +126,6 @@ class GUIConsumer(JsonWebsocketConsumer):
         except Exception as e:
             rospy.logerr(e)
 
-
     def filter_xbox_axis(
         self,
         value: int,
@@ -147,22 +147,31 @@ class GUIConsumer(JsonWebsocketConsumer):
         Scales [-1,1] joystick input to min/max of each joint
         """
         if brushless:
-            return (self.brushless_motors[joint_name]["min_velocity"] 
-                    + (input+1) * (self.brushless_motors[joint_name]["max_velocity"] 
-                    - self.brushless_motors[joint_name]["min_velocity"]) / 2)
-        else: 
-            return (self.brushed_motors[joint_name]["min_velocity"] 
-                    + (input+1) * (self.brushed_motors[joint_name]["max_velocity"] 
-                    - self.brushed_motors[joint_name]["min_velocity"]) / 2)
+            return (
+                self.brushless_motors[joint_name]["min_velocity"]
+                + (input + 1)
+                * (
+                    self.brushless_motors[joint_name]["max_velocity"]
+                    - self.brushless_motors[joint_name]["min_velocity"]
+                )
+                / 2
+            )
+        else:
+            return (
+                self.brushed_motors[joint_name]["min_velocity"]
+                + (input + 1)
+                * (self.brushed_motors[joint_name]["max_velocity"] - self.brushed_motors[joint_name]["min_velocity"])
+                / 2
+            )
 
     def handle_arm_message(self, msg):
-        RA_NAMES = ["joint_a","joint_b","joint_c","joint_de_pitch","joint_de_yaw","allen_key","gripper"]
+        RA_NAMES = ["joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll", "allen_key", "gripper"]
         ra_slow_mode = False
         if msg["arm_mode"] == "ik":
             x = 1
         elif msg["arm_mode"] == "position":
             arm_position_cmd = Position(
-                names=RA_NAMES,
+                names=["joint_b", "joint_c", "joint_de_pitch", "joint_de_roll"],
                 positions=msg["positions"],
             )
             self.arm_position_cmd_pub.publish(arm_position_cmd)
@@ -171,11 +180,21 @@ class GUIConsumer(JsonWebsocketConsumer):
             arm_velocity_cmd = Velocity()
             arm_velocity_cmd.names = RA_NAMES
             arm_velocity_cmd.velocities = [
-                self.to_velocity(self.filter_xbox_axis(msg["axes"][self.ra_config["joint_a"]["xbox_index"]]), "joint_a") ,
-                self.to_velocity(self.filter_xbox_axis(msg["axes"][self.ra_config["joint_b"]["xbox_index"]]), "joint_b", False),
-                self.to_velocity(self.filter_xbox_axis(msg["axes"][self.ra_config["joint_c"]["xbox_index"]]), "joint_c"),
-                self.to_velocity(self.filter_xbox_axis(msg["axes"][self.ra_config["joint_de_0"]["xbox_index"]]), "joint_de_0"),
-                self.to_velocity(self.filter_xbox_axis(msg["axes"][self.ra_config["joint_de_1"]["xbox_index"]]), "joint_de_1"),
+                self.to_velocity(
+                    self.filter_xbox_axis(msg["axes"][self.ra_config["joint_a"]["xbox_index"]]), "joint_a"
+                ),
+                self.to_velocity(
+                    self.filter_xbox_axis(msg["axes"][self.ra_config["joint_b"]["xbox_index"]]), "joint_b", False
+                ),
+                self.to_velocity(
+                    self.filter_xbox_axis(msg["axes"][self.ra_config["joint_c"]["xbox_index"]]), "joint_c"
+                ),
+                self.to_velocity(
+                    self.filter_xbox_axis(msg["axes"][self.ra_config["joint_de_pitch"]["xbox_index"]]), "joint_de_0"
+                ),
+                self.to_velocity(
+                    self.filter_xbox_axis(msg["axes"][self.ra_config["joint_de_roll"]["xbox_index"]]), "joint_de_1"
+                ),
                 self.ra_config["allen_key"]["multiplier"] * self.filter_xbox_button(msg["buttons"], "y", "a"),
                 self.ra_config["gripper"]["multiplier"] * self.filter_xbox_button(msg["buttons"], "b", "x"),
             ]
@@ -191,12 +210,17 @@ class GUIConsumer(JsonWebsocketConsumer):
             elif d_pad_x < -0.5:
                 ra_slow_mode = False
 
-            arm_throttle_cmd.throttles = [self.ra_config[name]["multiplier"] 
-                                               * self.filter_xbox_axis(msg["axes"][info["xbox_index"]]) for name, info in self.ra_config.items() if name.startswith("joint")]
-            arm_throttle_cmd.throttles.extend([
-                self.ra_config["allen_key"]["multiplier"] * self.filter_xbox_button(msg["buttons"], "y", "a"),
-                self.ra_config["gripper"]["multiplier"] * self.filter_xbox_button(msg["buttons"], "b", "x"),
-            ])
+            arm_throttle_cmd.throttles = [
+                self.ra_config[name]["multiplier"] * self.filter_xbox_axis(msg["axes"][info["xbox_index"]])
+                for name, info in self.ra_config.items()
+                if name.startswith("joint")
+            ]
+            arm_throttle_cmd.throttles.extend(
+                [
+                    self.ra_config["allen_key"]["multiplier"] * self.filter_xbox_button(msg["buttons"], "y", "a"),
+                    self.ra_config["gripper"]["multiplier"] * self.filter_xbox_button(msg["buttons"], "b", "x"),
+                ]
+            )
 
             for i, name in enumerate(RA_NAMES):
                 if ra_slow_mode:
@@ -205,7 +229,6 @@ class GUIConsumer(JsonWebsocketConsumer):
                     arm_throttle_cmd.throttles[i] *= -1
 
             self.arm_throttle_cmd_pub.publish(arm_throttle_cmd)
-
 
     def handle_joystick_message(self, msg):
         # Tiny deadzone so we can safely e-stop with dampen switch

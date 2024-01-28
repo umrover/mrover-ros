@@ -22,7 +22,7 @@ teleop:
       slow_mode_multiplier: 1
       invert: False
       xbox_index: 3
-    joint_de_yaw:
+    joint_de_roll:
       multiplier: 1
       slow_mode_multiplier: 1
       invert: False
@@ -35,7 +35,7 @@ teleop:
       multiplier: 1
       slow_mode_multiplier: 1
       invert: False
-      
+
   sa_controls:
     sa_joint_1:
       multiplier: 1
@@ -52,7 +52,7 @@ teleop:
     microscope:
       multiplier: 1
       slow_mode_multiplier: 0.5
-  
+
   drive_controls:
     forward_back:
       multiplier: 1
@@ -62,7 +62,6 @@ teleop:
       multiplier: 1
     twist:
       multiplier: 0.7
-    
 
   xbox_mappings:
     left_js_x: 0
@@ -79,7 +78,7 @@ teleop:
     b: 1
     x: 2
     y: 3
-  
+
   joystick_mappings:
     left_right: 1
     forward_back: 0

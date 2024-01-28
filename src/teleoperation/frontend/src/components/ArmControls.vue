@@ -25,16 +25,17 @@
                 <input v-model="arm_mode" class="form-check-input" type="radio" id="thr" value="throttle" />
                 <label class="form-check-label" for="thr">Throttle</label>
             </div>
-           
+
         </div>
-        <div class ="controls-flex" v-if="arm_mode ==='position'"> 
+        <div class="controls-flex" v-if="arm_mode === 'position'">
             <div class="row">
                 <div class="col" v-for="(joint, key) in temp_positions" :key="key">
                     <label>{{ key }}</label>
-                    <input class="form-control" type="number" :min="joint.min" :max="joint.max" @input="validateInput(joint, $event)" v-model="joint.value" >
+                    <input class="form-control" type="number" :min="joint.min" :max="joint.max"
+                        @input="validateInput(joint, $event)" v-model="joint.value">
                 </div>
             </div>
-            <button class="btn btn-primary mx-auto my-2" @click="submit_positions">Submit</button> 
+            <button class="btn btn-primary mx-auto my-2" @click="submit_positions">Submit</button>
         </div>
         <div class="controls-flex">
             <h4>Misc. Controls</h4>
@@ -47,13 +48,13 @@
         </div>
         <div class="controls-flex">
             <h4>Calibration</h4>
-            <CalibrationCheckbox name="All Joints Calibration"/>
+            <CalibrationCheckbox name="All Joints Calibration" />
             <JointAdjust v-if="arm_mode == 'position'" :options="[
                 { name: 'joint_a', option: 'Joint A' },
                 { name: 'joint_b', option: 'Joint B' },
                 { name: 'joint_c', option: 'Joint C' },
                 { name: 'joint_de_pitch', option: 'Joint DE Pitch' },
-                { name: 'joint_de_yaw', option: 'Joint DE Yaw' }
+                { name: 'joint_de_roll', option: 'Joint DE Yaw' }
             ]" />
         </div>
     </div>
@@ -84,36 +85,28 @@ export default defineComponent({
             arm_mode: "arm_disabled",
             joints_array: [false, false, false, false, false, false],
             laser_enabled: false,
-            /* Positions in degrees! */
-            temp_positions:{
-                joint_a: {
-                    value: 0,
-                    min: 0,
-                    max: 1
-                }, joint_b: {
+            temp_positions: {
+                /* Positions in degrees! */
+                /* Joint A, allen_key and gripper don't need positioning */
+                joint_b: {
                     value: 0,
                     min: 0,
                     max: 45
-                }, joint_c: {
+                }, 
+                joint_c: {
                     value: 0,
                     min: -120,
                     max: 100
-                }, joint_de_pitch: {
+                }, 
+                joint_de_pitch: {
                     value: 0,
                     min: -135,
                     max: 135
-                }, joint_de_yaw: {
+                }, 
+                joint_de_roll: {
                     value: 0,
                     min: -135,
                     max: 135
-                }, allen_key: {
-                    value: 0,
-                    min: 0,
-                    max: 1
-                }, gripper: {
-                    value: 0,
-                    min: 0,
-                    max: 1
                 }
             },
             positions: []
@@ -123,7 +116,7 @@ export default defineComponent({
     created: function () {
         this.websocket.onmessage = (event) => {
             const msg = JSON.parse(event.data);
-            if(msg.type=="laser_service"){
+            if (msg.type == "laser_service") {
                 if (!msg.result) {
                     this.laser_enabled = !this.laser_enabled;
                     alert("Toggling Arm Laser failed.");
@@ -131,7 +124,7 @@ export default defineComponent({
             }
         };
         interval = window.setInterval(() => {
-            
+
             const gamepads = navigator.getGamepads();
             for (let i = 0; i < 4; i++) {
                 const gamepad = gamepads[i];
@@ -146,18 +139,18 @@ export default defineComponent({
                         let buttons = gamepad.buttons.map((button) => {
                             return button.value;
                         });
-               
+
                         this.publishJoystickMessage(gamepad.axes, buttons, this.arm_mode, this.positions);
                     }
                 }
             }
-        }, updateRate * 1000); 
+        }, updateRate * 1000);
     },
 
     methods: {
         ...mapActions('websocket', ['sendMessage']),
 
-        validateInput: function(joint, event) {
+        validateInput: function (joint, event) {
             if (event.target.value < joint.min) {
                 event.target.value = joint.min;
             }
@@ -167,20 +160,20 @@ export default defineComponent({
             joint.value = event.target.value;
         },
 
-        publishJoystickMessage: function (axes: any, buttons: any, arm_mode: any, positions:any) {
+        publishJoystickMessage: function (axes: any, buttons: any, arm_mode: any, positions: any) {
             if (arm_mode != "arm_disabled") {
-                this.sendMessage({type:"arm_values", axes: axes, buttons: buttons, arm_mode: arm_mode, positions: positions})
+                this.sendMessage({ type: "arm_values", axes: axes, buttons: buttons, arm_mode: arm_mode, positions: positions })
             }
         },
         toggleArmLaser: function () {
             this.laser_enabled = !this.laser_enabled;
-            this.sendMessage({type:"laser_service", data:this.laser_enabled})
-            
-         },
+            this.sendMessage({ type: "laser_service", data: this.laser_enabled })
 
-        submit_positions: function (){
+        },
+
+        submit_positions: function () {
             //converts to radians
-            this.positions = Object.values(this.temp_positions).map(obj => Number(obj.value)*Math.PI/180);
+            this.positions = Object.values(this.temp_positions).map(obj => Number(obj.value) * Math.PI / 180);
         }
 
     }
@@ -232,4 +225,4 @@ export default defineComponent({
 .position-box {
     width: 50px;
 }
-  </style>
+</style>
