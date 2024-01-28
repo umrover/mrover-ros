@@ -45,6 +45,12 @@ namespace mrover {
         mConfigCommand.max_forward_pos = Radians{xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "max_forward_pos", 0.0)};
         mConfigCommand.max_backward_pos = Radians{xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "max_backward_pos", 0.0)};
 
+        mMinVelocity = RadiansPerSecond{xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "min_velocity", -1.0)};
+        mMaxVelocity = RadiansPerSecond{xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "max_velocity", 1.0)};
+
+        mMinPosition = Radians{xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "min_position", -1.0)};
+        mMaxPosition = Radians{xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "max_position", 1.0)};
+
         mErrorState = "Unknown";
         mState = "Unknown";
     }

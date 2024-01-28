@@ -80,26 +80,28 @@ namespace mrover {
             TimeUnit now = current_ticks / tick_frequency;
             TimeUnit dt = now - m_last_time;
             m_last_time = now;
-            return calculate(input, target, now);
+            // TODO(quintin): need a timer for this...
+            dt = TimeUnit{0.01};
+            return calculate(input, target, dt);
         }
 
         auto with_p(double p) -> PIDF& {
-            m_p = p;
+            m_p = decltype(m_p){p};
             return *this;
         }
 
         auto with_i(double i) -> PIDF& {
-            m_i = i;
+            m_i = decltype(m_i){i};
             return *this;
         }
 
         auto with_d(double d) -> PIDF& {
-            m_d = d;
+            m_d = decltype(m_d){d};
             return *this;
         }
 
         auto with_f(double f) -> PIDF& {
-            m_f = f;
+            m_f = decltype(m_f){f};
             return *this;
         }
 
@@ -113,7 +115,7 @@ namespace mrover {
             return *this;
         }
 
-        auto with_output_bound(double min, double max) -> PIDF& {
+        auto with_output_bound(OutputUnit min, OutputUnit max) -> PIDF& {
             m_output_bound = {min, max};
             return *this;
         }

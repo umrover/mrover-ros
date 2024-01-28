@@ -12,15 +12,11 @@ namespace mrover {
         mNh.getParam(std::format("brushless_motors/controllers/{}", mControllerName), brushlessMotorData);
         assert(brushlessMotorData.getType() == XmlRpc::XmlRpcValue::TypeStruct);
 
-        mMinVelocity = RadiansPerSecond{xmlRpcValueToTypeOrDefault<double>(
-                brushlessMotorData, "min_velocity", -1.0)};
-        mMaxVelocity = RadiansPerSecond{xmlRpcValueToTypeOrDefault<double>(
-                brushlessMotorData, "max_velocity", 1.0)};
+        mMinVelocity = RadiansPerSecond{xmlRpcValueToTypeOrDefault<double>(brushlessMotorData, "min_velocity", -1.0)};
+        mMaxVelocity = RadiansPerSecond{xmlRpcValueToTypeOrDefault<double>(brushlessMotorData, "max_velocity", 1.0)};
 
-        mMinPosition = Radians{xmlRpcValueToTypeOrDefault<double>(
-                brushlessMotorData, "min_position", -1.0)};
-        mMaxPosition = Radians{xmlRpcValueToTypeOrDefault<double>(
-                brushlessMotorData, "max_position", 1.0)};
+        mMinPosition = Radians{xmlRpcValueToTypeOrDefault<double>(brushlessMotorData, "min_position", -1.0)};
+        mMaxPosition = Radians{xmlRpcValueToTypeOrDefault<double>(brushlessMotorData, "max_position", 1.0)};
     }
 
     void BrushlessController::setDesiredThrottle(Percent throttle) {

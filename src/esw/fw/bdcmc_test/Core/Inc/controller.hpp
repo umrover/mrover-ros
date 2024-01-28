@@ -213,6 +213,8 @@ namespace mrover {
 
             RadiansPerSecond target = message.velocity;
             RadiansPerSecond input = m_velocity.value();
+            mode.pidf.with_p(1.2);
+            mode.pidf.with_output_bound(-1.0, 1.0);
             m_desired_output = mode.pidf.calculate(input, target);
             m_error = BDCMCErrorInfo::NO_ERROR;
         }
@@ -235,7 +237,9 @@ namespace mrover {
             }
 
             Radians target = message.position;
-            Radians input = m_uncalib_position.value();
+            Radians input = m_uncalib_position.value() - m_state_after_calib->offset_position;
+            mode.pidf.with_p(1.2);
+            mode.pidf.with_output_bound(-1.0, 1.0);
             m_desired_output = mode.pidf.calculate(input, target);
             m_error = BDCMCErrorInfo::NO_ERROR;
         }
