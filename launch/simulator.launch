@@ -1,37 +1,16 @@
-<!-- 
-    This launch file launches the Gazebo simulator and spawns a model of the rover inside it.
-
-    :arg gui: true/false value deciding whether or not the Gazebo gui is launched
-    :arg gazebo_config_path: path to the Gazebo config containing Gazebo environment and world description
- -->
 <launch>
-  <arg name="gui" default="true"/>
-  <arg name="gazebo_config_path" default="$(find mrover)/config/gazebo"/>
-  <arg name="world_name" default="world"/>
+    <rosparam command="load" file="$(find mrover)/config/simulator/simulator.yaml" />
 
-  <include file="$(find gazebo_ros)/launch/empty_world.launch">
-    <env name="GAZEBO_MODEL_PATH" value="$(arg gazebo_config_path)/env_description"/>
-    <arg name="world_name" value="$(arg gazebo_config_path)/env_description/$(arg world_name).world"/>
-    <arg name="paused" value="false"/>
-    <arg name="use_sim_time" value="true"/>
-    <arg name="gui" value="$(arg gui)"/>
+    <include file="$(find mrover)/launch/autonomy.launch">
+        <arg name="sim" value="true" />
+        <arg name="ekf_start_delay" value="1" />
+    </include>
 
-    <!-- run gazebo server in debug mode -->
-    <arg name="debug" value="false"/>
-    <arg name="verbose" default="false"/>
+    <node pkg="nodelet" type="nodelet" name="nodelet_manager" required="true"
+        args="manager" output="screen" />
 
-    <!-- if the gazebo GUI or server closes or dies, the whole launch file will die -->
-    <arg name="server_required" value="true"/>
-    <arg name="gui_required" value="true"/>
-  </include>
+    <node pkg="nodelet" type="nodelet" name="simulator_nodelet"
+        args="load mrover/SimulatorNodelet nodelet_manager" output="screen" />
 
-  <!-- merge imu & mag msgs from gazebo into one -->
-  <node name="imu_packager" pkg="mrover" type="sim_imu_driver.py"/>
-
-  <!-- spawn the rover model in gazebo, requires robot_description rosparam to be set -->
-  <node name="spawn_model" pkg="gazebo_ros" type="spawn_model" output="screen"
-        args="-urdf -param robot_description -model rover"/>
-
-  <!-- publish the state of each joint as a JointState message -->
-  <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher"/>
+    <node name="arm_controller" pkg="mrover" type="arm_controller" output="screen" />
 </launch>

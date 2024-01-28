@@ -26,6 +26,7 @@ single_fiducial:
   stop_thresh: 1.0
   fiducial_stop_threshold: 1.75
   post_avoidance_multiplier: 1.42
+  post_radius: 0.7
 
 waypoint:
   stop_thresh: 0.5

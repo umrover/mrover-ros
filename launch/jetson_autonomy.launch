@@ -1,0 +1,6 @@
+<launch>
+    <include file="$(find mrover)/launch/jetson_base.launch" />
+    <include file="$(find mrover)/launch/esw_autonomy.launch" />
+    <include file="$(find mrover)/launch/zed.launch" />
+    <include file="$(find mrover)/launch/autonomy.launch" />
+</launch>

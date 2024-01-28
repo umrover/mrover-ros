@@ -1,0 +1,7 @@
+---
+- hosts: all
+  vars:
+    ros_distro: noetic
+    ubuntu_release: focal
+  roles:
+    - esw

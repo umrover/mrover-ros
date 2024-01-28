@@ -1,0 +1,6 @@
+<launch>
+    <rosparam command="load" file="$(find mrover)/config/esw.yaml" />
+
+    <node name="led" pkg="mrover" type="led" />
+    <node name="led_hw_bridge" pkg="mrover" type="led_hw_bridge" />
+</launch>
