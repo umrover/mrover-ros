@@ -27,21 +27,17 @@ for x, y, z, w, time in zip(lin_pose_x,lin_pose_y,lin_pose_z, lin_pose_w, time):
 
     rec_yaw.append(yaw)
     rec_time.append(time)
-    print(yaw, time)
 
+for i in range(1, len(rec_time)):
+    rec_time[i] = rec_time[i] - rec_time[0]
 
-# rec_time = rec_time[20:]
-# rec_yaw = rec_yaw[20:]
-
-# for i in range(len(rec_time)):
-#     rec_time[i] = rec_time[i] - rec_time[0]
-
+rec_time[0] = 0
 
 plt.figure(figsize=(10, 10))
 plt.plot(rec_time, rec_yaw, color='red', label='right')
 plt.xlabel('time (s)')
 plt.ylabel('yaw (rad)')
-plt.title('yaw vs time')
+plt.title('yaw vs time rtk')
 plt.legend()
 plt.savefig("rtk_plot.png")
 plt.show()

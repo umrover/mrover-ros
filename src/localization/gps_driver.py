@@ -72,7 +72,9 @@ class GPS_Driver:
             parsed_latitude = msg.lat
             parsed_longitude = msg.lon
             parsed_altitude = msg.hMSL
-            message_header = Header(stamp=rospy.Time.now(), frame_id="base_link")
+            time = msg.nano
+
+            message_header = Header(stamp=rospy.Time(nsecs=time), frame_id="base_link")
 
             self.gps_pub.publish(
                 NavSatFix(
