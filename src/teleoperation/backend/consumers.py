@@ -44,6 +44,9 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.arm_throttle_cmd_pub = rospy.Publisher("arm_throttle_cmd", Throttle, queue_size=1)
         self.arm_velocity_cmd_pub = rospy.Publisher("arm_velocity_cmd", Velocity, queue_size=1)
         self.arm_position_cmd_pub = rospy.Publisher("arm_position_cmd", Position, queue_size=1)
+        self.sa_throttle_cmd_pub = rospy.Publisher("sa_throttle_cmd", Throttle, queue_size=1)
+        self.sa_velocity_cmd_pub = rospy.Publisher("sa_velocity_cmd", Velocity, queue_size=1)
+        self.sa_position_cmd_pub = rospy.Publisher("sa_position_cmd", Position, queue_size=1)
 
         # Subscribers
         self.pdb_sub = rospy.Subscriber("/pdb_data", PDLB, self.pdb_callback)
@@ -114,6 +117,8 @@ class GUIConsumer(JsonWebsocketConsumer):
                 self.handle_joystick_message(message)
             elif message["type"] == "arm_values":
                 self.handle_arm_message(message)
+            elif message["type"] == "sa_arm_values":
+                self.handle_sa_arm_message(message)
             elif message["type"] == "auton_command":
                 self.send_auton_command(message)
             elif message["type"] == "teleop_enabled":
@@ -154,6 +159,52 @@ class GUIConsumer(JsonWebsocketConsumer):
             return (self.brushed_motors[joint_name]["min_velocity"] 
                     + (input+1) * (self.brushed_motors[joint_name]["max_velocity"] 
                     - self.brushed_motors[joint_name]["min_velocity"]) / 2)
+        
+    def handle_sa_arm_message(self,msg):
+        SA_NAMES = ["sa_x","sa_y","sa_z","scoop","sensor_actuator"]
+        raw_left_trigger = msg.axes[self.xbox_mappings["left_trigger"]]
+        left_trigger = raw_left_trigger if raw_left_trigger > 0 else 0
+        raw_right_trigger = msg.axes[self.xbox_mappings["right_trigger"]]
+        right_trigger = raw_right_trigger if raw_right_trigger > 0 else 0
+        if msg["arm_mode"] == "position":
+            sa_position_cmd = Position(
+                names=SA_NAMES,
+                positions=msg["positions"],
+            )
+            self.sa_position_cmd_pub.publish(sa_position_cmd)
+
+        elif msg["arm_mode"] == "velocity":
+            sa_velocity_cmd = Velocity()
+            sa_velocity_cmd.names = SA_NAMES
+            sa_velocity_cmd.velocities = [
+                self.to_velocity(self.filter_xbox_axis(msg["axes"][self.sa_config["sa_x"]["xbox_index"]]), "sa_a") ,
+                self.to_velocity(self.filter_xbox_axis(msg["axes"][self.sa_config["sa_y"]["xbox_index"]]), "sa_y", False),
+                self.to_velocity(self.filter_xbox_axis(msg["axes"][self.sa_config["sa_z"]["xbox_index"]]), "sa_z"),
+                self.sa_config["scoop"]["multiplier"] * (right_trigger-left_trigger),
+                self.sa_config["sensor_actuator"]["multiplier"] *  self.filter_xbox_button(msg["buttons"], "right_bumper", "left_bumper"),
+            ]
+
+            self.sa_velocity_cmd_pub.publish(sa_velocity_cmd)
+
+        elif msg["arm_mode"] == "throttle":
+            sa_throttle_cmd = Throttle()
+            sa_throttle_cmd.names = SA_NAMES
+
+            sa_throttle_cmd.throttles = [self.sa_config[name]["multiplier"] 
+                                               * self.filter_xbox_axis(msg["axes"][info["xbox_index"]],0.15,True) for name, info in self.sa_config.items() if name.startswith("sa")]
+            sa_throttle_cmd.throttles.extend([
+                self.sa_config["scoop"]["multiplier"] * (right_trigger-left_trigger),
+                self.sa_config["sensor_actuator"]["multiplier"] *  self.filter_xbox_button(msg["buttons"], "right_bumper", "left_bumper"),
+            ])
+
+            fast_mode_activated = msg["buttons"][self.xbox_mappings["a"]] or msg["buttons"][self.xbox_mappings["b"]]
+            if not fast_mode_activated:
+                for i, name in enumerate(SA_NAMES):
+                    # When going up (vel > 0) with SA joint 2, we DON'T want slow mode.
+                    if not (name == "sa_y" and sa_throttle_cmd.throttles[i] > 0):
+                        sa_throttle_cmd.throttles[i] *= self.sa_config[name]["slow_mode_multiplier"]
+
+            self.sa_throttle_cmd_pub.publish(sa_throttle_cmd)
 
     def handle_arm_message(self, msg):
         RA_NAMES = ["joint_a","joint_b","joint_c","joint_de_pitch","joint_de_yaw","allen_key","gripper"]

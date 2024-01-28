@@ -78,6 +78,9 @@
       <div class="shadow p-3 rounded odom">
         <OdometryReading :odom="odom"></OdometryReading>
       </div>
+      <div>
+        <SAArmControls></SAArmControls>
+      </div>
     </div>
   </template>
   
@@ -97,6 +100,7 @@
 //   import MCUReset from "./MCUReset.vue";
   import MotorAdjust from "./MotorAdjust.vue";
   import OdometryReading from "./OdometryReading.vue";
+  import SAArmControls from "./SAArmControls.vue"
   import { disableAutonLED, quaternionToMapAngle } from "../utils.js";
   
   export default {
@@ -109,7 +113,7 @@
       MastGimbalControls,
       DriveMoteusStateTable,
       PDBFuse,
-    //   SAArmControls,
+      SAArmControls,
       LimitSwitch,
       CalibrationCheckbox,
     //   CommReadout,
