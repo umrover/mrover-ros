@@ -43,7 +43,7 @@ namespace mrover {
             return HAL_GPIO_ReadPin(m_port, m_pin);
         }
 
-        inline auto write(GPIO_PinState val) const -> void {
+        auto write(GPIO_PinState val) const -> void {
             HAL_GPIO_WritePin(m_port, m_pin, val);
         }
 

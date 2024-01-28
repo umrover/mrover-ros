@@ -8,6 +8,8 @@
 #include <hardware_i2c.hpp>
 #include <units/units.hpp>
 
+#include "filtering.hpp"
+
 namespace mrover {
 
     constexpr auto tau = 2 * std::numbers::pi_v<float>;
@@ -78,10 +80,10 @@ namespace mrover {
         std::uint32_t m_ticks_prev{};
         std::uint32_t m_ticks_now{};
         Ratio m_multiplier;
-        Seconds dt;
+        Seconds m_velocity_dt;
 
         Radians m_position;
-        RadiansPerSecond m_velocity;
+        MeanMedianFilter<RadiansPerSecond, 17> m_velocity_filter;
     };
 
 } // namespace mrover

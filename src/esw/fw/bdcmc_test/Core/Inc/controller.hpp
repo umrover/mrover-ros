@@ -71,7 +71,7 @@ namespace mrover {
         OutBoundMessage m_outbound = ControllerDataState{.config_calib_error_data = {.error = m_error}};
 
         /**
-         * \brief Updates \link m_uncalib_position and \link m_velocity based on the hardware
+         * \brief Updates \link m_uncalib_position \endlink and \link m_velocity \endlink based on the hardware
          */
         auto update_relative_encoder() -> void {
             std::optional<EncoderReading> reading;
@@ -267,9 +267,9 @@ namespace mrover {
     public:
         Controller() = default;
 
-        Controller(TIM_HandleTypeDef* hbridge_output, Pin hbridge_forward_pin, Pin hbridge_backward_pin, FDCAN<InBoundMessage> const& fdcan, TIM_HandleTypeDef* watchdog_timer, TIM_HandleTypeDef* quadrature_encoder_timer, TIM_HandleTypeDef* quadrature_encoder_vel_timer, I2C_HandleTypeDef* absolute_encoder_i2c, std::array<LimitSwitch, 4> const& limit_switches)
-            : m_motor_driver{HBridge(hbridge_output, hbridge_forward_pin, hbridge_backward_pin)},
-              m_fdcan{fdcan},
+        Controller(TIM_HandleTypeDef* hbridge_output, Pin const hbridge_forward_pin, Pin const hbridge_backward_pin, FDCAN<InBoundMessage> const& fdcan, TIM_HandleTypeDef* watchdog_timer, TIM_HandleTypeDef* quadrature_encoder_timer, TIM_HandleTypeDef* quadrature_encoder_vel_timer, I2C_HandleTypeDef* absolute_encoder_i2c, std::array<LimitSwitch, 4> const& limit_switches)
+            : m_fdcan{fdcan},
+              m_motor_driver{HBridge(hbridge_output, hbridge_forward_pin, hbridge_backward_pin)},
               m_watchdog_timer{watchdog_timer},
               m_quadrature_encoder_timer{quadrature_encoder_timer},
               m_quadrature_encoder_vel_timer{quadrature_encoder_vel_timer},
@@ -292,7 +292,7 @@ namespace mrover {
         }
 
         /**
-         * \brief           Called from the FDCAN interrupt handler when a new message is received, updating \link m_inbound and processing it.
+         * \brief           Called from the FDCAN interrupt handler when a new message is received, updating \link m_inbound \endlink and processing it.
          * \param message   Command message to process.
          *
          * \note            This resets the message watchdog timer.
@@ -310,7 +310,7 @@ namespace mrover {
         }
 
         /**
-         * \brief Update all non-blocking readings, process the current command stored in \link m_inbound, update \link m_outbound, and drive the motor.
+         * \brief Update all non-blocking readings, process the current command stored in \link m_inbound \endlink, update \link m_outbound \endlink, and drive the motor.
          *
          * \note Reading the limit switches and encoders is non-blocking since they are memory-mapped.
          */
@@ -348,7 +348,7 @@ namespace mrover {
         /**
          * \brief Serialize our internal state into an outbound status message
          *
-         * \note This does not actually send the message it just updates it. We want to send at a lower rate in \link send()
+         * \note This does not actually send the message it just updates it. We want to send at a lower rate in \link send() \endlink
          */
         auto update_outbound() -> void {
             ControllerDataState state{

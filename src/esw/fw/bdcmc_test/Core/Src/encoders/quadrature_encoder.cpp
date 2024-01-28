@@ -4,16 +4,16 @@
 
 #include <units/units.hpp>
 
-namespace mrover { 
+namespace mrover {
 
     QuadratureEncoderReader::QuadratureEncoderReader(TIM_HandleTypeDef* timer, Ratio multiplier, TIM_HandleTypeDef* vel_timer)
         : m_position_timer{timer}, m_velocity_timer{vel_timer}, m_multiplier{multiplier} {
 
         // Per Sashreek's hypothesis in `Motor velocity calc.pdf` #esw-brushed-24
         compound_unit<Ticks, inverse<Seconds>> min_measurable_velocity = MIN_MEASURABLE_VELOCITY * RELATIVE_CPR;
-        dt = Seconds{1 / min_measurable_velocity.get()};
+        m_velocity_dt = Seconds{1 / min_measurable_velocity.get()};
 
-        auto psc = static_cast<std::uint32_t>((CLOCK_FREQ * dt).get() / static_cast<float>(m_velocity_timer->Instance->ARR + 1) - 1);
+        auto psc = static_cast<std::uint32_t>((CLOCK_FREQ * m_velocity_dt).get() / static_cast<float>(m_velocity_timer->Instance->ARR + 1) - 1);
         m_velocity_timer->Instance->PSC = psc;
 
         m_counts_unwrapped_prev = __HAL_TIM_GetCounter(m_position_timer);
@@ -45,13 +45,14 @@ namespace mrover {
     [[nodiscard]] auto QuadratureEncoderReader::read() -> std::optional<EncoderReading> {
         std::int64_t delta_ticks = count_delta(m_counts_unwrapped_prev, m_position_timer);
         m_position += m_multiplier * Ticks{delta_ticks} / RELATIVE_CPR;
-        return EncoderReading{m_position, m_velocity};
+        return EncoderReading{m_position, m_velocity_filter.get_filtered()};
     }
 
     auto QuadratureEncoderReader::update_vel() -> void {
         std::int64_t delta_ticks = count_delta(m_vel_counts_unwrapped_prev, m_position_timer);
         Radians delta_angle = m_multiplier * Ticks{delta_ticks} / RELATIVE_CPR;
-        m_velocity = delta_angle / dt;
+        RadiansPerSecond velocity = delta_angle / m_velocity_dt;
+        m_velocity_filter.add_reading(velocity);
     }
 
 
