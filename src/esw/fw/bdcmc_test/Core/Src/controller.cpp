@@ -7,18 +7,10 @@
 
 #include "main.h"
 
-// Flag for testing
-#define TESTING true
-
-// TODO: enable the watchdog and feed it in the htim6 update loop. make sure when the interrupt fires we disable PWN output. you will probably have to make the interrupt definition
-// TODO: add another timer for absolute encoder? another solution is starting a transaction in the 10,000 Hz update loop if we are done with the previous transaction
-
 extern FDCAN_HandleTypeDef hfdcan1;
 
 extern I2C_HandleTypeDef hi2c1;
 #define ABSOLUTE_I2C &hi2c1
-
-// extern WWDG_HandleTypeDef hwwdg;
 
 /**
  * For each timer, the update rate is determined by the .ioc file.
@@ -29,23 +21,23 @@ extern I2C_HandleTypeDef hi2c1;
  * You must also set auto reload to true so the interurpt gets called on a cycle.
  */
 
-extern TIM_HandleTypeDef htim2;  // Absolute encoder timer (currently at 20Hz)
-extern TIM_HandleTypeDef htim4;  // Quadrature encoder #1
-extern TIM_HandleTypeDef htim3;  // Quadrature encoder #2
-extern TIM_HandleTypeDef htim6;  // 10,000 Hz Update timer
-extern TIM_HandleTypeDef htim7;  // 100 Hz Send timer
-extern TIM_HandleTypeDef htim15; // H-Bridge PWM
-extern TIM_HandleTypeDef htim16; // Message watchdog timer
-extern TIM_HandleTypeDef htim17; // Quadrature velocity timer (external)
+extern TIM_HandleTypeDef htim2;
+extern TIM_HandleTypeDef htim4;
+extern TIM_HandleTypeDef htim3;
+extern TIM_HandleTypeDef htim6;
+extern TIM_HandleTypeDef htim7;
+extern TIM_HandleTypeDef htim15;
+extern TIM_HandleTypeDef htim16;
+extern TIM_HandleTypeDef htim17;
 
-#define QUADRATURE_TIMER_1 &htim4
-#define QUADRATURE_VELOCITY_TIMER_1 &htim17
-#define QUADRATURE_TIMER_2 &htim3
-#define UPDATE_TIMER &htim6
-#define SEND_TIMER &htim7
-#define PWM_TIMER &htim15
-#define FDCAN_WATCHDOG_TIMER &htim16
-#define ABSOLUTE_ENCODER_TIMER &htim2
+#define QUADRATURE_TICK_TIMER_1 &htim4 // Special encoder timer which externally reads quadrature encoder ticks
+// #define QUADRATURE_TIMER_2 &htim3
+#define QUADRATURE_ELAPSED_TIMER_1 &htim17 // Measures time since the lsat quadrature tickreading
+// #define ABSOLUTE_ENCODER_TIMER &htim2
+// #define UPDATE_TIMER &htim6
+#define SEND_TIMER &htim7            // 100 Hz FDCAN repeating timer
+#define PWM_TIMER_1 &htim15          // H-Bridge PWM
+#define FDCAN_WATCHDOG_TIMER &htim16 // FDCAN watchdog timer that needs to be reset every time a message is received
 
 namespace mrover {
 
@@ -61,13 +53,13 @@ namespace mrover {
     void init() {
         fdcan_bus = FDCAN<InBoundMessage>{DEVICE_ID, DESTINATION_DEVICE_ID, &hfdcan1};
         controller = Controller{
-                PWM_TIMER,
+                PWM_TIMER_1,
                 Pin{GPIOB, GPIO_PIN_15},
                 Pin{GPIOC, GPIO_PIN_6},
                 fdcan_bus,
                 FDCAN_WATCHDOG_TIMER,
-                QUADRATURE_TIMER_1,
-                QUADRATURE_VELOCITY_TIMER_1,
+                QUADRATURE_TICK_TIMER_1,
+                QUADRATURE_ELAPSED_TIMER_1,
                 ABSOLUTE_I2C,
                 {
                         LimitSwitch{Pin{LIMIT_0_0_GPIO_Port, LIMIT_0_0_Pin}},
@@ -77,10 +69,11 @@ namespace mrover {
                 },
         };
 
+        // TODO: these should probably be in the controller / encoders themselves
         // Necessary for the timer interrupt to work
-        check(HAL_TIM_Base_Start_IT(UPDATE_TIMER) == HAL_OK, Error_Handler);
+        // check(HAL_TIM_Base_Start_IT(UPDATE_TIMER) == HAL_OK, Error_Handler);
         check(HAL_TIM_Base_Start_IT(SEND_TIMER) == HAL_OK, Error_Handler);
-        check(HAL_TIM_Base_Start_IT(ABSOLUTE_ENCODER_TIMER) == HAL_OK, Error_Handler);
+        // check(HAL_TIM_Base_Start_IT(ABSOLUTE_ENCODER_TIMER) == HAL_OK, Error_Handler);
     }
 
     void fdcan_received_callback() {
@@ -94,10 +87,6 @@ namespace mrover {
         if (messageId.destination == DEVICE_ID) {
             controller.receive(message);
         }
-    }
-
-    void test_received_callback(InBoundMessage message) {
-        controller.receive(message);
     }
 
     void update_callback() {
@@ -114,6 +103,10 @@ namespace mrover {
 
     void update_absolute_encoder_callback() {
         controller.update_absolute_encoder();
+    }
+
+    void update_quadrature_encoder_callback() {
+        controller.update_quadrature_encoder();
     }
 
     void send_callback() {
@@ -149,16 +142,12 @@ void HAL_PostInit() {
  * \note Timers have to be started with "HAL_TIM_Base_Start_IT" for this interrupt to work for them.
  */
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim) {
-    if (htim == UPDATE_TIMER) {
-        mrover::update_callback();
-    } else if (htim == SEND_TIMER) {
+    if (htim == SEND_TIMER) {
         mrover::send_callback();
     } else if (htim == FDCAN_WATCHDOG_TIMER) {
         mrover::fdcan_watchdog_expired();
-    } else if (htim == ABSOLUTE_ENCODER_TIMER) {
-        mrover::request_absolute_encoder_data_callback();
-    } else if (htim == QUADRATURE_VELOCITY_TIMER_1) {
-        mrover::calc_velocity();
+    } else if (htim == QUADRATURE_TICK_TIMER_1) {
+        mrover::update_quadrature_encoder_callback();
     }
     // TODO: check for slow update timer and call on controller to send out i2c frame
 }

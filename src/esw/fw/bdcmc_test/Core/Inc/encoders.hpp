@@ -8,7 +8,7 @@
 #include <hardware_i2c.hpp>
 #include <units/units.hpp>
 
-#include "filtering.hpp"
+// #include "filtering.hpp"
 
 namespace mrover {
 
@@ -20,7 +20,7 @@ namespace mrover {
     constexpr auto RELATIVE_CPR = CountsPerRad{3355 / tau}; // Measured empirically
     constexpr auto ABSOLUTE_CPR = CountsPerRad{1024 / tau};
     constexpr auto MIN_MEASURABLE_VELOCITY = RadiansPerSecond{0.05}; // Very thoroughly obtained number - Quintin Approves
-    constexpr auto CLOCK_FREQ = Hertz{144000000};
+    const auto CLOCK_FREQ = Hertz{HAL_RCC_GetHCLKFreq()};
 
     struct EncoderReading {
         Radians position;
@@ -65,25 +65,26 @@ namespace mrover {
     public:
         QuadratureEncoderReader() = default;
 
-        QuadratureEncoderReader(TIM_HandleTypeDef* timer, Ratio multiplier, TIM_HandleTypeDef* vel_timer);
+        QuadratureEncoderReader(TIM_HandleTypeDef* tick_timer, Ratio multiplier, TIM_HandleTypeDef* elapsed_timer);
 
-        [[nodiscard]] auto read() -> std::optional<EncoderReading>;
+        [[nodiscard]] auto read() const -> std::optional<EncoderReading>;
 
-        auto update_vel() -> void;
+        auto update() -> void;
 
     private:
-        TIM_HandleTypeDef* m_position_timer{};
-        TIM_HandleTypeDef* m_velocity_timer{};
+        TIM_HandleTypeDef* m_tick_timer{};
+        TIM_HandleTypeDef* m_elapsed_timer{};
         std::int64_t m_counts_unwrapped_prev{};
-        std::int64_t m_vel_counts_unwrapped_prev{};
-        std::uint32_t m_counts_raw_now{};
-        std::uint32_t m_ticks_prev{};
-        std::uint32_t m_ticks_now{};
+        // std::int64_t m_vel_counts_unwrapped_prev{};
+        // std::uint32_t m_counts_raw_now{};
+        // std::uint32_t m_ticks_prev{};
+        // std::uint32_t m_ticks_now{};
         Ratio m_multiplier;
-        Seconds m_velocity_dt;
+        // Seconds m_velocity_dt;
 
         Radians m_position;
-        MeanMedianFilter<RadiansPerSecond, 17> m_velocity_filter;
+        RadiansPerSecond m_velocity;
+        // MeanMedianFilter<RadiansPerSecond, 17> m_velocity_filter;
     };
 
 } // namespace mrover

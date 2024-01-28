@@ -33,8 +33,8 @@ namespace mrover {
         HBridge m_motor_driver;
         TIM_HandleTypeDef* m_watchdog_timer{};
         bool m_watchdog_enabled{};
-        TIM_HandleTypeDef* m_quadrature_encoder_timer{};
-        TIM_HandleTypeDef* m_quadrature_encoder_vel_timer{};
+        TIM_HandleTypeDef* m_encoder_timer{};
+        TIM_HandleTypeDef* m_encoder_elapsed_timer{};
         I2C_HandleTypeDef* m_absolute_encoder_i2c{};
         std::optional<QuadratureEncoderReader> m_relative_encoder;
         // TODO: implement
@@ -125,8 +125,6 @@ namespace mrover {
         }
 
         auto process_command(AdjustCommand const& message) -> void {
-            update_relative_encoder();
-
             // TODO: verify this is correct
             if (m_uncalib_position && m_state_after_config) {
                 m_state_after_calib = StateAfterCalib{
@@ -142,7 +140,7 @@ namespace mrover {
             if (message.quad_abs_enc_info.quad_present) {
                 // TODO(quintin): Why TF does this crash without .get() ?
                 Ratio multiplier = (message.quad_abs_enc_info.quad_is_forward_polarity ? 1.0f : -1.0f) * message.quad_enc_out_ratio.get();
-                if (!m_relative_encoder) m_relative_encoder.emplace(m_quadrature_encoder_timer, multiplier, m_quadrature_encoder_vel_timer);
+                if (!m_relative_encoder) m_relative_encoder.emplace(m_encoder_timer, multiplier, m_encoder_elapsed_timer);
             }
             if (message.quad_abs_enc_info.abs_present) {
                 Ratio multiplier = (message.quad_abs_enc_info.abs_is_forward_polarity ? 1 : -1) * message.abs_enc_out_ratio;
@@ -173,8 +171,6 @@ namespace mrover {
             }
 
             m_state_after_config = config;
-
-            update_relative_encoder();
         }
 
         auto process_command(IdleCommand const&) -> void {
@@ -204,8 +200,6 @@ namespace mrover {
                 return;
             }
 
-            update_relative_encoder();
-
             if (!m_velocity) {
                 m_error = BDCMCErrorInfo::RECEIVING_PID_COMMANDS_WHEN_NO_READER_EXISTS;
                 return;
@@ -228,8 +222,6 @@ namespace mrover {
                 m_error = BDCMCErrorInfo::RECEIVING_POSITION_COMMANDS_WHEN_NOT_CALIBRATED;
                 return;
             }
-
-            update_relative_encoder();
 
             if (!m_uncalib_position) {
                 m_error = BDCMCErrorInfo::RECEIVING_PID_COMMANDS_WHEN_NO_READER_EXISTS;
@@ -267,12 +259,12 @@ namespace mrover {
     public:
         Controller() = default;
 
-        Controller(TIM_HandleTypeDef* hbridge_output, Pin const hbridge_forward_pin, Pin const hbridge_backward_pin, FDCAN<InBoundMessage> const& fdcan, TIM_HandleTypeDef* watchdog_timer, TIM_HandleTypeDef* quadrature_encoder_timer, TIM_HandleTypeDef* quadrature_encoder_vel_timer, I2C_HandleTypeDef* absolute_encoder_i2c, std::array<LimitSwitch, 4> const& limit_switches)
+        Controller(TIM_HandleTypeDef* hbridge_output, Pin hbridge_forward_pin, Pin hbridge_backward_pin, FDCAN<InBoundMessage> const& fdcan, TIM_HandleTypeDef* watchdog_timer, TIM_HandleTypeDef* encoder_tick_timer, TIM_HandleTypeDef* encoder_elapsed_timer, I2C_HandleTypeDef* absolute_encoder_i2c, std::array<LimitSwitch, 4> const& limit_switches)
             : m_fdcan{fdcan},
               m_motor_driver{HBridge(hbridge_output, hbridge_forward_pin, hbridge_backward_pin)},
               m_watchdog_timer{watchdog_timer},
-              m_quadrature_encoder_timer{quadrature_encoder_timer},
-              m_quadrature_encoder_vel_timer{quadrature_encoder_vel_timer},
+              m_encoder_timer{encoder_tick_timer},
+              m_encoder_elapsed_timer{encoder_elapsed_timer},
               m_absolute_encoder_i2c{absolute_encoder_i2c},
               m_limit_switches{limit_switches} {}
 
@@ -342,7 +334,7 @@ namespace mrover {
          * \note Called more frequently than update position.
          */
         auto calc_quadrature_velocity() -> void {
-            m_relative_encoder->update_vel();
+            m_relative_encoder->update();
         }
 
         /**
@@ -354,7 +346,7 @@ namespace mrover {
             ControllerDataState state{
                     // Encoding as NaN instead of an optional saves space in the message
                     // It also has a predictable memory layout
-                    .position = [&] {
+                    .position = [this] {
                         if (m_uncalib_position && m_state_after_calib) {
                             return m_uncalib_position.value() - m_state_after_calib->offset_position;
                         }
@@ -396,6 +388,12 @@ namespace mrover {
             m_fdcan.broadcast(m_outbound);
         }
 
+
+        auto update_quadrature_encoder() -> void {
+            if (m_relative_encoder) {
+                m_relative_encoder->update();
+            }
+        }
 
         auto request_absolute_encoder_data() -> void {
             // Only read the encoder if we are configured

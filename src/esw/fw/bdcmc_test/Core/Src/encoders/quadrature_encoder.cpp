@@ -6,26 +6,28 @@
 
 namespace mrover {
 
-    QuadratureEncoderReader::QuadratureEncoderReader(TIM_HandleTypeDef* timer, Ratio multiplier, TIM_HandleTypeDef* vel_timer)
-        : m_position_timer{timer}, m_velocity_timer{vel_timer}, m_multiplier{multiplier} {
+    QuadratureEncoderReader::QuadratureEncoderReader(TIM_HandleTypeDef* tick_timer, Ratio multiplier, TIM_HandleTypeDef* elapsed_timer)
+        : m_tick_timer{tick_timer}, m_elapsed_timer{elapsed_timer}, m_multiplier{multiplier} {
 
-        // Per Sashreek's hypothesis in `Motor velocity calc.pdf` #esw-brushed-24
-        compound_unit<Ticks, inverse<Seconds>> min_measurable_velocity = MIN_MEASURABLE_VELOCITY * RELATIVE_CPR;
-        m_velocity_dt = Seconds{1 / min_measurable_velocity.get()};
+        // // Per Sashreek's hypothesis in `Motor velocity calc.pdf` #esw-brushed-24
+        // compound_unit<Ticks, inverse<Seconds>> min_measurable_velocity = MIN_MEASURABLE_VELOCITY * RELATIVE_CPR;
+        // m_velocity_dt = Seconds{1 / min_measurable_velocity.get()};
+        //
+        // auto psc = static_cast<std::uint32_t>((CLOCK_FREQ * m_velocity_dt).get() / static_cast<float>(m_timer->Instance->ARR + 1) - 1);
+        // m_timer->Instance->PSC = psc;
 
-        auto psc = static_cast<std::uint32_t>((CLOCK_FREQ * m_velocity_dt).get() / static_cast<float>(m_velocity_timer->Instance->ARR + 1) - 1);
-        m_velocity_timer->Instance->PSC = psc;
+        m_counts_unwrapped_prev = __HAL_TIM_GetCounter(m_tick_timer);
+        check(HAL_TIM_Encoder_Start_IT(m_tick_timer, TIM_CHANNEL_ALL) == HAL_OK, Error_Handler);
 
-        m_counts_unwrapped_prev = __HAL_TIM_GetCounter(m_position_timer);
-        check(HAL_TIM_Encoder_Start(m_position_timer, TIM_CHANNEL_ALL) == HAL_OK, Error_Handler);
+        // m_vel_counts_unwrapped_prev = __HAL_TIM_GetCounter(m_timer);
+        // check(HAL_TIM_Base_Start_IT(m_timer) == HAL_OK, Error_Handler);
 
-        m_vel_counts_unwrapped_prev = __HAL_TIM_GetCounter(m_velocity_timer);
-        check(HAL_TIM_Base_Start_IT(m_velocity_timer) == HAL_OK, Error_Handler);
+        check(HAL_TIM_Base_Start(m_elapsed_timer) == HAL_OK, Error_Handler);
     }
 
-    auto count_delta(std::int64_t& store, TIM_HandleTypeDef* timer) -> std::int64_t {
-        std::uint32_t now = timer->Instance->CNT;
-        std::uint32_t max_value = timer->Instance->ARR;
+    auto count_delta(std::int64_t& store, TIM_HandleTypeDef* timer) -> Ticks {
+        std::uint32_t now = __HAL_TIM_GetCounter(timer);
+        std::uint32_t max_value = __HAL_TIM_GetAutoreload(timer);
 
         // adapted from: https://electronics.stackexchange.com/questions/605278/how-to-increase-stm32-timer-encoder-mode-counter-value
         // handle when timer wraps around
@@ -39,20 +41,26 @@ namespace mrover {
         std::int64_t unwrapped = store + mod_dif;
         store = unwrapped;
 
-        return mod_dif;
+        return Ticks{mod_dif};
     }
 
-    [[nodiscard]] auto QuadratureEncoderReader::read() -> std::optional<EncoderReading> {
-        std::int64_t delta_ticks = count_delta(m_counts_unwrapped_prev, m_position_timer);
-        m_position += m_multiplier * Ticks{delta_ticks} / RELATIVE_CPR;
-        return EncoderReading{m_position, m_velocity_filter.get_filtered()};
+    [[nodiscard]] auto QuadratureEncoderReader::read() const -> std::optional<EncoderReading> {
+        // std::int64_t delta_ticks = count_delta(m_counts_unwrapped_prev, m_position_timer);
+        // m_position += m_multiplier * Ticks{delta_ticks} / RELATIVE_CPR;
+        return std::make_optional<EncoderReading>(m_position, m_velocity);
     }
 
-    auto QuadratureEncoderReader::update_vel() -> void {
-        std::int64_t delta_ticks = count_delta(m_vel_counts_unwrapped_prev, m_position_timer);
-        Radians delta_angle = m_multiplier * Ticks{delta_ticks} / RELATIVE_CPR;
-        RadiansPerSecond velocity = delta_angle / m_velocity_dt;
-        m_velocity_filter.add_reading(velocity);
+    auto QuadratureEncoderReader::update() -> void {
+        std::uint32_t elapsed_count = __HAL_TIM_GetCounter(m_elapsed_timer);
+        __HAL_TIM_SetCounter(m_elapsed_timer, 0);
+
+        Ticks delta_ticks = count_delta(m_counts_unwrapped_prev, m_tick_timer);
+
+        Radians delta_angle = m_multiplier * delta_ticks / RELATIVE_CPR;
+        Seconds elapsed_time = 1 / CLOCK_FREQ * elapsed_count;
+
+        m_position += delta_angle;
+        m_velocity = delta_angle / elapsed_time;
     }
 
 
