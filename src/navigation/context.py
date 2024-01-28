@@ -121,15 +121,17 @@ class LongRangeTagStore:
     class TagData:
         hit_count: int
         tag: LongRangeTag
+        time: rospy.Time
 
     ctx: Context
     __data: dict[int, TagData]
     min_hits: int
 
-    def __init__(self, ctx: Context, min_hits: int) -> None:
+    def __init__(self, ctx: Context, min_hits: int, max_hits: int = 10) -> None:
         self.ctx = ctx
         self.__data = {}
         self.min_hits = min_hits
+        self.max_hits = max_hits
 
     def push_frame(self, tags: List[LongRangeTag]) -> None:
         for _, cur_tag in self.__data.items():
@@ -139,13 +141,14 @@ class LongRangeTagStore:
                     del self.__data[cur_tag.tag.id]
             else:
                 cur_tag.hit_count += 1
+                cur_tag.hit_count = min(cur_tag.hit_count, self.max_hits)
 
         for tag in tags:
             if tag.id not in self.__data:
                 self.__data[tag.id] = self.TagData(hit_count=1, tag=tag)
 
     def get(self, tag_id: int) -> Optional[LongRangeTag]:
-        if tag_id in self.__data and self.__data[tag_id].hit_count > self.min_hits:
+        if tag_id in self.__data and self.__data[tag_id].hit_count >= self.min_hits:
             return self.__data[tag_id].tag
         else:
             return None

@@ -61,6 +61,7 @@ class LongRangeState(ApproachTargetBaseState):
         direction_to_tag = normalize(direction_to_tag)
         distance = 20  # TODO replace with rosparam
         tag_position = rover_position + direction_to_tag * distance
+        return tag_position
 
     def determine_next(self, context, finished: bool) -> State:
         fid_pos = context.env.current_fid_pos()
