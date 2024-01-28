@@ -115,6 +115,7 @@ class SearchState(State):
             self.STOP_THRESH,
             self.DRIVE_FWD_THRESH,
             path_start=self.prev_target,
+            future_point=self.traj.get_next_pt(),
         )
         if arrived:
             self.prev_target = target_pos

@@ -13,6 +13,11 @@ class Trajectory:
     def get_cur_pt(self) -> np.ndarray:
         return self.coordinates[self.cur_pt]
 
+    def get_next_pt(self) -> np.ndarray:
+        if self.cur_pt + 1 < self.coordinates.size():
+            return self.coordinates[self.cur_pt]
+        return None
+
     def increment_point(self) -> bool:
         """
         Increments the tracked point in the trajectory, returns true if

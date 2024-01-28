@@ -163,6 +163,7 @@ class DriveController:
         in_odom: bool = False,
         drive_back: bool = False,
         path_start: Optional[np.ndarray] = None,
+        future_point: Optional[np.ndarray] = None,
     ) -> Tuple[Twist, bool]:
         """
         Returns a drive command to get the rover to the target position, calls the state machine to do so and updates the last angular error in the process
@@ -173,6 +174,7 @@ class DriveController:
         :param in_odom: Whether to use odom constants or map constants.
         :param drive_back: True if rover should drive backwards, false otherwise.
         :param path_start: If you want the rover to drive on a line segment (and actively try to stay on the line), pass the start of the line segment as this param, otherwise pass None.
+        :future_point: Optionally provided point on the path to drive to after reaching the target position.
         :return: A tuple of the drive command and a boolean indicating whether the rover is at the target position.
         :modifies: self._last_angular_error
         """
@@ -195,11 +197,16 @@ class DriveController:
         if path_start is not None:
             target_pos = self.get_lookahead_pt(path_start, target_pos, rover_pos, LOOKAHEAD_DISTANCE)
 
+        # If look ahead point is ahead of the path end, create a vector to the future point and start the look ahead again.
+
         target_dir = target_pos - rover_pos
 
         # if the target is farther than completion distance away from the last one, reset the controller
         if self._last_target is not None and np.linalg.norm(target_pos - self._last_target) > completion_thresh:
             self.reset()
+            if future_point is not None:
+                target_pos = self.get_lookahead_pt(self._last_target, future_point, rover_pos, LOOKAHEAD_DISTANCE)
+                target_dir = target_pos - rover_pos
 
         # compute errors
         linear_error = float(np.linalg.norm(target_dir))
