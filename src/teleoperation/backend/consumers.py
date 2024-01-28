@@ -156,7 +156,7 @@ class GUIConsumer(JsonWebsocketConsumer):
                     - self.brushed_motors[joint_name]["min_velocity"]) / 2)
 
     def handle_arm_message(self, msg):
-        RA_NAMES = list(self.ra_config.keys())
+        RA_NAMES = ["joint_a","joint_b","joint_c","joint_de_pitch","joint_de_yaw","allen_key","gripper"]
         ra_slow_mode = False
         if msg["arm_mode"] == "ik":
             x = 1
