@@ -178,6 +178,8 @@ brushed_motors:
       motor_max_voltage: 12.0 # used to calculate max pwm
       limit_max_forward_pos: true
       max_forward_pos: 1.0
+      min_velocity: -1.0
+      max_velocity: 1.0
     allen_key:
       gear_ratio: 30.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
       limit_0_present: true

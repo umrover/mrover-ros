@@ -5,45 +5,55 @@
             <h4>Arm mode</h4>
             <!-- Make opposite option disappear so that we cannot select both -->
             <!-- Change to radio buttons in the future -->
-            <input ref="arm-enabled" v-model="arm_mode" type="radio" name="'arm_mode'" value="arm_disabled" />
-            Arm Disabled
-            <input ref="ik" v-model="arm_mode" type="radio" name="'arm_mode'" value="ik" />
-            IK
-            <input ref="position" v-model="arm_mode" type="radio" name="'arm_mode'" value="position" />
-            Position
-          
-            <input ref="velocity" v-model="arm_mode" type="radio" name="'arm_mode'" value="velocity" />
-            Velocity
-            <input ref="throttle" v-model="arm_mode" type="radio" name="'arm_mode'" value="throttle" />
-            Throttle
+            <div class="form-check">
+                <input v-model="arm_mode" class="form-check-input" type="radio" id="dis" value="arm_disabled" />
+                <label class="form-check-label" for="dis">Arm Disabled</label>
+            </div>
+            <div class="form-check">
+                <input v-model="arm_mode" class="form-check-input" type="radio" id="ik" value="ik" />
+                <label class="form-check-label" for="ik">IK</label>
+            </div>
+            <div class="form-check">
+                <input v-model="arm_mode" class="form-check-input" type="radio" id="pos" value="position" />
+                <label class="form-check-label" for="pos">Position</label>
+            </div>
+            <div class="form-check">
+                <input v-model="arm_mode" class="form-check-input" type="radio" id="vel" value="velocity" />
+                <label class="form-check-label" for="vel">Velocity</label>
+            </div>
+            <div class="form-check">
+                <input v-model="arm_mode" class="form-check-input" type="radio" id="thr" value="throttle" />
+                <label class="form-check-label" for="thr">Throttle</label>
+            </div>
            
         </div>
         <div class ="controls-flex" v-if="arm_mode ==='position'"> 
-           <div v-for="(value, key) in temp_positions" :key="key">
-            <label>{{ key }}</label>
-            <input class="position-box"  type="text" v-model="temp_positions[key]" >
+            <div class="row">
+                <div class="col" v-for="(joint, key) in temp_positions" :key="key">
+                    <label>{{ key }}</label>
+                    <input class="form-control" type="number" :min="joint.min" :max="joint.max" @input="validateInput(joint, $event)" v-model="joint.value" >
+                </div>
             </div>
-            <button @click="submit_positions">submit</button>
-       
-      </div>
+            <button class="btn btn-primary mx-auto my-2" @click="submit_positions">Submit</button> 
+        </div>
         <div class="controls-flex">
             <h4>Misc. Controls</h4>
             <ToggleButton id="arm_laser" :current-state="laser_enabled" label-enable-text="Arm Laser On"
                 label-disable-text="Arm Laser Off" @change="toggleArmLaser()" />
             <div class="limit-switch">
-                <h4>Joint B Limit Switch</h4>
+                <h4>Limit Switches</h4>
                 <LimitSwitch :name="'All Switches'" />
             </div>
         </div>
         <div class="controls-flex">
             <h4>Calibration</h4>
             <CalibrationCheckbox name="All Joints Calibration"/>
-            <JointAdjust :options="[
+            <JointAdjust v-if="arm_mode == 'position'" :options="[
                 { name: 'joint_a', option: 'Joint A' },
                 { name: 'joint_b', option: 'Joint B' },
                 { name: 'joint_c', option: 'Joint C' },
-                { name: 'joint_d', option: 'Joint D' },
-                { name: 'joint_e', option: 'Joint E' }
+                { name: 'joint_de_pitch', option: 'Joint DE Pitch' },
+                { name: 'joint_de_yaw', option: 'Joint DE Yaw' }
             ]" />
         </div>
     </div>
@@ -74,23 +84,41 @@ export default defineComponent({
             arm_mode: "arm_disabled",
             joints_array: [false, false, false, false, false, false],
             laser_enabled: false,
+            /* Positions in degrees! */
             temp_positions:{
-                joint_a:'', joint_b:'', joint_c:'', joint_de_pitch:'', joint_de_yaw:'', allen_key:'', gripper:''
+                joint_a: {
+                    value: 0,
+                    min: 0,
+                    max: 1
+                }, joint_b: {
+                    value: 0,
+                    min: 0,
+                    max: 45
+                }, joint_c: {
+                    value: 0,
+                    min: -120,
+                    max: 100
+                }, joint_de_pitch: {
+                    value: 0,
+                    min: -135,
+                    max: 135
+                }, joint_de_yaw: {
+                    value: 0,
+                    min: -135,
+                    max: 135
+                }, allen_key: {
+                    value: 0,
+                    min: 0,
+                    max: 1
+                }, gripper: {
+                    value: 0,
+                    min: 0,
+                    max: 1
+                }
             },
             positions: []
         };
     },
-
-    // watch: {
-    //     arm_mode: function (newMode, oldMode) {
-    //         this.updateArmMode(newMode, oldMode);
-    //     }
-    // },
-
-    // beforeUnmount: function () {
-    //     this.updateArmMode("arm_disabled", this.arm_mode);
-    //     window.clearInterval(interval);
-    // },
 
     created: function () {
         this.websocket.onmessage = (event) => {
@@ -123,71 +151,25 @@ export default defineComponent({
                     }
                 }
             }
-        }, updateRate * 1000);
-       
-        // this.updateArmMode("arm_disabled", this.arm_mode);
-        // const jointData = {
-        // //publishes array of all falses when refreshing the page
-        // joints: this.joints_array
-        // };
-    
+        }, updateRate * 1000); 
     },
-
-    
-   
-        // this.ra_mode_service = new ROSLIB.Service({
-        //     ros: this.$ros,
-        //     name: "change_ra_mode",
-        //     serviceType: "mrover/ChangeArmMode"
-        // });
-    //     this.jointlock_pub = new ROSLIB.Topic({
-    //         ros: this.$ros,
-    //         name: "/joint_lock",
-    //         messageType: "mrover/JointLock"
-    //     });
-    //     const jointData = {
-    //         //publishes array of all falses when refreshing the page
-    //         joints: this.joints_array
-    //     };
-    //     var jointlockMsg = new ROSLIB.Message(jointData);
-    //     this.jointlock_pub.publish(jointlockMsg);
-
- 
-    // },
 
     methods: {
         ...mapActions('websocket', ['sendMessage']),
-        // updateArmMode: function (newMode: any, oldMode: string) {
-        //     const armData = {
-        //         mode: newMode
-        //     };
 
-        //     var armcontrolsmsg = new ROSLIB.ServiceRequest(armData);
-        //     this.ra_mode_service.callService(armcontrolsmsg, (response: { success: any; }) => {
-        //         if (!response.success) {
-        //             this.arm_mode = oldMode;
-        //             alert("Failed to change arm mode");
-        //         }
-        //     });
-        // },
-
-    //     updateJointsEnabled: function (jointnum, enabled) {
-    //         this.joints_array[jointnum] = enabled;
-    //         const jointData = {
-    //             joints: this.joints_array
-    //         };
-    //         var jointlockMsg = new ROSLIB.Message(jointData);
-    //         this.jointlock_pub.publish(jointlockMsg);
-    //     },
+        validateInput: function(joint, event) {
+            if (event.target.value < joint.min) {
+                event.target.value = joint.min;
+            }
+            else if (event.target.value > joint.max) {
+                event.target.value = joint.max;
+            }
+            joint.value = event.target.value;
+        },
 
         publishJoystickMessage: function (axes: any, buttons: any, arm_mode: any, positions:any) {
-            const joystickData = {
-                axes: axes,
-                buttons: buttons
-            };
-            if (arm_mode != "arm_disabled")
-            {
-                this.sendMessage({type:"arm_values", data:joystickData, arm_mode: arm_mode, positions: positions})
+            if (arm_mode != "arm_disabled") {
+                this.sendMessage({type:"arm_values", axes: axes, buttons: buttons, arm_mode: arm_mode, positions: positions})
             }
         },
         toggleArmLaser: function () {
@@ -197,10 +179,8 @@ export default defineComponent({
          },
 
         submit_positions: function (){
-            this.positions = []
-            for (let key in this.temp_positions) {
-                        this.positions.push(Number(this.temp_positions[key]));
-                    }
+            //converts to radians
+            this.positions = Object.values(this.temp_positions).map(obj => Number(obj.value)*Math.PI/180);
         }
 
     }

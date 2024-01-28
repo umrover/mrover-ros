@@ -1,34 +1,33 @@
 # You will need to restart basestation.launch for
 # Any changes to take effect
 teleop:
-  ra_joints: ["joint_a", "joint_b", "joint_c", "joint_d", "joint_e"]
-
   ra_controls:
     joint_a:
       multiplier: 1
       slow_mode_multiplier: 0.5
       invert: False
+      xbox_index: 0
     joint_b:
       multiplier: -1
       slow_mode_multiplier: 1
       invert: False
+      xbox_index: 1
     joint_c:
       multiplier: 1
       slow_mode_multiplier: 0.6
       invert: True
-    joint_d:
+      xbox_index: 4
+    joint_de_0:
       multiplier: 1
       slow_mode_multiplier: 1
       invert: False
-    joint_e:
+      xbox_index: 3
+    joint_de_1:
       multiplier: 1
       slow_mode_multiplier: 1
       invert: False
-    joint_f:
-      multiplier: 1
-      slow_mode_multiplier: 1
-      invert: False
-    finger:
+      xbox_index: 5
+    allen_key:
       multiplier: 1
       slow_mode_multiplier: 1
       invert: False

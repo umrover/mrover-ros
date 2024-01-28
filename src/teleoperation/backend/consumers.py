@@ -75,8 +75,9 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.wheel_radius = rospy.get_param("wheel/radius")
         self.max_angular_speed = self.max_wheel_speed / self.wheel_radius
 
-        self.ra_config = rospy.get_param("teleop/ra_controls")  # could be different name
-        self.velocity_config = rospy.get_param("brushless_motors/controllers")
+        self.ra_config = rospy.get_param("teleop/ra_controls")
+        self.brushless_motors = rospy.get_param("brushless_motors/controllers")
+        self.brushed_motors = rospy.get_param("brushed_motors/controllers")
         self.xbox_mappings = rospy.get_param("teleop/xbox_mappings")
         self.sa_config = rospy.get_param("teleop/sa_controls")
 
@@ -127,134 +128,84 @@ class GUIConsumer(JsonWebsocketConsumer):
 
     def filter_xbox_axis(
         self,
-        axes_array: "List[float]",
-        axis_name: str,
+        value: int,
         deadzone_threshold: float = DEFAULT_ARM_DEADZONE,
         quad_control: bool = False,
     ) -> float:
-        """
-        Applies various filtering functions to an axis for controlling the arm
-        :param axes_array: Axis array from sensor_msgs/Joy, each value is a float from [-1,1]
-        :param axis_name: String representing the axis you are controlling, should match teleop.yaml
-        :param deadzone_threshold: Float representing the deadzone of the axis that you would like to use
-        :param quad_control: Bool for whether or not we want the axis to follow an x^2 curve instead of a linear one
-        Velocities are sent in range [-1,1]
-        :return: Returns an output velocity value for the given joint using the given axis_name
-        """
-        deadzoned_val = deadzone(axes_array[self.xbox_mappings[axis_name]], deadzone_threshold)
+        deadzoned_val = deadzone(value, deadzone_threshold)
         return quadratic(deadzoned_val) if quad_control else deadzoned_val
 
-    def filter_xbox_button(self, button_array: "List[int]", pos_button: str, neg_button: str) -> int:
+    def filter_xbox_button(self, button_array: "List[int]", pos_button: str, neg_button: str) -> float:
         """
         Applies various filtering functions to an axis for controlling the arm
-        :param button_array: Button array from sensor_msgs/Joy, each value is an int 0 or 1
-        :param pos_button: String representing the positive button for controlling a joint
-        :param neg_button: String representing the negtaive button for controlling a joint
         :return: Return -1, 0, or 1 depending on what buttons are being pressed
         """
         return button_array[self.xbox_mappings[pos_button]] - button_array[self.xbox_mappings[neg_button]]
 
+    def to_velocity(self, input: int, joint_name: str, brushless: bool = True) -> float:
+        """
+        Scales [-1,1] joystick input to min/max of each joint
+        """
+        if brushless:
+            return (self.brushless_motors[joint_name]["min_velocity"] 
+                    + (input+1) * (self.brushless_motors[joint_name]["max_velocity"] 
+                    - self.brushless_motors[joint_name]["min_velocity"]) / 2)
+        else: 
+            return (self.brushed_motors[joint_name]["min_velocity"] 
+                    + (input+1) * (self.brushed_motors[joint_name]["max_velocity"] 
+                    - self.brushed_motors[joint_name]["min_velocity"]) / 2)
 
     def handle_arm_message(self, msg):
-        RA_NAMES = ["joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_yaw", "allen_key", "gripper"]
+        RA_NAMES = list(self.ra_config.keys())
         ra_slow_mode = False
         if msg["arm_mode"] == "ik":
             x = 1
         elif msg["arm_mode"] == "position":
-            self.arm_position_cmd = Position(
+            arm_position_cmd = Position(
                 names=RA_NAMES,
                 positions=msg["positions"],
             )
-           
-            self.arm_position_cmd_pub.publish(self.arm_position_cmd)
+            self.arm_position_cmd_pub.publish(arm_position_cmd)
 
         elif msg["arm_mode"] == "velocity":
-            self.arm_velocity_cmd = Velocity(
-                names=RA_NAMES,
-                velocities=[0.0 for _ in RA_NAMES],
-            )
-
-            self.arm_velocity_cmd.velocities = [
-                (self.filter_xbox_axis(msg["data"]["axes"], "left_js_x") + 1)
-                * (self.velocity_config["joint_a"]["max_velocity"] - self.velocity_config["joint_a"]["min_velocity"])
-                / (1 - (-1))
-                - self.velocity_config["joint_a"]["min_velocity"],
-                (self.filter_xbox_axis(msg["data"]["axes"], "left_js_y") + 1)
-                * (self.velocity_config["joint_a"]["max_velocity"] - self.velocity_config["joint_a"]["min_velocity"])
-                / (1 - (-1))
-                - self.velocity_config["joint_a"]["min_velocity"],
-                (self.filter_xbox_axis(msg["data"]["axes"], "right_js_y") + 1)
-                * (self.velocity_config["joint_c"]["max_velocity"] - self.velocity_config["joint_c"]["min_velocity"])
-                / (1 - (-1))
-                - self.velocity_config["joint_c"]["min_velocity"],
-                (self.filter_xbox_axis(msg["data"]["axes"], "right_js_x") + 1)
-                * (
-                    self.velocity_config["joint_de_0"]["max_velocity"]
-                    - self.velocity_config["joint_de_0"]["min_velocity"]
-                )
-                / (1 - (-1))
-                - self.velocity_config["joint_de_1"]["min_velocity"],
-                (self.filter_xbox_axis(msg["data"]["axes"], "right_js_x") + 1)
-                * (
-                    self.velocity_config["joint_de_1"]["max_velocity"]
-                    - self.velocity_config["joint_de_0"]["min_velocity"]
-                )
-                / (1 - (-1))
-                - self.velocity_config["joint_de_1"]["min_velocity"],
-                ##(self.filter_xbox_axis(msg.axes, "left_js_x")+ 1) * (self.velocity_config["joint_a"]["max_velocity"] - self.velocity_config["joint_a"]["min_velocity"]) / (1 - (-1)) - self.velocity_config["joint_a"]["min_velocity"],
-                self.ra_config["finger"]["multiplier"] * self.filter_xbox_button(msg["data"]["buttons"], "y", "a"),
-                self.ra_config["gripper"]["multiplier"] * self.filter_xbox_button(msg["data"]["buttons"], "b", "x"),
+            arm_velocity_cmd = Velocity()
+            arm_velocity_cmd.names = RA_NAMES
+            arm_velocity_cmd.velocities = [
+                self.to_velocity(self.filter_xbox_axis(msg["axes"][self.ra_config["joint_a"]["xbox_index"]]), "joint_a") ,
+                self.to_velocity(self.filter_xbox_axis(msg["axes"][self.ra_config["joint_b"]["xbox_index"]]), "joint_b", False),
+                self.to_velocity(self.filter_xbox_axis(msg["axes"][self.ra_config["joint_c"]["xbox_index"]]), "joint_c"),
+                self.to_velocity(self.filter_xbox_axis(msg["axes"][self.ra_config["joint_de_0"]["xbox_index"]]), "joint_de_0"),
+                self.to_velocity(self.filter_xbox_axis(msg["axes"][self.ra_config["joint_de_1"]["xbox_index"]]), "joint_de_1"),
+                self.ra_config["allen_key"]["multiplier"] * self.filter_xbox_button(msg["buttons"], "y", "a"),
+                self.ra_config["gripper"]["multiplier"] * self.filter_xbox_button(msg["buttons"], "b", "x"),
             ]
-            self.arm_velocity_cmd_pub.publish(self.arm_velocity_cmd)
+
+            self.arm_velocity_cmd_pub.publish(arm_velocity_cmd)
 
         elif msg["arm_mode"] == "throttle":
-            self.arm_throttle_cmd = Throttle(
-                names=RA_NAMES,
-                throttles=[0.0 for _ in RA_NAMES],
-            )
-            d_pad_x = msg["data"]["axes"][self.xbox_mappings["d_pad_x"]]
+            arm_throttle_cmd = Throttle()
+            arm_throttle_cmd.names = RA_NAMES
+            d_pad_x = msg["axes"][self.xbox_mappings["d_pad_x"]]
             if d_pad_x > 0.5:
-                self.ra_slow_mode = True
+                ra_slow_mode = True
             elif d_pad_x < -0.5:
-                self.ra_slow_mode = False
+                ra_slow_mode = False
 
-            # Filter for xbox triggers, they are typically [-1,1]
-            # Lose [-1,0] range since when joystick is initially plugged in
-            # these output 0 instead of -1 when up
-            raw_left_trigger = msg["data"]["axes"][self.xbox_mappings["left_trigger"]]
-            left_trigger = raw_left_trigger if raw_left_trigger > 0 else 0
-            raw_right_trigger = msg["data"]["axes"][self.xbox_mappings["right_trigger"]]
-            right_trigger = raw_right_trigger if raw_right_trigger > 0 else 0
-            self.arm_throttle_cmd.throttles = [
-                self.ra_config["joint_a"]["multiplier"] * self.filter_xbox_axis(msg["data"]["axes"], "left_js_x"),
-                self.ra_config["joint_b"]["multiplier"] * self.filter_xbox_axis(msg["data"]["axes"], "left_js_y"),
-                self.ra_config["joint_c"]["multiplier"] * self.filter_xbox_axis(msg["data"]["axes"], "right_js_y"),
-                self.ra_config["joint_d"]["multiplier"] * self.filter_xbox_axis(msg["data"]["axes"], "right_js_x"),
-                self.ra_config["joint_d"]["multiplier"] * self.filter_xbox_axis(msg["data"]["axes"], "right_js_x"),
-                self.ra_config["finger"]["multiplier"] * self.filter_xbox_button(msg["data"]["buttons"], "y", "a"),
-                self.ra_config["gripper"]["multiplier"] * self.filter_xbox_button(msg["data"]["buttons"], "b", "x"),
-            ]
+            arm_throttle_cmd.throttles = [self.ra_config[name]["multiplier"] 
+                                               * self.filter_xbox_axis(msg["axes"][info["xbox_index"]]) for name, info in self.ra_config.items() if name.startswith("joint")]
+            arm_throttle_cmd.throttles.extend([
+                self.ra_config["allen_key"]["multiplier"] * self.filter_xbox_button(msg["buttons"], "y", "a"),
+                self.ra_config["gripper"]["multiplier"] * self.filter_xbox_button(msg["buttons"], "b", "x"),
+            ])
 
             for i, name in enumerate(RA_NAMES):
-                if self.ra_slow_mode:
-                    self.arm_throttle_cmd.velocity[i] *= self.ra_config[name]["slow_mode_multiplier"]
+                if ra_slow_mode:
+                    arm_throttle_cmd.throttles[i] *= self.ra_config[name]["slow_mode_multiplier"]
                 if self.ra_config[name]["invert"]:
-                    self.arm_throttle_cmd.velocity[i] *= -1
+                    arm_throttle_cmd.throttles[i] *= -1
 
-            self.arm_throttle_cmd_pub.publish(self.arm_throttle_cmd)
+            self.arm_throttle_cmd_pub.publish(arm_throttle_cmd)
 
-    
-    def handle_joystick_message(self, msg):
-        mappings = rospy.get_param("teleop/joystick_mappings")
-        drive_config = rospy.get_param("teleop/drive_controls")
-        max_wheel_speed = rospy.get_param("rover/max_speed")
-        wheel_radius = rospy.get_param("wheel/radius")
-        max_angular_speed = max_wheel_speed / wheel_radius
-
-        twist_pub = rospy.Publisher("/cmd_vel", Twist, queue_size=100)
-
-        # Super small deadzone so we can safely e-stop with dampen switch
-        dampen = deadzone(msg.axes[mappings["dampen"]], 0.01)
 
     def handle_joystick_message(self, msg):
         # Tiny deadzone so we can safely e-stop with dampen switch
