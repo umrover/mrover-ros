@@ -6,12 +6,19 @@
       <!-- <MCUReset class="mcu_reset"></MCUReset>
         <CommReadout class="comms"></CommReadout> -->
       <div class="help">
-        <img src="help.png" alt="Help" title="Help" width="48" height="48" />
+        <img src="/help.png" alt="Help" title="Help" width="48" height="48" />
       </div>
       <div class="helpscreen"></div>
-      <div class="helpimages" style="display: flex; align-items: center; justify-content: space-evenly">
-        <img src="joystick.png" alt="Joystick" title="Joystick Controls"
-          style="width: auto; height: 70%; display: inline-block" />
+      <div
+        class="helpimages"
+        style="display: flex; align-items: center; justify-content: space-evenly"
+      >
+        <img
+          src="/joystick.png"
+          alt="Joystick"
+          title="Joystick Controls"
+          style="width: auto; height: 70%; display: inline-block"
+        />
       </div>
     </div>
     <div :class="['shadow p-3 rounded data', ledColor]">
@@ -94,7 +101,7 @@ export default defineComponent({
         latitude_deg: 42.293195,
         longitude_deg: -83.7096706,
         bearing_deg: 0,
-        altitude: 0,
+        altitude: 0
       },
 
       teleopEnabledCheck: false,
@@ -152,15 +159,17 @@ export default defineComponent({
           this.moteusState.error.push(msg.error)
         }
       } else if (msg.type == 'led') {
-        if (msg.red) this.ledColor = 'bg-danger' //red
-        else if (msg.green) this.ledColor = 'blink' //blinking green
+        if (msg.red)
+          this.ledColor = 'bg-danger' //red
+        else if (msg.green)
+          this.ledColor = 'blink' //blinking green
         else if (msg.blue) this.ledColor = 'bg-primary' //blue
       } else if (msg.type == 'nav_state') {
         this.navState = msg.state
       } else if (msg.type == 'nav_sat_fix') {
         this.odom.latitude_deg = msg.latitude
         this.odom.longitude_deg = msg.longitude
-        this.odom.altitude = msg.altitude;
+        this.odom.altitude = msg.altitude
       } else if (msg.type == 'auton_tfclient') {
         this.odom.bearing_deg = quaternionToMapAngle(msg.rotation)
       }
@@ -189,7 +198,7 @@ export default defineComponent({
   display: grid;
   grid-gap: 10px;
   grid-template-columns: 40% 20% auto;
-  grid-template-rows: repeat(5,auto);
+  grid-template-rows: repeat(5, auto);
   grid-template-areas:
     'header header header'
     'map map waypoints'
@@ -208,7 +217,6 @@ export default defineComponent({
 }
 
 @keyframes blinkAnimation {
-
   0%,
   100% {
     background-color: var(--bs-success);
@@ -278,8 +286,8 @@ h2 {
   cursor: pointer;
 }
 
-.help:hover~.helpscreen,
-.help:hover~.helpimages {
+.help:hover ~ .helpscreen,
+.help:hover ~ .helpimages {
   visibility: visible;
 }
 

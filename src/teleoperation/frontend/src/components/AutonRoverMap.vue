@@ -1,18 +1,34 @@
 <template>
   <div class="wrap">
     <!-- Leaflet Map Definition-->
-    <l-map @ready="onMapReady" ref="map" class="map" :zoom="22" :center="center" @click="getClickedLatLon($event)">
+    <l-map
+      @ready="onMapReady"
+      ref="map"
+      class="map"
+      :zoom="22"
+      :center="center"
+      @click="getClickedLatLon($event)"
+    >
       <l-control-scale :imperial="false" />
       <!-- Tile Layer for map background -->
-      <l-tile-layer ref="tileLayer" :url="online ? onlineUrl : offlineUrl" :attribution="attribution"
-        :options="online ? onlineTileOptions : offlineTileOptions" />
+      <l-tile-layer
+        ref="tileLayer"
+        :url="online ? onlineUrl : offlineUrl"
+        :attribution="attribution"
+        :options="online ? onlineTileOptions : offlineTileOptions"
+      />
 
       <!-- Markers for rover location -->
       <!-- TODO: Figure out if we still want these -->
       <l-marker ref="rover" :lat-lng="odomLatLng" :icon="locationIcon" />
 
       <!-- Waypoint Icons -->
-      <l-marker v-for="(waypoint, index) in waypointList" :key="index" :lat-lng="waypoint.latLng" :icon="waypointIcon">
+      <l-marker
+        v-for="(waypoint, index) in waypointList"
+        :key="index"
+        :lat-lng="waypoint.latLng"
+        :icon="waypointIcon"
+      >
         <l-tooltip :options="{ permanent: 'true', direction: 'top' }">
           {{ waypoint.name }}, {{ index }}
         </l-tooltip>
@@ -20,7 +36,7 @@
 
       <!-- Polylines -->
       <l-polyline :lat-lngs="polylinePath" :color="'red'" :dash-array="'5, 5'" />
-      <l-polyline :lat-lngs="odomPath" :color="'blue'" :dash-array="'5, 5'"/>
+      <l-polyline :lat-lngs="odomPath" :color="'blue'" :dash-array="'5, 5'" />
     </l-map>
     <!-- Controls that go directly under the map -->
     <div class="controls">
@@ -113,7 +129,7 @@ export default {
       return [this.odomLatLng].concat(
         this.route.map((waypoint: { latLng: any }) => waypoint.latLng)
       )
-    },
+    }
   },
   watch: {
     odom: {
@@ -132,25 +148,25 @@ export default {
         }
 
         // Update the rover marker using bearing angle
-        this.roverMarker.setRotationAngle(angle)
-
-        this.roverMarker.setLatLng(latLng)
+        if (this.roverMarker !== null) {
+          this.roverMarker.setRotationAngle(angle)
+          this.roverMarker.setLatLng(latLng)
+        }
 
         // Update the rover path
         this.odomCount++
         if (this.odomCount % DRAW_FREQUENCY === 0) {
-          if(this.odomPath.length > MAX_ODOM_COUNT) {
+          if (this.odomPath.length > MAX_ODOM_COUNT) {
             this.odomPath = [...this.odomPath.slice(1), latLng] //remove oldest element
           }
-          
+
           this.odomPath = [...this.odomPath, latLng]
-          this.odomCount = 0;
+          this.odomCount = 0
         }
-        
       },
       // Deep will watch for changes in children of an object
       deep: true
-    },
+    }
   },
   created: function () {
     // Get Icons for Map
@@ -168,9 +184,9 @@ export default {
   },
 
   methods: {
-    onMapReady: function() {
+    onMapReady: function () {
       // Pull objects from refs to be able to access data and change w functions
-        this.$nextTick(() => {
+      this.$nextTick(() => {
         this.map = this.$refs.map.leafletObject
         this.roverMarker = this.$refs.rover.leafletObject
       })
