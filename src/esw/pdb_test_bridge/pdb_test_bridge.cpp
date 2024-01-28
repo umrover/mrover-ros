@@ -57,16 +57,16 @@ int main(int argc, char** argv) {
         set_auton_led(ledPublisher, false, true, false, true);
         sleep(1000);
 
-        // ROS_INFO("BLUE SOLID");
-        // set_auton_led(ledPublisher, false, false, true, false);
-        // // sleep(1000);
+        ROS_INFO("BLUE SOLID");
+        set_auton_led(ledPublisher, false, false, true, false);
+        sleep(1000);
 
-        // ROS_INFO("BLUE BLINKING");
-        // set_auton_led(ledPublisher, false, false, true, true);
-        // sleep(1000);
+        ROS_INFO("BLUE BLINKING");
+        set_auton_led(ledPublisher, false, false, true, true);
+        sleep(1000);
 
-        // set_auton_led(ledPublisher, false, false, false, false);
-        // ROS_INFO("****END AUTON LED TEST****");
+        set_auton_led(ledPublisher, false, false, false, false);
+        ROS_INFO("****END AUTON LED TEST****");
     }
 
     return 0;
