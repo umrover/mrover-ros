@@ -28,14 +28,12 @@
 
         </div>
         <div class="controls-flex" v-if="arm_mode === 'position'">
-            <div class="row">
                 <div class="col" v-for="(joint, key) in temp_positions" :key="key">
                     <label>{{ key }}</label>
                     <input class="form-control" type="number" :min="joint.min" :max="joint.max"
                         @input="validateInput(joint, $event)" v-model="joint.value">
                 </div>
-            </div>
-            <button class="btn btn-primary mx-auto my-2" @click="submit_positions">Submit</button>
+            <div class="col text-center"><button class="btn btn-primary" @click="submit_positions">Submit</button></div>
         </div>
         <div class="controls-flex">
             <h4>Misc. Controls</h4>
@@ -90,13 +88,13 @@ export default defineComponent({
                 /* Joint A, allen_key and gripper don't need positioning */
                 joint_b: {
                     value: 0,
-                    min: 0,
-                    max: 45
+                    min: -45,
+                    max: 0
                 }, 
                 joint_c: {
                     value: 0,
-                    min: -120,
-                    max: 100
+                    min: -100,
+                    max: 120
                 }, 
                 joint_de_pitch: {
                     value: 0,
