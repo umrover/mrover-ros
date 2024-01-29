@@ -10,7 +10,7 @@ namespace mrover {
         mPnh = getMTPrivateNodeHandle();
 
         std::filesystem::path packagePath = ros::package::getPath("mrover");
-        std::filesystem::path modelPath = packagePath / "data" / "mallet_bottle_v2.onnx";
+        std::filesystem::path modelPath = packagePath / "data" / "yolov8n_mallet_bottle_better.onnx";
 
         mInferenceWrapper = InferenceWrapper{modelPath};
 
