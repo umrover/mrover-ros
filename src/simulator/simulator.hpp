@@ -205,6 +205,7 @@ namespace mrover {
         ros::Publisher mImuPub;
         ros::Publisher mMotorStatusPub;
         ros::Publisher mDriveControllerStatePub;
+        ros::Publisher mArmControllerStatePub;
 
         tf2_ros::Buffer mTfBuffer;
         tf2_ros::TransformListener mTfListener{mTfBuffer};

@@ -190,9 +190,7 @@ namespace mrover {
             MotorsStatus status;
             status.joint_states.header.stamp = ros::Time::now();
             status.joint_states.header.frame_id = "map";
-
             ControllerState driveControllerState;
-
             for (auto& position: {"front", "center", "back"}) {
                 for (auto& side: {"left", "right"}) {
                     std::string linkName = std::format("{}_{}_wheel_link", position, side);
@@ -213,18 +211,25 @@ namespace mrover {
                     driveControllerState.limit_hit.push_back(0b000);
                 }
             }
-
             mMotorStatusPub.publish(status);
             mDriveControllerStatePub.publish(driveControllerState);
 
-
             ControllerState armControllerState;
-            for (auto& linkName: {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_yaw"}) {
-                armControllerState.name.emplace_back(linkName);
+            for (auto& linkName: {"arm_a_link", "arm_b_link", "arm_c_link", "arm_d_link", "arm_e_link"}) {
+                armControllerState.name.emplace_back(armMsgToUrdf.backward(linkName).value());
                 armControllerState.state.emplace_back("Armed");
                 armControllerState.error.emplace_back("None");
-                armControllerState.limit_hit.push_back(0b000);
+
+                std::uint8_t limitSwitches = 0b000;
+                if (auto limits = rover.model.getLink(linkName)->parent_joint->limits) {
+                    double joinPosition = rover.physics->getJointPos(rover.linkNameToMeta.at(linkName).index);
+                    constexpr double OFFSET = 0.05;
+                    if (joinPosition < limits->lower + OFFSET) limitSwitches |= 0b001;
+                    if (joinPosition > limits->upper - OFFSET) limitSwitches |= 0b010;
+                }
+                armControllerState.limit_hit.push_back(limitSwitches);
             }
+            mArmControllerStatePub.publish(armControllerState);
         }
     }
 
