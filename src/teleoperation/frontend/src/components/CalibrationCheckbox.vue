@@ -36,12 +36,8 @@ export default defineComponent({
 
   data() {
     return {
-      websocket: new WebSocket("ws://localhost:8000/ws/gui"),
-      socket: null,
       toggleEnabled: false,
       calibrated: false,
-      calibrate_service: null,
-      calibrate_sub: null,
       interval: 0 as number
     }
   },

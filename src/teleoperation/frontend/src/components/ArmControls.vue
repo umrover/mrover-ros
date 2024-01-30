@@ -3,8 +3,6 @@
         <h2>Arm Controls</h2>
         <div class="controls-flex">
             <h4>Arm mode</h4>
-            <!-- Make opposite option disappear so that we cannot select both -->
-            <!-- Change to radio buttons in the future -->
             <div class="form-check">
                 <input v-model="arm_mode" class="form-check-input" type="radio" id="dis" value="arm_disabled" />
                 <label class="form-check-label" for="dis">Arm Disabled</label>

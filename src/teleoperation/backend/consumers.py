@@ -123,6 +123,8 @@ class GUIConsumer(JsonWebsocketConsumer):
                 self.auton_bearing()
             elif message["type"] == "mast_gimbal":
                 self.mast_gimbal(message)
+            elif message['type'] == 'enable_limit_switch':
+                self.limit_switch(message)
         except Exception as e:
             rospy.logerr(e)
 
@@ -319,6 +321,51 @@ class GUIConsumer(JsonWebsocketConsumer):
                 {"type": "calibrate_service", "name": msg["name"], "state": msg["state"], "error": msg["error"]}
             )
         )
+
+    def limit_switch(self, msg):
+        joints = ["joint_a","joint_b","joint_c","joint_de_pitch","joint_de_roll","allen_key","gripper"]
+        fail = []
+        for joint in joints:
+            name = "arm_enable_limit_switch_"+joint
+            self.limit_switch_service = rospy.ServiceProxy(name, SetBool)
+            try:
+                result = self.limit_switch_service(data = msg['data'])
+                if not result.success:
+                    fail.append(joint)
+            except rospy.ServiceException as e:
+                print(f"Service call failed: {e}")
+        self.send(text_data=json.dumps({
+                    'type': 'enable_limit_switch',
+                    'result': fail
+                }))
+
+    def calibrate_motors(self,msg):
+        joints = ["joint_a","joint_b","joint_c","joint_de_pitch","joint_de_roll","allen_key","gripper"]
+        fail = []
+        for joint in joints:
+            name = "arm_calibrate_"+joint
+            self.calibrate_service = rospy.ServiceProxy(name, Trigger)
+            try:
+                result = self.calibrate_service()
+                if not result.success:
+                    fail.append(joint)
+            except rospy.ServiceException as e:
+                print(f"Service call failed: {e}")
+        self.send(text_data=json.dumps({
+                    'type': 'calibrate_motors',
+                    'result': fail
+                }))
+    
+    def arm_adjust(self,msg):
+        try:
+            result = self.arm_adjust_service(name=msg['name'], value=msg['value'])
+            self.send(text_data=json.dumps({
+                'type': 'arm_adjust',
+                'result': result.success
+            }))
+        except rospy.ServiceException as e:
+            print(f"Service call failed: {e}")
+  
 
     def disable_auton_led(self):
         message = String()
