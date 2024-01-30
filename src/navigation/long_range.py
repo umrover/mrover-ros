@@ -15,8 +15,8 @@ from typing import Optional
 from util.state_lib.state import State
 from abc import abstractmethod
 import state
-from state import ApproachTargetBaseState
-from state import approach_post
+from navigation.approach_target_base import ApproachTargetBaseState
+import approach_post
 import numpy as np
 import math
 
