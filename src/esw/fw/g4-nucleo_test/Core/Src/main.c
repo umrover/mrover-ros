@@ -113,47 +113,11 @@ int main(void)
 
 		int pins[16] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
 
-//		for (int i = 0; i < 16; ++i) {
-//			HAL_GPIO_WritePin(GPIOA, pins[i], GPIO_PIN_RESET);
-//			HAL_GPIO_WritePin(GPIOB, pins[i], GPIO_PIN_RESET);
-//			HAL_GPIO_WritePin(GPIOC, pins[i], GPIO_PIN_RESET);
-//			HAL_GPIO_WritePin(GPIOD, pins[i], GPIO_PIN_RESET);
-//			HAL_GPIO_WritePin(GPIOE, pins[i], GPIO_PIN_RESET);
-//			HAL_GPIO_WritePin(GPIOF, pins[i], GPIO_PIN_RESET);
-//			HAL_GPIO_WritePin(GPIOG, pins[i], GPIO_PIN_RESET);
-//		}
-//
-//		HAL_Delay(30);
-//
-//		for (int i = 0; i <16; ++i) {
-//			HAL_GPIO_WritePin(GPIOA, pins[i], GPIO_PIN_SET);
-//			HAL_GPIO_WritePin(GPIOB, pins[i], GPIO_PIN_SET);
-//			HAL_GPIO_WritePin(GPIOC, pins[i], GPIO_PIN_SET);
-//			HAL_GPIO_WritePin(GPIOD, pins[i], GPIO_PIN_SET);
-//			HAL_GPIO_WritePin(GPIOE, pins[i], GPIO_PIN_SET);
-//			HAL_GPIO_WritePin(GPIOF, pins[i], GPIO_PIN_SET);
-//			HAL_GPIO_WritePin(GPIOG, pins[i], GPIO_PIN_SET);
-//		}
 
-//		HAL_GPIO_WritePin(GPIOA, 10, GPIO_PIN_RESET);
-//		HAL_Delay(30);
-//		HAL_GPIO_WritePin(GPIOA, 10, GPIO_PIN_SET);
-//
-//		HAL_GPIO_WritePin(GPIOA, 11, GPIO_PIN_RESET);
-//		HAL_Delay(30);
-//		HAL_GPIO_WritePin(GPIOA, 11, GPIO_PIN_SET);
-//
-//		HAL_GPIO_WritePin(GPIOA, 12, GPIO_PIN_RESET);
-//		HAL_Delay(30);
-//		HAL_GPIO_WritePin(GPIOA, 12, GPIO_PIN_SET);
-//
-//		HAL_GPIO_WritePin(GPIOA, 13, GPIO_PIN_RESET);
-//		HAL_Delay(30);
-//		HAL_GPIO_WritePin(GPIOA, 13, GPIO_PIN_SET);
 //		for (int i = 0; i < 1; ++i) {
 			HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, GPIO_PIN_RESET);
 //			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_SET);
-			TIM15->CCR1 = 100;
+			TIM15->CCR1 = 60;
 			HAL_Delay(250);
 			HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, GPIO_PIN_SET);
 //			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_RESET);

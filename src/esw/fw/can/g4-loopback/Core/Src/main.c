@@ -157,15 +157,12 @@ int main(void)
 
 	int values[5] = {50, 30, 50, 70, 90};
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_SET);
 
-	for (int i = 0; i < 1; ++i) {
+	for (int i = 0; i < 5; ++i) {
 		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, GPIO_PIN_RESET);
-		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_SET);
 		TIM15->CCR1 = values[i];
 		HAL_Delay(1000);
 		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, GPIO_PIN_SET);
-		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_RESET);
 		HAL_Delay(1000);
 	}
 
