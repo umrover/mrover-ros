@@ -1,24 +1,14 @@
 import tf2_ros
 import rospy
-from aenum import Enum, NoAlias
-from geometry_msgs.msg import Twist
+
 from util.ros_utils import get_rosparam
-from context import Context
 from util.state_lib.state import State
-from util.state_lib.state_machine import StateMachine
 from util.np_utils import normalized
-from abc import ABC, abstractmethod
-from state import DoneState
-from search import SearchState
-from util.state_lib.state_publisher_server import StatePublisher
 from typing import Optional
-from util.state_lib.state import State
-from abc import abstractmethod
-import state
+
+from navigation import approach_post
 from navigation.approach_target_base import ApproachTargetBaseState
-import approach_post
 import numpy as np
-import math
 
 DIST_AHEAD = get_rosparam("long_range/distance_ahead", 20)
 
@@ -68,6 +58,6 @@ class LongRangeState(ApproachTargetBaseState):
     def determine_next(self, context, finished: bool) -> State:
         fid_pos = context.env.current_fid_pos()
         if fid_pos is None:
-            return state.LongRangeState()
+            return self
         else:
             return approach_post.ApproachPostState()
