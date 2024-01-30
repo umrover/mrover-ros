@@ -1,4 +1,3 @@
-// Basic demo for readings from Adafruit BNO08x
 #include <Adafruit_BNO08x.h>
 
 // For SPI mode, we need a CS pin
@@ -12,6 +11,20 @@
 
 Adafruit_BNO08x bno08x(BNO08X_RESET);
 sh2_SensorValue_t sensorValue;
+
+float rotationVector_i;
+float rotationVector_j;
+float rotationVector_k;
+float rotationVector_real;
+
+float linearAcceleration_x;
+float linearAcceleration_y;
+float linearAcceleration_z;
+
+float gyroscope_x;
+float gyroscope_y;
+float gyroscope_z;
+
 
 void setup(void) {
   Serial.begin(115200);
@@ -40,55 +53,21 @@ void setup(void) {
 // Here is where you define the sensor outputs you want to receive
 void setReports(void) {
   Serial.println("Setting desired reports");
-  if (!bno08x.enableReport(SH2_ROTATION_VECTOR)) {
+  if (!bno08x.enableReport(SH2_ROTATION_VECTOR, 10000)) {
     Serial.println("Could not enable rotation vector");
   }
-  if (!bno08x.enableReport(SH2_ACCELEROMETER)) {
-    Serial.println("Could not enable accelerometer");
+  if (!bno08x.enableReport(SH2_LINEAR_ACCELERATION, 10000)) {
+    Serial.println("Could not enable linear acceleration");
   }
-  if (!bno08x.enableReport(SH2_GYROSCOPE_CALIBRATED)) {
+  if (!bno08x.enableReport(SH2_GYROSCOPE_CALIBRATED, 10000)) {
     Serial.println("Could not enable gyroscope");
   }
-  if (!bno08x.enableReport(SH2_MAGNETIC_FIELD_CALIBRATED)) {
+  if (!bno08x.enableReport(SH2_MAGNETIC_FIELD_CALIBRATED, 10000)) {
     Serial.println("Could not enable magnetic field calibrated");
   }
 }
-void printActivity(uint8_t activity_id) {
-  switch (activity_id) {
-  case PAC_UNKNOWN:
-    Serial.print("Unknown");
-    break;
-  case PAC_IN_VEHICLE:
-    Serial.print("In Vehicle");
-    break;
-  case PAC_ON_BICYCLE:
-    Serial.print("On Bicycle");
-    break;
-  case PAC_ON_FOOT:
-    Serial.print("On Foot");
-    break;
-  case PAC_STILL:
-    Serial.print("Still");
-    break;
-  case PAC_TILTING:
-    Serial.print("Tilting");
-    break;
-  case PAC_WALKING:
-    Serial.print("Walking");
-    break;
-  case PAC_RUNNING:
-    Serial.print("Running");
-    break;
-  case PAC_ON_STAIRS:
-    Serial.print("On Stairs");
-    break;
-  default:
-    Serial.print("NOT LISTED");
-  }
-  Serial.print(" (");
-  Serial.print(activity_id);
-  Serial.print(")");
-}
+
+
 void loop() {
   delay(10);
 
@@ -100,30 +79,59 @@ void loop() {
   if (!bno08x.getSensorEvent(&sensorValue)) {
     return;
   }
+  switch (sensorValue.sensorId) {
+
+  case SH2_ROTATION_VECTOR:
+    // Serial.print("ORIENTATION ");
     // orientation
-    Serial.print(sensorValue.un.rotationVector.i);
+    rotationVector_i = sensorValue.un.rotationVector.i;
+    rotationVector_j = sensorValue.un.rotationVector.j;
+    rotationVector_k = sensorValue.un.rotationVector.k;
+    rotationVector_real = sensorValue.un.rotationVector.real;
+    break;
+
+  case SH2_LINEAR_ACCELERATION:
+    // Serial.print("LINEAR ACCELERATION ");
+    //acceleration
+    linearAcceleration_x = sensorValue.un.linearAcceleration.x;
+    linearAcceleration_y = sensorValue.un.linearAcceleration.y;
+    linearAcceleration_z = sensorValue.un.linearAcceleration.z;
+    break;
+
+  case SH2_GYROSCOPE_CALIBRATED:
+    // Serial.print("GYRO  ");
+    //gyro
+    gyroscope_x = sensorValue.un.gyroscope.x;
+    gyroscope_y = sensorValue.un.gyroscope.y;
+    gyroscope_z = sensorValue.un.gyroscope.z;
+    break;
+
+  case SH2_MAGNETIC_FIELD_CALIBRATED:
+    // Serial.print("MAG ");
+    // orientation
+    Serial.print(rotationVector_i, 6);
     Serial.print(" ");
-    Serial.print(sensorValue.un.rotationVector.j);
+    Serial.print(rotationVector_j, 6);
     Serial.print(" ");
-    Serial.print(sensorValue.un.rotationVector.k);
+    Serial.print(rotationVector_k, 6);
     Serial.print(" ");
-    Serial.print(sensorValue.un.rotationVector.real);
+    Serial.print(rotationVector_real, 6);
     Serial.print(" ");
 
     //acceleration
-    Serial.print(sensorValue.un.accelerometer.x, 6);
+    Serial.print(linearAcceleration_x, 6);
     Serial.print(" ");
-    Serial.print(sensorValue.un.accelerometer.y, 6);
+    Serial.print(linearAcceleration_y, 6);
     Serial.print(" ");
-    Serial.print(sensorValue.un.accelerometer.z, 6);
+    Serial.print(linearAcceleration_z, 6);
     Serial.print(" ");
 
     //gyro
-    Serial.print(sensorValue.un.gyroscope.x, 6);
+    Serial.print(gyroscope_x, 6);
     Serial.print(" ");
-    Serial.print(sensorValue.un.gyroscope.y, 6);
+    Serial.print(gyroscope_y, 6);
     Serial.print(" ");
-    Serial.print(sensorValue.un.gyroscope.z, 6);
+    Serial.print(gyroscope_z, 6);
     Serial.print(" ");
 
     //mag
@@ -133,12 +141,14 @@ void loop() {
     Serial.print(" ");
     Serial.print(sensorValue.un.magneticField.z, 6);
     Serial.print(" ");
-
     Serial.print(sensorValue.un.temperature.value); 
     Serial.print(" ");
 
+    // Serial.print("Calibration ");
     Serial.print(sensorValue.status); 
-    Serial.println();
+    Serial.print("\n");
+    break;
+
+  }
 
 }
-
