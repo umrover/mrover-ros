@@ -151,6 +151,9 @@ class LongRangeTagStore:
                 self.__data[tag.id] = self.TagData(hit_count=1, tag=tag, time=rospy.get_time())
 
     def get(self, tag_id: int) -> Optional[LongRangeTag]:
+        if len(self.__data) == 0:
+            return None
+
         time_difference = rospy.get_time() - self.__data[tag_id].time
         if (
             tag_id in self.__data
