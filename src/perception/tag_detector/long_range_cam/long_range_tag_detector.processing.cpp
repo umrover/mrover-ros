@@ -3,6 +3,8 @@
 #include <opencv2/core/types.hpp>
 #include <sensor_msgs/Image.h>
 
+#include <opencv2/imgproc.hpp>
+
 namespace mrover {
 
     /**
@@ -25,7 +27,7 @@ namespace mrover {
         // 3. We only want to publish the tags if the topic has subscribers
         if (mPublishImages && mImgPub.getNumSubscribers()) {
             // Draw the tags on the image using OpenCV
-            //publishTagsOnImage();
+            publishTagsOnImage();
         }
 
         //Publish all tags that meet threshold
@@ -40,8 +42,11 @@ namespace mrover {
         assert(msg);
         assert(msg->height > 0);
         assert(msg->width > 0);
-        //Store image message to mImgMsg member variable
-        cv::Mat cvImage = cv::Mat{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC3, const_cast<uint8_t*>(msg->data.data())};
+
+        // TODO: Modify when going back to real cam
+        cv::Mat cvImage_C4 = cv::Mat{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC4, const_cast<uint8_t*>(msg->data.data())};
+        cv::Mat cvImage = cv::Mat();
+        cv::cvtColor(cvImage_C4, cvImage, cv::COLOR_BGRA2BGR);
 
         //Store to mImg member variable - unsure if necessary but need it to persist
         cvImage.copyTo(mImg);
