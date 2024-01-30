@@ -216,6 +216,15 @@ namespace mrover {
 
             mMotorStatusPub.publish(status);
             mDriveControllerStatePub.publish(driveControllerState);
+
+
+            ControllerState armControllerState;
+            for (auto& linkName: {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_yaw"}) {
+                armControllerState.name.emplace_back(linkName);
+                armControllerState.state.emplace_back("Armed");
+                armControllerState.error.emplace_back("None");
+                armControllerState.limit_hit.push_back(0b000);
+            }
         }
     }
 
