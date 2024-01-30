@@ -214,7 +214,8 @@ namespace mrover {
             //            mode.pidf.with_k(0.625);
             mode.pidf.with_p(2.8);
             mode.pidf.with_output_bound(-1.0, 1.0);
-            m_desired_output = mode.pidf.calculate(input, target);
+            // TODO(quintin): Use timer for dt
+            m_desired_output = mode.pidf.calculate(input, target, Seconds{0.01});
             m_error = BDCMCErrorInfo::NO_ERROR;
         }
 
@@ -237,7 +238,8 @@ namespace mrover {
             Radians input = m_uncalib_position.value() - m_state_after_calib->offset_position;
             mode.pidf.with_p(1.2);
             mode.pidf.with_output_bound(-1.0, 1.0);
-            m_desired_output = mode.pidf.calculate(input, target);
+            // TODO(quintin): Use timer for dt
+            m_desired_output = mode.pidf.calculate(input, target, Seconds{0.01});
             m_error = BDCMCErrorInfo::NO_ERROR;
         }
 

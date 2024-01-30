@@ -38,6 +38,15 @@ namespace mrover {
         InputUnit m_last_error{};
         TimeUnit m_last_time{};
 
+    public:
+        /**
+         * TODO: documentation
+         *
+         * @param input     Current value
+         * @param target    Desired final value
+         * @param dt        Time since last call
+         * @return          Output value to control the input to move to the target
+         */
         auto calculate(InputUnit input, InputUnit target, TimeUnit dt) -> OutputUnit {
             InputUnit error = target - input;
 
@@ -64,25 +73,6 @@ namespace mrover {
             m_last_error = error;
 
             return clamp(result, out_min, out_max);
-        }
-
-    public:
-        /**
-         * TODO: documentation
-         *
-         * @param input     Current value
-         * @param target    Desired final value
-         * @return          Output value to control the input to move to the target
-         */
-        auto calculate(InputUnit input, InputUnit target) -> OutputUnit {
-            double current_ticks = HAL_GetTick();
-            IsUnit auto tick_frequency = Hertz{HAL_GetTickFreq()};
-            TimeUnit now = current_ticks / tick_frequency;
-            TimeUnit dt = now - m_last_time;
-            m_last_time = now;
-            // TODO(quintin): need a timer for this...
-            dt = TimeUnit{0.01};
-            return calculate(input, target, dt);
         }
 
         auto with_p(double p) -> PIDF& {
