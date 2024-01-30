@@ -8,7 +8,7 @@
 #include <hardware_i2c.hpp>
 #include <units/units.hpp>
 
-// #include "filtering.hpp"
+#include "filtering.hpp"
 
 namespace mrover {
 
@@ -20,7 +20,7 @@ namespace mrover {
     constexpr auto RELATIVE_CPR = CountsPerRad{3355 / tau}; // Measured empirically
     constexpr auto ABSOLUTE_CPR = CountsPerRad{1024 / tau};
     constexpr auto MIN_MEASURABLE_VELOCITY = RadiansPerSecond{0.05}; // Very thoroughly obtained number - Quintin Approves
-    const auto CLOCK_FREQ = Hertz{HAL_RCC_GetHCLKFreq()};
+    auto const CLOCK_FREQ = Hertz{HAL_RCC_GetHCLKFreq()};
 
     struct EncoderReading {
         Radians position;
@@ -71,6 +71,10 @@ namespace mrover {
 
         auto update() -> void;
 
+        auto expired() -> void {
+            m_velocity_filter.clear();
+        }
+
     private:
         TIM_HandleTypeDef* m_tick_timer{};
         TIM_HandleTypeDef* m_elapsed_timer{};
@@ -83,8 +87,8 @@ namespace mrover {
         // Seconds m_velocity_dt;
 
         Radians m_position;
-        RadiansPerSecond m_velocity;
-        // MeanMedianFilter<RadiansPerSecond, 17> m_velocity_filter;
+        // RadiansPerSecond m_velocity;
+        RunningMeanFilter<RadiansPerSecond, 4 + 1> m_velocity_filter;
     };
 
 } // namespace mrover

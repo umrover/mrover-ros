@@ -30,8 +30,8 @@ extern TIM_HandleTypeDef htim15;
 extern TIM_HandleTypeDef htim16;
 extern TIM_HandleTypeDef htim17;
 
-#define QUADRATURE_TICK_TIMER_1 &htim4 // Special encoder timer which externally reads quadrature encoder ticks
-// #define QUADRATURE_TIMER_2 &htim3
+#define QUADRATURE_TICK_TIMER_1 &htim3 // Special encoder timer which externally reads quadrature encoder ticks
+// #define QUADRATURE_TIMER_2 &htim4
 #define QUADRATURE_ELAPSED_TIMER_1 &htim17 // Measures time since the lsat quadrature tickreading
 // #define ABSOLUTE_ENCODER_TIMER &htim2
 // #define UPDATE_TIMER &htim6
@@ -50,7 +50,7 @@ namespace mrover {
     FDCAN<InBoundMessage> fdcan_bus;
     Controller controller;
 
-    void init() {
+    auto init() -> void {
         fdcan_bus = FDCAN<InBoundMessage>{DEVICE_ID, DESTINATION_DEVICE_ID, &hfdcan1};
         controller = Controller{
                 PWM_TIMER_1,
@@ -76,7 +76,7 @@ namespace mrover {
         // check(HAL_TIM_Base_Start_IT(ABSOLUTE_ENCODER_TIMER) == HAL_OK, Error_Handler);
     }
 
-    void fdcan_received_callback() {
+    auto fdcan_received_callback() -> void {
         std::optional<std::pair<FDCAN_RxHeaderTypeDef, InBoundMessage>> received = fdcan_bus.receive();
         if (!received) Error_Handler(); // This function is called WHEN we receive a message so this should never happen
 
@@ -89,37 +89,41 @@ namespace mrover {
         }
     }
 
-    void update_callback() {
+    auto update_callback() -> void {
         controller.update();
     }
 
-    void request_absolute_encoder_data_callback() {
+    auto request_absolute_encoder_data_callback() -> void {
         controller.request_absolute_encoder_data();
     }
 
-    void read_absolute_encoder_data_callback() {
+    auto read_absolute_encoder_data_callback() -> void {
         controller.read_absolute_encoder_data();
     }
 
-    void update_absolute_encoder_callback() {
+    auto update_absolute_encoder_callback() -> void {
         controller.update_absolute_encoder();
     }
 
-    void update_quadrature_encoder_callback() {
+    auto update_quadrature_encoder_callback() -> void {
         controller.update_quadrature_encoder();
     }
 
-    void send_callback() {
+    auto quadrature_elapsed_timer_expired() -> void {
+        controller.quadrature_elapsed_timer_expired();
+    }
+
+    auto send_callback() -> void {
         controller.send();
     }
 
-    void fdcan_watchdog_expired() {
+    auto fdcan_watchdog_expired() -> void {
         controller.receive_watchdog_expired();
     }
 
-    void calc_velocity() {
-        controller.calc_quadrature_velocity();
-    }
+    // void calc_velocity() {
+    //     controller.calc_quadrature_velocity();
+    // }
 
 } // namespace mrover
 
@@ -146,10 +150,16 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim) {
         mrover::send_callback();
     } else if (htim == FDCAN_WATCHDOG_TIMER) {
         mrover::fdcan_watchdog_expired();
-    } else if (htim == QUADRATURE_TICK_TIMER_1) {
-        mrover::update_quadrature_encoder_callback();
+    } else if (htim == QUADRATURE_ELAPSED_TIMER_1) {
+        mrover::quadrature_elapsed_timer_expired();
     }
     // TODO: check for slow update timer and call on controller to send out i2c frame
+}
+
+void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef* htim) {
+    if (htim == QUADRATURE_TICK_TIMER_1) {
+        mrover::update_quadrature_encoder_callback();
+    }
 }
 
 /**

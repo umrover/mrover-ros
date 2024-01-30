@@ -207,7 +207,8 @@ namespace mrover {
 
             RadiansPerSecond target = message.velocity;
             RadiansPerSecond input = m_velocity.value();
-            mode.pidf.with_p(1.2);
+//            mode.pidf.with_k(0.625);
+            mode.pidf.with_p(2.8);
             mode.pidf.with_output_bound(-1.0, 1.0);
             m_desired_output = mode.pidf.calculate(input, target);
             m_error = BDCMCErrorInfo::NO_ERROR;
@@ -328,14 +329,21 @@ namespace mrover {
             process_command();
         }
 
-        /**
-         * \brief Update the quadrature velocity measurement.
-         *
-         * \note Called more frequently than update position.
-         */
-        auto calc_quadrature_velocity() -> void {
-            m_relative_encoder->update();
+        auto quadrature_elapsed_timer_expired() -> void {
+            if (m_relative_encoder) {
+                m_relative_encoder->expired();
+                update_relative_encoder();
+            }
         }
+
+        // /**
+        //  * \brief Update the quadrature velocity measurement.
+        //  *
+        //  * \note Called more frequently than update position.
+        //  */
+        // auto calc_quadrature_velocity() -> void {
+        //     m_relative_encoder->update();
+        // }
 
         /**
          * \brief Serialize our internal state into an outbound status message
@@ -375,7 +383,6 @@ namespace mrover {
          */
         auto update() -> void {
             process_command();
-
             update_outbound();
         }
 
@@ -385,11 +392,13 @@ namespace mrover {
          * The update rate should be limited to avoid hammering the FDCAN bus.
          */
         auto send() -> void {
+            update();
             m_fdcan.broadcast(m_outbound);
         }
 
 
         auto update_quadrature_encoder() -> void {
+            update();
             if (m_relative_encoder) {
                 m_relative_encoder->update();
             }

@@ -11,18 +11,22 @@ int main(int argc, char** argv) {
 
     auto brushlessController = std::make_unique<BrushedController>(nh, "jetson", "devboard");
 
-    Radians target = 10_rad;
+    auto targetPosition = 10_rad;
+    auto targetVelocity = RadiansPerSecond{1.2};
+    Dimensionless targetThrottle = 0.5;
 
     ros::Timer timer = nh.createTimer(ros::Duration{5}, [&](ros::TimerEvent const&) {
-        target *= -1;
-        ROS_INFO_STREAM(std::format("Target: {}", target.get()));
+        targetPosition *= -1;
+        targetVelocity *= -1;
+        targetThrottle *= -1;
+        ROS_INFO_STREAM(std::format("Target: {}", targetPosition.get()));
     });
 
     ros::Rate rate(100);
     while (ros::ok()) {
-        // brushlessController->setDesiredPosition(target);
-        // brushlessController->setDesiredVelocity(RadiansPerSecond{2.0});
-        brushlessController->setDesiredThrottle(-0.5);
+        brushlessController->setDesiredPosition(targetPosition);
+        // brushlessController->setDesiredVelocity(targetVelocity);
+        // brushlessController->setDesiredThrottle(targetThrottle);
         rate.sleep();
         ros::spinOnce();
     }
