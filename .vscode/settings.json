@@ -41,4 +41,10 @@
         "GLFW",
         "wgpu"
     ],
+    "search.exclude": {
+        "**/node_modules": true,
+        "**/bower_components": true,
+        "**/*.code-search": true,
+        "deps/dawn": true,
+    }
 }
