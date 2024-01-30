@@ -37,7 +37,6 @@ namespace mrover {
         TIM_HandleTypeDef* m_encoder_elapsed_timer{};
         I2C_HandleTypeDef* m_absolute_encoder_i2c{};
         std::optional<QuadratureEncoderReader> m_relative_encoder;
-        // TODO: implement
         std::optional<AbsoluteEncoderReader> m_absolute_encoder;
         std::array<LimitSwitch, 4> m_limit_switches;
 
@@ -56,7 +55,9 @@ namespace mrover {
             Radians max_backward_pos;
         };
 
-        std::optional<StateAfterConfig> m_state_after_config; // Present if and only if we are configured
+        // Present if and only if we are configured
+        // Configuration messages are sent over the CAN bus
+        std::optional<StateAfterConfig> m_state_after_config;
 
         struct StateAfterCalib {
             // Ex: If the encoder reads in 6 Radians and offset is 4 Radians,
@@ -64,7 +65,10 @@ namespace mrover {
             Radians offset_position;
         };
 
-        std::optional<StateAfterCalib> m_state_after_calib; // Present if and only if we are calibrated
+        // Present if and only if we are calibrated
+        // Calibrated means we know where we are absolutely
+        // This gets set if we hit a limit switch, get an absolute encoder reading, or get a manual adjust command from teleoperation
+        std::optional<StateAfterCalib> m_state_after_calib;
 
         // Messaging
         InBoundMessage m_inbound = IdleCommand{};
@@ -207,7 +211,7 @@ namespace mrover {
 
             RadiansPerSecond target = message.velocity;
             RadiansPerSecond input = m_velocity.value();
-//            mode.pidf.with_k(0.625);
+            //            mode.pidf.with_k(0.625);
             mode.pidf.with_p(2.8);
             mode.pidf.with_output_bound(-1.0, 1.0);
             m_desired_output = mode.pidf.calculate(input, target);
@@ -418,24 +422,26 @@ namespace mrover {
         }
 
         auto update_absolute_encoder() -> void {
-            // TODO: make this work
-            // std::optional<EncoderReading> reading;
-            //
-            // // Only read the encoder if we are configured
-            // if (m_absolute_encoder) {
-            //     reading = m_absolute_encoder->read();
-            // }
-            //
-            // if (reading) {
-            //     auto const& [position, velocity] = reading.value();
-            //     if (m_state_after_calib) {
-            //         m_uncalib_position = position - m_state_after_calib->offset_position;
-            //     }
-            //     m_velocity = velocity;
-            // } else {
-            //     m_uncalib_position = std::nullopt;
-            //     m_velocity = std::nullopt;
-            // }
+            std::optional<EncoderReading> reading;
+
+            // Only read the encoder if we are configured
+            if (m_absolute_encoder) {
+                reading = m_absolute_encoder->read();
+            }
+
+            if (reading) {
+                auto const& [position, velocity] = reading.value();
+                if (!m_state_after_calib) m_state_after_calib.emplace();
+
+                // TODO(quintin): This is pretty stupid
+                m_state_after_calib->offset_position = -position;
+
+                m_uncalib_position.emplace(); // Reset to zero
+                m_velocity = velocity;
+            } else {
+                m_uncalib_position = std::nullopt;
+                m_velocity = std::nullopt;
+            }
         }
     };
 
