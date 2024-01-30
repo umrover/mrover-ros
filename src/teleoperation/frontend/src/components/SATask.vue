@@ -9,16 +9,9 @@
         <img src="/help.png" alt="Help" title="Help" width="48" height="48" />
       </div>
       <div class="helpscreen"></div>
-      <div
-        class="helpimages"
-        style="display: flex; align-items: center; justify-content: space-evenly"
-      >
-        <img
-          src="/joystick.png"
-          alt="Joystick"
-          title="Joystick Controls"
-          style="width: auto; height: 70%; display: inline-block"
-        />
+      <div class="helpimages" style="display: flex; align-items: center; justify-content: space-evenly">
+        <img src="/joystick.png" alt="Joystick" title="Joystick Controls"
+          style="width: auto; height: 70%; display: inline-block" />
       </div>
     </div>
     <div class="shadow p-3 rounded map">
@@ -40,7 +33,7 @@
       <PDBFuse />
     </div>
     <div class="shadow p-3 rounded jointState">
-      <JointStateTable :joint-state-data="jointState" :vertical="true" />
+      <MotorsStatusTable :joint-state-data="jointState" :vertical="true" />
     </div>
     <div class="shadow p-3 rounded moteus">
       <DriveMoteusStateTable :moteus-state-data="moteusState" />
@@ -55,29 +48,18 @@
     <div class="shadow p-3 rounded calibration">
       <h3>Calibrations</h3>
       <div class="calibration-checkboxes">
-        <CalibrationCheckbox
-          :name="'Joint 1 Calibration'"
-          :joint_name="'sa_joint_1'"
-          :calibrate_topic="'sa_is_calibrated'"
-        />
-        <CalibrationCheckbox
-          :name="'Joint 2 Calibration'"
-          :joint_name="'sa_joint_2'"
-          :calibrate_topic="'sa_is_calibrated'"
-        />
-        <CalibrationCheckbox
-          :name="'Joint 3 Calibration'"
-          :joint_name="'sa_joint_3'"
-          :calibrate_topic="'sa_is_calibrated'"
-        />
+        <CalibrationCheckbox :name="'Joint 1 Calibration'" :joint_name="'sa_joint_1'"
+          :calibrate_topic="'sa_is_calibrated'" />
+        <CalibrationCheckbox :name="'Joint 2 Calibration'" :joint_name="'sa_joint_2'"
+          :calibrate_topic="'sa_is_calibrated'" />
+        <CalibrationCheckbox :name="'Joint 3 Calibration'" :joint_name="'sa_joint_3'"
+          :calibrate_topic="'sa_is_calibrated'" />
       </div>
-      <MotorAdjust
-        :options="[
-          { name: 'sa_joint_1', option: 'Joint 1' },
-          { name: 'sa_joint_2', option: 'Joint 2' },
-          { name: 'sa_joint_3', option: 'Joint 3' }
-        ]"
-      />
+      <MotorAdjust :options="[
+        { name: 'sa_joint_1', option: 'Joint 1' },
+        { name: 'sa_joint_2', option: 'Joint 2' },
+        { name: 'sa_joint_3', option: 'Joint 3' }
+      ]" />
     </div>
     <div v-show="false">
       <MastGimbalControls></MastGimbalControls>
@@ -97,7 +79,7 @@ import MastGimbalControls from './MastGimbalControls.vue'
 import PDBFuse from './PDBFuse.vue'
 import Cameras from './Cameras.vue'
 import DriveMoteusStateTable from './DriveMoteusStateTable.vue'
-import JointStateTable from './JointStateTable.vue'
+import MotorsStatusTable from './MotorsStatusTable.vue'
 import LimitSwitch from './LimitSwitch.vue'
 import CalibrationCheckbox from './CalibrationCheckbox.vue'
 //   import CommReadout from "./CommReadout.vue";
@@ -112,7 +94,7 @@ export default {
     BasicWaypointEditor,
     Cameras,
     DriveControls,
-    JointStateTable,
+    MotorsStatusTable,
     MastGimbalControls,
     DriveMoteusStateTable,
     PDBFuse,
@@ -245,8 +227,8 @@ export default {
   cursor: pointer;
 }
 
-.help:hover ~ .helpscreen,
-.help:hover ~ .helpimages {
+.help:hover~.helpscreen,
+.help:hover~.helpimages {
   visibility: visible;
 }
 

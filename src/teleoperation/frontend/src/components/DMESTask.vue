@@ -8,16 +8,9 @@
         <img src="/help.png" alt="Help" title="Help" width="48" height="48" />
       </div>
       <div class="helpscreen"></div>
-      <div
-        class="helpimages"
-        style="display: flex; align-items: center; justify-content: space-evenly"
-      >
-        <img
-          src="/joystick.png"
-          alt="Joystick"
-          title="Joystick Controls"
-          style="width: auto; height: 70%; display: inline-block"
-        />
+      <div class="helpimages" style="display: flex; align-items: center; justify-content: space-evenly">
+        <img src="/joystick.png" alt="Joystick" title="Joystick Controls"
+          style="width: auto; height: 70%; display: inline-block" />
       </div>
     </div>
 
@@ -34,7 +27,7 @@
       <PDBFuse />
     </div>
     <div class="shadow p-3 rounded drive-vel-data">
-      <JointStateTable :joint-state-data="jointState" :vertical="true" />
+      <MotorsStatusTable :joint-state-data="jointState" :vertical="true" />
     </div>
     <div v-if="type === 'DM'" class="shadow p-3 rounded waypoint-editor">
       <BasicWaypointEditor :odom="odom" />
@@ -65,7 +58,7 @@ import ArmControls from './ArmControls.vue'
 import BasicMap from './BasicRoverMap.vue'
 import BasicWaypointEditor from './BasicWaypointEditor.vue'
 import Cameras from './Cameras.vue'
-import JointStateTable from './JointStateTable.vue'
+import MotorsStatusTable from './MotorsStatusTable.vue'
 import OdometryReading from './OdometryReading.vue'
 import DriveControls from './DriveControls.vue'
 import MastGimbalControls from './MastGimbalControls.vue'
@@ -79,7 +72,7 @@ export default defineComponent({
     BasicMap,
     BasicWaypointEditor,
     Cameras,
-    JointStateTable,
+    MotorsStatusTable,
     OdometryReading,
     DriveControls,
     MastGimbalControls
@@ -202,8 +195,8 @@ export default defineComponent({
   cursor: pointer;
 }
 
-.help:hover ~ .helpscreen,
-.help:hover ~ .helpimages {
+.help:hover~.helpscreen,
+.help:hover~.helpimages {
   visibility: visible;
 }
 

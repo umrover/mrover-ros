@@ -20,8 +20,8 @@ namespace mrover {
         mGpsTask = PeriodicTask{mPnh.param<float>("gps_rate", 10)};
         mImuTask = PeriodicTask{mPnh.param<float>("imu_rate", 100)};
         mMotorStatusPub = mNh.advertise<MotorsStatus>("/drive_status", 1);
-        mDriveControllerStatePub = mNh.advertise<ControllerState>("/drive_controller_state", 1);
-        mArmControllerStatePub = mNh.advertise<ControllerState>("/arm_controller_state", 1);
+        mDriveControllerStatePub = mNh.advertise<ControllerState>("/drive_controller_data", 1);
+        mArmControllerStatePub = mNh.advertise<ControllerState>("/arm_controller_data", 1);
 
         mIkTargetPub = mNh.advertise<IK>("/arm_ik", 1);
 

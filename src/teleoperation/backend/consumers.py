@@ -18,9 +18,10 @@ from mrover.msg import (
     StateMachineStateUpdate,
     Throttle,
     CalibrationStatus,
+    MotorsStatus
 )
 from mrover.srv import EnableAuton
-from sensor_msgs.msg import JointState, NavSatFix
+from sensor_msgs.msg import NavSatFix
 from std_msgs.msg import String, Bool
 from std_srvs.srv import SetBool, Trigger
 from util.SE3 import SE3
@@ -58,7 +59,7 @@ class GUIConsumer(JsonWebsocketConsumer):
             "/drive_controller_data", ControllerState, self.drive_controller_callback
         )
         self.gps_fix = rospy.Subscriber("/gps/fix", NavSatFix, self.gps_fix_callback)
-        self.joint_state_sub = rospy.Subscriber("/drive_joint_data", JointState, self.joint_state_callback)
+        self.drive_status_sub = rospy.Subscriber("/drive_status", MotorsStatus, self.drive_status_callback)
         self.led_sub = rospy.Subscriber("/led", LED, self.led_callback)
         self.nav_state_sub = rospy.Subscriber("/nav_state", StateMachineStateUpdate, self.nav_state_callback)
         self.imu_calibration = rospy.Subscriber("imu/calibration", CalibrationStatus, self.imu_calibration_callback)
@@ -84,7 +85,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.pdb_sub.unregister()
         self.arm_moteus_sub.unregister()
         self.drive_moteus_sub.unregister()
-        self.joint_state_sub.unregister()
+        self.drive_status_sub.unregister()
         self.gps_fix.unregister()
         self.led_sub.unregister()
         self.nav_state_sub.unregister()
@@ -190,8 +191,14 @@ class GUIConsumer(JsonWebsocketConsumer):
         )
 
     def drive_controller_callback(self, msg):
+        hits = []
+        for n in msg.limit_hit:
+            temp = []
+            for i in range(4):
+                temp.append((1 if n & (1 << i) != 0 else 0) )
+            hits.append(temp)
         self.send(
-            text_data=json.dumps({"type": "drive_moteus", "name": msg.name, "state": msg.state, "error": msg.error})
+            text_data=json.dumps({"type": "drive_moteus", "name": msg.name, "state": msg.state, "error": msg.error, "limit_hit": hits})
         )
 
     def enable_laser_callback(self, msg):
@@ -220,17 +227,19 @@ class GUIConsumer(JsonWebsocketConsumer):
         message.data = "off"
         self.led_pub.publish(message)
 
-    def joint_state_callback(self, msg):
-        msg.position = [x * self.wheel_radius for x in msg.position]
-        msg.velocity = [x * self.wheel_radius for x in msg.velocity]
+    def drive_status_callback(self, msg):
+        msg.joint_states.position = [x * self.wheel_radius for x in msg.joint_states.position]
+        msg.joint_states.velocity = [x * self.wheel_radius for x in msg.joint_states.velocity]
         self.send(
             text_data=json.dumps(
                 {
-                    "type": "joint_state",
+                    "type": "drive_status",
                     "name": msg.name,
-                    "position": msg.position,
-                    "velocity": msg.velocity,
-                    "effort": msg.effort,
+                    "position": msg.joint_states.position,
+                    "velocity": msg.joint_states.velocity,
+                    "effort": msg.joint_states.effort,
+                    "state": msg.moteus_states.state,
+                    "error": msg.moteus_states.error
                 }
             )
         )

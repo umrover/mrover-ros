@@ -205,6 +205,10 @@ namespace mrover {
                     status.joint_states.velocity.push_back(vel);
                     status.joint_states.effort.push_back(torque);
 
+                    status.moteus_states.name.push_back(linkName);
+                    status.moteus_states.state.emplace_back("Armed");
+                    status.moteus_states.error.emplace_back("None");
+
                     driveControllerState.name.push_back(linkName);
                     driveControllerState.state.emplace_back("Armed");
                     driveControllerState.error.emplace_back("None");
