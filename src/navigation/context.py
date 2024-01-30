@@ -117,7 +117,7 @@ class Course:
         """
         Gets the pose of the waypoint with the given index
         """
-        waypoint_frame = self.course_data.waypoints[wp_idx].tf_id
+        waypoint_frame = f"course{wp_idx}"
         return SE3.from_tf_tree(self.ctx.tf_buffer, parent_frame="map", child_frame=waypoint_frame)
 
     def current_waypoint_pose(self) -> SE3:
@@ -154,9 +154,9 @@ class Course:
 
 def setup_course(ctx: Context, waypoints: List[Tuple[Waypoint, SE3]]) -> Course:
     all_waypoint_info = []
-    for waypoint_info, pose in waypoints:
+    for wp_idx, (waypoint_info, pose) in enumerate(waypoints):
         all_waypoint_info.append(waypoint_info)
-        pose.publish_to_tf_tree(tf_broadcaster, "map", waypoint_info.tf_id)
+        pose.publish_to_tf_tree(tf_broadcaster, "map", f"course{wp_idx}")
     # make the course out of just the pure waypoint objects which is the 0th elt in the tuple
     return Course(ctx=ctx, course_data=mrover.msg.Course([waypoint[0] for waypoint in waypoints]))
 
@@ -176,7 +176,7 @@ def convert_gps_to_cartesian(waypoint: GPSWaypoint) -> Tuple[Waypoint, SE3]:
     # navigation algorithms currently require all coordinates to have zero as the z coordinate
     odom[2] = 0
 
-    return Waypoint(tag_id=waypoint.tag_id, tf_id=f"course{waypoint.tag_id}", type=waypoint.type), SE3(position=odom)
+    return Waypoint(tag_id=waypoint.tag_id, type=waypoint.type), SE3(position=odom)
 
 
 def convert_cartesian_to_gps(coordinate: np.ndarray) -> GPSWaypoint:
