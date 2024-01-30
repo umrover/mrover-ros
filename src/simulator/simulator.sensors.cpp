@@ -186,10 +186,13 @@ namespace mrover {
     auto SimulatorNodelet::motorStatusUpdate() -> void {
         if (auto lookup = getUrdf("rover"); lookup) {
             URDF const& rover = *lookup;
-            sensor_msgs::JointState jointState;
+
             MotorsStatus status;
-            jointState.header.stamp = ros::Time::now();
-            jointState.header.frame_id = "map";
+            status.joint_states.header.stamp = ros::Time::now();
+            status.joint_states.header.frame_id = "map";
+
+            ControllerState driveControllerState;
+
             for (auto& position: {"front", "center", "back"}) {
                 for (auto& side: {"left", "right"}) {
                     std::string linkName = std::format("{}_{}_wheel_link", position, side);
@@ -197,15 +200,22 @@ namespace mrover {
                     double pos = rover.physics->getJointPos(index);
                     double vel = rover.physics->getJointVel(index);
                     double torque = rover.physics->getJointTorque(index);
+
                     status.name.push_back(linkName);
-                    jointState.name.push_back(linkName);
-                    jointState.position.push_back(pos);
-                    jointState.velocity.push_back(vel);
-                    jointState.effort.push_back(torque);
+                    status.joint_states.name.push_back(linkName);
+                    status.joint_states.position.push_back(pos);
+                    status.joint_states.velocity.push_back(vel);
+                    status.joint_states.effort.push_back(torque);
+
+                    driveControllerState.name.push_back(linkName);
+                    driveControllerState.state.emplace_back("Armed");
+                    driveControllerState.error.emplace_back("None");
+                    driveControllerState.limit_hit.push_back(0b000);
                 }
             }
-            status.joint_states = jointState;
+
             mMotorStatusPub.publish(status);
+            mDriveControllerStatePub.publish(driveControllerState);
         }
     }
 

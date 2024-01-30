@@ -72,6 +72,7 @@
 #include <se3.hpp>
 #include <units.hpp>
 
+#include <mrover/ControllerState.h>
 #include <mrover/IK.h>
 #include <mrover/ImuAndMag.h>
 #include <mrover/MotorsStatus.h>
