@@ -43,9 +43,12 @@ export default defineComponent({
   watch: {
     message(msg) {
       if (msg.type == 'enable_limit_switch') {
-        if (!msg.result) {
-          this.limit_enabled = false
-          alert('Toggling Limit Switch failed.')
+        if(msg.result.length>0) {
+            this.limit_enabled = false;
+            for (var j = 0; j<msg.result.length;++j)
+              {
+                alert("Toggling Limit Switch failed for" + msg.result[j]);
+              }
         }
       }
     }
