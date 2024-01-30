@@ -12,7 +12,6 @@
  * @brief Profiles the execution time of a loop composed of multiple events.
  */
 class LoopProfiler {
-private:
     using Clock = std::chrono::high_resolution_clock;
     using EventReadings = std::vector<Clock::duration>;
     using DisplayUnits = std::chrono::milliseconds;
@@ -25,34 +24,40 @@ private:
     size_t mTick = 0; // Loop iteration counter
 
 public:
-    LoopProfiler(std::string_view name, size_t printTick = 120) : mName{name}, mPrintTick{printTick} {}
+    explicit LoopProfiler(std::string_view name, size_t printTick = 120) : mName{name}, mPrintTick{printTick} {}
 
     /**
      * @brief Call this at the beginning of each loop iteration.
      */
     void beginLoop() {
-        // if (mTick % mPrintTick == 0) {
-        //     Clock::duration averageLoopDuration{};
-        //     for (auto& [_, durations]: mEventReadings) {
-        //         averageLoopDuration += std::accumulate(durations.begin(), durations.end(), Clock::duration{}) / durations.size();
-        //     }
-        //     // Print update time for the entire loop
-        //     size_t threadId = std::hash<std::thread::id>{}(std::this_thread::get_id());
-        //     auto averageLoopMs = std::chrono::duration_cast<DisplayUnits>(averageLoopDuration);
-        //     int hz = averageLoopMs.count() ? DisplayUnits::period::den / averageLoopMs.count() : -1;
-        //     ROS_INFO_STREAM("[" << mName << "] [" << threadId << "] Total: "
-        //                         << averageLoopMs.count() << "ms"
-        //                         << " (" << hz << " Hz)");
-        //     // Print update times for each loop event
-        //     for (auto& [name, durations]: mEventReadings) {
-        //         Clock::duration averageEventDuration = std::accumulate(durations.begin(), durations.end(), Clock::duration{}) / durations.size();
-        //         auto averageEventMs = std::chrono::duration_cast<DisplayUnits>(averageEventDuration);
-        //         ROS_INFO_STREAM("\t" << name << ": " << averageEventMs.count() << "ms");
-        //         durations.clear();
-        //     }
-        // }
+        if (mTick % mPrintTick == 0) {
+            Clock::duration averageLoopDuration{};
+            for (auto& [_, durations]: mEventReadings) {
+                if (durations.empty()) {
+                    continue;
+                }
+                averageLoopDuration += std::accumulate(durations.begin(), durations.end(), Clock::duration{}) / durations.size();
+            }
+            // Print update time for the entire loop
+            size_t threadId = std::hash<std::thread::id>{}(std::this_thread::get_id());
+            auto averageLoopMs = std::chrono::duration_cast<DisplayUnits>(averageLoopDuration);
+            int hz = averageLoopMs.count() ? DisplayUnits::period::den / averageLoopMs.count() : -1;
+            ROS_DEBUG_STREAM("[" << mName << "] [" << threadId << "] Total: "
+                                 << averageLoopMs.count() << "ms"
+                                 << " (" << hz << " Hz)");
+            // Print update times for each loop event
+            for (auto& [name, durations]: mEventReadings) {
+                if (durations.empty()) {
+                    continue;
+                }
+                Clock::duration averageEventDuration = std::accumulate(durations.begin(), durations.end(), Clock::duration{}) / durations.size();
+                auto averageEventMs = std::chrono::duration_cast<DisplayUnits>(averageEventDuration);
+                ROS_DEBUG_STREAM("\t" << name << ": " << averageEventMs.count() << "ms");
+                durations.clear();
+            }
+        }
 
-        // mTick++;
+        mTick++;
     }
 
     /**
@@ -63,11 +68,11 @@ public:
      * @param name
      */
     void measureEvent(std::string const& name) {
-        // Clock::time_point now = Clock::now();
-        // if (mLastEpochTime) {
-        //     Clock::duration duration = now - mLastEpochTime.value();
-        //     mEventReadings[name].push_back(duration);
-        // }
-        // mLastEpochTime = now;
+        Clock::time_point now = Clock::now();
+        if (mLastEpochTime) {
+            Clock::duration duration = now - mLastEpochTime.value();
+            mEventReadings[name].push_back(duration);
+        }
+        mLastEpochTime = now;
     }
 };
