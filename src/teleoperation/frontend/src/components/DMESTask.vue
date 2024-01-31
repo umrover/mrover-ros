@@ -97,9 +97,10 @@ export default defineComponent({
 
       // Default object isn't empty, so has to be initialized to ""
       moteusState: {
-        name: ['', '', '', '', '', ''],
-        error: ['', '', '', '', '', ''],
-        state: ['', '', '', '', '', '']
+        name: [] as string[],
+        error: [] as string[],
+        state: [] as string[],
+        limit_hit: [] as boolean[] /* Each motor stores an array of 4 indicating which limit switches are hit */
       },
 
       jointState: {

@@ -21,7 +21,11 @@ from mrover.msg import (
     MotorsStatus
 )
 from mrover.srv import EnableAuton
-from sensor_msgs.msg import NavSatFix
+from sensor_msgs.msg import (
+    NavSatFix,
+    Temperature,
+    RelativeHumidity
+)
 from std_msgs.msg import String, Bool
 from std_srvs.srv import SetBool, Trigger
 from util.SE3 import SE3
@@ -63,7 +67,9 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.led_sub = rospy.Subscriber("/led", LED, self.led_callback)
         self.nav_state_sub = rospy.Subscriber("/nav_state", StateMachineStateUpdate, self.nav_state_callback)
         self.imu_calibration = rospy.Subscriber("imu/calibration", CalibrationStatus, self.imu_calibration_callback)
-
+        self.sa_temp_data = rospy.Subscriber("/sa_temp_data", Temperature, self.sa_temp_data_callback)
+        self.sa_humidity_data = rospy.Subscriber("/sa_humidity_data", RelativeHumidity, self.sa_humidity_data_callback)
+        
         # Services
         self.laser_service = rospy.ServiceProxy("enable_mosfet_device", SetBool)
         self.calibrate_service = rospy.ServiceProxy("arm_calibrate", Trigger)
@@ -277,6 +283,12 @@ class GUIConsumer(JsonWebsocketConsumer):
 
     def nav_state_callback(self, msg):
         self.send(text_data=json.dumps({"type": "nav_state", "state": msg.state}))
+
+    def sa_temp_data_callback(self, msg):
+        self.send(text_data=json.dumps(obj={"type": "temp_data", "temp_data": msg.temperature}))
+
+    def sa_humidity_data_callback(self, msg):
+        self.send(text_data=json.dumps(obj={"type": "relative_humidity", "humidity_data": msg.relative_humidity}))
 
     def auton_bearing(self):
         base_link_in_map = SE3.from_tf_tree(self.tf_buffer, "map", "base_link")
