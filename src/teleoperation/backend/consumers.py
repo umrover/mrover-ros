@@ -99,16 +99,12 @@ class GUIConsumer(JsonWebsocketConsumer):
         try:
             if message["type"] == "joystick_values":
                 self.handle_joystick_message(message)
-            elif message["type"] == "enable_decive_srv":
-                self.enable_device_callback(message)
             elif message["type"] == "disable_auton_led":
                 self.disable_auton_led()
             elif message["type"] == "laser_service":
                 self.enable_laser_callback(message)
             elif message["type"] == "calibrate_motors":
                 self.calibrate_motors(message)
-            elif message["type"] == "calibrate_service":
-                self.calibrate_motors_callback(message)
             elif message["type"] == "arm_adjust":
                 self.arm_adjust(message)
             elif message["type"] == "change_ra_mode":
@@ -308,22 +304,10 @@ class GUIConsumer(JsonWebsocketConsumer):
         except rospy.ServiceException as e:
             rospy.logerr(f"Service call failed: {e}")
 
-    def enable_device_callback(self, msg):
-        try:
-            result = self.calibrate_service()
-            self.send(text_data=json.dumps({"type": "calibrate_service", "result": result.success}))
-        except rospy.ServiceException as e:
-            rospy.logerr(e)
-
-    def calibrate_motors_callback(self, msg):
-        self.send(
-            text_data=json.dumps(
-                {"type": "calibrate_service", "name": msg["name"], "state": msg["state"], "error": msg["error"]}
-            )
-        )
-
     def limit_switch(self, msg):
-        joints = ["joint_a","joint_b","joint_c","joint_de_pitch","joint_de_roll","allen_key","gripper"]
+        joints = [msg["name"]] #assume only 1 limit switch, unless using RA
+        if(msg["name"] == "all_ra"):
+            joints = ["joint_a","joint_b","joint_c","joint_de_pitch","joint_de_roll","allen_key","gripper"]
         fail = []
         for joint in joints:
             name = "arm_enable_limit_switch_"+joint
@@ -340,7 +324,9 @@ class GUIConsumer(JsonWebsocketConsumer):
                 }))
 
     def calibrate_motors(self,msg):
-        joints = ["joint_a","joint_b","joint_c","joint_de_pitch","joint_de_roll","allen_key","gripper"]
+        joints = [msg["name"]]
+        if msg["name"] == "all_ra":
+            joints = ["joint_a","joint_b","joint_c","joint_de_pitch","joint_de_roll","allen_key","gripper"]
         fail = []
         for joint in joints:
             name = "arm_calibrate_"+joint

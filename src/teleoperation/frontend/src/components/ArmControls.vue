@@ -39,7 +39,7 @@
                 label-disable-text="Arm Laser Off" @change="toggleArmLaser()" />
             <div class="limit-switch">
                 <h4>Limit Switches</h4>
-                <LimitSwitch :name="'All Switches'" />
+                <LimitSwitch :name="'All Switches'" :switch_name="'all_ra'" />
             </div>
         </div>
         <div class="controls-flex">

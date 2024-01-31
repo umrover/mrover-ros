@@ -48,18 +48,14 @@ export default defineComponent({
 
   watch: {
     message(msg) {
-      if (msg.type == 'calibration_status') {
-        for (var i = 0; i < msg.names.length; ++i) {
-          if (msg.names[i] == this.joint_name) {
-            this.calibrated = msg.calibrated[i]
-            break
+      if(msg.type =="calibrate_motors"){
+        if (msg.result.length > 0) {
+          this.toggleEnabled = false;
+          for (var j = 0; j<msg.result.length;++j) {
+            alert("ESW cannot calibrate motor " + msg.result[j]);
           }
         }
-      } else if (msg.type == 'calibrate_service') {
-        if (!msg.result) {
-          this.toggleEnabled = false
-          alert('ESW cannot calibrate this motor')
-        }
+        else this.calibrated = true;
       }
     },
 
@@ -93,7 +89,7 @@ export default defineComponent({
       this.toggleEnabled = !this.toggleEnabled
     },
     publishCalibrationMessage: function () {
-      this.sendMessage({ type: 'calibrate_service', data: this.toggleEnabled })
+      this.sendMessage({ type: 'calibrate_motors', data: this.toggleEnabled })
     }
   }
 })
