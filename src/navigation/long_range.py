@@ -30,7 +30,7 @@ class LongRangeState(ApproachTargetBaseState):
         pass
 
     def get_target_pos(self, context) -> Optional[int]:
-        tag_id = context.course.get_current_waypoint().tag_id
+        tag_id = context.course.current_waypoint().tag_id
         tag = context.env.long_range_tags.get(tag_id)
         if tag is None:
             return None
@@ -52,11 +52,12 @@ class LongRangeState(ApproachTargetBaseState):
 
         direction_to_tag = normalized(direction_to_tag)
         distance = DIST_AHEAD
+        direction_to_tag = np.array([direction_to_tag[0], direction_to_tag[1], 0.0])
         tag_position = rover_position + direction_to_tag * distance
         return tag_position
 
     def determine_next(self, context, finished: bool) -> State:
-        fid_pos = context.env.current_fid_pos()
+        fid_pos = context.env.current_target_pos()
         if fid_pos is None:
             return self
         else:

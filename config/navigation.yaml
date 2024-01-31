@@ -52,3 +52,5 @@ watchdog:
 long_range:
   distance_ahead: 20
   time_threshold: 5
+  increment_weight: 100
+  decrement_weight: 1

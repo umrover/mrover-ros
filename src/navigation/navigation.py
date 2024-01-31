@@ -60,7 +60,7 @@ class Navigation(threading.Thread):
             ],
         )
         self.state_machine.add_transitions(ApproachObjectState(), [DoneState(), SearchState()])
-        self.state_machine.add_transitions(LongRangeState(), [ApproachPostState()])
+        self.state_machine.add_transitions(LongRangeState(), [ApproachPostState(), SearchState()])
         self.state_machine.add_transitions(OffState(), [WaypointState(), DoneState()])
         self.state_machine.configure_off_switch(OffState(), off_check)
         self.state_machine_server = StatePublisher(self.state_machine, "nav_structure", 1, "nav_state", 10)
