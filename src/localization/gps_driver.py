@@ -18,6 +18,7 @@ from std_msgs.msg import Header
 from sensor_msgs.msg import NavSatFix
 from rtcm_msgs.msg import Message
 from mrover.msg import rtkStatus
+import datetime
 
 
 class GPS_Driver:
@@ -72,9 +73,10 @@ class GPS_Driver:
             parsed_latitude = msg.lat
             parsed_longitude = msg.lon
             parsed_altitude = msg.hMSL
-            time = msg.nano
+            time = datetime.datetime(year=msg.year, month=msg.month, day=msg.day, hour= msg.hour, second=msg.second, microsecond= int((msg.nano/1000)))
+            time=time.timestamp()
 
-            message_header = Header(stamp=rospy.Time(nsecs=time), frame_id="base_link")
+            message_header = Header(stamp=time, frame_id="base_link")
 
             self.gps_pub.publish(
                 NavSatFix(
