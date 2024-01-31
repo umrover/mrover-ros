@@ -148,7 +148,7 @@ namespace mrover {
             }
             if (message.quad_abs_enc_info.abs_present) {
                 Ratio multiplier = (message.quad_abs_enc_info.abs_is_forward_polarity ? 1 : -1) * message.abs_enc_out_ratio;
-                if (!m_absolute_encoder) m_absolute_encoder.emplace(SMBus<uint8_t, uint16_t>{m_absolute_encoder_i2c}, 0, 0, multiplier);
+                if (!m_absolute_encoder) m_absolute_encoder.emplace(SMBus<uint8_t, uint16_t>{m_absolute_encoder_i2c}, 0, 0, multiplier, m_encoder_elapsed_timer);
             }
 
             m_motor_driver.change_max_pwm(message.max_pwm);
