@@ -26,7 +26,7 @@
       <OdometryReading :odom="odom" />
     </div>
     <div class="shadow p-3 rounded map">
-      <AutonRoverMap :odom="odom" />
+      <AutonRoverMap :odom="odom" :center="center" />
     </div>
     <div class="shadow p-3 rounded waypoints">
       <AutonWaypointEditor :odom="odom" @toggleTeleop="teleopEnabledCheck = $event" />
@@ -87,13 +87,15 @@ export default defineComponent({
     MastGimbalControls
   },
 
+  // add prop where map has the center property and autontask sends it once it gets it
+
   data() {
     return {
       // Default coordinates are at MDRS
       odom: {
-        latitude_deg: 38.406025,
-        longitude_deg: -110.7923723,
-        bearing_deg: 0
+        latitude_deg: 0,
+        longitude_deg: 0,
+        bearing_deg: 0,
       },
 
       teleopEnabledCheck: false,
@@ -174,11 +176,9 @@ export default defineComponent({
     window.clearInterval(interval)
   },
 
-  created() {
-    interval = setInterval(() => {
-      this.sendMessage({ type: 'auton_tfclient' })
-    }, 1000)
-  }
+  // interval = setInterval(() => {
+  //   this.sendMessage({ type: 'auton_tfclient' })
+  // }, 1000)
 })
 </script>
 

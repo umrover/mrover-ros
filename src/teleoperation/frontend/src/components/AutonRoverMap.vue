@@ -4,36 +4,23 @@
     <l-map ref="map" class="map" :zoom="22" :center="center" @click="getClickedLatLon($event)">
       <l-control-scale :imperial="false" />
       <!-- Tile Layer for map background -->
-      <l-tile-layer
-        ref="tileLayer"
-        :url="online ? onlineUrl : offlineUrl"
-        :attribution="attribution"
-        :options="online ? onlineTileOptions : offlineTileOptions"
-      />
+      <l-tile-layer ref="tileLayer" :url="online ? onlineUrl : offlineUrl" :attribution="attribution"
+        :options="online ? onlineTileOptions : offlineTileOptions" />
 
       <!-- Markers for rover location -->
       <!-- TODO: Figure out if we still want these -->
       <l-marker ref="rover" :lat-lng="odomLatLng" :icon="locationIcon" />
 
       <!-- Waypoint Icons -->
-      <l-marker
-        v-for="(waypoint, index) in waypointList"
-        :key="index"
-        :lat-lng="waypoint.latLng"
-        :icon="waypointIcon"
-      >
+      <l-marker v-for="(waypoint, index) in waypointList" :key="index" :lat-lng="waypoint.latLng" :icon="waypointIcon">
         <l-tooltip :options="{ permanent: 'true', direction: 'top' }">
           {{ waypoint.name }}, {{ index }}
         </l-tooltip>
       </l-marker>
 
       <!-- Search Path Icons -->
-      <l-marker
-        v-for="(search_path_point, index) in searchPathPoints"
-        :key="index"
-        :lat-lng="search_path_point.latLng"
-        :icon="searchPathIcon"
-      >
+      <l-marker v-for="(search_path_point, index) in searchPathPoints" :key="index" :lat-lng="search_path_point.latLng"
+        :icon="searchPathIcon">
         <l-tooltip>Search Path {{ index }}</l-tooltip>
       </l-marker>
 
@@ -59,7 +46,7 @@ import {
   LTooltip,
   LControlScale
 } from '@vue-leaflet/vue-leaflet'
-import { mapGetters, mapMutations } from 'vuex'
+import { mapGetters, mapMutations, mapActions } from 'vuex'
 import 'leaflet/dist/leaflet.css'
 import L from '../leaflet-rotatedmarker'
 
@@ -80,7 +67,6 @@ const offlineTileOptions = {
 
 export default {
   name: 'AutonRoverMap',
-
   components: {
     LMap,
     LTileLayer,
@@ -93,12 +79,12 @@ export default {
     odom: {
       type: Object,
       required: true
-    }
+    },
   },
   data() {
     return {
       // Default Center at MDRS
-      center: L.latLng(38.406025, -110.7923723),
+      center: L.latLng(0.0, 0.0),
       attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
       online: true,
       onlineUrl: onlineUrl,
@@ -144,7 +130,15 @@ export default {
     }
   },
   watch: {
-    waypointList: {handler: function() {console.log(this.waypointList)}},
+    waypointList: { handler: function () { console.log(this.waypointList) } },
+
+    message(msg) {
+      if (msg.type == "center_map") {
+        this.center = L.latLng(msg.lat, msg.long)
+        console.log(msg.lat, msg.long)
+      }
+    },
+
     odom: {
       handler: function (val) {
         // Trigger every time rover odom is changed
@@ -161,9 +155,12 @@ export default {
         }
 
         // Update the rover marker using bearing angle
-        this.roverMarker.setRotationAngle(angle)
+        if (this.roverMarker != null) {
+          this.roverMarker.setRotationAngle(angle)
 
-        this.roverMarker.setLatLng(latLng)
+          this.roverMarker.setLatLng(latLng)
+        }
+
 
         // Update the rover path
         this.odomCount++
@@ -211,6 +208,11 @@ export default {
       popupAnchor: [0, -32]
     })
 
+
+    window.setTimeout(() => {
+      this.sendMessage({ "type": "center_map" });
+    }, 250)
+
     //   this.search_path_topic = new ROSLIB.Topic({
     //     ros: this.$ros,
     //     name: "/search_path",
@@ -238,6 +240,7 @@ export default {
   },
 
   methods: {
+    ...mapActions('websocket', ['sendMessage']),
     // Event listener for setting store values to get data to waypoint Editor
     getClickedLatLon: function (e: { latlng: { lat: any; lng: any } }) {
       this.setClickPoint({
@@ -281,6 +284,7 @@ export default {
     'map'
     'controls';
 }
+
 .custom-tooltip {
   display: inline-block;
   margin: 10px 20px;

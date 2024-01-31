@@ -31,36 +31,39 @@ def quadratic(val: float) -> float:
 class GUIConsumer(JsonWebsocketConsumer):
     def connect(self):
         self.accept()
+        try:
         # Publishers
-        self.twist_pub = rospy.Publisher("/cmd_vel", Twist, queue_size=100)
-        self.led_pub = rospy.Publisher("/auton_led_cmd", String, queue_size=1)
-        self.auton_cmd_pub = rospy.Publisher("/auton/command", AutonCommand, queue_size=100)
-        self.teleop_pub = rospy.Publisher("/teleop_enabled", Bool, queue_size=1)
-        self.mast_gimbal_pub = rospy.Publisher("/mast_gimbal_throttle_cmd", Throttle, queue_size=1)
+            self.twist_pub = rospy.Publisher("/cmd_vel", Twist, queue_size=100)
+            self.led_pub = rospy.Publisher("/auton_led_cmd", String, queue_size=1)
+            # self.auton_cmd_pub = rospy.Publisher("/auton/command", AutonCommand, queue_size=100)
+            self.teleop_pub = rospy.Publisher("/teleop_enabled", Bool, queue_size=1)
+            self.mast_gimbal_pub = rospy.Publisher("/mast_gimbal_throttle_cmd", Throttle, queue_size=1)
 
-        # Subscribers
-        self.pdb_sub = rospy.Subscriber("/pdb_data", PDLB, self.pdb_callback)
-        self.arm_moteus_sub = rospy.Subscriber("/arm_controller_data", ControllerState, self.arm_controller_callback)
-        self.drive_moteus_sub = rospy.Subscriber( "/drive_controller_data", ControllerState, self.drive_controller_callback)
-        self.gps_fix = rospy.Subscriber("/gps/fix", NavSatFix, self.gps_fix_callback)
-        self.joint_state_sub = rospy.Subscriber("/drive_joint_data", JointState, self.joint_state_callback)
-        self.led_sub = rospy.Subscriber("/led", LED, self.led_callback)
-        self.nav_state_sub = rospy.Subscriber("/nav_state", StateMachineStateUpdate, self.nav_state_callback)
-        self.tf_buffer = tf2_ros.Buffer()
-        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
-        self.enable_auton = rospy.ServiceProxy("enable_auton", EnableAuton)
+            # Subscribers
+            self.pdb_sub = rospy.Subscriber("/pdb_data", PDLB, self.pdb_callback)
+            self.arm_moteus_sub = rospy.Subscriber("/arm_controller_data", ControllerState, self.arm_controller_callback)
+            self.drive_moteus_sub = rospy.Subscriber( "/drive_controller_data", ControllerState, self.drive_controller_callback)
+            self.gps_fix = rospy.Subscriber("/gps/fix", NavSatFix, self.gps_fix_callback)
+            self.joint_state_sub = rospy.Subscriber("/drive_joint_data", JointState, self.joint_state_callback)
+            self.led_sub = rospy.Subscriber("/led", LED, self.led_callback)
+            self.nav_state_sub = rospy.Subscriber("/nav_state", StateMachineStateUpdate, self.nav_state_callback)
+            self.tf_buffer = tf2_ros.Buffer()
+            self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
+            self.enable_auton = rospy.ServiceProxy("enable_auton", EnableAuton)
 
-        # Services
-        self.laser_service = rospy.ServiceProxy("enable_mosfet_device", SetBool)
-        self.calibrate_service = rospy.ServiceProxy("arm_calibrate", Trigger)
+            # Services
+            self.laser_service = rospy.ServiceProxy("enable_mosfet_device", SetBool)
+            self.calibrate_service = rospy.ServiceProxy("arm_calibrate", Trigger)
 
-        # ROS Parameters
-        self.mappings = rospy.get_param("teleop/joystick_mappings")
-        self.drive_config = rospy.get_param("teleop/drive_controls")
-        self.max_wheel_speed = rospy.get_param("rover/max_speed")
-        self.wheel_radius = rospy.get_param("wheel/radius")
-        self.max_angular_speed = self.max_wheel_speed / self.wheel_radius
+            # ROS Parameters
+            self.mappings = rospy.get_param("teleop/joystick_mappings")
+            self.drive_config = rospy.get_param("teleop/drive_controls")
+            self.max_wheel_speed = rospy.get_param("rover/max_speed")
+            self.wheel_radius = rospy.get_param("wheel/radius")
+            self.max_angular_speed = self.max_wheel_speed / self.wheel_radius
 
+        except rospy.ROSException as e:
+            rospy.logerr(e)
         
 
     def disconnect(self, close_code):
@@ -94,7 +97,9 @@ class GUIConsumer(JsonWebsocketConsumer):
                 self.send_teleop_enabled(message)
             elif message["type"] == "mast_gimbal":
                 self.mast_gimbal(message)
-        except rospy.ROSException as e:
+            elif message["type"] == "center_map":
+                self.send_center()
+        except Exception as e:
             rospy.logerr(e)
 
     def handle_joystick_message(self, msg):
@@ -263,3 +268,10 @@ class GUIConsumer(JsonWebsocketConsumer):
         rot_pwr = msg["throttles"][0] * pwr["rotation_pwr"]
         up_down_pwr = msg["throttles"][1] * pwr["up_down_pwr"]
         self.mast_gimbal_pub.publish(Throttle(["mast_gimbal_x", "mast_gimbal_y"], [rot_pwr, up_down_pwr]))
+
+    def send_center(self):
+        lat = rospy.get_param("gps_linearization/reference_point_latitude")
+        long = rospy.get_param("gps_linearization/reference_point_longitude")
+        self.send(text_data=json.dumps({"type":"center_map",
+                                            "latitude": lat, 
+                                            "longitude":long}))
