@@ -13,7 +13,7 @@ namespace mrover {
         bool mPublishCostMap{}; // If set, publish the global costmap
         float mResolution{};    // Meters per cell
         float mDimension{};     // Dimensions of the square costmap in meters
-        float mNormalThreshold = 0.5;
+        float mNormalThreshold = 0.9;
         tf2_ros::Buffer tf_buffer;
         tf2_ros::TransformListener tf_listener{tf_buffer};
 
