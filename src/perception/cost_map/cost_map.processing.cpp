@@ -19,7 +19,7 @@ namespace mrover {
         try {
             SE3 zed_to_map = SE3::fromTfTree(tf_buffer, "map", "zed2i_left_camera_frame");
             auto* points = reinterpret_cast<Point const*>(msg->data.data());
-            int step = 2;
+            int step = 1;
             uint32_t num_points = msg->width * msg->height / step;
             Eigen::MatrixXd point_matrix(4, num_points);
             Eigen::MatrixXd normal_matrix(4, num_points);
