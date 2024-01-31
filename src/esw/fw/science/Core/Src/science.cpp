@@ -11,7 +11,7 @@ extern uint8_t spectral_status_buffer[1];
 namespace mrover {
 
     // NOTE: Change this for the PDLB controller
-    constexpr static std::uint8_t DEVICE_ID = 0x32;
+    constexpr static std::uint8_t DEVICE_ID = 0x33;
 
     // Usually this is the Jetson
     constexpr static std::uint8_t DESTINATION_DEVICE_ID = 0x10;

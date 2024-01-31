@@ -14,38 +14,22 @@ namespace mrover {
 
         for (std::size_t i = 0; i < 4; ++i) {
             SET_BIT_AT_INDEX(mConfigCommand.limit_switch_info.present, i, xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, std::format("limit_{}_present", i), false));
-            SET_BIT_AT_INDEX(mConfigCommand.limit_switch_info.enabled, i, xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, std::format("limit_{}_enable", i), false));
-
-            mConfigCommand.limit_switch_info.active_high = xmlRpcValueToTypeOrDefault<bool>(
-                    brushedMotorData, std::format("limit_{}_active_high", i), false);
-            mConfigCommand.limit_switch_info.limits_forward = xmlRpcValueToTypeOrDefault<bool>(
-                    brushedMotorData, std::format("limit_{}_limits_fwd", i), false);
-
-
-            mConfigCommand.limit_switch_info.use_for_readjustment = xmlRpcValueToTypeOrDefault<bool>(
-                    brushedMotorData, std::format("limit_{}_used_for_readjustment", i), false);
-
-            mConfigCommand.limit_switch_info.is_default_enabled = xmlRpcValueToTypeOrDefault<bool>(
-                    brushedMotorData, std::format("limit_{}_default_enabled", i), false);
-
+            SET_BIT_AT_INDEX(mConfigCommand.limit_switch_info.enabled, i, xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, std::format("limit_{}_enabled", i), false));
+            SET_BIT_AT_INDEX(mConfigCommand.limit_switch_info.active_high, i, xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, std::format("limit_{}_is_active_high", i), true)); // might switch default value to false depending on wiring
+            SET_BIT_AT_INDEX(mConfigCommand.limit_switch_info.limits_forward, i, xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, std::format("limit_{}_limits_fwd", i), true));
+            SET_BIT_AT_INDEX(mConfigCommand.limit_switch_info.use_for_readjustment, i, xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, std::format("limit_{}_used_for_readjustment", i), true));
             mConfigCommand.limit_switch_info.limit_readj_pos.at(i) = Radians{static_cast<double>(brushedMotorData[std::format("limit_{}_readjust_position", i)])};
         }
 
-        mConfigCommand.quad_abs_enc_info.quad_present = xmlRpcValueToTypeOrDefault<bool>(
-                brushedMotorData, "quad_present", false);
-        mConfigCommand.quad_abs_enc_info.quad_is_forward_polarity = xmlRpcValueToTypeOrDefault<bool>(
-                brushedMotorData, "quad_is_forward_polarity", false);
-        mConfigCommand.quad_abs_enc_info.abs_present = xmlRpcValueToTypeOrDefault<bool>(
-                brushedMotorData, "abs_present", false);
+        mConfigCommand.quad_abs_enc_info.quad_present = xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, "quad_present", false);
+        mConfigCommand.quad_abs_enc_info.quad_is_forward_polarity = xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, "quad_is_fwd_polarity", false);
+        mConfigCommand.quad_abs_enc_info.abs_present = xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, "abs_present", false);
 
-        mConfigCommand.quad_abs_enc_info.abs_is_forward_polarity = xmlRpcValueToTypeOrDefault<bool>(
-                brushedMotorData, "abs_is_forward_polarity", false);
+        mConfigCommand.quad_abs_enc_info.abs_is_forward_polarity = xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, "abs_is_fwd_polarity", false);
 
-        mConfigCommand.quad_enc_out_ratio = xmlRpcValueToTypeOrDefault<double>(
-                brushedMotorData, "quad_ratio", 1.0);
+        mConfigCommand.quad_enc_out_ratio = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "quad_ratio", 1.0);
 
-        mConfigCommand.abs_enc_out_ratio = xmlRpcValueToTypeOrDefault<double>(
-                brushedMotorData, "abs_ratio", 1.0);
+        mConfigCommand.abs_enc_out_ratio = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "abs_ratio", 1.0);
 
         auto driver_voltage = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "driver_voltage");
         assert(driver_voltage > 0);
@@ -54,16 +38,18 @@ namespace mrover {
 
         mConfigCommand.max_pwm = motor_max_voltage / driver_voltage;
 
-        mConfigCommand.limit_switch_info.limit_max_forward_position = xmlRpcValueToTypeOrDefault<bool>(
-                brushedMotorData, "limit_max_forward_pos", false);
+        mConfigCommand.limit_switch_info.limit_max_forward_position = xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, "limit_max_forward_pos", false);
 
-        mConfigCommand.limit_switch_info.limit_max_backward_position = xmlRpcValueToTypeOrDefault<bool>(
-                brushedMotorData, "limit_max_backward_pos", false);
+        mConfigCommand.limit_switch_info.limit_max_backward_position = xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, "limit_max_backward_pos", false);
 
-        mConfigCommand.max_forward_pos = Radians{
-                xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "max_forward_pos", 0.0)};
-        mConfigCommand.max_backward_pos = Radians{
-                xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "max_backward_pos", 0.0)};
+        mConfigCommand.max_forward_pos = Radians{xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "max_forward_pos", 0.0)};
+        mConfigCommand.max_backward_pos = Radians{xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "max_backward_pos", 0.0)};
+
+        mMinVelocity = RadiansPerSecond{xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "min_velocity", -1.0)};
+        mMaxVelocity = RadiansPerSecond{xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "max_velocity", 1.0)};
+
+        mMinPosition = Radians{xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "min_position", -1.0)};
+        mMaxPosition = Radians{xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "max_position", 1.0)};
 
         mErrorState = "Unknown";
         mState = "Unknown";
@@ -114,6 +100,7 @@ namespace mrover {
     void BrushedController::processMessage(ControllerDataState const& state) {
         mCurrentPosition = state.position;
         mCurrentVelocity = state.velocity;
+        ROS_INFO("Vel: %f | Pos: %f", mCurrentVelocity.get(), mCurrentPosition.get());
         ConfigCalibErrorInfo configCalibErrInfo = state.config_calib_error_data;
         mIsConfigured = configCalibErrInfo.configured;
         mIsCalibrated = configCalibErrInfo.calibrated;

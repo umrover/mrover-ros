@@ -35,26 +35,31 @@ namespace mrover {
     }
 
     void ArmTranslator::clampValues(float& val1, float& val2, float minValue1, float maxValue1, float minValue2, float maxValue2) {
-        if (val1 < minValue1) {
-            float const ratio = minValue1 / val1;
-            val1 *= ratio;
-            val2 *= ratio;
-        }
-        if (maxValue1 < val1) {
-            float const ratio = maxValue1 / val1;
-            val1 *= ratio;
-            val2 *= ratio;
-        }
-        if (val2 < minValue2) {
-            float const ratio = minValue2 / val2;
-            val1 *= ratio;
-            val2 *= ratio;
-        }
-        if (maxValue2 < val2) {
-            float const ratio = maxValue2 / val2;
-            val1 *= ratio;
-            val2 *= ratio;
-        }
+        // val1 = (val1 - (-80)) / (maxValue1 - minValue1) * ();
+        // val2 if (val1 < minValue1) {
+        //     float const ratio = minValue1 / val1;
+        //     val1 *= ratio;
+        //     val2 *= ratio;
+        // }
+        // if (maxValue1 < val1) {
+        //     float const ratio = maxValue1 / val1;
+        //     val1 *= ratio;
+        //     val2 *= ratio;
+        // }
+        // if (val2 < minValue2) {
+        //     float const ratio = minValue2 / val2;
+        //     val1 *= ratio;
+        //     val2 *= ratio;
+        // }
+        // if (maxValue2 < val2) {
+        //     float const ratio = maxValue2 / val2;
+        //     val1 *= ratio;
+        //     val2 *= ratio;
+        // }
+    }
+
+    void ArmTranslator::mapValue(float& val, float inputMinValue, float inputMaxValue, float outputMinValue, float outputMaxValue) {
+        val = (val - inputMinValue) / (inputMaxValue - inputMinValue) * (outputMaxValue - outputMinValue) + outputMinValue;
     }
 
     void ArmTranslator::processThrottleCmd(Throttle::ConstPtr const& msg) {
@@ -64,16 +69,25 @@ namespace mrover {
         }
 
         Throttle throttle = *msg;
+        ROS_INFO("pitch throttle: %f    roll throttle: %f", msg->throttles.at(mJointDEPitchIndex), msg->throttles.at(mJointDERollIndex));
 
         auto [joint_de_0_throttle, joint_de_1_throttle] = transformPitchRollToMotorOutputs(
                 msg->throttles.at(mJointDEPitchIndex),
                 msg->throttles.at(mJointDERollIndex));
 
-        clampValues(
+        ROS_INFO("pre-mapped values: de_0 %f   de_1 %f", joint_de_0_throttle, joint_de_1_throttle);
+
+        mapValue(
                 joint_de_0_throttle,
-                joint_de_1_throttle,
+                -80.0f,
+                80.0f,
                 -1.0f,
-                1.0f,
+                1.0f);
+
+        mapValue(
+                joint_de_1_throttle,
+                -80.0f,
+                80.0f,
                 -1.0f,
                 1.0f);
 
@@ -81,6 +95,8 @@ namespace mrover {
         throttle.names.at(mJointDERollIndex) = "joint_de_1";
         throttle.throttles.at(mJointDEPitchIndex) = joint_de_0_throttle;
         throttle.throttles.at(mJointDERollIndex) = joint_de_1_throttle;
+
+        ROS_INFO("post-mapped values: de_0 %f   de_1 %f", joint_de_0_throttle, joint_de_1_throttle);
 
         mThrottlePub->publish(throttle);
     }
@@ -125,14 +141,21 @@ namespace mrover {
                 msg->velocities.at(mJointDEPitchIndex),
                 msg->velocities.at(mJointDERollIndex));
 
-        clampValues(
+        mapValue(
                 joint_de_0_vel,
-                joint_de_1_vel,
-                mMinRadPerSecDE0.get(),
-                mMaxRadPerSecDE0.get(),
+                -800.0,
+                800.0,
                 mMinRadPerSecDE1.get(),
                 mMaxRadPerSecDE1.get());
 
+        mapValue(
+                joint_de_1_vel,
+                -800.0,
+                800.0,
+                mMinRadPerSecDE1.get(),
+                mMaxRadPerSecDE1.get());
+
+        ROS_INFO("max velocity: %f", joint_de_0_vel);
         velocity.names.at(mJointDEPitchIndex) = "joint_de_0";
         velocity.names.at(mJointDERollIndex) = "joint_de_1";
         velocity.velocities.at(mJointDEPitchIndex) = joint_de_0_vel;

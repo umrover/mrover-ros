@@ -46,6 +46,7 @@ namespace mrover {
         std::uint16_t angle_left = raw_data >> 8 & 0xFF; // 0xFE
         std::uint16_t angle_right = raw_data & 0xFF;     // 0xFF
         std::uint16_t angle_left_modified = angle_left & 0x3F;
+        // TODO(owen): Why is this unused? If it truly is, remove it
         std::uint16_t angle_raw = (angle_right << 6) | angle_left_modified;
         m_previous_raw_data = raw_data;
         return raw_data;
@@ -53,6 +54,7 @@ namespace mrover {
 
     [[nodiscard]] auto AbsoluteEncoderReader::read() -> std::optional<EncoderReading> {
         if (std::optional<std::uint64_t> count = try_read_buffer()) {
+            // TODO(owen): Replace the denominator with a timer. Check the quadrature encoder code
             std::uint64_t ticks_now = HAL_GetTick();
             m_position = m_multiplier * Ticks{count.value()} / ABSOLUTE_CPR;
             Seconds seconds_per_tick = 1 / Hertz{HAL_GetTickFreq()};
@@ -60,7 +62,7 @@ namespace mrover {
             m_ticks_prev = ticks_now;
         }
 
-        return EncoderReading{m_position, m_velocity};
+        return std::make_optional<EncoderReading>(m_position, m_velocity);
     }
 
 } // namespace mrover
