@@ -50,6 +50,7 @@ namespace mrover {
 
         void publish_moteus_frame(moteus::CanFdFrame const& frame) {
             auto* address = reinterpret_cast<std::byte const*>(frame.data);
+            // ROS_INFO("publishing to CAN device: %x", *reinterpret_cast<int const*>(address));
             publish_data({address, frame.size}, frame.reply_required);
         }
 

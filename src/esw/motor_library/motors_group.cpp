@@ -46,7 +46,6 @@ namespace mrover {
         assert(controllersRoot.getType() == XmlRpc::XmlRpcValue::TypeStruct);
 
         for (std::string const& name: mControllerNames) {
-
             if (!controllersRoot.hasMember(name)) {
                 ROS_ERROR("There is a mismatch in the config - motor %s doesn't exist!", name.c_str());
                 throw;
@@ -79,7 +78,7 @@ namespace mrover {
         for (size_t i = 0; i < msg->names.size(); ++i) {
             std::string const& name = msg->names[i];
             if (!mControllers.contains(name)) {
-                ROS_ERROR("Throttle request for %s ignored!", name.c_str());
+                ROS_ERROR("Group throttle request for %s ignored (%f)!", name.c_str(), msg->throttles[i]);
                 continue;
             }
 

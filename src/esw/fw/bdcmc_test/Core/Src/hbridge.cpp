@@ -25,8 +25,8 @@ namespace mrover {
     }
 
     void HBridge::set_direction_pins(Percent duty_cycle) const {
-        m_forward_pins.write(duty_cycle > 0_percent ? GPIO_PIN_SET : GPIO_PIN_RESET);
-        m_reverse_pins.write(duty_cycle < 0_percent ? GPIO_PIN_SET : GPIO_PIN_RESET);
+        m_forward_pins.write(duty_cycle < 0_percent ? GPIO_PIN_SET : GPIO_PIN_RESET);
+        m_reverse_pins.write(duty_cycle > 0_percent ? GPIO_PIN_SET : GPIO_PIN_RESET);
     }
 
     void HBridge::set_duty_cycle(Percent duty_cycle, Percent max_duty_cycle) const {

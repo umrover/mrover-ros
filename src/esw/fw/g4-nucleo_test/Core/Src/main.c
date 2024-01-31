@@ -136,7 +136,8 @@ int main(void)
 	  uint32_t delay_between_switch = 2000;
 	  ramp_up_down_reverse(delay_between_switch);
 
-		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, GPIO_PIN_RESET);
+:x
+:x
 		TIM15->CCR1 = 100;
 		HAL_Delay(delay_between_switch);
 

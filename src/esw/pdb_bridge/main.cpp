@@ -12,7 +12,7 @@ int main(int argc, char** argv) {
     ros::init(argc, argv, "pdb_bridge");
     ros::NodeHandle nh;
 
-    PDBPublisher = nh.advertise<mrover::PDLB>("can/pdlb/out", 1);
+    PDBPublisher = nh.advertise<mrover::PDLB>("pdlb_data", 1);
     ros::Subscriber CANSubscriber = nh.subscribe<mrover::CAN>("can/pdlb/in", 1, processCANData);
 
     // Enter the ROS event loop
