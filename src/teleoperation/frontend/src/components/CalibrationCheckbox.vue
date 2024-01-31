@@ -81,24 +81,6 @@ export default defineComponent({
   },
 
   created: function () {
-    // this.websocket.onmessage = (event) => { console.log(event.data)
-    //     const msg = JSON.parse(event.data);
-    //     if(msg.type=="calibration_status"){
-    //     for (var i = 0; i < msg.names.length; ++i) {
-    //       if (msg.names[i] == this.joint_name) {
-    //         this.calibrated = msg.calibrated[i];
-    //         break;
-    //       }
-    //     }
-    //     }
-    //     else if(msg.type =="calibrate_service"){
-    //       if (!msg.result) {
-    //       this.toggleEnabled = false;
-    //       alert("ESW cannot calibrate this motor");
-    //   }
-    //     }
-    // };
-
     this.interval = setInterval(() => {
       if (!this.calibrated && this.toggleEnabled) {
         this.publishCalibrationMessage()

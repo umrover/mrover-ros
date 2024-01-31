@@ -62,33 +62,33 @@ namespace mrover {
         depthStencil.stencilBack.compare = wgpu::CompareFunction::Always;
         descriptor.depthStencil = &depthStencil;
 
-        {
-            std::array<wgpu::VertexAttribute, 3> attributes{};
-            attributes[0].format = wgpu::VertexFormat::Float32x3;
-            attributes[0].shaderLocation = 0;
-            attributes[1].format = wgpu::VertexFormat::Float32x3;
-            attributes[1].shaderLocation = 1;
-            attributes[2].format = wgpu::VertexFormat::Float32x2;
-            attributes[2].shaderLocation = 2;
-            std::array<wgpu::VertexBufferLayout, 3> vertexBufferLayout{};
-            vertexBufferLayout[0].arrayStride = sizeof(float) * 3;
-            vertexBufferLayout[0].stepMode = wgpu::VertexStepMode::Vertex;
-            vertexBufferLayout[0].attributeCount = 1;
-            vertexBufferLayout[0].attributes = attributes.data() + 0;
-            vertexBufferLayout[1].arrayStride = sizeof(float) * 3;
-            vertexBufferLayout[1].stepMode = wgpu::VertexStepMode::Vertex;
-            vertexBufferLayout[1].attributeCount = 1;
-            vertexBufferLayout[1].attributes = attributes.data() + 1;
-            vertexBufferLayout[2].arrayStride = sizeof(float) * 2;
-            vertexBufferLayout[2].stepMode = wgpu::VertexStepMode::Vertex;
-            vertexBufferLayout[2].attributeCount = 1;
-            vertexBufferLayout[2].attributes = attributes.data() + 2;
 
-            descriptor.vertex.entryPoint = "vs_main";
-            descriptor.vertex.module = mShaderModule;
-            descriptor.vertex.bufferCount = vertexBufferLayout.size();
-            descriptor.vertex.buffers = vertexBufferLayout.data();
-        }
+        std::array<wgpu::VertexAttribute, 3> attributes{};
+        attributes[0].format = wgpu::VertexFormat::Float32x3;
+        attributes[0].shaderLocation = 0;
+        attributes[1].format = wgpu::VertexFormat::Float32x3;
+        attributes[1].shaderLocation = 1;
+        attributes[2].format = wgpu::VertexFormat::Float32x2;
+        attributes[2].shaderLocation = 2;
+        std::array<wgpu::VertexBufferLayout, 3> vertexBufferLayout{};
+        vertexBufferLayout[0].arrayStride = sizeof(float) * 3;
+        vertexBufferLayout[0].stepMode = wgpu::VertexStepMode::Vertex;
+        vertexBufferLayout[0].attributeCount = 1;
+        vertexBufferLayout[0].attributes = attributes.data() + 0;
+        vertexBufferLayout[1].arrayStride = sizeof(float) * 3;
+        vertexBufferLayout[1].stepMode = wgpu::VertexStepMode::Vertex;
+        vertexBufferLayout[1].attributeCount = 1;
+        vertexBufferLayout[1].attributes = attributes.data() + 1;
+        vertexBufferLayout[2].arrayStride = sizeof(float) * 2;
+        vertexBufferLayout[2].stepMode = wgpu::VertexStepMode::Vertex;
+        vertexBufferLayout[2].attributeCount = 1;
+        vertexBufferLayout[2].attributes = attributes.data() + 2;
+
+        descriptor.vertex.entryPoint = "vs_main";
+        descriptor.vertex.module = mShaderModule;
+        descriptor.vertex.bufferCount = vertexBufferLayout.size();
+        descriptor.vertex.buffers = vertexBufferLayout.data();
+
 
         wgpu::FragmentState fragment;
         fragment.module = mShaderModule;
@@ -162,6 +162,7 @@ namespace mrover {
         mPbrPipeline = mDevice.createRenderPipeline(descriptor);
         if (!mPbrPipeline) throw std::runtime_error("Failed to create WGPU render pipeline");
 
+        // TODO(quintin): This is technically not correct. As far as I can tell getting actual wireframe rendering is pretty difficult in WGPU
         descriptor.primitive.topology = wgpu::PrimitiveTopology::LineList;
         mWireframePipeline = mDevice.createRenderPipeline(descriptor);
         if (!mWireframePipeline) throw std::runtime_error("Failed to create WGPU wireframe render pipeline");
@@ -365,7 +366,6 @@ namespace mrover {
         uniforms.value.modelToWorldForNormals = modelToWorld.matrix().inverse().transpose().cast<float>();
         uniforms.value.modelToWorldForNormals.col(3).setZero();
         uniforms.value.modelToWorldForNormals.row(3).setZero();
-        uniforms.value.material = 1;
         uniforms.enqueueWrite();
 
         for (Model::Mesh& mesh: model.meshes) {
@@ -478,20 +478,24 @@ namespace mrover {
         }
     }
 
-    // TODO(quintin): Free pointers in here at the end of the program
-    boost::container::static_vector<sensor_msgs::PointCloud2*, 32> pointCloudPool;
+    template<typename T>
+    struct Pool {
+        boost::container::static_vector<T*, 32> container;
 
-    auto getPooledPointCloud() -> sensor_msgs::PointCloud2* {
-        if (pointCloudPool.empty()) return new sensor_msgs::PointCloud2{};
+        auto get() -> T* {
+            if (container.empty()) return new T{};
+            T* result = container.back();
+            container.pop_back();
+            return result;
+        }
 
-        auto* pointCloud = pointCloudPool.back();
-        pointCloudPool.pop_back();
-        return pointCloud;
-    }
+        auto give(T* t) -> void {
+            container.push_back(t);
+        }
+    };
 
-    auto returnPooledPointCloud(sensor_msgs::PointCloud2* pointCloud) -> void {
-        pointCloudPool.push_back(pointCloud);
-    }
+    Pool<sensor_msgs::PointCloud2> pointCloudPool;
+    Pool<sensor_msgs::Image> imagePool;
 
     auto SimulatorNodelet::renderUpdate() -> void {
         wgpu::TextureView nextTexture = mSwapChain.getCurrentTextureView();
@@ -521,35 +525,93 @@ namespace mrover {
 
         wgpu::CommandEncoder encoder = mDevice.createCommandEncoder();
         {
-            for (Camera& camera: mCameras) {
-                if (camera.callback) {
+            // TODO(quintin): Remote duplicate code
+            for (StereoCamera& stereoCamera: mStereoCameras) {
+                if (stereoCamera.base.callback) {
                     mWgpuInstance.processEvents();
-                    if (camera.pointCloudBufferStaging.getMapState() == wgpu::BufferMapState::Mapped) {
-                        auto pointCloud = boost::shared_ptr<sensor_msgs::PointCloud2>{getPooledPointCloud(), &returnPooledPointCloud};
+                    if (stereoCamera.base.stagingBuffer.getMapState() == wgpu::BufferMapState::Mapped) {
+                        auto pointCloud = boost::shared_ptr<sensor_msgs::PointCloud2>{pointCloudPool.get(), [](sensor_msgs::PointCloud2* msg) { pointCloudPool.give(msg); }};
                         pointCloud->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
                         pointCloud->is_dense = true;
-                        pointCloud->width = camera.resolution.x();
-                        pointCloud->height = camera.resolution.y();
+                        pointCloud->width = stereoCamera.base.resolution.x();
+                        pointCloud->height = stereoCamera.base.resolution.y();
                         pointCloud->header.stamp = ros::Time::now();
                         pointCloud->header.frame_id = "zed2i_left_camera_frame";
                         fillPointCloudMessageHeader(pointCloud);
 
-                        auto* fromCompute = camera.pointCloudBufferStaging.getConstMappedRange(0, camera.pointCloudBufferStaging.getSize());
+                        auto* fromCompute = stereoCamera.base.stagingBuffer.getConstMappedRange(0, stereoCamera.base.stagingBuffer.getSize());
                         auto* toMessage = pointCloud->data.data();
-                        std::memcpy(toMessage, fromCompute, camera.pointCloudBufferStaging.getSize());
-                        camera.pointCloudBufferStaging.unmap();
+                        std::memcpy(toMessage, fromCompute, stereoCamera.base.stagingBuffer.getSize());
+                        stereoCamera.base.stagingBuffer.unmap();
+                        stereoCamera.base.callback = nullptr;
+
+                        stereoCamera.base.pub.publish(pointCloud);
+                    }
+                }
+                if (!stereoCamera.base.callback && stereoCamera.base.updateTask.shouldUpdate()) {
+                    // TODO(quintin): Move these into camera update
+                    colorAttachment.view = stereoCamera.base.colorTextureView;
+                    normalAttachment.view = stereoCamera.base.normalTextureView;
+                    depthStencilAttachment.view = stereoCamera.base.depthTextureView;
+
+                    renderCamera(stereoCamera.base, encoder, renderPassDescriptor);
+                    computeStereoCamera(stereoCamera, encoder);
+
+                    stereoCamera.base.needsMap = true;
+                }
+            }
+            for (Camera& camera: mCameras) {
+                constexpr std::size_t elementSize = 4;
+                std::size_t size = camera.resolution.x() * camera.resolution.y() * elementSize;
+                if (camera.callback) {
+                    mWgpuInstance.processEvents();
+                    if (camera.stagingBuffer.getMapState() == wgpu::BufferMapState::Mapped) {
+                        auto image = boost::shared_ptr<sensor_msgs::Image>{imagePool.get(), [](sensor_msgs::Image* msg) { imagePool.give(msg); }};
+                        image->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
+                        image->encoding = sensor_msgs::image_encodings::BGRA8;
+                        image->width = camera.resolution.x();
+                        image->height = camera.resolution.y();
+                        image->step = camera.resolution.x() * elementSize;
+                        image->header.stamp = ros::Time::now();
+                        image->header.frame_id = "zed2i_left_camera_frame";
+                        image->data.resize(size);
+
+                        auto* fromRender = camera.stagingBuffer.getConstMappedRange(0, camera.stagingBuffer.getSize());
+                        auto* toMessage = image->data.data();
+                        std::memcpy(toMessage, fromRender, camera.stagingBuffer.getSize());
+                        camera.stagingBuffer.unmap();
                         camera.callback = nullptr;
 
-                        camera.pcPub.publish(pointCloud);
+                        camera.pub.publish(image);
                     }
                 }
                 if (!camera.callback && camera.updateTask.shouldUpdate()) {
-                    // TODO(quintin): Move these into camera update
                     colorAttachment.view = camera.colorTextureView;
                     normalAttachment.view = camera.normalTextureView;
                     depthStencilAttachment.view = camera.depthTextureView;
 
-                    cameraUpdate(camera, encoder, renderPassDescriptor);
+                    renderCamera(camera, encoder, renderPassDescriptor);
+
+                    if (!camera.stagingBuffer) {
+                        wgpu::BufferDescriptor descriptor;
+                        descriptor.usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::MapRead;
+                        descriptor.size = size;
+                        camera.stagingBuffer = mDevice.createBuffer(descriptor);
+                    }
+
+                    wgpu::ImageCopyTexture copyTexture;
+                    copyTexture.texture = camera.colorTexture;
+                    copyTexture.aspect = wgpu::TextureAspect::All;
+                    wgpu::ImageCopyBuffer copyBuffer;
+                    copyBuffer.buffer = camera.stagingBuffer;
+                    copyBuffer.layout.bytesPerRow = camera.resolution.x() * elementSize;
+                    copyBuffer.layout.rowsPerImage = camera.resolution.y();
+                    wgpu::Extent3D extent{
+                            static_cast<std::uint32_t>(camera.resolution.x()),
+                            static_cast<std::uint32_t>(camera.resolution.y()),
+                            1,
+                    };
+                    encoder.copyTextureToBuffer(copyTexture, copyBuffer, extent);
 
                     camera.needsMap = true;
                 }
@@ -606,9 +668,16 @@ namespace mrover {
 
         mSwapChain.present();
 
+        // TODO(quintin): Remote duplicate code
+        for (StereoCamera& stereoCamera: mStereoCameras) {
+            if (stereoCamera.base.needsMap) {
+                stereoCamera.base.callback = stereoCamera.base.stagingBuffer.mapAsync(wgpu::MapMode::Read, 0, stereoCamera.base.stagingBuffer.getSize(), [](wgpu::BufferMapAsyncStatus const&) {});
+                stereoCamera.base.needsMap = false;
+            }
+        }
         for (Camera& camera: mCameras) {
             if (camera.needsMap) {
-                camera.callback = camera.pointCloudBufferStaging.mapAsync(wgpu::MapMode::Read, 0, camera.pointCloudBufferStaging.getSize(), [](wgpu::BufferMapAsyncStatus const&) {});
+                camera.callback = camera.stagingBuffer.mapAsync(wgpu::MapMode::Read, 0, camera.stagingBuffer.getSize(), [](wgpu::BufferMapAsyncStatus const&) {});
                 camera.needsMap = false;
             }
         }

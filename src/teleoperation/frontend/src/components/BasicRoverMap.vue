@@ -1,6 +1,13 @@
 <template>
   <div class="wrap">
-    <l-map ref="map" class="map" :zoom="22" :center="center" @click="getClickedLatLon($event)">
+    <l-map
+      @ready="onMapReady"
+      ref="map"
+      class="map"
+      :zoom="22"
+      :center="center"
+      @click="getClickedLatLon($event)"
+    >
       <l-control-scale :imperial="false" />
       <l-tile-layer
         ref="tileLayer"
@@ -115,6 +122,13 @@ export default {
   },
 
   methods: {
+    onMapReady: function () {
+      // Pull objects from refs to be able to access data and change w functions
+      this.$nextTick(() => {
+        this.map = this.$refs.map.leafletObject
+        this.roverMarker = this.$refs.rover.leafletObject
+      })
+    },
     // Event listener for setting store values to get data to waypoint Editor
     getClickedLatLon: function (e: any) {
       this.setClickPoint({
@@ -177,23 +191,17 @@ export default {
         // Update the rover path
         this.odomCount++
         if (this.odomCount % DRAW_FREQUENCY === 0) {
-          if (this.odomCount > MAX_ODOM_COUNT * DRAW_FREQUENCY) {
-            this.odomPath.splice(0, 1)
+          if (this.odomPath.length > MAX_ODOM_COUNT) {
+            this.odomPath = [...this.odomPath.slice(1), latLng] //remove oldest element
           }
-          this.odomPath.push(latLng)
-        }
 
-        this.odomPath[this.odomPath.length - 1] = latLng
+          this.odomPath = [...this.odomPath, latLng]
+          this.odomCount = 0
+        }
       },
       // Deep will watch for changes in children of an object
       deep: true
     }
-  },
-  mounted: function () {
-    this.$nextTick(() => {
-      this.map = this.$refs.map.mapObject
-      // this.roverMarker = this.$refs.rover.mapObject
-    })
   }
 }
 </script>

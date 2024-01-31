@@ -19,6 +19,8 @@ else ()
     link_libraries(TBB::tbb)
 endif ()
 
+include_directories(BEFORE SYSTEM src/preload)
+
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # Generate compile_commands.json for clangd
@@ -72,11 +74,21 @@ set(MROVER_CMAKE_INCLUDES
 ### ============ ###
 
 if (MROVER_BUILD_SIM)
-    include(cmake/webgpu.cmake)
-    add_subdirectory(deps/glfw3webgpu)
-    find_package(Assimp REQUIRED)
+    # Apparently Assimp has different names on different systems
+    # find_package is case-sensitive so try both
+    find_package(Assimp QUIET)
+    find_package(assimp QUIET)
+    if (NOT Assimp_FOUND AND NOT assimp_FOUND)
+        message(FATAL_ERROR "Assimp not found")
+    endif ()
+
     find_package(Bullet REQUIRED)
+
     find_package(glfw3 REQUIRED)
+
+    include(cmake/webgpu.cmake)
+
+    add_subdirectory(deps/glfw3webgpu)
 endif ()
 find_package(OpenCV REQUIRED)
 find_package(ZED QUIET)
@@ -139,11 +151,13 @@ if (NOT APPLE)
     mrover_add_library(motor_library src/esw/motor_library/*.cpp src/esw/motor_library)
     target_link_libraries(motor_library PUBLIC can_device moteus)
 
-    mrover_add_nodelet(can_driver src/esw/can_driver/*.cpp src/esw/can_driver src/esw/can_driver/pch.hpp)
-    mrover_nodelet_link_libraries(can_driver nl-3 nl-route-3)
-    # TODO(quintin): Fix this CMake hard coding
-    #mrover_nodelet_link_libraries(can ${NetLink_LIBRARIES} ${NetLinkRoute_LIBRARIES}})
-    mrover_nodelet_include_directories(can_driver /usr/include/libnl3)
+    if (NetLink_FOUND AND NetLinkRoute_FOUND)
+        mrover_add_nodelet(can_driver src/esw/can_driver/*.cpp src/esw/can_driver src/esw/can_driver/pch.hpp)
+        mrover_nodelet_link_libraries(can_driver nl-3 nl-route-3)
+        # TODO(quintin): Fix this CMake hard coding
+        #mrover_nodelet_link_libraries(can ${NetLink_LIBRARIES} ${NetLinkRoute_LIBRARIES}})
+        mrover_nodelet_include_directories(can_driver /usr/include/libnl3)
+    endif ()
 
     macro(mrover_add_esw_bridge_node name sources)
         mrover_add_node(${name} ${sources})
@@ -162,6 +176,7 @@ if (NOT APPLE)
     mrover_add_esw_bridge_node(brushless_test_bridge src/esw/brushless_test_bridge/*.cpp motor_library)
     mrover_add_esw_bridge_node(brushed_test_bridge src/esw/brushed_test_bridge/*.cpp)
     mrover_add_esw_bridge_node(test_arm_bridge src/esw/test_arm_bridge/*.cpp)
+    #    mrover_add_esw_bridge_node(sa_sensor src/esw/fw/dirt_sensor/dirt_sensor_ros/dirt_sensor_ros.ino)
 endif ()
 
 ## Perception
@@ -169,13 +184,13 @@ endif ()
 mrover_add_nodelet(tag_detector src/perception/tag_detector/*.cpp src/perception/tag_detector src/perception/tag_detector/pch.hpp)
 mrover_nodelet_link_libraries(tag_detector opencv_core opencv_objdetect opencv_aruco opencv_imgproc opencv_highgui lie)
 
-# if (CUDA_FOUND)
-#     mrover_add_library(streaming src/esw/streaming/*.c* src/esw/streaming)
-#     #    target_link_libraries(streaming PUBLIC opencv_core opencv_cudacodec)
-#     target_link_libraries(streaming PUBLIC cuda nvidia-encode opencv_core)
-#     target_include_directories(streaming SYSTEM PUBLIC deps/nvenc)
-#     target_compile_definitions(streaming PUBLIC BOOST_ASIO_NO_DEPRECATED)
-# endif ()
+if (CUDA_FOUND)
+    mrover_add_library(streaming src/esw/streaming/*.c* src/esw/streaming)
+    #    target_link_libraries(streaming PUBLIC opencv_core opencv_cudacodec)
+    target_link_libraries(streaming PUBLIC cuda nvidia-encode opencv_core)
+    target_include_directories(streaming SYSTEM PUBLIC deps/nvenc)
+    target_compile_definitions(streaming PUBLIC BOOST_ASIO_NO_DEPRECATED)
+endif ()
 
 if (ZED_FOUND)
     mrover_add_nodelet(zed src/perception/zed_wrapper/*.c* src/perception/zed_wrapper src/perception/zed_wrapper/pch.hpp)
