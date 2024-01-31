@@ -1,7 +1,7 @@
 #include "se3.hpp"
 
-SE3 SE3::fromTfTree(tf2_ros::Buffer const& buffer, std::string const& fromFrameId, std::string const& toFrameId) {
-    geometry_msgs::TransformStamped transform = buffer.lookupTransform(fromFrameId, toFrameId, ros::Time{});
+SE3 SE3::fromTfTree(tf2_ros::Buffer const& buffer, std::string const& toFrameId, std::string const& fromFrameId) {
+    geometry_msgs::TransformStamped transform = buffer.lookupTransform(toFrameId, fromFrameId, ros::Time{});
     return fromTf(transform.transform);
 }
 
