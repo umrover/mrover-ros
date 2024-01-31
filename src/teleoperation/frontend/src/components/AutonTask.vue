@@ -98,8 +98,8 @@ export default defineComponent({
     return {
       // Default coordinates are at MDRS
       odom: {
-        latitude_deg: 42.293195,
-        longitude_deg: -83.7096706,
+        latitude_deg: 38.4098,
+        longitude_deg: -110.78235,
         bearing_deg: 0,
         altitude: 0
       },

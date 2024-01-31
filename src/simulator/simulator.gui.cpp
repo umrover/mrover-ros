@@ -59,7 +59,7 @@ namespace mrover {
             ImGui::BeginDisabled(!mInGui);
 
             ImGui::SliderFloat("Target FPS", &mTargetUpdateRate, 5.0f, 1000.0f);
-            ImGui::SliderFloat("Fly Speed", &mFlySpeed, 0.01f, 10.0f);
+            ImGui::SliderFloat("Fly Speed", &mFlySpeed, 0.01f, 50.0f);
             ImGui::SliderFloat("Look Sense", &mLookSense, 0.0001f, 0.01f);
             ImGui::SliderFloat("FOV", &mFovDegrees, 10.0f, 120.0f);
             ImGui::InputFloat3("Gravity", mGravityAcceleration.m_floats);

@@ -5,7 +5,7 @@ objects:
     translation: [ 0, 0, 0.5 ]
   - type: urdf
     name: world
-    uri: package://mrover/urdf/world/world.urdf.xacro
+    uri: package://mrover/urdf/world/playground.urdf.xacro
   - type: urdf
     name: tag_0
     uri: package://mrover/urdf/world/tag_0.urdf.xacro
