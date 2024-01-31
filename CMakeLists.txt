@@ -62,6 +62,7 @@ set(MROVER_MESSAGE_DEPENDENCIES
 )
 
 set(MROVER_PARAMETERS
+        config/DetectorParams.cfg
         config/TagDetectorParams.cfg
         config/ObjectDetectorParams.cfg
 )
