@@ -10,7 +10,7 @@ namespace mrover {
         camera.sceneUniforms.value.lightColor = {1, 1, 1, 1};
         camera.sceneUniforms.value.lightInWorld = {0, 0, 5, 1};
         float aspect = static_cast<float>(camera.resolution.x()) / static_cast<float>(camera.resolution.y());
-        camera.sceneUniforms.value.cameraToClip = computeCameraToClip(mFovDegrees * DEG_TO_RAD, aspect, NEAR, FAR).cast<float>();
+        camera.sceneUniforms.value.cameraToClip = computeCameraToClip(camera.fov * DEG_TO_RAD, aspect, NEAR, FAR).cast<float>();
         SE3 cameraInWorld = btTransformToSe3(camera.link->m_cachedWorldTransform);
         camera.sceneUniforms.value.worldToCamera = cameraInWorld.matrix().inverse().cast<float>();
         camera.sceneUniforms.value.cameraInWorld = cameraInWorld.position().cast<float>().homogeneous();

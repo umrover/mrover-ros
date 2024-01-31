@@ -127,6 +127,7 @@ namespace mrover {
         Eigen::Vector2i resolution;
         PeriodicTask updateTask;
         ros::Publisher pub;
+        float fov{};
 
         wgpu::Texture colorTexture = nullptr;
         wgpu::TextureView colorTextureView = nullptr;
