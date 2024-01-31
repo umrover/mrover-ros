@@ -1,6 +1,0 @@
----
-- hosts: all
-  vars:
-    ubuntu_release: focal
-  roles:
-    - macos_dev

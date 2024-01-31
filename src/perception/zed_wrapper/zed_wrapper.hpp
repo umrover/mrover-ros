@@ -2,14 +2,11 @@
 
 #include "pch.hpp"
 
-#include "../point.hpp"
-
 namespace mrover {
 
     using PointCloudGpu = thrust::device_vector<Point>;
 
     class ZedNodelet : public nodelet::Nodelet {
-    private:
         struct Measures {
             ros::Time time;
             sl::Mat leftImage;
@@ -59,31 +56,31 @@ namespace mrover {
 
         size_t mGrabUpdateTick = 0, mPointCloudUpdateTick = 0;
 
-        void onInit() override;
+        auto onInit() -> void override;
 
     public:
         ZedNodelet() = default;
 
         ~ZedNodelet() override;
 
-        void grabUpdate();
+        auto grabUpdate() -> void;
 
-        void pointCloudUpdate();
+        auto pointCloudUpdate() -> void;
     };
 
-    ros::Time slTime2Ros(sl::Timestamp t);
+    auto slTime2Ros(sl::Timestamp t) -> ros::Time;
 
-    void fillPointCloudMessageFromGpu(sl::Mat& xyzGpu, sl::Mat& bgraGpu, PointCloudGpu& pcGpu, sensor_msgs::PointCloud2Ptr const& msg);
+    auto fillPointCloudMessageFromGpu(sl::Mat& xyzGpu, sl::Mat& bgraGpu, PointCloudGpu& pcGpu, sensor_msgs::PointCloud2Ptr const& msg) -> void;
 
-    void fillCameraInfoMessages(sl::CalibrationParameters& calibration, sl::Resolution const& resolution,
-                                sensor_msgs::CameraInfoPtr const& leftInfoMsg, sensor_msgs::CameraInfoPtr const& rightInfoMsg);
+    auto fillCameraInfoMessages(sl::CalibrationParameters& calibration, sl::Resolution const& resolution,
+                                sensor_msgs::CameraInfoPtr const& leftInfoMsg, sensor_msgs::CameraInfoPtr const& rightInfoMsg) -> void;
 
-    void fillImageMessage(sl::Mat& bgra, sensor_msgs::ImagePtr const& msg);
+    auto fillImageMessage(sl::Mat const& bgra, sensor_msgs::ImagePtr const& msg) -> void;
 
-    void fillImuMessage(sl::SensorsData::IMUData& imuData, sensor_msgs::Imu& msg);
+    auto fillImuMessage(sl::SensorsData::IMUData& imuData, sensor_msgs::Imu& msg) -> void;
 
-    void fillMagMessage(sl::SensorsData::MagnetometerData& magData, sensor_msgs::MagneticField& msg);
+    auto fillMagMessage(sl::SensorsData::MagnetometerData const& magData, sensor_msgs::MagneticField& msg) -> void;
 
-    void checkCudaError(cudaError_t error);
+    auto checkCudaError(cudaError_t error) -> void;
 
 } // namespace mrover

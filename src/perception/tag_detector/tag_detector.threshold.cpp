@@ -45,7 +45,7 @@ namespace mrover {
             mThreshMsg.is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
             size_t size = mThreshMsg.step * mThreshMsg.height;
             mThreshMsg.data.resize(size);
-            std::uninitialized_copy(std::execution::par_unseq, mGrayImg.data, mGrayImg.data + size, mThreshMsg.data.begin());
+            std::memcpy(mThreshMsg.data.data(), mGrayImg.data, size);
 
             publisher.publish(mThreshMsg);
         }

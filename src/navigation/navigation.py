@@ -24,8 +24,7 @@ class Navigation(threading.Thread):
     def __init__(self, context: Context):
         super().__init__()
         self.name = "NavigationThread"
-        self.state_machine = StateMachine(OffState(), "NavStateMachine")
-        self.state_machine.set_context(context)
+        self.state_machine = StateMachine[Context](OffState(), "NavStateMachine", context)
         self.state_machine.add_transitions(
             ApproachPostState(), [WaypointState(), SearchState(), RecoveryState(), DoneState()]
         )
@@ -54,12 +53,12 @@ class Navigation(threading.Thread):
 
 
 def main():
-    rospy.loginfo("===== navigation starting =====")
     rospy.init_node("navigation")
     context = Context()
     navigation = Navigation(context)
     rospy.on_shutdown(navigation.stop)
     navigation.start()
+    rospy.loginfo("Navigation starting")
 
 
 if __name__ == "__main__":

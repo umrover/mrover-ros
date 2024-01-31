@@ -87,6 +87,12 @@
       - python3.10-dev
       - python3.10-venv
       - ros-{{ ros_distro }}-rosbash
+      - libbullet-dev
+      - libglfw3-dev
+      - xorg-dev
+      - libx11-xcb-dev
+      - libnl-3-dev
+      - libnl-route-3-dev
 
 - name: Initialize rosdep
   become: True
@@ -114,6 +120,9 @@
 
 - name: Upgrade Bun
   command: ~/.bun/bin/bun upgrade
+
+- name: Install Bun Packages
+  command: ~/.bun/bin/bun install --cwd {{ catkin_workspace }}/src/mrover/src/teleoperation/frontend
 
 - name: Install Catkin Profiles
   synchronize:
@@ -161,10 +170,18 @@
     link: /usr/bin/clangd
     priority: 160
 
+- name: Set LLD 16 as Default
+  become: True
+  alternatives:
+    name: lld
+    path: /usr/bin/lld-16
+    link: /usr/bin/lld
+    priority: 160
+
 - name: Setup Python Virtual Environment
   pip:
     name:
       # Installs from pyproject.toml
       - "{{ catkin_workspace }}/src/mrover[dev]"
     virtualenv: "{{ catkin_workspace }}/src/mrover/venv"
-    virtualenv_command: python3.10 -m venv
+    virtualenv_command: /usr/bin/python3.10 -m venv

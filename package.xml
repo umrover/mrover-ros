@@ -67,18 +67,11 @@
   <!-- Localization -->
   <depend>rviz_imu_plugin</depend>
   <depend>robot_localization</depend>
-  <depend>nmea_navsat_driver</depend>
 
   <!-- Navigation -->
-  <depend>smach_ros</depend>
-  <depend>control_msgs</depend>
 
-  <!-- Teleop -->
+  <!-- Utility -->
   <exec_depend>teleop_twist_joy</exec_depend>
-
-  <!-- Simulation -->
-  <depend>gazebo_ros</depend>
-  <exec_depend>hector_gazebo</exec_depend>
   <exec_depend>teleop_twist_keyboard</exec_depend>
 
   <!-- Test -->
@@ -87,7 +80,9 @@
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>
-    <nodelet plugin="${prefix}/plugins/tag_detector_plugin.xml"/>
-    <nodelet plugin="${prefix}/plugins/zed_plugin.xml"/>
+    <nodelet plugin="${prefix}/plugins/tag_detector_plugin.xml" />
+    <nodelet plugin="${prefix}/plugins/zed_plugin.xml" />
+    <nodelet plugin="${prefix}/plugins/can.xml" />
+    <nodelet plugin="${prefix}/plugins/simulator.xml" />
   </export>
 </package>
