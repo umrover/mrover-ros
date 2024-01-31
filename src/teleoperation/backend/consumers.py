@@ -9,7 +9,7 @@ from channels.generic.websocket import JsonWebsocketConsumer
 import rospy
 import tf2_ros
 from geometry_msgs.msg import Twist
-from mrover.msg import PDLB, ControllerState, GPSWaypoint, WaypointType, LED, StateMachineStateUpdate, Throttle, CalibrationStatus
+from mrover.msg import PDLB, ControllerState, GPSWaypoint, WaypointType, LED, StateMachineStateUpdate, Throttle, CalibrationStatus, SpectralGroup
 from mrover.srv import EnableAuton
 from sensor_msgs.msg import JointState, NavSatFix
 from std_msgs.msg import String, Bool
@@ -52,6 +52,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.led_sub = rospy.Subscriber("/led", LED, self.led_callback)
         self.nav_state_sub = rospy.Subscriber("/nav_state", StateMachineStateUpdate, self.nav_state_callback)
         self.imu_calibration = rospy.Subscriber('imu/calibration', CalibrationStatus, self.imu_calibration_callback)
+        self.science_spectral = rospy.Subscriber('/science_spectral',SpectralGroup, self.science_spectral_callback)
 
 
         # Services
@@ -337,3 +338,16 @@ class GUIConsumer(JsonWebsocketConsumer):
 
             rate.sleep()
 
+    def science_spectral_callback(self, msg):
+        data = []
+        error = []
+        for spectral in msg.spectrals:
+            rospy.logerr(spectral.data)
+            data.append(spectral.data)
+            error.append(spectral.error)
+
+        self.send(text_data=json.dumps({
+            'type': 'spectral_data',
+            'data': data,
+            'error': error
+        }))

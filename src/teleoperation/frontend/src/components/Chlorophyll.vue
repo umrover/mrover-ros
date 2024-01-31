@@ -3,30 +3,17 @@
     <h3>Chlorophyll Test Control</h3>
     <div>
       <div>
-        <ToggleButton
-          id="white_led_toggle"
-          :current-state="whiteLEDS_active"
-          label-enable-text="White LEDs On"
-          label-disable-text="White LEDs Off"
-          @change="toggle_whiteLEDS()"
-        />
-        <ToggleButton
-          id="uv_carousel"
-          :current-state="UV_carousel"
-          label-enable-text="Carousel UV On"
-          label-disable-text="Carousel UV Off"
-          @change="toggleCarouselUV()"
-        />
+        <ToggleButton id="white_led_toggle" :current-state="whiteLEDS_active" label-enable-text="White LEDs On"
+          label-disable-text="White LEDs Off" @change="toggle_whiteLEDS()" />
+        <ToggleButton id="uv_carousel" :current-state="UV_carousel" label-enable-text="Carousel UV On"
+          label-disable-text="Carousel UV Off" @change="toggleCarouselUV()" />
       </div>
     </div>
     <div class="wrap-table">
       <div>
         <h3>Chlorophyll Spectral data</h3>
       </div>
-      <table
-        class="tableFormat"
-        style="undefined;table-layout: fixed; width: 434px"
-      >
+      <table class="tableFormat" style="undefined;table-layout: fixed; width: 434px">
         <colgroup>
           <col style="width: 100px" />
           <col style="width: 63px" />
@@ -50,10 +37,10 @@
         </thead>
         <tbody>
           <tr v-for="i in 3" :key="i">
-            <div v-if="spectral_data.length > 0 && !spectral_data[i-1].error"></div>
+            <div v-if="spectral_data.length > 0 && !error[i - 1]">
               <td class="tableElement">Site {{ String.fromCharCode(64 + i) }}</td>
               <td v-for="j in 6" :key="j" class="tableElement">
-                {{ spectral_data[i-1].data[j-1].toFixed(0) }}
+                {{ spectral_data[i - 1][j - 1].toFixed(2) }}
               </td>
             </div>
           </tr>
@@ -79,8 +66,8 @@ export default {
   data() {
     return {
       whiteLEDS_active: false,
-      UV_carousel: false,
-      spectral_data: []
+      spectral_data: [],
+      error: []
     };
   },
 
@@ -131,8 +118,10 @@ export default {
   watch: {
     message(msg) {
       if (msg.type == 'spectral_data') {
-        this.spectral_data = msg.spectral_data
+        this.spectral_data = msg.data
+        this.error = msg.error
         console.log(this.spectral_data)
+        console.log(this.error)
       }
     }
   }
