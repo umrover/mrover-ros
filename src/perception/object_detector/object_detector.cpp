@@ -25,8 +25,8 @@ namespace mrover {
         //Read ROS Params
         mNh.param<int>("obj_increment_weight", mObjIncrementWeight, 2);
         mNh.param<int>("obj_decrement_weight", mObjDecrementWeight, 1);
-        mNh.param<int>("obj_hitcount_threshold", mObjHitThreshold, 50);
-        mNh.param<int>("obj_hitcount_max", mObjMaxHitcount, 60);
+        mNh.param<int>("obj_hitcount_threshold", mObjHitThreshold, 5);
+        mNh.param<int>("obj_hitcount_max", mObjMaxHitcount, 10);
 
         //Initialize Object Hit Cout to Zeros
         mHitCountHammer = 0;
