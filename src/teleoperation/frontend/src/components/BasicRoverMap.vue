@@ -122,11 +122,9 @@ export default {
     getWaypointIcon: function (isDrone: boolean) {
       if (this.index === this.highlightedWaypoint) {
         return this.highlightedWaypointIcon
-      }
-      else if (isDrone) {
+      } else if (isDrone) {
         return this.droneWaypointIcon
-      }
-      else {
+      } else {
         return this.waypointIcon
       }
     },
