@@ -132,14 +132,6 @@ export default {
     }
   },
   watch: {
-<<<<<<< HEAD
-    waypointList: {
-      handler: function () {
-        console.log(this.waypointList)
-      }
-    },
-=======
->>>>>>> 0e83dd2def00077b63a76afe3e7234f02e0d63d8
     odom: {
       handler: function (val) {
         // Trigger every time rover odom is changed
