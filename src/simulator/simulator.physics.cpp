@@ -110,8 +110,8 @@ namespace mrover {
                 }
             };
 
-            if (mPublishBottlePose) publishModel("bottle", mPublishBottleDistanceThreshold);
-            if (mPublishHammerPose) publishModel("hammer", mPublishHammerDistanceThreshold);
+            if (mPublishBottleDistanceThreshold > 0) publishModel("bottle", mPublishBottleDistanceThreshold);
+            if (mPublishHammerDistanceThreshold > 0) publishModel("hammer", mPublishHammerDistanceThreshold);
         }
     }
 

@@ -196,9 +196,7 @@ namespace mrover {
         bool mEnablePhysics = false;
         bool mRenderModels = true;
         bool mRenderWireframeColliders = false;
-        bool mPublishHammerPose = true;
         double mPublishHammerDistanceThreshold = 4;
-        bool mPublishBottlePose = true;
         double mPublishBottleDistanceThreshold = 4;
 
         float mFloat = 0.0f;
