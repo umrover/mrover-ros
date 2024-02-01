@@ -66,6 +66,9 @@ void update_and_send_heater();
 
 void receive_message();
 
+// Used for testing while CAN isn't working
+void receive_message_debug(int device, int enable);
+
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
