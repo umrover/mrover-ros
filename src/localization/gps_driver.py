@@ -17,7 +17,7 @@ from pyubx2 import UBXReader, UBX_PROTOCOL, RTCM3_PROTOCOL, protocol, UBXMessage
 from std_msgs.msg import Header
 from sensor_msgs.msg import NavSatFix
 from rtcm_msgs.msg import Message
-from mrover.msg import rtkStatus
+# from mrover.msg import rtkStatus
 import datetime
 
 
@@ -28,7 +28,7 @@ class GPS_Driver:
         self.baud = rospy.get_param("baud")
         self.base_station_sub = rospy.Subscriber("/rtcm", Message, self.process_rtcm)
         self.gps_pub = rospy.Publisher("fix", NavSatFix, queue_size=1)
-        self.rtk_fix_pub = rospy.Publisher("rtk_fix_status", rtkStatus, queue_size=1)
+        # self.rtk_fix_pub = rospy.Publisher("rtk_fix_status", rtkStatus, queue_size=1)
 
         self.lock = threading.Lock()
 
@@ -73,8 +73,10 @@ class GPS_Driver:
             parsed_latitude = msg.lat
             parsed_longitude = msg.lon
             parsed_altitude = msg.hMSL
-            time = datetime.datetime(year=msg.year, month=msg.month, day=msg.day, hour= msg.hour, second=msg.second, microsecond= int((msg.nano/1000)))
-            time=time.timestamp()
+            time = datetime.datetime(year=msg.year, month=msg.month, day=msg.day, hour= msg.hour, second=msg.second , milliseconds= int((msg.nano/1e6)),microsecond = (int((msg.nano/1e6) % 1e6)) / 1e3)
+            time= rospy.Time(secs=time.timestamp())
+            print(time, rospy.Time.now(), msg.nano)
+
 
             message_header = Header(stamp=time, frame_id="base_link")
 
@@ -86,7 +88,7 @@ class GPS_Driver:
                     altitude=parsed_altitude,
                 )
             )
-            self.rtk_fix_pub.publish(rtkStatus(msg_used))
+            # self.rtk_fix_pub.publish(rtkStatus(msg_used))
 
             if msg.difSoln == 1:
                 print("Differemtial Corrections Applied")
