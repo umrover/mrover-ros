@@ -160,9 +160,11 @@ namespace mrover {
             if (link->name.contains("camera"sv)) {
                 Camera camera = makeCameraForLink(simulator, &multiBody->getLink(linkIndex));
                 if (link->name.contains("zed")) {
+                    camera.fov = 60;
                     camera.pub = simulator.mNh.advertise<sensor_msgs::PointCloud2>("camera/left/points", 1);
                     simulator.mStereoCameras.emplace_back(std::move(camera));
                 } else {
+                    camera.fov = 15;
                     camera.pub = simulator.mNh.advertise<sensor_msgs::Image>("long_range_image", 1);
                     simulator.mCameras.push_back(std::move(camera));
                 }

@@ -127,6 +127,7 @@ namespace mrover {
         Eigen::Vector2i resolution;
         PeriodicTask updateTask;
         ros::Publisher pub;
+        float fov{};
 
         wgpu::Texture colorTexture = nullptr;
         wgpu::TextureView colorTextureView = nullptr;
@@ -204,6 +205,8 @@ namespace mrover {
         ros::Publisher mGpsPub;
         ros::Publisher mImuPub;
         ros::Publisher mMotorStatusPub;
+        ros::Publisher mDriveControllerStatePub;
+        ros::Publisher mArmControllerStatePub;
 
         tf2_ros::Buffer mTfBuffer;
         tf2_ros::TransformListener mTfListener{mTfBuffer};
@@ -368,8 +371,8 @@ namespace mrover {
 
         auto armThrottlesCallback(Throttle::ConstPtr const& message) -> void;
 
-        // TODO(quintin): May want to restrucutre the names to all agree
-        std::unordered_map<std::string, std::string> armMsgToUrdf{
+        // TODO(quintin): May want to restructure the names to all agree
+        bimap<std::string, std::string> armMsgToUrdf{
                 {"joint_a", "arm_a_link"},
                 {"joint_b", "arm_b_link"},
                 {"joint_c", "arm_c_link"},
@@ -386,8 +389,8 @@ namespace mrover {
                     std::string const& name = boost::get<0>(combined);
                     float value = boost::get<1>(combined);
 
-                    if (auto it = armMsgToUrdf.find(name); it != armMsgToUrdf.end()) {
-                        std::string const& name = it->second;
+                    if (auto urdfName = armMsgToUrdf.forward(name)) {
+                        std::string const& name = urdfName.value();
 
                         int linkIndex = rover.linkNameToMeta.at(name).index;
 

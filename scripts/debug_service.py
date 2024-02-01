@@ -6,17 +6,16 @@ Logs the service request to stdout
 
 from typing import Any
 import rospy
-# from mrover.srv import PublishEnableAuton, PublishEnableAutonResponse
-from std_srvs.srv import Trigger, TriggerResponse, SetBool, SetBoolResponse
+from mrover.srv import EnableAuton, EnableAutonResponse
 
 # Change these values for the service name and type definition to test different values
-SERVICE_NAME = "arm_enable_limit_switch_gripper"
-SERVICE_TYPE = SetBool
+SERVICE_NAME = "enable_auton"
+SERVICE_TYPE = EnableAuton
 
 
 def print_service_request(service_request: Any):
     rospy.loginfo(service_request)
-    return SetBoolResponse(success=True)
+    return EnableAutonResponse(success=True)
 
 
 def main():

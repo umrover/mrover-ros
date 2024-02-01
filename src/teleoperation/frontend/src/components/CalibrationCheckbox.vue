@@ -27,10 +27,6 @@ export default defineComponent({
     joint_name: {
       type: String,
       required: true
-    },
-    calibrate_topic: {
-      type: String,
-      required: true
     }
   },
 
