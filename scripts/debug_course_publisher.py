@@ -27,11 +27,11 @@ if __name__ == "__main__":
                 (
                     Waypoint(tag_id=0, type=WaypointType(val=WaypointType.POST)),
                     SE3(position=np.array([5, 0, 0])),
-                )
-                # (
-                #     Waypoint(tag_id=1, type=WaypointType(val=WaypointType.POST)),
-                #     SE3(position=np.array([11, -10, 0])),
-                # )
+                ),
+                (
+                    Waypoint(tag_id=1, type=WaypointType(val=WaypointType.POST)),
+                    SE3(position=np.array([11, -10, 0])),
+                ),
             ]
         ]
     )

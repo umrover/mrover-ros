@@ -28,7 +28,7 @@ from util.ros_utils import get_rosparam
 TAG_EXPIRATION_TIME_SECONDS = 60
 
 TIME_THRESHOLD = get_rosparam("long_range/time_threshold", 5)
-INCREMENT_WEIGHT = get_rosparam("long_range/increment_weight", 100)
+INCREMENT_WEIGHT = get_rosparam("long_range/increment_weight", 5)
 DECREMENT_WEIGHT = get_rosparam("long_range/decrement_weight", 1)
 
 REF_LAT = rospy.get_param("gps_linearization/reference_point_latitude")
@@ -133,7 +133,7 @@ class LongRangeTagStore:
     min_hits: int
     max_hits: int
 
-    def __init__(self, ctx: Context, min_hits: int, max_hits: int = 100) -> None:
+    def __init__(self, ctx: Context, min_hits: int, max_hits: int = 10) -> None:
         self.ctx = ctx
         self.__data = {}
         self.min_hits = min_hits
@@ -144,28 +144,30 @@ class LongRangeTagStore:
             tags_ids = [tag.id for tag in tags]
             if cur_tag.tag.id not in tags_ids:
                 cur_tag.hit_count -= DECREMENT_WEIGHT
-                print(f"dec {cur_tag.tag.id} to {cur_tag.hit_count}")
+                # print(f"DEC {cur_tag.tag.id} to {cur_tag.hit_count}")
                 if cur_tag.hit_count <= 0:
                     del self.__data[cur_tag.tag.id]
-                    print("deleted from dict")
+                    # print("DELETED from dict")
             else:
                 cur_tag.hit_count += INCREMENT_WEIGHT
+                cur_tag.time = rospy.get_time()
                 if cur_tag.hit_count > self.max_hits:
                     cur_tag.hit_count = self.max_hits
-                print("TAG ID", cur_tag.tag.id, "HIT COUNT:", cur_tag.hit_count)
+                # print(f"INC {cur_tag.tag.id} to {cur_tag.hit_count}")
 
         for tag in tags:
             if tag.id not in self.__data:
+                # print(f"INC {tag.id} to {INCREMENT_WEIGHT}")
                 self.__data[tag.id] = self.TagData(hit_count=INCREMENT_WEIGHT, tag=tag, time=rospy.get_time())
 
     def get(self, tag_id: int) -> Optional[LongRangeTag]:
         if len(self.__data) == 0:
             return None
         if tag_id not in self.__data:
-            print(f"{tag_id} not seen.")
+            # print(f"{tag_id} not seen.")
             return None
         time_difference = rospy.get_time() - self.__data[tag_id].time
-        print(f"tag id hc: {self.__data[tag_id].hit_count}")
+        # print(f"HIT COUNT: {self.__data[tag_id].hit_count}")
         if (
             tag_id in self.__data
             and self.__data[tag_id].hit_count >= self.min_hits
@@ -311,7 +313,7 @@ class Context:
         self.course = None
         self.rover = Rover(self, False, "")
         # TODO update min_hits to be a param
-        self.env = Environment(self, long_range_tags=LongRangeTagStore(self, 50))
+        self.env = Environment(self, long_range_tags=LongRangeTagStore(self, 3))
         self.disable_requested = False
         self.use_odom = rospy.get_param("use_odom_frame")
         self.world_frame = rospy.get_param("world_frame")
