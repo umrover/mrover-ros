@@ -2,6 +2,8 @@ import { createWebHistory, createRouter } from 'vue-router'
 import Menu from '../components/Menu.vue'
 import DMESTask from '../components/DMESTask.vue'
 import AutonTask from '../components/AutonTask.vue'
+import ISHTask from '../components/ISHTask.vue'
+import SATask from '../components/SATask.vue'
 
 const routes = [
   {
@@ -29,6 +31,16 @@ const routes = [
     path: '/AutonTask',
     name: 'AutonTask',
     component: AutonTask
+  },
+  {
+    path: '/SATask',
+    name: 'SATask',
+    component: SATask
+  },
+  {
+    path: '/ISHTask',
+    name: 'ISHTask',
+    component: ISHTask
   }
 ]
 const router = createRouter({

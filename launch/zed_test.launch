@@ -1,34 +1,31 @@
 <launch>
-    <arg name="run_rviz" default="true"/>
-    <arg name="run_dynamic_reconfigure" default="true"/>
+      <arg name="run_rviz" default="true" />
+      <arg name="run_dynamic_reconfigure" default="true" />
 
-    <arg name="run_tag_detector" default="true"/>
-    <arg name="use_rtabmap_stereo_odom" default="false"/>
-    <arg name="use_builtin_visual_odom" default="false"/>
+      <arg name="run_tag_detector" default="true" />
+      <arg name="use_builtin_visual_odom" default="false" />
 
-    <group if="$(arg run_rviz)">
-        <arg name="rvizconfig" default="$(find mrover)/config/rviz/zed_test.rviz"/>
-        <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)"/>
-    </group>
+      <include file="$(find mrover)/launch/zed.launch">
+            <arg name="use_builtin_visual_odom" value="$(arg use_builtin_visual_odom)" />
+      </include>
 
-    <node name="rqt_tf_tree" pkg="rqt_tf_tree" type="rqt_tf_tree" output="screen"/>
+      <include file="$(find mrover)/launch/perception.launch">
+            <arg name="run_tag_detector" value="$(arg run_tag_detector)" />
+      </include>
 
-    <node if="$(arg run_dynamic_reconfigure)"
-          name="rqt_reconfigure" pkg="rqt_reconfigure" type="rqt_reconfigure"/>
+      <group if="$(arg run_rviz)">
+            <arg name="rvizconfig" default="$(find mrover)/config/rviz/zed_test.rviz" />
+            <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" />
+      </group>
 
-    <node pkg="nodelet" type="nodelet" name="nodelet_manager" required="true"
-          args="manager" output="screen"/>
+      <node pkg="nodelet" type="nodelet" name="nodelet_manager" required="true"
+            args="manager" output="screen" />
 
-    <include file="$(find mrover)/launch/zed.launch">
-        <arg name="use_rtabmap_stereo_odom" value="$(arg use_rtabmap_stereo_odom)"/>
-        <arg name="use_builtin_visual_odom" value="$(arg use_builtin_visual_odom)"/>
-    </include>
+      <node name="rqt_tf_tree" pkg="rqt_tf_tree" type="rqt_tf_tree" output="screen" />
 
-    <node if="$(arg run_tag_detector)"
-          pkg="nodelet" type="nodelet" name="tag_detector" respawn="true"
-          args="load mrover/TagDetectorNodelet nodelet_manager" output="screen">
-    </node>
+      <node if="$(arg run_dynamic_reconfigure)"
+            name="rqt_reconfigure" pkg="rqt_reconfigure" type="rqt_reconfigure" />
 
-  <node pkg="tf" type="static_transform_publisher" name="map_odom_publisher"
-        args="1 0 0 0 0 0 map odom 100"/>
+      <node pkg="tf" type="static_transform_publisher" name="map_odom_publisher"
+            args="1 0 0 0 0 0 map odom 100" />
 </launch>

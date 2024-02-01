@@ -3,7 +3,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from enum import Enum
 from threading import Lock, Event
-from typing import DefaultDict, Set, List, Callable, Any, Optional
+from typing import DefaultDict, Set, List, Callable, TypeVar, Optional, Generic
 
 from util.state_lib.state import State, ExitState
 
@@ -21,32 +21,36 @@ class TransitionRecord:
     dest_state: str
 
 
-class StateMachine:
+ContextType = TypeVar("ContextType")
+
+
+class StateMachine(Generic[ContextType]):
     current_state: State
     state_lock: Lock
     state_transitions: DefaultDict[type[State], Set[type[State]]]
     transition_log: List[TransitionRecord]
-    context: Any
+    context: ContextType
     name: str
-    off_lambda: Optional[Callable[[Any], bool]]
+    off_lambda: Optional[Callable[[ContextType], bool]]
     off_state: Optional[State]
     log_level: LogLevel
     logger: Callable[[str], None]
     stop_event: Event
 
     def __init__(
-            self,
-            initial_state: State,
-            name: str,
-            log_level: LogLevel = LogLevel.DEBUG,
-            logger: Callable[[str], None] = print,
+        self,
+        initial_state: State,
+        name: str,
+        context: ContextType,
+        log_level: LogLevel = LogLevel.DEBUG,
+        logger: Callable[[str], None] = print,
     ):
         self.current_state = initial_state
         self.state_lock = Lock()
         self.state_transitions = defaultdict(set)
         self.state_transitions[type(self.current_state)] = set()
         self.transition_log: List[TransitionRecord] = []
-        self.context = None
+        self.context = context
         self.name = name
         self.off_lamdba = None
         self.off_state = None
@@ -67,7 +71,7 @@ class StateMachine:
             raise Exception(f"Invalid transition from {current_state} to {next_state}")
         if type(next_state) is not type(current_state):
             if self.log_level == LogLevel.DEBUG or self.log_level == LogLevel.VERBOSE:
-                self.logger(f"{self.name} state machine, transistioning to {str(next_state)}")
+                self.logger(f"{self.name} state machine, transitioning to {str(next_state)}")
             current_state.on_exit(self.context)
             self.transition_log.append(TransitionRecord(time.time(), str(current_state), str(next_state)))
             with self.state_lock:
@@ -82,6 +86,7 @@ class StateMachine:
         Runs the state machine until it returns an ExitState.
         Aims for as close to update_rate_hz, updates per second
         :param update_rate: targeted updates per second
+        :param warning_handle: function to call when a warning is raised
         """
         target_loop_time = None if update_rate == float("inf") else (1.0 / update_rate)
         self.current_state.on_enter(self.context)
@@ -109,10 +114,7 @@ class StateMachine:
         if self.off_state is not None:
             self.add_transition(state_from, self.off_state)
 
-    def set_context(self, context: Any):
-        self.context = context
-
-    def configure_off_switch(self, off_state: State, off_lambda: Callable[[Any], bool]):
+    def configure_off_switch(self, off_state: State, off_lambda: Callable[[ContextType], bool]):
         if type(off_state) not in self.state_transitions:
             raise Exception("Attempted to configure an Off State that doesn't exist")
         self.off_state = off_state

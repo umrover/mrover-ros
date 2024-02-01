@@ -73,24 +73,38 @@ namespace mrover {
 
                     model.waitMeshes();
 
-                    if (model.meshes.size() != 1) throw std::invalid_argument{"Mesh collider must be constructed from exactly one mesh"};
+                    // Colliders with non-zero mass must be convex
+                    // This is a limitation of most physics engines
+                    if (link->inertial->mass > std::numeric_limits<float>::epsilon()) {
+                        auto* convexHullShape = simulator.makeBulletObject<btConvexHullShape>(simulator.mCollisionShapes);
+                        for (Model::Mesh const& meshData: model.meshes) {
+                            for (Eigen::Vector3f const& point: meshData.vertices.data) {
+                                convexHullShape->addPoint(btVector3{point.x(), point.y(), point.z()}, false);
+                            }
+                        }
+                        convexHullShape->recalcLocalAabb();
+                        shapes.emplace_back(convexHullShape, urdfPoseToBtTransform(collision->origin));
+                        simulator.mMeshToUri.emplace(convexHullShape, fileUri);
+                    } else {
+                        auto* triangleMesh = new btTriangleMesh{};
+                        triangleMesh->preallocateVertices(static_cast<int>(model.meshes.front().vertices.data.size()));
+                        triangleMesh->preallocateIndices(static_cast<int>(model.meshes.front().indices.data.size()));
 
-                    Model::Mesh const& meshData = model.meshes.front();
+                        for (Model::Mesh const& meshData: model.meshes) {
+                            for (std::size_t i = 0; i < meshData.indices.data.size(); i += 3) {
+                                Eigen::Vector3f v0 = meshData.vertices.data[meshData.indices.data[i + 0]];
+                                Eigen::Vector3f v1 = meshData.vertices.data[meshData.indices.data[i + 1]];
+                                Eigen::Vector3f v2 = meshData.vertices.data[meshData.indices.data[i + 2]];
+                                triangleMesh->addTriangle(btVector3{v0.x(), v0.y(), v0.z()}, btVector3{v1.x(), v1.y(), v1.z()}, btVector3{v2.x(), v2.y(), v2.z()});
+                            }
+                        }
 
-                    auto* triangleMesh = new btTriangleMesh{};
-                    triangleMesh->preallocateVertices(static_cast<int>(meshData.vertices.data.size()));
-                    triangleMesh->preallocateIndices(static_cast<int>(meshData.indices.data.size()));
-                    for (std::size_t i = 0; i < meshData.indices.data.size(); i += 3) {
-                        Eigen::Vector3f v0 = meshData.vertices.data[meshData.indices.data[i + 0]];
-                        Eigen::Vector3f v1 = meshData.vertices.data[meshData.indices.data[i + 1]];
-                        Eigen::Vector3f v2 = meshData.vertices.data[meshData.indices.data[i + 2]];
-                        triangleMesh->addTriangle(btVector3{v0.x(), v0.y(), v0.z()}, btVector3{v1.x(), v1.y(), v1.z()}, btVector3{v2.x(), v2.y(), v2.z()});
+                        auto* meshShape = simulator.makeBulletObject<btBvhTriangleMeshShape>(simulator.mCollisionShapes, triangleMesh, true);
+                        // TODO(quintin): Configure this in the URDF
+                        meshShape->setMargin(0.01);
+                        shapes.emplace_back(meshShape, urdfPoseToBtTransform(collision->origin));
+                        simulator.mMeshToUri.emplace(meshShape, fileUri);
                     }
-                    auto* meshShape = simulator.makeBulletObject<btBvhTriangleMeshShape>(simulator.mCollisionShapes, triangleMesh, true);
-                    // TODO(quintin): Configure this in the URDF
-                    meshShape->setMargin(0.01);
-                    shapes.emplace_back(meshShape, urdfPoseToBtTransform(collision->origin));
-                    simulator.mMeshToUri.emplace(meshShape, fileUri);
                     break;
                 }
                 default:
@@ -144,8 +158,16 @@ namespace mrover {
             assert(was_inserted);
 
             if (link->name.contains("camera"sv)) {
-                Camera canera = makeCameraForLink(simulator, &multiBody->getLink(linkIndex));
-                simulator.mCameras.push_back(std::move(canera));
+                Camera camera = makeCameraForLink(simulator, &multiBody->getLink(linkIndex));
+                if (link->name.contains("zed")) {
+                    camera.fov = 60;
+                    camera.pub = simulator.mNh.advertise<sensor_msgs::PointCloud2>("camera/left/points", 1);
+                    simulator.mStereoCameras.emplace_back(std::move(camera));
+                } else {
+                    camera.fov = 15;
+                    camera.pub = simulator.mNh.advertise<sensor_msgs::Image>("long_range_image", 1);
+                    simulator.mCameras.push_back(std::move(camera));
+                }
             }
 
             for (urdf::VisualSharedPtr const& visual: link->visual_array) {
@@ -191,20 +213,9 @@ namespace mrover {
                     case urdf::Joint::REVOLUTE: {
                         ROS_INFO_STREAM(std::format("Rotating joint {}: {} ({}) <-> {} ({})", parentJoint->name, parentJoint->parent_link_name, parentIndex, parentJoint->child_link_name, linkIndex));
                         multiBody->setupRevolute(linkIndex, mass, inertia, parentIndex, jointInParent.getRotation().inverse(), axisInJoint, jointInParent.getOrigin(), comInJoint.getOrigin(), true);
-                        if (parentJoint->type == urdf::Joint::REVOLUTE) {
-                            auto lower = static_cast<btScalar>(parentJoint->limits->lower), upper = static_cast<btScalar>(parentJoint->limits->upper);
-                            auto* limitConstraint = simulator.makeBulletObject<btMultiBodyJointLimitConstraint>(simulator.mMultibodyConstraints, multiBody, linkIndex, lower, upper);
-                            constraintsToFinalize.push_back(limitConstraint);
-                        }
 
                         if (link->name.contains("wheel"sv)) {
-                            ROS_INFO_STREAM("\tGear");
-
-                            // auto* gearConstraint = simulator.makeBulletObject<btMultiBodyGearConstraint>(simulator.mMultibodyConstraints, multiBody, parentIndex, multiBody, linkIndex, btVector3{}, btVector3{}, btMatrix3x3{}, btMatrix3x3{});
-                            // gearConstraint->setMaxAppliedImpulse(10000);
-                            // gearConstraint->setGearRatio(50);
-                            // gearConstraint->setErp(0.2);
-                            // constraintsToFinalize.push_back(gearConstraint);
+                            ROS_INFO_STREAM("\tWheel");
 
                             collider->setRollingFriction(0.0);
                             collider->setSpinningFriction(0.0);
@@ -234,6 +245,16 @@ namespace mrover {
                     default:
                         break;
                 }
+                switch (parentJoint->type) {
+                    case urdf::Joint::REVOLUTE:
+                    case urdf::Joint::PRISMATIC: {
+                        auto lower = static_cast<btScalar>(parentJoint->limits->lower), upper = static_cast<btScalar>(parentJoint->limits->upper);
+                        auto* limitConstraint = simulator.makeBulletObject<btMultiBodyJointLimitConstraint>(simulator.mMultibodyConstraints, multiBody, linkIndex, lower, upper);
+                        constraintsToFinalize.push_back(limitConstraint);
+                    }
+                    default:
+                        break;
+                }
 
                 multiBody->getLink(linkIndex).m_collider = collider; // Bullet WHY? Why is this not exposed via a function call? This took a LONG time to figure out btw.
             } else {
@@ -259,20 +280,17 @@ namespace mrover {
         multiBody->updateCollisionObjectWorldTransforms(q, m);
         simulator.mDynamicsWorld->addMultiBody(multiBody);
 
-        // auto* gearConstraint = simulator.makeBulletObject<btMultiBodyGearConstraint>(simulator.mMultibodyConstraints, multiBody, 0, multiBody, 1, btVector3{}, btVector3{}, btMatrix3x3{}, btMatrix3x3{});
-        // gearConstraint->setMaxAppliedImpulse(10000);
-        // gearConstraint->setGearRatio(-2);
-        // gearConstraint->setErp(0.2);
-        // constraintsToFinalize.push_back(gearConstraint);
-
-        // auto* motor = simulator.makeBulletObject<btMultiBodyJointMotor>(simulator.mMultibodyConstraints, multiBody, 0, 0, 0);
-        // constraintsToFinalize.push_back(motor);
-        // multiBody->getLink(0).m_userPtr = motor;
-
         for (btMultiBodyConstraint* constraint: constraintsToFinalize) {
             constraint->finalizeMultiDof();
             simulator.mDynamicsWorld->addMultiBodyConstraint(constraint);
         }
+    }
+
+    auto SimulatorNodelet::getUrdf(std::string const& name) -> std::optional<std::reference_wrapper<URDF>> {
+        auto it = mUrdfs.find(name);
+        if (it == mUrdfs.end()) return std::nullopt;
+
+        return it->second;
     }
 
 } // namespace mrover
