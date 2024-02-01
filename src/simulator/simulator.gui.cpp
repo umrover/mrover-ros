@@ -77,9 +77,12 @@ namespace mrover {
             // ImGui::SliderFloat("Float", &mFloat, 0.0f, 1000.0f);
 
             ImGui::Checkbox("Publish IK", &mPublishIk);
-            if (mPublishIk) {
-                ImGui::SliderFloat3("IK Target", mIkTarget.data(), -1.f, 1.f);
-            }
+            if (mPublishIk) ImGui::SliderFloat3("IK Target", mIkTarget.data(), -1.f, 1.f);
+
+            ImGui::Checkbox("Publish Hammer Pose", &mPublishHammerPose);
+            ImGui::InputDouble("Publish Hammer Distance Threshold", &mPublishHammerDistanceThreshold);
+            ImGui::Checkbox("Publish Bottle Pose", &mPublishBottlePose);
+            ImGui::InputDouble("Publish Bottle Distance Threshold", &mPublishBottleDistanceThreshold);
 
             ImGui::EndDisabled();
             ImGui::End();
@@ -136,6 +139,10 @@ namespace mrover {
             for (Camera const& camera: mCameras) {
                 float aspect = static_cast<float>(camera.resolution.x()) / static_cast<float>(camera.resolution.y());
                 ImGui::Image(camera.colorTextureView, {320, 320 / aspect}, {0, 0}, {1, 1});
+            }
+            for (StereoCamera const& stereoCamera: mStereoCameras) {
+                float aspect = static_cast<float>(stereoCamera.base.resolution.x()) / static_cast<float>(stereoCamera.base.resolution.y());
+                ImGui::Image(stereoCamera.base.colorTextureView, {320, 320 / aspect}, {0, 0}, {1, 1});
             }
 
             ImGui::End();
