@@ -38,12 +38,12 @@
                 label-disable-text="Arm Laser Off" @change="toggleArmLaser()" />
             <div class="limit-switch">
                 <h4>Limit Switches</h4>
-                <LimitSwitch :name="'All Switches'" />
+                <LimitSwitch :name="'All Switches'" :switch_name="'all_sa'"/>
             </div>
         </div>
         <div class="controls-flex">
             <h4>Calibration</h4>
-            <CalibrationCheckbox name="All Joints Calibration"/>
+            <CalibrationCheckbox :name="'All Joints Calibration'" :joint_name="'all_sa'"/>
             <JointAdjust v-if="arm_mode == 'position'" :options="[
                 { name: 'joint_a', option: 'Joint A' },
                 { name: 'joint_b', option: 'Joint B' },
@@ -57,7 +57,7 @@
   
 <script lang ="ts">
 import { defineComponent } from 'vue';
-import { mapActions } from 'vuex';
+import { mapActions, mapState } from 'vuex';
 import ToggleButton from "./ToggleButton.vue";
 import CalibrationCheckbox from "./CalibrationCheckbox.vue";
 import JointAdjust from "./MotorAdjust.vue";
@@ -109,15 +109,7 @@ export default defineComponent({
     },
 
     created: function () {
-        this.websocket.onmessage = (event) => {
-            const msg = JSON.parse(event.data);
-            if(msg.type=="laser_service"){
-                if (!msg.result) {
-                    this.laser_enabled = !this.laser_enabled;
-                    alert("Toggling Arm Laser failed.");
-                }
-            }
-        };
+
         interval = window.setInterval(() => {
             
             const gamepads = navigator.getGamepads();
@@ -140,6 +132,21 @@ export default defineComponent({
                 }
             }
         }, updateRate * 1000); 
+    },
+
+    computed: {
+    ...mapState('websocket', ['message']),
+    },
+
+    watch: {
+        message(msg) {
+            if(msg.type=="laser_service"){
+                if (!msg.result) {
+                    this.laser_enabled = !this.laser_enabled;
+                    alert("Toggling Arm Laser failed.");
+                }
+            }
+        }
     },
 
     methods: {

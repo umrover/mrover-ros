@@ -1,18 +1,12 @@
 <template>
   <div class="shadow my-1 p-3 rounded waypoint-item">
     <div class="identification">
-      <p>{{ waypoint.name }}, ID: {{ waypoint.id }}</p>
+      <p>{{ waypoint.name }} | ID: {{ waypoint.id }} | Type: {{ WAYPOINT_TYPES[waypoint.type] }}</p>
     </div>
     <div class="row">
       <div class="col text-center">
         <button class="btn btn-danger" @click="$emit('add', { in_route: in_route, index: index })">
           Add
-        </button>
-        <button
-          :class="['btn', waypoint.post ? 'btn-success' : 'btn-danger']"
-          @click="$emit('togglePost', { in_route: in_route, index: index })"
-        >
-          Post
         </button>
         <button
           class="btn btn-danger"
@@ -39,7 +33,20 @@
 import { mapGetters } from 'vuex'
 import { convertDMS } from '../utils'
 
+const WAYPOINT_TYPES = {
+  0: 'No Search',
+  1: 'Post',
+  2: 'Mallet',
+  3: 'Water Bottle'
+}
+
 export default {
+  data() {
+    return {
+      WAYPOINT_TYPES: WAYPOINT_TYPES
+    }
+  },
+
   props: {
     waypoint: {
       type: Object,

@@ -27,21 +27,13 @@ export default defineComponent({
     joint_name: {
       type: String,
       required: true
-    },
-    calibrate_topic: {
-      type: String,
-      required: true
     }
   },
 
   data() {
     return {
-      websocket: new WebSocket("ws://localhost:8000/ws/gui"),
-      socket: null,
       toggleEnabled: false,
       calibrated: false,
-      calibrate_service: null,
-      calibrate_sub: null,
       interval: 0 as number
     }
   },

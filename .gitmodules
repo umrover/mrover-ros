@@ -2,6 +2,7 @@
 	path = deps/libde265
 	url = git@github.com:strukturag/libde265.git
 	shallow = true
+	branch = 0.1-20240106
 [submodule "deps/dawn"]
 	path = deps/dawn
 	url = https://dawn.googlesource.com/dawn

@@ -255,6 +255,8 @@ brushed_motors:
       quad_ratio: 48.0 # encoder ratio compared to motor
       driver_voltage: 24.0 # used to calculate max pwm
       motor_max_voltage: 6.0 # used to calculate max pwm
+      min_velocity: -1.0
+      max_velocity: 1.0
     sa_y:
       gear_ratio: 75.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
       limit_0_present: true
@@ -274,6 +276,8 @@ brushed_motors:
       quad_ratio: 48.0 # encoder ratio compared to motor
       driver_voltage: 24.0 # used to calculate max pwm
       motor_max_voltage: 6.0 # used to calculate max pwm
+      min_velocity: -1.0
+      max_velocity: 1.0
     sa_z:
       gear_ratio: 75.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
       limit_0_present: true
@@ -293,6 +297,8 @@ brushed_motors:
       quad_ratio: 48.0 # encoder ratio compared to motor
       driver_voltage: 24.0 # used to calculate max pwm
       motor_max_voltage: 6.0 # used to calculate max pwm
+      min_velocity: -1.0
+      max_velocity: 1.0
     scoop:
       gear_ratio: 75.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
       limit_0_present: true

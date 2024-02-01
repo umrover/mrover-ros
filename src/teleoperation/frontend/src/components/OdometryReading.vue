@@ -17,27 +17,27 @@
         <p>Bearing: {{ odom.bearing_deg.toFixed(2) }}º</p>
       </div>
       <div>
-        <p v-if="alt_available">Altitude: {{ odom.altitude.toFixed(2) }}m</p>
+        <p>Altitude: {{ odom.altitude.toFixed(2) }}m</p>
       </div>
     </div>
-    <!-- <div class="calibration imu">
+    <div class="calibration imu">
       <IMUCalibration></IMUCalibration>
     </div>
-    <div class = "flightindicator">
+    <div class="flightindicator">
       <FlightAttitudeIndicator></FlightAttitudeIndicator>
-    </div> -->
+    </div>
   </div>
 </template>
 
 <script lang="ts">
 import { convertDMS } from '../utils.js'
 import { mapGetters } from 'vuex'
-// import IMUCalibration from "./IMUCalibration.vue";
-// import FlightAttitudeIndicator from "./FlightAttitudeIndicator.vue";
+import IMUCalibration from './IMUCalibration.vue'
+import FlightAttitudeIndicator from './FlightAttitudeIndicator.vue'
 export default {
   components: {
-    // FlightAttitudeIndicator,
-    // IMUCalibration,
+    FlightAttitudeIndicator,
+    IMUCalibration
   },
   props: {
     odom: {
@@ -63,8 +63,7 @@ export default {
       return this.odom_format == 'DMS'
     },
     alt_available: function () {
-      // return isNan(this.odom.altitude);
-      return false
+      return !isNan(this.odom.altitude)
     }
   }
 }
@@ -72,16 +71,13 @@ export default {
 
 <style scoped>
 .odom-wrap {
-  padding: 0px;
   padding-left: 10px;
   padding-right: 0px;
-  border: none;
   margin-top: 0.5rem;
   display: grid;
   grid-gap: 10px;
-  grid-template-columns: 300px 2fr 1.25fr 0.75fr;
-  grid-template-rows: 140px 2fr;
-  flex-direction: row;
+  grid-template-columns: auto auto;
+  grid-template-rows: auto auto;
   gap: 10px;
   grid-template-areas:
     'odom flightIndicator'
@@ -91,14 +87,6 @@ export default {
 }
 .odom-wrap p {
   display: inline;
-}
-
-.calibration {
-  border: 1px solid black;
-  padding-left: 10px;
-  margin-bottom: 5px;
-  margin-top: 5px;
-  background-color: rgb(180, 180, 180);
 }
 
 .odom {
