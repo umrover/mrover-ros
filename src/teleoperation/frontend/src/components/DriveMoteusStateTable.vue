@@ -16,37 +16,37 @@
           <tr>
             <th class="table-secondary">Name</th>
             <td>
-              {{ moteusStateData.name[(i-1) * 2] }}
+              {{ moteusStateData.name[(i - 1) * 2] }}
             </td>
             <td>
-              {{ moteusStateData.name[(i-1) * 2 + 1] }}
+              {{ moteusStateData.name[(i - 1) * 2 + 1] }}
             </td>
           </tr>
           <tr>
             <th class="table-secondary">State</th>
             <td>
-              {{ moteusStateData.state[(i-1) * 2] }}
+              {{ moteusStateData.state[(i - 1) * 2] }}
             </td>
             <td>
-              {{ moteusStateData.state[(i-1) * 2 + 1] }}
+              {{ moteusStateData.state[(i - 1) * 2 + 1] }}
             </td>
           </tr>
           <tr>
             <th class="table-secondary">Error</th>
             <td>
-              {{ moteusStateData.error[(i-1) * 2] }}
+              {{ moteusStateData.error[(i - 1) * 2] }}
             </td>
             <td>
-              {{ moteusStateData.error[(i-1) * 2 + 1] }}
+              {{ moteusStateData.error[(i - 1) * 2 + 1] }}
             </td>
           </tr>
           <tr class="bold-border">
             <th class="table-secondary">Limit Hit</th>
             <td>
-              {{ moteusStateData.limit_hit[(i-1) * 2] }}
+              {{ moteusStateData.limit_hit[(i - 1) * 2] }}
             </td>
             <td>
-              {{ moteusStateData.limit_hit[(i-1) * 2 + 1] }}
+              {{ moteusStateData.limit_hit[(i - 1) * 2 + 1] }}
             </td>
           </tr>
         </template>

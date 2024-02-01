@@ -20,19 +20,19 @@
           <tr v-for="(joint, index) in motorData.name" :key="index">
             <td>{{ joint }}</td>
             <td>
-              {{ (motorData.position[index]).toFixed(3) }}
+              {{ motorData.position[index].toFixed(3) }}
             </td>
             <td>
-              {{ (motorData.velocity[index]).toFixed(3) }}
+              {{ motorData.velocity[index].toFixed(3) }}
             </td>
             <td>
-              {{ (motorData.effort[index]).toFixed(3) }}
+              {{ motorData.effort[index].toFixed(3) }}
             </td>
             <td>
-              {{ (motorData.state[index]) }}
+              {{ motorData.state[index] }}
             </td>
             <td>
-              {{ (motorData.error[index]) }}
+              {{ motorData.error[index] }}
             </td>
           </tr>
         </tbody>
@@ -54,13 +54,13 @@
           <tr>
             <th>Position (m)</th>
             <td v-for="position in motorData.position" :key="position">
-              {{ (position).toFixed(3) }}
+              {{ position.toFixed(3) }}
             </td>
           </tr>
           <tr>
             <th>Velocity (m/s)</th>
             <td v-for="velocity in motorData.velocity" :key="velocity">
-              {{ (velocity).toFixed(3) }}
+              {{ velocity.toFixed(3) }}
             </td>
           </tr>
           <tr>
@@ -103,9 +103,8 @@ export default {
   },
 
   data() {
-    return {
-    }
-  },
+    return {}
+  }
 }
 </script>
 

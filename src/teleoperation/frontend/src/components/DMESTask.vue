@@ -8,9 +8,16 @@
         <img src="/help.png" alt="Help" title="Help" width="48" height="48" />
       </div>
       <div class="helpscreen"></div>
-      <div class="helpimages" style="display: flex; align-items: center; justify-content: space-evenly">
-        <img src="/joystick.png" alt="Joystick" title="Joystick Controls"
-          style="width: auto; height: 70%; display: inline-block" />
+      <div
+        class="helpimages"
+        style="display: flex; align-items: center; justify-content: space-evenly"
+      >
+        <img
+          src="/joystick.png"
+          alt="Joystick"
+          title="Joystick Controls"
+          style="width: auto; height: 70%; display: inline-block"
+        />
       </div>
     </div>
 
@@ -99,7 +106,8 @@ export default defineComponent({
         name: [] as string[],
         error: [] as string[],
         state: [] as string[],
-        limit_hit: [] as boolean[] /* Each motor stores an array of 4 indicating which limit switches are hit */ 
+        limit_hit:
+          [] as boolean[] /* Each motor stores an array of 4 indicating which limit switches are hit */
       },
 
       motorData: {
@@ -107,7 +115,7 @@ export default defineComponent({
         position: [] as number[],
         velocity: [] as number[],
         effort: [] as number[]
-      },
+      }
     }
   },
 
@@ -195,8 +203,8 @@ export default defineComponent({
   cursor: pointer;
 }
 
-.help:hover~.helpscreen,
-.help:hover~.helpimages {
+.help:hover ~ .helpscreen,
+.help:hover ~ .helpimages {
   visibility: visible;
 }
 

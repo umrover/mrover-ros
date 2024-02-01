@@ -116,7 +116,8 @@ export default defineComponent({
         name: [] as string[],
         error: [] as string[],
         state: [] as string[],
-        limit_hit: [] as boolean[] /* Each motor stores an array of 4 indicating which limit switches are hit */ 
+        limit_hit:
+          [] as boolean[] /* Each motor stores an array of 4 indicating which limit switches are hit */
       },
 
       motorData: {
@@ -147,15 +148,13 @@ export default defineComponent({
         this.motorData.state = msg.state
         this.motorData.error = msg.error
       } else if (msg.type == 'drive_moteus') {
-          this.moteusState.name = msg.name
-          this.moteusState.state = msg.state
-          this.moteusState.error = msg.error
-          this.moteusState.limit_hit = msg.limit_hit
+        this.moteusState.name = msg.name
+        this.moteusState.state = msg.state
+        this.moteusState.error = msg.error
+        this.moteusState.limit_hit = msg.limit_hit
       } else if (msg.type == 'led') {
-        if (msg.red)
-          this.ledColor = 'bg-danger' //red
-        else if (msg.green)
-          this.ledColor = 'blink' //blinking green
+        if (msg.red) this.ledColor = 'bg-danger' //red
+        else if (msg.green) this.ledColor = 'blink' //blinking green
         else if (msg.blue) this.ledColor = 'bg-primary' //blue
       } else if (msg.type == 'nav_state') {
         this.navState = msg.state
@@ -286,9 +285,9 @@ h2 {
 
 /* Grid area declarations */
 .map {
-    grid-area: map;
+  grid-area: map;
 }
-.waypoints{
+.waypoints {
   grid-area: waypoints;
 }
 

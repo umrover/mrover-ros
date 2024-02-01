@@ -5,7 +5,7 @@
       <LEDIndicator :connected="calibrated" :name="name" :show_name="false" />
     </span>
   </div>
-</template> 
+</template>
 
 <script lang="ts">
 import { defineComponent } from 'vue'
@@ -44,18 +44,15 @@ export default defineComponent({
 
   watch: {
     message(msg) {
-      if(msg.type =="calibrate_motors"){
+      if (msg.type == 'calibrate_motors') {
         if (msg.result.length > 0) {
-          this.toggleEnabled = false;
-          for (var j = 0; j<msg.result.length;++j) {
-            alert("ESW cannot calibrate motor " + msg.result[j]);
+          this.toggleEnabled = false
+          for (var j = 0; j < msg.result.length; ++j) {
+            alert('ESW cannot calibrate motor ' + msg.result[j])
           }
-        }
-        else this.calibrated = true;
+        } else this.calibrated = true
       }
     },
-
-    
 
     toggleEnabled: function (val) {
       // When the checkbox is toggled, publish a single false request to the calibrate service
