@@ -91,16 +91,16 @@ namespace mrover {
         assert(msg->source == mControllerName);
         assert(msg->destination == mName);
         auto result = moteus::Query::Parse(msg->data.data(), msg->data.size());
-        ROS_INFO("controller: %s    %3d p/v/t=(%7.3f,%7.3f,%7.3f)  v/t/f=(%5.1f,%5.1f,%3d)",
+        ROS_INFO("controller: %s    %3d p/a/v/t=(%7.3f,%7.3f,%7.3f,%7.3f)  v/t/f=(%5.1f,%5.1f,%3d)",
                  mControllerName.c_str(),
                  result.mode,
                  result.position,
+                 result.abs_position,
                  result.velocity,
                  result.torque,
                  result.voltage,
                  result.temperature,
-                 result.fault,
-                 result.abs_position);
+                 result.fault);
 
         mCurrentPosition = mrover::Radians{
                 mrover::Revolutions{result.position}}; // moteus stores position in revolutions.
