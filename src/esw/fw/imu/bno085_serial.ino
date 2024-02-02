@@ -12,10 +12,10 @@
 Adafruit_BNO08x bno08x(BNO08X_RESET);
 sh2_SensorValue_t sensorValue;
 
-float rotationVector_i;
-float rotationVector_j;
-float rotationVector_k;
-float rotationVector_real;
+float rotationVector_x;
+float rotationVector_y;
+float rotationVector_z;
+float rotationVector_w;
 
 float linearAcceleration_x;
 float linearAcceleration_y;
@@ -31,8 +31,6 @@ void setup(void) {
   while (!Serial)
     delay(10); // will pause Zero, Leonardo, etc until serial console opens
 
-  Serial.println("Adafruit BNO08x test!");
-
   // Try to initialize!
   if (!bno08x.begin_I2C()) {
     // if (!bno08x.begin_UART(&Serial1)) {  // Requires a device with > 300 byte
@@ -42,17 +40,13 @@ void setup(void) {
       delay(10);
     }
   }
-  Serial.println("BNO08x Found!");
 
   setReports();
-
-  Serial.println("Reading events");
   delay(100);
 }
 
 // Here is where you define the sensor outputs you want to receive
 void setReports(void) {
-  Serial.println("Setting desired reports");
   if (!bno08x.enableReport(SH2_ROTATION_VECTOR, 10000)) {
     Serial.println("Could not enable rotation vector");
   }
@@ -84,10 +78,10 @@ void loop() {
   case SH2_ROTATION_VECTOR:
     // Serial.print("ORIENTATION ");
     // orientation
-    rotationVector_i = sensorValue.un.rotationVector.i;
-    rotationVector_j = sensorValue.un.rotationVector.j;
-    rotationVector_k = sensorValue.un.rotationVector.k;
-    rotationVector_real = sensorValue.un.rotationVector.real;
+    rotationVector_x = sensorValue.un.rotationVector.i;
+    rotationVector_y = sensorValue.un.rotationVector.j;
+    rotationVector_z = sensorValue.un.rotationVector.k;
+    rotationVector_w = sensorValue.un.rotationVector.real;
     break;
 
   case SH2_LINEAR_ACCELERATION:
@@ -109,13 +103,13 @@ void loop() {
   case SH2_MAGNETIC_FIELD_CALIBRATED:
     // Serial.print("MAG ");
     // orientation
-    Serial.print(rotationVector_i, 6);
+    Serial.print(rotationVector_x, 6);
     Serial.print(" ");
-    Serial.print(rotationVector_j, 6);
+    Serial.print(rotationVector_y, 6);
     Serial.print(" ");
-    Serial.print(rotationVector_k, 6);
+    Serial.print(rotationVector_z, 6);
     Serial.print(" ");
-    Serial.print(rotationVector_real, 6);
+    Serial.print(rotationVector_w, 6);
     Serial.print(" ");
 
     //acceleration
