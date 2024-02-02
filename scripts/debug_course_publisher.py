@@ -20,14 +20,14 @@ if __name__ == "__main__":
         [
             convert_waypoint_to_gps(waypoint)
             for waypoint in [
-                # (
-                #     Waypoint(tag_id=0, type=WaypointType(val=WaypointType.MALLET)),
-                #     SE3(position=np.array([8, 2, 0])),
-                # )
                 (
-                    Waypoint(tag_id=0, type=WaypointType(val=WaypointType.POST)),
-                    SE3(position=np.array([3, 0, 0])),
+                    Waypoint(tag_id=0, type=WaypointType(val=WaypointType.MALLET)),
+                    SE3(position=np.array([4, 2, 0])),
                 )
+                # (
+                #     Waypoint(tag_id=0, type=WaypointType(val=WaypointType.POST)),
+                #     SE3(position=np.array([3, 0, 0])),
+                # )
                 # (
                 #     Waypoint(tag_id=1, type=WaypointType(val=WaypointType.POST)),
                 #     SE3(position=np.array([11, -10, 0])),

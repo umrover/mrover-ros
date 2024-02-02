@@ -34,8 +34,7 @@ namespace mrover {
         if (mEngine->getTensorIOMode(INPUT_BINDING_NAME) != TensorIOMode::kINPUT) throw std::runtime_error("Expected Input Binding 0 Is An Input");
         if (mEngine->getTensorIOMode(OUTPUT_BINDING_NAME) != TensorIOMode::kOUTPUT) throw std::runtime_error("Expected Input Binding Input To Be 1");
 
-        //Create the execution context
-        setUpContext();
+        createExecutionContext();
 
         //Init the io tensors on the GPU
         prepTensors();
@@ -78,17 +77,7 @@ namespace mrover {
         std::filesystem::path enginePath = packagePath / "data" / "tensorrt-engine-yolov8n_mallet_bottle_better.engine";
 
         //Check if engine file exists
-        if (exists(enginePath)) {
-            //Load engine from file
-            std::ifstream inputFileStream(enginePath, std::ios::binary);
-            std::stringstream engineBuffer;
-
-            //Stream in the engine file to the buffer
-            engineBuffer << inputFileStream.rdbuf();
-            std::string enginePlan = engineBuffer.str();
-            //Deserialize the Cuda Engine file from the buffer
-            return runtime->deserializeCudaEngine(enginePlan.data(), enginePlan.size());
-        } else {
+        if (!exists(enginePath)) {
             ROS_WARN_STREAM("Optimizing ONXX model for TensorRT. This make take a long time...");
 
             //Create the Engine from onnx file
@@ -107,9 +96,19 @@ namespace mrover {
 
             return tempEng;
         }
+
+        //Load engine from file
+        std::ifstream inputFileStream(enginePath, std::ios::binary);
+        std::stringstream engineBuffer;
+
+        //Stream in the engine file to the buffer
+        engineBuffer << inputFileStream.rdbuf();
+        std::string enginePlan = engineBuffer.str();
+        //Deserialize the Cuda Engine file from the buffer
+        return runtime->deserializeCudaEngine(enginePlan.data(), enginePlan.size());
     }
 
-    void Inference::setUpContext() {
+    void Inference::createExecutionContext() {
         // Create Execution Context.
         mContext.reset(mEngine->createExecutionContext());
 
@@ -150,11 +149,6 @@ namespace mrover {
     }
 
 
-    /**
-* Takes tensor bindings and allocates memory on the GPU for input and output tensors
-* Requires enginePtr, bindings, inputTensor, and outputTensor
-* Modifies bindings, inputTensor, and outputTensor
-*/
     void Inference::prepTensors() {
         //Assign the properties to the input and output tensors
         for (int i = 0; i < mEngine->getNbIOTensors(); i++) {

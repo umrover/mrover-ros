@@ -13,6 +13,7 @@ using nvinfer1::IExecutionContext;
 namespace mrover {
 
     class Inference {
+    private:
         //Init Logger
         nvinfer1::Logger mLogger;
 
@@ -34,29 +35,38 @@ namespace mrover {
         cv::Size mModelOutputShape;
 
         //STATIC FUNCTIONS
-        static int getBindingInputIndex(const IExecutionContext* context);
+        static int getBindingInputIndex(IExecutionContext const* context);
 
-    private:
         //Creates a ptr to the engine
         ICudaEngine* createCudaEngine(std::filesystem::path const& onnxModelPath);
 
         //Launch the model execution onto the GPU
         void launchInference(cv::Mat const& input, cv::Mat const& output) const;
 
-        //Init the tensors
+        /**
+         * @brief Prepares the tensors for inference.
+         * 
+         * Takes tensor bindings and allocates memory on the GPU for input and output tensors
+         * Requires enginePtr, bindings, inputTensor, and outputTensor
+         * 
+         * Requires enginePtr, bindings, inputTensor, and outputTensor
+         * Modifies bindings, inputTensor, and outputTensor
+         */
         void prepTensors();
 
-        //Init the execution context
-        void setUpContext();
+        /**
+        * @brief Creates the execution context for the model
+        */
+        void createExecutionContext();
 
     public:
         //Inference Constructor
         Inference(std::filesystem::path const& onnxModelPath);
 
         //Forward Pass of the model
-        void doDetections(const cv::Mat& img) const;
+        void doDetections(cv::Mat const& img) const;
 
-        //Get the output tensor with in a YOLO v8 style data structure 
+        //Get the output tensor with in a YOLO v8 style data structure
         cv::Mat getOutputTensor();
     };
 

@@ -3,6 +3,7 @@
 #include "../point.hpp"
 #include "inference_wrapper.hpp"
 #include <algorithm>
+#include <cstddef>
 #include <math.h>
 #include <opencv2/core/mat.hpp>
 #include <opencv2/highgui.hpp>
@@ -24,7 +25,10 @@ namespace mrover {
             mImg = cv::Mat{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC4, cv::Scalar{0, 0, 0, 0}};
         }
 
-        //Convert the pointcloud data into rgba image
+        //TODO - BREAKOUT
+        //auto pixelPtr = convertPointCloudToRGBA(msg);
+
+        //Convert the pointcloud data into rgba image and store in mImg
         auto* pixelPtr = reinterpret_cast<cv::Vec4b*>(mImg.data);
         auto* pointPtr = reinterpret_cast<Point const*>(msg->data.data());
         std::for_each(std::execution::par_unseq, pixelPtr, pixelPtr + mImg.total(), [&](cv::Vec4b& pixel) {
@@ -35,13 +39,15 @@ namespace mrover {
             pixel[3] = pointPtr[i].a;
         });
 
+
         //Resize the image and change it from BGRA to BGR
         cv::Mat sizedImage;
-        cv::resize(mImg, sizedImage, cv::Size(640, 640));
+        cv::Size imgSize{640, 640};
+        cv::resize(mImg, sizedImage, imgSize);
         cv::cvtColor(sizedImage, sizedImage, cv::COLOR_BGRA2BGR);
 
         //Create the blob from the resized image
-        cv::dnn::blobFromImage(sizedImage, mImageBlob, 1.0 / 255.0, cv::Size{640, 640}, cv::Scalar(), true, false);
+        cv::dnn::blobFromImage(sizedImage, mImageBlob, 1.0 / 255.0, imgSize, cv::Scalar(), true, false);
 
         //Run the blob through the model
         mInferenceWrapper.doDetections(mImageBlob);
@@ -52,19 +58,19 @@ namespace mrover {
         //Get model specific information
         int rows = output.rows;
         int dimensions = output.cols;
-        bool yolov8 = false;
 
         // yolov5 has an output of shape (batchSize, 25200, 85) (Num classes + box[x,y,w,h] + confidence[c])
         // yolov8 has an output of shape (batchSize, 84,  8400) (Num classes + box[x,y,w,h])
-        if (dimensions > rows) // Check if the shape[2] is more than shape[1] (yolov8)
+        if (dimensions <= rows) // Check if the shape[2] is more than shape[1] (yolov8)
         {
-            yolov8 = true;
-            rows = output.cols;
-            dimensions = output.rows;
-
-            output = output.reshape(1, dimensions);
-            cv::transpose(output, output);
+            throw std::runtime_error("Something is wrong Model with interpretation");
         }
+
+        rows = output.cols;
+        dimensions = output.rows;
+
+        output = output.reshape(1, dimensions);
+        cv::transpose(output, output);
         //Reinterpret data from the output to be in a usable form
         auto data = reinterpret_cast<float*>(output.data);
 
@@ -89,42 +95,37 @@ namespace mrover {
 
         //Each of the possibilities do interpret the data
         for (int i = 0; i < rows; ++i) {
-            //This should always be true
-            if (yolov8) {
-                //This is because the first 4 points are box[x,y,w,h]
-                float* classes_scores = data + 4;
+            //This is because the first 4 points are box[x,y,w,h]
+            float* classes_scores = data + 4;
 
-                //Create a mat to store all of the class scores
-                cv::Mat scores(1, static_cast<int>(classes.size()), CV_32FC1, classes_scores);
-                cv::Point class_id;
-                double maxClassScore;
+            //Create a mat to store all of the class scores
+            cv::Mat scores(1, static_cast<int>(classes.size()), CV_32FC1, classes_scores);
+            cv::Point class_id;
+            double maxClassScore;
 
-                //Find the max class score for the associated row
-                minMaxLoc(scores, nullptr, &maxClassScore, nullptr, &class_id);
+            //Find the max class score for the associated row
+            minMaxLoc(scores, nullptr, &maxClassScore, nullptr, &class_id);
 
-                //Determine if the class is an acceptable confidence level else disregard
-                if (maxClassScore > modelScoreThreshold) {
-                    //Push back data points into storage containers
-                    confidences.push_back(static_cast<float>(maxClassScore));
-                    class_ids.push_back(class_id.x);
+            //Determine if the class is an acceptable confidence level else disregard
+            if (maxClassScore > modelScoreThreshold) {
+                //Push back data points into storage containers
+                confidences.push_back(static_cast<float>(maxClassScore));
+                class_ids.push_back(class_id.x);
 
-                    //Get the bounding box data
-                    float x = data[0];
-                    float y = data[1];
-                    float w = data[2];
-                    float h = data[3];
+                //Get the bounding box data
+                float x = data[0];
+                float y = data[1];
+                float w = data[2];
+                float h = data[3];
 
-                    //Cast the corners into integers to be used on pixels
-                    int left = static_cast<int>((x - 0.5 * w) * x_factor);
-                    int top = static_cast<int>((y - 0.5 * h) * y_factor);
-                    int width = static_cast<int>(w * x_factor);
-                    int height = static_cast<int>(h * y_factor);
+                //Cast the corners into integers to be used on pixels
+                int left = static_cast<int>((x - 0.5 * w) * x_factor);
+                int top = static_cast<int>((y - 0.5 * h) * y_factor);
+                int width = static_cast<int>(w * x_factor);
+                int height = static_cast<int>(h * y_factor);
 
-                    //Push abck the box into storage
-                    boxes.emplace_back(left, top, width, height);
-                }
-            } else { //YOLO V5
-                throw std::runtime_error("Something is wrong Model with interpretation");
+                //Push abck the box into storage
+                boxes.emplace_back(left, top, width, height);
             }
 
             data += dimensions;
@@ -156,18 +157,19 @@ namespace mrover {
         bool seenWaterBottle = false;
         bool seenHammer = false;
         std::pair<int, int> center;
-        ROS_INFO("NUM DETECTIONS: %d", detections.size());
-        for (Detection detection: detections) {
-
-            Detection firstDetection = detection;
-
-            if (firstDetection.class_id == 1 && !seenHammer) {
+        ROS_DEBUG("NUM DETECTIONS: %zu", detections.size());
+        for (Detection const& detection: detections) {
+            cv::Rect box = detection.box;
+            center = std::pair<int, int>(box.x + box.width / 2, box.y + box.height / 2);
+            auto centerWidth = static_cast<size_t>(center.first * static_cast<double>(msg->width) / sizedImage.cols);
+            auto centerHeight = static_cast<size_t>(center.second * static_cast<double>(msg->height) / sizedImage.rows);
+            if (detection.class_id == 1 && !seenHammer) {
                 seenHammer = true;
-                cv::Rect box = firstDetection.box;
-                center = std::pair<int, int>(box.x + box.width / 2, box.y + box.height / 2);
 
+                //TODO: BREAKOUT
+                //TODO: Refactor put immediates in the zed frame and finals in the map frame
                 //Get the object's position in 3D from the point cloud and run this statement if the optional has a value
-                if (std::optional<SE3> objectLocation = getObjectInCamFromPixel(msg, center.first * static_cast<float>(msg->width) / sizedImage.cols, center.second * static_cast<float>(msg->height) / sizedImage.rows, box.width, box.height); objectLocation) {
+                if (std::optional<SE3> objectLocation = getObjectInCamFromPixel(msg, centerWidth, centerHeight, box.width, box.height); objectLocation) {
                     try {
                         //Publish Immediate
                         std::string immediateFrameId = "immediateDetectedObjectHammer";
@@ -195,13 +197,13 @@ namespace mrover {
                 }
             }
 
-            else if (firstDetection.class_id == 0 && !seenWaterBottle) {
+            else if (detection.class_id == 0 && !seenWaterBottle) {
                 seenWaterBottle = true;
-                cv::Rect box = firstDetection.box;
+                cv::Rect box = detection.box;
                 center = std::pair<int, int>(box.x + box.width / 2, box.y + box.height / 2);
 
                 //Get the object's position in 3D from the point cloud and run this statement if the optional has a value
-                if (std::optional<SE3> objectLocation = getObjectInCamFromPixel(msg, center.first * static_cast<float>(msg->width) / sizedImage.cols, center.second * static_cast<float>(msg->height) / sizedImage.rows, box.width, box.height); objectLocation) {
+                if (std::optional<SE3> objectLocation = getObjectInCamFromPixel(msg, centerWidth, centerHeight, box.width, box.height); objectLocation) {
                     try {
                         //Publish Immediate
                         std::string immediateFrameId = "immediateDetectedObjectBottle";
@@ -237,7 +239,7 @@ namespace mrover {
                 mHitCountBottle = std::max(0, mHitCountBottle - mObjDecrementWeight);
             }
 
-
+            //TODO: CHange color
             //Draw the detected object's bounding boxes on the image for each of the objects detected
             for (size_t i = 0; i < detections.size(); i++) {
                 std::cout << detections[i].className
@@ -256,14 +258,9 @@ namespace mrover {
             }
         }
 
-
-        // else {
-        //     mHitCount = std::max(0, mHitCount - mObjDecrementWeight);
-
-        // }
-
+        //TODO - Breakout
         //We only want to publish the debug image if there is something lsitening, to reduce the operations going on
-        if (mDebugImgPub.getNumSubscribers() > 0 || true) {
+        if (mDebugImgPub.getNumSubscribers() > 0) {
             sensor_msgs::Image newDebugImageMessage; //I chose regular msg not ptr so it can be used outside of this process
 
             //Convert the image back to BGRA for ROS
