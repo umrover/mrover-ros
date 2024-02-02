@@ -3,8 +3,8 @@
 #include "../point.hpp"
 #include "inference_wrapper.hpp"
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
-#include <math.h>
 #include <opencv2/core/mat.hpp>
 #include <opencv2/highgui.hpp>
 #include <random>
@@ -65,10 +65,10 @@ namespace mrover {
         auto data = reinterpret_cast<float*>(output.data);
 
         //Model Information
-        float modelInputCols = 640;
-        float modelInputRows = 640;
-        float modelShapeWidth = 640;
-        float modelShapeHeight = 640;
+        auto modelInputCols = static_cast<float>(imgSize.width);
+        auto modelInputRows = static_cast<float>(imgSize.height);
+        auto modelShapeWidth = static_cast<float>(imgSize.width);
+        auto modelShapeHeight = static_cast<float>(imgSize.height);
 
         //Set model thresholds
         float modelScoreThreshold = 0.75;
@@ -157,52 +157,28 @@ namespace mrover {
                 }
             }
 
-
-            //TODO: CHange color
             //Draw the detected object's bounding boxes on the image for each of the objects detected
             for (size_t i = 0; i < detections.size(); i++) {
-                std::cout << detections[i].className
-                          << i << std::endl;
-
-                cv::rectangle(sizedImage, detections[i].box, cv::Scalar(0, 0, 0), 1, cv::LINE_8, 0);
+                //Font color will change for each different detection
+                cv::Scalar font_Color(static_cast<double>(i * 50), static_cast<double>(i * 50), static_cast<double>(i * 50));
+                cv::rectangle(sizedImage, detections[i].box, font_Color, 1, cv::LINE_8, 0);
 
                 //Put the text on the image
                 cv::Point text_position(80, static_cast<int>(80 * (i + 1)));
                 int font_size = 1;
-                cv::Scalar font_Color(0, 0, 0);
                 int font_weight = 2;
                 putText(sizedImage, detections[i].className, text_position, cv::FONT_HERSHEY_COMPLEX, font_size, font_Color, font_weight); //Putting the text in the matrix//
             }
         }
 
-        //TODO - Breakout
         //We only want to publish the debug image if there is something lsitening, to reduce the operations going on
         if (mDebugImgPub.getNumSubscribers() > 0) {
-            sensor_msgs::Image newDebugImageMessage; //I chose regular msg not ptr so it can be used outside of this process
-
-            //Convert the image back to BGRA for ROS
-            cv::cvtColor(sizedImage, sizedImage, cv::COLOR_BGR2BGRA);
-
-            newDebugImageMessage.height = sizedImage.rows;
-            newDebugImageMessage.width = sizedImage.cols;
-            newDebugImageMessage.encoding = sensor_msgs::image_encodings::BGRA8;
-            newDebugImageMessage.step = sizedImage.channels() * sizedImage.cols;
-            newDebugImageMessage.is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
-
-            auto imgPtr = sizedImage.data;
-
-            //Calculate the image size
-            size_t size = newDebugImageMessage.step * newDebugImageMessage.height;
-            newDebugImageMessage.data.resize(size);
-
-            //Copy the data to the image
-            memcpy(newDebugImageMessage.data.data(), imgPtr, size);
-
-            mDebugImgPub.publish(newDebugImageMessage);
+            //Publishes the image to the debug publisher
+            publishImg(sizedImage);
         }
     } // namespace mrover
 
-    std::optional<SE3> ObjectDetectorNodelet::getObjectInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t u, size_t v, size_t width, size_t height) {
+    auto ObjectDetectorNodelet::getObjectInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t u, size_t v, size_t width, size_t height) -> std::optional<SE3> {
         assert(cloudPtr);
         if (u >= cloudPtr->width || v >= cloudPtr->height) {
             NODELET_WARN("Tag center out of bounds: [%zu %zu]", u, v);
@@ -213,14 +189,14 @@ namespace mrover {
         return spiralSearchInImg(cloudPtr, u, v, width, height);
     }
 
-    std::optional<SE3> ObjectDetectorNodelet::spiralSearchInImg(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t xCenter, size_t yCenter, size_t width, size_t height) {
+    auto ObjectDetectorNodelet::spiralSearchInImg(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t xCenter, size_t yCenter, size_t width, size_t height) -> std::optional<SE3> {
         size_t currX = xCenter;
         size_t currY = yCenter;
         size_t radius = 0;
         int t = 0;
         int numPts = 16;
         bool isPointInvalid = true;
-        Point point;
+        Point point{};
 
         //Find the smaller of the two box dimensions so we know the max spiral radius
         size_t smallDim = std::min(width / 2, height / 2);
@@ -228,8 +204,8 @@ namespace mrover {
 
         while (isPointInvalid) {
             //This is the parametric equation to spiral around the center pnt
-            currX = xCenter + std::cos(t * 1.0 / numPts * 2 * M_PI) * radius;
-            currY = yCenter + std::sin(t * 1.0 / numPts * 2 * M_PI) * radius;
+            currX = static_cast<size_t>(static_cast<double>(xCenter) + std::cos(t * 1.0 / numPts * 2 * M_PI) * static_cast<double>(radius));
+            currY = static_cast<size_t>(static_cast<double>(yCenter) + std::sin(t * 1.0 / numPts * 2 * M_PI) * static_cast<double>(radius));
 
             //Grab the point from the pntCloud and determine if its a finite pnt
             point = reinterpret_cast<Point const*>(cloudPtr->data.data())[currX + currY * cloudPtr->width];
@@ -308,5 +284,30 @@ namespace mrover {
                 }
             }
         }
+    }
+
+    void ObjectDetectorNodelet::publishImg(cv::Mat const& img) {
+        sensor_msgs::Image newDebugImageMessage; //I chose regular msg not ptr so it can be used outside of this process
+
+        //Convert the image back to BGRA for ROS
+        cv::Mat bgraImg;
+        cv::cvtColor(img, bgraImg, cv::COLOR_BGR2BGRA);
+
+        newDebugImageMessage.height = bgraImg.rows;
+        newDebugImageMessage.width = bgraImg.cols;
+        newDebugImageMessage.encoding = sensor_msgs::image_encodings::BGRA8;
+        newDebugImageMessage.step = bgraImg.channels() * bgraImg.cols;
+        newDebugImageMessage.is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
+
+        auto imgPtr = bgraImg.data;
+
+        //Calculate the image size
+        size_t size = newDebugImageMessage.step * newDebugImageMessage.height;
+        newDebugImageMessage.data.resize(size);
+
+        //Copy the data to the image
+        memcpy(newDebugImageMessage.data.data(), imgPtr, size);
+
+        mDebugImgPub.publish(newDebugImageMessage);
     }
 } // namespace mrover

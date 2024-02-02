@@ -71,9 +71,11 @@ namespace mrover {
 
         std::optional<SE3> spiralSearchInImg(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t xCenter, size_t yCenter, size_t width, size_t height);
 
-        void convertPointCloudToRGBA(sensor_msgs::PointCloud2ConstPtr const& msg, cv::Mat& img);
+        static void convertPointCloudToRGBA(sensor_msgs::PointCloud2ConstPtr const& msg, cv::Mat& img);
 
         void updateHitsObject(sensor_msgs::PointCloud2ConstPtr const& msg, Detection const& detection, std::vector<bool>& seenObjects, cv::Size const& imgSize = {640, 640});
+
+        void publishImg(cv::Mat const& img);
 
     public:
         //Node constructor
