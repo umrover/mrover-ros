@@ -66,8 +66,13 @@ class WaterBottleSearchState(State):
         costmap2D.reshape(self.height, self.width)
         rospy.loginfo(f"2D costmap: {costmap2D}")
         self.origin = self.center - [self.width/2, self.height/2]
-        # Call A-STAR
         
+        rover_pose = self.context.rover.get_pose().position[0:2]
+        self.traj.increment_point()
+        end_point = self.traj.get_cur_pt()
+        
+        # Call A-STAR
+        self.a_star(costmap2d = costmap2D,start = rover_pose, end = end_point)
         
     """
     #Convert global(Real World) to i and j (Occupancy grid)
@@ -92,13 +97,17 @@ class WaterBottleSearchState(State):
         half_res = [self.resolution/2, -self.resolution/2]
         return self.origin - width_height + resolution_conversion + half_res
     
+    """
+    # It returns the path given from A-Star in reverse
+    """
     def return_path(current_node):
         path = []
         current = current_node
         while current is not None:
             path.append(current.position)
             current = current.parent
-        return path[::-1]  # Return reversed path`
+        return path[::-1]  # Return reversed path
+    
     """
     # TODO: A-STAR Algorithm: f(n) = g(n) + h(n)
     # def a_star():j
