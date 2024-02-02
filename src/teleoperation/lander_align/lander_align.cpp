@@ -21,8 +21,7 @@ namespace mrover {
     // }
 
     auto LanderAlignNodelet::filterNormals(sensor_msgs::PointCloud2Ptr const& cloud, int const threshold) -> std::vector<Point*> {
-        // TODO: return a vector of Point pointers that correspond to all points in the point cloud that are not the ground
-        // filter based on whether z-normal valus exceed specified threshold
+        // TODO: OPTIMIZE; doing this many push_back calls could slow things down
 
         auto* cloudData = reinterpret_cast<Point const*>(cloud->fields.data());
         std::vector<Point*> extractedPoints;
