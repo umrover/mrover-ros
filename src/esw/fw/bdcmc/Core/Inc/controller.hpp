@@ -11,6 +11,7 @@
 #include <pidf.hpp>
 #include <units/units.hpp>
 
+#include "testing.hpp"
 #include "encoders.hpp"
 #include "hbridge.hpp"
 

@@ -34,55 +34,55 @@ can:
       id: 0x16
     - name: "joint_a"
       bus: 0
-      id: 0x17
+      id: 0x20
     - name: "joint_b"
       bus: 0
-      id: 0x18
+      id: 0x21
     - name: "joint_c"
       bus: 0
-      id: 0x19
+      id: 0x22
     - name: "joint_de_0"
       bus: 0
-      id: 0x20
+      id: 0x23
     - name: "joint_de_1"
       bus: 0
-      id: 0x21
+      id: 0x24
     - name: "allen_key"
       bus: 0
-      id: 0x22
+      id: 0x25
     - name: "gripper"
       bus: 0
-      id: 0x23
+      id: 0x26
     - name: "mast_gimbal_x"
       bus: 0
-      id: 0x24
+      id: 0x27
     - name: "mast_gimbal_y"
       bus: 0
-      id: 0x25
+      id: 0x28
     - name: "sa_x"
       bus: 0
-      id: 0x26
+      id: 0x29
     - name: "sa_y"
       bus: 0
-      id: 0x27
+      id: 0x30
     - name: "sa_z"
       bus: 0
-      id: 0x28
+      id: 0x31
     - name: "scoop"
       bus: 0
-      id: 0x29
+      id: 0x32
     - name: "sensor_actuator"
       bus: 0
-      id: 0x30
+      id: 0x33
     - name: "cache"
       bus: 0
-      id: 0x31
+      id: 0x34
     - name: "pdlb"
       bus: 0
-      id: 0x32
+      id: 0x50
     - name: "science"
       bus: 0
-      id: 0x33
+      id: 0x51
 
 brushless_motors:
   controllers:
@@ -111,9 +111,12 @@ brushless_motors:
       min_velocity: -1.0
       max_velocity: 1.0
     joint_de_0:
-      min_velocity: -1.0
-      max_velocity: 1.0
+      min_velocity: -10.0
+      max_velocity: 10.0
     joint_de_1:
+      min_velocity: -10.0
+      max_velocity: 10.0
+    sa_z:
       min_velocity: -1.0
       max_velocity: 1.0
 
@@ -129,10 +132,10 @@ brushed_motors:
     #   limit_1_present: false
     #   limit_2_present: false
     #   limit_3_present: false
-    #   limit_0_default_enabled: false
-    #   limit_1_default_enabled: false
-    #   limit_2_default_enabled: false
-    #   limit_3_default_enabled: false
+    #   limit_0_enabled: false
+    #   limit_1_enabled: false
+    #   limit_2_enabled: false
+    #   limit_3_enabled: false
     #   limit_0_is_active_high: true
     #   limit_1_is_active_high: true
     #   limit_2_is_active_high: true
@@ -165,7 +168,7 @@ brushed_motors:
     joint_b:
       gear_ratio: 1.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
       limit_0_present: true
-      limit_0_default_enabled: true
+      limit_0_enabled: true
       limit_0_is_active_high: true
       limit_0_limits_fwd: false
       limit_0_used_for_readjustment: true
@@ -182,8 +185,8 @@ brushed_motors:
       gear_ratio: 30.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
       limit_0_present: true
       limit_1_present: true
-      limit_0_default_enabled: true
-      limit_1_default_enabled: true
+      limit_0_enabled: true
+      limit_1_enabled: true
       limit_0_is_active_high: true
       limit_1_is_active_high: true
       limit_0_limits_fwd: true
@@ -210,8 +213,8 @@ brushed_motors:
       gear_ratio: 1000.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
       limit_0_present: true
       limit_1_present: true
-      limit_0_default_enabled: true
-      limit_1_default_enabled: true
+      limit_0_enabled: true
+      limit_1_enabled: true
       limit_0_is_active_high: true
       limit_1_is_active_high: true
       limit_0_limits_fwd: true
@@ -234,9 +237,9 @@ brushed_motors:
       limit_0_present: true
       limit_1_present: true
       limit_2_present: true
-      limit_0_default_enabled: true
-      limit_1_default_enabled: true
-      limit_2_default_enabled: true
+      limit_0_enabled: true
+      limit_1_enabled: true
+      limit_2_enabled: true
       limit_0_is_active_high: true
       limit_1_is_active_high: true
       limit_2_is_active_high: true
@@ -257,27 +260,8 @@ brushed_motors:
       gear_ratio: 75.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
       limit_0_present: true
       limit_1_present: true
-      limit_0_default_enabled: true
-      limit_1_default_enabled: true
-      limit_0_is_active_high: true
-      limit_1_is_active_high: true
-      limit_0_limits_fwd: true
-      limit_1_limits_fwd: false
-      limit_0_used_for_readjustment: true
-      limit_1_used_for_readjustment: true
-      quad_present: true
-      quad_is_fwd_polarity: true
-      limit_0_readjust_position: 0.0 # radians
-      limit_1_readjust_position: 0.0 # radians
-      quad_ratio: 48.0 # encoder ratio compared to motor
-      driver_voltage: 24.0 # used to calculate max pwm
-      motor_max_voltage: 6.0 # used to calculate max pwm
-    sa_z:
-      gear_ratio: 75.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
-      limit_0_present: true
-      limit_1_present: true
-      limit_0_default_enabled: true
-      limit_1_default_enabled: true
+      limit_0_enabled: true
+      limit_1_enabled: true
       limit_0_is_active_high: true
       limit_1_is_active_high: true
       limit_0_limits_fwd: true
@@ -295,8 +279,8 @@ brushed_motors:
       gear_ratio: 75.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
       limit_0_present: true
       limit_1_present: true
-      limit_0_default_enabled: true
-      limit_1_default_enabled: true
+      limit_0_enabled: true
+      limit_1_enabled: true
       limit_0_is_active_high: true
       limit_1_is_active_high: true
       limit_0_limits_fwd: true
@@ -314,8 +298,8 @@ brushed_motors:
       gear_ratio: 1.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
       limit_0_present: true
       limit_1_present: true
-      limit_0_default_enabled: true
-      limit_1_default_enabled: true
+      limit_0_enabled: true
+      limit_1_enabled: true
       limit_0_is_active_high: true
       limit_1_is_active_high: true
       limit_0_limits_fwd: true
@@ -330,8 +314,8 @@ brushed_motors:
       gear_ratio: 1.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
       limit_0_present: true
       limit_1_present: true
-      limit_0_default_enabled: true
-      limit_1_default_enabled: true
+      limit_0_enabled: true
+      limit_1_enabled: true
       limit_0_is_active_high: true
       limit_1_is_active_high: true
       limit_0_limits_fwd: true
@@ -570,7 +554,7 @@ motors:
     sa_y:
       type: "brushed"
     sa_z:
-      type: "brushed"
+      type: "brushless"
     scoop:
       type: "brushed"
     sensor_actuator:

@@ -12,7 +12,7 @@ extern FDCAN_HandleTypeDef hfdcan1;
 namespace mrover {
 
     // NOTE: Change this for the PDLB controller
-    constexpr static std::uint8_t DEVICE_ID = 0x32;
+    constexpr static std::uint8_t DEVICE_ID = 0x50;
 
     // Usually this is the Jetson
     constexpr static std::uint8_t DESTINATION_DEVICE_ID = 0x10;

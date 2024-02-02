@@ -37,6 +37,7 @@ namespace mrover {
         void processThrottleCmd(Throttle::ConstPtr const& msg);
 
         static void clampValues(float& val1, float& val2, float minValue1, float maxValue1, float minValue2, float maxValue2);
+        static void mapValue(float& val, float inputMinValue, float inputMaxValue, float outputMinValue, float outputMaxValue);
 
         bool jointDEIsCalibrated();
 
