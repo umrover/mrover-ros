@@ -5,6 +5,7 @@
 #include <ros/time.h>
 #include <sensor_msgs/image_encodings.h>
 #include <thread>
+#include <format>
 
 namespace mrover {
 

@@ -207,7 +207,7 @@ namespace mrover {
         mImgMsg.is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
         size_t size = mImgMsg.step * mImgMsg.height;
         mImgMsg.data.resize(size);
-        std::uninitialized_copy(std::execution::par_unseq, mImg.data, mImg.data + size, mImgMsg.data.begin());
+        std::memcpy(mImgMsg.data.data(), mImg.data, size);
         mImgPub.publish(mImgMsg);
     }
 

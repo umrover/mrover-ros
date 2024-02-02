@@ -1,0 +1,51 @@
+#pragma once
+
+// macOS does not have std::jthread yet
+// So we define it ourselves.
+// https://en.cppreference.com/w/cpp/thread/jthread
+// This implementation is missing stop_token support
+
+#include_next <thread>
+
+#ifdef __APPLE__
+
+namespace std {
+    class jthread {
+    public:
+        jthread() noexcept = default;
+
+        template<typename Function, typename... Args>
+        explicit jthread(Function&& f, Args&&... args)
+            : mThread(std::forward<Function>(f), std::forward<Args>(args)...) {}
+
+        ~jthread() {
+            if (mThread.joinable()) {
+                mThread.join();
+            }
+        }
+
+        jthread(jthread const&) = delete;
+        auto operator=(jthread const&) -> jthread& = delete;
+
+        jthread(jthread&&) = default;
+        auto operator=(jthread&&) -> jthread& = default;
+
+        auto join() -> void { mThread.join(); }
+
+        auto detach() -> void { mThread.detach(); }
+
+        auto get_id() const noexcept -> std::thread::id {
+            return mThread.get_id();
+        }
+
+        auto joinable() const noexcept -> bool {
+            return mThread.joinable();
+        }
+
+    private:
+        std::thread mThread;
+    };
+
+} // namespace std
+
+#endif

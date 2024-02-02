@@ -5,6 +5,7 @@
 #include <cmath>
 #include <cstdint>
 #include <execution>
+#include <format>
 #include <limits>
 #include <numeric>
 #include <optional>
