@@ -31,6 +31,8 @@ class GPS_Driver:
         # self.rtk_fix_pub = rospy.Publisher("rtk_fix_status", rtkStatus, queue_size=1)
 
         self.lock = threading.Lock()
+        self.valid_offset = False
+        self.time_offset = -1
 
     def connect(self):
         # open connection to rover GPS
@@ -73,10 +75,13 @@ class GPS_Driver:
             parsed_latitude = msg.lat
             parsed_longitude = msg.lon
             parsed_altitude = msg.hMSL
-            time = datetime.datetime(year=msg.year, month=msg.month, day=msg.day, hour= msg.hour, second=msg.second , milliseconds= int((msg.nano/1e6)),microsecond = (int((msg.nano/1e6) % 1e6)) / 1e3)
-            time= rospy.Time(secs=time.timestamp())
-            print(time, rospy.Time.now(), msg.nano)
+            time = datetime.datetime(year=msg.year, month=msg.month, day=msg.day, hour= msg.hour, second=msg.second)
+            time = time.timestamp() + (msg.nano / 1e6)
+            if not self.valid_offset:
+                self.time_offset = rospy.Time.now() - time
+                self.valid_offset = True
 
+            time = time + self.time_offset 
 
             message_header = Header(stamp=time, frame_id="base_link")
 
