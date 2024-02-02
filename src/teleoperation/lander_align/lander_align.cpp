@@ -36,10 +36,10 @@ namespace mrover {
         return extractedPoints;
     }
 
-    auto LanderAlignNodelet::ransac(std::vector<Point*> const& points, double const distanceThreshold, int const epochs) -> Eigen::Vector3f {
+    auto LanderAlignNodelet::ransac(const std::vector<Point*>& points, const float distanceThreshold, int minInliers, const int epochs) -> Eigen::Vector3f {
         // TODO: use RANSAC to find the lander face, should be the closest, we may need to modify this to output more information, currently the output is the normal
         // takes 3 samples for every epoch and terminates after specified number of epochs
-        Eigen::Vector3f bestPlane; // normal vector representing plane
+        Eigen::Vector3f bestPlane; // normal vector representing plane (initialize as zero vector?? default ctor??)
 
         // define randomizer
         std::default_random_engine generator;
@@ -55,11 +55,30 @@ namespace mrover {
             Eigen::Vector3f vec2{point2->x, point2->y, point2->z};
             Eigen::Vector3f vec3{point3->x, point3->y, point3->z};
 
-            // fit a plane to these points TODO change this to vec substract then cross
-            Eigen::Vector3f u{point1->x - point2->x, point1->y - point2->y, point1->z - point2->z};
-            Eigen::Vector3f v{point1->x - point3->x, point1->y - point3->y, point1->z - point3->z};
-            // Eigen::Vector3f plane = u.subTo(Dest &dst)
+            // fit a plane to these points
+            Eigen::Vector3f normal = (vec1 - vec2).cross(vec1 - vec3).normalized();
+            float offset = -normal.dot(vec1); // calculate offset (D value) using one of the points
+
+            int numInliers = 0;
+
+            for (auto p : points) { 
+                // calculate distance of each point from potential plane
+                float distance = std::abs(normal.x() * p->x + normal.y() * p->y + normal.z() * p->z + offset);
+
+                if (distance < distanceThreshold) {
+                    ++numInliers; // count num of inliers that pass the "good enough fit" threshold
+                }
+            }
+
+            // update best plane if better inlier count
+            if (numInliers > minInliers) { 
+                minInliers = numInliers;
+                bestPlane = normal;
+            }
         }
+
+        return bestPlane; // TODO address zero vector null case or bug
+
     }
 
 } // namespace mrover
