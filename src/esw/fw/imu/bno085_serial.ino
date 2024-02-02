@@ -12,10 +12,10 @@
 Adafruit_BNO08x bno08x(BNO08X_RESET);
 sh2_SensorValue_t sensorValue;
 
-float rotationVector_x;
-float rotationVector_y;
-float rotationVector_z;
-float rotationVector_w;
+float quaternion_x;
+float quaternion_y;
+float quaternion_z;
+float quaternion_w;
 
 float linearAcceleration_x;
 float linearAcceleration_y;
@@ -78,10 +78,10 @@ void loop() {
   case SH2_ROTATION_VECTOR:
     // Serial.print("ORIENTATION ");
     // orientation
-    rotationVector_x = sensorValue.un.rotationVector.i;
-    rotationVector_y = sensorValue.un.rotationVector.j;
-    rotationVector_z = sensorValue.un.rotationVector.k;
-    rotationVector_w = sensorValue.un.rotationVector.real;
+    quaternion_x = sensorValue.un.rotationVector.i;
+    quaternion_y = sensorValue.un.rotationVector.j;
+    quaternion_z = sensorValue.un.rotationVector.k;
+    quaternion_w = sensorValue.un.rotationVector.real;
     break;
 
   case SH2_LINEAR_ACCELERATION:
@@ -103,13 +103,13 @@ void loop() {
   case SH2_MAGNETIC_FIELD_CALIBRATED:
     // Serial.print("MAG ");
     // orientation
-    Serial.print(rotationVector_x, 6);
+    Serial.print(quaternion_x, 6);
     Serial.print(" ");
-    Serial.print(rotationVector_y, 6);
+    Serial.print(quaternion_y, 6);
     Serial.print(" ");
-    Serial.print(rotationVector_z, 6);
+    Serial.print(quaternion_z, 6);
     Serial.print(" ");
-    Serial.print(rotationVector_w, 6);
+    Serial.print(quaternion_w, 6);
     Serial.print(" ");
 
     //acceleration
