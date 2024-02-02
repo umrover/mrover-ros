@@ -72,18 +72,25 @@ namespace mrover {
         mDevice.publish_moteus_frame(setBrakeFrame);
     }
 
+    void BrushlessController::adjust() {
+        moteus::OutputExact::Command outputExactCmd{0.0};
+        moteus::CanFdFrame setPositionFrame = mController.MakeOutputExact(outputExactCmd);
+        mDevice.publish_moteus_frame(setPositionFrame);
+    }
+
     void BrushlessController::processCANMessage(CAN::ConstPtr const& msg) {
         assert(msg->source == mControllerName);
         assert(msg->destination == mName);
         auto result = moteus::Query::Parse(msg->data.data(), msg->data.size());
-        ROS_INFO("%3d p/v/t=(%7.3f,%7.3f,%7.3f)  v/t/f=(%5.1f,%5.1f,%3d)",
+        ROS_INFO("%3d p/v/t=(%7.3f,%7.3f,%7.3f)  v/t/f=(%5.1f,%5.1f,%3d) abs=(%5.1f)",
                  result.mode,
                  result.position,
                  result.velocity,
                  result.torque,
                  result.voltage,
                  result.temperature,
-                 result.fault);
+                 result.fault,
+                 result.abs_position);
 
         mCurrentPosition = mrover::Radians{
                 mrover::Revolutions{result.position}}; // moteus stores position in revolutions.
