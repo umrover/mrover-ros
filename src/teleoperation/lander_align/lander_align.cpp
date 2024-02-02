@@ -12,30 +12,39 @@ namespace mrover {
 
     // deprecated/not needed anymore
     // auto LanderAlignNodelet::downsample(sensor_msgs::PointCloud2Ptr const& cloud) -> sensor_msgs::PointCloud2Ptr {
-        // TODO: make a new point cloud with half the resolution, check the zed wrapper for how to make one
-        // sensor_msgs::PointCloud2 cloudSample;
-        // cloudSample.header = cloud->header
+    // TODO: make a new point cloud with half the resolution, check the zed wrapper for how to make one
+    // sensor_msgs::PointCloud2 cloudSample;
+    // cloudSample.header = cloud->header
     //     cloudSample.height = cloud->height / 2;
     //     cloudSample.width = cloud->width / 2;
     //     cloudSample.fields
     // }
 
-    auto LanderAlignNodelet::filterNormals(sensor_msgs::PointCloud2Ptr const& cloud, const int threshold) -> std::vector<Point*> {
+    auto LanderAlignNodelet::filterNormals(sensor_msgs::PointCloud2Ptr const& cloud, int const threshold) -> std::vector<Point*> {
         // TODO: return a vector of Point pointers that correspond to all points in the point cloud that are not the ground
         // filter based on whether z-normal valus exceed specified threshold
-        auto* cloudData = reinterpret_cast<Point const*>(cloud->fields.data());
 
-        return {};
+        auto* cloudData = reinterpret_cast<Point const*>(cloud->fields.data());
+        std::vector<Point*> extractedPoints;
+
+        for (auto point = cloudData; point < cloudData + (cloud->height * cloud->width); point++) {
+            if (point->normal_z < threshold) {
+                extractedPoints.push_back(point);
+            }
+        }
+
+
+        return extractedPoints;
     }
 
-    auto LanderAlignNodelet::ransac(const std::vector<Point*>& points, const double distanceThreshold, const int epochs) -> Eigen::Vector3f {
+    auto LanderAlignNodelet::ransac(std::vector<Point*> const& points, double const distanceThreshold, int const epochs) -> Eigen::Vector3f {
         // TODO: use RANSAC to find the lander face, should be the closest, we may need to modify this to output more information, currently the output is the normal
         // takes 3 samples for every epoch and terminates after specified number of epochs
         Eigen::Vector3f bestPlane; // normal vector representing plane
 
         // define randomizer
         std::default_random_engine generator;
-        std::uniform_int_distribution<int> distribution (0, (int) points.size() - 1);
+        std::uniform_int_distribution<int> distribution(0, (int) points.size() - 1);
 
         for (int i = 0; i < epochs; ++i) {
             // sample 3 random points (potential inliers)
@@ -51,9 +60,7 @@ namespace mrover {
             Eigen::Vector3f u{point1->x - point2->x, point1->y - point2->y, point1->z - point2->z};
             Eigen::Vector3f v{point1->x - point3->x, point1->y - point3->y, point1->z - point3->z};
             // Eigen::Vector3f plane = u.subTo(Dest &dst)
-
         }
-
     }
 
 } // namespace mrover
