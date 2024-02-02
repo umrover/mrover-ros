@@ -29,7 +29,6 @@ namespace mrover {
         mNh.param<int>("obj_hitcount_max", mObjMaxHitcount, 10);
 
         //Initialize Object Hit Cout to Zeros
-        mHitCountHammer = 0;
-        mHitCountBottle = 0;
+        mObjectHitCounts = {0, 0};
     }
 } // namespace mrover
