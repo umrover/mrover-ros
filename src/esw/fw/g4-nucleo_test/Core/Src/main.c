@@ -56,7 +56,30 @@ static void MX_TIM15_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+void ramp_up_down_reverse(uint32_t delay) {
+	int values[5] = {100, 75, 50, 75, 100};
+	for (int i = 0; i < 5; ++i) {
+		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, GPIO_PIN_RESET);
+		TIM15->CCR1 = values[i];
+		HAL_Delay(delay);
 
+		// Spin other direction
+		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, GPIO_PIN_SET);
+		HAL_Delay(delay);
+
+		TIM15->CCR1 = 0;
+		HAL_Delay(delay);
+	}
+}
+
+void flip_flop_lights() {
+	for (int i = 0; i < 5; ++i) {
+		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, GPIO_PIN_RESET);
+		HAL_Delay(100);
+		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, GPIO_PIN_SET);
+		HAL_Delay(100);
+	}
+}
 /* USER CODE END 0 */
 
 /**
@@ -106,23 +129,21 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-		int values[5] = {50, 30, 50, 70, 90};
-//		HAL_GPIO_WritePin(GPIOB, 15, GPIO_PIN_RESET);
-//		HAL_GPIO_WritePin(GPIOB, 13, GPIO_PIN_SET);
-//		TIM15->CCR1 = 20;
+	  TIM15->CCR1 = 0;
+	  // turns the lights on/off for 1 second
+	  //flip_flop_lights();
 
-		int pins[16] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
+	  uint32_t delay_between_switch = 2000;
+	  ramp_up_down_reverse(delay_between_switch);
+		TIM15->CCR1 = 100;
+		HAL_Delay(delay_between_switch);
 
+		// Spin other direction
+		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, GPIO_PIN_SET);
+		HAL_Delay(delay_between_switch);
 
-//		for (int i = 0; i < 1; ++i) {
-			HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, GPIO_PIN_RESET);
-//			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_SET);
-			TIM15->CCR1 = 60;
-			HAL_Delay(250);
-			HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, GPIO_PIN_SET);
-//			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_RESET);
-			HAL_Delay(250);
-//		}
+		TIM15->CCR1 = 0;
+		HAL_Delay(delay_between_switch);
   }
   /* USER CODE END 3 */
 }
@@ -339,3 +360,4 @@ void assert_failed(uint8_t *file, uint32_t line)
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
+;

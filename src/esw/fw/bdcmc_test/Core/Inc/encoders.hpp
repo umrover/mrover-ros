@@ -31,7 +31,7 @@ namespace mrover {
     public:
         AbsoluteEncoderReader() = default;
 
-        AbsoluteEncoderReader(SMBus<uint8_t, uint16_t> i2c_bus, std::uint8_t A1, std::uint8_t A2, Ratio multiplier);
+        AbsoluteEncoderReader(SMBus<uint8_t, uint16_t> i2c_bus, std::uint8_t A1, std::uint8_t A2, Ratio multiplier, TIM_HandleTypeDef* elapsed_timer);
 
         auto request_raw_angle() -> void;
         auto read_raw_angle_into_buffer() -> void;
@@ -48,16 +48,17 @@ namespace mrover {
                     device_slave_address_both_high = 0x43;
         };
 
+        TIM_HandleTypeDef* m_elapsed_timer{};
+
         std::uint16_t m_address{};
         SMBus<uint8_t, uint16_t> m_i2cBus;
 
         std::uint64_t m_previous_raw_data{};
 
-        std::uint32_t m_ticks_prev{};
-        Radians m_angle_prev;
         Ratio m_multiplier;
 
         Radians m_position;
+        Radians m_position_prev;
         RadiansPerSecond m_velocity;
     };
 

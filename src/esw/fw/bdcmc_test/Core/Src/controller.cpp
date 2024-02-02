@@ -32,7 +32,7 @@ extern TIM_HandleTypeDef htim17;
 
 #define QUADRATURE_TICK_TIMER_1 &htim3 // Special encoder timer which externally reads quadrature encoder ticks
 // #define QUADRATURE_TIMER_2 &htim4
-#define QUADRATURE_ELAPSED_TIMER_1 &htim17 // Measures time since the lsat quadrature tickreading
+#define QUADRATURE_ELAPSED_TIMER_1 &htim17 // Measures time since the lsat quadrature tick reading
 // #define ABSOLUTE_ENCODER_TIMER &htim2
 // #define UPDATE_TIMER &htim6
 #define SEND_TIMER &htim7            // 100 Hz FDCAN repeating timer

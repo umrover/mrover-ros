@@ -161,6 +161,55 @@ int main(void)
 
   init();
 
+  //-------------------------------------------------
+  // TODO: remove all this code once done debugging (CAN isn't working)
+  enum ScienceDevice {
+      HEATER_B0,
+      HEATER_N0,
+      HEATER_B1,
+      HEATER_N1,
+      HEATER_B2,
+      HEATER_N2,
+      WHITE_LED_0,
+      WHITE_LED_1,
+      WHITE_LED_2,
+      UV_LED_0,
+      UV_LED_1,
+      UV_LED_2
+  };
+  int enable = 1;
+  int disable = 0;
+
+  receive_message_debug(WHITE_LED_0, enable);
+  receive_message_debug(WHITE_LED_0, disable);
+  receive_message_debug(WHITE_LED_1, enable);
+  receive_message_debug(WHITE_LED_1, disable);
+  receive_message_debug(WHITE_LED_2, enable);
+  receive_message_debug(WHITE_LED_2, disable);
+
+  receive_message_debug(UV_LED_0, enable);
+  receive_message_debug(UV_LED_0, disable);
+  receive_message_debug(UV_LED_1, enable);
+  receive_message_debug(UV_LED_1, disable);
+  receive_message_debug(UV_LED_2, enable);
+  receive_message_debug(UV_LED_2, disable);
+
+  receive_message_debug(HEATER_N0, enable);
+  receive_message_debug(HEATER_N0, disable);
+  receive_message_debug(HEATER_N1, enable);
+  receive_message_debug(HEATER_N1, disable);
+  receive_message_debug(HEATER_N2, enable);
+  receive_message_debug(HEATER_N2, disable);
+
+  receive_message_debug(HEATER_B0, enable);
+  receive_message_debug(HEATER_B0, disable);
+  receive_message_debug(HEATER_B1, enable);
+  receive_message_debug(HEATER_B1, disable);
+  receive_message_debug(HEATER_B2, enable);
+  receive_message_debug(HEATER_B2, disable);
+
+  //-------------------------------------------------
+
   /* USER CODE END 2 */
 
   /* Init scheduler */
@@ -208,6 +257,7 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

@@ -96,6 +96,11 @@ namespace mrover {
 		science.update_and_send_heater();
 	}
 
+	// USED FOR TESTING WHILE CAN IS DOWN
+	void receive_message_debug(InBoundScienceMessage message) {
+		science.receive(message);
+	}
+
     void receive_message() {
 		if (std::optional received = fdcan_bus.receive()) {
 			auto const& [header, message] = received.value();
@@ -125,6 +130,14 @@ void update_and_send_thermistor_and_auto_shutoff_if_applicable() {
 
 void update_and_send_heater() {
 	mrover::update_and_send_heater();
+}
+
+// Used for debugging while CAN isn't working
+void receive_message_debug(int device, int enable) {
+	mrover::EnableScienceDeviceCommand message;
+	message.science_device = static_cast<mrover::ScienceDevice>(device);
+	message.enable = enable;
+	mrover::receive_message_debug(message);	
 }
 
 void receive_message() {
