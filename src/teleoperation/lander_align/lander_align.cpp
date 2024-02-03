@@ -20,11 +20,11 @@ namespace mrover {
     //     cloudSample.fields
     // }
 
-    auto LanderAlignNodelet::filterNormals(sensor_msgs::PointCloud2Ptr const& cloud, int const threshold) -> std::vector<Point*> {
+    auto LanderAlignNodelet::filterNormals(sensor_msgs::PointCloud2Ptr const& cloud, const float threshold) -> std::vector<const Point*> {
         // TODO: OPTIMIZE; doing this many push_back calls could slow things down
 
         auto* cloudData = reinterpret_cast<Point const*>(cloud->fields.data());
-        std::vector<Point*> extractedPoints;
+        std::vector<const Point*> extractedPoints;
 
         for (auto point = cloudData; point < cloudData + (cloud->height * cloud->width); point++) {
             if (point->normal_z < threshold) {

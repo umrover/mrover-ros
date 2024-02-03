@@ -12,9 +12,9 @@ namespace mrover {
         // deprecated/not needed anymore
         // auto downsample(sensor_msgs::PointCloud2Ptr const& cloud) -> sensor_msgs::PointCloud2Ptr;
 
-        auto filterNormals(sensor_msgs::PointCloud2Ptr const& cloud, const int threshold) -> std::vector<Point*>;
+        auto filterNormals(sensor_msgs::PointCloud2Ptr const& cloud, float threshold) -> std::vector<const Point*>;
 
-        auto ransac(const std::vector<Point*>& filteredPoints) -> Eigen::Vector3f;
+        auto ransac(const std::vector<Point*>& points, float distanceThreshold, int minInliers, int epochs) -> Eigen::Vector3f;
     };
 
 } // namespace mrover
