@@ -89,7 +89,8 @@ namespace mrover {
 
         Radians m_position;
         // RadiansPerSecond m_velocity;
-        RunningMeanFilter<RadiansPerSecond, 4 + 1> m_velocity_filter;
+        RunningMeanFilter<RadiansPerSecond, 16> m_velocity_filter;
+        // IIRFilter<RadiansPerSecond, 0.05> m_velocity_filter;
     };
 
 } // namespace mrover

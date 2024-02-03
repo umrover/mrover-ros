@@ -9,6 +9,7 @@
 #include <iostream>
 #include <units/units.hpp>
 
+#include <mrover/AdjustMotor.h>
 #include <mrover/ControllerState.h>
 #include <mrover/Position.h>
 #include <mrover/Throttle.h>
@@ -38,6 +39,8 @@ namespace mrover {
             mControllerDataPub = mNh.advertise<ControllerState>(std::format("{}_controller_data", mControllerName), 1);
 
             // mPublishDataTimer = mNh.createTimer(ros::Duration(0.1), &Controller::publishDataCallback, this);
+
+            mAdjustServer = mNh.advertiseService(std::format("{}_adjust", mControllerName), &Controller::adjustServiceCallback, this);
 
             ROS_INFO("instantiate %s", mControllerName.c_str());
         }
@@ -103,7 +106,7 @@ namespace mrover {
             controller_state.name.push_back(mName);
             controller_state.state.push_back(mState);
             controller_state.error.push_back(mErrorState);
-            uint8_t limit_hit;
+            std::uint8_t limit_hit{};
             for (int i = 0; i < 4; ++i) {
                 limit_hit |= mLimitHit.at(i) << i;
             }
@@ -112,6 +115,17 @@ namespace mrover {
 
             mJointDataPub.publish(joint_state);
             mControllerDataPub.publish(controller_state);
+        }
+
+        bool adjustServiceCallback(AdjustMotor::Request& req, AdjustMotor::Response& res) {
+            if (req.name != mControllerName) {
+                ROS_ERROR("Adjust request at server for %s ignored", req.name.c_str());
+                res.success = false;
+                return true;
+            }
+            setDesiredPosition(Radians{req.value});
+            res.success = true;
+            return true;
         }
 
 
@@ -137,6 +151,8 @@ namespace mrover {
         ros::Publisher mJointDataPub;
         ros::Publisher mControllerDataPub;
         ros::Timer mPublishDataTimer;
+
+        ros::ServiceServer mAdjustServer;
     };
 
 } // namespace mrover

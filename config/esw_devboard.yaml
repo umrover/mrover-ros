@@ -60,3 +60,6 @@ brushed_motors:
       limit_max_backward_pos: false
       max_forward_pos: 1.0
       max_backward_pos: 0.0
+      position_p: 1.2
+      velocity_p: 1.4
+      velocity_ff: 0.9

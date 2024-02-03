@@ -142,8 +142,7 @@ namespace mrover {
             StateAfterConfig config{.gear_ratio = message.gear_ratio};
 
             if (message.quad_abs_enc_info.quad_present) {
-                // TODO(quintin): Why TF does this crash without .get() ?
-                Ratio multiplier = (message.quad_abs_enc_info.quad_is_forward_polarity ? 1.0f : -1.0f) * message.quad_enc_out_ratio.get();
+                Ratio multiplier = (message.quad_abs_enc_info.quad_is_forward_polarity ? 1 : -1) * message.quad_enc_out_ratio;
                 if (!m_relative_encoder) m_relative_encoder.emplace(m_encoder_timer, multiplier, m_encoder_elapsed_timer);
             }
             if (message.quad_abs_enc_info.abs_present) {
@@ -211,12 +210,19 @@ namespace mrover {
 
             RadiansPerSecond target = message.velocity;
             RadiansPerSecond input = m_velocity.value();
-            //            mode.pidf.with_k(0.625);
-            mode.pidf.with_p(2.8);
+            mode.pidf.with_p(message.p);
+            // mode.pidf.with_i(message.i);
+            mode.pidf.with_d(message.d);
+            mode.pidf.with_ff(message.ff);
             mode.pidf.with_output_bound(-1.0, 1.0);
             // TODO(quintin): Use timer for dt
             m_desired_output = mode.pidf.calculate(input, target, Seconds{0.01});
             m_error = BDCMCErrorInfo::NO_ERROR;
+
+            m_fdcan.broadcast(OutBoundMessage{DebugState{
+                    .f1 = m_velocity.value().get(),
+                    .f2 = message.velocity.get(),
+            }});
         }
 
         auto process_command(PositionCommand const& message, PositionMode& mode) -> void {
@@ -236,7 +242,9 @@ namespace mrover {
 
             Radians target = message.position;
             Radians input = m_uncalib_position.value() - m_state_after_calib->offset_position;
-            mode.pidf.with_p(1.2);
+            mode.pidf.with_p(message.p);
+            // mode.pidf.with_i(message.i);
+            mode.pidf.with_d(message.d);
             mode.pidf.with_output_bound(-1.0, 1.0);
             // TODO(quintin): Use timer for dt
             m_desired_output = mode.pidf.calculate(input, target, Seconds{0.01});
@@ -305,7 +313,7 @@ namespace mrover {
             }
 
             m_inbound = message;
-            process_command();
+            update();
         }
 
         /**
@@ -404,10 +412,10 @@ namespace mrover {
 
 
         auto update_quadrature_encoder() -> void {
-            update();
             if (m_relative_encoder) {
                 m_relative_encoder->update();
             }
+            update();
         }
 
         auto request_absolute_encoder_data() -> void {

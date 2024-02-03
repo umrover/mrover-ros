@@ -88,10 +88,11 @@ namespace mrover {
         ros::Subscriber mPositionSub;
         ros::Subscriber mArmHWJointDataSub;
 
-        std::unordered_map<std::string, std::unique_ptr<ros::ServiceServer>> mAdjustServer;
+        // TODO:(owen) unique_ptr servers? unique_ptr clients? Both? Neither? The world may never know. (try to learn)
+        std::unordered_map<std::string, std::unique_ptr<ros::ServiceServer>> mAdjustServersByRawArmNames;
         // std::unordered_map<std::string, std::unique_ptr<ros::ServiceServer> > mCalibrateServer;
 
-        std::unordered_map<std::string, ros::ServiceClient> mAdjustClient;
+        std::unordered_map<std::string, ros::ServiceClient> mAdjustClientsByArmHWNames;
         // std::unique_ptr<ros::ServiceClient> mCalibrateClient;
 
         std::optional<float> mJointDEPitchAdjust;
