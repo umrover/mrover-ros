@@ -69,6 +69,7 @@ namespace mrover {
         double getEffort() override;
         void setStop();
         void setBrake();
+        void adjust();
 
     private:
         moteus::Controller mController{moteus::Controller::Options{}};

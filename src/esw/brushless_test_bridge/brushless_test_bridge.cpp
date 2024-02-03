@@ -1,3 +1,4 @@
+#include <ros/rate.h>
 #include <ros/ros.h>
 
 #include <iostream>
@@ -25,6 +26,9 @@ int main(int argc, char** argv) {
 
     int count = 0;
     ros::Rate rate{100};
+
+    /*
+    // Different positions test
     std::array<float, 4> positions = {1.0, 2.0, 3.0, 4.0};
     while (ros::ok()) {
         // Throttle test
@@ -34,6 +38,16 @@ int main(int argc, char** argv) {
         count++;
         ros::spinOnce();
         rate.sleep();
+    }
+
+    */
+    ros::Rate rate_0p5hz{0.5};
+    while (ros::ok() && count < 10) {
+        // Motor should keep moving forward every 2 seconds. Repeats 10 times.
+        brushlessController->setDesiredPosition(mrover::Radians{1.0});
+        brushlessController->adjust();
+        count++;
+        rate_0p5hz.sleep();
     }
 
     return EXIT_SUCCESS;

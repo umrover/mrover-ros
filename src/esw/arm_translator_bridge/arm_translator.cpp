@@ -10,7 +10,15 @@ namespace mrover {
             if (i != mJointDEPitchIndex && i != mJointDERollIndex) {
                 assert(mArmHWNames.at(i) == mRawArmNames.at(i));
             }
+
+            // adjust and calibrate services
+            std::string rawName = static_cast<std::string>(mRawArmNames[i]);
+            mAdjustServer[rawName] = std::make_unique<ros::ServiceServer>(nh.advertiseService(std::format("{}_adjust", rawName), &ArmTranslator::adjustServiceCallback, this));
+
+            std::string hwName = static_cast<std::string>(mArmHWNames[i]);
+            mAdjustClient[hwName] = nh.serviceClient<mrover::AdjustMotor>(std::format("{}_adjust", hwName));
         }
+
 
         mJointDEPitchOffset = Radians{getFloatFromRosParam(nh, "joint_de/pitch_offset")};
         mJointDERollOffset = Radians{getFloatFromRosParam(nh, "joint_de/roll_offset")};
@@ -226,6 +234,55 @@ namespace mrover {
         jointState.effort.at(mJointDE1Index) = jointDERollEff;
 
         mJointDataPub->publish(jointState);
+    }
+
+    bool ArmTranslator::adjustServiceCallback(AdjustMotor::Request& req, AdjustMotor::Response& res) {
+        AdjustMotor::Response resp;
+        AdjustMotor::Request adjustReq = req;
+
+        bool deFlag;
+        if (req.name == "joint_de_roll") {
+            mJointDERollAdjust = req.value;
+            deFlag = true;
+        } else if (req.name == "joint_de_pitch") {
+            mJointDEPitchAdjust = req.value;
+            deFlag = true;
+        } else {
+            mAdjustClient[adjustReq.name].call(adjustReq, resp);
+        }
+
+        if (mJointDEPitchAdjust && mJointDERollAdjust) {
+            // convert DE_roll and DE_pitch into DE_0 and DE_1 (outgoing message to arm_hw_bridge)
+            auto [joint_de_0_raw_value, joint_de_1_raw_value] = transformPitchRollToMotorOutputs(
+                    mJointDEPitchAdjust.value(),
+                    mJointDERollAdjust.value());
+
+            float joint_de_0_value = joint_de_0_raw_value + mJointDE0PosOffset->get();
+            float joint_de_1_value = joint_de_1_raw_value + mJointDE1PosOffset->get();
+
+
+            adjustReq.name = "joint_de_0";
+            adjustReq.value = joint_de_0_value;
+            mAdjustClient[adjustReq.name].call(adjustReq, resp);
+
+            adjustReq.name = "joint_de_1";
+            adjustReq.value = joint_de_1_value;
+            mAdjustClient[adjustReq.name].call(adjustReq, resp);
+
+            mJointDEPitchAdjust = std::nullopt;
+            mJointDERollAdjust = std::nullopt;
+            deFlag = false;
+        }
+
+        // adjust service was for de, but both de joints have not adjusted yet
+        if (deFlag) {
+            res.success = false;
+            return true;
+        }
+
+        res.success = resp.success;
+
+        return true;
     }
 
 
