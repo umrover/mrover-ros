@@ -29,17 +29,14 @@ namespace mrover {
         }
     };
 
-    template<IsUnit T>
+    template<IsUnit T, double Alpha>
     class IIRFilter {
 
         T m_value{};
-        double m_alpha{};
 
     public:
-        IIRFilter(double alpha) : m_alpha{alpha} {}
-
-        auto add_reaidng(T reading) -> void {
-            m_value = m_alpha * reading + (1 - m_alpha) * m_value;
+        auto add_reading(T reading) -> void {
+            m_value = Alpha * reading + (1 - Alpha) * m_value;
         }
 
         [[nodiscard]] auto get_filtered() const -> T {
@@ -54,7 +51,7 @@ namespace mrover {
     template<IsUnit T>
     class ButterworthFilter {
 
-        
+
     };
 
 } // namespace mrover
