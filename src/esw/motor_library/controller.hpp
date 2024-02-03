@@ -9,6 +9,7 @@
 #include <iostream>
 #include <units/units.hpp>
 
+#include <mrover/AdjustMotor.h>
 #include <mrover/ControllerState.h>
 #include <mrover/Position.h>
 #include <mrover/Throttle.h>
@@ -38,6 +39,8 @@ namespace mrover {
             mControllerDataPub = mNh.advertise<ControllerState>(std::format("{}_controller_data", mControllerName), 1);
 
             // mPublishDataTimer = mNh.createTimer(ros::Duration(0.1), &Controller::publishDataCallback, this);
+
+            mAdjustServer = mNh.advertiseService(std::format("{}_adjust", mControllerName), &Controller::adjustServiceCallback, this);
 
             ROS_INFO("instantiate %s", mControllerName.c_str());
         }
@@ -114,6 +117,18 @@ namespace mrover {
             mControllerDataPub.publish(controller_state);
         }
 
+        bool adjustServiceCallback(AdjustMotor::Request& req, AdjustMotor::Response& res) {
+            if (req.name != mControllerName) {
+                ROS_ERROR("Adjust request at server for %s ignored", req.name.c_str());
+                res.success = false;
+                return true;
+            }
+            setDesiredPosition(Radians{req.value});
+            res.success = true;
+            return true;
+        }
+
+
     protected:
         ros::NodeHandle mNh;
         std::string mName, mControllerName;
@@ -136,6 +151,8 @@ namespace mrover {
         ros::Publisher mJointDataPub;
         ros::Publisher mControllerDataPub;
         ros::Timer mPublishDataTimer;
+
+        ros::ServiceServer mAdjustServer;
     };
 
 } // namespace mrover
