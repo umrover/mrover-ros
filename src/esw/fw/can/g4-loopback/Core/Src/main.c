@@ -65,6 +65,7 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
       /* Notification Error */
       Error_Handler();
     }
+
   }
 }
 
@@ -144,15 +145,17 @@ int main(void)
 	HAL_TIM_PWM_Start(&htim15, TIM_CHANNEL_1);
   while (1)
   {
-	 if (HAL_FDCAN_GetTxFifoFreeLevel(&hfdcan1)) {
-		// Free space in the mailbox
-		if (HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan1, &TxHeader, TxData)!= HAL_OK) {
-			Error_Handler();
-		}
-	} else {
-		// Abort oldest message in the mailbox to make room for the new message
-		HAL_FDCAN_AbortTxRequest(&hfdcan1, FDCAN_TX_BUFFER0);
-	}
+
+	  if (HAL_FDCAN_GetTxFifoFreeLevel(&hfdcan1)) {
+	  		// Free space in the mailbox
+	  		if (HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan1, &TxHeader, TxData)!= HAL_OK) {
+	  			Error_Handler();
+	  		}
+	  	} else {
+	  		// Abort oldest message in the mailbox to make room for the new message
+	  		HAL_FDCAN_AbortTxRequest(&hfdcan1, FDCAN_TX_BUFFER0);
+	  	}
+
 	HAL_Delay(100);
 
 	int values[5] = {50, 30, 50, 70, 90};
