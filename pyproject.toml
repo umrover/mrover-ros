@@ -16,7 +16,7 @@ dependencies = [
     # MRover dependencies
     "Django==4.2.5",
     "empy==3.3.4",
-    "numpy==1.26.0",
+    "numpy==1.26.3",
     "pandas==2.1.0",
     "shapely==2.0.1",
     "pyserial==3.5",

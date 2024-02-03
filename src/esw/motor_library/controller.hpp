@@ -103,7 +103,7 @@ namespace mrover {
             controller_state.name.push_back(mName);
             controller_state.state.push_back(mState);
             controller_state.error.push_back(mErrorState);
-            uint8_t limit_hit;
+            std::uint8_t limit_hit{};
             for (int i = 0; i < 4; ++i) {
                 limit_hit |= mLimitHit.at(i) << i;
             }
@@ -113,7 +113,6 @@ namespace mrover {
             mJointDataPub.publish(joint_state);
             mControllerDataPub.publish(controller_state);
         }
-
 
     protected:
         ros::NodeHandle mNh;

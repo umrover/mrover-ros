@@ -51,6 +51,16 @@ namespace mrover {
         mMinPosition = Radians{xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "min_position", -1.0)};
         mMaxPosition = Radians{xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "max_position", 1.0)};
 
+        mPositionGains.p = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "position_p", 0.0);
+        mPositionGains.i = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "position_i", 0.0);
+        mPositionGains.d = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "position_d", 0.0);
+        mPositionGains.ff = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "position_ff", 0.0);
+
+        mVelocityGains.p = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "velocity_p", 0.0);
+        mVelocityGains.i = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "velocity_i", 0.0);
+        mVelocityGains.d = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "velocity_d", 0.0);
+        mVelocityGains.ff = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "velocity_ff", 0.0);
+
         mErrorState = "Unknown";
         mState = "Unknown";
     }
@@ -76,7 +86,12 @@ namespace mrover {
 
         assert(position >= mMinPosition && position <= mMaxPosition);
 
-        mDevice.publish_message(InBoundMessage{PositionCommand{.position = position}});
+        mDevice.publish_message(InBoundMessage{PositionCommand{
+                .position = position,
+                .p = static_cast<float>(mPositionGains.p),
+                .i = static_cast<float>(mPositionGains.i),
+                .d = static_cast<float>(mPositionGains.d),
+        }});
     }
 
     void BrushedController::setDesiredVelocity(RadiansPerSecond velocity) {
@@ -88,7 +103,13 @@ namespace mrover {
 
         assert(velocity >= mMinVelocity && velocity <= mMaxVelocity);
 
-        mDevice.publish_message(InBoundMessage{VelocityCommand{.velocity = velocity}});
+        mDevice.publish_message(InBoundMessage{VelocityCommand{
+                .velocity = velocity,
+                .p = static_cast<float>(mVelocityGains.p),
+                .i = static_cast<float>(mVelocityGains.i),
+                .d = static_cast<float>(mVelocityGains.d),
+                .ff = static_cast<float>(mVelocityGains.ff),
+        }});
     }
 
     void BrushedController::sendConfiguration() {
@@ -115,6 +136,7 @@ namespace mrover {
             mState = "Not Armed";
         }
     }
+
 
     void BrushedController::processCANMessage(CAN::ConstPtr const& msg) {
         assert(msg->source == mControllerName);
