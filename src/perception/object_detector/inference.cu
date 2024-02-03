@@ -1,12 +1,5 @@
 #include "inference.cuh"
 
-#include <NvInfer.h>
-#include <NvOnnxParser.h>
-#include <cstdio>
-#include <cuda_runtime_api.h>
-#include <opencv4/opencv2/core/hal/interface.h>
-
-#include "logger.cuh"
 
 using namespace nvinfer1;
 /**

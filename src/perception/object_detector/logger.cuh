@@ -1,5 +1,6 @@
 #pragma once
 
+#include "pch.hpp"
 #include <NvInfer.h>
 
 namespace nvinfer1 {

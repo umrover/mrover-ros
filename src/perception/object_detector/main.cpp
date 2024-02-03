@@ -1,6 +1,6 @@
 #include "object_detector.hpp"
 
-int main(int argc, char** argv) {
+auto main(int argc, char** argv) -> int {
     ros::init(argc, argv, "object_detector");
 
     // Start the ZED Nodelet

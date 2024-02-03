@@ -1,11 +1,13 @@
-// Cpp native
 #pragma once
 
+#include "logger.cuh"
 #include "pch.hpp"
 
 #include <NvInfer.h>
-
-#include "logger.cuh"
+#include <NvOnnxParser.h>
+#include <cstdio>
+#include <cuda_runtime_api.h>
+#include <opencv4/opencv2/core/hal/interface.h>
 
 using nvinfer1::ICudaEngine;
 using nvinfer1::IExecutionContext;
@@ -35,10 +37,10 @@ namespace mrover {
         cv::Size mModelOutputShape;
 
         //STATIC FUNCTIONS
-        static int getBindingInputIndex(IExecutionContext const* context);
+        static auto getBindingInputIndex(IExecutionContext const* context) -> int;
 
         //Creates a ptr to the engine
-        ICudaEngine* createCudaEngine(std::filesystem::path const& onnxModelPath);
+        auto createCudaEngine(std::filesystem::path const& onnxModelPath) -> ICudaEngine*;
 
         //Launch the model execution onto the GPU
         void launchInference(cv::Mat const& input, cv::Mat const& output) const;

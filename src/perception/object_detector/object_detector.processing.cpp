@@ -71,7 +71,7 @@ namespace mrover {
         auto modelShapeHeight = static_cast<float>(imgSize.height);
 
         //Set model thresholds
-        float modelScoreThreshold = 0.75;
+        float modelScoreThreshold = 0.50;
         float modelNMSThreshold = 0.50;
 
         //Get x and y scale factors
@@ -172,7 +172,7 @@ namespace mrover {
         }
 
         //We only want to publish the debug image if there is something lsitening, to reduce the operations going on
-        if (mDebugImgPub.getNumSubscribers() > 0) {
+        if (mDebugImgPub.getNumSubscribers() > 0 || true) {
             //Publishes the image to the debug publisher
             publishImg(sizedImage);
         }
@@ -249,7 +249,10 @@ namespace mrover {
         auto centerWidth = static_cast<size_t>(center.first * static_cast<double>(msg->width) / imgSize.width);
         auto centerHeight = static_cast<size_t>(center.second * static_cast<double>(msg->height) / imgSize.height);
 
-        if (seenObjects.at(detection.class_id)) {
+		std::cout << mObjectHitCounts.at(0) << ", " << mObjectHitCounts.at(1) << std::endl;
+        ROS_INFO("%d, %d", mObjectHitCounts.at(0), mObjectHitCounts.at(1));
+
+		if (!seenObjects.at(detection.class_id)) {
             seenObjects.at(detection.class_id) = true;
 
             //Get the object's position in 3D from the point cloud and run this statement if the optional has a value
@@ -260,13 +263,15 @@ namespace mrover {
                     //Push the immediate detections to the zed frame
                     SE3::pushToTfTree(mTfBroadcaster, immediateFrameId, mCameraFrameId, objectLocation.value());
 
+
                     //Since the object is seen we need to increment the hit counter
                     mObjectHitCounts.at(detection.class_id) = std::min(mObjMaxHitcount, mObjectHitCounts.at(detection.class_id) + mObjIncrementWeight);
-
+					ROS_INFO("PUSHED TO TF TEMP");
                     //Only publish to permament if we are confident in the object
                     if (mObjectHitCounts.at(detection.class_id) > mObjHitThreshold) {
 
                         std::string permanentFrameId = "detectedObject" + classes.at(detection.class_id);
+
 
                         //Grab the object inside of the camera frame and push it into the map frame
                         SE3 objectInsideCamera = SE3::fromTfTree(mTfBuffer, mMapFrameId, immediateFrameId);
