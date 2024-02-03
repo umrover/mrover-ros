@@ -1,6 +1,6 @@
 <template>
   <div class="calibration-wrapper">
-    <Checkbox :name="name" @toggle="toggleCalibration"> </Checkbox>
+    <Checkbox :name="name" @toggle="toggleCalibration"/>
     <span class="led">
       <LEDIndicator :connected="calibrated" :name="name" :show_name="false" />
     </span>
@@ -24,10 +24,10 @@ export default defineComponent({
       type: String,
       required: true
     },
-    joint_name: {
+    topic_name: {
       type: String,
       required: true
-    }
+    },
   },
 
   data() {
@@ -82,7 +82,7 @@ export default defineComponent({
       this.toggleEnabled = !this.toggleEnabled
     },
     publishCalibrationMessage: function () {
-      this.sendMessage({ type: 'calibrate_motors', data: this.toggleEnabled })
+      this.sendMessage({ type: 'calibrate_motors', topic: this.topic_name })
     }
   }
 })

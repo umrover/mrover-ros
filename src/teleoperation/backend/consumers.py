@@ -69,7 +69,7 @@ class GUIConsumer(JsonWebsocketConsumer):
 
         # Subscribers
         self.pdb_sub = rospy.Subscriber("/pdb_data", PDLB, self.pdb_callback)
-        self.arm_moteus_sub = rospy.Subscriber("/arm_controller_data", ControllerState, self.arm_controller_callback)
+        self.arm_moteus_sub = rospy.Subscriber("/arm_hw_controller_data", ControllerState, self.arm_controller_callback)
         self.drive_moteus_sub = rospy.Subscriber(
             "/drive_controller_data", ControllerState, self.drive_controller_callback
         )
@@ -80,10 +80,11 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.imu_calibration = rospy.Subscriber("imu/calibration", CalibrationStatus, self.imu_calibration_callback)
 
         # Services
-        self.laser_service = rospy.ServiceProxy("enable_mosfet_device", SetBool)
-        self.calibrate_service = rospy.ServiceProxy("arm_calibrate", Trigger)
-        self.arm_adjust_service = rospy.ServiceProxy("arm_adjust", AdjustMotor)
+        self.laser_service = rospy.ServiceProxy("enable_arm_laser", SetBool)
         self.enable_auton = rospy.ServiceProxy("enable_auton", EnableAuton)
+        self.change_heater_srv = rospy.ServiceProxy("science_change_heater_auto_shutoff_state", SetBool)
+        self.calibrate_cache_srv = rospy.ServiceProxy("cache_calibrate", Trigger)
+        self.cache_enable_limit = rospy.ServiceProxy("cache_enable_limit_switches", SetBool)
 
         # ROS Parameters
         self.mappings = rospy.get_param("teleop/joystick_mappings")
@@ -397,27 +398,35 @@ class GUIConsumer(JsonWebsocketConsumer):
                 }))
 
     def calibrate_motors(self,msg):
-        joints = [msg["name"]]
-        if msg["name"] == "all_ra":
+        if msg["topic"] == "all_ra":
             joints = ["joint_a","joint_b","joint_c","joint_de_pitch","joint_de_roll","allen_key","gripper"]
-        fail = []
-        for joint in joints:
-            name = "arm_calibrate_"+joint
-            self.calibrate_service = rospy.ServiceProxy(name, Trigger)
+            for joint in joints:
+                fail = [] #if any calibration fails, add joint name to a list to return
+                self.calibrate_service = rospy.ServiceProxy("arm_calibrate_"+joint, Trigger)
+                try:
+                    result = self.calibrate_service()
+                    if not result.success:
+                        fail.append(joint)
+                except rospy.ServiceException as e:
+                    print(f"Service call failed: {e}")
+        else:
+            self.calibrate_service = rospy.ServiceProxy(msg["topic"], Trigger)
             try:
                 result = self.calibrate_service()
                 if not result.success:
-                    fail.append(joint)
+                    fail = msg["topic"]
             except rospy.ServiceException as e:
                 print(f"Service call failed: {e}")
+            
         self.send(text_data=json.dumps({
                     'type': 'calibrate_motors',
                     'result': fail
                 }))
-    
+
     def arm_adjust(self,msg):
         try:
-            result = self.arm_adjust_service(name=msg['name'], value=msg['value'])
+            arm_adjust_srv = rospy.ServiceProxy(msg["name"]+"_adjust", AdjustMotor)
+            result = arm_adjust_srv(name=msg['name'], value=msg['value'])
             self.send(text_data=json.dumps({
                 'type': 'arm_adjust',
                 'result': result.success

@@ -56,28 +56,25 @@
       <h3>Calibrations</h3>
       <div class="calibration-checkboxes">
         <CalibrationCheckbox
-          :name="'Joint 1 Calibration'"
-          :joint_name="'sa_joint_1'"
-          :calibrate_topic="'sa_is_calibrated'"
+          :name="'SA X Calibration'"
+          :topic_name="'sa_calibrate_sa_x'"
         />
         <CalibrationCheckbox
-          :name="'Joint 2 Calibration'"
-          :joint_name="'sa_joint_2'"
-          :calibrate_topic="'sa_is_calibrated'"
+          :name="'SA Y Calibration'"
+          :topic_name="'sa_calibrate_sa_y'"
         />
         <CalibrationCheckbox
-          :name="'Joint 3 Calibration'"
-          :joint_name="'sa_joint_3'"
-          :calibrate_topic="'sa_is_calibrated'"
+          :name="'SA Z Calibration'"
+          :topic_name="'sa_calibrate_sa_z'"
         />
       </div>
-      <MotorAdjust
+      <!-- <MotorAdjust
         :options="[
           { name: 'sa_joint_1', option: 'Joint 1' },
           { name: 'sa_joint_2', option: 'Joint 2' },
           { name: 'sa_joint_3', option: 'Joint 3' }
         ]"
-      />
+      /> -->
     </div>
     <div v-show="false">
       <MastGimbalControls></MastGimbalControls>

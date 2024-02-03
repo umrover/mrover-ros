@@ -11,8 +11,8 @@
         <label for="joint">Motor to adjust</label>
         <select v-model="selectedMotor">
           <option disabled value="">Select a motor</option>
-          <option v-for="option in options" :key="option.name" :value="option.name">
-            {{ option.option }}
+          <option v-for="option in motors" :key="option.esw_name" :value="option.esw_name">
+            {{ option.display_name }}
           </option>
         </select>
       </div>
@@ -33,8 +33,8 @@ import { mapState, mapActions } from 'vuex'
 
 export default defineComponent({
   props: {
-    options: {
-      type: Array<{ name: string; option: string }>,
+    motors: {
+      type: Array<{ esw_name: string; display_name: string }>,
       required: true,
       // Default to empty array
       // Should be array of object in format {name: "joint_a", option: "A"}
@@ -50,8 +50,8 @@ export default defineComponent({
   },
 
   created: function () {
-    if (this.options.length == 1) {
-      this.selectedMotor = this.options[0].name
+    if (this.motors.length == 1) {
+      this.selectedMotor = this.motors[0].esw_name
     }
   },
 

@@ -45,30 +45,16 @@
       <button class="btn btn-primary mx-auto my-2" @click="submit_positions">Submit</button>
     </div>
     <div class="controls-flex">
-      <h4>Misc. Controls</h4>
-      <ToggleButton
-        id="arm_laser"
-        :current-state="laser_enabled"
-        label-enable-text="Arm Laser On"
-        label-disable-text="Arm Laser Off"
-        @change="toggleArmLaser()"
-      />
-      <div class="limit-switch">
-        <h4>Limit Switches</h4>
-        <LimitSwitch :name="'All Switches'" :switch_name="'all_sa'" />
-      </div>
-    </div>
-    <div class="controls-flex">
       <h4>Calibration</h4>
-      <CalibrationCheckbox :name="'All Joints Calibration'" :joint_name="'all_sa'" />
-      <JointAdjust
+      <!-- <CalibrationCheckbox :name="'All Joints Calibration'" :motor_name="'all_sa'" /> -->
+      <MotorAdjust
         v-if="arm_mode == 'position'"
         :options="[
-          { name: 'joint_a', option: 'Joint A' },
-          { name: 'joint_b', option: 'Joint B' },
-          { name: 'joint_c', option: 'Joint C' },
-          { name: 'joint_de_pitch', option: 'Joint DE Pitch' },
-          { name: 'joint_de_yaw', option: 'Joint DE Yaw' }
+          { esw_name: 'sa_x', display_name: 'X' },
+          { esw_name: 'sa_y', display_name: 'Y' },
+          { esw_name: 'sa_z', display_name: 'Z' },
+          { esw_name: 'scoop', display_name: 'Scoop' },
+          { esw_name: 'sensor_actuator', display_name: 'Sensor Actuator' }
         ]"
       />
     </div>
@@ -78,10 +64,8 @@
 <script lang="ts">
 import { defineComponent } from 'vue'
 import { mapActions, mapState } from 'vuex'
-import ToggleButton from './ToggleButton.vue'
 import CalibrationCheckbox from './CalibrationCheckbox.vue'
-import JointAdjust from './MotorAdjust.vue'
-import LimitSwitch from './LimitSwitch.vue'
+import MotorAdjust from './MotorAdjust.vue'
 
 // In seconds
 const updateRate = 0.1
@@ -89,16 +73,12 @@ let interval: number | undefined
 
 export default defineComponent({
   components: {
-    ToggleButton,
     CalibrationCheckbox,
-    JointAdjust,
-    LimitSwitch
+    MotorAdjust,
   },
   data() {
     return {
-      websocket: new WebSocket('ws://localhost:8000/ws/gui'),
       arm_mode: 'arm_disabled',
-      joints_array: [false, false, false, false, false, false],
       laser_enabled: false,
       /* Positions in degrees! */
       temp_positions: {
@@ -193,10 +173,6 @@ export default defineComponent({
           positions: positions
         })
       }
-    },
-    toggleArmLaser: function () {
-      this.laser_enabled = !this.laser_enabled
-      this.sendMessage({ type: 'laser_service', data: this.laser_enabled })
     },
 
     submit_positions: function () {

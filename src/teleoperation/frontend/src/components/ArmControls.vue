@@ -63,14 +63,14 @@
     <div class="controls-flex">
       <h4>Calibration</h4>
       <CalibrationCheckbox name="All Joints Calibration" />
-      <JointAdjust
+      <MotorAdjust
         v-if="arm_mode == 'position'"
-        :options="[
-          { name: 'joint_a', option: 'Joint A' },
-          { name: 'joint_b', option: 'Joint B' },
-          { name: 'joint_c', option: 'Joint C' },
-          { name: 'joint_de_pitch', option: 'Joint DE Pitch' },
-          { name: 'joint_de_roll', option: 'Joint DE Yaw' }
+        :motors="[
+          { esw_name: 'joint_a', display_name: 'Joint A' },
+          { esw_name: 'joint_b', display_name: 'Joint B' },
+          { esw_name: 'joint_c', display_name: 'Joint C' },
+          { esw_name: 'joint_de_pitch', display_name: 'Joint DE Pitch' },
+          { esw_name: 'joint_de_roll', display_name: 'Joint DE Yaw' }
         ]"
       />
     </div>
@@ -82,7 +82,7 @@ import { defineComponent } from 'vue'
 import { mapActions } from 'vuex'
 import ToggleButton from './ToggleButton.vue'
 import CalibrationCheckbox from './CalibrationCheckbox.vue'
-import JointAdjust from './MotorAdjust.vue'
+import MotorAdjust from './MotorAdjust.vue'
 import LimitSwitch from './LimitSwitch.vue'
 
 // In seconds
@@ -93,7 +93,7 @@ export default defineComponent({
   components: {
     ToggleButton,
     CalibrationCheckbox,
-    JointAdjust,
+    MotorAdjust,
     LimitSwitch
   },
   data() {
