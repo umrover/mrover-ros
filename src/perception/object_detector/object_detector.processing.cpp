@@ -6,6 +6,7 @@
 #include <cmath>
 #include <cstddef>
 #include <opencv2/core/mat.hpp>
+#include <opencv2/core/types.hpp>
 #include <opencv2/highgui.hpp>
 #include <random>
 #include <stdexcept>
@@ -158,9 +159,11 @@ namespace mrover {
             }
 
             //Draw the detected object's bounding boxes on the image for each of the objects detected
+            std::vector<cv::Scalar> font_Colors = {cv::Scalar{232, 115, 5},
+                                                   cv::Scalar{0, 4, 227}};
             for (size_t i = 0; i < detections.size(); i++) {
                 //Font color will change for each different detection
-                cv::Scalar font_Color(static_cast<double>(i * 50), static_cast<double>(i * 50), static_cast<double>(i * 50));
+                cv::Scalar font_Color = font_Colors.at(detections.at(i).class_id);
                 cv::rectangle(sizedImage, detections[i].box, font_Color, 1, cv::LINE_8, 0);
 
                 //Put the text on the image
@@ -249,10 +252,10 @@ namespace mrover {
         auto centerWidth = static_cast<size_t>(center.first * static_cast<double>(msg->width) / imgSize.width);
         auto centerHeight = static_cast<size_t>(center.second * static_cast<double>(msg->height) / imgSize.height);
 
-		std::cout << mObjectHitCounts.at(0) << ", " << mObjectHitCounts.at(1) << std::endl;
+        std::cout << mObjectHitCounts.at(0) << ", " << mObjectHitCounts.at(1) << std::endl;
         ROS_INFO("%d, %d", mObjectHitCounts.at(0), mObjectHitCounts.at(1));
 
-		if (!seenObjects.at(detection.class_id)) {
+        if (!seenObjects.at(detection.class_id)) {
             seenObjects.at(detection.class_id) = true;
 
             //Get the object's position in 3D from the point cloud and run this statement if the optional has a value
@@ -266,7 +269,7 @@ namespace mrover {
 
                     //Since the object is seen we need to increment the hit counter
                     mObjectHitCounts.at(detection.class_id) = std::min(mObjMaxHitcount, mObjectHitCounts.at(detection.class_id) + mObjIncrementWeight);
-					ROS_INFO("PUSHED TO TF TEMP");
+                    ROS_INFO("PUSHED TO TF TEMP");
                     //Only publish to permament if we are confident in the object
                     if (mObjectHitCounts.at(detection.class_id) > mObjHitThreshold) {
 
