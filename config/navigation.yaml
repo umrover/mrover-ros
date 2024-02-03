@@ -54,3 +54,5 @@ long_range:
   time_threshold: 5
   increment_weight: 5
   decrement_weight: 1
+  min_hits: 3
+  max_hits: 10

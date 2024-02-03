@@ -30,6 +30,8 @@ TAG_EXPIRATION_TIME_SECONDS = 60
 TIME_THRESHOLD = get_rosparam("long_range/time_threshold", 5)
 INCREMENT_WEIGHT = get_rosparam("long_range/increment_weight", 5)
 DECREMENT_WEIGHT = get_rosparam("long_range/decrement_weight", 1)
+MIN_HITS = get_rosparam("long_range/min_hits", 3)
+MAX_HITS = get_rosparam("long_range/max_hits", 10)
 
 REF_LAT = rospy.get_param("gps_linearization/reference_point_latitude")
 REF_LON = rospy.get_param("gps_linearization/reference_point_longitude")
@@ -79,16 +81,17 @@ class Environment:
 
     def get_target_pos(self, id: str, in_odom_frame: bool = True) -> Optional[np.ndarray]:
         """
-        Retrieves the pose of the given fiducial ID from the TF tree in the odom frame
-        if in_odom_frame is True otherwise in the world frame
-        if it exists and is more recent than TAG_EXPIRATION_TIME_SECONDS, otherwise returns None
+        Retrieves the pose of the given target from the TF tree in the odom frame (if in_odom_frame is True otherwise in
+        the world frame) if it exists and is more recent than TAG_EXPIRATION_TIME_SECONDS, otherwise returns None
+        :param id: id of what we want from the TF tree. Could be for a fiducial, the hammer, or the water bottle
+        :param in_odom_frame: bool for if we are in the odom fram or world frame
+        :return: pose of the target or None
         """
         try:
             parent_frame = self.ctx.odom_frame if in_odom_frame else self.ctx.world_frame
-            target_pose, time = SE3.from_tf_time(self.ctx.tf_buffer, parent_frame=parent_frame, child_frame=f"{id}")
+            target_pose, time = SE3.from_tf_time(self.ctx.tf_buffer, parent_frame=parent_frame, child_frame=id)
             now = rospy.Time.now()
             if now.to_sec() - time.to_sec() >= TAG_EXPIRATION_TIME_SECONDS:
-                print(f"EXPIRED {id}!")
                 return None
         except (
             tf2_ros.LookupException,
@@ -117,7 +120,6 @@ class Environment:
         elif current_waypoint.type == WaypointType.WATER_BOTTLE:
             return self.get_target_pos("bottle", in_odom)
         else:
-            # print("CURRENT WAYPOINT IS NOT A POST OR OBJECT")
             return None
 
 
@@ -133,7 +135,7 @@ class LongRangeTagStore:
     min_hits: int
     max_hits: int
 
-    def __init__(self, ctx: Context, min_hits: int, max_hits: int = 10) -> None:
+    def __init__(self, ctx: Context, min_hits: int = MIN_HITS, max_hits: int = MAX_HITS) -> None:
         self.ctx = ctx
         self.__data = {}
         self.min_hits = min_hits
@@ -144,30 +146,24 @@ class LongRangeTagStore:
             tags_ids = [tag.id for tag in tags]
             if cur_tag.tag.id not in tags_ids:
                 cur_tag.hit_count -= DECREMENT_WEIGHT
-                # print(f"DEC {cur_tag.tag.id} to {cur_tag.hit_count}")
                 if cur_tag.hit_count <= 0:
                     del self.__data[cur_tag.tag.id]
-                    # print("DELETED from dict")
             else:
                 cur_tag.hit_count += INCREMENT_WEIGHT
                 cur_tag.time = rospy.get_time()
                 if cur_tag.hit_count > self.max_hits:
                     cur_tag.hit_count = self.max_hits
-                # print(f"INC {cur_tag.tag.id} to {cur_tag.hit_count}")
 
         for tag in tags:
             if tag.id not in self.__data:
-                # print(f"INC {tag.id} to {INCREMENT_WEIGHT}")
                 self.__data[tag.id] = self.TagData(hit_count=INCREMENT_WEIGHT, tag=tag, time=rospy.get_time())
 
     def get(self, tag_id: int) -> Optional[LongRangeTag]:
         if len(self.__data) == 0:
             return None
         if tag_id not in self.__data:
-            # print(f"{tag_id} not seen.")
             return None
         time_difference = rospy.get_time() - self.__data[tag_id].time
-        # print(f"HIT COUNT: {self.__data[tag_id].hit_count}")
         if (
             tag_id in self.__data
             and self.__data[tag_id].hit_count >= self.min_hits
@@ -312,8 +308,7 @@ class Context:
         self.stuck_listener = rospy.Subscriber("nav_stuck", Bool, self.stuck_callback)
         self.course = None
         self.rover = Rover(self, False, "")
-        # TODO update min_hits to be a param
-        self.env = Environment(self, long_range_tags=LongRangeTagStore(self, 3))
+        self.env = Environment(self, long_range_tags=LongRangeTagStore(self))
         self.disable_requested = False
         self.use_odom = rospy.get_param("use_odom_frame")
         self.world_frame = rospy.get_param("world_frame")
