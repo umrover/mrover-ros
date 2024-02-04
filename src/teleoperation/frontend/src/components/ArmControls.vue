@@ -62,7 +62,7 @@
     </div>
     <div class="controls-flex">
       <h4>Calibration</h4>
-      <CalibrationCheckbox name="All Joints Calibration" />
+      <CalibrationCheckbox name="All Joints Calibration" topic_name = "all_ra" />
       <MotorAdjust
         v-if="arm_mode == 'position'"
         :motors="[

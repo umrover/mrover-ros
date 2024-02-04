@@ -45,12 +45,19 @@ export default defineComponent({
   watch: {
     message(msg) {
       if (msg.type == 'calibrate_motors') {
-        if (msg.result.length > 0) {
-          this.toggleEnabled = false
-          for (var j = 0; j < msg.result.length; ++j) {
-            alert('ESW cannot calibrate motor ' + msg.result[j])
+        if(this.toggleEnabled){
+          if(Array.isArray(msg.result)&& msg.result.length >0){
+              this.toggleEnabled = false
+              for (var j = 0; j < msg.result.length; ++j) {
+                alert('ESW cannot calibrate motor ' + msg.result[j])
+              }
           }
-        } else this.calibrated = true
+          else if (typeof msg.result === "string"){
+            this.toggleEnabled = false
+            alert('ESW cannot calibrate motor ' + msg.result)
+          }
+        else this.calibrated = true
+      }
       }
     },
 

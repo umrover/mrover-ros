@@ -398,10 +398,10 @@ class GUIConsumer(JsonWebsocketConsumer):
                 }))
 
     def calibrate_motors(self,msg):
+        fail = [] #if any calibration fails, add joint name to a list to return
         if msg["topic"] == "all_ra":
             joints = ["joint_a","joint_b","joint_c","joint_de_pitch","joint_de_roll","allen_key","gripper"]
             for joint in joints:
-                fail = [] #if any calibration fails, add joint name to a list to return
                 self.calibrate_service = rospy.ServiceProxy("arm_calibrate_"+joint, Trigger)
                 try:
                     result = self.calibrate_service()

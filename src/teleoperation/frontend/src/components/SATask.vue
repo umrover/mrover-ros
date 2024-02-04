@@ -54,6 +54,7 @@
     </div>
     <div class="shadow p-3 rounded calibration">
       <h3>Calibrations</h3>
+      <br>
       <div class="calibration-checkboxes">
         <CalibrationCheckbox
           :name="'SA X Calibration'"

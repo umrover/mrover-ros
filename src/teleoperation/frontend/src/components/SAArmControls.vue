@@ -45,8 +45,6 @@
       <button class="btn btn-primary mx-auto my-2" @click="submit_positions">Submit</button>
     </div>
     <div class="controls-flex">
-      <h4>Calibration</h4>
-      <!-- <CalibrationCheckbox :name="'All Joints Calibration'" :motor_name="'all_sa'" /> -->
       <MotorAdjust
         v-if="arm_mode == 'position'"
         :options="[
