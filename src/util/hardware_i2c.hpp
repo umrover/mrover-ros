@@ -1,6 +1,5 @@
 #pragma once
 
-#include <any>
 #include <cstdint>
 #include <optional>
 

@@ -12,15 +12,11 @@ namespace mrover {
         mNh.getParam(std::format("brushless_motors/controllers/{}", mControllerName), brushlessMotorData);
         assert(brushlessMotorData.getType() == XmlRpc::XmlRpcValue::TypeStruct);
 
-        mMinVelocity = RadiansPerSecond{xmlRpcValueToTypeOrDefault<double>(
-                brushlessMotorData, "min_velocity", -1.0)};
-        mMaxVelocity = RadiansPerSecond{xmlRpcValueToTypeOrDefault<double>(
-                brushlessMotorData, "max_velocity", 1.0)};
+        mMinVelocity = RadiansPerSecond{xmlRpcValueToTypeOrDefault<double>(brushlessMotorData, "min_velocity", -1.0)};
+        mMaxVelocity = RadiansPerSecond{xmlRpcValueToTypeOrDefault<double>(brushlessMotorData, "max_velocity", 1.0)};
 
-        mMinPosition = Radians{xmlRpcValueToTypeOrDefault<double>(
-                brushlessMotorData, "min_position", -1.0)};
-        mMaxPosition = Radians{xmlRpcValueToTypeOrDefault<double>(
-                brushlessMotorData, "max_position", 1.0)};
+        mMinPosition = Radians{xmlRpcValueToTypeOrDefault<double>(brushlessMotorData, "min_position", -1.0)};
+        mMaxPosition = Radians{xmlRpcValueToTypeOrDefault<double>(brushlessMotorData, "max_position", 1.0)};
     }
 
     void BrushlessController::setDesiredThrottle(Percent throttle) {
@@ -76,14 +72,21 @@ namespace mrover {
         mDevice.publish_moteus_frame(setBrakeFrame);
     }
 
+    void BrushlessController::adjust() {
+        moteus::OutputExact::Command outputExactCmd{0.0};
+        moteus::CanFdFrame setPositionFrame = mController.MakeOutputExact(outputExactCmd);
+        mDevice.publish_moteus_frame(setPositionFrame);
+    }
+
     void BrushlessController::processCANMessage(CAN::ConstPtr const& msg) {
         assert(msg->source == mControllerName);
         assert(msg->destination == mName);
         auto result = moteus::Query::Parse(msg->data.data(), msg->data.size());
-        ROS_INFO("controller: %s    %3d p/v/t=(%7.3f,%7.3f,%7.3f)  v/t/f=(%5.1f,%5.1f,%3d)",
+        ROS_INFO("controller: %s    %3d p/a/v/t=(%7.3f,%7.3f,%7.3f,%7.3f)  v/t/f=(%5.1f,%5.1f,%3d)",
                  mControllerName.c_str(),
                  result.mode,
                  result.position,
+                 result.abs_position,
                  result.velocity,
                  result.torque,
                  result.voltage,

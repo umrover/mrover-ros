@@ -7,6 +7,10 @@
 
 namespace mrover {
 
+    struct Gains {
+        double p{}, i{}, d{}, ff{};
+    };
+
     class BrushedController : public Controller {
     public:
         void setDesiredThrottle(Percent throttle) override; // from -1.0 to 1.0
@@ -16,6 +20,8 @@ namespace mrover {
         void processCANMessage(CAN::ConstPtr const& msg) override;
 
         void processMessage(ControllerDataState const& state);
+
+        void processMessage(DebugState const&) {}
 
         void sendConfiguration();
 
@@ -29,6 +35,9 @@ namespace mrover {
 
         bool mIsConfigured = false;
         ConfigCommand mConfigCommand;
+
+        Gains mPositionGains;
+        Gains mVelocityGains;
     };
 
 } // namespace mrover

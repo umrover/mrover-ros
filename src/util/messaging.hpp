@@ -72,10 +72,6 @@ namespace mrover {
         Radians max_backward_pos;
     };
 
-    struct EnableLimitSwitchesCommand : BaseCommand {
-        bool enable;
-    };
-
     struct IdleCommand : BaseCommand {
     };
 
@@ -85,24 +81,33 @@ namespace mrover {
 
     struct VelocityCommand : BaseCommand {
         RadiansPerSecond velocity;
+        float p{}, i{}, d{}, ff{};
     };
 
     struct PositionCommand : BaseCommand {
         Radians position;
+        float p{}, i{}, d{};
     };
 
-    struct ControllerDataState : BaseCommand {
+    struct ControllerDataState {
         Radians position;
         RadiansPerSecond velocity;
         ConfigCalibErrorInfo config_calib_error_data;
         LimitStateInfo limit_switches;
     };
 
+    struct DebugState {
+        float f1{};
+        float f2{};
+        float f3{};
+        float f4{};
+    };
+
     using InBoundMessage = std::variant<
-            AdjustCommand, ConfigCommand, EnableLimitSwitchesCommand, IdleCommand, ThrottleCommand, VelocityCommand, PositionCommand>;
+            AdjustCommand, ConfigCommand, IdleCommand, ThrottleCommand, VelocityCommand, PositionCommand>;
 
     using OutBoundMessage = std::variant<
-            ControllerDataState>;
+            ControllerDataState, DebugState>;
 
     struct ArmLaserCommand : BaseCommand {
         bool enable;

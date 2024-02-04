@@ -1,5 +1,8 @@
 #pragma once
 
+#include <format>
+#include <memory>
+
 #include <XmlRpcValue.h>
 #include <ros/ros.h>
 
@@ -8,12 +11,15 @@
 #include "joint_de_translation.hpp"
 #include "matrix_helper.hpp"
 #include "read_from_ros_param.hpp"
+#include <mrover/AdjustMotor.h>
 #include <mrover/ControllerState.h>
 #include <mrover/Position.h>
 #include <mrover/Throttle.h>
 #include <mrover/Velocity.h>
 #include <sensor_msgs/JointState.h>
 #include <std_msgs/Float32.h>
+#include <std_srvs/Trigger.h>
+
 
 namespace mrover {
 
@@ -32,6 +38,10 @@ namespace mrover {
         void processPositionCmd(Position::ConstPtr const& msg);
 
         void processArmHWJointData(sensor_msgs::JointState::ConstPtr const& msg);
+
+        bool adjustServiceCallback(AdjustMotor::Request& req, AdjustMotor::Response& res);
+
+        bool calibrateServiceCallback(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
 
     private:
         void processThrottleCmd(Throttle::ConstPtr const& msg);
@@ -77,6 +87,16 @@ namespace mrover {
         ros::Subscriber mVelocitySub;
         ros::Subscriber mPositionSub;
         ros::Subscriber mArmHWJointDataSub;
+
+        // TODO:(owen) unique_ptr servers? unique_ptr clients? Both? Neither? The world may never know. (try to learn)
+        std::unordered_map<std::string, std::unique_ptr<ros::ServiceServer>> mAdjustServersByRawArmNames;
+        // std::unordered_map<std::string, std::unique_ptr<ros::ServiceServer> > mCalibrateServer;
+
+        std::unordered_map<std::string, ros::ServiceClient> mAdjustClientsByArmHWNames;
+        // std::unique_ptr<ros::ServiceClient> mCalibrateClient;
+
+        std::optional<float> mJointDEPitchAdjust;
+        std::optional<float> mJointDERollAdjust;
     };
 
 } // namespace mrover

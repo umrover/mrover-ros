@@ -19,6 +19,8 @@ namespace mrover {
 
         void update_temp();
 
+        void update_science_temp();
+
         float get_temp();
 
     private:

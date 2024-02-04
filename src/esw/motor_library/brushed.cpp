@@ -21,21 +21,15 @@ namespace mrover {
             mConfigCommand.limit_switch_info.limit_readj_pos.at(i) = Radians{static_cast<double>(brushedMotorData[std::format("limit_{}_readjust_position", i)])};
         }
 
-        mConfigCommand.quad_abs_enc_info.quad_present = xmlRpcValueToTypeOrDefault<bool>(
-                brushedMotorData, "quad_present", false);
-        mConfigCommand.quad_abs_enc_info.quad_is_forward_polarity = xmlRpcValueToTypeOrDefault<bool>(
-                brushedMotorData, "quad_is_fwd_polarity", false);
-        mConfigCommand.quad_abs_enc_info.abs_present = xmlRpcValueToTypeOrDefault<bool>(
-                brushedMotorData, "abs_present", false);
+        mConfigCommand.quad_abs_enc_info.quad_present = xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, "quad_present", false);
+        mConfigCommand.quad_abs_enc_info.quad_is_forward_polarity = xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, "quad_is_fwd_polarity", false);
+        mConfigCommand.quad_abs_enc_info.abs_present = xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, "abs_present", false);
 
-        mConfigCommand.quad_abs_enc_info.abs_is_forward_polarity = xmlRpcValueToTypeOrDefault<bool>(
-                brushedMotorData, "abs_is_fwd_polarity", false);
+        mConfigCommand.quad_abs_enc_info.abs_is_forward_polarity = xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, "abs_is_fwd_polarity", false);
 
-        mConfigCommand.quad_enc_out_ratio = xmlRpcValueToTypeOrDefault<double>(
-                brushedMotorData, "quad_ratio", 1.0);
+        mConfigCommand.quad_enc_out_ratio = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "quad_ratio", 1.0);
 
-        mConfigCommand.abs_enc_out_ratio = xmlRpcValueToTypeOrDefault<double>(
-                brushedMotorData, "abs_ratio", 1.0);
+        mConfigCommand.abs_enc_out_ratio = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "abs_ratio", 1.0);
 
         auto driver_voltage = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "driver_voltage");
         assert(driver_voltage > 0);
@@ -44,16 +38,28 @@ namespace mrover {
 
         mConfigCommand.max_pwm = motor_max_voltage / driver_voltage;
 
-        mConfigCommand.limit_switch_info.limit_max_forward_position = xmlRpcValueToTypeOrDefault<bool>(
-                brushedMotorData, "limit_max_forward_pos", false);
+        mConfigCommand.limit_switch_info.limit_max_forward_position = xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, "limit_max_forward_pos", false);
 
-        mConfigCommand.limit_switch_info.limit_max_backward_position = xmlRpcValueToTypeOrDefault<bool>(
-                brushedMotorData, "limit_max_backward_pos", false);
+        mConfigCommand.limit_switch_info.limit_max_backward_position = xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, "limit_max_backward_pos", false);
 
-        mConfigCommand.max_forward_pos = Radians{
-                xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "max_forward_pos", 0.0)};
-        mConfigCommand.max_backward_pos = Radians{
-                xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "max_backward_pos", 0.0)};
+        mConfigCommand.max_forward_pos = Radians{xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "max_forward_pos", 0.0)};
+        mConfigCommand.max_backward_pos = Radians{xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "max_backward_pos", 0.0)};
+
+        mMinVelocity = RadiansPerSecond{xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "min_velocity", -1.0)};
+        mMaxVelocity = RadiansPerSecond{xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "max_velocity", 1.0)};
+
+        mMinPosition = Radians{xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "min_position", -1.0)};
+        mMaxPosition = Radians{xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "max_position", 1.0)};
+
+        mPositionGains.p = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "position_p", 0.0);
+        mPositionGains.i = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "position_i", 0.0);
+        mPositionGains.d = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "position_d", 0.0);
+        mPositionGains.ff = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "position_ff", 0.0);
+
+        mVelocityGains.p = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "velocity_p", 0.0);
+        mVelocityGains.i = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "velocity_i", 0.0);
+        mVelocityGains.d = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "velocity_d", 0.0);
+        mVelocityGains.ff = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "velocity_ff", 0.0);
 
         mErrorState = "Unknown";
         mState = "Unknown";
@@ -80,7 +86,12 @@ namespace mrover {
 
         assert(position >= mMinPosition && position <= mMaxPosition);
 
-        mDevice.publish_message(InBoundMessage{PositionCommand{.position = position}});
+        mDevice.publish_message(InBoundMessage{PositionCommand{
+                .position = position,
+                .p = static_cast<float>(mPositionGains.p),
+                .i = static_cast<float>(mPositionGains.i),
+                .d = static_cast<float>(mPositionGains.d),
+        }});
     }
 
     void BrushedController::setDesiredVelocity(RadiansPerSecond velocity) {
@@ -92,7 +103,13 @@ namespace mrover {
 
         assert(velocity >= mMinVelocity && velocity <= mMaxVelocity);
 
-        mDevice.publish_message(InBoundMessage{VelocityCommand{.velocity = velocity}});
+        mDevice.publish_message(InBoundMessage{VelocityCommand{
+                .velocity = velocity,
+                .p = static_cast<float>(mVelocityGains.p),
+                .i = static_cast<float>(mVelocityGains.i),
+                .d = static_cast<float>(mVelocityGains.d),
+                .ff = static_cast<float>(mVelocityGains.ff),
+        }});
     }
 
     void BrushedController::sendConfiguration() {
@@ -119,6 +136,7 @@ namespace mrover {
             mState = "Not Armed";
         }
     }
+
 
     void BrushedController::processCANMessage(CAN::ConstPtr const& msg) {
         assert(msg->source == mControllerName);
