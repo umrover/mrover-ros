@@ -111,11 +111,11 @@ brushless_motors:
       min_velocity: -1.0
       max_velocity: 1.0
     joint_de_0:
-      min_velocity: -10.0
-      max_velocity: 10.0
+      min_velocity: -20.0
+      max_velocity: 20.0
     joint_de_1:
-      min_velocity: -10.0
-      max_velocity: 10.0
+      min_velocity: -20.0
+      max_velocity: 20.0
     sa_z:
       min_velocity: -1.0
       max_velocity: 1.0

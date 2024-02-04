@@ -21,7 +21,7 @@ int main(int argc, char** argv) {
     // - rosrun mrover can_driver_node _interface:=can0
     // - roslaunch brushless_test.launch
 
-    auto brushlessController = std::make_unique<mrover::BrushlessController>(nh, "jetson", "devboard");
+    auto brushlessController = std::make_unique<mrover::BrushlessController>(nh, "jetson", "joint_de_1");
 
     int count = 0;
     ros::Rate rate{100};
@@ -29,8 +29,8 @@ int main(int argc, char** argv) {
     while (ros::ok()) {
         // Throttle test
         //brushlessController->setDesiredThrottle(mrover::Percent{((float) count) / 500.0});
-        //brushlessController->setDesiredVelocity(mrover::RadiansPerSecond{10.0});
-        brushlessController->setDesiredPosition(mrover::Radians{positions.at(count / 400)});
+        brushlessController->setDesiredVelocity(mrover::RadiansPerSecond{5.0});
+        // brushlessController->setDesiredPosition(mrover::Radians{positions.at(count / 400)});
         count++;
         ros::spinOnce();
         rate.sleep();

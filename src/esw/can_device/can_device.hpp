@@ -63,6 +63,7 @@ namespace mrover {
             CAN can_message;
             can_message.source = mFromDevice;
             can_message.destination = mToDevice;
+
             can_message.reply_required = replyRequired;
             // This is needed since ROS is old and uses std::uint8_t instead of std::byte
             std::ranges::transform(data, std::back_inserter(can_message.data), [](std::byte b) { return static_cast<std::uint8_t>(b); });

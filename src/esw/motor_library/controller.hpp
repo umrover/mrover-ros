@@ -57,6 +57,7 @@ namespace mrover {
             auto duration = std::chrono::high_resolution_clock::now() - mLastConnection;
             if (duration < std::chrono::milliseconds(100)) {
                 setDesiredThrottle(0_percent);
+                ROS_INFO("TIMEOUT\n");
             }
         }
 

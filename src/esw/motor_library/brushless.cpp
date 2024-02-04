@@ -25,14 +25,6 @@ namespace mrover {
 
     void BrushlessController::setDesiredThrottle(Percent throttle) {
         updateLastConnection();
-
-        if (mControllerName == "joint_de_0")
-            ROS_INFO("Brushless Throttle Set.. Calling Velocity Set: %f", throttle.get());
-
-        RadiansPerSecond v = mapThrottleToVelocity(throttle);
-
-        if (mControllerName == "joint_de_0")
-            ROS_INFO("Brushless mapped throttle to velocity: %f", v.get());
         setDesiredVelocity(mapThrottleToVelocity(throttle));
     }
 
@@ -55,8 +47,7 @@ namespace mrover {
     void BrushlessController::setDesiredVelocity(RadiansPerSecond velocity) {
         updateLastConnection();
 
-        if (mControllerName == "joint_de_1")
-            ROS_INFO("Brushless Velocity Set Sending to Moteus: %f", velocity.get());
+
         RevolutionsPerSecond velocity_rev_s = std::clamp(velocity, mMinVelocity, mMaxVelocity);
         // ROS_WARN("%7.3f   %7.3f",
         //  velocity.get(), velocity_rev_s.get());
@@ -70,10 +61,10 @@ namespace mrover {
 
             moteus::CanFdFrame positionFrame = mController.MakePosition(command);
             mDevice.publish_moteus_frame(positionFrame);
-        }
 
-        if (mControllerName == "joint_de_1")
-            ROS_INFO("%s velocity set to %f", mControllerName.c_str(), velocity.get());
+            if (mControllerName == "joint_de_1")
+                ROS_INFO("Brushless Velocity Set Sending to Moteus: %f", command.velocity);
+        }
     }
 
     void BrushlessController::setStop() {
