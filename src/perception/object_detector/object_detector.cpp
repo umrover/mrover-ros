@@ -1,6 +1,7 @@
 #include "object_detector.hpp"
 #include "inference_wrapper.hpp"
 #include "pch.hpp"
+#include <loop_profiler.hpp>
 
 namespace mrover {
 
@@ -30,5 +31,7 @@ namespace mrover {
 
         //Initialize Object Hit Cout to Zeros
         mObjectHitCounts = {0, 0};
+
+        mEnableLoopProfiler = true;
     }
 } // namespace mrover

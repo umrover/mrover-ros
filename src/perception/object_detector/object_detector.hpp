@@ -2,6 +2,7 @@
 
 #include "inference_wrapper.hpp"
 #include "pch.hpp"
+#include <loop_profiler.hpp>
 #include <opencv2/core/mat.hpp>
 #include <ros/publisher.h>
 
@@ -16,6 +17,10 @@ namespace mrover {
     };
 
     class ObjectDetectorNodelet : public nodelet::Nodelet {
+
+        //Loop Profiler
+        LoopProfiler mLoopProfiler{"Object Detector", 1};
+        bool mEnableLoopProfiler;
 
         //Mat for the image from the point cloud
         cv::Mat mImg;
@@ -43,9 +48,6 @@ namespace mrover {
 
         // Internal state
         cv::dnn::Net mNet;
-
-        // Debug
-        LoopProfiler mProfiler{"Object Detector"};
 
         //TF Member Variables
         tf2_ros::Buffer mTfBuffer;

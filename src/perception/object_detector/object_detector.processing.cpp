@@ -11,10 +11,19 @@
 #include <random>
 #include <stdexcept>
 
-
 namespace mrover {
 
     void ObjectDetectorNodelet::imageCallback(sensor_msgs::PointCloud2ConstPtr const& msg) {
+
+        //
+        if (mEnableLoopProfiler) {
+            if (ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Debug)) {
+                ros::console::notifyLoggerLevelsChanged();
+            }
+            mLoopProfiler.beginLoop();
+            mLoopProfiler.measureEvent("Wait");
+        }
+
         //Does the msg exist with a height and width
         assert(msg);
         assert(msg->height > 0);
@@ -40,11 +49,19 @@ namespace mrover {
         //Create the blob from the resized image
         cv::dnn::blobFromImage(sizedImage, mImageBlob, 1.0 / 255.0, imgSize, cv::Scalar(), true, false);
 
+        if (mEnableLoopProfiler) {
+            mLoopProfiler.measureEvent("Convert Image");
+        }
+
         //Run the blob through the model
         mInferenceWrapper.doDetections(mImageBlob);
 
         //Retrieve the output from the model
         cv::Mat output = mInferenceWrapper.getOutputTensor();
+
+        if (mEnableLoopProfiler) {
+            mLoopProfiler.measureEvent("Execute on GPU");
+        }
 
         //Get model specific information
         int rows = output.rows;
@@ -144,6 +161,14 @@ namespace mrover {
             detections.push_back(result);
         }
 
+        if (mEnableLoopProfiler) {
+            mLoopProfiler.measureEvent("Extract Detections");
+        }
+
+        if (mEnableLoopProfiler) {
+            //mLoopProfiler.measureEvent("Push to TF START");
+        }
+
         std::vector<bool> seenObjects = {false, false};
         //If there are detections locate them in 3D
         for (Detection const& detection: detections) {
@@ -151,11 +176,19 @@ namespace mrover {
             //Increment Object hit counts if theyre seen
             updateHitsObject(msg, detection, seenObjects);
 
+            if (mEnableLoopProfiler) {
+                //mLoopProfiler.measureEvent("Push to TF 1");
+            }
+
             //Decrement Object hit counts if they're not seen
             for (size_t i = 0; i < seenObjects.size(); i++) {
                 if (!seenObjects.at(i)) {
                     mObjectHitCounts.at(i) = std::max(0, mObjectHitCounts.at(i) - mObjDecrementWeight);
                 }
+            }
+
+            if (mEnableLoopProfiler) {
+                //mLoopProfiler.measureEvent("Push to TF 2");
             }
 
             //Draw the detected object's bounding boxes on the image for each of the objects detected
@@ -174,10 +207,18 @@ namespace mrover {
             }
         }
 
+        if (mEnableLoopProfiler) {
+            mLoopProfiler.measureEvent("Push to TF FINAL");
+        }
+
         //We only want to publish the debug image if there is something lsitening, to reduce the operations going on
         if (mDebugImgPub.getNumSubscribers() > 0 || true) {
             //Publishes the image to the debug publisher
             publishImg(sizedImage);
+        }
+
+        if (mEnableLoopProfiler) {
+            mLoopProfiler.measureEvent("Publish Debug Img");
         }
     } // namespace mrover
 
