@@ -11,11 +11,11 @@ from geometry_msgs.msg import Twist
 from mrover.msg import MotorsStatus
 from nav_msgs.msg import Odometry
 from pandas import DataFrame
-from smach_msgs.msg import SmachContainerStatus
 from std_msgs.msg import Bool
 from util.ros_utils import get_rosparam
 from nav_msgs.msg import Odometry
 from util.SE3 import SE3
+import time
 
 
 class TipDetection:
@@ -26,7 +26,7 @@ class TipDetection:
     time_threshold: float
     hit_count_threshold: int
     reset_hit_count_threshold: int
-    time_counter: int
+    time_counter: time
 
     def __init__(self):
         rospy.Subscriber("imu/imu_only", Imu, self.imu_callback)
@@ -38,11 +38,10 @@ class TipDetection:
         self.time_threshold = 1
         self.hit_count_threshold = 5
         self.reset_hit_count_threshold = 10
-        self.time_counter = 0
+        self.time_counter = time.time()
 
         odometry_sub = message_filters.Subscriber("global_ekf/odometry", Odometry)
         odometry_sub.registerCallback(self.odometry_callback)
-        #print("init done")
 
 
     def imu_callback(self, msg: Imu):
@@ -62,8 +61,8 @@ class TipDetection:
         self.perform_robotic_tasks(self.time_threshold)
         self.second_check(odometry)
         self.check_for_hit_count(self.hit_count)
-        self.reset_hit_count_time(self.time_threshold)
-        self.time_counter += 1
+        self.reset_hit_count_time(self.reset_hit_count_threshold, self.time_counter)
+
 
 
     # checking the rover's velocity
@@ -120,18 +119,18 @@ class TipDetection:
         # not sure why we're checking for 0, need clarification ^^ -audrey
         if linear_acceleration_x == 0 and elapsed_seconds > self.time_threshold:
             if self.w >= self.orientation_threshold:
-                hit_count += 1
+                self.hit_count += 1
             elif self.x >= self.orientation_threshold:
-                hit_count += 1
+                self.hit_count += 1
             elif self.y >= self.orientation_threshold:
-                hit_count += 1
+                self.hit_count += 1
         elif linear_acceleration_y == 0 and elapsed_seconds > self.time_threshold:
             if self.w >= self.orientation_threshold:
-                hit_count += 1
+                self.hit_count += 1
             elif self.x >= self.orientation_threshold:
-                hit_count += 1
+                self.hit_count += 1
             elif self.y >= self.orientation_threshold:
-                hit_count += 1
+                self.hit_count += 1
 
 
     # seeing if hit_count is too big
@@ -144,12 +143,12 @@ class TipDetection:
             rospy.loginfo(hit_count)
 
 
-    def reset_hit_count_time(self, reset_hit_count_threshold):
-        if self.time_counter > self.reset_hit_count_threshold:
+    def reset_hit_count_time(self, reset_hit_count_threshold, time_counter):
+        rospy.loginfo(self.time_counter)
+        if time.time() - self.time_counter > self.reset_hit_count_threshold:
             rospy.loginfo("resetting hit count...")
-            rospy.sleep(reset_hit_count_threshold)  # Simulate a x second delay
             self.hit_count = 0
-            self.time_counter = 0
+            self.time_counter = time.time()
 
 
 
@@ -159,7 +158,6 @@ def main():
     TipDetection()
 
     rospy.spin() # taken from failure identification but idk what it does exactly
-
 
 
 
