@@ -20,14 +20,14 @@ if __name__ == '__main__':
 
     plot = win.addPlot()
     curve1 = plot.plot(pen='b')
-    curve2 = plot.plot(pen='g')
+    # curve2 = plot.plot(pen='g')
     # curve3 = plot.plot(pen='r')
 
     plot.enableAutoRange('xy', True)
-    plot.setYRange(-5, 5)
+    plot.setYRange(0, 1 << 14)
 
-    xs = np.zeros(1000)
-    ys = np.zeros((1000, 4))
+    xs = np.zeros(40)
+    ys = np.zeros((40, 4))
 
     with can.interface.Bus(channel='vcan0', interface='socketcan', fd=True) as bus:
         def update():
@@ -46,7 +46,7 @@ if __name__ == '__main__':
                 ys[-1] = np.array(struct.unpack('ffff', message.data[0:16]))
 
                 curve1.setData(xs, ys[:, 0])
-                curve2.setData(xs, ys[:, 1])
+                # curve2.setData(xs, ys[:, 1])
                 # curve3.setData(xs, ys[:, 2])
 
 

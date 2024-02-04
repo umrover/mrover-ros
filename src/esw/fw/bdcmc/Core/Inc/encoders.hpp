@@ -18,7 +18,7 @@ namespace mrover {
     using CountsPerRad = compound_unit<Ticks, inverse<Radians>>;
 
     constexpr auto RELATIVE_CPR = CountsPerRad{3355 / tau}; // Measured empirically
-    constexpr auto ABSOLUTE_CPR = CountsPerRad{1024 / tau};
+    constexpr auto ABSOLUTE_CPR = CountsPerRad{(1 << 14) / tau};
     constexpr auto MIN_MEASURABLE_VELOCITY = RadiansPerSecond{0.05}; // Very thoroughly obtained number - Quintin Approves
     auto const CLOCK_FREQ = Hertz{HAL_RCC_GetHCLKFreq()};
 
@@ -29,9 +29,11 @@ namespace mrover {
 
     class AbsoluteEncoderReader {
     public:
+        using AS5048B_Bus = SMBus<std::uint8_t, std::array<std::uint8_t, 2>>;
+
         AbsoluteEncoderReader() = default;
 
-        AbsoluteEncoderReader(SMBus<uint8_t, uint16_t> i2c_bus, std::uint8_t A1, std::uint8_t A2, Ratio multiplier, TIM_HandleTypeDef* elapsed_timer);
+        AbsoluteEncoderReader(AS5048B_Bus i2c_bus, std::uint8_t A1, std::uint8_t A2, Ratio multiplier, TIM_HandleTypeDef* elapsed_timer);
 
         auto request_raw_angle() -> void;
         auto read_raw_angle_into_buffer() -> void;
@@ -51,7 +53,7 @@ namespace mrover {
         TIM_HandleTypeDef* m_elapsed_timer{};
 
         std::uint16_t m_address{};
-        SMBus<uint8_t, uint16_t> m_i2cBus;
+        AS5048B_Bus m_i2cBus;
 
         std::uint64_t m_previous_raw_data{};
 
@@ -59,7 +61,7 @@ namespace mrover {
 
         Radians m_position;
         Radians m_position_prev;
-        RadiansPerSecond m_velocity;
+        RunningMeanFilter<RadiansPerSecond, 16> m_velocity_filter;
     };
 
     class QuadratureEncoderReader {

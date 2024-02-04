@@ -78,13 +78,9 @@ namespace mrover {
          * \brief Updates \link m_uncalib_position \endlink and \link m_velocity \endlink based on the hardware
          */
         auto update_relative_encoder() -> void {
-            std::optional<EncoderReading> reading;
+            if (!m_relative_encoder) return;
 
-            if (m_relative_encoder) {
-                reading = m_relative_encoder->read();
-            }
-
-            if (reading) {
+            if (std::optional<EncoderReading> reading = m_relative_encoder->read()) {
                 auto const& [position, velocity] = reading.value();
                 m_uncalib_position = position;
                 m_velocity = velocity;
@@ -147,7 +143,7 @@ namespace mrover {
             }
             if (message.quad_abs_enc_info.abs_present) {
                 Ratio multiplier = (message.quad_abs_enc_info.abs_is_forward_polarity ? 1 : -1) * message.abs_enc_out_ratio;
-                if (!m_absolute_encoder) m_absolute_encoder.emplace(SMBus<uint8_t, uint16_t>{m_absolute_encoder_i2c}, 0, 0, multiplier, m_encoder_elapsed_timer);
+                if (!m_absolute_encoder) m_absolute_encoder.emplace(AbsoluteEncoderReader::AS5048B_Bus{m_absolute_encoder_i2c}, 0, 0, multiplier, m_encoder_elapsed_timer);
             }
 
             m_motor_driver.change_max_pwm(message.max_pwm);
@@ -256,7 +252,8 @@ namespace mrover {
             struct command_to_mode;
 
             template<typename Command, typename ModeHead, typename... Modes>
-            struct command_to_mode<Command, std::variant<ModeHead, Modes...>> { // Linear search to find corresponding mode
+            struct command_to_mode<Command, std::variant<ModeHead, Modes...>> {
+                // Linear search to find corresponding mode
                 using type = std::conditional_t<requires(Controller controller, Command command, ModeHead mode) { controller.process_command(command, mode); },
                                                 ModeHead,
                                                 typename command_to_mode<Command, std::variant<Modes...>>::type>; // Recursive call
@@ -432,19 +429,18 @@ namespace mrover {
         }
 
         auto update_absolute_encoder() -> void {
-            std::optional<EncoderReading> reading;
+            if (!m_absolute_encoder) return;
 
-            // Only read the encoder if we are configured
-            if (m_absolute_encoder) {
-                reading = m_absolute_encoder->read();
-            }
-
-            if (reading) {
+            if (std::optional<EncoderReading> reading = m_absolute_encoder->read()) {
                 auto const& [position, velocity] = reading.value();
                 if (!m_state_after_calib) m_state_after_calib.emplace();
 
                 // TODO(quintin): This is pretty stupid
                 m_state_after_calib->offset_position = -position;
+
+                m_fdcan.broadcast(OutBoundMessage{DebugState{
+                        .f1 = position.get(),
+                }});
 
                 m_uncalib_position.emplace(); // Reset to zero
                 m_velocity = velocity;

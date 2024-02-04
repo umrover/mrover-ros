@@ -33,7 +33,7 @@ extern TIM_HandleTypeDef htim17;
 #define QUADRATURE_TICK_TIMER_1 &htim3 // Special encoder timer which externally reads quadrature encoder ticks
 // #define QUADRATURE_TIMER_2 &htim4
 #define QUADRATURE_ELAPSED_TIMER_1 &htim17 // Measures time since the lsat quadrature tick reading
-// #define ABSOLUTE_ENCODER_TIMER &htim2
+#define ABSOLUTE_ENCODER_TIMER &htim2
 // #define UPDATE_TIMER &htim6
 #define SEND_TIMER &htim7            // 100 Hz FDCAN repeating timer
 #define PWM_TIMER_1 &htim15          // H-Bridge PWM
@@ -45,7 +45,7 @@ namespace mrover {
     constexpr static std::uint8_t DEVICE_ID = 0x21; // currently set for joint_b
 
     // Usually this is the Jetson
-    constexpr static std::uint8_t DESTINATION_DEVICE_ID = 0x0;
+    constexpr static std::uint8_t DESTINATION_DEVICE_ID = 0x10;
 
     FDCAN<InBoundMessage> fdcan_bus;
     Controller controller;
@@ -73,7 +73,7 @@ namespace mrover {
         // Necessary for the timer interrupt to work
         // check(HAL_TIM_Base_Start_IT(UPDATE_TIMER) == HAL_OK, Error_Handler);
         check(HAL_TIM_Base_Start_IT(SEND_TIMER) == HAL_OK, Error_Handler);
-        // check(HAL_TIM_Base_Start_IT(ABSOLUTE_ENCODER_TIMER) == HAL_OK, Error_Handler);
+        check(HAL_TIM_Base_Start_IT(ABSOLUTE_ENCODER_TIMER) == HAL_OK, Error_Handler);
     }
 
     auto fdcan_received_callback() -> void {
@@ -152,6 +152,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim) {
         mrover::fdcan_watchdog_expired();
     } else if (htim == QUADRATURE_ELAPSED_TIMER_1) {
         mrover::quadrature_elapsed_timer_expired();
+    } else if (htim == ABSOLUTE_ENCODER_TIMER) {
+        mrover::request_absolute_encoder_data_callback();
     }
     // TODO: check for slow update timer and call on controller to send out i2c frame
 }
