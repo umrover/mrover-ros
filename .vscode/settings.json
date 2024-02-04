@@ -45,5 +45,9 @@
         "**/bower_components": true,
         "**/*.code-search": true,
         "deps/dawn": true,
-    }
+    },
+    "python.autoComplete.extraPaths": [
+        "/home/eric/catkin_ws/devel/lib/python3/dist-packages",
+        "/opt/ros/noetic/lib/python3/dist-packages"
+    ]
 }

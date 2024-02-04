@@ -42,10 +42,12 @@ export default defineComponent({
 
   watch: {
     message(msg) {
-      if (msg.type == 'enable_device_srv') {
-        if (!msg.result) {
+      if (msg.type == 'enable_limit_switch') {
+        if (msg.result.length > 0) {
           this.limit_enabled = false
-          alert('Toggling Limit Switch failed.')
+          for (var j = 0; j < msg.result.length; ++j) {
+            alert('Toggling Limit Switch failed for' + msg.result[j])
+          }
         }
       }
     }
@@ -56,7 +58,7 @@ export default defineComponent({
     toggleLimitSwitch: function () {
       this.limit_enabled = !this.limit_enabled
       this.sendMessage({
-        type: 'enable_device_srv',
+        type: 'enable_limit_switch',
         name: this.switch_name,
         enable: this.limit_enabled
       })

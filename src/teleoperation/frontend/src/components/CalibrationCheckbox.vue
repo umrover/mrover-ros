@@ -1,6 +1,6 @@
 <template>
   <div class="calibration-wrapper">
-    <Checkbox :name="name" @toggle="toggleCalibration"> </Checkbox>
+    <Checkbox :name="name" @toggle="toggleCalibration"/>
     <span class="led">
       <LEDIndicator :connected="calibrated" :name="name" :show_name="false" />
     </span>
@@ -24,23 +24,16 @@ export default defineComponent({
       type: String,
       required: true
     },
-    joint_name: {
+    topic_name: {
       type: String,
       required: true
     },
-    calibrate_topic: {
-      type: String,
-      required: true
-    }
   },
 
   data() {
     return {
-      socket: null,
       toggleEnabled: false,
       calibrated: false,
-      calibrate_service: null,
-      calibrate_sub: null,
       interval: 0 as number
     }
   },
@@ -51,18 +44,20 @@ export default defineComponent({
 
   watch: {
     message(msg) {
-      if (msg.type == 'calibration_status') {
-        for (var i = 0; i < msg.names.length; ++i) {
-          if (msg.names[i] == this.joint_name) {
-            this.calibrated = msg.calibrated[i]
-            break
+      if (msg.type == 'calibrate_motors') {
+        if(this.toggleEnabled){
+          if(Array.isArray(msg.result)&& msg.result.length >0){
+              this.toggleEnabled = false
+              for (var j = 0; j < msg.result.length; ++j) {
+                alert('ESW cannot calibrate motor ' + msg.result[j])
+              }
           }
-        }
-      } else if (msg.type == 'calibrate_service') {
-        if (!msg.result) {
-          this.toggleEnabled = false
-          alert('ESW cannot calibrate this motor')
-        }
+          else if (typeof msg.result === "string"){
+            this.toggleEnabled = false
+            alert('ESW cannot calibrate motor ' + msg.result)
+          }
+        else this.calibrated = true
+      }
       }
     },
 
@@ -94,7 +89,7 @@ export default defineComponent({
       this.toggleEnabled = !this.toggleEnabled
     },
     publishCalibrationMessage: function () {
-      this.sendMessage({ type: 'calibrate_service', data: this.toggleEnabled })
+      this.sendMessage({ type: 'calibrate_motors', topic: this.topic_name })
     }
   }
 })
