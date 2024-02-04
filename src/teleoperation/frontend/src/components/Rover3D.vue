@@ -7,15 +7,28 @@
   
   <script lang="ts">
   import { defineComponent } from 'vue'
+  import { mapState } from 'vuex'
   import { threeSetup } from '../rover_three.js';
   
   export default defineComponent({
     data() {
-      return {}
+      return {
+        threeScene: null
+      }
     },
  
     mounted() {
-        threeSetup("threejs");
+        this.threeScene = threeSetup("threejs");
+    },
+
+    computed: {
+      ...mapState('websocket', ['message']),
+    },
+
+    watch: {
+        message(msg) {
+           this.threeScene.updateJointAngles(msg.positions);
+        }
     }
   })
   </script>

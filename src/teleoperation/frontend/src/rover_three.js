@@ -47,30 +47,41 @@ export function threeSetup(containerId) {
 
     } );
 
-
-
-    // const geometry = new THREE.BoxGeometry(1, 1, 1);
-    // const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-    // const cube = new THREE.Mesh(geometry, material);
-    // scene.add(cube);
-
     camera.position.z = 1.5;
   
     function animate() {
       requestAnimationFrame(animate);
       controls.update();
-    //   cube.rotation.x += 0.01;
-    //   cube.rotation.y += 0.01;
       renderer.render(scene, camera);
     }
   
     animate();
 
-    // function onWindowResize() {
-    //     camera.aspect = container.clientWidth / container.clientHeight; // Update the camera's aspect ratio
-    //     camera.updateProjectionMatrix(); // Update the camera's projection matrix
-    //     renderer.setSize(container.clientWidth, container.clientHeight); // Resizer the renderer to the container's size
-    // }
-    // window.addEventListener('resize', onWindowResize, false);
+    function fk(positions) {
+      const LINK_AB = 22.8544;
+      const LINK_BC = 19.5129;
+      const LINK_CD = 5.59352;
+      let p1 = {
+        x: 0,
+        y: 0
+      }
+      let p2 = {
+        x: p1.x + Math.cos(positions[0]),
+        y: p1.y + Math.sin(positions[0])
+      }
+      let p3 = {
+        x: p2.x + Math.cos(positions[0]+positions[1]),
+        y: p2.y + Math.sin(positions[0]+positions[1])
+      }
+    }
+
+    function updateJointAngles(newJointAngles) {
+      //...code to update the scene based on the newJointAngles parameter...
+    }
+
+    // Return an object with the updateJointAngles() function
+    return {
+        updateJointAngles
+    }
   };
   
