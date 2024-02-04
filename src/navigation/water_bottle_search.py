@@ -224,9 +224,11 @@ class WaterBottleSearchState(State):
     def on_loop(self, context) -> State:
         # continue executing the path from wherever it left off
         target_pos = self.traj.get_cur_pt()
+        traj_target = True
         # if there is an alternate path we need to take to avoid the obstacle, use that trajectory
         if len(self.star_traj.coordinates) != 0:
             target_pos = self.star_traj.get_cur_pt() 
+            traj_target = False
         cmd_vel, arrived = context.rover.driver.get_drive_command(
             target_pos,
             context.rover.get_pose(),
@@ -236,12 +238,17 @@ class WaterBottleSearchState(State):
         )
         if arrived:
             self.prev_target = target_pos
-            # if we finish the astar path, then reset astar and increment the spiral
-            if self.star_traj.increment_point():
-                self.star_traj = Trajectory(np.array([]))
-                # if we finish the spiral without seeing the fiducial, move on with course
+            # if our target was the search spiral point, only increment the spiral path
+            if traj_target:
+                # if we finish the spiral without seeing the object, move on with course
                 if self.traj.increment_point():
                     return waypoint.WaypointState()
+            else: # otherwise, increment the astar path
+                # if we finish the astar path, then reset astar and increment the spiral path
+                if self.star_traj.increment_point():
+                    self.star_traj = Trajectory(np.array([]))
+                    if self.traj.increment_point():
+                        return waypoint.WaypointState()
         if context.rover.stuck:
             context.rover.previous_state = self
             self.is_recovering = True
