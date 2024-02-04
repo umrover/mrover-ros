@@ -13,8 +13,8 @@
       <div>
         <h3>Chlorophyll Spectral data</h3>
       </div>
-      <table class="tableFormat" style="undefined;table-layout: fixed; width: 434px">
-        <colgroup>
+      <table class="table table-bordered">
+        <!-- <colgroup>
           <col style="width: 100px" />
           <col style="width: 63px" />
           <col style="width: 63px" />
@@ -23,26 +23,29 @@
           <col style="width: 63px" />
           <col style="width: 63px" />
           <col style="width: 63px" />
-        </colgroup>
+        </colgroup> -->
         <thead>
-          <tr>
-            <th class="tableElement">Wavelength</th>
-            <th class="tableElement">610nm</th>
-            <th class="tableElement">680nm</th>
-            <th class="tableElement">730nm</th>
-            <th class="tableElement">760nm</th>
-            <th class="tableElement">810nm</th>
-            <th class="tableElement">860nm</th>
+          <tr class="table-primary">
+            <th>Wavelength</th>
+            <th>610nm</th>
+            <th>680nm</th>
+            <th>730nm</th>
+            <th>760nm</th>
+            <th>810nm</th>
+            <th>860nm</th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="i in 3" :key="i">
-            <div v-if="spectral_data.length > 0 && !error[i - 1]">
-              <td class="tableElement">Site {{ String.fromCharCode(64 + i) }}</td>
-              <td v-for="j in 6" :key="j" class="tableElement">
-                {{ spectral_data[i - 1][j - 1].toFixed(2) }}
-              </td>
-            </div>
+            <td>
+              Site {{ String.fromCharCode(64 + i) }}
+            </td>
+            <td v-if="spectral_data.length > 0 && !error[i - 1]" v-for="j in 6" :key="j">
+              {{ spectral_data[i - 1][j - 1].toFixed(2) }}
+            </td>
+            <td v-else v-for="k in 6" :key="k">
+              -
+            </td>
           </tr>
         </tbody>
       </table>
@@ -129,11 +132,11 @@ export default {
 </script>
 
 <style scoped>
-.box1 {
+/*.box1 {
   text-align: left;
   vertical-align: top;
   display: inline-block;
-}
+}*/
 
 .wrap-table {
   display: inline-block;
@@ -142,7 +145,15 @@ export default {
   padding-bottom: 5px;
 }
 
-.report {
+.site {
+  width: 100px;
+}
+
+.spectral-data {
+  width: 63px;
+}
+
+/*.report {
   height: 5vh;
   align-items: center;
   padding-top: 3vh;
@@ -178,5 +189,5 @@ export default {
   border-color: inherit;
   text-align: center;
   vertical-align: top;
-}
+}*/
 </style>
