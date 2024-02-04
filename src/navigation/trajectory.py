@@ -20,6 +20,3 @@ class Trajectory:
         """
         self.cur_pt += 1
         return self.cur_pt >= len(self.coordinates)
-    
-    def reset_cur_pt(self) -> None:
-        self.cur_pt = 0
