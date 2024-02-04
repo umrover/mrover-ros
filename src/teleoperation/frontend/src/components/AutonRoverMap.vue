@@ -18,9 +18,9 @@
         </l-tooltip>
       </l-marker>
 
-        <!-- Polylines -->
-        <l-polyline :lat-lngs="polylinePath" :color="'red'" :dash-array="'5, 5'" />
-        <l-polyline :lat-lngs="odomPath" :color="'blue'" :dash-array="'5, 5'" />
+      <!-- Polylines -->
+      <l-polyline :lat-lngs="polylinePath" :color="'red'" :dash-array="'5, 5'" />
+      <l-polyline :lat-lngs="odomPath" :color="'blue'" :dash-array="'5, 5'" />
     </l-map>
     <!-- Controls that go directly under the map -->
     <div class="controls">
@@ -115,13 +115,6 @@ export default {
     }
   },
   watch: {
-    message(msg) {
-      if (msg.type == "center_map") {
-        this.center = L.latLng(msg.lat, msg.long)
-        console.log(msg.lat, msg.long)
-      }
-    },
-
     odom: {
       handler: function (val) {
         // Trigger every time rover odom is changed
@@ -171,9 +164,6 @@ export default {
       iconAnchor: [32, 64],
       popupAnchor: [0, -32]
     })
-    window.setTimeout(() => {
-      this.sendMessage({ "type": "center_map" });
-    }, 250)
   },
 
   methods: {
@@ -228,9 +218,7 @@ export default {
     'controls';
 }
 
-<<<<<<< HEAD .custom-tooltip {
-  =======
-  /* .custom-tooltip {
+/* .custom-tooltip {
 >>>>>>> 467f453fc814fb83532e90412d432c5622b2afcf
   display: inline-block;
   margin: 10px 20px;
@@ -246,15 +234,15 @@ export default {
   border-top-color: #0088cc;
 } */
 
-  /* Grid area declarations */
-  .map {
-    height: 100%;
-    width: 100%;
-    grid-area: map;
-  }
+/* Grid area declarations */
+.map {
+  height: 100%;
+  width: 100%;
+  grid-area: map;
+}
 
-  .controls {
-    grid-area: controls;
-    display: inline;
-  }
+.controls {
+  grid-area: controls;
+  display: inline;
+}
 </style>
