@@ -15,6 +15,7 @@
         <MenuButton link="/AutonTask" name="Autonomy Mission" />
         <MenuButton link="/Control" name="Temp Controls GUI" />
         <MenuButton link="/ROSDebug" name="ROS Debug Tools" />
+        <MenuButton link="/TopicChart" name="Topic Chart" />
       </fieldset>
     </div>
   </div>

@@ -4,6 +4,7 @@ import DMESTask from '../components/DMESTask.vue'
 import AutonTask from '../components/AutonTask.vue'
 import ISHTask from '../components/ISHTask.vue'
 import SATask from '../components/SATask.vue'
+import TopicChart from '../components/TopicChart.vue'
 
 const routes = [
   {
@@ -41,6 +42,11 @@ const routes = [
     path: '/ISHTask',
     name: 'ISHTask',
     component: ISHTask
+  },
+  {
+    path: '/TopicChart',
+    name: 'TopicChart',
+    component: TopicChart
   }
 ]
 const router = createRouter({
