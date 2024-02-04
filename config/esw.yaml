@@ -156,7 +156,7 @@ brushed_motors:
     #   quad_ratio: 1.0  # encoder ratio compared to motor
     #   abs_ratio: 1.0  # encoder ratio compared to motor
     #   abs_encoder_offset: 0.0 # 0 for joint position corresponds to this radians reading by absolute encoder
-    #   driver_voltage: 24.0  # used to calculate max pwm
+    #   driver_voltage: 12.0  # used to calculate max pwm
     #   motor_max_voltage: 12.0  # used to calculate max pwm
     #   limit_max_forward_pos: false
     #   limit_max_backward_pos: false
@@ -174,7 +174,7 @@ brushed_motors:
       limit_0_readjust_position: 0.0 # radians
       abs_ratio: 1.0 # encoder ratio compared to motor
       abs_encoder_offset: 0.0 # 0 for joint position corresponds to this radians reading by absolute encoder
-      driver_voltage: 24.0 # used to calculate max pwm
+      driver_voltage: 12.0 # used to calculate max pwm
       motor_max_voltage: 12.0 # used to calculate max pwm
       limit_max_forward_pos: true
       max_forward_pos: 1.0
@@ -195,7 +195,7 @@ brushed_motors:
       limit_0_readjust_position: 0.0 # radians
       limit_1_readjust_position: 0.0 # radians
       quad_ratio: 1.0 # encoder ratio compared to motor
-      driver_voltage: 24.0 # used to calculate max pwm
+      driver_voltage: 12.0 # used to calculate max pwm
       motor_max_voltage: 12.0 # used to calculate max pwm
     gripper:
       gear_ratio: 47.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
@@ -204,7 +204,7 @@ brushed_motors:
       abs_present: false
       abs_is_fwd_polarity: true
       quad_ratio: 1.0 # encoder ratio compared to motor
-      driver_voltage: 24.0 # used to calculate max pwm
+      driver_voltage: 12.0 # used to calculate max pwm
       motor_max_voltage: 12.0 # used to calculate max pwm
     mast_gimbal_x:
       gear_ratio: 1000.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
@@ -223,11 +223,11 @@ brushed_motors:
       limit_0_readjust_position: 0.0 # radians
       limit_1_readjust_position: 6.28 # radians
       quad_ratio: 1.0 # encoder ratio compared to motor
-      driver_voltage: 24.0 # used to calculate max pwm
+      driver_voltage: 12.0 # used to calculate max pwm
       motor_max_voltage: 12.0 # used to calculate max pwm
     mast_gimbal_y:
       gear_ratio: 1000.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
-      driver_voltage: 24.0 # used to calculate max pwm
+      driver_voltage: 12.0 # used to calculate max pwm
       motor_max_voltage: 12.0 # used to calculate max pwm
     sa_x:
       gear_ratio: 75.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
@@ -251,7 +251,7 @@ brushed_motors:
       limit_0_readjust_position: 0.0 # radians
       limit_1_readjust_position: 0.0 # radians
       quad_ratio: 48.0 # encoder ratio compared to motor
-      driver_voltage: 24.0 # used to calculate max pwm
+      driver_voltage: 12.0 # used to calculate max pwm
       motor_max_voltage: 6.0 # used to calculate max pwm
     sa_y:
       gear_ratio: 75.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
@@ -270,7 +270,7 @@ brushed_motors:
       limit_0_readjust_position: 0.0 # radians
       limit_1_readjust_position: 0.0 # radians
       quad_ratio: 48.0 # encoder ratio compared to motor
-      driver_voltage: 24.0 # used to calculate max pwm
+      driver_voltage: 12.0 # used to calculate max pwm
       motor_max_voltage: 6.0 # used to calculate max pwm
     scoop:
       gear_ratio: 75.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
@@ -289,7 +289,7 @@ brushed_motors:
       limit_0_readjust_position: 0.0 # radians
       limit_1_readjust_position: 0.0 # radians
       quad_ratio: 48.0 # encoder ratio compared to motor
-      driver_voltage: 24.0 # used to calculate max pwm
+      driver_voltage: 12.0 # used to calculate max pwm
       motor_max_voltage: 6.0 # used to calculate max pwm
     sensor_actuator:
       gear_ratio: 1.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
@@ -305,7 +305,7 @@ brushed_motors:
       limit_1_used_for_readjustment: true
       limit_0_readjust_position: 0.0 # radians
       limit_1_readjust_position: 0.0 # radians
-      driver_voltage: 24.0 # used to calculate max pwm
+      driver_voltage: 12.0 # used to calculate max pwm
       motor_max_voltage: 6.0 # used to calculate max pwm
     cache:
       gear_ratio: 1.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
@@ -321,7 +321,7 @@ brushed_motors:
       limit_1_used_for_readjustment: true
       limit_0_readjust_position: 0.0 # radians
       limit_1_readjust_position: 0.0 # radians
-      driver_voltage: 24.0 # used to calculate max pwm
+      driver_voltage: 12.0 # used to calculate max pwm
       motor_max_voltage: 6.0 # used to calculate max pwm
 cameras:
   camera_type_info:
