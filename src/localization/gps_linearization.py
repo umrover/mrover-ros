@@ -12,6 +12,7 @@ from util.SE3 import SE3
 from util.SO3 import SO3
 from util.np_utils import numpify
 import message_filters
+from rtkStatus.msg import rtkStatus
 
 
 class GPSLinearization:
@@ -25,6 +26,9 @@ class GPSLinearization:
     last_imu_msg: Optional[ImuAndMag]
     pose_publisher: rospy.Publisher
 
+    # last offset
+    last_pose_offset: Optional[np.ndarray]
+
     # reference coordinates
     ref_lat: float
     ref_lon: float
@@ -35,6 +39,9 @@ class GPSLinearization:
     # covariance config
     use_dop_covariance: bool
     config_gps_covariance: np.ndarray
+
+    
+    
 
     def __init__(self):
         # read required parameters, if they don't exist an error will be thrown
@@ -50,17 +57,20 @@ class GPSLinearization:
 
         self.last_gps_msg = None
         self.last_imu_msg = None
+        self.last_pose_offset = None
 
         right_gps_sub = message_filters.Subscriber("right_gps_driver/fix", NavSatFix)
         left_gps_sub = message_filters.Subscriber("left_gps_driver/fix", NavSatFix)
+        left_rtk_fix_sub = message_filters.Subscriber("left_gps_driver/rtk_fix_status", rtkStatus)
+        right_rtk_fix_sub = message_filters.Subscrier("right_gps_driver/rtk_fix_status", rtkStatus)
 
-        sync_gps_sub = message_filters.ApproximateTimeSynchronizer([right_gps_sub, left_gps_sub], 10, 0.5)
+        sync_gps_sub = message_filters.ApproximateTimeSynchronizer([right_gps_sub, left_gps_sub, left_rtk_fix_sub, right_rtk_fix_sub], 10, 0.5)
         sync_gps_sub.registerCallback(self.gps_callback)
-
+        
         rospy.Subscriber("imu/data", ImuAndMag, self.imu_callback)
         self.pose_publisher = rospy.Publisher("linearized_pose", PoseWithCovarianceStamped, queue_size=1)
 
-    def gps_callback(self, right_gps_msg: NavSatFix, left_gps_msg: NavSatFix):
+    def gps_callback(self, right_gps_msg: NavSatFix, left_gps_msg: NavSatFix, left_rtk_fix: rtkStatus, right_rtk_fix: rtkStatus):
         """
         Callback function that receives GPS messages, assigns their covariance matrix,
         and then publishes the linearized pose.
@@ -68,9 +78,9 @@ class GPSLinearization:
         :param msg: The NavSatFix message containing GPS data that was just received
         TODO: Handle invalid PVTs
         """
-        if np.any(np.isnan([right_gps_msg.latitude, right_gps_msg.longitude, right_gps_msg.altitude])):
+        if np.any(np.isnan([right_gps_msg.latitude, right_gps_msg.longitude, right_gps_msg.altitude, right_rtk_fix.RTK_FIX_TYPE])):
             return
-        if np.any(np.isnan([left_gps_msg.latitude, left_gps_msg.longitude, left_gps_msg.altitude])):
+        if np.any(np.isnan([left_gps_msg.latitude, left_gps_msg.longitude, left_gps_msg.altitude, left_rtk_fix.RTK_FIX_TYPE])):
             return
 
         ref_coord = np.array([self.ref_lat, self.ref_lon, self.ref_alt])
@@ -84,10 +94,18 @@ class GPSLinearization:
 
         pose = GPSLinearization.compute_gps_pose(right_cartesian=right_cartesian, left_cartesian=left_cartesian)
 
+        # if the fix status of both gps is 2 (fixed), then update the offset
+        if (right_rtk_fix.RTK_FIX_TYPE == 2 and left_rtk_fix.RTK_FIX_TYPE == 2):
+            
+
         covariance_matrix = np.zeros((6, 6))
         covariance_matrix[:3, :3] = self.config_gps_covariance.reshape(3, 3)
         covariance_matrix[3:, 3:] = self.config_imu_covariance.reshape(3, 3)
 
+        # apply the offset to the orientation before publishing to ekf
+
+
+        
         # TODO: publish to ekf
         pose_msg = PoseWithCovarianceStamped(
             header=Header(stamp=rospy.Time.now(), frame_id=self.world_frame),
@@ -108,10 +126,15 @@ class GPSLinearization:
 
         :param msg: The Imu message containing IMU data that was just received
         """
+        # apply offset correction
+        if self.last_pose_offset is not None:
+
         self.last_imu_msg = msg
 
         if self.last_gps_msg is not None:
             self.publish_pose()
+
+        # find most recent gps heading published and apply offset
 
     def publish_pose(self):
         """
