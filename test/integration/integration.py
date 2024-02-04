@@ -26,7 +26,7 @@ class TestIntegration(unittest.TestCase):
         waypoint_in_world = SE3(position=np.array([-5.5, -5.5, 0.0]))
         waypoints = [
             (
-                Waypoint(fiducial_id=0, tf_id="course0", type=WaypointType(val=WaypointType.NO_SEARCH)),
+                Waypoint(tag_id=0, type=WaypointType(val=WaypointType.NO_SEARCH)),
                 waypoint_in_world,
             ),
         ]

@@ -50,7 +50,6 @@ namespace mrover {
 
         void publish_moteus_frame(moteus::CanFdFrame const& frame) {
             auto* address = reinterpret_cast<std::byte const*>(frame.data);
-            // ROS_INFO("publishing to CAN device: %x", *reinterpret_cast<int const*>(address));
             publish_data({address, frame.size}, frame.reply_required);
         }
 
@@ -63,7 +62,6 @@ namespace mrover {
             CAN can_message;
             can_message.source = mFromDevice;
             can_message.destination = mToDevice;
-
             can_message.reply_required = replyRequired;
             // This is needed since ROS is old and uses std::uint8_t instead of std::byte
             std::ranges::transform(data, std::back_inserter(can_message.data), [](std::byte b) { return static_cast<std::uint8_t>(b); });

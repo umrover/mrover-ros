@@ -41,8 +41,6 @@ namespace mrover {
             // mPublishDataTimer = mNh.createTimer(ros::Duration(0.1), &Controller::publishDataCallback, this);
 
             mAdjustServer = mNh.advertiseService(std::format("{}_adjust", mControllerName), &Controller::adjustServiceCallback, this);
-
-            ROS_INFO("instantiate %s", mControllerName.c_str());
         }
 
         virtual ~Controller() = default;
@@ -60,7 +58,7 @@ namespace mrover {
             auto duration = std::chrono::high_resolution_clock::now() - mLastConnection;
             if (duration < std::chrono::milliseconds(100)) {
                 setDesiredThrottle(0_percent);
-                ROS_INFO("TIMEOUT with controller %s\n", mControllerName.c_str());
+                ROS_WARN("TIMEOUT with controller %s\n", mControllerName.c_str());
             }
         }
 
@@ -69,9 +67,6 @@ namespace mrover {
                 ROS_ERROR("Throttle request at topic for %s ignored!", msg->names.at(0).c_str());
                 return;
             }
-
-            if (mControllerName == "joint_de_0")
-                ROS_INFO("set throttle request %f", msg->throttles[0]);
 
             setDesiredThrottle(msg->throttles.at(0));
         }
@@ -83,8 +78,6 @@ namespace mrover {
                 return;
             }
 
-            if (mControllerName == "joint_de_0")
-                ROS_INFO("set velocity request %f", msg->velocities[0]);
             setDesiredVelocity(RadiansPerSecond{msg->velocities.at(0)});
         }
 

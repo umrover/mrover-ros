@@ -1,3 +1,10 @@
-[submodule "deps/moteus"]
-	path = deps/moteus
-	url = git@github.com:mjbots/moteus.git
+[submodule "deps/libde265"]
+	path = deps/libde265
+	url = git@github.com:strukturag/libde265.git
+	shallow = true
+	branch = 0.1-20240106
+[submodule "deps/dawn"]
+	path = deps/dawn
+	url = https://dawn.googlesource.com/dawn
+	shallow = true
+	branch = chromium/6108

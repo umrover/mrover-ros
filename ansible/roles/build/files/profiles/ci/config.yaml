@@ -9,6 +9,7 @@ cmake_args:
   - -DCMAKE_CXX_COMPILER=clang++-16
   - -DCMAKE_CXX_CLANG_TIDY=clang-tidy-16
   - -DCMAKE_CUDA_HOST_COMPILER=clang++-16
+  - -DMROVER_CI=ON
   - -Wno-dev
 devel_layout: linked
 devel_space: devel

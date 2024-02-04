@@ -16,8 +16,7 @@ class StatePublisher:
     state_machine: StateMachine
     __structure_thread: threading.Thread
     __state_thread: threading.Thread
-    __stop_lock: threading.Lock
-    __stop: bool
+    __stop_event: threading.Event
 
     def __init__(
         self,
@@ -30,7 +29,7 @@ class StatePublisher:
         self.state_machine = state_machine
         self.structure_publisher = rospy.Publisher(structure_pub_topic, StateMachineStructure, queue_size=1)
         self.state_publisher = rospy.Publisher(state_pub_topic, StateMachineStateUpdate, queue_size=1)
-        self.__stop_lock = threading.Lock()
+        self.__stop_event = threading.Event()
         self.__structure_thread = threading.Thread(
             target=self.run_at_interval, args=(self.publish_structure, structure_update_rate_hz)
         )
@@ -42,8 +41,7 @@ class StatePublisher:
         self.__state_thread.start()
 
     def stop(self) -> None:
-        with self.__stop_lock:
-            self.__stop = True
+        self.__stop_event.set()
 
     def publish_structure(self) -> None:
         structure = StateMachineStructure()
@@ -67,9 +65,8 @@ class StatePublisher:
         desired_loop_time = 1.0 / update_hz
         while True:
             start_time = time.time()
-            with self.__stop_lock:
-                if self.__stop:
-                    break
+            if self.__stop_event.is_set():
+                break
             func()
             elapsed_time = time.time() - start_time
             if desired_loop_time - elapsed_time > 0:

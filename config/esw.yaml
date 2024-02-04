@@ -87,38 +87,35 @@ can:
 brushless_motors:
   controllers:
     front_left:
-      min_velocity: -1.0
-      max_velocity: 1.0
+      min_velocity: -70.0
+      max_velocity: 70.0
     front_right:
-      min_velocity: -1.0
-      max_velocity: 1.0
+      min_velocity: -70.0
+      max_velocity: 70.0
     middle_left:
-      min_velocity: -1.0
-      max_velocity: 1.0
+      min_velocity: -70.0
+      max_velocity: 70.0
     middle_right:
-      min_velocity: -1.0
-      max_velocity: 1.0
+      min_velocity: -70.0
+      max_velocity: 70.0
     back_left:
-      min_velocity: -1.0
-      max_velocity: 1.0
+      min_velocity: -70.0
+      max_velocity: 70.0
     back_right:
-      min_velocity: -1.0
-      max_velocity: 1.0
+      min_velocity: -70.0
+      max_velocity: 70.0
     joint_a:
-      min_velocity: -1.0
-      max_velocity: 1.0
+      min_velocity: -70.0
+      max_velocity: 70.0
     joint_c:
-      min_velocity: -1.0
-      max_velocity: 1.0
+      min_velocity: -70.0
+      max_velocity: 70.0
     joint_de_0:
-      min_velocity: -20.0
-      max_velocity: 20.0
+      min_velocity: -70.0
+      max_velocity: 70.0
     joint_de_1:
-      min_velocity: -20.0
-      max_velocity: 20.0
-    sa_z:
-      min_velocity: -1.0
-      max_velocity: 1.0
+      min_velocity: -70.0
+      max_velocity: 70.0
 
 joint_de:
   pitch_offset: 0.0
@@ -477,15 +474,15 @@ arm:
 drive:
   controllers:
     front_left:
-      multiplier: 1.0
+      multiplier: -1.0
     front_right:
       multiplier: 1.0
     middle_left:
-      multiplier: 1.0
+      multiplier: -1.0
     middle_right:
       multiplier: 1.0
     back_left:
-      multiplier: 1.0
+      multiplier: -1.0
     back_right:
       multiplier: 1.0
 

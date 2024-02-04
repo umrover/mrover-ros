@@ -43,7 +43,6 @@ namespace mrover {
     void BrushlessController::setDesiredVelocity(RadiansPerSecond velocity) {
         updateLastConnection();
 
-
         RevolutionsPerSecond velocity_rev_s = std::clamp(velocity, mMinVelocity, mMaxVelocity);
         // ROS_WARN("%7.3f   %7.3f",
         //  velocity.get(), velocity_rev_s.get());
@@ -57,9 +56,6 @@ namespace mrover {
 
             moteus::CanFdFrame positionFrame = mController.MakePosition(command);
             mDevice.publish_moteus_frame(positionFrame);
-
-            if (mControllerName == "joint_de_1")
-                ROS_INFO("Brushless Velocity Set Sending to Moteus: %f", command.velocity);
         }
     }
 
@@ -93,10 +89,8 @@ namespace mrover {
                  result.temperature,
                  result.fault);
 
-        mCurrentPosition = mrover::Radians{
-                mrover::Revolutions{result.position}}; // moteus stores position in revolutions.
-        mCurrentVelocity = mrover::RadiansPerSecond{
-                mrover::RevolutionsPerSecond{result.velocity}}; // moteus stores position in revolutions.
+        mCurrentPosition = mrover::Revolutions{result.position}; // moteus stores position in revolutions.
+        mCurrentVelocity = mrover::RevolutionsPerSecond{result.velocity}; // moteus stores position in revolutions.
 
         mErrorState = moteusErrorCodeToErrorState(result.mode, static_cast<ErrorCode>(result.fault));
         mState = moteusModeToState(result.mode);

@@ -33,4 +33,17 @@
     "python.analysis.typeCheckingMode": "off",
     //// Miscellaneous
     "redhat.telemetry.enabled": false,
+    "git.ignoreSubmodules": true,
+    "git.detectSubmodules": false,
+    "cSpell.words": [
+        "Eigen",
+        "GLFW",
+        "wgpu"
+    ],
+    "search.exclude": {
+        "**/node_modules": true,
+        "**/bower_components": true,
+        "**/*.code-search": true,
+        "deps/dawn": true,
+    }
 }

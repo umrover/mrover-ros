@@ -2,7 +2,8 @@
 
 namespace mrover {
 
-    CanNetLink::CanNetLink(std::string interface, std::uint32_t bitrate, std::uint32_t bitrate_prescaler)
+    // TODO(quintin): Either remove bitrate settings or make it work
+    CanNetLink::CanNetLink(std::string interface, [[maybe_unused]] std::uint32_t bitrate, [[maybe_unused]] std::uint32_t bitrate_prescaler)
         : mInterface{std::move(interface)} {
 
         try {

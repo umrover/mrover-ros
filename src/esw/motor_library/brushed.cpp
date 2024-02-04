@@ -137,7 +137,6 @@ namespace mrover {
         }
     }
 
-
     void BrushedController::processCANMessage(CAN::ConstPtr const& msg) {
         assert(msg->source == mControllerName);
         assert(msg->destination == mName);

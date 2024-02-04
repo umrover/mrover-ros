@@ -1,9 +1,10 @@
 #pragma once
 
-#include "messaging.hpp"
-#include "params_utils.hpp"
 #include <can_device.hpp>
-#include <controller.hpp>
+#include <messaging.hpp>
+#include <params_utils.hpp>
+
+#include "controller.hpp"
 
 namespace mrover {
 

@@ -1,4 +1,3 @@
-#include "mrover/Velocity.h"
 #include <iostream>
 
 #include <ros/init.h>

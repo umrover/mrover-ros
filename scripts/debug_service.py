@@ -6,16 +6,16 @@ Logs the service request to stdout
 
 from typing import Any
 import rospy
-from mrover.srv import PublishEnableAuton, PublishEnableAutonResponse
+from mrover.srv import EnableAuton, EnableAutonResponse
 
 # Change these values for the service name and type definition to test different values
 SERVICE_NAME = "enable_auton"
-SERVICE_TYPE = PublishEnableAuton
+SERVICE_TYPE = EnableAuton
 
 
 def print_service_request(service_request: Any):
     rospy.loginfo(service_request)
-    return PublishEnableAutonResponse(success=True)
+    return EnableAutonResponse(success=True)
 
 
 def main():
