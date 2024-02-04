@@ -76,12 +76,14 @@ class GPS_Driver:
             parsed_longitude = msg.lon
             parsed_altitude = msg.hMSL
             time = datetime.datetime(year=msg.year, month=msg.month, day=msg.day, hour= msg.hour, second=msg.second)
-            time = time.timestamp() + (msg.nano / 1e6)
+            time = rospy.Time(secs=time.timestamp() + (msg.nano / 1e6))
             if not self.valid_offset:
                 self.time_offset = rospy.Time.now() - time
                 self.valid_offset = True
 
-            time = time + self.time_offset 
+            time = time + self.time_offset
+
+            print(time, rospy.Time.now(), time-rospy.Time.now(), self.time_offset) 
 
             message_header = Header(stamp=time, frame_id="base_link")
 
