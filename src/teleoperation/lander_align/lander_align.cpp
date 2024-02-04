@@ -1,6 +1,9 @@
 #include "lander_align.hpp"
+#include "pch.hpp"
 #include <Eigen/src/Core/Matrix.h>
+#include <geometry_msgs/Vector3.h>
 #include <random>
+#include <ros/subscriber.h>
 #include <vector>
 
 namespace mrover {
@@ -8,6 +11,21 @@ namespace mrover {
     auto LanderAlignNodelet::onInit() -> void {
         mNh = getMTNodeHandle();
         mPnh = getMTPrivateNodeHandle();
+        mThreshold = 10;
+        mVectorSub = mNh.subscribe("/camera/left/points", 1, &LanderAlignNodelet::filterNormals, this);
+        mDebugVectorPub = mNh.advertise<geometry_msgs::Vector3>("/lander_align/Pose", 1);
+    }
+
+    void LanderAlignNodelet::LanderCallback(sensor_msgs::PointCloud2Ptr const& cloud) {
+        filterNormals(cloud);
+        Eigen::Vector3f planeNorm = ransac(mFilteredPoints, 1, 10, 10);
+
+        geometry_msgs::Vector3 vect;
+        vect.x = planeNorm.x();
+        vect.y = planeNorm.y();
+        vect.z = planeNorm.z();
+
+        mDebugVectorPub.publish(vect);
     }
 
     // deprecated/not needed anymore
@@ -20,23 +38,20 @@ namespace mrover {
     //     cloudSample.fields
     // }
 
-    auto LanderAlignNodelet::filterNormals(sensor_msgs::PointCloud2Ptr const& cloud, const float threshold) -> std::vector<const Point*> {
-        // TODO: OPTIMIZE; doing this many push_back calls could slow things down
+    void LanderAlignNodelet::filterNormals(sensor_msgs::PointCloud2Ptr const& cloud) {
+        // TODO: OPTIMIZE; doing this maobject_detector/debug_imgny push_back calls could slow things down
 
         auto* cloudData = reinterpret_cast<Point const*>(cloud->fields.data());
-        std::vector<const Point*> extractedPoints;
+        // std::vector<Point const*> extractedPoints;
 
         for (auto point = cloudData; point < cloudData + (cloud->height * cloud->width); point++) {
-            if (point->normal_z < threshold) {
-                extractedPoints.push_back(point);
+            if (point->normal_z < mThreshold) {
+                mFilteredPoints.push_back(point);
             }
         }
-
-
-        return extractedPoints;
     }
 
-    auto LanderAlignNodelet::ransac(const std::vector<Point*>& points, const float distanceThreshold, int minInliers, const int epochs) -> Eigen::Vector3f {
+    auto LanderAlignNodelet::ransac(std::vector<Point const*> const& points, float const distanceThreshold, int minInliers, int const epochs) -> Eigen::Vector3f {
         // TODO: use RANSAC to find the lander face, should be the closest, we may need to modify this to output more information, currently the output is the normal
         // takes 3 samples for every epoch and terminates after specified number of epochs
         Eigen::Vector3f bestPlane(0, 0, 0); // normal vector representing plane (initialize as zero vector?? default ctor??)
@@ -62,7 +77,7 @@ namespace mrover {
 
                 int numInliers = 0;
 
-                for (auto p : points) { 
+                for (auto p: points) {
                     // calculate distance of each point from potential plane
                     float distance = std::abs(normal.x() * p->x + normal.y() * p->y + normal.z() * p->z + offset);
 
@@ -72,7 +87,7 @@ namespace mrover {
                 }
 
                 // update best plane if better inlier count
-                if (numInliers > minInliers) { 
+                if (numInliers > minInliers) {
                     minInliers = numInliers;
                     bestPlane = normal;
                 }
@@ -81,5 +96,6 @@ namespace mrover {
 
         return bestPlane;
     }
+
 
 } // namespace mrover
