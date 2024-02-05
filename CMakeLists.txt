@@ -81,13 +81,9 @@ if (MROVER_BUILD_SIM)
     if (NOT Assimp_FOUND AND NOT assimp_FOUND)
         message(FATAL_ERROR "Assimp not found")
     endif ()
-
     find_package(Bullet REQUIRED)
-
     find_package(glfw3 REQUIRED)
-
     include(cmake/webgpu.cmake)
-
     add_subdirectory(deps/glfw3webgpu)
 endif ()
 find_package(OpenCV REQUIRED)
@@ -185,12 +181,20 @@ mrover_add_nodelet(tag_detector src/perception/tag_detector/*.cpp src/perception
 mrover_nodelet_link_libraries(tag_detector opencv_core opencv_objdetect opencv_aruco opencv_imgproc opencv_highgui lie)
 
 if (CUDA_FOUND)
-    mrover_add_library(streaming src/esw/streaming/*.c* src/esw/streaming)
-    #    target_link_libraries(streaming PUBLIC opencv_core opencv_cudacodec)
-    target_link_libraries(streaming PUBLIC cuda nvidia-encode opencv_core)
-    target_include_directories(streaming SYSTEM PUBLIC deps/nvenc)
-    target_compile_definitions(streaming PUBLIC BOOST_ASIO_NO_DEPRECATED)
+    mrover_add_library(hardware_h265_encoder src/esw/hardware_h265_encoder/*.c* src/esw/hardware_h265_encoder)
+    target_link_libraries(hardware_h265_encoder PUBLIC cuda nvidia-encode opencv_core)
+    target_include_directories(hardware_h265_encoder SYSTEM PUBLIC deps/nvenc)
 endif ()
+
+add_subdirectory(deps/libde265)
+#target_include_directories(de265 SYSTEM INTERFACE deps/libde265)
+
+mrover_add_library(software_h265_encoder src/esw/software_h265_encoder/*.c* src/esw/software_h265_encoder)
+target_link_libraries(software_h265_encoder PUBLIC opencv_core de265)
+target_include_directories(software_h265_encoder SYSTEM PUBLIC deps/nvenc)
+
+mrover_add_library(streaming src/esw/streaming/*.cpp src/esw/streaming)
+target_compile_definitions(streaming PUBLIC BOOST_ASIO_NO_DEPRECATED)
 
 if (ZED_FOUND)
     mrover_add_nodelet(zed src/perception/zed_wrapper/*.c* src/perception/zed_wrapper src/perception/zed_wrapper/pch.hpp)
