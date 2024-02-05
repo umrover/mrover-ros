@@ -162,6 +162,7 @@ brushed_motors:
     #   limit_max_backward_pos: false
     #   max_forward_pos: 1.0
     #   max_backward_pos: 0.0
+    #   calibration_throttle: 5.0
     joint_b:
       gear_ratio: 1.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
       limit_0_present: false
@@ -180,6 +181,7 @@ brushed_motors:
       max_forward_pos: 1.0
       min_velocity: -1.0
       max_velocity: 1.0
+      calibration_throttle: 0.5  # throttle during calibration
     allen_key:
       gear_ratio: 30.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
       limit_0_present: true

@@ -50,6 +50,7 @@ namespace mrover {
         virtual void setDesiredPosition(Radians position) = 0;          // joint output
         virtual void processCANMessage(CAN::ConstPtr const& msg) = 0;
         virtual double getEffort() = 0;
+        virtual void adjust(Radians position) = 0;
         void updateLastConnection() {
             mLastConnection = std::chrono::high_resolution_clock::now();
         }
@@ -117,11 +118,10 @@ namespace mrover {
                 res.success = false;
                 return true;
             }
-            setDesiredPosition(Radians{req.value});
+            adjust(Radians{req.value});
             res.success = true;
             return true;
         }
-
 
     protected:
         ros::NodeHandle mNh;
@@ -132,7 +132,9 @@ namespace mrover {
         Radians mMinPosition{}, mMaxPosition{};
         Radians mCurrentPosition{};
         RadiansPerSecond mCurrentVelocity{};
+        Percent mCalibrationThrottle{};
         bool mIsCalibrated{};
+        bool mhasLimit{};
         std::string mErrorState;
         std::string mState;
         std::array<bool, 4> mLimitHit{};

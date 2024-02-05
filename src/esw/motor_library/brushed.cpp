@@ -61,6 +61,10 @@ namespace mrover {
         mVelocityGains.d = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "velocity_d", 0.0);
         mVelocityGains.ff = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "velocity_ff", 0.0);
 
+        for (int i = 0; i < 4; ++i) {
+            mhasLimit |= xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, std::format("limit_{}_enabled", i), false);
+        }
+        mCalibrationThrottle = Percent{xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "calibration_throttle", 0.0)};
         mErrorState = "Unknown";
         mState = "Unknown";
     }
@@ -118,6 +122,20 @@ namespace mrover {
         // Need to await configuration. Can NOT directly set mIsConfigured to true.
     }
 
+    void BrushedController::adjust(Radians commandedPosition) {
+        updateLastConnection();
+        if (!mIsConfigured) {
+            sendConfiguration();
+            return;
+        }
+
+        assert(commandedPosition >= mMinPosition && commandedPosition <= mMaxPosition);
+
+        mDevice.publish_message(InBoundMessage{AdjustCommand{
+                .position = commandedPosition
+        }});
+    }
+
     void BrushedController::processMessage(ControllerDataState const& state) {
         mCurrentPosition = state.position;
         mCurrentVelocity = state.velocity;
@@ -167,6 +185,24 @@ namespace mrover {
                 return "RECEIVING_PID_COMMANDS_WHEN_NO_READER_EXISTS";
             default:
                 return "UNKNOWN_ERROR_CODE";
+        }
+    }
+
+    bool BrushedController::calibrateServiceCallback(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res) {
+        if (!mhasLimit) {
+            res.success = false;
+            res.message = mControllerName + " does not have limit switches, cannot calibrate";
+            return true;
+        } else if (mIsCalibrated) {
+            res.success = false;
+            res.message = mControllerName + " already calibrated";
+            return true;
+        } else {
+            // sends throttle command until a limit switch is hit
+            // mIsCalibrated is set with CAN message coming from BDCMC
+            setDesiredThrottle(mCalibrationThrottle); 
+            res.success = true;
+            return true;
         }
     }
 

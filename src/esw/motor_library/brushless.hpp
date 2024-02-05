@@ -69,7 +69,7 @@ namespace mrover {
         double getEffort() override;
         void setStop();
         void setBrake();
-        void adjust();
+        void adjust(Radians position) override;
 
     private:
         moteus::Controller mController{moteus::Controller::Options{}};

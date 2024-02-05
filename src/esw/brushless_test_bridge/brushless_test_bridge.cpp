@@ -45,7 +45,7 @@ int main(int argc, char** argv) {
     while (ros::ok() && count < 10) {
         // Motor should keep moving forward every 2 seconds. Repeats 10 times.
         brushlessController->setDesiredPosition(mrover::Radians{1.0});
-        brushlessController->adjust();
+        brushlessController->adjust(mrover::Radians{0.0});
         count++;
         rate_0p5hz.sleep();
     }

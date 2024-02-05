@@ -41,7 +41,7 @@ namespace mrover {
 
         bool adjustServiceCallback(AdjustMotor::Request& req, AdjustMotor::Response& res);
 
-        bool calibrateServiceCallback(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
+        
 
     private:
         void processThrottleCmd(Throttle::ConstPtr const& msg);

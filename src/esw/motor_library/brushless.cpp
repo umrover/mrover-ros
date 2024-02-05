@@ -68,8 +68,13 @@ namespace mrover {
         mDevice.publish_moteus_frame(setBrakeFrame);
     }
 
-    void BrushlessController::adjust() {
-        moteus::OutputExact::Command outputExactCmd{0.0};
+    void BrushlessController::adjust(Radians commandedPosition) {
+        updateLastConnection();
+        Revolutions commandedPosition_rev = std::clamp(commandedPosition, mMinPosition, mMaxPosition);
+        moteus::OutputExact::Command command{
+                .position = commandedPosition_rev.get(),
+        };
+        moteus::OutputExact::Command outputExactCmd{command};
         moteus::CanFdFrame setPositionFrame = mController.MakeOutputExact(outputExactCmd);
         mDevice.publish_moteus_frame(setPositionFrame);
     }
