@@ -28,8 +28,10 @@ class GPSLinearization:
     last_imu_msg: Optional[ImuAndMag]
     pose_publisher: rospy.Publisher
 
-    # last offset
-    last_pose_offset: Optional[np.ndarray]
+    # offset
+    rtk_offset: Optional[np.ndarray]
+    calculate_offset: bool
+    last_gps_pose: Optional[np.ndarray]
 
     # reference coordinates
     ref_lat: float
@@ -52,6 +54,7 @@ class GPSLinearization:
         self.ref_alt = rospy.get_param("gps_linearization/reference_point_altitude")
         self.world_frame = rospy.get_param("world_frame")
         self.use_dop_covariance = rospy.get_param("global_ekf/use_gps_dop_covariance")
+        calculate_offset = False
 
         # config gps and imu convariance matrices
         self.config_gps_covariance = np.array(rospy.get_param("global_ekf/gps_covariance", None))
@@ -59,7 +62,7 @@ class GPSLinearization:
 
         self.last_gps_msg = None
         self.last_imu_msg = None
-        self.last_pose_offset = None
+        self.rtk_offset = None
 
         right_gps_sub = message_filters.Subscriber("right_gps_driver/fix", NavSatFix)
         left_gps_sub = message_filters.Subscriber("left_gps_driver/fix", NavSatFix)
@@ -95,11 +98,11 @@ class GPSLinearization:
         )
 
         pose = GPSLinearization.compute_gps_pose(right_cartesian=right_cartesian, left_cartesian=left_cartesian)
+        last_gps_pose = pose
 
-        # if the fix status of both gps is 2 (fixed), update the offset
+        # if the fix status of both gps is 2 (fixed), update the offset with the next imu messsage
         if (right_rtk_fix.RTK_FIX_TYPE == RTK_FIX and left_rtk_fix.RTK_FIX_TYPE == 2):
-            # calc offset from imu heading and rtk heading, store the offset
-            # how can we make sure these 2 headings are comparable??
+            calculate_offset = True
             
 
         covariance_matrix = np.zeros((6, 6))
@@ -126,18 +129,19 @@ class GPSLinearization:
 
         :param msg: The Imu message containing IMU data that was just received
         """
+
+        if calculate_offset:
+            # calc offset from imu heading and last_gps_pose, store the offset
+            # how can we make sure these 2 headings are comparable??
+            calculate_offset = False
         
-        if self.last_pose_offset is not None:
+        if self.rtk_offset is not None:
             # apply offset correction
 
         self.last_imu_msg = msg
 
         # publish pose (corrected, imu)
         self.publish_pose()
-
-
-        # if self.last_gps_msg is not None:
-        #     self.publish_pose()
 
 
 
@@ -147,6 +151,7 @@ class GPSLinearization:
         as a PoseWithCovarianceStamped message.
         """
         ref_coord = np.array([self.ref_lat, self.ref_lon, self.ref_alt])
+        # use last_gps_pose instead of last_gps_msg
         linearized_pose, covariance = self.get_linearized_pose_in_world(self.last_gps_msg, self.last_imu_msg, ref_coord)
 
         pose_msg = PoseWithCovarianceStamped(
