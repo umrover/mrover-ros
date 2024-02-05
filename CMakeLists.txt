@@ -32,7 +32,11 @@ if (MROVER_CI)
     list(APPEND MROVER_CPP_COMPILE_OPTIONS -Werror)
 endif ()
 
-option(MROVER_BUILD_SIM "Build the simulator" ON)
+if (EXISTS ${CMAKE_CURRENT_LIST_DIR}/deps/dawn/out/Release)
+    set(MROVER_BUILD_SIM ON)
+else ()
+    set(MROVER_BUILD_SIM OFF)
+endif ()
 
 include(cmake/macros.cmake)
 
