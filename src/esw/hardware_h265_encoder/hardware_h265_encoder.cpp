@@ -8,6 +8,7 @@
 
 #include <streaming.hpp>
 
+#include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
 
 std::optional<StreamServer> streamServer;
@@ -21,7 +22,9 @@ auto imageCallback(sensor_msgs::ImageConstPtr const& msg) -> void {
 
         cv::Mat bgraFrame{size, CV_8UC4, const_cast<std::uint8_t*>(msg->data.data()), msg->step};
         cv::Mat i420Frame;
-        cvtColor(bgraFrame, i420Frame, cv::COLOR_BGRA2YUV_I420);
+        cvtColor(bgraFrame, i420Frame, cv::COLOR_BGRA2YUV_IYUV);
+
+        // imwrite("/home/quintin/catkin_ws/src/mrover/image.png", i420Frame);
 
         Encoder::BitstreamView view = encoder->feed(i420Frame);
         std::span span{static_cast<std::byte*>(view.lockParams.bitstreamBufferPtr), view.lockParams.bitstreamSizeInBytes};

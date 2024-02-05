@@ -31,7 +31,7 @@ void cudaCheck(cudaError_t status) {
 namespace std {
     template<>
     struct equal_to<GUID> {
-        bool operator()(GUID const& g1, GUID const& g2) const {
+        auto operator()(GUID const& g1, GUID const& g2) const -> bool {
             return g1.Data1 == g2.Data1 && g1.Data2 == g2.Data2 && g1.Data3 == g2.Data3 &&
                    g1.Data4[0] == g2.Data4[0] && g1.Data4[1] == g2.Data4[1] && g1.Data4[2] == g2.Data4[2] &&
                    g1.Data4[3] == g2.Data4[3] && g1.Data4[4] == g2.Data4[4] && g1.Data4[5] == g2.Data4[5] &&
@@ -59,6 +59,8 @@ std::unordered_map<GUID, std::string> GUID_TO_NAME{
         {NV_ENC_CODEC_H264_GUID, "H264"},
         {NV_ENC_CODEC_AV1_GUID, "AV1"},
 };
+
+constexpr NV_ENC_BUFFER_FORMAT FRAME_FORMAT = NV_ENC_BUFFER_FORMAT_IYUV;
 
 Encoder::Encoder(cv::Size const& size) : m_size{size} {
     cudaCheck(cudaSetDevice(0));
@@ -136,7 +138,7 @@ Encoder::Encoder(cv::Size const& size) : m_size{size} {
             .version = NV_ENC_CREATE_INPUT_BUFFER_VER,
             .width = static_cast<std::uint32_t>(m_size.width),
             .height = static_cast<std::uint32_t>(m_size.height),
-            .bufferFmt = NV_ENC_BUFFER_FORMAT_IYUV,
+            .bufferFmt = FRAME_FORMAT,
     };
     NvCheck(m_nvenc.nvEncCreateInputBuffer(m_encoder, &createInputBufferParams));
     m_input = createInputBufferParams.inputBuffer;
@@ -173,7 +175,7 @@ auto Encoder::feed(cv::InputArray frameI420) -> BitstreamView {
             .inputBuffer = m_input,
             .outputBitstream = m_output,
             .completionEvent = nullptr,
-            .bufferFmt = NV_ENC_BUFFER_FORMAT_IYUV,
+            .bufferFmt = FRAME_FORMAT,
             .pictureStruct = NV_ENC_PIC_STRUCT_FRAME,
     };
 
