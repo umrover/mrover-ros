@@ -15,6 +15,8 @@ import message_filters
 from rtkStatus.msg import rtkStatus
 
 
+
+
 class GPSLinearization:
     """
     This node subscribes to GPS and IMU data, linearizes the GPS data
@@ -94,17 +96,15 @@ class GPSLinearization:
 
         pose = GPSLinearization.compute_gps_pose(right_cartesian=right_cartesian, left_cartesian=left_cartesian)
 
-        # if the fix status of both gps is 2 (fixed), then update the offset
-        if (right_rtk_fix.RTK_FIX_TYPE == 2 and left_rtk_fix.RTK_FIX_TYPE == 2):
+        # if the fix status of both gps is 2 (fixed), update the offset
+        if (right_rtk_fix.RTK_FIX_TYPE == RTK_FIX and left_rtk_fix.RTK_FIX_TYPE == 2):
+            # calc offset from imu heading and rtk heading, store the offset
+            # how can we make sure these 2 headings are comparable??
             
 
         covariance_matrix = np.zeros((6, 6))
         covariance_matrix[:3, :3] = self.config_gps_covariance.reshape(3, 3)
         covariance_matrix[3:, 3:] = self.config_imu_covariance.reshape(3, 3)
-
-        # apply the offset to the orientation before publishing to ekf
-
-
         
         # TODO: publish to ekf
         pose_msg = PoseWithCovarianceStamped(
@@ -117,7 +117,7 @@ class GPSLinearization:
                 covariance=covariance_matrix.flatten().tolist(),
             ),
         )
-
+        # publish pose (rtk)
         self.pose_publisher.publish(pose_msg)
 
     def imu_callback(self, msg: ImuAndMag):
@@ -126,15 +126,20 @@ class GPSLinearization:
 
         :param msg: The Imu message containing IMU data that was just received
         """
-        # apply offset correction
+        
         if self.last_pose_offset is not None:
+            # apply offset correction
 
         self.last_imu_msg = msg
 
-        if self.last_gps_msg is not None:
-            self.publish_pose()
+        # publish pose (corrected, imu)
+        self.publish_pose()
 
-        # find most recent gps heading published and apply offset
+
+        # if self.last_gps_msg is not None:
+        #     self.publish_pose()
+
+
 
     def publish_pose(self):
         """
