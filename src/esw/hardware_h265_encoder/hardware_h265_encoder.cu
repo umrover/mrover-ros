@@ -10,12 +10,6 @@
 #include <cuda.h>
 #include <nvEncodeAPI.h>
 
-void NvCheck(NVENCSTATUS status) {
-    if (status != NV_ENC_SUCCESS) {
-        throw std::runtime_error("NvEnc failed");
-    }
-}
-
 void cuCheck(CUresult status) {
     if (status != CUDA_SUCCESS) {
         throw std::runtime_error("CUDA failed");
@@ -25,6 +19,12 @@ void cuCheck(CUresult status) {
 void cudaCheck(cudaError_t status) {
     if (status != cudaSuccess) {
         throw std::runtime_error("CUDA failed");
+    }
+}
+
+void NvCheck(NVENCSTATUS status) {
+    if (status != NV_ENC_SUCCESS) {
+        throw std::runtime_error("NvEnc failed");
     }
 }
 
@@ -46,8 +46,8 @@ namespace std {
             seed ^= std::hash<std::uint32_t>{}(g.Data1);
             seed ^= std::hash<std::uint16_t>{}(g.Data2);
             seed ^= std::hash<std::uint16_t>{}(g.Data3);
-            for (std::size_t i = 0; i < 8; ++i) {
-                seed ^= std::hash<std::uint8_t>{}(g.Data4[i]);
+            for (unsigned char i: g.Data4) {
+                seed ^= std::hash<std::uint8_t>{}(i);
             }
             return seed;
         }
@@ -59,8 +59,6 @@ std::unordered_map<GUID, std::string> GUID_TO_NAME{
         {NV_ENC_CODEC_H264_GUID, "H264"},
         {NV_ENC_CODEC_AV1_GUID, "AV1"},
 };
-
-constexpr NV_ENC_BUFFER_FORMAT FRAME_FORMAT = NV_ENC_BUFFER_FORMAT_IYUV;
 
 Encoder::Encoder(cv::Size const& size) : m_size{size} {
     cudaCheck(cudaSetDevice(0));
@@ -138,7 +136,7 @@ Encoder::Encoder(cv::Size const& size) : m_size{size} {
             .version = NV_ENC_CREATE_INPUT_BUFFER_VER,
             .width = static_cast<std::uint32_t>(m_size.width),
             .height = static_cast<std::uint32_t>(m_size.height),
-            .bufferFmt = FRAME_FORMAT,
+            .bufferFmt = NV_ENC_BUFFER_FORMAT_ARGB,
     };
     NvCheck(m_nvenc.nvEncCreateInputBuffer(m_encoder, &createInputBufferParams));
     m_input = createInputBufferParams.inputBuffer;
@@ -150,19 +148,19 @@ Encoder::Encoder(cv::Size const& size) : m_size{size} {
     m_output = createBitstreamBufferParams.bitstreamBuffer;
 }
 
-auto Encoder::feed(cv::InputArray frameI420) -> BitstreamView {
-    if (!frameI420.isContinuous()) throw std::runtime_error("Frame is not continuous");
-    if (frameI420.type() != CV_8UC1) throw std::runtime_error("Not single channel, note that YUV420 is expected");
-    if (frameI420.size() != cv::Size{m_size.width, m_size.height + m_size.height / 2}) throw std::runtime_error("Wrong size, note that YUV420 is expected");
+auto Encoder::feed(cv::InputArray frameBgra) -> BitstreamView {
+    if (!frameBgra.isContinuous()) throw std::runtime_error("Frame is not continuous");
+    // if (frameI420.type() != CV_8UC1) throw std::runtime_error("Not single channel, note that YUV420 is expected");
+    // if (frameI420.size() != cv::Size{m_size.width, m_size.height + m_size.height / 2}) throw std::runtime_error("Wrong size, note that YUV420 is expected");
 
     NV_ENC_LOCK_INPUT_BUFFER lockInputBufferParams{
             .version = NV_ENC_LOCK_INPUT_BUFFER_VER,
             .inputBuffer = m_input,
     };
     NvCheck(m_nvenc.nvEncLockInputBuffer(m_encoder, &lockInputBufferParams));
-    for (int r = 0; r < frameI420.rows(); ++r) {
+    for (int r = 0; r < frameBgra.rows(); ++r) {
         auto* row = static_cast<std::byte*>(lockInputBufferParams.bufferDataPtr) + r * lockInputBufferParams.pitch;
-        std::memcpy(row, frameI420.getMat().ptr(r), frameI420.cols());
+        std::memcpy(row, frameBgra.getMat().ptr(r), frameBgra.cols() * 4);
     }
     NvCheck(m_nvenc.nvEncUnlockInputBuffer(m_encoder, m_input));
 
@@ -171,11 +169,11 @@ auto Encoder::feed(cv::InputArray frameI420) -> BitstreamView {
             .inputWidth = static_cast<std::uint32_t>(m_size.width),
             .inputHeight = static_cast<std::uint32_t>(m_size.height),
             .frameIdx = m_frame_index++,
-            .inputTimeStamp = static_cast<std::uint64_t>(m_clock.now().time_since_epoch().count()),
+            .inputTimeStamp = static_cast<std::uint64_t>(std::chrono::high_resolution_clock::now().time_since_epoch().count()),
             .inputBuffer = m_input,
             .outputBitstream = m_output,
             .completionEvent = nullptr,
-            .bufferFmt = FRAME_FORMAT,
+            .bufferFmt = NV_ENC_BUFFER_FORMAT_IYUV,
             .pictureStruct = NV_ENC_PIC_STRUCT_FRAME,
     };
 
@@ -199,7 +197,7 @@ Encoder::BitstreamView::BitstreamView(BitstreamView&& other) noexcept {
     *this = std::move(other);
 }
 
-auto Encoder::BitstreamView::operator=(BitstreamView&& other) noexcept -> Encoder::BitstreamView& {
+auto Encoder::BitstreamView::operator=(BitstreamView&& other) noexcept -> BitstreamView& {
     std::swap(nvenc, other.nvenc);
     std::swap(encoder, other.encoder);
     std::swap(output, other.output);

@@ -36,7 +36,7 @@ private:
 public:
     explicit Encoder(cv::Size const& size);
 
-    [[nodiscard]] auto feed(cv::InputArray frameI420) -> BitstreamView;
+    [[nodiscard]] auto feed(cv::InputArray frameBgra) -> BitstreamView;
 
     ~Encoder();
 };
