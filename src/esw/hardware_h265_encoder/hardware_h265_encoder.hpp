@@ -5,8 +5,8 @@
 #include <nvEncodeAPI.h>
 #include <opencv2/core/mat.hpp>
 
-struct Encoder {
-
+class Encoder {
+public:
     struct BitstreamView {
         NV_ENCODE_API_FUNCTION_LIST* nvenc = nullptr;
         void* encoder = nullptr;
@@ -18,12 +18,13 @@ struct Encoder {
         ~BitstreamView();
 
         BitstreamView(BitstreamView const&) = delete;
-        BitstreamView& operator=(BitstreamView const&) = delete;
+        auto operator=(BitstreamView const&) -> BitstreamView& = delete;
 
         BitstreamView(BitstreamView&& other) noexcept;
-        BitstreamView& operator=(BitstreamView&& other) noexcept;
+        auto operator=(BitstreamView&& other) noexcept -> BitstreamView&;
     };
 
+private:
     cv::Size m_size;
     NV_ENCODE_API_FUNCTION_LIST m_nvenc{.version = NV_ENCODE_API_FUNCTION_LIST_VER};
     void* m_encoder = nullptr;
@@ -33,9 +34,9 @@ struct Encoder {
     std::chrono::high_resolution_clock m_clock;
 
 public:
-    Encoder(cv::Size const& size);
+    explicit Encoder(cv::Size const& size);
 
-    [[nodiscard]] BitstreamView feed(cv::InputArray frameI420);
+    [[nodiscard]] auto feed(cv::InputArray frameI420) -> BitstreamView;
 
     ~Encoder();
 };

@@ -180,21 +180,21 @@ endif ()
 mrover_add_nodelet(tag_detector src/perception/tag_detector/*.cpp src/perception/tag_detector src/perception/tag_detector/pch.hpp)
 mrover_nodelet_link_libraries(tag_detector opencv_core opencv_objdetect opencv_aruco opencv_imgproc opencv_highgui lie)
 
+mrover_add_library(streaming src/esw/streaming/*.cpp src/esw/streaming)
+target_compile_definitions(streaming PUBLIC BOOST_ASIO_NO_DEPRECATED)
+
 if (CUDA_FOUND)
-    mrover_add_library(hardware_h265_encoder src/esw/hardware_h265_encoder/*.c* src/esw/hardware_h265_encoder)
-    target_link_libraries(hardware_h265_encoder PUBLIC cuda nvidia-encode opencv_core)
+    mrover_add_node(hardware_h265_encoder src/esw/hardware_h265_encoder/*.c*)
+    target_link_libraries(hardware_h265_encoder PUBLIC cuda nvidia-encode opencv_core opencv_imgproc streaming)
     target_include_directories(hardware_h265_encoder SYSTEM PUBLIC deps/nvenc)
 endif ()
 
 add_subdirectory(deps/libde265)
-#target_include_directories(de265 SYSTEM INTERFACE deps/libde265)
+include_directories(deps/libde265/extra deps/libde265 SYSTEM)
 
-mrover_add_library(software_h265_encoder src/esw/software_h265_encoder/*.c* src/esw/software_h265_encoder)
-target_link_libraries(software_h265_encoder PUBLIC opencv_core de265)
+mrover_add_node(software_h265_encoder src/esw/software_h265_encoder/*.c*)
+target_link_libraries(software_h265_encoder PUBLIC opencv_core opencv_imgproc opencv_imgcodecs de265 streaming)
 target_include_directories(software_h265_encoder SYSTEM PUBLIC deps/nvenc)
-
-mrover_add_library(streaming src/esw/streaming/*.cpp src/esw/streaming)
-target_compile_definitions(streaming PUBLIC BOOST_ASIO_NO_DEPRECATED)
 
 if (ZED_FOUND)
     mrover_add_nodelet(zed src/perception/zed_wrapper/*.c* src/perception/zed_wrapper src/perception/zed_wrapper/pch.hpp)

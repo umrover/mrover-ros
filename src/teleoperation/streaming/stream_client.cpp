@@ -77,7 +77,7 @@ EM_BOOL on_message(int _event_type, const EmscriptenWebSocketMessageEvent* webso
             const vStride = $7;
 
             const canvas = document.getElementById('canvas');
-            const ctx = canvas.getContext   ('2d');
+            const ctx = canvas.getContext('2d');
             if (Module.imageBuffer === undefined) {
                 Module.imageBuffer = ctx.createImageData(width, height);
                 canvas.width = width;

@@ -41,7 +41,7 @@ namespace std {
 
     template<>
     struct hash<GUID> {
-        std::size_t operator()(GUID const& g) const {
+        auto operator()(GUID const& g) const noexcept -> std::size_t {
             std::size_t seed = 0;
             seed ^= std::hash<std::uint32_t>{}(g.Data1);
             seed ^= std::hash<std::uint16_t>{}(g.Data2);
@@ -148,7 +148,7 @@ Encoder::Encoder(cv::Size const& size) : m_size{size} {
     m_output = createBitstreamBufferParams.bitstreamBuffer;
 }
 
-Encoder::BitstreamView Encoder::feed(cv::InputArray frameI420) {
+auto Encoder::feed(cv::InputArray frameI420) -> BitstreamView {
     if (!frameI420.isContinuous()) throw std::runtime_error("Frame is not continuous");
     if (frameI420.type() != CV_8UC1) throw std::runtime_error("Not single channel, note that YUV420 is expected");
     if (frameI420.size() != cv::Size{m_size.width, m_size.height + m_size.height / 2}) throw std::runtime_error("Wrong size, note that YUV420 is expected");
@@ -159,7 +159,7 @@ Encoder::BitstreamView Encoder::feed(cv::InputArray frameI420) {
     };
     NvCheck(m_nvenc.nvEncLockInputBuffer(m_encoder, &lockInputBufferParams));
     for (int r = 0; r < frameI420.rows(); ++r) {
-        std::byte* row = static_cast<std::byte*>(lockInputBufferParams.bufferDataPtr) + r * lockInputBufferParams.pitch;
+        auto* row = static_cast<std::byte*>(lockInputBufferParams.bufferDataPtr) + r * lockInputBufferParams.pitch;
         std::memcpy(row, frameI420.getMat().ptr(r), frameI420.cols());
     }
     NvCheck(m_nvenc.nvEncUnlockInputBuffer(m_encoder, m_input));
@@ -197,7 +197,7 @@ Encoder::BitstreamView::BitstreamView(BitstreamView&& other) noexcept {
     *this = std::move(other);
 }
 
-Encoder::BitstreamView& Encoder::BitstreamView::operator=(BitstreamView&& other) noexcept {
+auto Encoder::BitstreamView::operator=(BitstreamView&& other) noexcept -> Encoder::BitstreamView& {
     std::swap(nvenc, other.nvenc);
     std::swap(encoder, other.encoder);
     std::swap(output, other.output);
