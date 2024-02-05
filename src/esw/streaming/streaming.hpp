@@ -16,7 +16,7 @@ namespace websocket = beast::websocket;
 
 using tcp = net::ip::tcp;
 
-struct StreamServer {
+class StreamServer {
 
     net::io_context m_context;
     tcp::acceptor m_acceptor;

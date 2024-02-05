@@ -50,6 +50,7 @@ auto imageCallback(sensor_msgs::ImageConstPtr const& msg) -> void {
         en265_packet* packet;
         while ((packet = en265_get_packet(encoder, 0)) != nullptr) {
             std::span span{std::bit_cast<std::byte*>(packet->data), static_cast<std::size_t>(packet->length)};
+            ROS_INFO_STREAM(span.size());
             streamServer->feed(span);
             en265_free_packet(encoder, packet);
         }

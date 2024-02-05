@@ -185,7 +185,7 @@ target_compile_definitions(streaming PUBLIC BOOST_ASIO_NO_DEPRECATED)
 
 if (CUDA_FOUND)
     mrover_add_node(hardware_h265_encoder src/esw/hardware_h265_encoder/*.c*)
-    target_link_libraries(hardware_h265_encoder PUBLIC cuda nvidia-encode opencv_core opencv_imgproc opencv_imgcodecs streaming)
+    target_link_libraries(hardware_h265_encoder PUBLIC cuda nvidia-encode opencv_core opencv_imgproc opencv_imgcodecs opencv_videoio streaming)
     target_include_directories(hardware_h265_encoder SYSTEM PUBLIC deps/nvenc)
 endif ()
 
