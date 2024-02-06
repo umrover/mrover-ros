@@ -19,22 +19,18 @@ namespace mrover {
         try {
             SE3 zed_to_map = SE3::fromTfTree(tf_buffer, "map", "zed2i_left_camera_frame");
             auto* points = reinterpret_cast<Point const*>(msg->data.data());
-            int step = 4;
-            uint32_t num_points = msg->width * msg->height / step;
-            Eigen::MatrixXd point_matrix(4, num_points);
-            Eigen::MatrixXd normal_matrix(4, num_points);
             // std::for_each(points, points + msg->width * msg->height, [&](auto* point) {
-            for (auto point = points; point - points < msg->width * msg->height; point += step) {
+            for (auto point = points; point - points < msg->width * msg->height; point += mDownSamplingFactor) {
                 Eigen::Vector4d p{point->x, point->y, point->z, 1};
-                point_matrix.col((point - points) / step) = p;
+                point_matrix.col((point - points) / mDownSamplingFactor) = p;
                 Eigen::Vector4d normal{point->normal_x, point->normal_y, point->normal_z, 0};
-                normal_matrix.col((point - points) / step) = normal;
+                normal_matrix.col((point - points) / mDownSamplingFactor) = normal;
             }
 
             point_matrix = zed_to_map.matrix() * point_matrix;
             normal_matrix = zed_to_map.matrix() * normal_matrix;
 
-            for (uint32_t i = 0; i < num_points; i++) {
+            for (uint32_t i = 0; i < mNumPoints; i++) {
                 double x = point_matrix(0, i);
                 double y = point_matrix(1, i);
                 Eigen::Vector4d n = normal_matrix.col(i);

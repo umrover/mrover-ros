@@ -1,4 +1,5 @@
 #include "pch.hpp"
+#include <Eigen/src/Core/Matrix.h>
 
 namespace mrover {
 
@@ -14,6 +15,11 @@ namespace mrover {
         float mResolution{};    // Meters per cell
         float mDimension{};     // Dimensions of the square costmap in meters
         float mNormalThreshold = 0.9;
+        int mDownSamplingFactor = 4;
+        uint32_t mNumPoints = 640 * 480 / mDownSamplingFactor;
+        Eigen::MatrixXd point_matrix{4, mNumPoints};
+        Eigen::MatrixXd normal_matrix{4, mNumPoints};
+
         tf2_ros::Buffer tf_buffer;
         tf2_ros::TransformListener tf_listener{tf_buffer};
 
