@@ -54,7 +54,7 @@ namespace mrover {
         updateLastConnection();
 
         MoteusLimitSwitchInfo limitSwitchInfo = getPressedLimitSwitchInfo();
-        if ((velocity > 0 && limitSwitchInfo.isFwdPressed) || (velocity < 0 && limitSwitchInfo.isBwdPressed)) {
+        if ((velocity > Radians{0} && limitSwitchInfo.isFwdPressed) || (velocity < Radians{0} && limitSwitchInfo.isBwdPressed)) {
             setBrake();
             return;
         }
@@ -84,13 +84,12 @@ namespace mrover {
         mDevice.publish_moteus_frame(setBrakeFrame);
     }
 
-    MoteusLimitSwitchInfo getPressedLimitSwitchInfo() {
+    MoteusLimitSwitchInfo BrushlessController::getPressedLimitSwitchInfo() {
         // TODO - implement this
         MoteusLimitSwitchInfo result;
     
         result.isFwdPressed = false;
         result.isBwdPressed = false;
-
 
         if (hasFwdLimitSwitch) {
             // TODO

@@ -81,9 +81,8 @@ namespace mrover {
         moteus::Controller mController{moteus::Controller::Options{}};
         double mMeasuredEffort{};
         bool hasFwdLimitSwitch{};
-        bool hasBwdLimitSwitch{}
+        bool hasBwdLimitSwitch{};
         
-
         // Function to map throttle to velocity
         RadiansPerSecond mapThrottleToVelocity(Percent throttle);
         // Converts moteus error codes and mode codes to std::string descriptions
