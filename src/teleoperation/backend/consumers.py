@@ -356,8 +356,14 @@ class GUIConsumer(JsonWebsocketConsumer):
         )
 
     def arm_controller_callback(self, msg):
+        hits = []
+        for n in msg.limit_hit:
+            temp = []
+            for i in range(4):
+                temp.append((1 if n & (1 << i) != 0 else 0) )
+            hits.append(temp)
         self.send(
-            text_data=json.dumps({"type": "arm_moteus", "name": msg.name, "state": msg.state, "error": msg.error})
+            text_data=json.dumps({"type": "arm_moteus", "name": msg.name, "state": msg.state, "error": msg.error, "limit_hit": hits})
         )
 
     def drive_controller_callback(self, msg):
