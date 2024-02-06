@@ -57,6 +57,11 @@ namespace mrover {
         PositionInvalid = 43,
     };
 
+    struct MoteusLimitSwitchInfo {
+        bool isFwdPressed;
+        bool isBwdPressed;
+    };
+
     class BrushlessController : public Controller {
     public:
         BrushlessController(ros::NodeHandle const& nh, std::string name, std::string controllerName);
@@ -69,11 +74,15 @@ namespace mrover {
         double getEffort() override;
         void setStop();
         void setBrake();
+        MoteusLimitSwitchInfo getPressedLimitSwitchInfo();
         void adjust(Radians position) override;
 
     private:
         moteus::Controller mController{moteus::Controller::Options{}};
         double mMeasuredEffort{};
+        bool hasFwdLimitSwitch{};
+        bool hasBwdLimitSwitch{}
+        
 
         // Function to map throttle to velocity
         RadiansPerSecond mapThrottleToVelocity(Percent throttle);

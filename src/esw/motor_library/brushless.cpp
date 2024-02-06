@@ -17,6 +17,9 @@ namespace mrover {
 
         mMinPosition = Radians{xmlRpcValueToTypeOrDefault<double>(brushlessMotorData, "min_position", -1.0)};
         mMaxPosition = Radians{xmlRpcValueToTypeOrDefault<double>(brushlessMotorData, "max_position", 1.0)};
+
+        hasFwdLimitSwitch = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "hasFwdLimitSwitch", false);
+        hasBwdLimitSwitch = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "hasBwdLimitSwitch", false);
     }
 
     void BrushlessController::setDesiredThrottle(Percent throttle) {
@@ -26,6 +29,13 @@ namespace mrover {
 
     void BrushlessController::setDesiredPosition(Radians position) {
         updateLastConnection();
+
+        MoteusLimitSwitchInfo limitSwitchInfo = getPressedLimitSwitchInfo();
+        if ((mCurrentPosition < position && limitSwitchInfo.isFwdPressed) || (mCurrentPosition > position && limitSwitchInfo.isBwdPressed)) {
+            setBrake();
+            return;
+        }
+
         Revolutions position_revs = std::clamp(position, mMinPosition, mMaxPosition);
         moteus::PositionMode::Command command{
                 .position = position_revs.get(),
@@ -42,6 +52,12 @@ namespace mrover {
 
     void BrushlessController::setDesiredVelocity(RadiansPerSecond velocity) {
         updateLastConnection();
+
+        MoteusLimitSwitchInfo limitSwitchInfo = getPressedLimitSwitchInfo();
+        if ((velocity > 0 && limitSwitchInfo.isFwdPressed) || (velocity < 0 && limitSwitchInfo.isBwdPressed)) {
+            setBrake();
+            return;
+        }
 
         RevolutionsPerSecond velocity_rev_s = std::clamp(velocity, mMinVelocity, mMaxVelocity);
         // ROS_WARN("%7.3f   %7.3f",
@@ -66,6 +82,26 @@ namespace mrover {
     void BrushlessController::setBrake() {
         moteus::CanFdFrame setBrakeFrame = mController.MakeBrake();
         mDevice.publish_moteus_frame(setBrakeFrame);
+    }
+
+    MoteusLimitSwitchInfo getPressedLimitSwitchInfo() {
+        // TODO - implement this
+        MoteusLimitSwitchInfo result;
+    
+        result.isFwdPressed = false;
+        result.isBwdPressed = false;
+
+
+        if (hasFwdLimitSwitch) {
+            // TODO
+            result.isFwdPressed = false;
+        }
+        if (hasBwdLimitSwitch) {
+            // TODO 
+            result.isBwdPressed = false;
+        }
+
+        return result;
     }
 
     void BrushlessController::adjust(Radians commandedPosition) {
