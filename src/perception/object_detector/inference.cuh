@@ -8,6 +8,7 @@
 #include <cstdio>
 #include <cuda_runtime_api.h>
 #include <opencv4/opencv2/core/hal/interface.h>
+#include <string>
 
 using nvinfer1::ICudaEngine;
 using nvinfer1::IExecutionContext;
@@ -16,6 +17,9 @@ namespace mrover {
 
     class Inference {
     private:
+        //Model Path
+        std::string mModelPath;
+
         //Init Logger
         nvinfer1::Logger mLogger;
 

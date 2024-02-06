@@ -2,6 +2,7 @@
 #include "inference_wrapper.hpp"
 #include "pch.hpp"
 #include <loop_profiler.hpp>
+#include <string>
 
 namespace mrover {
 
@@ -11,7 +12,7 @@ namespace mrover {
         mPnh = getMTPrivateNodeHandle();
 
         std::filesystem::path packagePath = ros::package::getPath("mrover");
-        std::filesystem::path modelPath = packagePath / "data" / "yolov8n_mallet_bottle_better.onnx";
+        std::filesystem::path modelPath = packagePath / "data" / mModelName.append(".onnx");
 
         mInferenceWrapper = InferenceWrapper{modelPath};
 
@@ -28,6 +29,8 @@ namespace mrover {
         mNh.param<int>("obj_decrement_weight", mObjDecrementWeight, 1);
         mNh.param<int>("obj_hitcount_threshold", mObjHitThreshold, 5);
         mNh.param<int>("obj_hitcount_max", mObjMaxHitcount, 10);
+        mNh.param<std::string>("model_name", mModelName, "yolov8n_mallet_bottle_better");
+
 
         //Initialize Object Hit Cout to Zeros
         mObjectHitCounts = {0, 0};

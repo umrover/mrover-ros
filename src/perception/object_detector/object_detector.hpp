@@ -5,6 +5,7 @@
 #include <loop_profiler.hpp>
 #include <opencv2/core/mat.hpp>
 #include <ros/publisher.h>
+#include <string>
 
 namespace mrover {
 
@@ -17,6 +18,9 @@ namespace mrover {
     };
 
     class ObjectDetectorNodelet : public nodelet::Nodelet {
+
+        //Model Name for Object Detector
+        std::string mModelName;
 
         //Loop Profiler
         LoopProfiler mLoopProfiler{"Object Detector", 1};

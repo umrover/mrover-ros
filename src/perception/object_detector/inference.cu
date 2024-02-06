@@ -34,6 +34,9 @@ namespace mrover {
     }
 
     ICudaEngine* Inference::createCudaEngine(std::filesystem::path const& onnxModelPath) {
+
+        mModelPath = {onnxModelPath.c_str()};
+
         //Define the size of Batches
         constexpr auto explicitBatch = 1U << static_cast<uint32_t>(NetworkDefinitionCreationFlag::kEXPLICIT_BATCH);
 
@@ -67,7 +70,7 @@ namespace mrover {
 
         //Define the engine file location relative to the mrover package
         std::filesystem::path packagePath = ros::package::getPath("mrover");
-        std::filesystem::path enginePath = packagePath / "data" / "tensorrt-engine-yolov8n_mallet_bottle_better.engine";
+        std::filesystem::path enginePath = packagePath / "data" / std::string("tensorrt-engine-").append(mModelPath).append(".engine");
 
         //Check if engine file exists
         if (!exists(enginePath)) {

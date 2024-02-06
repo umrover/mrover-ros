@@ -1,11 +1,11 @@
 <!-- This launch file launches all nodes necessary for autonomous navigation. -->
 <launch>
-  <arg name="run_tag_detector" default="true"/>
-  <arg name="sim" default="false"/>
-  <arg name="use_ekf" default="true"/>
-  <arg name="ekf_start_delay" default="0"/>
-  <arg name="use_linearization" default="true"/>
-  <arg name="use_tensorrt" default="false"/>
+  <arg name="run_tag_detector" default="true" />
+  <arg name="sim" default="false" />
+  <arg name="use_ekf" default="true" />
+  <arg name="ekf_start_delay" default="0" />
+  <arg name="use_linearization" default="true" />
+  <arg name="use_object_detector" default="false" />
 
   <!--
     ==========
@@ -13,15 +13,15 @@
     ==========
   -->
   <node pkg="nodelet" type="nodelet" name="nodelet_manager" required="true"
-        args="manager" output="screen"/>
+    args="manager" output="screen" />
   <!-- nodelet to detect AR tags and publish them to the TF tree -->
   <node if="$(arg run_tag_detector)"
-        pkg="nodelet" type="nodelet" name="tag_detector"
-        args="load mrover/TagDetectorNodelet nodelet_manager" output="screen"/>
+    pkg="nodelet" type="nodelet" name="tag_detector"
+    args="load mrover/TagDetectorNodelet nodelet_manager" output="screen" />
 
-  <node if="$(arg use_tensorrt)"
-        pkg="nodelet" type="nodelet" name="object_detector_nodelet"
-        args="load mrover/ObjectDetectorNodelet nodelet_manager" output="screen"/>
+  <node if="$(arg use_object_detector)"
+    pkg="nodelet" type="nodelet" name="object_detector_nodelet"
+    args="load mrover/ObjectDetectorNodelet nodelet_manager" output="screen" />
 
   <!--
     ===========
@@ -29,8 +29,8 @@
     ===========
   -->
   <!-- node to navigate to a series of waypoints, AR tags, and gates -->
-  <rosparam command="load" file="$(find mrover)/config/navigation.yaml"/>
-  <node name="nav" pkg="mrover" type="navigation.py" output="screen"/>
+  <rosparam command="load" file="$(find mrover)/config/navigation.yaml" />
+  <node name="nav" pkg="mrover" type="navigation.py" output="screen" />
   <!--  <node name="failure_id" pkg="mrover" type="failure_identification.py"/>-->
 
   <!--
@@ -38,19 +38,20 @@
     Localization
     ============
   -->
-  <rosparam command="load" file="$(find mrover)/config/localization.yaml"/>
-  <rosparam if="$(arg sim)" command="load" file="$(find mrover)/config/sim_ekf.yaml"/>
-  <rosparam unless="$(arg sim)" command="load" file="$(find mrover)/config/ekf.yaml"/>
+  <rosparam command="load" file="$(find mrover)/config/localization.yaml" />
+  <rosparam if="$(arg sim)" command="load" file="$(find mrover)/config/sim_ekf.yaml" />
+  <rosparam unless="$(arg sim)" command="load" file="$(find mrover)/config/ekf.yaml" />
 
   <!-- global EKF -->
   <node if="$(arg use_ekf)" pkg="robot_localization" type="ekf_localization_node" name="global_ekf"
-        clear_params="true" launch-prefix="bash -c 'sleep $(arg ekf_start_delay); $0 $@'">
-    <remap from="odometry/filtered" to="global_ekf/odometry"/>
+    clear_params="true" launch-prefix="bash -c 'sleep $(arg ekf_start_delay); $0 $@'">
+    <remap from="odometry/filtered" to="global_ekf/odometry" />
   </node>
   <!-- passthrough filter to replace EKF in data path -->
-  <node unless="$(arg use_ekf)" pkg="mrover" type="passthrough_filter.py" name="passthrough_filter"/>
+  <node unless="$(arg use_ekf)" pkg="mrover" type="passthrough_filter.py" name="passthrough_filter" />
 
   <!-- node to linearize GPS from geodetic to ENU cartesian coords -->
-  <node if="$(arg use_linearization)" name="gps_linearization" pkg="mrover" type="gps_linearization.py"
-        output="screen"/>
+  <node if="$(arg use_linearization)" name="gps_linearization" pkg="mrover"
+    type="gps_linearization.py"
+    output="screen" />
 </launch>
