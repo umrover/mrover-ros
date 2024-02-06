@@ -6,17 +6,17 @@ Logs the service request to stdout
 
 from typing import Any
 import rospy
-from mrover.srv import EnableAuton, EnableAutonResponse
+from mrover.srv import AdjustMotor, AdjustMotorResponse
 from std_srvs.srv import Trigger, TriggerResponse
 
 # Change these values for the service name and type definition to test different values
-SERVICE_NAME = "sa_calibrate_sa_y"
-SERVICE_TYPE = Trigger
+SERVICE_NAME = "joint_b_adjust"
+SERVICE_TYPE = AdjustMotor
 
 
 def print_service_request(service_request: Any):
     rospy.loginfo(service_request)
-    return TriggerResponse(success=True)
+    return AdjustMotorResponse(success=True)
 
 
 def main():

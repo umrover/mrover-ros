@@ -94,6 +94,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.max_angular_speed = self.max_wheel_speed / self.wheel_radius
 
         self.ra_config = rospy.get_param("teleop/ra_controls")
+        self.RA_NAMES = rospy.get_param("teleop/ra_names")
         self.brushless_motors = rospy.get_param("brushless_motors/controllers")
         self.brushed_motors = rospy.get_param("brushed_motors/controllers")
         self.xbox_mappings = rospy.get_param("teleop/xbox_mappings")
@@ -231,7 +232,6 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.sa_throttle_cmd_pub.publish(sa_throttle_cmd)
 
     def handle_arm_message(self, msg):
-        RA_NAMES = ["joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll", "allen_key", "gripper"]
         ra_slow_mode = False
         if msg["arm_mode"] == "ik":
             x = 1
@@ -244,7 +244,7 @@ class GUIConsumer(JsonWebsocketConsumer):
 
         elif msg["arm_mode"] == "velocity":
             arm_velocity_cmd = Velocity()
-            arm_velocity_cmd.names = RA_NAMES
+            arm_velocity_cmd.names = self.RA_NAMES
             arm_velocity_cmd.velocities = [
                 self.to_velocity(
                     self.filter_xbox_axis(msg["axes"][self.ra_config["joint_a"]["xbox_index"]]), "joint_a"
@@ -269,7 +269,7 @@ class GUIConsumer(JsonWebsocketConsumer):
 
         elif msg["arm_mode"] == "throttle":
             arm_throttle_cmd = Throttle()
-            arm_throttle_cmd.names = RA_NAMES
+            arm_throttle_cmd.names = self.RA_NAMES
             d_pad_x = msg["axes"][self.xbox_mappings["d_pad_x"]]
             if d_pad_x > 0.5:
                 ra_slow_mode = True
@@ -288,7 +288,7 @@ class GUIConsumer(JsonWebsocketConsumer):
                 ]
             )
 
-            for i, name in enumerate(RA_NAMES):
+            for i, name in enumerate(self.RA_NAMES):
                 if ra_slow_mode:
                     arm_throttle_cmd.throttles[i] *= self.ra_config[name]["slow_mode_multiplier"]
                 if self.ra_config[name]["invert"]:
@@ -380,24 +380,31 @@ class GUIConsumer(JsonWebsocketConsumer):
     def enable_laser_callback(self, msg):
         try:
             result = self.laser_service(data=msg["data"])
-            self.send(text_data=json.dumps({"type": "laser_service", "result": result.success}))
+            self.send(text_data=json.dumps({"type": "laser_service", "success": result.success}))
         except rospy.ServiceException as e:
             rospy.logerr(f"Service call failed: {e}")
 
     def limit_switch(self, msg):
-        joints = [msg["name"]] #assume only 1 limit switch, unless using RA
-        if(msg["name"] == "all_ra"):
-            joints = ["joint_a","joint_b","joint_c","joint_de_pitch","joint_de_roll","allen_key","gripper"]
         fail = []
-        for joint in joints:
-            name = "arm_enable_limit_switch_"+joint
-            self.limit_switch_service = rospy.ServiceProxy(name, SetBool)
+        if msg["topic"] == "all_ra":
+            for joint in self.RA_NAMES:
+                name = "arm_enable_limit_switch_"+joint
+                self.limit_switch_service = rospy.ServiceProxy(name, SetBool)
+                try:
+                    result = self.limit_switch_service(data = msg['data'])
+                    if not result.success:
+                        fail.append(joint)
+                except rospy.ServiceException as e:
+                    print(f"Service call failed: {e}")
+        else:
+            self.limit_switch_service = rospy.ServiceProxy(msg["topic"], SetBool)
             try:
                 result = self.limit_switch_service(data = msg['data'])
                 if not result.success:
                     fail.append(joint)
             except rospy.ServiceException as e:
                 print(f"Service call failed: {e}")
+                    
         self.send(text_data=json.dumps({
                     'type': 'enable_limit_switch',
                     'result': fail
@@ -406,8 +413,7 @@ class GUIConsumer(JsonWebsocketConsumer):
     def calibrate_motors(self,msg):
         fail = [] #if any calibration fails, add joint name to a list to return
         if msg["topic"] == "all_ra":
-            joints = ["joint_a","joint_b","joint_c","joint_de_pitch","joint_de_roll","allen_key","gripper"]
-            for joint in joints:
+            for joint in self.RA_NAMES:
                 self.calibrate_service = rospy.ServiceProxy("arm_calibrate_"+joint, Trigger)
                 try:
                     result = self.calibrate_service()
@@ -435,7 +441,7 @@ class GUIConsumer(JsonWebsocketConsumer):
             result = arm_adjust_srv(name=msg['name'], value=msg['value'])
             self.send(text_data=json.dumps({
                 'type': 'arm_adjust',
-                'result': result.success
+                'success': result.success
             }))
         except rospy.ServiceException as e:
             print(f"Service call failed: {e}")
