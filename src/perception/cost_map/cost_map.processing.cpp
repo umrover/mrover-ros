@@ -25,7 +25,7 @@ namespace mrover {
             Eigen::MatrixXd normal_matrix(4, num_points);
             // std::for_each(points, points + msg->width * msg->height, [&](auto* point) {
             for (auto point = points; point - points < msg->width * msg->height; point += step) {
-                Eigen::Vector4d p{point->x, point->y, 0, 1};
+                Eigen::Vector4d p{point->x, point->y, point->z, 1};
                 point_matrix.col((point - points) / step) = p;
                 Eigen::Vector4d normal{point->normal_x, point->normal_y, point->normal_z, 0};
                 normal_matrix.col((point - points) / step) = normal;
@@ -46,7 +46,7 @@ namespace mrover {
                     auto i = mGlobalGridMsg.info.width * y_index + x_index;
 
                     Eigen::Vector3d normal{n.x(), n.y(), n.z()};
-                    normal.normalize();
+                    // normal.normalize();
                     // get vertical component of (unit) normal vector
                     double z_comp = normal.z();
                     // small z component indicates largely horizontal normal (surface is vertical)
