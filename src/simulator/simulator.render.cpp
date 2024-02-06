@@ -684,7 +684,7 @@ namespace mrover {
             if (!mSceneUniforms.buffer) {
                 mSceneUniforms.init(mDevice);
                 mSceneUniforms.value.lightColor = {1, 1, 1, 1};
-                mSceneUniforms.value.lightInWorld = {0, 0, 5, 1};
+                mSceneUniforms.value.lightInWorld = {0, 0, 20, 1};
             }
 
             int width, height;

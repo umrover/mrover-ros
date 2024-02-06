@@ -2,7 +2,11 @@ objects:
   - type: urdf
     name: rover
     uri: package://mrover/urdf/rover/rover.urdf.xacro
-    translation: [ 0, 0, 0.5 ]
+    translation: [0, 0, 0.5]
   - type: urdf
     name: world
     uri: package://mrover/urdf/world/mdrs.urdf.xacro
+#  - type: urdf
+#    name: lander
+#    uri: package://mrover/urdf/world/lander.urdf.xacro
+#    translation: [84.5, -45.89, -1.36]
