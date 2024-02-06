@@ -56,14 +56,26 @@
         @change="toggleArmLaser()"
       />
       <div class="limit-switch">
-        <h4>Limit Switches</h4>
-        <LimitSwitch :name="'All Switches'" :switch_name="'all_ra'" />
+        <h4 style="margin-right: 10px">Limit Switches</h4>
+        <!-- TODO: Make switch to toggle all switches on or off, will need to use refs or modify LimitSwitch.vue -->
+        <!-- <LimitSwitch :display_name="'All Switches'" :service_name="'all_ra'" /> -->
+        <div>
+          <LimitSwitch :display_name="'Joint A'" :service_name="'joint_a'" />
+          <LimitSwitch :display_name="'Joint B'" :service_name="'joint_b'" />
+          <LimitSwitch :display_name="'Joint C'" :service_name="'joint_c'" />
+          <LimitSwitch :display_name="'Joint DE Pitch'" :service_name="'joint_de_pitch'" />
+        </div>
+        <div>
+          <LimitSwitch :display_name="'Joint DE Roll'" :service_name="'joint_de_roll'" />
+          <LimitSwitch :display_name="'Allen Key'" :service_name="'allen_key'" />
+          <LimitSwitch :display_name="'Gripper'" :service_name="'gripper'" />
+        </div>
       </div>
     </div>
     <div class="controls-flex">
       <h4>Calibration</h4>
-      <CalibrationCheckbox name="All Joints Calibration" topic_name = "all_ra" />
-      <MotorAdjust 
+      <CalibrationCheckbox name="All Joints Calibration" topic_name="all_ra" />
+      <MotorAdjust
         v-if="arm_mode === 'position'"
         :motors="[
           { esw_name: 'joint_a', display_name: 'Joint A' },
@@ -129,7 +141,7 @@ export default defineComponent({
   },
 
   computed: {
-    ...mapState('websocket', ['message']),
+    ...mapState('websocket', ['message'])
   },
 
   watch: {
@@ -239,8 +251,9 @@ export default defineComponent({
 
 .limit-switch {
   display: flex;
-  flex-direction: column;
-  align-items: center;
+  flex-direction: row;
+  justify-content: space-between;
+  margin-left: 30px;
 }
 
 .limit-switch h4 {

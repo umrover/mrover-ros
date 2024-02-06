@@ -47,27 +47,22 @@
     </div>
     <div class="shadow p-3 rounded limit">
       <h3>Limit Switches</h3>
-      <LimitSwitch :switch_name="'sa_joint_1'" :name="'Joint 1 Switch'" />
-      <LimitSwitch :switch_name="'sa_joint_2'" :name="'Joint 2 Switch'" />
-      <LimitSwitch :switch_name="'sa_joint_3'" :name="'Joint 3 Switch'" />
-      <LimitSwitch :switch_name="'scoop'" :name="'Scoop Switch'" />
+      <LimitSwitch :service_name="'sa_enable_limit_switch_sa_x'" :display_name="'SA X Switch'" />
+      <LimitSwitch :service_name="'sa_enable_limit_switch_sa_y'" :display_name="'SA Y Switch'" />
+      <LimitSwitch :service_name="'sa_enable_limit_switch_sa_z'" :display_name="'SA Z Switch'" />
+      <LimitSwitch :service_name="'sa_enable_limit_switch_scoop'" :display_name="'Scoop Switch'" />
+      <LimitSwitch
+        :service_name="'sa_enable_limit_switch_sensor_actuator'"
+        :display_name="'Sensor Actuator Switch'"
+      />
     </div>
     <div class="shadow p-3 rounded calibration">
       <h3>Calibrations</h3>
-      <br>
+      <br />
       <div class="calibration-checkboxes">
-        <CalibrationCheckbox
-          :name="'SA X Calibration'"
-          :topic_name="'sa_calibrate_sa_x'"
-        />
-        <CalibrationCheckbox
-          :name="'SA Y Calibration'"
-          :topic_name="'sa_calibrate_sa_y'"
-        />
-        <CalibrationCheckbox
-          :name="'SA Z Calibration'"
-          :topic_name="'sa_calibrate_sa_z'"
-        />
+        <CalibrationCheckbox :name="'SA X Calibration'" :topic_name="'sa_calibrate_sa_x'" />
+        <CalibrationCheckbox :name="'SA Y Calibration'" :topic_name="'sa_calibrate_sa_y'" />
+        <CalibrationCheckbox :name="'SA Z Calibration'" :topic_name="'sa_calibrate_sa_z'" />
       </div>
       <!-- <MotorAdjust
         :options="[

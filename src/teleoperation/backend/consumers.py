@@ -19,8 +19,8 @@ from mrover.msg import (
     CalibrationStatus,
     Calibrated,
     MotorsStatus,
-    Velocity, 
-    Position
+    Velocity,
+    Position,
 )
 from mrover.srv import EnableAuton
 from sensor_msgs.msg import NavSatFix
@@ -102,7 +102,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.brushed_motors = rospy.get_param("brushed_motors/controllers")
         self.xbox_mappings = rospy.get_param("teleop/xbox_mappings")
         self.sa_config = rospy.get_param("teleop/sa_controls")
-        
+
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
         self.flight_thread = threading.Thread(target=self.flight_attitude_listener)
@@ -146,7 +146,7 @@ class GUIConsumer(JsonWebsocketConsumer):
                 self.auton_bearing()
             elif message["type"] == "mast_gimbal":
                 self.mast_gimbal(message)
-            elif message['type'] == 'enable_limit_switch':
+            elif message["type"] == "enable_limit_switch":
                 self.limit_switch(message)
             elif message["type"] == "save_auton_waypoint_list":
                 self.save_auton_waypoint_list(message)
@@ -180,16 +180,25 @@ class GUIConsumer(JsonWebsocketConsumer):
         Scales [-1,1] joystick input to min/max of each joint
         """
         if brushless:
-            return (self.brushless_motors[joint_name]["min_velocity"] 
-                    + (input+1) * (self.brushless_motors[joint_name]["max_velocity"] 
-                    - self.brushless_motors[joint_name]["min_velocity"]) / 2)
-        else: 
-            return (self.brushed_motors[joint_name]["min_velocity"] 
-                    + (input+1) * (self.brushed_motors[joint_name]["max_velocity"] 
-                    - self.brushed_motors[joint_name]["min_velocity"]) / 2)
-        
-    def handle_sa_arm_message(self,msg):
-        SA_NAMES = ["sa_x","sa_y","sa_z","scoop","sensor_actuator"]
+            return (
+                self.brushless_motors[joint_name]["min_velocity"]
+                + (input + 1)
+                * (
+                    self.brushless_motors[joint_name]["max_velocity"]
+                    - self.brushless_motors[joint_name]["min_velocity"]
+                )
+                / 2
+            )
+        else:
+            return (
+                self.brushed_motors[joint_name]["min_velocity"]
+                + (input + 1)
+                * (self.brushed_motors[joint_name]["max_velocity"] - self.brushed_motors[joint_name]["min_velocity"])
+                / 2
+            )
+
+    def handle_sa_arm_message(self, msg):
+        SA_NAMES = ["sa_x", "sa_y", "sa_z", "scoop", "sensor_actuator"]
         raw_left_trigger = msg["axes"][self.xbox_mappings["left_trigger"]]
         left_trigger = raw_left_trigger if raw_left_trigger > 0 else 0
         raw_right_trigger = msg["axes"][self.xbox_mappings["right_trigger"]]
@@ -205,11 +214,18 @@ class GUIConsumer(JsonWebsocketConsumer):
             sa_velocity_cmd = Velocity()
             sa_velocity_cmd.names = SA_NAMES
             sa_velocity_cmd.velocities = [
-                self.to_velocity(self.filter_xbox_axis(msg["axes"][self.sa_config["sa_x"]["xbox_index"]]), "sa_x", False),
-                self.to_velocity(self.filter_xbox_axis(msg["axes"][self.sa_config["sa_y"]["xbox_index"]]), "sa_y", False),
-                self.to_velocity(self.filter_xbox_axis(msg["axes"][self.sa_config["sa_z"]["xbox_index"]]), "sa_z", False),
-                self.sa_config["scoop"]["multiplier"] * (right_trigger-left_trigger),
-                self.sa_config["sensor_actuator"]["multiplier"] *  self.filter_xbox_button(msg["buttons"], "right_bumper", "left_bumper"),
+                self.to_velocity(
+                    self.filter_xbox_axis(msg["axes"][self.sa_config["sa_x"]["xbox_index"]]), "sa_x", False
+                ),
+                self.to_velocity(
+                    self.filter_xbox_axis(msg["axes"][self.sa_config["sa_y"]["xbox_index"]]), "sa_y", False
+                ),
+                self.to_velocity(
+                    self.filter_xbox_axis(msg["axes"][self.sa_config["sa_z"]["xbox_index"]]), "sa_z", False
+                ),
+                self.sa_config["scoop"]["multiplier"] * (right_trigger - left_trigger),
+                self.sa_config["sensor_actuator"]["multiplier"]
+                * self.filter_xbox_button(msg["buttons"], "right_bumper", "left_bumper"),
             ]
 
             self.sa_velocity_cmd_pub.publish(sa_velocity_cmd)
@@ -218,12 +234,18 @@ class GUIConsumer(JsonWebsocketConsumer):
             sa_throttle_cmd = Throttle()
             sa_throttle_cmd.names = SA_NAMES
 
-            sa_throttle_cmd.throttles = [self.sa_config[name]["multiplier"] 
-                                               * self.filter_xbox_axis(msg["axes"][info["xbox_index"]],0.15,True) for name, info in self.sa_config.items() if name.startswith("sa")]
-            sa_throttle_cmd.throttles.extend([
-                self.sa_config["scoop"]["multiplier"] * (right_trigger-left_trigger),
-                self.sa_config["sensor_actuator"]["multiplier"] *  self.filter_xbox_button(msg["buttons"], "right_bumper", "left_bumper"),
-            ])
+            sa_throttle_cmd.throttles = [
+                self.sa_config[name]["multiplier"] * self.filter_xbox_axis(msg["axes"][info["xbox_index"]], 0.15, True)
+                for name, info in self.sa_config.items()
+                if name.startswith("sa")
+            ]
+            sa_throttle_cmd.throttles.extend(
+                [
+                    self.sa_config["scoop"]["multiplier"] * (right_trigger - left_trigger),
+                    self.sa_config["sensor_actuator"]["multiplier"]
+                    * self.filter_xbox_button(msg["buttons"], "right_bumper", "left_bumper"),
+                ]
+            )
 
             fast_mode_activated = msg["buttons"][self.xbox_mappings["a"]] or msg["buttons"][self.xbox_mappings["b"]]
             if not fast_mode_activated:
@@ -382,10 +404,12 @@ class GUIConsumer(JsonWebsocketConsumer):
         for n in msg.limit_hit:
             temp = []
             for i in range(4):
-                temp.append((1 if n & (1 << i) != 0 else 0) )
+                temp.append((1 if n & (1 << i) != 0 else 0))
             hits.append(temp)
         self.send(
-            text_data=json.dumps({"type": "arm_moteus", "name": msg.name, "state": msg.state, "error": msg.error, "limit_hit": hits})
+            text_data=json.dumps(
+                {"type": "arm_moteus", "name": msg.name, "state": msg.state, "error": msg.error, "limit_hit": hits}
+            )
         )
 
     def drive_controller_callback(self, msg):
@@ -393,10 +417,12 @@ class GUIConsumer(JsonWebsocketConsumer):
         for n in msg.limit_hit:
             temp = []
             for i in range(4):
-                temp.append((1 if n & (1 << i) != 0 else 0) )
+                temp.append((1 if n & (1 << i) != 0 else 0))
             hits.append(temp)
         self.send(
-            text_data=json.dumps({"type": "drive_moteus", "name": msg.name, "state": msg.state, "error": msg.error, "limit_hit": hits})
+            text_data=json.dumps(
+                {"type": "drive_moteus", "name": msg.name, "state": msg.state, "error": msg.error, "limit_hit": hits}
+            )
         )
 
     def enable_laser_callback(self, msg):
@@ -408,35 +434,32 @@ class GUIConsumer(JsonWebsocketConsumer):
 
     def limit_switch(self, msg):
         fail = []
-        if msg["topic"] == "all_ra":
+        if msg["name"] == "all_ra":
             for joint in self.RA_NAMES:
-                name = "arm_enable_limit_switch_"+joint
+                name = "arm_enable_limit_switch_" + joint
                 self.limit_switch_service = rospy.ServiceProxy(name, SetBool)
                 try:
-                    result = self.limit_switch_service(data = msg['data'])
+                    result = self.limit_switch_service(data=msg["data"])
                     if not result.success:
                         fail.append(joint)
                 except rospy.ServiceException as e:
                     print(f"Service call failed: {e}")
         else:
-            self.limit_switch_service = rospy.ServiceProxy(msg["topic"], SetBool)
+            self.limit_switch_service = rospy.ServiceProxy(msg["name"], SetBool)
             try:
-                result = self.limit_switch_service(data = msg['data'])
+                result = self.limit_switch_service(data=msg["data"])
                 if not result.success:
                     fail.append(joint)
             except rospy.ServiceException as e:
                 print(f"Service call failed: {e}")
-                    
-        self.send(text_data=json.dumps({
-                    'type': 'enable_limit_switch',
-                    'result': fail
-                }))
 
-    def calibrate_motors(self,msg):
-        fail = [] #if any calibration fails, add joint name to a list to return
+        self.send(text_data=json.dumps({"type": "enable_limit_switch", "result": fail}))
+
+    def calibrate_motors(self, msg):
+        fail = []  # if any calibration fails, add joint name to a list to return
         if msg["topic"] == "all_ra":
             for joint in self.RA_NAMES:
-                self.calibrate_service = rospy.ServiceProxy("arm_calibrate_"+joint, Trigger)
+                self.calibrate_service = rospy.ServiceProxy("arm_calibrate_" + joint, Trigger)
                 try:
                     result = self.calibrate_service()
                     if not result.success:
@@ -451,23 +474,16 @@ class GUIConsumer(JsonWebsocketConsumer):
                     fail = msg["topic"]
             except rospy.ServiceException as e:
                 print(f"Service call failed: {e}")
-            
-        self.send(text_data=json.dumps({
-                    'type': 'calibrate_motors',
-                    'result': fail
-                }))
 
-    def arm_adjust(self,msg):
+        self.send(text_data=json.dumps({"type": "calibrate_motors", "result": fail}))
+
+    def arm_adjust(self, msg):
         try:
-            arm_adjust_srv = rospy.ServiceProxy(msg["name"]+"_adjust", AdjustMotor)
-            result = arm_adjust_srv(name=msg['name'], value=msg['value'])
-            self.send(text_data=json.dumps({
-                'type': 'arm_adjust',
-                'success': result.success
-            }))
+            arm_adjust_srv = rospy.ServiceProxy(msg["name"] + "_adjust", AdjustMotor)
+            result = arm_adjust_srv(name=msg["name"], value=msg["value"])
+            self.send(text_data=json.dumps({"type": "arm_adjust", "success": result.success}))
         except rospy.ServiceException as e:
             print(f"Service call failed: {e}")
-  
 
     def disable_auton_led(self):
         message = String()
@@ -486,7 +502,7 @@ class GUIConsumer(JsonWebsocketConsumer):
                     "velocity": msg.joint_states.velocity,
                     "effort": msg.joint_states.effort,
                     "state": msg.moteus_states.state,
-                    "error": msg.moteus_states.error
+                    "error": msg.moteus_states.error,
                 }
             )
         )
