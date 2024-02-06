@@ -78,8 +78,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.drive_status_sub = rospy.Subscriber("/drive_status", MotorsStatus, self.drive_status_callback)
         self.led_sub = rospy.Subscriber("/led", LED, self.led_callback)
         self.nav_state_sub = rospy.Subscriber("/nav_state", StateMachineStateUpdate, self.nav_state_callback)
-        self.imu_calibra
-        tion = rospy.Subscriber("imu/calibration", CalibrationStatus, self.imu_calibration_callback)
+        self.imu_calibration = rospy.Subscriber("imu/calibration", CalibrationStatus, self.imu_calibration_callback)
 
         # Services
         self.laser_service = rospy.ServiceProxy("enable_arm_laser", SetBool)
@@ -96,7 +95,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.max_angular_speed = self.max_wheel_speed / self.wheel_radius
 
         self.ra_config = rospy.get_param("teleop/ra_controls")
-        self.ik_names: rospy.get_param("teleop/ik_multipliers")
+        self.ik_names = rospy.get_param("teleop/ik_multipliers")
         self.RA_NAMES = rospy.get_param("teleop/ra_names")
         self.brushless_motors = rospy.get_param("brushless_motors/controllers")
         self.brushed_motors = rospy.get_param("brushed_motors/controllers")
@@ -268,15 +267,11 @@ class GUIConsumer(JsonWebsocketConsumer):
             right_trigger = self.filter_xbox_axis(msg["axes"][self.xbox_mappings["right_trigger"]])
             if right_trigger < 0:
                 right_trigger = 0  
-            
-            base_link_in_map.position[0]+= self.ik_names["x"]["multiplier"]*self.filter_xbox_axis(["axes"][self.xbox_mappings["left_js_x"]]),
-            base_link_in_map.position[1]= self.ik_names["y"]["multiplier"]*self.filter_xbox_axis(msg["axes"][self.xbox_mappings["left_js_y"]]),
-            base_link_in_map.position[2]-=self.ik_names["z"]["multiplier"]*left_trigger+self.ik_names["z"]["multiplier"]*right_trigger
-            
-            arm_ik_cmd = Pose(
-                pose = base_link_in_map.position,
-                quaternion = base_link_in_map.rotation.quaternion
-            )
+            base_link_in_map.position[0]+= self.ik_names["x"]*self.filter_xbox_axis(msg["axes"][self.xbox_mappings["left_js_x"]]),
+            base_link_in_map.position[1]+= self.ik_names["y"]*self.filter_xbox_axis(msg["axes"][self.xbox_mappings["left_js_y"]]),
+            base_link_in_map.position[2]-=self.ik_names["z"]*left_trigger+self.ik_names["z"]*right_trigger
+           
+            arm_ik_cmd = base_link_in_map.toPose()
             self.arm_ik_pub.publish(arm_ik_cmd)
 
         elif msg["arm_mode"] == "position":
