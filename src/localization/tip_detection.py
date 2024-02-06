@@ -33,20 +33,35 @@ class TipDetection:
         # read the orientation data from the given Imu message, store that value in `self.pose`, then publish that pose to the TF tree.
         self.hit_count = 0
         self.orientation_threshold = 0.5
-        self.angular_velocity_threshold_x = .25 #pitch
-        self.angular_velocity_threshold_y = .25 #roll
+        self.angular_velocity_threshold_x = 0.25  # pitch
+        self.angular_velocity_threshold_y = 0.25  # roll
         self.time_threshold = 1
         self.hit_count_threshold = 5
         self.reset_hit_count_threshold = 10
         self.time_counter = time.time()
 
-        odometry_sub = message_filters.Subscriber("global_ekf/odometry", Odometry)
-        odometry_sub.registerCallback(self.odometry_callback)
+        self.buffer = tf2_ros.Buffer()
+        self.world_frame = rospy.get_param("world_frame")
+        self.rover_frame = rospy.get_param("rover_frame")
+        print(self.world_frame)
+        print(self.rover_frame)
+        self.in_loop()
 
+        # odometry_sub = message_filters.Subscriber("global_ekf/odometry", Odometry)
+        # odometry_sub.registerCallback(self.odometry_callback)
+
+    def in_loop(self):
+        rate = rospy.Rate(10.0)
+        while not rospy.is_shutdown():
+            try:
+                print(SE3.from_tf_tree(self.buffer, self.world_frame, self.rover_frame))
+            except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
+                print(e)
+                rate.sleep()
+        
 
     def imu_callback(self, msg: Imu):
         pass
-        
 
     # every time data is gotten from odometry, odometry_callback() is called from init()
     # calling the rest of the functions like detect_tip() in odometry_callback()
@@ -62,8 +77,6 @@ class TipDetection:
         self.second_check(odometry)
         self.check_for_hit_count(self.hit_count)
         self.reset_hit_count_time(self.reset_hit_count_threshold, self.time_counter)
-
-
 
     # checking the rover's velocity
     def detect_tip(self, odometry):
@@ -92,18 +105,16 @@ class TipDetection:
         if angular_velocity_y >= self.angular_velocity_threshold_y:
             self.hit_count += 1
 
-
     # crates the time difference
     def perform_robotic_tasks(self, time_threshold):
         # Simulate robotic tasks
         rospy.loginfo("performing tasks...")
         rospy.sleep(time_threshold)  # Simulate a x second delay
 
-
     # checking acceleration of rover
     # why don't we have an acceleration threshold? why are we using orientation threshold? -audrey
-    def second_check(self, odometry):    
-        pass    
+    def second_check(self, odometry):
+        pass
         start_time = rospy.Time.now()
         self.perform_robotic_tasks(self.time_threshold)
         current_time = rospy.Time.now()
@@ -132,33 +143,29 @@ class TipDetection:
             elif self.y >= self.orientation_threshold:
                 self.hit_count += 1
 
-
     # seeing if hit_count is too big
     def check_for_hit_count(self, hit_count):
         if hit_count > self.hit_count_threshold:
             rospy.loginfo("tipping")
             rospy.loginfo(hit_count)
         else:
-            rospy.loginfo('not tipping')
+            rospy.loginfo("not tipping")
             rospy.loginfo(hit_count)
 
-
     def reset_hit_count_time(self, reset_hit_count_threshold, time_counter):
-        rospy.loginfo(self.time_counter)
+        print(f"time {time.time()- self.time_counter}")
         if time.time() - self.time_counter > self.reset_hit_count_threshold:
             rospy.loginfo("resetting hit count...")
             self.hit_count = 0
             self.time_counter = time.time()
 
 
-
 def main():
     rospy.loginfo("===== tip detection starting =====")
     rospy.init_node("tip_detection")
-    TipDetection()
+    tip_detector = TipDetection()
 
-    rospy.spin() # taken from failure identification but idk what it does exactly
-
+    # rospy.spin()  # taken from failure identification but idk what it does exactly
 
 
 if __name__ == "__main__":
