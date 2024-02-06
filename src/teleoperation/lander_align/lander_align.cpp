@@ -63,9 +63,9 @@ namespace mrover {
         do {
             for (int i = 0; i < epochs; ++i) {
                 // sample 3 random points (potential inliers)
-                Point* point1 = points[distribution(generator)];
-                Point* point2 = points[distribution(generator)];
-                Point* point3 = points[distribution(generator)];
+                Point const* point1 = points[distribution(generator)];
+                Point const* point2 = points[distribution(generator)];
+                Point const* point3 = points[distribution(generator)];
 
                 Eigen::Vector3f vec1{point1->x, point1->y, point1->z};
                 Eigen::Vector3f vec2{point2->x, point2->y, point2->z};
