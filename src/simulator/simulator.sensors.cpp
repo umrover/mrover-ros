@@ -10,7 +10,7 @@ namespace mrover {
         camera.sceneUniforms.value.lightColor = {1, 1, 1, 1};
         camera.sceneUniforms.value.lightInWorld = {0, 0, 5, 1};
         float aspect = static_cast<float>(camera.resolution.x()) / static_cast<float>(camera.resolution.y());
-        camera.sceneUniforms.value.cameraToClip = computeCameraToClip(mFovDegrees * DEG_TO_RAD, aspect, NEAR, FAR).cast<float>();
+        camera.sceneUniforms.value.cameraToClip = computeCameraToClip(camera.fov * DEG_TO_RAD, aspect, NEAR, FAR).cast<float>();
         SE3 cameraInWorld = btTransformToSe3(camera.link->m_cachedWorldTransform);
         camera.sceneUniforms.value.worldToCamera = cameraInWorld.matrix().inverse().cast<float>();
         camera.sceneUniforms.value.cameraInWorld = cameraInWorld.position().cast<float>().homogeneous();
@@ -56,7 +56,7 @@ namespace mrover {
                 wgpu::BufferDescriptor descriptor;
                 descriptor.usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::MapRead;
                 descriptor.size = pointCloudBufferSize;
-                stereoCamera.base.stagingBuffer = mDevice.createBuffer(descriptor);
+                stereoCamera.pointCloudStagingBuffer = mDevice.createBuffer(descriptor);
             }
         }
 
@@ -84,7 +84,7 @@ namespace mrover {
 
         computePass.end();
 
-        encoder.copyBufferToBuffer(stereoCamera.pointCloudBuffer, 0, stereoCamera.base.stagingBuffer, 0, stereoCamera.pointCloudBuffer.getSize());
+        encoder.copyBufferToBuffer(stereoCamera.pointCloudBuffer, 0, stereoCamera.pointCloudStagingBuffer, 0, stereoCamera.pointCloudBuffer.getSize());
 
         bindGroup.release();
         computePass.release();
@@ -204,6 +204,10 @@ namespace mrover {
                     status.joint_states.position.push_back(pos);
                     status.joint_states.velocity.push_back(vel);
                     status.joint_states.effort.push_back(torque);
+
+                    status.moteus_states.name.push_back(linkName);
+                    status.moteus_states.state.emplace_back("Armed");
+                    status.moteus_states.error.emplace_back("None");
 
                     driveControllerState.name.push_back(linkName);
                     driveControllerState.state.emplace_back("Armed");
