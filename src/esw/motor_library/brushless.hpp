@@ -80,8 +80,12 @@ namespace mrover {
     private:
         moteus::Controller mController{moteus::Controller::Options{}};
         double mMeasuredEffort{};
-        bool hasFwdLimitSwitch{};
-        bool hasBwdLimitSwitch{};
+        bool fwdLimitSwitchPresent{};
+        bool bwdLimitSwitchPresent{};
+        bool fwdLimitSwitchEnabled{};
+        bool bwdLimitSwitchEnabled{};
+        bool fwdLimitSwitchActiveHigh{};
+        bool bwdLimitSwitchActiveHigh{};
         
         // Function to map throttle to velocity
         RadiansPerSecond mapThrottleToVelocity(Percent throttle);

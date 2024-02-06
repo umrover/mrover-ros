@@ -18,8 +18,13 @@ namespace mrover {
         mMinPosition = Radians{xmlRpcValueToTypeOrDefault<double>(brushlessMotorData, "min_position", -1.0)};
         mMaxPosition = Radians{xmlRpcValueToTypeOrDefault<double>(brushlessMotorData, "max_position", 1.0)};
 
-        hasFwdLimitSwitch = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "hasFwdLimitSwitch", false);
-        hasBwdLimitSwitch = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "hasBwdLimitSwitch", false);
+        fwdLimitSwitchPresent = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "fwdLimitSwitchPresent", false);
+        bwdLimitSwitchPresent = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "bwdLimitSwitchPresent", false);
+        fwdLimitSwitchEnabled = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "fwdLimitSwitchEnabled", false);
+        bwdLimitSwitchEnabled = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "bwdLimitSwitchEnabled", false);
+        fwdLimitSwitchActiveHigh = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "fwdLimitSwitchActiveHigh", false);
+        bwdLimitSwitchActiveHigh = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "bwdLimitSwitchActiveHigh", false);
+
     }
 
     void BrushlessController::setDesiredThrottle(Percent throttle) {
@@ -91,13 +96,15 @@ namespace mrover {
         result.isFwdPressed = false;
         result.isBwdPressed = false;
 
-        if (hasFwdLimitSwitch) {
+        if (fwdLimitSwitchPresent && fwdLimitSwitchEnabled) {
             // TODO
-            result.isFwdPressed = false;
+            bool gpioState = false;
+            result.isFwdPressed = gpioState == fwdLimitSwitchActiveHigh;
         }
-        if (hasBwdLimitSwitch) {
+        if (bwdLimitSwitchPresent && bwdLimitSwitchEnabled) {
             // TODO 
-            result.isBwdPressed = false;
+            bool gpioState = false;
+            result.isBwdPressed = gpioState == fwdLimitSwitchActiveHigh;
         }
 
         return result;
