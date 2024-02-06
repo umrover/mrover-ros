@@ -124,7 +124,9 @@ export default defineComponent({
         name: [] as string[],
         position: [] as number[],
         velocity: [] as number[],
-        effort: [] as number[]
+        effort: [] as number[],
+        state: [] as string[],
+        error: [] as string[]
       }
     }
   },

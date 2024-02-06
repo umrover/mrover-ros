@@ -69,7 +69,7 @@ class GUIConsumer(JsonWebsocketConsumer):
 
         # Subscribers
         self.pdb_sub = rospy.Subscriber("/pdb_data", PDLB, self.pdb_callback)
-        self.arm_moteus_sub = rospy.Subscriber("/arm_hw_controller_data", ControllerState, self.arm_controller_callback)
+        self.arm_moteus_sub = rospy.Subscriber("/arm_controller_data", ControllerState, self.arm_controller_callback)
         self.drive_moteus_sub = rospy.Subscriber(
             "/drive_controller_data", ControllerState, self.drive_controller_callback
         )

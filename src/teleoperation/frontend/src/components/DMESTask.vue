@@ -46,7 +46,7 @@
       <ArmControls />
     </div>
     <div class="shadow p-3 rounded moteus">
-      <DriveMoteusStateTable :moteus-state-data="moteusState" />
+      <DriveMoteusStateTable :moteus-state-data="moteusDrive" />
       <ArmMoteusStateTable />
     </div>
     <div v-show="false">
@@ -102,7 +102,7 @@ export default defineComponent({
         altitude: 0
       },
 
-      moteusState: {
+      moteusDrive: {
         name: [] as string[],
         error: [] as string[],
         state: [] as string[],
@@ -114,7 +114,9 @@ export default defineComponent({
         name: [] as string[],
         position: [] as number[],
         velocity: [] as number[],
-        effort: [] as number[]
+        effort: [] as number[],
+        state: [] as string[],
+        error: [] as string[]
       }
     }
   },
@@ -125,11 +127,19 @@ export default defineComponent({
 
   watch: {
     message(msg) {
-      if (msg.type == 'joint_state') {
+      if (msg.type == 'drive_status') {
         this.motorData.name = msg.name
         this.motorData.position = msg.position
         this.motorData.velocity = msg.velocity
         this.motorData.effort = msg.effort
+        this.motorData.state = msg.state
+        this.motorData.error = msg.error
+      }
+      else if (msg.type == 'drive_moteus') {
+        this.moteusDrive.name = msg.name
+        this.moteusDrive.state = msg.state
+        this.moteusDrive.error = msg.error
+        this.moteusDrive.limit_hit = msg.limit_hit
       }
     }
   }
