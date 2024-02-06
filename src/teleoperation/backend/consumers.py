@@ -28,7 +28,7 @@ from std_msgs.msg import String, Bool
 from std_srvs.srv import SetBool, Trigger
 from mrover.srv import EnableDevice, AdjustMotor
 from sensor_msgs.msg import JointState, Joy, NavSatFix
-from geometry_msgs.msg import Twist
+from geometry_msgs.msg import Twist, Pose
 
 from util.SE3 import SE3
 
@@ -60,6 +60,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.led_pub = rospy.Publisher("/auton_led_cmd", String, queue_size=1)
         self.teleop_pub = rospy.Publisher("/teleop_enabled", Bool, queue_size=1)
         self.mast_gimbal_pub = rospy.Publisher("/mast_gimbal_throttle_cmd", Throttle, queue_size=1)
+        self.arm_ik_pub = rospy.Publisher("arm_ik", Pose, queue_size=1)
         self.arm_throttle_cmd_pub = rospy.Publisher("arm_throttle_cmd", Throttle, queue_size=1)
         self.arm_velocity_cmd_pub = rospy.Publisher("arm_velocity_cmd", Velocity, queue_size=1)
         self.arm_position_cmd_pub = rospy.Publisher("arm_position_cmd", Position, queue_size=1)
@@ -77,7 +78,8 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.drive_status_sub = rospy.Subscriber("/drive_status", MotorsStatus, self.drive_status_callback)
         self.led_sub = rospy.Subscriber("/led", LED, self.led_callback)
         self.nav_state_sub = rospy.Subscriber("/nav_state", StateMachineStateUpdate, self.nav_state_callback)
-        self.imu_calibration = rospy.Subscriber("imu/calibration", CalibrationStatus, self.imu_calibration_callback)
+        self.imu_calibra
+        tion = rospy.Subscriber("imu/calibration", CalibrationStatus, self.imu_calibration_callback)
 
         # Services
         self.laser_service = rospy.ServiceProxy("enable_arm_laser", SetBool)
@@ -94,6 +96,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.max_angular_speed = self.max_wheel_speed / self.wheel_radius
 
         self.ra_config = rospy.get_param("teleop/ra_controls")
+        self.ik_names: rospy.get_param("teleop/ik_multipliers")
         self.RA_NAMES = rospy.get_param("teleop/ra_names")
         self.brushless_motors = rospy.get_param("brushless_motors/controllers")
         self.brushed_motors = rospy.get_param("brushed_motors/controllers")
@@ -234,7 +237,26 @@ class GUIConsumer(JsonWebsocketConsumer):
     def handle_arm_message(self, msg):
         ra_slow_mode = False
         if msg["arm_mode"] == "ik":
-            x = 1
+            base_link_in_map = SE3.from_tf_tree(self.tf_buffer, "map", "base_link")
+            
+            left_trigger = self.filter_xbox_axis(msg["axes"][self.xbox_mappings["left_trigger"]])
+            if left_trigger < 0:
+                left_trigger = 0
+
+            right_trigger = self.filter_xbox_axis(msg["axes"][self.xbox_mappings["right_trigger"]])
+            if right_trigger < 0:
+                right_trigger = 0  
+            
+            base_link_in_map.position[0]+= self.ik_names["x"]["multiplier"]*self.filter_xbox_axis(["axes"][self.xbox_mappings["left_js_x"]]),
+            base_link_in_map.position[1]= self.ik_names["y"]["multiplier"]*self.filter_xbox_axis(msg["axes"][self.xbox_mappings["left_js_y"]]),
+            base_link_in_map.position[2]-=self.ik_names["z"]["multiplier"]*left_trigger+self.ik_names["z"]["multiplier"]*right_trigger
+            
+            arm_ik_cmd = Pose(
+                pose = base_link_in_map.position,
+                quaternion = base_link_in_map.rotation.quaternion
+            )
+            self.arm_ik_pub.publish(arm_ik_cmd)
+
         elif msg["arm_mode"] == "position":
             arm_position_cmd = Position(
                 names=["joint_b", "joint_c", "joint_de_pitch", "joint_de_roll"],

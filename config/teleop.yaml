@@ -117,3 +117,8 @@ teleop:
     blah: ["/tf", "/tf_static", "/rosout"]
     foo: ["/rosout", "/tf"]
     bar: ["/tf_static", "/rosout", "/tf"]
+
+  ik_multipliers:
+    x: 1
+    y: 1
+    z: 1
