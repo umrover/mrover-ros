@@ -51,8 +51,6 @@ namespace mrover {
         // hint: you have mTagDictionary, mTagCorners, mTagIds, and mTagDetectorParams member variables already defined!
         // hint: write and use the "getCenterFromTagCorners" and "getClosenessMetricFromTagCorners" functions
 
-        cv::aruco::detectMarkers(image, mTagDictionary, mTagCorners, mTagIds, mTagDetectorParams);
-
         tags.clear(); // Clear old tags in output vector
 
         // TODO: implement me!
