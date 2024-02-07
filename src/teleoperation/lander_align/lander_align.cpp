@@ -1,7 +1,10 @@
 #include "lander_align.hpp"
 #include "pch.hpp"
 #include <Eigen/src/Core/Matrix.h>
+#include <cstddef>
 #include <geometry_msgs/Vector3.h>
+#include <lie/se3.hpp>
+#include <optional>
 #include <random>
 #include <ros/subscriber.h>
 #include <vector>
@@ -12,21 +15,23 @@ namespace mrover {
         mNh = getMTNodeHandle();
         mPnh = getMTPrivateNodeHandle();
         mThreshold = 10;
-        mVectorSub = mNh.subscribe("/camera/left/points", 1, &LanderAlignNodelet::filterNormals, this);
+        mVectorSub = mNh.subscribe("/camera/left/points", 1, &LanderAlignNodelet::LanderCallback, this);
         mDebugVectorPub = mNh.advertise<geometry_msgs::Vector3>("/lander_align/Pose", 1);
-        mBestCenter(0, 0, 0);
+
+        //TF Create the Reference Frames
+        mNh.param<std::string>("camera_frame", mCameraFrameId, "zed2i_left_camera_frame");
+        mNh.param<std::string>("world_frame", mMapFrameId, "map");
     }
 
     void LanderAlignNodelet::LanderCallback(sensor_msgs::PointCloud2Ptr const& cloud) {
         filterNormals(cloud);
-        Eigen::Vector3f planeNorm = ransac(mFilteredPoints, 1, 10, 10);
-
-        geometry_msgs::Vector3 vect;
-        vect.x = planeNorm.x();
-        vect.y = planeNorm.y();
-        vect.z = planeNorm.z();
-
-        mDebugVectorPub.publish(vect);
+        if (std::optional<Eigen::Vector3f> planeNorm = ransac(mFilteredPoints, 0.2, 10, 100); planeNorm) {
+            geometry_msgs::Vector3 vect;
+            vect.x = planeNorm.value().x();
+            vect.y = planeNorm.value().y();
+            vect.z = planeNorm.value().z();
+            mDebugVectorPub.publish(vect);
+        }
     }
 
     // deprecated/not needed anymore
@@ -41,27 +46,35 @@ namespace mrover {
 
     void LanderAlignNodelet::filterNormals(sensor_msgs::PointCloud2Ptr const& cloud) {
         // TODO: OPTIMIZE; doing this maobject_detector/debug_imgny push_back calls could slow things down
+        mFilteredPoints.clear();
+        auto* cloudData = reinterpret_cast<Point const*>(cloud->data.data());
 
-        auto* cloudData = reinterpret_cast<Point const*>(cloud->fields.data());
-        // std::vector<Point const*> extractedPoints;
+        // define randomizer
+        std::default_random_engine generator;
+        std::uniform_int_distribution<int> distribution(0, (int) 200);
 
-        for (auto point = cloudData; point < cloudData + (cloud->height * cloud->width); point++) {
-            if (point->normal_z < mThreshold) {
+        for (auto point = cloudData; point < cloudData + (cloud->height * cloud->width); point += distribution(generator)) {
+            bool isPointInvalid = (!std::isfinite(point->x) || !std::isfinite(point->y) || !std::isfinite(point->z));
+            if (point->normal_z < mThreshold && !isPointInvalid) {
                 mFilteredPoints.push_back(point);
             }
         }
     }
 
-    auto LanderAlignNodelet::ransac(std::vector<Point const*> const& points, float const distanceThreshold, int minInliers, int const epochs) -> Eigen::Vector3f {
+    auto LanderAlignNodelet::ransac(std::vector<Point const*> const& points, float const distanceThreshold, int minInliers, int const epochs) -> std::optional<Eigen::Vector3f> {
         // TODO: use RANSAC to find the lander face, should be the closest, we may need to modify this to output more information, currently the output is the normal
         // takes 3 samples for every epoch and terminates after specified number of epochs
         Eigen::Vector3f bestPlane(0, 0, 0); // normal vector representing plane (initialize as zero vector?? default ctor??)
+        float offset;
 
         // define randomizer
         std::default_random_engine generator;
         std::uniform_int_distribution<int> distribution(0, (int) points.size() - 1);
 
-        do {
+        if (points.size() < 3) {
+            return std::nullopt;
+        }
+        while (bestPlane.isZero()) {
             for (int i = 0; i < epochs; ++i) {
                 // sample 3 random points (potential inliers)
                 Point const* point1 = points[distribution(generator)];
@@ -74,7 +87,7 @@ namespace mrover {
 
                 // fit a plane to these points
                 Eigen::Vector3f normal = (vec1 - vec2).cross(vec1 - vec3).normalized();
-                float offset = -normal.dot(vec1); // calculate offset (D value) using one of the points
+                offset = -normal.dot(vec1); // calculate offset (D value) using one of the points
 
                 int numInliers = 0;
 
@@ -90,13 +103,13 @@ namespace mrover {
                 // update best plane if better inlier count
                 if (numInliers > minInliers) {
                     minInliers = numInliers;
-                    bestPlane = normal;
-                    mBestOffset = offset;
+                    bestPlane = normal.normalized();
                 }
             }
-        } while (bestPlane.isZero()); // keep trying until we get valid result TODO break case after X attempts??
+        }
 
         // Run through one more loop to identify the center of the plane
+        int numInliers = 0;
         for (auto p: points) {
             // calculate distance of each point from potential plane
             float distance = std::abs(bestPlane.x() * p->x + bestPlane.y() * p->y + bestPlane.z() * p->z + mBestOffset);
@@ -109,7 +122,20 @@ namespace mrover {
             }
         }
 
-        mBestCenter /= numInliers;
+        if (numInliers == 0) {
+            return std::nullopt;
+        }
+
+        mBestCenter /= static_cast<float>(numInliers);
+
+        SE3 planeLoc{
+                {mBestCenter(0), mBestCenter(1), mBestCenter(2)},
+                {}};
+
+        std::string immediateFrameId = "immediatePlane";
+        SE3::pushToTfTree(mTfBroadcaster, immediateFrameId, mCameraFrameId, planeLoc);
+
+        ROS_INFO("THE LOCATION OF THE PLANE IS AT: %f, %f, %f with normal vector %f, %f, %f", mBestCenter(0), mBestCenter(1), mBestCenter(2), bestPlane.x(), bestPlane.y(), bestPlane.z());
 
         return bestPlane;
     }

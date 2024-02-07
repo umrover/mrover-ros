@@ -11,13 +11,22 @@ namespace mrover {
 
         ros::Subscriber mVectorSub;
 
-
-        float mThreshold;
+        //**
         float mBestOffset;
 
-        std::vector<Point const*> mFilteredPoints;
-
         Eigen::Vector3f mBestCenter;
+        //**
+
+        //TF Member Variables
+        tf2_ros::Buffer mTfBuffer;
+        tf2_ros::TransformListener mTfListener{mTfBuffer};
+        tf2_ros::TransformBroadcaster mTfBroadcaster;
+        std::string mCameraFrameId;
+        std::string mMapFrameId;
+
+        float mThreshold;
+
+        std::vector<Point const*> mFilteredPoints;
 
         auto onInit() -> void override;
 
@@ -28,7 +37,7 @@ namespace mrover {
 
         void filterNormals(sensor_msgs::PointCloud2Ptr const& cloud);
 
-        auto ransac(std::vector<Point const*> const& points, float distanceThreshold, int minInliers, int epochs) -> Eigen::Vector3f;
+        auto ransac(std::vector<Point const*> const& points, float distanceThreshold, int minInliers, int epochs) -> std::optional<Eigen::Vector3f>;
     };
 
 } // namespace mrover

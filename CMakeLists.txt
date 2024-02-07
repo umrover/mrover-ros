@@ -190,6 +190,7 @@ endif ()
 
 mrover_add_nodelet(lander_align src/teleoperation/lander_align/*.cpp src/teleoperation/lander_align src/teleoperation/lander_align/pch.hpp)
 mrover_add_node(arm_controller src/teleoperation/arm_controller/*.cpp)
+mrover_nodelet_link_libraries(lander_align lie)
 
 ## Simulator
 
