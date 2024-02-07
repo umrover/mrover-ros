@@ -2,6 +2,10 @@
 
 namespace mrover {
 
+    auto r3ToBtVector3(R3 const& r3) -> btVector3 {
+        return btVector3{static_cast<btScalar>(r3.x()), static_cast<btScalar>(r3.y()), static_cast<btScalar>(r3.z())};
+    }
+
     auto SimulatorNodelet::guiUpdate(wgpu::RenderPassEncoder& pass) -> void {
         if (mSaveTask.shouldUpdate() && mEnablePhysics) {
             if (auto it = mUrdfs.find("rover"); it != mUrdfs.end()) {
@@ -31,7 +35,7 @@ namespace mrover {
             if (auto it = mUrdfs.find("rover"); it != mUrdfs.end()) {
                 URDF const& rover = it->second;
 
-                const auto& [baseTransform, baseVelocity, links] = mSaveHistory.at(mSaveSelection + historySize);
+                auto const& [baseTransform, baseVelocity, links] = mSaveHistory.at(mSaveSelection + historySize);
                 rover.physics->setBaseWorldTransform(baseTransform);
                 rover.physics->setBaseVel(baseVelocity);
                 for (int link = 0; link < rover.physics->getNumLinks(); ++link) {
@@ -72,7 +76,11 @@ namespace mrover {
 
             // ImGui::SliderFloat("Float", &mFloat, 0.0f, 1000.0f);
 
-            ImGui::SliderFloat3("IK", mIkTarget.data(), -1.f, 1.f);
+            ImGui::Checkbox("Publish IK", &mPublishIk);
+            if (mPublishIk) ImGui::SliderFloat3("IK Target", mIkTarget.data(), -1.f, 1.f);
+
+            ImGui::InputDouble("Publish Hammer Distance Threshold", &mPublishHammerDistanceThreshold);
+            ImGui::InputDouble("Publish Bottle Distance Threshold", &mPublishBottleDistanceThreshold);
 
             ImGui::EndDisabled();
             ImGui::End();
@@ -98,20 +106,41 @@ namespace mrover {
                     ImGui::Text("Camera Position: (%.2f, %.2f, %.2f)", p.x(), p.y(), p.z());
                     ImGui::Text("Camera Orientation: (%.2f, %.2f, %.2f, %.2f)", q.w(), q.x(), q.y(), q.z());
                 }
+            }
 
-                // for (auto const& [name, i] : rover.linkNameToIndex) {
-                //     if (i == -1) continue;
-                //
-                //     btScalar vel = rover.physics->getJointVel(i);
-                //     btScalar pos = rover.physics->getJointPos(i);
-                //
-                //     ImGui::Text("%s: %.2f, %.2f", name.c_str(), pos, vel);
-                // }
+            {
+                // TODO(quintin): This does not work when the cursor is not in the middle of the screen...
+                Eigen::Vector2d cursorInWindow;
+                glfwGetCursorPos(mWindow.get(), &cursorInWindow.x(), &cursorInWindow.y());
+                Eigen::Vector2i windowSize;
+                glfwGetWindowSize(mWindow.get(), &windowSize.x(), &windowSize.y());
+                Eigen::Vector2f cursorInNdc{
+                        cursorInWindow.x() / windowSize.x() * 2 - 1,
+                        1 - 2 * cursorInWindow.y() / windowSize.y(),
+                };
+                Eigen::Vector4f cursorInWorld = (mSceneUniforms.value.cameraToClip.matrix() * mSceneUniforms.value.worldToCamera.matrix()).inverse() * Eigen::Vector4f{cursorInNdc.x(), cursorInNdc.y(), NEAR, 1};
+                cursorInWorld /= cursorInWorld.w();
+
+                auto rayStart = btVector3{cursorInWorld.x(), cursorInWorld.y(), cursorInWorld.z()};
+                auto rayEnd = rayStart + r3ToBtVector3(mCameraInWorld.rotation().matrix().col(0)) * 100;
+
+                btMultiBodyDynamicsWorld::ClosestRayResultCallback rayCallback{rayStart, rayEnd};
+                mDynamicsWorld->rayTest(rayStart, rayEnd, rayCallback);
+                if (rayCallback.hasHit()) {
+                    btVector3 const& hitPoint = rayCallback.m_hitPointWorld;
+                    ImGui::Text("Cursor: (%.2f, %.2f, %.2f)", hitPoint.x(), hitPoint.y(), hitPoint.z());
+                } else {
+                    ImGui::Text("Cursor: None");
+                }
             }
 
             for (Camera const& camera: mCameras) {
                 float aspect = static_cast<float>(camera.resolution.x()) / static_cast<float>(camera.resolution.y());
                 ImGui::Image(camera.colorTextureView, {320, 320 / aspect}, {0, 0}, {1, 1});
+            }
+            for (StereoCamera const& stereoCamera: mStereoCameras) {
+                float aspect = static_cast<float>(stereoCamera.base.resolution.x()) / static_cast<float>(stereoCamera.base.resolution.y());
+                ImGui::Image(stereoCamera.base.colorTextureView, {320, 320 / aspect}, {0, 0}, {1, 1});
             }
 
             ImGui::End();

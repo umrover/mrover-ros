@@ -90,6 +90,9 @@
       - libbullet-dev
       - libglfw3-dev
       - xorg-dev
+      - libx11-xcb-dev
+      - libnl-3-dev
+      - libnl-route-3-dev
 
 - name: Initialize rosdep
   become: True
@@ -117,6 +120,9 @@
 
 - name: Upgrade Bun
   command: ~/.bun/bin/bun upgrade
+
+- name: Install Bun Packages
+  command: ~/.bun/bin/bun install --cwd {{ catkin_workspace }}/src/mrover/src/teleoperation/frontend
 
 - name: Install Catkin Profiles
   synchronize:

@@ -1,0 +1,8 @@
+<launch>
+    <arg name="run_tag_detector" default="true" />
+
+    <!-- Nodelet to detect AR tags and publish them to the TF tree -->
+    <node if="$(arg run_tag_detector)"
+        pkg="nodelet" type="nodelet" name="tag_detector"
+        args="load mrover/TagDetectorNodelet nodelet_manager" output="screen" />
+</launch>

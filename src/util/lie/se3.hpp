@@ -1,7 +1,5 @@
 #pragma once
 
-#include <boost_cpp23_workaround.hpp>
-
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
@@ -40,7 +38,7 @@ public:
 
     [[nodiscard]] R3 operator*(R3 const& other) const;
 
-    [[nodiscard]] Eigen::Matrix4d matrix() const;
+    [[nodiscard]] Eigen::Matrix3d matrix() const;
 
     [[nodiscard]] Eigen::Quaterniond quaternion() const;
 

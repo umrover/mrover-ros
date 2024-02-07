@@ -17,116 +17,102 @@ fit
     <MotorAdjust :options="[{name: 'joint_a', option: 'Joint A'}]" />
 -->
 <template>
-    <div class="wrap">
+  <div class="wrap">
+    <div v-if="options.length > 1">
+      <h4>Adjust Motor Angles</h4>
+    </div>
+    <div v-else>
+      <h4>Adjust {{ options[0].option }} Angle</h4>
+    </div>
+    <div>
       <div v-if="options.length > 1">
-        <h4>Adjust Motor Angles</h4>
-      </div>
-      <div v-else>
-        <h4>Adjust {{ options[0].option }} Angle</h4>
+        <label for="joint">Motor to adjust</label>
+        <select v-model="selectedMotor">
+          <option disabled value="">Select a motor</option>
+          <option v-for="option in options" :key="option.name" :value="option.name">
+            {{ option.option }}
+          </option>
+        </select>
       </div>
       <div>
-        <div v-if="options.length > 1">
-          <label for="joint">Motor to adjust</label>
-          <select v-model="selectedMotor">
-            <option disabled value="">Select a motor</option>
-            <option
-              v-for="option in options"
-              :key="option.name"
-              :value="option.name"
-            >
-              {{ option.option }}
-            </option>
-          </select>
-        </div>
-        <div>
-          <label for="angle">Angle (in Rad)</label>
-          <input
-            v-model="adjustmentAngle"
-            type="number"
-            :min="-2 * Math.PI"
-            :max="2 * Math.PI"
-          />
-          <button
-            class="btn btn-primary"
-            @click="publishAdjustmentMessage"
-          >Adjust</button>
-        </div>
+        <label for="angle">Angle (in Rad)</label>
+        <input v-model="adjustmentAngle" type="number" :min="-2 * Math.PI" :max="2 * Math.PI" />
+        <button class="btn btn-primary" @click="publishAdjustmentMessage">Adjust</button>
       </div>
     </div>
-  </template>
-  
-  <script lang = "ts">
+  </div>
+</template>
 
-  export default {
-    props: {
-      options: {
-        type: Array,
-        required: true,
-        // Default to empty array
-        // Should be array of object in format {name: "joint_a", option: "A"}
-        default: () => [],
-      },
-    },
-  
-    data() {
-      return {
-        adjustmentAngle: 0,
-        selectedMotor: "",
-  
-        serviceClient: null,
-      };
-    },
-  
-    created() {
-      // this.serviceClient = new ROSLIB.Service({
-      //   ros: this.$ros,
-      //   name: "/adjust",
-      //   serviceType: "mrover/AdjustMotors",
+<script lang="ts">
+export default {
+  props: {
+    options: {
+      type: Array,
+      required: true,
+      // Default to empty array
+      // Should be array of object in format {name: "joint_a", option: "A"}
+      default: () => []
+    }
+  },
+
+  data() {
+    return {
+      adjustmentAngle: 0,
+      selectedMotor: '',
+
+      serviceClient: null
+    }
+  },
+
+  created() {
+    // this.serviceClient = new ROSLIB.Service({
+    //   ros: this.$ros,
+    //   name: "/adjust",
+    //   serviceType: "mrover/AdjustMotors",
+    // });
+
+    if (this.options.length == 1) {
+      this.selectedMotor = this.options[0].name
+    }
+  },
+
+  methods: {
+    publishAdjustmentMessage() {
+      // const request = new ROSLIB.ServiceRequest({
+      //   name: this.selectedMotor,
+      //   value: this.clamp(
+      //     parseFloat(this.adjustmentAngle),
+      //     -2 * Math.PI,
+      //     2 * Math.PI
+      //   ),
       // });
-  
-      if (this.options.length == 1) {
-        this.selectedMotor = this.options[0].name;
-      }
+      // if (this.selectedMotor != "") {
+      //   this.serviceClient.callService(request, (result) => {
+      //     if (!result.success) {
+      //       alert("Adjustment failed");
+      //     }
+      //   });
+      // }
     },
-  
-    methods: {
-      publishAdjustmentMessage() {
-        // const request = new ROSLIB.ServiceRequest({
-        //   name: this.selectedMotor,
-        //   value: this.clamp(
-        //     parseFloat(this.adjustmentAngle),
-        //     -2 * Math.PI,
-        //     2 * Math.PI
-        //   ),
-        // });
-        // if (this.selectedMotor != "") {
-        //   this.serviceClient.callService(request, (result) => {
-        //     if (!result.success) {
-        //       alert("Adjustment failed");
-        //     }
-        //   });
-        // }
-      },
-  
-      clamp(value: number, min: number, max: number) {
-        return Math.min(Math.max(value, min), max);
-      },
-    },
-  };
-  </script>
-  
-  <style scoped>
-  /* make items appear in one row */
-  .wrap {
-    display: flex;
-    height: 100%;
-    padding: 1.5% 0 1.5% 0;
-    flex-direction: column;
-  }
-  
-  .wrap h4 {
-    margin-top: -10px;
-    margin-bottom: 10px;
-  }
 
-  </style>
+    clamp(value: number, min: number, max: number) {
+      return Math.min(Math.max(value, min), max)
+    }
+  }
+}
+</script>
+
+<style scoped>
+/* make items appear in one row */
+.wrap {
+  display: flex;
+  height: 100%;
+  padding: 1.5% 0 1.5% 0;
+  flex-direction: column;
+}
+
+.wrap h4 {
+  margin-top: -10px;
+  margin-bottom: 10px;
+}
+</style>

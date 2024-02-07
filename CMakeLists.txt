@@ -10,18 +10,21 @@ if (APPLE)
             -D_LIBCPP_ENABLE_CXX20_REMOVED_ALLOCATOR_MEMBERS
             -D_LIBCPP_ENABLE_CXX20_REMOVED_ALLOCATOR_VOID_SPECIALIZATION
     )
-    # TODO(quintin): address this
-    add_library(tbb SHARED IMPORTED)
-    set_property(TARGET tbb PROPERTY IMPORTED_LOCATION /opt/homebrew/Caskroom/miniforge/base/envs/ros_env/lib/libtbb.12.10.dylib)
 
     find_package(fmt REQUIRED)
     link_libraries(fmt::fmt)
+else ()
+    # TODO(quintin): Fix this
+    find_package(TBB REQUIRED)
+    link_libraries(TBB::tbb)
 endif ()
+
+include_directories(BEFORE SYSTEM src/preload)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # Generate compile_commands.json for clangd
-if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+if (NOT APPLE AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     add_link_options(-fuse-ld=lld) # LLVM lld is faster than GNU ld
 endif ()
 set(MROVER_CPP_COMPILE_OPTIONS -Wall -Wextra -pedantic)
@@ -71,11 +74,21 @@ set(MROVER_CMAKE_INCLUDES
 ### ============ ###
 
 if (MROVER_BUILD_SIM)
-    include(cmake/webgpu.cmake)
-    add_subdirectory(deps/glfw3webgpu)
-    find_package(Assimp REQUIRED)
+    # Apparently Assimp has different names on different systems
+    # find_package is case-sensitive so try both
+    find_package(Assimp QUIET)
+    find_package(assimp QUIET)
+    if (NOT Assimp_FOUND AND NOT assimp_FOUND)
+        message(FATAL_ERROR "Assimp not found")
+    endif ()
+
     find_package(Bullet REQUIRED)
+
     find_package(glfw3 REQUIRED)
+
+    include(cmake/webgpu.cmake)
+
+    add_subdirectory(deps/glfw3webgpu)
 endif ()
 find_package(OpenCV REQUIRED)
 find_package(ZED QUIET)
@@ -132,17 +145,19 @@ mrover_add_library(lie src/util/lie/*.cpp src/util/lie)
 
 ## ESW
 
-if (UNIX AND NOT APPLE)
+if (NOT APPLE)
     mrover_add_vendor_header_only_library(moteus src/esw/mjbots)
     mrover_add_header_only_library(can_device src/esw/can_device)
     mrover_add_library(motor_library src/esw/motor_library/*.cpp src/esw/motor_library)
     target_link_libraries(motor_library PUBLIC can_device moteus)
 
-    mrover_add_nodelet(can_driver src/esw/can_driver/*.cpp src/esw/can_driver src/esw/can_driver/pch.hpp)
-    mrover_nodelet_link_libraries(can_driver nl-3 nl-route-3)
-    # TODO(quintin): Fix this CMake hard coding
-    #mrover_nodelet_link_libraries(can ${NetLink_LIBRARIES} ${NetLinkRoute_LIBRARIES}})
-    mrover_nodelet_include_directories(can_driver /usr/include/libnl3)
+    if (NetLink_FOUND AND NetLinkRoute_FOUND)
+        mrover_add_nodelet(can_driver src/esw/can_driver/*.cpp src/esw/can_driver src/esw/can_driver/pch.hpp)
+        mrover_nodelet_link_libraries(can_driver nl-3 nl-route-3)
+        # TODO(quintin): Fix this CMake hard coding
+        #mrover_nodelet_link_libraries(can ${NetLink_LIBRARIES} ${NetLinkRoute_LIBRARIES}})
+        mrover_nodelet_include_directories(can_driver /usr/include/libnl3)
+    endif ()
 
     macro(mrover_add_esw_bridge_node name sources)
         mrover_add_node(${name} ${sources})
@@ -161,12 +176,13 @@ if (UNIX AND NOT APPLE)
     mrover_add_esw_bridge_node(brushless_test_bridge src/esw/brushless_test_bridge/*.cpp motor_library)
     mrover_add_esw_bridge_node(brushed_test_bridge src/esw/brushed_test_bridge/*.cpp)
     mrover_add_esw_bridge_node(test_arm_bridge src/esw/test_arm_bridge/*.cpp)
+    #    mrover_add_esw_bridge_node(sa_sensor src/esw/fw/dirt_sensor/dirt_sensor_ros/dirt_sensor_ros.ino)
 endif ()
 
 ## Perception
 
 mrover_add_nodelet(tag_detector src/perception/tag_detector/*.cpp src/perception/tag_detector src/perception/tag_detector/pch.hpp)
-mrover_nodelet_link_libraries(tag_detector tbb opencv_core opencv_objdetect opencv_aruco opencv_imgproc opencv_highgui lie)
+mrover_nodelet_link_libraries(tag_detector opencv_core opencv_objdetect opencv_aruco opencv_imgproc opencv_highgui lie)
 
 if (CUDA_FOUND)
     mrover_add_library(streaming src/esw/streaming/*.c* src/esw/streaming)
@@ -197,7 +213,7 @@ mrover_nodelet_link_libraries(lander_align lie)
 if (MROVER_BUILD_SIM)
     mrover_add_nodelet(simulator src/simulator/*.cpp src/simulator src/simulator/pch.hpp)
     mrover_nodelet_include_directories(simulator ${ASSIMP_INCLUDE_DIRS} ${BULLET_INCLUDE_DIRS} ${OPENCV_INCLUDE_DIRS} src/simulator/imgui)
-    mrover_nodelet_link_libraries(simulator ${ASSIMP_LIBRARIES} ${BULLET_LIBRARIES} glfw3webgpu webgpu glfw tbb opencv_core opencv_imgcodecs opencv_imgproc lie)
+    mrover_nodelet_link_libraries(simulator ${ASSIMP_LIBRARIES} ${BULLET_LIBRARIES} glfw3webgpu webgpu glfw opencv_core opencv_imgcodecs opencv_imgproc lie)
     mrover_nodelet_defines(simulator BOOST_THREAD_PROVIDES_FUTURE)
 endif ()
 

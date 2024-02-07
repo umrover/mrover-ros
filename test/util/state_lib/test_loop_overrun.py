@@ -58,9 +58,8 @@ class WarningHandle:
 
 class TestLoopOverrun(unittest.TestCase):
     def test_loop_overrun(self):
-        sm = StateMachine(ForwardState(), "LoopOverrun")
         context = Context()
-        sm.set_context(context)
+        sm = StateMachine[Context](ForwardState(), "LoopOverrun", context)
         sm.add_transition(ForwardState(), BackwardState())
         sm.add_transition(BackwardState(), ForwardState())
         sm.add_transition(BackwardState(), ExitState())
