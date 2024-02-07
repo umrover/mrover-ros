@@ -21,6 +21,7 @@ import time
 class TipDetection:
     hit_count: int
     orientation_threshold: float
+    z_orientation_threshold: float
     angular_velocity_threshold_x: float
     angular_velocity_threshold_y: float
     time_threshold: float
@@ -33,6 +34,7 @@ class TipDetection:
         # read the orientation data from the given Imu message, store that value in `self.pose`, then publish that pose to the TF tree.
         self.hit_count = 0
         self.orientation_threshold = 0.5
+        self.z_orientation_threshold = 0.5 # may need to change this
         self.angular_velocity_threshold_x = 0.25  # pitch
         self.angular_velocity_threshold_y = 0.25  # roll
         self.time_threshold = 1
@@ -54,6 +56,23 @@ class TipDetection:
         rate = rospy.Rate(10.0)
         while not rospy.is_shutdown():
             try:
+                # extract the  matrix by [0,0,1] (z vector). this could be completely wrong
+                self.old = SE3.from_tf_tree(self.buffer, self.world_frame, self.rover_frame)
+                self.transform = []
+                for i in range(3):
+                    for j in range(3):
+                        self.transform.append([[self.old[i][j] for b in range(j, j + 3)]
+                                          for a in range(i, i + 3)
+                                          ]
+                        )
+
+                # multiply this transform by the z vector [0, 0, 1]
+                self.transform = np.array([0, 0, 1]) * self.transform  # ?
+
+                # compare this new transform with our threshold to see if it's tipping, if so increment hit_count
+                if self.transform >= self.z_orientation_threshold:
+                    self.hit_count += 1
+                
                 print(SE3.from_tf_tree(self.buffer, self.world_frame, self.rover_frame))
             except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
                 print(e)
@@ -126,8 +145,8 @@ class TipDetection:
         linear_acceleration_x = abs(odometry.twist.twist.linear.x)
         linear_acceleration_y = abs(odometry.twist.twist.linear.y)
 
-        # checking if the acceleration exceeds our threshold ?
-        # not sure why we're checking for 0, need clarification ^^ -audrey
+        # checking if the acceleration exceeds our threshold
+        # why are we checking if it's 0 -aud
         if linear_acceleration_x == 0 and elapsed_seconds > self.time_threshold:
             if self.w >= self.orientation_threshold:
                 self.hit_count += 1
@@ -165,7 +184,7 @@ def main():
     rospy.init_node("tip_detection")
     tip_detector = TipDetection()
 
-    # rospy.spin()  # taken from failure identification but idk what it does exactly
+    # rospy.spin()  
 
 
 if __name__ == "__main__":
