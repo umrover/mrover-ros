@@ -1,5 +1,24 @@
 <template>
   <div>
+    <div class="shadow p-3 mb-5 header">
+      <h1>Topic Viewer</h1>
+      <img class="logo" src="/mrover.png" alt="MRover" title="MRover" width="200" />
+      <div class="help">
+        <img src="/help.png" alt="Help" title="Help" width="48" height="48" />
+      </div>
+      <div class="helpscreen"></div>
+      <div
+        class="helpimages"
+        style="display: flex; align-items: center; justify-content: space-evenly"
+      >
+        <img
+          src="/joystick.png"
+          alt="Joystick"
+          title="Joystick Controls"
+          style="width: auto; height: 70%; display: inline-block"
+        />
+      </div>
+    </div>
     <apexchart type="line" height="350" :options="chartOptions" :series="series"></apexchart>
   </div>
 </template>
@@ -38,6 +57,13 @@ export default {
             colors: ['#f3f3f3', 'transparent'], // takes an array which will be repeated on columns
             opacity: 0.5
           }
+        },
+        xaxis: {
+          tickAmount: 'dataPoints'
+        },
+        legend: {
+          show: true,
+          showForSingleSeries: true
         }
       }
     }
