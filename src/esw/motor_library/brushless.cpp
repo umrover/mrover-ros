@@ -129,7 +129,7 @@ namespace mrover {
         assert(msg->source == mControllerName);
         assert(msg->destination == mName);
         auto result = moteus::Query::Parse(msg->data.data(), msg->data.size());
-        ROS_INFO("controller: %s    %3d p/a/v/t=(%7.3f,%7.3f,%7.3f,%7.3f)  v/t/f=(%5.1f,%5.1f,%3d)",
+        ROS_INFO("controller: %s    %3d p/a/v/t=(%7.3f,%7.3f,%7.3f,%7.3f)  v/t/f=(%5.1f,%5.1f,%3d) GPIO: Aux1-%d , Aux2-%d",
                  mControllerName.c_str(),
                  result.mode,
                  result.position,
@@ -138,7 +138,10 @@ namespace mrover {
                  result.torque,
                  result.voltage,
                  result.temperature,
-                 result.fault);
+                 result.fault,
+                 result.aux1_gpio,
+                 result.aux2.gpio
+                 );
 
         mCurrentPosition = mrover::Revolutions{result.position}; // moteus stores position in revolutions.
         mCurrentVelocity = mrover::RevolutionsPerSecond{result.velocity}; // moteus stores position in revolutions.
