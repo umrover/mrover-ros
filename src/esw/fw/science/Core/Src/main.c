@@ -238,8 +238,8 @@ int main(void)
   /* USER CODE BEGIN RTOS_THREADS */
 
   // TODO - Using spectral causes a hardfault!!!
-  SpectralTaskHandle = osThreadNew(SpectralTask, NULL, &SpectralTask_attributes);
-  SpectralPollingTaskHandle = osThreadNew(SpectralPollingTask, NULL, &SpectralPollingTask_attributes);
+//  SpectralTaskHandle = osThreadNew(SpectralTask, NULL, &SpectralTask_attributes);
+//  SpectralPollingTaskHandle = osThreadNew(SpectralPollingTask, NULL, &SpectralPollingTask_attributes);
 //  HeaterUpdatesTaskHandle = osThreadNew(HeaterUpdatesTask, NULL, &HeaterUpdatesTask_attributes);
   ThermistorAndAutoShutoffTaskHandle = osThreadNew(ThermistorAndAutoShutoffTask, NULL, &ThermistorAndAutoShutoffTask_attributes);
 
@@ -594,14 +594,6 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
   }
 }
 
-//void ReceiveMessages(void *argument) {
-//	uint32_t tick = osKernelGetTickCount();
-//	for(;;) {
-//		tick += osKernelGetTickFreq(); // 1 Hz
-//		receive_message();
-//		osDelayUntil(tick);
-//	}
-//}
 
 void SpectralTask(void *argument) {
 	uint32_t tick = osKernelGetTickCount();
@@ -636,19 +628,12 @@ void ThermistorAndAutoShutoffTask(void *argument) {
 	for(;;) {
 		tick += osKernelGetTickFreq(); // 1 Hz
 
-		update_and_send_heater();
+//		update_and_send_heater();
 		update_and_send_thermistor_and_auto_shutoff_if_applicable();
 		osDelayUntil(tick);
 	}
 }
 
-//void HeaterUpdatesTask(void *argument) {
-//	uint32_t tick = osKernelGetTickCount();
-//	for(;;) {
-//		tick += osKernelGetTickFreq(); // 1 Hz
-//		osDelayUntil(tick);
-//	}
-//}
 
 /* USER CODE END 4 */
 

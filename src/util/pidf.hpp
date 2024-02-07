@@ -29,7 +29,7 @@ namespace mrover {
         compound_unit<OutputUnit, inverse<InputUnit>> m_p{};
         compound_unit<OutputUnit, inverse<InputUnit>, inverse<TimeUnit>> m_i{};
         compound_unit<OutputUnit, inverse<compound_unit<InputUnit, inverse<TimeUnit>>>> m_d{};
-        compound_unit<OutputUnit, inverse<InputUnit>> m_f{};
+        compound_unit<OutputUnit, inverse<InputUnit>> m_ff{};
         InputUnit m_dead_band{};
         std::pair<OutputUnit, OutputUnit> m_output_bound{};
         std::optional<std::pair<InputUnit, InputUnit>> m_input_bound;
@@ -69,7 +69,7 @@ namespace mrover {
             }
 
             InputUnit error_for_p = abs(error) < m_dead_band ? InputUnit{} : error;
-            OutputUnit result = m_p * error_for_p + m_i * m_total_error + m_d * (error - m_last_error) / dt + m_f * target;
+            OutputUnit result = m_p * error_for_p + m_i * m_total_error + m_d * (error - m_last_error) / dt + m_ff * target;
             m_last_error = error;
 
             return clamp(result, out_min, out_max);
@@ -90,8 +90,8 @@ namespace mrover {
             return *this;
         }
 
-        auto with_f(double f) -> PIDF& {
-            m_f = decltype(m_f){f};
+        auto with_ff(double ff) -> PIDF& {
+            m_ff = decltype(m_ff){ff};
             return *this;
         }
 

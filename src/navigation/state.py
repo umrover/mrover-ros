@@ -34,8 +34,6 @@ class OffState(State):
         if context.course and (not context.course.is_complete()):
             return waypoint.WaypointState()
 
-        cmd_vel = Twist()
-        context.rover.send_drive_command(cmd_vel)
         return self
 
 

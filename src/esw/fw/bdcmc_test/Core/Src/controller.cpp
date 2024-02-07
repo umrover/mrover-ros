@@ -33,7 +33,7 @@ extern TIM_HandleTypeDef htim17;
 #define QUADRATURE_TICK_TIMER_1 &htim3 // Special encoder timer which externally reads quadrature encoder ticks
 // #define QUADRATURE_TIMER_2 &htim4
 #define QUADRATURE_ELAPSED_TIMER_1 &htim17 // Measures time since the lsat quadrature tick reading
-// #define ABSOLUTE_ENCODER_TIMER &htim2
+#define ABSOLUTE_ENCODER_TIMER &htim2
 // #define UPDATE_TIMER &htim6
 #define SEND_TIMER &htim7            // 100 Hz FDCAN repeating timer
 #define PWM_TIMER_1 &htim15          // H-Bridge PWM
@@ -152,6 +152,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim) {
         mrover::fdcan_watchdog_expired();
     } else if (htim == QUADRATURE_ELAPSED_TIMER_1) {
         mrover::quadrature_elapsed_timer_expired();
+    } else if (htim == ABSOLUTE_ENCODER_TIMER) {
+        mrover::request_absolute_encoder_data_callback();
     }
     // TODO: check for slow update timer and call on controller to send out i2c frame
 }

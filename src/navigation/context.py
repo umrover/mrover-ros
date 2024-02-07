@@ -3,20 +3,18 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import ClassVar, Optional, List, Tuple
 
-import mrover.msg
-import mrover.srv
 import numpy as np
 import pymap3d
+
 import rospy
 import tf2_ros
 from geometry_msgs.msg import Twist
-from mrover.msg import Waypoint, GPSWaypoint, EnableAuton, WaypointType, GPSPointList
-from std_msgs.msg import Time, Bool
-from visualization_msgs.msg import Marker
-
-from util.SE3 import SE3
-
+from mrover.msg import Waypoint, GPSWaypoint, WaypointType, GPSPointList, Course as CourseMsg
+from mrover.srv import EnableAuton, EnableAutonRequest, EnableAutonResponse
 from navigation.drive import DriveController
+from std_msgs.msg import Time, Bool
+from util.SE3 import SE3
+from visualization_msgs.msg import Marker
 
 TAG_EXPIRATION_TIME_SECONDS = 60
 
@@ -56,7 +54,7 @@ class Rover:
 @dataclass
 class Environment:
     """
-    Context class to represent the rover's envrionment
+    Context class to represent the rover's environment
     Information such as locations of fiducials or obstacles
     """
 
@@ -100,13 +98,13 @@ class Environment:
             print("CURRENT WAYPOINT IS NONE")
             return None
 
-        return self.get_fid_pos(current_waypoint.fiducial_id, in_odom)
+        return self.get_fid_pos(current_waypoint.tag_id, in_odom)
 
 
 @dataclass
 class Course:
     ctx: Context
-    course_data: mrover.msg.Course
+    course_data: CourseMsg
     # Currently active waypoint
     waypoint_index: int = 0
 
@@ -117,7 +115,7 @@ class Course:
         """
         Gets the pose of the waypoint with the given index
         """
-        waypoint_frame = self.course_data.waypoints[wp_idx].tf_id
+        waypoint_frame = f"course{wp_idx}"
         return SE3.from_tf_tree(self.ctx.tf_buffer, parent_frame="map", child_frame=waypoint_frame)
 
     def current_waypoint_pose(self) -> SE3:
@@ -126,7 +124,7 @@ class Course:
         """
         return self.waypoint_pose(self.waypoint_index)
 
-    def current_waypoint(self) -> Optional[mrover.msg.Waypoint]:
+    def current_waypoint(self) -> Optional[Waypoint]:
         """
         Returns the currently active waypoint
 
@@ -144,7 +142,7 @@ class Course:
         """
         waypoint = self.current_waypoint()
         if waypoint is not None:
-            return waypoint.type.val == mrover.msg.WaypointType.POST
+            return waypoint.type.val == WaypointType.POST
         else:
             return False
 
@@ -154,11 +152,11 @@ class Course:
 
 def setup_course(ctx: Context, waypoints: List[Tuple[Waypoint, SE3]]) -> Course:
     all_waypoint_info = []
-    for waypoint_info, pose in waypoints:
+    for wp_idx, (waypoint_info, pose) in enumerate(waypoints):
         all_waypoint_info.append(waypoint_info)
-        pose.publish_to_tf_tree(tf_broadcaster, "map", waypoint_info.tf_id)
+        pose.publish_to_tf_tree(tf_broadcaster, "map", f"course{wp_idx}")
     # make the course out of just the pure waypoint objects which is the 0th elt in the tuple
-    return Course(ctx=ctx, course_data=mrover.msg.Course([waypoint[0] for waypoint in waypoints]))
+    return Course(ctx=ctx, course_data=CourseMsg([waypoint[0] for waypoint in waypoints]))
 
 
 def convert_gps_to_cartesian(waypoint: GPSWaypoint) -> Tuple[Waypoint, SE3]:
@@ -173,10 +171,10 @@ def convert_gps_to_cartesian(waypoint: GPSWaypoint) -> Tuple[Waypoint, SE3]:
     )
     # zero the z-coordinate of the odom because even though the altitudes are set to zero,
     # two points on a sphere are not going to have the same z coordinate
-    # navigation algorithmns currently require all coordinates to have zero as the z coordinate
+    # navigation algorithms currently require all coordinates to have zero as the z coordinate
     odom[2] = 0
 
-    return Waypoint(fiducial_id=waypoint.id, tf_id=f"course{waypoint.id}", type=waypoint.type), SE3(position=odom)
+    return Waypoint(tag_id=waypoint.tag_id, type=waypoint.type), SE3(position=odom)
 
 
 def convert_cartesian_to_gps(coordinate: np.ndarray) -> GPSWaypoint:
@@ -189,7 +187,7 @@ def convert_cartesian_to_gps(coordinate: np.ndarray) -> GPSWaypoint:
     return GPSWaypoint(lat, lon, WaypointType(val=WaypointType.NO_SEARCH), 0)
 
 
-def convert_and_get_course(ctx: Context, data: EnableAuton) -> Course:
+def convert_and_get_course(ctx: Context, data: EnableAutonRequest) -> Course:
     waypoints = [convert_gps_to_cartesian(waypoint) for waypoint in data.waypoints]
     return setup_course(ctx, waypoints)
 
@@ -221,7 +219,7 @@ class Context:
         self.vel_cmd_publisher = rospy.Publisher("cmd_vel", Twist, queue_size=1)
         self.vis_publisher = rospy.Publisher("nav_vis", Marker, queue_size=1)
         self.search_point_publisher = rospy.Publisher("search_path", GPSPointList, queue_size=1)
-        self.enable_auton_service = rospy.Service("enable_auton", mrover.srv.PublishEnableAuton, self.recv_enable_auton)
+        self.enable_auton_service = rospy.Service("enable_auton", EnableAuton, self.recv_enable_auton)
         self.stuck_listener = rospy.Subscriber("nav_stuck", Bool, self.stuck_callback)
         self.course = None
         self.rover = Rover(self, False, "")
@@ -232,13 +230,12 @@ class Context:
         self.odom_frame = rospy.get_param("odom_frame")
         self.rover_frame = rospy.get_param("rover_frame")
 
-    def recv_enable_auton(self, req: mrover.srv.PublishEnableAutonRequest) -> mrover.srv.PublishEnableAutonResponse:
-        enable_msg = req.enableMsg
-        if enable_msg.enable:
-            self.course = convert_and_get_course(self, enable_msg)
+    def recv_enable_auton(self, req: EnableAutonRequest) -> EnableAutonResponse:
+        if req.enable:
+            self.course = convert_and_get_course(self, req)
         else:
             self.disable_requested = True
-        return mrover.srv.PublishEnableAutonResponse(True)
+        return EnableAutonResponse(True)
 
     def stuck_callback(self, msg: Bool):
         self.rover.stuck = msg.data

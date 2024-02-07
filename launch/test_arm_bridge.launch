@@ -4,12 +4,9 @@ software
 	on the physical rover.
  -->
 <launch>
-    <!-- launch rover core nodes -->
-    <include file="$(find mrover)/launch/rover_core.launch" />
+  <include file="$(find mrover)/launch/esw_arm.launch"/>
 
-    <!-- params for hardware interfaces including IMU, GPS, and moteus -->
-    <rosparam command="load" file="$(find mrover)/config/esw.yaml" />
-
-    <node name="arm_hw_bridge" pkg="mrover" type="arm_hw_bridge" />
-    <node name="arm_translator_bridge" pkg="mrover" type="arm_translator_bridge" />
+  <node name="can_driver" pkg="mrover" type="can_driver">
+    <param name="interface" value="vcan0"/>
+  </node>
 </launch>

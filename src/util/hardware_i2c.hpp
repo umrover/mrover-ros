@@ -1,6 +1,5 @@
 #pragma once
 
-#include <any>
 #include <cstdint>
 #include <optional>
 
@@ -67,7 +66,7 @@ namespace mrover {
             check(HAL_I2C_Master_Receive_DMA(m_i2c, address << 1 | 1, address_of<std::uint8_t>(m_receive_buffer), sizeof(m_receive_buffer)) == HAL_OK, Error_Handler);
         }
 
-// breaks science code: error: 'const class std::any' has no member named 'type'
+        // breaks science code: error: 'const class std::any' has no member named 'type'
         auto get_buffer() const -> std::optional<TReceive> {
             return m_receive_buffer;
         }

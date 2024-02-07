@@ -1,3 +1,2 @@
-int32 fiducial_id
-string tf_id
+uint8 tag_id
 WaypointType type

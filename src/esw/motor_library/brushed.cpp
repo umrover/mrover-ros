@@ -51,6 +51,20 @@ namespace mrover {
         mMinPosition = Radians{xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "min_position", -1.0)};
         mMaxPosition = Radians{xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "max_position", 1.0)};
 
+        mPositionGains.p = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "position_p", 0.0);
+        mPositionGains.i = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "position_i", 0.0);
+        mPositionGains.d = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "position_d", 0.0);
+        mPositionGains.ff = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "position_ff", 0.0);
+
+        mVelocityGains.p = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "velocity_p", 0.0);
+        mVelocityGains.i = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "velocity_i", 0.0);
+        mVelocityGains.d = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "velocity_d", 0.0);
+        mVelocityGains.ff = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "velocity_ff", 0.0);
+
+        for (int i = 0; i < 4; ++i) {
+            mhasLimit |= xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, std::format("limit_{}_enabled", i), false);
+        }
+        mCalibrationThrottle = Percent{xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "calibration_throttle", 0.0)};
         mErrorState = "Unknown";
         mState = "Unknown";
     }
@@ -76,7 +90,12 @@ namespace mrover {
 
         assert(position >= mMinPosition && position <= mMaxPosition);
 
-        mDevice.publish_message(InBoundMessage{PositionCommand{.position = position}});
+        mDevice.publish_message(InBoundMessage{PositionCommand{
+                .position = position,
+                .p = static_cast<float>(mPositionGains.p),
+                .i = static_cast<float>(mPositionGains.i),
+                .d = static_cast<float>(mPositionGains.d),
+        }});
     }
 
     void BrushedController::setDesiredVelocity(RadiansPerSecond velocity) {
@@ -88,13 +107,33 @@ namespace mrover {
 
         assert(velocity >= mMinVelocity && velocity <= mMaxVelocity);
 
-        mDevice.publish_message(InBoundMessage{VelocityCommand{.velocity = velocity}});
+        mDevice.publish_message(InBoundMessage{VelocityCommand{
+                .velocity = velocity,
+                .p = static_cast<float>(mVelocityGains.p),
+                .i = static_cast<float>(mVelocityGains.i),
+                .d = static_cast<float>(mVelocityGains.d),
+                .ff = static_cast<float>(mVelocityGains.ff),
+        }});
     }
 
     void BrushedController::sendConfiguration() {
         mDevice.publish_message(InBoundMessage{mConfigCommand});
 
         // Need to await configuration. Can NOT directly set mIsConfigured to true.
+    }
+
+    void BrushedController::adjust(Radians commandedPosition) {
+        updateLastConnection();
+        if (!mIsConfigured) {
+            sendConfiguration();
+            return;
+        }
+
+        assert(commandedPosition >= mMinPosition && commandedPosition <= mMaxPosition);
+
+        mDevice.publish_message(InBoundMessage{AdjustCommand{
+                .position = commandedPosition
+        }});
     }
 
     void BrushedController::processMessage(ControllerDataState const& state) {
@@ -146,6 +185,24 @@ namespace mrover {
                 return "RECEIVING_PID_COMMANDS_WHEN_NO_READER_EXISTS";
             default:
                 return "UNKNOWN_ERROR_CODE";
+        }
+    }
+
+    bool BrushedController::calibrateServiceCallback(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res) {
+        if (!mhasLimit) {
+            res.success = false;
+            res.message = mControllerName + " does not have limit switches, cannot calibrate";
+            return true;
+        } else if (mIsCalibrated) {
+            res.success = false;
+            res.message = mControllerName + " already calibrated";
+            return true;
+        } else {
+            // sends throttle command until a limit switch is hit
+            // mIsCalibrated is set with CAN message coming from BDCMC
+            setDesiredThrottle(mCalibrationThrottle); 
+            res.success = true;
+            return true;
         }
     }
 

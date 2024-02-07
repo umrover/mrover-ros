@@ -1,32 +1,33 @@
 #pragma once
 
-#include <XmlRpcValue.h>
 #include <cstdint>
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <filesystem>
+#include <format>
+
+#include <XmlRpcValue.h>
 
 namespace mrover {
 
     // Define a function template for type conversion with a default value
     template<typename T>
-    T xmlRpcValueToTypeOrDefault(const XmlRpc::XmlRpcValue& parent, const std::string& member, const std::optional<T>& defaultValue = std::nullopt) {
+    auto xmlRpcValueToTypeOrDefault(XmlRpc::XmlRpcValue const& parent, std::string const& member, std::optional<T> const& defaultValue = std::nullopt) -> T {
         if (!parent.hasMember(member)) {
-            if (defaultValue.has_value()) {
-                return defaultValue.value();
-            } else {
-                throw std::invalid_argument("Member not found: " + member);
-            }
+            if (defaultValue) return defaultValue.value();
+
+            throw std::invalid_argument(std::format("Member not found: {}", member));
         }
 
-        const XmlRpc::XmlRpcValue& value = parent[member];
+        XmlRpc::XmlRpcValue const& value = parent[member];
 
         if constexpr (std::is_same_v<T, std::uint8_t>) {
             if (value.getType() != XmlRpc::XmlRpcValue::TypeInt) {
                 throw std::invalid_argument("Expected XmlRpcValue of TypeInt for member: " + member);
             }
             return static_cast<std::uint8_t>(static_cast<int>(value));
-        } else if constexpr (std::is_same_v<T, std::string>) {
+        } else if constexpr (std::is_same_v<T, std::string> || std::is_same_v<T, std::filesystem::path>) {
             if (value.getType() != XmlRpc::XmlRpcValue::TypeString) {
                 throw std::invalid_argument("Expected XmlRpcValue of TypeString for member: " + member);
             }
@@ -46,5 +47,31 @@ namespace mrover {
         }
     }
 
+    template<std::size_t N>
+    auto xmlRpcValueToNumberArray(XmlRpc::XmlRpcValue const& parent, std::string const& member) -> std::array<double, N> {
+        if (!parent.hasMember(member)) {
+            throw std::invalid_argument(std::format("Member not found: {}", member));
+        }
+
+        XmlRpc::XmlRpcValue const& value = parent[member];
+        if (value.getType() != XmlRpc::XmlRpcValue::TypeArray) {
+            throw std::invalid_argument(std::format("Expected XmlRpcValue of TypeArray for member: {}", member));
+        }
+        if (value.size() != N) {
+            throw std::invalid_argument(std::format("Expected array of size {} for member: {}", N, member));
+        }
+
+        std::array<double, N> result;
+        for (int i = 0; i < N; ++i) {
+            if (value[i].getType() == XmlRpc::XmlRpcValue::TypeDouble) {
+                result[i] = static_cast<double>(value[i]);
+            } else if (value[i].getType() == XmlRpc::XmlRpcValue::TypeInt) {
+                result[i] = static_cast<int>(value[i]);
+            } else {
+                throw std::invalid_argument(std::format("Expected XmlRpcValue of TypeDouble or TypeInt for member: {}", member));
+            }
+        }
+        return result;
+    }
 
 } // namespace mrover

@@ -9,6 +9,7 @@
 #include <iostream>
 #include <units/units.hpp>
 
+#include <mrover/AdjustMotor.h>
 #include <mrover/ControllerState.h>
 #include <mrover/Position.h>
 #include <mrover/Throttle.h>
@@ -39,7 +40,7 @@ namespace mrover {
 
             // mPublishDataTimer = mNh.createTimer(ros::Duration(0.1), &Controller::publishDataCallback, this);
 
-            ROS_INFO("instantiate %s", mControllerName.c_str());
+            mAdjustServer = mNh.advertiseService(std::format("{}_adjust", mControllerName), &Controller::adjustServiceCallback, this);
         }
 
         virtual ~Controller() = default;
@@ -49,6 +50,7 @@ namespace mrover {
         virtual void setDesiredPosition(Radians position) = 0;          // joint output
         virtual void processCANMessage(CAN::ConstPtr const& msg) = 0;
         virtual double getEffort() = 0;
+        virtual void adjust(Radians position) = 0;
         void updateLastConnection() {
             mLastConnection = std::chrono::high_resolution_clock::now();
         }
@@ -57,6 +59,7 @@ namespace mrover {
             auto duration = std::chrono::high_resolution_clock::now() - mLastConnection;
             if (duration < std::chrono::milliseconds(100)) {
                 setDesiredThrottle(0_percent);
+                ROS_WARN("TIMEOUT with controller %s\n", mControllerName.c_str());
             }
         }
 
@@ -65,9 +68,6 @@ namespace mrover {
                 ROS_ERROR("Throttle request at topic for %s ignored!", msg->names.at(0).c_str());
                 return;
             }
-
-            if (mControllerName == "joint_de_0")
-                ROS_INFO("set throttle request %f", msg->throttles[0]);
 
             setDesiredThrottle(msg->throttles.at(0));
         }
@@ -79,8 +79,6 @@ namespace mrover {
                 return;
             }
 
-            if (mControllerName == "joint_de_0")
-                ROS_INFO("set velocity request %f", msg->velocities[0]);
             setDesiredVelocity(RadiansPerSecond{msg->velocities.at(0)});
         }
 
@@ -103,7 +101,7 @@ namespace mrover {
             controller_state.name.push_back(mName);
             controller_state.state.push_back(mState);
             controller_state.error.push_back(mErrorState);
-            uint8_t limit_hit;
+            std::uint8_t limit_hit{};
             for (int i = 0; i < 4; ++i) {
                 limit_hit |= mLimitHit.at(i) << i;
             }
@@ -114,6 +112,16 @@ namespace mrover {
             mControllerDataPub.publish(controller_state);
         }
 
+        bool adjustServiceCallback(AdjustMotor::Request& req, AdjustMotor::Response& res) {
+            if (req.name != mControllerName) {
+                ROS_ERROR("Adjust request at server for %s ignored", req.name.c_str());
+                res.success = false;
+                return true;
+            }
+            adjust(Radians{req.value});
+            res.success = true;
+            return true;
+        }
 
     protected:
         ros::NodeHandle mNh;
@@ -124,7 +132,9 @@ namespace mrover {
         Radians mMinPosition{}, mMaxPosition{};
         Radians mCurrentPosition{};
         RadiansPerSecond mCurrentVelocity{};
+        Percent mCalibrationThrottle{};
         bool mIsCalibrated{};
+        bool mhasLimit{};
         std::string mErrorState;
         std::string mState;
         std::array<bool, 4> mLimitHit{};
@@ -137,6 +147,8 @@ namespace mrover {
         ros::Publisher mJointDataPub;
         ros::Publisher mControllerDataPub;
         ros::Timer mPublishDataTimer;
+
+        ros::ServiceServer mAdjustServer;
     };
 
 } // namespace mrover

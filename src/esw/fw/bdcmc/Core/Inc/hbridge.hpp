@@ -25,8 +25,6 @@ namespace mrover {
         Pin m_reverse_pins{};
         TIM_HandleTypeDef* m_timer{};
         std::uint32_t m_channel = TIM_CHANNEL_1;
-        std::uint32_t volatile* m_arr_register{};
-        std::uint32_t volatile* m_ccr_register{};
         Percent m_max_pwm{};
     };
 

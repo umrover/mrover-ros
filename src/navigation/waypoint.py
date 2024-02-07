@@ -20,7 +20,7 @@ class WaypointState(State):
     def on_loop(self, context) -> State:
         """
         Handle driving to a waypoint defined by a linearized cartesian position.
-        If the waypoint is associated with a fiducial id, go into that state early if we see it,
+        If the waypoint is associated with a tag id, go into that state early if we see it,
         otherwise wait until we get there to conduct a more thorough search.
         :param ud:  State machine user data
         :return:    Next state
@@ -52,7 +52,7 @@ class WaypointState(State):
                     # We finished a regular waypoint, go onto the next one
                     context.course.increment_waypoint()
                 else:
-                    # We finished a waypoint associated with a fiducial id, but we have not seen it yet.
+                    # We finished a waypoint associated with a tag id, but we have not seen it yet.
                     return search.SearchState()
 
             if context.rover.stuck:

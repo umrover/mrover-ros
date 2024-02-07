@@ -1,3 +1,4 @@
+#include <ros/rate.h>
 #include <ros/ros.h>
 
 #include <iostream>
@@ -21,19 +22,32 @@ int main(int argc, char** argv) {
     // - rosrun mrover can_driver_node _interface:=can0
     // - roslaunch brushless_test.launch
 
-    auto brushlessController = std::make_unique<mrover::BrushlessController>(nh, "jetson", "devboard");
+    auto brushlessController = std::make_unique<mrover::BrushlessController>(nh, "jetson", "joint_de_1");
 
     int count = 0;
     ros::Rate rate{100};
+
+    /*
+    // Different positions test
     std::array<float, 4> positions = {1.0, 2.0, 3.0, 4.0};
     while (ros::ok()) {
         // Throttle test
         //brushlessController->setDesiredThrottle(mrover::Percent{((float) count) / 500.0});
-        //brushlessController->setDesiredVelocity(mrover::RadiansPerSecond{10.0});
-        brushlessController->setDesiredPosition(mrover::Radians{positions.at(count / 400)});
+        brushlessController->setDesiredVelocity(mrover::RadiansPerSecond{5.0});
+        // brushlessController->setDesiredPosition(mrover::Radians{positions.at(count / 400)});
         count++;
         ros::spinOnce();
         rate.sleep();
+    }
+
+    */
+    ros::Rate rate_0p5hz{0.5};
+    while (ros::ok() && count < 10) {
+        // Motor should keep moving forward every 2 seconds. Repeats 10 times.
+        brushlessController->setDesiredPosition(mrover::Radians{1.0});
+        brushlessController->adjust(mrover::Radians{0.0});
+        count++;
+        rate_0p5hz.sleep();
     }
 
     return EXIT_SUCCESS;

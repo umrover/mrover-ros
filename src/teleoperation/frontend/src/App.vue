@@ -1,21 +1,17 @@
-<script setup lang='ts'>
-import { RouterLink, RouterView } from 'vue-router'
-import TaskSelector from './components/TaskSelector.vue'
-</script>
-
 <template>
-  <header>
-    <div class='wrapper'>
-      <TaskSelector />
-
-      <nav>
-        <RouterLink to='/autonomy'>Autonomy</RouterLink>
-      </nav>
-    </div>
-  </header>
-
-  <RouterView />
+  <div id="app">
+    <router-view />
+  </div>
 </template>
 
+<script lang="ts">
+export default {
+  name: 'App'
+}
+</script>
+
 <style scoped>
+#app {
+  font-family: 'Avenir', Helvetica, Arial, sans-serif;
+}
 </style>

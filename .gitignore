@@ -15,9 +15,13 @@ venv/
 node_modules/
 /src/teleop/gui/dist/
 /src/teleop/gui/src/static/map
+starter_project/teleop/basestation_gui/frontend/build
 keys.json*
 yarn.lock*
 yarn-error.log*
+bun.lock*
+package-lock.json*
+db.sqlite3
 
 # Bag Files
 /bags/
@@ -35,3 +39,6 @@ moteus-cal*
 
 # clangd
 .cache/
+
+# macOS
+.DS_Store

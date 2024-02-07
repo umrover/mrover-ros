@@ -123,7 +123,7 @@ namespace mrover {
                 mStream.value(),
                 boost::asio::buffer(&mReadFrame, sizeof(mReadFrame)),
                 // Supply lambda that is called on completion
-                [this](boost::system::error_code const& ec, std::size_t bytes) { // NOLINT(*-no-recursion)
+                [this](boost::system::error_code const& ec, [[maybe_unused]] std::size_t bytes) { // NOLINT(*-no-recursion)
                     checkErrorCode(ec);
                     assert(bytes == sizeof(mReadFrame));
 
@@ -226,20 +226,3 @@ namespace mrover {
     }
 
 } // namespace mrover
-
-int main(int argc, char** argv) {
-    ros::init(argc, argv, "can_driver");
-
-    // Start the CAN Nodelet
-    nodelet::Loader nodelet;
-    nodelet.load(ros::this_node::getName(), "mrover/CanNodelet", ros::names::getRemappings(), {});
-
-    ros::spin();
-
-    return EXIT_SUCCESS;
-}
-
-#ifdef MROVER_IS_NODELET
-#include <pluginlib/class_list_macros.h>
-PLUGINLIB_EXPORT_CLASS(mrover::CanNodelet, nodelet::Nodelet)
-#endif

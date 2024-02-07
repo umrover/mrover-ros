@@ -1,0 +1,7 @@
+../Core/Src/spectral.c:8:11:new_spectral	2
+../Core/Src/spectral.c:21:6:initialize_spectral	1
+../Core/Src/spectral.c:40:6:update_spectral_all_channel_data	2
+../Core/Src/spectral.c:51:6:update_spectral_channel_data	2
+../Core/Src/spectral.c:69:10:get_spectral_channel_data	1
+../Core/Src/spectral.c:82:6:virtual_write_spectral	3
+../Core/Src/spectral.c:109:9:virtual_read_spectral	6
