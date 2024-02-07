@@ -1,10 +1,10 @@
 <template>
   <div class="wrap">
     <ToggleButton
-      :id="name"
+      :id="display_name"
       :current-state="limit_enabled"
-      :label-enable-text="name + ' On'"
-      :label-disable-text="name + ' Off'"
+      :label-enable-text="display_name + ' On'"
+      :label-disable-text="display_name + ' Off'"
       @change="toggleLimitSwitch()"
     />
   </div>
@@ -20,11 +20,11 @@ export default defineComponent({
     ToggleButton
   },
   props: {
-    name: {
+    display_name: {
       type: String,
       required: true
     },
-    switch_name: {
+    service_name: {
       type: String,
       required: true
     }
@@ -59,8 +59,8 @@ export default defineComponent({
       this.limit_enabled = !this.limit_enabled
       this.sendMessage({
         type: 'enable_limit_switch',
-        name: this.switch_name,
-        enable: this.limit_enabled
+        name: this.service_name,
+        data: this.limit_enabled
       })
     }
   }
