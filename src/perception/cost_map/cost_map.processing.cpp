@@ -46,7 +46,7 @@ namespace mrover {
                     // get vertical component of (unit) normal vector
                     double z_comp = normal.z();
                     // small z component indicates largely horizontal normal (surface is vertical)
-                    signed char cost = z_comp < mNormalThreshold ? 100 : 0;
+                    signed char cost = z_comp < mNormalThreshold ? 1 : 0;
 
                     mGlobalGridMsg.data[i] = std::max(mGlobalGridMsg.data[i], cost);
                 }
