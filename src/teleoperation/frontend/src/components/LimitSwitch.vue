@@ -1,5 +1,5 @@
 <template>
-  <div class="wrap">
+  <div>
     <ToggleButton
       :id="display_name"
       :current-state="limit_enabled"
