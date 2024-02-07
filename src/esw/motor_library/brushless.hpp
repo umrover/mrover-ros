@@ -86,6 +86,10 @@ namespace mrover {
         bool bwdLimitSwitchEnabled{};
         bool fwdLimitSwitchActiveHigh{};
         bool bwdLimitSwitchActiveHigh{};
+        bool fwdLimitSwitchUsedForReadjustment{};
+        bool bwdLimitSwitchUsedForReadjustment{};
+        Radians fwdLimitSwitchReadjustPosition{};
+        Radians bwdLimitSwitchReadjustPosition{};
         
         // Function to map throttle to velocity
         RadiansPerSecond mapThrottleToVelocity(Percent throttle);

@@ -24,6 +24,10 @@ namespace mrover {
         bwdLimitSwitchEnabled = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "bwdLimitSwitchEnabled", false);
         fwdLimitSwitchActiveHigh = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "fwdLimitSwitchActiveHigh", false);
         bwdLimitSwitchActiveHigh = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "bwdLimitSwitchActiveHigh", false);
+        fwdLimitSwitchUsedForReadjustment = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "fwdLimitSwitchUsedForReadjustment", false);
+        bwdLimitSwitchUsedForReadjustment = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "bwdLimitSwitchUsedForReadjustment", false);
+        fwdLimitSwitchReadjustPosition = Radians{xmlRpcValueToTypeOrDefault<double>(brushlessMotorData, "fwdLimitSwitchReadjustPosition", 0.0)};
+        bwdLimitSwitchReadjustPosition = Radians{xmlRpcValueToTypeOrDefault<double>(brushlessMotorData, "bwdLimitSwitchReadjustPosition", 0.0)};
 
     }
 
