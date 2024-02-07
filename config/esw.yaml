@@ -126,6 +126,19 @@ brushless_motors:
     joint_de_1:
       min_velocity: -70.0
       max_velocity: 70.0
+    sa_z:
+      min_velocity: -1.0
+      max_velocity: 1.0
+      limit_fwd_present: true
+      limit_bwd_present: true
+      limit_fwd_enabled: true
+      limit_bwd_enabled: true
+      limit_fwd_is_active_high: true
+      limit_bwd_is_active_high: true
+      limit_fwd_used_for_readjustment: true
+      limit_bwd_used_for_readjustment: true
+      limit_fwd_readjust_position: 1.0 # meters
+      limit_bwd_readjust_position: 0.0 # meters
 
 joint_de:
   pitch_offset: 0.0
