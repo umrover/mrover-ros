@@ -41,6 +41,10 @@ namespace mrover {
 
         [[nodiscard]] auto read() -> std::optional<EncoderReading>;
 
+        auto expired() -> void {
+            m_velocity_filter.clear();
+        }
+
     private:
         struct I2CAddress {
             constexpr static std::uint16_t

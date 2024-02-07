@@ -208,6 +208,13 @@ namespace mrover {
             return {};
         }
 
+        auto broadcast(IsFdcanSerializable auto const& send, uint8_t device_id) -> void {
+            uint8_t orig_source = m_source;
+            m_source = device_id;
+            broadcast(send);
+            m_source = orig_source;
+        }
+
         auto broadcast(IsFdcanSerializable auto const& send) -> void {
             MessageId messageId{
                     .destination = m_destination,

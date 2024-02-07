@@ -5,9 +5,8 @@
 
 namespace mrover {
 
-    HBridge::HBridge(TIM_HandleTypeDef* timer, Pin forward_pin, Pin reverse_pin)
-        : m_forward_pins{forward_pin},
-          m_reverse_pins{reverse_pin},
+    HBridge::HBridge(TIM_HandleTypeDef* timer, Pin dir_pin)
+        : m_dir_pin{dir_pin},
           m_timer{timer},
           m_max_pwm{0_percent} {
 
@@ -18,13 +17,12 @@ namespace mrover {
 
     void HBridge::write(Percent output) const {
         // Set direction pins/duty cycle
-        set_direction_pins(output);
+        set_direction_pin(output);
         set_duty_cycle(output, m_max_pwm);
     }
 
-    void HBridge::set_direction_pins(Percent duty_cycle) const {
-        m_forward_pins.write(duty_cycle < 0_percent ? GPIO_PIN_SET : GPIO_PIN_RESET);
-        m_reverse_pins.write(duty_cycle > 0_percent ? GPIO_PIN_SET : GPIO_PIN_RESET);
+    void HBridge::set_direction_pin(Percent duty_cycle) const {
+        m_dir_pin.write(duty_cycle < 0_percent ? GPIO_PIN_SET : GPIO_PIN_RESET);
     }
 
     void HBridge::set_duty_cycle(Percent duty_cycle, Percent max_duty_cycle) const {

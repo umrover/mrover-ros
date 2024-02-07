@@ -28,6 +28,9 @@ namespace mrover {
 
         using Mode = std::variant<std::monostate, PositionMode, VelocityMode>;
 
+        /* ==================== Device ID ==================== */
+        uint8_t m_id;
+
         /* ==================== Hardware ==================== */
         FDCAN<InBoundMessage> m_fdcan;
         HBridge m_motor_driver;
@@ -218,7 +221,7 @@ namespace mrover {
             m_fdcan.broadcast(OutBoundMessage{DebugState{
                     .f1 = m_velocity.value().get(),
                     .f2 = message.velocity.get(),
-            }});
+            }}, m_id);
         }
 
         auto process_command(PositionCommand const& message, PositionMode& mode) -> void {
@@ -271,9 +274,10 @@ namespace mrover {
     public:
         Controller() = default;
 
-        Controller(TIM_HandleTypeDef* hbridge_output, Pin hbridge_forward_pin, Pin hbridge_backward_pin, FDCAN<InBoundMessage> const& fdcan, TIM_HandleTypeDef* watchdog_timer, TIM_HandleTypeDef* encoder_tick_timer, TIM_HandleTypeDef* encoder_elapsed_timer, I2C_HandleTypeDef* absolute_encoder_i2c, std::array<LimitSwitch, 4> const& limit_switches)
-            : m_fdcan{fdcan},
-              m_motor_driver{HBridge(hbridge_output, hbridge_forward_pin, hbridge_backward_pin)},
+        Controller(uint8_t id, TIM_HandleTypeDef* hbridge_output, Pin hbridge_direction_pin, FDCAN<InBoundMessage> const& fdcan, TIM_HandleTypeDef* watchdog_timer, TIM_HandleTypeDef* encoder_tick_timer, TIM_HandleTypeDef* encoder_elapsed_timer, I2C_HandleTypeDef* absolute_encoder_i2c, std::array<LimitSwitch, 4> const& limit_switches)
+            : m_id{id},
+              m_fdcan{fdcan},
+              m_motor_driver{HBridge(hbridge_output, hbridge_direction_pin)},
               m_watchdog_timer{watchdog_timer},
               m_encoder_timer{encoder_tick_timer},
               m_encoder_elapsed_timer{encoder_elapsed_timer},
@@ -340,10 +344,13 @@ namespace mrover {
             process_command();
         }
 
-        auto quadrature_elapsed_timer_expired() -> void {
+        auto elapsed_timer_expired() -> void {
             if (m_relative_encoder) {
                 m_relative_encoder->expired();
                 update_relative_encoder();
+            }
+            if (m_absolute_encoder) {
+                m_absolute_encoder->expired();
             }
         }
 
@@ -404,7 +411,7 @@ namespace mrover {
          */
         auto send() -> void {
             update();
-            m_fdcan.broadcast(m_outbound);
+            m_fdcan.broadcast(m_outbound, m_id);
         }
 
 
@@ -440,7 +447,7 @@ namespace mrover {
 
                 m_fdcan.broadcast(OutBoundMessage{DebugState{
                         .f1 = position.get(),
-                }});
+                }}, m_id);
 
                 m_uncalib_position.emplace(); // Reset to zero
                 m_velocity = velocity;
