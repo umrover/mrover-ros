@@ -6,8 +6,8 @@ from channels.generic.websocket import JsonWebsocketConsumer
 import rospy
 import tf2_ros
 from geometry_msgs.msg import Twist
-from mrover.msg import PDLB, ControllerState, GPSWaypoint, LED, StateMachineStateUpdate, Throttle
-from mrover.srv import EnableAuton
+from mrover.msg import PDLB, ControllerState, GPSWaypoint, LED, StateMachineStateUpdate, Throttle, CameraCmd
+from mrover.srv import EnableAuton, ChangeCameras
 from sensor_msgs.msg import JointState, NavSatFix
 from std_msgs.msg import String, Bool
 from std_srvs.srv import SetBool, Trigger
@@ -95,8 +95,10 @@ class GUIConsumer(JsonWebsocketConsumer):
                 self.auton_bearing()
             elif message["type"] == "mast_gimbal":
                 self.mast_gimbal(message)
-            elif message["type"] == "num_resolutions" or message["type"] == "max_streams":
+            elif message["type"] == "max_streams":
                 self.send_res_streams()
+            elif message["type"] == "sendCameras":
+                self.change_cameras(msg=message)
         except Exception as e:
             rospy.logerr(e)
 
@@ -263,8 +265,10 @@ class GUIConsumer(JsonWebsocketConsumer):
 
     def change_cameras(self, msg):
         try:
-            camera_cmd = CameraCmd(msg["device"], msg["res"])
+            camera_cmd = CameraCmd(msg["device"], msg["resolution"])
+            rospy.logerr(camera_cmd)
             result = self.change_cameras_srv(primary=msg["primary"], camera_cmd=camera_cmd)
+            rospy.logerr(result)
         except rospy.ServiceException as e:
             print(f"Service call failed: {e}")
 

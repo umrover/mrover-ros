@@ -21,7 +21,12 @@
     </div>
     <h3>All Cameras</h3>
     Capacity:
-    <input v-model="capacity" type="Number" min="2" :max="streamOrder.length" />
+    <div class="row justify-content-md-left">
+      <div class="form-group col-md-4">
+        <input v-model="capacity" type="Number" min="2" max="streamOrder.length" class="form-control" />
+      </div>
+    </div>
+    <!-- <input v-model="capacity" type="Number" min="2" :max="streamOrder.length" /> -->
     <div v-for="i in camsEnabled.length" :key="i">
       <CameraInfo v-if="camsEnabled[i - 1]" :id="i - 1" :name="names[i - 1]" :stream="getStreamNum(i - 1)"
         @newQuality="changeQuality($event)" @swapStream="swapStream($event)"></CameraInfo>
@@ -33,6 +38,7 @@
 import CameraSelection from "../components/CameraSelection.vue";
 import CameraInfo from "../components/CameraInfo.vue";
 import { mapActions, mapState } from "vuex";
+import { reactive } from "vue";
 
 export default {
   components: {
@@ -48,13 +54,13 @@ export default {
   },
   data() {
     return {
-      camsEnabled: new Array(9).fill(false),
-      names: Array.from({ length: 9 }, (_, i) => "Camera: " + i),
+      camsEnabled: reactive(new Array(9).fill(false)),
+      names: reactive(Array.from({ length: 9 }, (_, i) => "Camera: " + i)),
       cameraIdx: 0,
       cameraName: "",
       capacity: 2,
-      qualities: new Array(9).fill(-1),
-      streamOrder: [],
+      qualities: reactive(new Array(9).fill(-1)),
+      streamOrder: reactive([]),
 
       available_sub: null,
       num_available: -1
@@ -77,7 +83,10 @@ export default {
   },
 
   computed: {
-    ...mapState('websocket', ['message'])
+    ...mapState('websocket', ['message']),
+    color: function () {
+      return this.camsEnabled ? 'btn-success' : 'btn-secondary'
+    }
   },
 
   created: function () {
@@ -114,8 +123,8 @@ export default {
 
     swapStream({ prev, newest }) {
       var temp = this.streamOrder[prev];
-      Vue.set(this.streamOrder, prev, this.streamOrder[newest]);
-      //this.streamOrder[prev] = this.streamOrder[newest];
+      // Vue.set(this.streamOrder, prev, this.streamOrder[newest]);
+      this.streamOrder[prev] = this.streamOrder[newest];
       this.streamOrder[newest] = temp;
     },
 
@@ -126,13 +135,10 @@ export default {
         this.streamOrder.push(-1);
         this.qualities[index] = -1; //close the stream when sending it to comms
       } else this.streamOrder[this.streamOrder.indexOf(-1)] = index;
-      console.log(this.streamOrder);
       this.sendCameras(index);
     },
 
-    getStreamNum(index: number) {
-      console.log("streamOrder Index", this.streamOrder.indexOf(index));
-      console.log("streamOrder Array", this.streamOrder, "index", index);
+    getStreamNum(index: number) { //TODO: check this out
       return this.streamOrder.indexOf(index);
     }
 

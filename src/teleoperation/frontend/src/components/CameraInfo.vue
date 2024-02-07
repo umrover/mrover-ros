@@ -1,13 +1,22 @@
 <template>
-  <div>
-    <p>{{ name }} ID: {{ id }}</p>
-    Stream:
-    <input v-model="selectedStream" class="box" type="Number" min="0" max="3" />
-    <button class="box" @click="swapStream()">Change stream</button>
-    <label for="quality">Quality:</label>
-    <select id="quality" v-model="selectedQuality" class="box" @change="changeQuality()">
-      <option v-for="i in numQuality" :key="i">{{ i - 1 }}</option>
-    </select>
+  <div class="shadow my-1 p-3 rounded">
+    <p>{{ name }} • ID: {{ id }}</p>
+    <div class="row justify-content-md-left">
+      <div class="form-group col-md-4">
+        Stream:
+        <input v-model="selectedStream" type="Number" min="0" max="3" class="form-control" @change="swapStream" />
+        <!-- <input v-model="selectedStream" class="box" type="Number" min="0" max="3" /> -->
+        <!-- <button class="box" @click="swapStream()">Change stream</button> -->
+      </div>
+      <div class="form-group col-md-4">
+        <label for="quality">Quality:</label>
+        <select v-model="selectedQuality" type="Number" min="0" max="4" class="form-control" id="quality"
+          @change="changeQuality()">
+          <!-- <select id="quality" v-model="selectedQuality" class="box" @change="changeQuality()"> -->
+          <option v-for="i in numQuality" :key="i">{{ i - 1 }}</option>
+        </select>
+      </div>
+    </div>
   </div>
 </template>
   
@@ -46,7 +55,6 @@ export default {
       }
     },
     stream: function () {
-      console.log("changed");
       this.prevStream = this.stream;
       this.selectedStream = this.stream;
     },
@@ -54,12 +62,6 @@ export default {
 
   computed: {
     ...mapState('websocket', ['message'])
-  },
-
-  created: function () {
-    window.setTimeout(() => {
-      this.sendMessage({ "type": "num_resolutions" });
-    }, 250)
   },
 
   methods: {

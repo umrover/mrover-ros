@@ -1,8 +1,8 @@
 <template>
   <div class="wrap">
-    <div v-for="j in 3" :key="j" class="buttons">
-      <template v-for="i in 3" :key="i">
-        <button class="btn btn-secondary mx-1 my-1" :disabled="maxedOut && !camsEnabled[i - 1 + 3 * (j - 1)]"
+    <div v-for="j in  3 " :key="j" class="buttons">
+      <template v-for="i in  3 " :key="i">
+        <button :class="['btn', color(i, j), 'mx-1', 'my-1']" :disabled="maxedOut && !camsEnabled[i - 1 + 3 * (j - 1)]"
           @click="$emit('cam_index', i - 1 + 3 * (j - 1))">
           <span>{{ names[i - 1 + 3 * (j - 1)] }}</span>
         </button>
@@ -31,6 +31,12 @@ export default {
     return {
       opacities: new Array(9).fill(1.0),
     };
+  },
+
+  methods: {
+    color: function (i: number, j: number) {
+      return this.camsEnabled[i - 1 + 3 * (j - 1)] ? 'btn-success' : 'btn-secondary';
+    },
   },
 
   computed: {
