@@ -13,8 +13,11 @@ namespace mrover {
 
 
         float mThreshold;
+        float mBestOffset;
 
         std::vector<Point const*> mFilteredPoints;
+
+        Eigen::Vector3f mBestCenter;
 
         auto onInit() -> void override;
 

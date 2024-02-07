@@ -14,6 +14,7 @@ namespace mrover {
         mThreshold = 10;
         mVectorSub = mNh.subscribe("/camera/left/points", 1, &LanderAlignNodelet::filterNormals, this);
         mDebugVectorPub = mNh.advertise<geometry_msgs::Vector3>("/lander_align/Pose", 1);
+        mBestCenter(0, 0, 0);
     }
 
     void LanderAlignNodelet::LanderCallback(sensor_msgs::PointCloud2Ptr const& cloud) {
@@ -90,9 +91,25 @@ namespace mrover {
                 if (numInliers > minInliers) {
                     minInliers = numInliers;
                     bestPlane = normal;
+                    mBestOffset = offset;
                 }
             }
         } while (bestPlane.isZero()); // keep trying until we get valid result TODO break case after X attempts??
+
+        // Run through one more loop to identify the center of the plane
+        for (auto p: points) {
+            // calculate distance of each point from potential plane
+            float distance = std::abs(bestPlane.x() * p->x + bestPlane.y() * p->y + bestPlane.z() * p->z + mBestOffset);
+
+            if (distance < distanceThreshold) {
+                mBestCenter(0) += p->x;
+                mBestCenter(1) += p->y;
+                mBestCenter(2) += p->z;
+                ++numInliers; // count num of inliers that pass the "good enough fit" threshold
+            }
+        }
+
+        mBestCenter /= numInliers;
 
         return bestPlane;
     }
