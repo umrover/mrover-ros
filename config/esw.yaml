@@ -137,8 +137,8 @@ brushless_motors:
       limit_bwd_is_active_high: true
       limit_fwd_used_for_readjustment: true
       limit_bwd_used_for_readjustment: true
-      limit_fwd_readjust_position: 1.0 # meters
-      limit_bwd_readjust_position: 0.0 # meters
+      limit_fwd_readjust_position: 1.0 # radians
+      limit_bwd_readjust_position: 0.0 # radians
 
 joint_de:
   pitch_offset: 0.0
