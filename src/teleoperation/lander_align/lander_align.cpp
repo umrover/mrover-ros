@@ -74,7 +74,7 @@ namespace mrover {
         if (points.size() < 3) {
             return std::nullopt;
         }
-        while (bestPlane.isZero()) {
+        while (bestPlane.isZero()) { // TODO add give up condition after X iter
             for (int i = 0; i < epochs; ++i) {
                 // sample 3 random points (potential inliers)
                 Point const* point1 = points[distribution(generator)];
