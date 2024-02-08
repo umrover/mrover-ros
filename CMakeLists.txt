@@ -184,7 +184,7 @@ endif ()
 ## Perception
 
 mrover_add_nodelet(zed_tag_detector src/perception/tag_detector/zed/*.cpp src/perception/tag_detector/zed src/perception/tag_detector/zed/pch.hpp)
-mrover_nodelet_link_libraries(zed_tag_detector opencv_core opencv_objdetect opencv_aruco opencv_imgproc tbb lie)
+mrover_nodelet_link_libraries(zed_tag_detector opencv_core opencv_aruco opencv_imgproc tbb lie)
 
 if (CUDA_FOUND)
     mrover_add_library(streaming src/esw/streaming/*.c* src/esw/streaming)
@@ -195,15 +195,14 @@ if (CUDA_FOUND)
 endif ()
 
 if (ZED_FOUND)
-    # object_detector
     mrover_add_nodelet(object_detector src/perception/object_detector/*.c* src/perception/object_detector src/perception/object_detector/pch.hpp)
     mrover_nodelet_link_libraries(object_detector PRIVATE opencv_core opencv_dnn opencv_imgproc lie nvinfer nvonnxparser tbb)
-    # Temporary
-    mrover_nodelet_link_libraries(object_detector PRIVATE opencv_imgcodecs)
-    mrover_nodelet_link_libraries(object_detector PRIVATE opencv_highgui)
     mrover_nodelet_defines(object_detector
             __CUDA_INCLUDE_COMPILER_INTERNAL_HEADERS__ # Eigen includes some files it should not, ignore
     )
+#    set_target_properties(object_detector_nodelet PROPERTIES CXX_STANDARD 11)
+    # Temporary
+    mrover_nodelet_link_libraries(object_detector PRIVATE opencv_imgcodecs opencv_highgui)
 
     mrover_add_nodelet(zed src/perception/zed_wrapper/*.c* src/perception/zed_wrapper src/perception/zed_wrapper/pch.hpp)
     mrover_nodelet_include_directories(zed ${ZED_INCLUDE_DIRS} ${CUDA_INCLUDE_DIRS})
@@ -211,7 +210,6 @@ if (ZED_FOUND)
     mrover_nodelet_defines(zed
             ALLOW_BUILD_DEBUG # Ignore ZED warnings about Debug mode
             __CUDA_INCLUDE_COMPILER_INTERNAL_HEADERS__ # Eigen includes some files it should not, ignore
-
     )
 endif ()
 

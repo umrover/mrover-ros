@@ -1,7 +1,9 @@
 #include "inference.cuh"
 
-
 using namespace nvinfer1;
+
+#include <NvOnnxParser.h>
+
 /**
 * cudaMemcpys CPU memory in inputTensor to GPU based on bindings
 * Queues that tensor to be passed through model
@@ -11,34 +13,32 @@ using namespace nvinfer1;
 */
 namespace mrover {
 
-    //Create names for common model names
     constexpr static char const* INPUT_BINDING_NAME = "images";
     constexpr static char const* OUTPUT_BINDING_NAME = "output0";
 
     Inference::Inference(std::filesystem::path const& onnxModelPath) {
-        //Create the engine object from either the file or from onnx file
+        // Create the engine object from either the file or from onnx file
         mEngine = std::unique_ptr<ICudaEngine>{createCudaEngine(onnxModelPath)};
         if (!mEngine) throw std::runtime_error("Failed to create CUDA engine");
 
         mLogger.log(ILogger::Severity::kINFO, "Created CUDA Engine");
 
-        //Check some assumptions about the model
+        // Check some assumptions about the model
         if (mEngine->getNbIOTensors() != 2) throw std::runtime_error("Invalid Binding Count");
         if (mEngine->getTensorIOMode(INPUT_BINDING_NAME) != TensorIOMode::kINPUT) throw std::runtime_error("Expected Input Binding 0 Is An Input");
         if (mEngine->getTensorIOMode(OUTPUT_BINDING_NAME) != TensorIOMode::kOUTPUT) throw std::runtime_error("Expected Input Binding Input To Be 1");
 
         createExecutionContext();
 
-        //Init the io tensors on the GPU
         prepTensors();
     }
 
-    ICudaEngine* Inference::createCudaEngine(std::filesystem::path const& onnxModelPath) {
+    auto Inference::createCudaEngine(std::filesystem::path const& onnxModelPath) -> ICudaEngine* {
 
-        mModelPath = {onnxModelPath.c_str()};
+        mModelPath = onnxModelPath;
 
         //Define the size of Batches
-        constexpr auto explicitBatch = 1U << static_cast<uint32_t>(NetworkDefinitionCreationFlag::kEXPLICIT_BATCH);
+        constexpr auto explicitBatch = 1U << static_cast<std::uint32_t>(NetworkDefinitionCreationFlag::kEXPLICIT_BATCH);
 
         //Init logger
         std::unique_ptr<IBuilder> builder{createInferBuilder(mLogger)};
@@ -104,7 +104,7 @@ namespace mrover {
         return runtime->deserializeCudaEngine(enginePlan.data(), enginePlan.size());
     }
 
-    void Inference::createExecutionContext() {
+    auto Inference::createExecutionContext() -> void {
         // Create Execution Context.
         mContext.reset(mEngine->createExecutionContext());
 
@@ -112,18 +112,17 @@ namespace mrover {
         mContext->setInputShape(INPUT_BINDING_NAME, mEngine->getTensorShape(INPUT_BINDING_NAME));
     }
 
-    void Inference::doDetections(cv::Mat const& img) const {
+    auto Inference::doDetections(cv::Mat const& img) const -> void {
         //Do the forward pass on the network
         launchInference(img, mOutputTensor);
     }
 
-    cv::Mat Inference::getOutputTensor() {
+    auto Inference::getOutputTensor() -> cv::Mat {
         //Returns the output tensor
         return mOutputTensor;
     }
 
-
-    void Inference::launchInference(cv::Mat const& input, cv::Mat const& output) const {
+    auto Inference::launchInference(cv::Mat const& input, cv::Mat const& output) const -> void {
         //Assert these items have been initialized
         assert(!input.empty());
         assert(!output.empty());
@@ -144,9 +143,8 @@ namespace mrover {
         cudaMemcpy(output.data, mBindings[1 - inputId], output.total() * output.elemSize(), cudaMemcpyDeviceToHost);
     }
 
-
-    void Inference::prepTensors() {
-        //Assign the properties to the input and output tensors
+    auto Inference::prepTensors() -> void {
+        // Assign the properties to the input and output tensors
         for (int i = 0; i < mEngine->getNbIOTensors(); i++) {
             char const* tensorName = mEngine->getIOTensorName(i);
             auto [rank, extents] = mEngine->getTensorShape(tensorName);
@@ -159,19 +157,21 @@ namespace mrover {
         }
 
         assert(mContext);
-        //Create an appropriately sized output tensor
+        // Create an appropriately sized output tensor
         Dims const outputTensorDims = mEngine->getTensorShape(OUTPUT_BINDING_NAME);
         for (int i = 0; i < outputTensorDims.nbDims; i++) {
             char message[512];
-            std::snprintf(message, sizeof(message), "size %d %d", i, outputTensorDims.d[i]);
-            mLogger.log(nvinfer1::ILogger::Severity::kINFO, message);
+            std::snprintf(message, sizeof(message), "Size %d %d", i, outputTensorDims.d[i]);
+            mLogger.log(ILogger::Severity::kINFO, message);
         }
 
-        //Create the mat wrapper around the output matrix for ease of use
-        mOutputTensor = cv::Mat::zeros(outputTensorDims.d[1], outputTensorDims.d[2], CV_MAKE_TYPE(CV_32F, 1));
+        // Create the mat wrapper around the output matrix for ease of use
+        assert(outputTensorDims.nbDims == 3);
+        assert(outputTensorDims.d[0] == 1);
+        mOutputTensor = cv::Mat::zeros(outputTensorDims.d[1], outputTensorDims.d[2], CV_32FC1);
     }
 
-    int Inference::getBindingInputIndex(IExecutionContext const* context) {
+    auto Inference::getBindingInputIndex(IExecutionContext const* context) -> int {
         //Returns the id for the input tensor
         return context->getEngine().getTensorIOMode(context->getEngine().getIOTensorName(0)) != TensorIOMode::kINPUT; // 0 (false) if bindingIsInput(0), 1 (true) otherwise
     }

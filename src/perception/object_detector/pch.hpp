@@ -17,8 +17,13 @@
 #include <string>
 #include <type_traits>
 #include <unordered_map>
+#include <algorithm>
+#include <cmath>
+#include <cstddef>
+#include <random>
+#include <stdexcept>
 
-#include <opencv2/core/mat.hpp>
+#include <opencv2/core.hpp>
 #include <opencv2/dnn.hpp>
 #include <opencv2/imgproc.hpp>
 
@@ -35,9 +40,8 @@
 #include <ros/package.h>
 
 #include <mrover/ObjectDetectorParamsConfig.h>
-#include <mrover/DetectedObject.h>
 
-#include <loop_profiler.hpp>
 #include <se3.hpp>
+#include <loop_profiler.hpp>
 #include <sensor_msgs/PointCloud2.h>
 #include <sensor_msgs/point_cloud2_iterator.h>

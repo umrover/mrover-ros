@@ -1,12 +1,8 @@
 #include "inference_wrapper.hpp"
 
-#include <opencv4/opencv2/core/mat.hpp>
-
 #include "inference.cuh"
 
 using namespace nvinfer1;
-
-
 
 /**
 * cudaMemcpys CPU memory in inputTensor to GPU based on bindings
@@ -17,18 +13,16 @@ using namespace nvinfer1;
 */
 namespace mrover {
 
-    InferenceWrapper::InferenceWrapper(std::string onnxModelPath) : mInference({}) {
-        //Initialize the unique_ptr to the inference class
+    InferenceWrapper::InferenceWrapper(std::string onnxModelPath) {
         mInference.reset(new Inference(std::move(onnxModelPath)));
     }
 
-    
-    void InferenceWrapper::doDetections(const cv::Mat& img) const {
-        //Execute the forward pass on the inference object
+    auto InferenceWrapper::doDetections(const cv::Mat& img) const -> void {
+        // Execute the forward pass on the inference object
         mInference->doDetections(img);
     }
 
-    cv::Mat InferenceWrapper::getOutputTensor() const {
+    auto InferenceWrapper::getOutputTensor() const -> cv::Mat {
         return mInference->getOutputTensor();
     }
 

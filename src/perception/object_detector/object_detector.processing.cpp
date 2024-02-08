@@ -1,21 +1,12 @@
 #include "object_detector.hpp"
 
-#include "../point.hpp"
+#include "point.hpp"
 #include "inference_wrapper.hpp"
-#include <algorithm>
-#include <cmath>
-#include <cstddef>
-#include <opencv2/core/mat.hpp>
-#include <opencv2/core/types.hpp>
-#include <opencv2/highgui.hpp>
-#include <random>
-#include <stdexcept>
 
 namespace mrover {
 
-    void ObjectDetectorNodelet::imageCallback(sensor_msgs::PointCloud2ConstPtr const& msg) {
+    auto ObjectDetectorNodelet::imageCallback(sensor_msgs::PointCloud2ConstPtr const& msg) -> void {
 
-        //
         if (mEnableLoopProfiler) {
             if (ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Debug)) {
                 ros::console::notifyLoggerLevelsChanged();
@@ -24,46 +15,43 @@ namespace mrover {
             mLoopProfiler.measureEvent("Wait");
         }
 
-        //Does the msg exist with a height and width
         assert(msg);
         assert(msg->height > 0);
         assert(msg->width > 0);
 
-        //Adjust the picture size to be in line with the expected img size form the Point Cloud
+        // Adjust the picture size to be in line with the expected img size from the Point Cloud
         if (static_cast<int>(msg->height) != mImg.rows || static_cast<int>(msg->width) != mImg.cols) {
             NODELET_INFO("Image size changed from [%d %d] to [%u %u]", mImg.cols, mImg.rows, msg->width, msg->height);
             mImg = cv::Mat{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC4, cv::Scalar{0, 0, 0, 0}};
         }
 
-        //DONE
-        //Convert the pointcloud data into rgba image and store in mImg
+        // Convert the pointcloud data into rgba image and store in mImg
         convertPointCloudToRGBA(msg, mImg);
 
-
-        //Resize the image and change it from BGRA to BGR
+        // Resize the image and change it from BGRA to BGR
         cv::Mat sizedImage;
         cv::Size imgSize{640, 640};
         cv::resize(mImg, sizedImage, imgSize);
         cv::cvtColor(sizedImage, sizedImage, cv::COLOR_BGRA2BGR);
 
-        //Create the blob from the resized image
+        // Create the blob from the resized image
         cv::dnn::blobFromImage(sizedImage, mImageBlob, 1.0 / 255.0, imgSize, cv::Scalar(), true, false);
 
         if (mEnableLoopProfiler) {
             mLoopProfiler.measureEvent("Convert Image");
         }
 
-        //Run the blob through the model
+        // Run the blob through the model
         mInferenceWrapper.doDetections(mImageBlob);
 
-        //Retrieve the output from the model
+        // Retrieve the output from the model
         cv::Mat output = mInferenceWrapper.getOutputTensor();
 
         if (mEnableLoopProfiler) {
             mLoopProfiler.measureEvent("Execute on GPU");
         }
 
-        //Get model specific information
+        // Get model specific information
         int rows = output.rows;
         int dimensions = output.cols;
 
@@ -112,7 +100,7 @@ namespace mrover {
             double maxClassScore;
 
             //Find the max class score for the associated row
-            minMaxLoc(scores, nullptr, &maxClassScore, nullptr, &class_id);
+            cv::minMaxLoc(scores, nullptr, &maxClassScore, nullptr, &class_id);
 
             //Determine if the class is an acceptable confidence level else disregard
             if (maxClassScore > modelScoreThreshold) {
@@ -140,21 +128,21 @@ namespace mrover {
         }
 
         //Coalesce the boxes into a smaller number of distinct boxes
-        std::vector<int> nms_result;
-        cv::dnn::NMSBoxes(boxes, confidences, modelScoreThreshold, modelNMSThreshold, nms_result);
+        std::vector<int> nmsResult;
+        cv::dnn::NMSBoxes(boxes, confidences, modelScoreThreshold, modelNMSThreshold, nmsResult);
 
         //Storage for the detection from the model
         std::vector<Detection> detections{};
-        for (int idx: nms_result) {
+        for (int idx: nmsResult) {
             //Init the detection
             Detection result;
 
             //Fill in the id and confidence for the class
-            result.class_id = class_ids[idx];
+            result.classId = class_ids[idx];
             result.confidence = confidences[idx];
 
             //Fill in the class name and box information
-            result.className = classes[result.class_id];
+            result.className = classes[result.classId];
             result.box = boxes[idx];
 
             //Push back the detection into the for storagevector
@@ -169,7 +157,7 @@ namespace mrover {
             //mLoopProfiler.measureEvent("Push to TF START");
         }
 
-        std::vector<bool> seenObjects = {false, false};
+        std::vector seenObjects{false, false};
         //If there are detections locate them in 3D
         for (Detection const& detection: detections) {
 
@@ -192,18 +180,18 @@ namespace mrover {
             }
 
             //Draw the detected object's bounding boxes on the image for each of the objects detected
-            std::vector<cv::Scalar> font_Colors = {cv::Scalar{232, 115, 5},
-                                                   cv::Scalar{0, 4, 227}};
-            for (size_t i = 0; i < detections.size(); i++) {
+            std::vector fontColors{cv::Scalar{232, 115, 5},
+                                   cv::Scalar{0, 4, 227}};
+            for (std::size_t i = 0; i < detections.size(); i++) {
                 //Font color will change for each different detection
-                cv::Scalar font_Color = font_Colors.at(detections.at(i).class_id);
-                cv::rectangle(sizedImage, detections[i].box, font_Color, 1, cv::LINE_8, 0);
+                cv::Scalar fontColor = fontColors.at(detections.at(i).classId);
+                cv::rectangle(sizedImage, detections[i].box, fontColor, 1, cv::LINE_8, 0);
 
                 //Put the text on the image
-                cv::Point text_position(80, static_cast<int>(80 * (i + 1)));
-                int font_size = 1;
-                int font_weight = 2;
-                putText(sizedImage, detections[i].className, text_position, cv::FONT_HERSHEY_COMPLEX, font_size, font_Color, font_weight); //Putting the text in the matrix//
+                cv::Point textPosition(80, static_cast<int>(80 * (i + 1)));
+                constexpr int fontSize = 1;
+                constexpr int fontWeight = 2;
+                putText(sizedImage, detections[i].className, textPosition, cv::FONT_HERSHEY_COMPLEX, fontSize, fontColor, fontWeight); //Putting the text in the matrix//
             }
         }
 
@@ -238,33 +226,33 @@ namespace mrover {
         size_t currY = yCenter;
         size_t radius = 0;
         int t = 0;
-        int numPts = 16;
+        constexpr int numPts = 16;
         bool isPointInvalid = true;
         Point point{};
 
-        //Find the smaller of the two box dimensions so we know the max spiral radius
+        // Find the smaller of the two box dimensions so we know the max spiral radius
         size_t smallDim = std::min(width / 2, height / 2);
 
-
         while (isPointInvalid) {
-            //This is the parametric equation to spiral around the center pnt
+            // This is the parametric equation to spiral around the center pnt
             currX = static_cast<size_t>(static_cast<double>(xCenter) + std::cos(t * 1.0 / numPts * 2 * M_PI) * static_cast<double>(radius));
             currY = static_cast<size_t>(static_cast<double>(yCenter) + std::sin(t * 1.0 / numPts * 2 * M_PI) * static_cast<double>(radius));
 
-            //Grab the point from the pntCloud and determine if its a finite pnt
+            // Grab the point from the pntCloud and determine if its a finite pnt
             point = reinterpret_cast<Point const*>(cloudPtr->data.data())[currX + currY * cloudPtr->width];
-            isPointInvalid = (!std::isfinite(point.x) || !std::isfinite(point.y) || !std::isfinite(point.z));
-            if (isPointInvalid) NODELET_WARN("Tag center point not finite: [%f %f %f]", point.x, point.y, point.z);
+            isPointInvalid = !std::isfinite(point.x) || !std::isfinite(point.y) || !std::isfinite(point.z);
+            if (isPointInvalid)
+                NODELET_WARN("Tag center point not finite: [%f %f %f]", point.x, point.y, point.z);
 
-            //After a full circle increase the radius
-            if (static_cast<int>(t) % numPts == 0) {
+            // After a full circle increase the radius
+            if (t % numPts == 0) {
                 radius++;
             }
 
-            //Increase the parameter
+            // Increase the parameter
             t++;
 
-            //If we reach the edge of the box we stop spiraling
+            // If we reach the edge of the box we stop spiraling
             if (radius >= smallDim) {
                 return std::nullopt;
             }
@@ -273,7 +261,7 @@ namespace mrover {
         return std::make_optional<SE3>(R3{point.x, point.y, point.z}, SO3{});
     }
 
-    void ObjectDetectorNodelet::convertPointCloudToRGBA(sensor_msgs::PointCloud2ConstPtr const& msg, cv::Mat& img) {
+    auto ObjectDetectorNodelet::convertPointCloudToRGBA(sensor_msgs::PointCloud2ConstPtr const& msg, cv::Mat& img) -> void {
         auto* pixelPtr = reinterpret_cast<cv::Vec4b*>(img.data);
         auto* pointPtr = reinterpret_cast<Point const*>(msg->data.data());
         std::for_each(std::execution::par_unseq, pixelPtr, pixelPtr + img.total(), [&](cv::Vec4b& pixel) {
@@ -285,36 +273,36 @@ namespace mrover {
         });
     }
 
-    void ObjectDetectorNodelet::updateHitsObject(sensor_msgs::PointCloud2ConstPtr const& msg, Detection const& detection, std::vector<bool>& seenObjects, cv::Size const& imgSize) {
+    auto ObjectDetectorNodelet::updateHitsObject(sensor_msgs::PointCloud2ConstPtr const& msg, Detection const& detection, std::vector<bool>& seenObjects, cv::Size const& imgSize) -> void {
 
         cv::Rect box = detection.box;
-        std::pair<int, int> center = std::pair<int, int>(box.x + box.width / 2, box.y + box.height / 2);
-        //Resize from {640, 640} image space to {720,1280} image space
+        auto center = std::pair(box.x + box.width / 2, box.y + box.height / 2);
+        // Resize from {640, 640} image space to {720,1280} image space
         auto centerWidth = static_cast<size_t>(center.first * static_cast<double>(msg->width) / imgSize.width);
         auto centerHeight = static_cast<size_t>(center.second * static_cast<double>(msg->height) / imgSize.height);
 
         std::cout << mObjectHitCounts.at(0) << ", " << mObjectHitCounts.at(1) << std::endl;
         ROS_INFO("%d, %d", mObjectHitCounts.at(0), mObjectHitCounts.at(1));
 
-        if (!seenObjects.at(detection.class_id)) {
-            seenObjects.at(detection.class_id) = true;
+        if (!seenObjects.at(detection.classId)) {
+            seenObjects.at(detection.classId) = true;
 
             //Get the object's position in 3D from the point cloud and run this statement if the optional has a value
             if (std::optional<SE3> objectLocation = getObjectInCamFromPixel(msg, centerWidth, centerHeight, box.width, box.height); objectLocation) {
                 try {
-                    std::string immediateFrameId = "immediateDetectedObject" + classes.at(detection.class_id);
+                    std::string immediateFrameId = "immediateDetectedObject" + classes.at(detection.classId);
 
                     //Push the immediate detections to the zed frame
                     SE3::pushToTfTree(mTfBroadcaster, immediateFrameId, mCameraFrameId, objectLocation.value());
 
 
                     //Since the object is seen we need to increment the hit counter
-                    mObjectHitCounts.at(detection.class_id) = std::min(mObjMaxHitcount, mObjectHitCounts.at(detection.class_id) + mObjIncrementWeight);
+                    mObjectHitCounts.at(detection.classId) = std::min(mObjMaxHitcount, mObjectHitCounts.at(detection.classId) + mObjIncrementWeight);
                     ROS_INFO("PUSHED TO TF TEMP");
                     //Only publish to permament if we are confident in the object
-                    if (mObjectHitCounts.at(detection.class_id) > mObjHitThreshold) {
+                    if (mObjectHitCounts.at(detection.classId) > mObjHitThreshold) {
 
-                        std::string permanentFrameId = "detectedObject" + classes.at(detection.class_id);
+                        std::string permanentFrameId = "detectedObject" + classes.at(detection.classId);
 
 
                         //Grab the object inside of the camera frame and push it into the map frame
@@ -335,10 +323,10 @@ namespace mrover {
         }
     }
 
-    void ObjectDetectorNodelet::publishImg(cv::Mat const& img) {
-        sensor_msgs::Image newDebugImageMessage; //I chose regular msg not ptr so it can be used outside of this process
+    auto ObjectDetectorNodelet::publishImg(cv::Mat const& img) -> void {
+        sensor_msgs::Image newDebugImageMessage; // I chose regular msg not ptr so it can be used outside of this process
 
-        //Convert the image back to BGRA for ROS
+        // Convert the image back to BGRA for ROS
         cv::Mat bgraImg;
         cv::cvtColor(img, bgraImg, cv::COLOR_BGR2BGRA);
 
@@ -355,8 +343,9 @@ namespace mrover {
         newDebugImageMessage.data.resize(size);
 
         //Copy the data to the image
-        memcpy(newDebugImageMessage.data.data(), imgPtr, size);
+        std::memcpy(newDebugImageMessage.data.data(), imgPtr, size);
 
         mDebugImgPub.publish(newDebugImageMessage);
     }
+
 } // namespace mrover

@@ -1,13 +1,14 @@
 #pragma once
 
 #include "pch.hpp"
+
 #include <NvInfer.h>
 
 namespace nvinfer1 {
 
     class Logger final : public ILogger {
     public:
-        void log(Severity severity, char const* msg) noexcept override;
+        auto log(Severity severity, char const* msg) noexcept -> void override;
     };
 
     template<typename T>
