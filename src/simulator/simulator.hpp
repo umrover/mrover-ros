@@ -206,6 +206,7 @@ namespace mrover {
         ros::NodeHandle mNh, mPnh;
 
         ros::Subscriber mTwistSub, mArmPositionsSub, mArmVelocitiesSub, mArmThrottlesSub;
+        ros::Subscriber mMastPositionsSub;
 
         ros::Publisher mGroundTruthPub;
         ros::Publisher mGpsPub;
@@ -381,6 +382,8 @@ namespace mrover {
         auto armVelocitiesCallback(Velocity::ConstPtr const& message) -> void;
 
         auto armThrottlesCallback(Throttle::ConstPtr const& message) -> void;
+
+        auto mastPositionsCallback(Position::ConstPtr const& message) -> void;
 
         // TODO(quintin): May want to restructure the names to all agree
         bimap<std::string, std::string> armMsgToUrdf{
