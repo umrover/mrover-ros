@@ -153,11 +153,13 @@ if (NOT APPLE)
     mrover_add_library(motor_library src/esw/motor_library/*.cpp src/esw/motor_library)
     target_link_libraries(motor_library PUBLIC can_device moteus)
 
-    mrover_add_nodelet(can_driver src/esw/can_driver/*.cpp src/esw/can_driver src/esw/can_driver/pch.hpp)
-    mrover_nodelet_link_libraries(can_driver nl-3 nl-route-3)
-    # TODO(quintin): Fix this CMake hard coding
-    #mrover_nodelet_link_libraries(can ${NetLink_LIBRARIES} ${NetLinkRoute_LIBRARIES}})
-    mrover_nodelet_include_directories(can_driver /usr/include/libnl3)
+    if (NetLink_FOUND AND NetLinkRoute_FOUND)
+        mrover_add_nodelet(can_driver src/esw/can_driver/*.cpp src/esw/can_driver src/esw/can_driver/pch.hpp)
+        mrover_nodelet_link_libraries(can_driver nl-3 nl-route-3)
+        # TODO(quintin): Fix this CMake hard coding
+        #mrover_nodelet_link_libraries(can ${NetLink_LIBRARIES} ${NetLinkRoute_LIBRARIES}})
+        mrover_nodelet_include_directories(can_driver /usr/include/libnl3)
+    endif ()
 
     macro(mrover_add_esw_bridge_node name sources)
         mrover_add_node(${name} ${sources})
@@ -176,6 +178,7 @@ if (NOT APPLE)
     mrover_add_esw_bridge_node(brushless_test_bridge src/esw/brushless_test_bridge/*.cpp motor_library)
     mrover_add_esw_bridge_node(brushed_test_bridge src/esw/brushed_test_bridge/*.cpp)
     mrover_add_esw_bridge_node(test_arm_bridge src/esw/test_arm_bridge/*.cpp)
+    #    mrover_add_esw_bridge_node(sa_sensor src/esw/fw/dirt_sensor/dirt_sensor_ros/dirt_sensor_ros.ino)
 endif ()
 
 ## Perception
@@ -188,6 +191,14 @@ mrover_nodelet_link_libraries(long_range_tag_detector opencv_core opencv_objdete
 
 mrover_add_nodelet(usb_camera src/perception/long_range_cam/*.cpp src/perception/long_range_cam src/perception/long_range_cam/pch.hpp)
 mrover_nodelet_link_libraries(usb_camera opencv_core opencv_objdetect opencv_aruco opencv_imgproc opencv_highgui tbb lie)
+
+if (CUDA_FOUND)
+    mrover_add_library(streaming src/esw/streaming/*.c* src/esw/streaming)
+    #    target_link_libraries(streaming PUBLIC opencv_core opencv_cudacodec)
+    target_link_libraries(streaming PUBLIC cuda nvidia-encode opencv_core)
+    target_include_directories(streaming SYSTEM PUBLIC deps/nvenc)
+    target_compile_definitions(streaming PUBLIC BOOST_ASIO_NO_DEPRECATED)
+endif ()
 
 if (ZED_FOUND)
     # object_detector

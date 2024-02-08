@@ -8,9 +8,9 @@
             <input class="form-control" id="waypointname" v-model="name" />
           </div>
           <div class="form-group col-md-6">
-            <label for="waypointid">ID:</label>
+            <label for="waypointid">Tag ID:</label>
             <input
-              v-if="type != 1"
+              v-if="type == 1"
               class="form-control"
               id="waypointid"
               v-model="id"
@@ -33,9 +33,9 @@
 
         <select class="form-select my-3" v-model="type">
           <option value="0" selected>No Search</option>
-          <option value="1" >Post</option>
+          <option value="1" selected>Post</option>
           <option value="2">Mallet</option>
-          <option value="3">Bottle</option>
+          <option value="3">Water Bottle</option>
         </select>
 
         <div class="form-check form-check-inline">
@@ -82,9 +82,7 @@
             <input class="form-control" id="sec1" v-model.number="input.lat.s" />
             <span for="sec1" class="input-group-text">"</span>
           </div>
-          <div class="col">
-              N
-          </div>
+          N
         </div>
         <div class="row">
           <div class="col input-group">
@@ -99,9 +97,7 @@
             <input class="form-control" id="sec2" v-model.number="input.lon.s" />
             <span for="sec2" class="input-group-text">"</span>
           </div>
-          <div class="col">
-              E
-          </div>
+          E
         </div>
 
         <div class="add-drop">
@@ -119,6 +115,11 @@
           <button class="btn btn-primary" @click="clearWaypoint">Clear Waypoints</button>
         </div>
         <div class="waypoints">
+          <!-- <draggable
+            v-model="storedWaypoints"
+            class="dragArea"
+            draggable=".item'"
+          > -->
           <WaypointItem
             v-for="(waypoint, i) in storedWaypoints"
             :key="i"
@@ -126,12 +127,15 @@
             :in_route="false"
             :index="i"
             @delete="deleteItem($event)"
+            @togglePost="togglePost($event)"
             @add="addItem($event)"
           />
+          <!-- </draggable> -->
         </div>
       </div>
     </div>
     <div class="col-wrap" style="left: 50%">
+      <!-- <div class="auton-check"> -->
       <AutonModeCheckbox
         ref="autonCheckbox"
         class="auton-checkbox"
@@ -148,9 +152,11 @@
         :name="'Teleop Controls'"
         @toggle="toggleTeleopMode($event)"
       />
+      <!-- </div> -->
       <Checkbox class="stuck-checkbox" name="Stuck" @toggle="roverStuck = !roverStuck"></Checkbox>
-      <div class="box">
-        <h4 class="waypoint-headers">Current Course</h4>
+      <h4 class="waypoint-headers">Current Course</h4>
+      <div class="box route">
+        <!-- <draggable v-model="route" class="dragArea" draggable=".item'"> -->
         <WaypointItem
           v-for="(waypoint, i) in route"
           :id="id"
@@ -160,8 +166,10 @@
           :index="i"
           :name="name"
           @delete="deleteItem($event)"
+          @togglePost="togglePost($event)"
           @add="addItem($event)"
         />
+        <!-- </draggable> -->
       </div>
     </div>
 
@@ -288,6 +296,7 @@
 <script lang="ts">
 import AutonModeCheckbox from './AutonModeCheckbox.vue'
 import Checkbox from './Checkbox.vue'
+import draggable from 'vuedraggable'
 import { convertDMS } from '../utils.js'
 import VelocityCommand from './VelocityCommand.vue'
 import WaypointItem from './AutonWaypointItem.vue'
@@ -295,10 +304,11 @@ import { mapState, mapActions, mapMutations, mapGetters } from 'vuex'
 import _ from 'lodash'
 import L from 'leaflet'
 
-let stuck_interval: number, intermediate_publish_interval: number
+let stuck_interval: number, auton_publish_interval: number
 
 export default {
   components: {
+    draggable,
     WaypointItem,
     AutonModeCheckbox,
     Checkbox,
@@ -336,9 +346,11 @@ export default {
         'Start',
         'Waypoint 1',
         'Waypoint 2',
+        'Waypoint 3',
         'Post 1',
         'Post 2',
         'Post 3',
+        'Gate'
       ],
       compModalLatDeg: Array(8).fill(0),
       compModalLatMin: Array(8).fill(0),
@@ -360,7 +372,8 @@ export default {
 
       autonButtonColor: 'btn-danger',
 
-      roverStuck: false
+      roverStuck: false,
+      waitingForNavResponse: false
     }
   },
   computed: {
@@ -410,17 +423,30 @@ export default {
   },
 
   watch: {
-    message(msg) {
+    route: {
+      handler: function (newRoute) {
+        const waypoints = newRoute.map((waypoint: { lat: any; lon: any; name: any }) => {
+          const lat = waypoint.lat
+          const lon = waypoint.lon
+          return { latLng: L.latLng(lat, lon), name: waypoint.name }
+        })
+        this.setRoute(waypoints)
+      },
+      deep: true
+    },
+
+    message: function (msg) {
       if (msg.type == 'nav_state') {
         // If still waiting for nav...
         if (
-          !(msg.state == 'OffState' && this.autonEnabled) &&
-          !(msg.state !== 'OffState' && !this.autonEnabled)
+          (msg.state == 'OffState' && this.autonEnabled) ||
+          (msg.state !== 'OffState' && !this.autonEnabled)
         ) {
-          this.autonButtonColor = this.autonEnabled ? 'btn-success' : 'btn-danger'
+          return
         }
-      }
-      else if (msg.type == 'get_waypoint_list') {
+        this.waitingForNavResponse = false
+        this.autonButtonColor = this.autonEnabled ? 'btn-success' : 'btn-danger'
+      } else if (msg.type == 'get_auton_waypoint_list') {
         // Get waypoints from server on page load
         this.storedWaypoints = msg.data
         const waypoints = msg.data.map((waypoint: { lat: any; lon: any; name: any }) => {
@@ -432,28 +458,16 @@ export default {
       }
     },
 
-    route: {
-      handler: function (newRoute) {
-      const waypoints = newRoute.map((waypoint: { lat: any; lon: any; name: any }) => {
-        const lat = waypoint.lat
-        const lon = waypoint.lon
-        return { latLng: L.latLng(lat, lon), name: waypoint.name }
-      })
-      this.setRoute(waypoints)
-    },
-      deep: true
-    },
-
-    storedWaypoints: { 
+    storedWaypoints: {
       handler: function (newList) {
-      const waypoints = newList.map((waypoint: { lat: any; lon: any; name: any }) => {
-        const lat = waypoint.lat
-        const lon = waypoint.lon
-        return { latLng: L.latLng(lat, lon), name: waypoint.name }
-      })
-      this.setWaypointList(waypoints)
-      this.sendMessage({ type: 'save_waypoint_list', data: newList })
-    },
+        const waypoints = newList.map((waypoint: { lat: any; lon: any; name: any }) => {
+          const lat = waypoint.lat
+          const lon = waypoint.lon
+          return { latLng: L.latLng(lat, lon), name: waypoint.name }
+        })
+        this.setWaypointList(waypoints)
+        this.sendMessage({ type: 'save_auton_waypoint_list', data: newList })
+      },
       deep: true
     },
 
@@ -477,19 +491,28 @@ export default {
 
   beforeUnmount: function () {
     window.clearInterval(stuck_interval)
-    window.clearInterval(intermediate_publish_interval)
+    window.clearInterval(auton_publish_interval)
     this.autonEnabled = false
+    this.sendAutonCommand()
   },
 
   created: function () {
     // Make sure local odom format matches vuex odom format
     this.odom_format_in = this.odom_format
 
+    auton_publish_interval = window.setInterval(() => {
+      if (this.waitingForNavResponse) {
+        this.sendAutonCommand()
+      }
+    }, 1000)
     window.setTimeout(() => {
       // Timeout so websocket will be initialized
-      this.sendMessage({ type: 'get_waypoint_list', data: null })
+      this.sendMessage({ type: 'get_auton_waypoint_list', data: null })
     }, 250)
   },
+
+  // mounted: function () {
+  // },
 
   methods: {
     ...mapActions('websocket', ['sendMessage']),
@@ -513,7 +536,7 @@ export default {
           is_enabled: true,
           waypoints: _.map(
             this.route,
-            (waypoint: { lat: number; lon: number; id: string; type: number }) => {
+            (waypoint: { lat: number; lon: number; id: string; type: string }) => {
               const lat = waypoint.lat
               const lon = waypoint.lon
               // Return a GPSWaypoint.msg formatted object for each
@@ -521,7 +544,7 @@ export default {
                 latitude_degrees: lat,
                 longitude_degrees: lon,
                 tag_id: parseInt(waypoint.id),
-                type: waypoint.type
+                type: parseInt(waypoint.type)
               }
             }
           )
@@ -544,57 +567,65 @@ export default {
     },
 
     submitModal: function () {
-      // this.showModal = false
-      // // Create lat/lon objects from comp modal arrays
-      // const coordinates = this.compModalLatDeg.map((deg: any, i: string | number) => {
-      //   return {
-      //     lat: {
-      //       d: deg,
-      //       m: this.compModalLatMin[i],
-      //       s: this.compModalLatSec[i]
-      //     },
-      //     lon: {
-      //       d: this.compModalLonDeg[i],
-      //       m: this.compModalLonMin[i],
-      //       s: this.compModalLonSec[i]
-      //     }
-      //   }
-      // })
+      // TODO: Update this for 2024 Auton Mission Format
+      this.showModal = false
+      // Create lat/lon objects from comp modal arrays
+      const coordinates = this.compModalLatDeg.map((deg: any, i: string | number) => {
+        return {
+          lat: {
+            d: deg,
+            m: this.compModalLatMin[i],
+            s: this.compModalLatSec[i]
+          },
+          lon: {
+            d: this.compModalLonDeg[i],
+            m: this.compModalLonMin[i],
+            s: this.compModalLonSec[i]
+          }
+        }
+      })
 
-      // let coord_num = 0
-      // let tag_id = 0
+      let coord_num = 0
+      let tag_id = 0
 
-      // // Start AR tag is always 0.
-      // this.storedWaypoints.push({
-      //   type: 0,
-      // })
+      // Start AR tag is always 0.
+      this.storedWaypoints.push({
+        name: 'Start',
+        id: tag_id,
+        lat: convertDMS(coordinates[coord_num].lat, 'D').d,
+        lon: convertDMS(coordinates[coord_num].lon, 'D').d,
+        type: 0,
+        post: false
+      })
 
-      // ++coord_num
-      // ++tag_id
+      ++coord_num
+      ++tag_id
 
-      // // Add Waypoints, which we set as sentinel value -1.
-      // for (; coord_num < 4; ++coord_num) {
-      //   this.storedWaypoints.push({
-      //     name: 'Waypoint ' + coord_num,
-      //     id: -1,
-      //     lat: convertDMS(coordinates[coord_num].lat, 'D').d,
-      //     lon: convertDMS(coordinates[coord_num].lon, 'D').d,
-      //     type: 0,
-      //   })
-      // }
+      // Add Waypoints, which we set as sentinel value -1.
+      for (; coord_num < 4; ++coord_num) {
+        this.storedWaypoints.push({
+          name: 'Waypoint ' + coord_num,
+          id: -1,
+          lat: convertDMS(coordinates[coord_num].lat, 'D').d,
+          lon: convertDMS(coordinates[coord_num].lon, 'D').d,
+          type: 0,
+          post: false
+        })
+      }
 
-      // // Add AR Tag Posts with IDs 1-3
-      // for (; coord_num < 7; ++coord_num) {
-      //   this.storedWaypoints.push({
-      //     name: 'AR Tag Post ' + tag_id,
-      //     id: tag_id,
-      //     lat: convertDMS(coordinates[coord_num].lat, 'D').d,
-      //     lon: convertDMS(coordinates[coord_num].lon, 'D').d,
-      //     type: 1,
-      //   })
+      // Add AR Tag Posts with IDs 1-3
+      for (; coord_num < 7; ++coord_num) {
+        this.storedWaypoints.push({
+          name: 'AR Tag Post ' + tag_id,
+          id: tag_id,
+          lat: convertDMS(coordinates[coord_num].lat, 'D').d,
+          lon: convertDMS(coordinates[coord_num].lon, 'D').d,
+          type: 1,
+          post: true
+        })
 
-      //   ++tag_id
-      // }
+        ++tag_id
+      }
     },
 
     deleteItem: function (waypoint: { index: any; in_route: boolean }) {
@@ -608,6 +639,14 @@ export default {
       }
     },
 
+    findWaypoint: function (waypoint: { index: any }) {
+      if (waypoint.index === this.highlightedWaypoint) {
+        this.setHighlightedWaypoint(-1)
+      } else {
+        this.setHighlightedWaypoint(waypoint.index)
+      }
+    },
+
     // Add item from all waypoints div to current waypoints div
     addItem: function (waypoint: { in_route: boolean; index: number }) {
       if (!waypoint.in_route) {
@@ -617,14 +656,22 @@ export default {
       }
     },
 
+    togglePost: function (waypoint: { in_route: boolean; index: number }) {
+      if (!waypoint.in_route) {
+        this.storedWaypoints[waypoint.index].post = !this.storedWaypoints[waypoint.index].post
+      } else if (waypoint.in_route) {
+        this.route[waypoint.index].post = !this.route[waypoint.index].post
+      }
+    },
+
     addWaypoint: function (coord: { lat: any; lon: any }) {
-      if (this.type != 1 && !this.checkWaypointIDUnique(this.id)) {
+      if (this.type == 1 && !this.checkWaypointIDUnique(this.id)) {
         alert('Waypoint ID must be unique')
         return
       }
       this.storedWaypoints.push({
         name: this.name,
-        id: this.type != 1 ? this.id : -1, // Check if type is post, if so, set id to -1
+        id: this.type == 1 ? this.id : -1, // Check if type is post, if so, set id to -1
         lat: convertDMS(coord.lat, 'D').d,
         lon: convertDMS(coord.lon, 'D').d,
         type: this.type,
@@ -640,11 +687,11 @@ export default {
       this.storedWaypoints = []
     },
 
-    toggleAutonMode: function (val: any) {
+    toggleAutonMode: function (val: boolean) {
       this.setAutonMode(val)
       // This will trigger the yellow "waiting for nav" state of the checkbox
       this.autonButtonColor = 'btn-warning'
-      this.sendAutonCommand()
+      this.waitingForNavResponse = true
     },
 
     toggleTeleopMode: function () {
@@ -686,11 +733,13 @@ export default {
     'auton-check stats'
     'teleop-check stuck-check';
   font-family: sans-serif;
+  /* min-height: 16.3vh; */
 }
 
 .waypoint-header {
   display: inline-flex;
   align-items: center;
+  /* height: 100%; */
 }
 
 .waypoint-header button {
@@ -702,8 +751,13 @@ export default {
 }
 
 .waypoints {
-  height: 30%;
-  overflow-y: hidden;
+  height: 43vh;
+  overflow-y: auto;
+}
+
+.route {
+  height: 65vh;
+  overflow-y: scroll;
 }
 
 .wp-input p {
@@ -718,22 +772,35 @@ export default {
 
 .teleop-checkbox {
   grid-area: teleop-check;
+  /* margin-top: -40px; */
   width: 50%;
   float: left;
   clear: both;
 }
 
 .stats {
+  /* margin-top: 10px; */
   grid-area: stats;
   float: right;
   width: 50%;
 }
 
+/* .teleop-stuck-btns {
+    width: 100%;
+    clear:both;
+  } */
+
 .stuck-checkbox {
+  /* align-content: center; */
   grid-area: stuck-check;
+  /* padding-inline: 20px; */
   width: 50%;
   float: right;
 }
+
+/* .stuck-check .stuck-checkbox {
+    transform: scale(1.5);
+  } */
 
 .auton-checkbox {
   float: left;

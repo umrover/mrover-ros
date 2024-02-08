@@ -18,7 +18,7 @@ namespace mrover {
                                      0, 0, 1, 0,                       // WGPU y = +ROS z
                                      1, 0, 0, 0,                       // WGPU z = +ROS x
                                      0, 0, 0, 1)
-            .finished();
+                                            .finished();
 
     static auto const COLOR_FORMAT = wgpu::TextureFormat::BGRA8Unorm;
     static auto const DEPTH_FORMAT = wgpu::TextureFormat::Depth32Float;
@@ -127,6 +127,8 @@ namespace mrover {
         Eigen::Vector2i resolution;
         PeriodicTask updateTask;
         ros::Publisher pub;
+        float fov{};
+        std::string frameId;
 
         wgpu::Texture colorTexture = nullptr;
         wgpu::TextureView colorTextureView = nullptr;
@@ -140,7 +142,7 @@ namespace mrover {
 
         wgpu::Buffer stagingBuffer = nullptr;
 
-        std::unique_ptr<wgpu::BufferMapCallback> callback = nullptr;
+        std::unique_ptr<wgpu::BufferMapCallback> callback;
         bool needsMap = false;
 
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -148,8 +150,11 @@ namespace mrover {
 
     struct StereoCamera {
         Camera base;
+        ros::Publisher pcPub;
 
+        wgpu::Buffer pointCloudStagingBuffer = nullptr;
         wgpu::Buffer pointCloudBuffer = nullptr;
+        std::unique_ptr<wgpu::BufferMapCallback> pointCloudCallback;
 
         Uniform<ComputeUniforms> computeUniforms{};
         wgpu::BindGroup computeBindGroup = nullptr;
@@ -191,6 +196,8 @@ namespace mrover {
         bool mEnablePhysics = false;
         bool mRenderModels = true;
         bool mRenderWireframeColliders = false;
+        double mPublishHammerDistanceThreshold = 4;
+        double mPublishBottleDistanceThreshold = 4;
 
         float mFloat = 0.0f;
 
@@ -204,6 +211,8 @@ namespace mrover {
         ros::Publisher mGpsPub;
         ros::Publisher mImuPub;
         ros::Publisher mMotorStatusPub;
+        ros::Publisher mDriveControllerStatePub;
+        ros::Publisher mArmControllerStatePub;
 
         tf2_ros::Buffer mTfBuffer;
         tf2_ros::TransformListener mTfListener{mTfBuffer};
@@ -215,7 +224,6 @@ namespace mrover {
 
         R3 mGpsLinerizationReferencePoint{};
         double mGpsLinerizationReferenceHeading{};
-        double mPublishHammerDistanceThreshold{};
 
         PeriodicTask mGpsTask;
         PeriodicTask mImuTask;
@@ -356,6 +364,12 @@ namespace mrover {
 
         auto renderUpdate() -> void;
 
+        auto camerasUpdate(wgpu::CommandEncoder encoder,
+                           wgpu::RenderPassColorAttachment& colorAttachment,
+                           wgpu::RenderPassColorAttachment& normalAttachment,
+                           wgpu::RenderPassDepthStencilAttachment& depthStencilAttachment,
+                           wgpu::RenderPassDescriptor const& renderPassDescriptor) -> void;
+
         auto guiUpdate(wgpu::RenderPassEncoder& pass) -> void;
 
         auto physicsUpdate(Clock::duration dt) -> void;
@@ -368,8 +382,8 @@ namespace mrover {
 
         auto armThrottlesCallback(Throttle::ConstPtr const& message) -> void;
 
-        // TODO(quintin): May want to restrucutre the names to all agree
-        std::unordered_map<std::string, std::string> armMsgToUrdf{
+        // TODO(quintin): May want to restructure the names to all agree
+        bimap<std::string, std::string> armMsgToUrdf{
                 {"joint_a", "arm_a_link"},
                 {"joint_b", "arm_b_link"},
                 {"joint_c", "arm_c_link"},
@@ -386,8 +400,8 @@ namespace mrover {
                     std::string const& name = boost::get<0>(combined);
                     float value = boost::get<1>(combined);
 
-                    if (auto it = armMsgToUrdf.find(name); it != armMsgToUrdf.end()) {
-                        std::string const& name = it->second;
+                    if (auto urdfName = armMsgToUrdf.forward(name)) {
+                        std::string const& name = urdfName.value();
 
                         int linkIndex = rover.linkNameToMeta.at(name).index;
 
