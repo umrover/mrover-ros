@@ -12,7 +12,7 @@ using Duration = std::chrono::duration<double>;
 class InvariantEKFNode {
 private:
     ros::NodeHandle mNh, mPnh;
-    ros::Subscriber mImuSub, mGpsSub;
+    ros::Subscriber mImuSub, mGpsSub, mMagSub;
     ros::Publisher mOdometryPub;
     InvariantEKF mEKF;
     TimePoint mLastImuTime, mLastGpsTime, mLastMagTime;
