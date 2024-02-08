@@ -12,7 +12,7 @@ from util.SE3 import SE3
 from util.SO3 import SO3
 from util.np_utils import numpify
 import message_filters
-from rtkStatus.msg import rtkStatus
+from mrover.msg import rtkStatus
 
 
 
@@ -54,15 +54,17 @@ class GPSLinearization:
         self.ref_alt = rospy.get_param("gps_linearization/reference_point_altitude")
         self.world_frame = rospy.get_param("world_frame")
         self.use_dop_covariance = rospy.get_param("global_ekf/use_gps_dop_covariance")
-        calculate_offset = False
+        
 
         # config gps and imu convariance matrices
         self.config_gps_covariance = np.array(rospy.get_param("global_ekf/gps_covariance", None))
         self.config_imu_covariance = np.array(rospy.get_param("global_ekf/imu_orientation_covariance", None))
 
+        #config params for new test
         self.last_gps_msg = None
         self.last_imu_msg = None
         self.rtk_offset = None
+        self.calculate_offset = False
 
         right_gps_sub = message_filters.Subscriber("right_gps_driver/fix", NavSatFix)
         left_gps_sub = message_filters.Subscriber("left_gps_driver/fix", NavSatFix)
@@ -98,11 +100,11 @@ class GPSLinearization:
         )
 
         pose = GPSLinearization.compute_gps_pose(right_cartesian=right_cartesian, left_cartesian=left_cartesian)
-        last_gps_pose = pose
+        self.last_gps_pose = pose
 
         # if the fix status of both gps is 2 (fixed), update the offset with the next imu messsage
-        if (right_rtk_fix.RTK_FIX_TYPE == RTK_FIX and left_rtk_fix.RTK_FIX_TYPE == 2):
-            calculate_offset = True
+        if (right_rtk_fix.RTK_FIX_TYPE == 2 and left_rtk_fix.RTK_FIX_TYPE == 2):
+            self.calculate_offset = True
             
 
         covariance_matrix = np.zeros((6, 6))
