@@ -21,6 +21,7 @@ from mrover.msg import (
     MotorsStatus,
     Velocity,
     Position,
+    IK
 )
 from mrover.srv import EnableAuton
 from sensor_msgs.msg import NavSatFix
@@ -28,7 +29,7 @@ from std_msgs.msg import String, Bool
 from std_srvs.srv import SetBool, Trigger
 from mrover.srv import EnableDevice, AdjustMotor
 from sensor_msgs.msg import JointState, Joy, NavSatFix
-from geometry_msgs.msg import Twist, Pose
+from geometry_msgs.msg import Twist, Pose, Point, Quaternion
 
 from util.SE3 import SE3
 
@@ -60,7 +61,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.led_pub = rospy.Publisher("/auton_led_cmd", String, queue_size=1)
         self.teleop_pub = rospy.Publisher("/teleop_enabled", Bool, queue_size=1)
         self.mast_gimbal_pub = rospy.Publisher("/mast_gimbal_throttle_cmd", Throttle, queue_size=1)
-        self.arm_ik_pub = rospy.Publisher("arm_ik", Pose, queue_size=1)
+        self.arm_ik_pub = rospy.Publisher("arm_ik", IK, queue_size=1)
         self.arm_throttle_cmd_pub = rospy.Publisher("arm_throttle_cmd", Throttle, queue_size=1)
         self.arm_velocity_cmd_pub = rospy.Publisher("arm_velocity_cmd", Velocity, queue_size=1)
         self.arm_position_cmd_pub = rospy.Publisher("arm_position_cmd", Position, queue_size=1)
@@ -271,7 +272,7 @@ class GUIConsumer(JsonWebsocketConsumer):
             base_link_in_map.position[1]+= self.ik_names["y"]*self.filter_xbox_axis(msg["axes"][self.xbox_mappings["left_js_y"]]),
             base_link_in_map.position[2]-=self.ik_names["z"]*left_trigger+self.ik_names["z"]*right_trigger
            
-            arm_ik_cmd = base_link_in_map.toPose()
+            arm_ik_cmd = IK(pose=Pose(position=Point(*base_link_in_map.position), orientation=Quaternion(*base_link_in_map.rotation.quaternion)))
             self.arm_ik_pub.publish(arm_ik_cmd)
 
         elif msg["arm_mode"] == "position":
