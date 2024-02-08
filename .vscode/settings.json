@@ -34,9 +34,8 @@
     //// Miscellaneous
     "redhat.telemetry.enabled": false,
     "editor.formatOnSave": true,
-    "git.ignoredRepositories": [
-        "${workspaceFolder}/deps/dawn"
-    ],
+    "git.ignoreSubmodules": true,
+    "git.detectSubmodules": false,
     "cSpell.words": [
         "Eigen",
         "GLFW",

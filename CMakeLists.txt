@@ -19,8 +19,7 @@ else ()
     link_libraries(TBB::tbb)
 endif ()
 
-string(APPEND CMAKE_CXX_FLAGS " -Wno-gnu-include-next")
-include_directories(BEFORE src/preload)
+include_directories(BEFORE SYSTEM src/preload)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)

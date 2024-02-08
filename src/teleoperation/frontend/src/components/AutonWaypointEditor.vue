@@ -10,6 +10,7 @@
           <div class="form-group col-md-6">
             <label for="waypointid">ID:</label>
             <input
+              v-if="type != 1"
               class="form-control"
               id="waypointid"
               v-model="id"
@@ -18,11 +19,21 @@
               min="0"
               step="1"
             />
+            <input
+              v-else
+              class="form-control"
+              id="waypointid"
+              type="number"
+              placeholder="-1"
+              step="1"
+              disabled
+            />
           </div>
         </div>
 
         <select class="form-select my-3" v-model="type">
-          <option value="1" selected>Post</option>
+          <option value="0" selected>No Search</option>
+          <option value="1" >Post</option>
           <option value="2">Mallet</option>
           <option value="3">Bottle</option>
         </select>
@@ -71,7 +82,9 @@
             <input class="form-control" id="sec1" v-model.number="input.lat.s" />
             <span for="sec1" class="input-group-text">"</span>
           </div>
-          N
+          <div class="col">
+              N
+          </div>
         </div>
         <div class="row">
           <div class="col input-group">
@@ -86,7 +99,9 @@
             <input class="form-control" id="sec2" v-model.number="input.lon.s" />
             <span for="sec2" class="input-group-text">"</span>
           </div>
-          E
+          <div class="col">
+              E
+          </div>
         </div>
 
         <div class="add-drop">
@@ -94,7 +109,8 @@
           <button class="btn btn-primary" @click="addWaypoint(formatted_odom)">
             Drop Waypoint
           </button>
-          <button class="btn btn-primary" @click="openModal">Competition Waypoint Entry</button>
+          <!-- Disabled until Competion entry modal is redone -->
+          <!-- <button class="btn btn-primary" @click="openModal">Competition Waypoint Entry</button> -->
         </div>
       </div>
       <div class="box">
@@ -110,7 +126,6 @@
             :in_route="false"
             :index="i"
             @delete="deleteItem($event)"
-            @togglePost="togglePost($event)"
             @add="addItem($event)"
           />
         </div>
@@ -145,7 +160,6 @@
           :index="i"
           :name="name"
           @delete="deleteItem($event)"
-          @togglePost="togglePost($event)"
           @add="addItem($event)"
         />
       </div>
@@ -302,7 +316,7 @@ export default {
     return {
       name: 'Waypoint',
       id: '0',
-      type: 1,
+      type: 0,
       odom_format_in: 'DM',
       input: {
         lat: {
@@ -322,11 +336,9 @@ export default {
         'Start',
         'Waypoint 1',
         'Waypoint 2',
-        'Waypoint 3',
         'Post 1',
         'Post 2',
         'Post 3',
-        'Gate'
       ],
       compModalLatDeg: Array(8).fill(0),
       compModalLatMin: Array(8).fill(0),
@@ -398,13 +410,38 @@ export default {
   },
 
   watch: {
-    route: function (newRoute) {
+    message(msg) {
+      if (msg.type == 'nav_state') {
+        // If still waiting for nav...
+        if (
+          !(msg.state == 'OffState' && this.autonEnabled) &&
+          !(msg.state !== 'OffState' && !this.autonEnabled)
+        ) {
+          this.autonButtonColor = this.autonEnabled ? 'btn-success' : 'btn-danger'
+        }
+      }
+      else if (msg.type == 'get_waypoint_list') {
+        // Get waypoints from server on page load
+        this.storedWaypoints = msg.data
+        const waypoints = msg.data.map((waypoint: { lat: any; lon: any; name: any }) => {
+          const lat = waypoint.lat
+          const lon = waypoint.lon
+          return { latLng: L.latLng(lat, lon), name: waypoint.name }
+        })
+        this.setWaypointList(waypoints)
+      }
+    },
+
+    route: {
+      handler: function (newRoute) {
       const waypoints = newRoute.map((waypoint: { lat: any; lon: any; name: any }) => {
         const lat = waypoint.lat
         const lon = waypoint.lon
         return { latLng: L.latLng(lat, lon), name: waypoint.name }
       })
       this.setRoute(waypoints)
+    },
+      deep: true
     },
 
     storedWaypoints: { 
@@ -415,6 +452,7 @@ export default {
         return { latLng: L.latLng(lat, lon), name: waypoint.name }
       })
       this.setWaypointList(waypoints)
+      this.sendMessage({ type: 'save_waypoint_list', data: newList })
     },
       deep: true
     },
@@ -441,23 +479,17 @@ export default {
     window.clearInterval(stuck_interval)
     window.clearInterval(intermediate_publish_interval)
     this.autonEnabled = false
-    // this.sendAutonCommand();
   },
 
   created: function () {
     // Make sure local odom format matches vuex odom format
     this.odom_format_in = this.odom_format
 
-    // intermediate_publish_interval = window.setInterval(() => {
-    //   this.sendAutonCommand();
-    // }, 1000);
-    // this.sendAutonCommand();
+    window.setTimeout(() => {
+      // Timeout so websocket will be initialized
+      this.sendMessage({ type: 'get_waypoint_list', data: null })
+    }, 250)
   },
-
-  // mounted: function () {
-  //   //Send auton off if GUI is refreshed
-  //   this.sendAutonCommand();
-  // },
 
   methods: {
     ...mapActions('websocket', ['sendMessage']),
@@ -473,19 +505,6 @@ export default {
     ...mapMutations('map', {
       setOdomFormat: 'setOdomFormat'
     }),
-
-    message(msg) {
-      if (msg.type == 'nav_state') {
-        // If still waiting for nav...
-        if (
-          (msg.state == 'OffState' && this.autonEnabled) ||
-          (msg.state !== 'OffState' && !this.autonEnabled)
-        ) {
-          return
-        }
-        this.autonButtonColor = this.autonEnabled ? 'btn-success' : 'btn-danger'
-      }
-    },
 
     sendAutonCommand() {
       if (this.autonEnabled) {
@@ -525,64 +544,57 @@ export default {
     },
 
     submitModal: function () {
-      this.showModal = false
-      // Create lat/lon objects from comp modal arrays
-      const coordinates = this.compModalLatDeg.map((deg: any, i: string | number) => {
-        return {
-          lat: {
-            d: deg,
-            m: this.compModalLatMin[i],
-            s: this.compModalLatSec[i]
-          },
-          lon: {
-            d: this.compModalLonDeg[i],
-            m: this.compModalLonMin[i],
-            s: this.compModalLonSec[i]
-          }
-        }
-      })
+      // this.showModal = false
+      // // Create lat/lon objects from comp modal arrays
+      // const coordinates = this.compModalLatDeg.map((deg: any, i: string | number) => {
+      //   return {
+      //     lat: {
+      //       d: deg,
+      //       m: this.compModalLatMin[i],
+      //       s: this.compModalLatSec[i]
+      //     },
+      //     lon: {
+      //       d: this.compModalLonDeg[i],
+      //       m: this.compModalLonMin[i],
+      //       s: this.compModalLonSec[i]
+      //     }
+      //   }
+      // })
 
-      let coord_num = 0
-      let tag_id = 0
+      // let coord_num = 0
+      // let tag_id = 0
 
-      // Start AR tag is always 0.
-      this.storedWaypoints.push({
-        name: 'Start',
-        id: tag_id,
-        lat: convertDMS(coordinates[coord_num].lat, 'D').d,
-        lon: convertDMS(coordinates[coord_num].lon, 'D').d,
-        type: 0,
-        post: false
-      })
+      // // Start AR tag is always 0.
+      // this.storedWaypoints.push({
+      //   type: 0,
+      // })
 
-      ++coord_num
-      ++tag_id
+      // ++coord_num
+      // ++tag_id
 
-      // Add Waypoints, which we set as sentinel value -1.
-      for (; coord_num < 4; ++coord_num) {
-        this.storedWaypoints.push({
-          name: 'Waypoint ' + coord_num,
-          id: -1,
-          lat: convertDMS(coordinates[coord_num].lat, 'D').d,
-          lon: convertDMS(coordinates[coord_num].lon, 'D').d,
-          type: 0,
-          post: false
-        })
-      }
+      // // Add Waypoints, which we set as sentinel value -1.
+      // for (; coord_num < 4; ++coord_num) {
+      //   this.storedWaypoints.push({
+      //     name: 'Waypoint ' + coord_num,
+      //     id: -1,
+      //     lat: convertDMS(coordinates[coord_num].lat, 'D').d,
+      //     lon: convertDMS(coordinates[coord_num].lon, 'D').d,
+      //     type: 0,
+      //   })
+      // }
 
-      // Add AR Tag Posts with IDs 1-3
-      for (; coord_num < 7; ++coord_num) {
-        this.storedWaypoints.push({
-          name: 'AR Tag Post ' + tag_id,
-          id: tag_id,
-          lat: convertDMS(coordinates[coord_num].lat, 'D').d,
-          lon: convertDMS(coordinates[coord_num].lon, 'D').d,
-          type: 1,
-          post: true
-        })
+      // // Add AR Tag Posts with IDs 1-3
+      // for (; coord_num < 7; ++coord_num) {
+      //   this.storedWaypoints.push({
+      //     name: 'AR Tag Post ' + tag_id,
+      //     id: tag_id,
+      //     lat: convertDMS(coordinates[coord_num].lat, 'D').d,
+      //     lon: convertDMS(coordinates[coord_num].lon, 'D').d,
+      //     type: 1,
+      //   })
 
-        ++tag_id
-      }
+      //   ++tag_id
+      // }
     },
 
     deleteItem: function (waypoint: { index: any; in_route: boolean }) {
@@ -596,14 +608,6 @@ export default {
       }
     },
 
-    findWaypoint: function (waypoint: { index: any }) {
-      if (waypoint.index === this.highlightedWaypoint) {
-        this.setHighlightedWaypoint(-1)
-      } else {
-        this.setHighlightedWaypoint(waypoint.index)
-      }
-    },
-
     // Add item from all waypoints div to current waypoints div
     addItem: function (waypoint: { in_route: boolean; index: number }) {
       if (!waypoint.in_route) {
@@ -613,23 +617,23 @@ export default {
       }
     },
 
-    togglePost: function (waypoint: { in_route: boolean; index: number }) {
-      if (!waypoint.in_route) {
-        this.storedWaypoints[waypoint.index].post = !this.storedWaypoints[waypoint.index].post
-      } else if (waypoint.in_route) {
-        this.route[waypoint.index].post = !this.route[waypoint.index].post
-      }
-    },
-
     addWaypoint: function (coord: { lat: any; lon: any }) {
+      if (this.type != 1 && !this.checkWaypointIDUnique(this.id)) {
+        alert('Waypoint ID must be unique')
+        return
+      }
       this.storedWaypoints.push({
         name: this.name,
-        id: this.id,
+        id: this.type != 1 ? this.id : -1, // Check if type is post, if so, set id to -1
         lat: convertDMS(coord.lat, 'D').d,
         lon: convertDMS(coord.lon, 'D').d,
         type: this.type,
         post: false
       })
+    },
+
+    checkWaypointIDUnique: function (id: any) {
+      return this.storedWaypoints.every((waypoint: { id: any }) => waypoint.id != id)
     },
 
     clearWaypoint: function () {

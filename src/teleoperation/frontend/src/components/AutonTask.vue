@@ -93,7 +93,8 @@ export default defineComponent({
       odom: {
         latitude_deg: 42.293195,
         longitude_deg: -83.7096706,
-        bearing_deg: 0
+        bearing_deg: 0,
+        altitude: 0,
       },
 
       teleopEnabledCheck: false,
@@ -159,6 +160,7 @@ export default defineComponent({
       } else if (msg.type == 'nav_sat_fix') {
         this.odom.latitude_deg = msg.latitude
         this.odom.longitude_deg = msg.longitude
+        this.odom.altitude = msg.altitude;
       } else if (msg.type == 'auton_tfclient') {
         this.odom.bearing_deg = quaternionToMapAngle(msg.rotation)
       }
@@ -187,7 +189,7 @@ export default defineComponent({
   display: grid;
   grid-gap: 10px;
   grid-template-columns: 40% 20% auto;
-  grid-template-rows: auto 40vh auto auto auto;
+  grid-template-rows: repeat(5,auto);
   grid-template-areas:
     'header header header'
     'map map waypoints'

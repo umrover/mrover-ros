@@ -18,15 +18,9 @@
         </l-tooltip>
       </l-marker>
 
-      <!-- Search Path Icons -->
-      <l-marker v-for="(search_path_point, index) in searchPathPoints" :key="index" :lat-lng="search_path_point.latLng"
-        :icon="searchPathIcon">
-        <l-tooltip>Search Path {{ index }}</l-tooltip>
-      </l-marker>
-
       <!-- Polylines -->
       <l-polyline :lat-lngs="polylinePath" :color="'red'" :dash-array="'5, 5'" />
-      <l-polyline :lat-lngs="odomPath" :color="'blue'" />
+      <l-polyline :lat-lngs="odomPath" :color="'blue'" :dash-array="'5, 5'"/>
     </l-map>
     <!-- Controls that go directly under the map -->
     <div class="controls">
@@ -50,7 +44,7 @@ import { mapGetters, mapMutations } from 'vuex'
 import 'leaflet/dist/leaflet.css'
 import L from '../leaflet-rotatedmarker'
 
-const MAX_ODOM_COUNT = 1000
+const MAX_ODOM_COUNT = 10
 const DRAW_FREQUENCY = 10
 // Options for the tilelayer object on the map
 const onlineUrl = 'http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}'
@@ -93,19 +87,11 @@ export default {
       offlineTileOptions: offlineTileOptions,
       roverMarker: null,
       waypointIcon: null,
-      searchPathIcon: null,
-      gatePathIcon: null,
+      locationIcon: null,
 
       map: null,
       odomCount: 0,
-      locationIcon: null,
       odomPath: [],
-
-      searchPathPoints: [],
-      gatePathPoints: [],
-
-      post1: null,
-      post2: null,
 
       findRover: false
     }
@@ -127,7 +113,7 @@ export default {
       return [this.odomLatLng].concat(
         this.route.map((waypoint: { latLng: any }) => waypoint.latLng)
       )
-    }
+    },
   },
   watch: {
     odom: {
@@ -146,7 +132,6 @@ export default {
         }
 
         // Update the rover marker using bearing angle
-        // console.log(this.roverMarker)
         this.roverMarker.setRotationAngle(angle)
 
         this.roverMarker.setLatLng(latLng)
@@ -154,28 +139,18 @@ export default {
         // Update the rover path
         this.odomCount++
         if (this.odomCount % DRAW_FREQUENCY === 0) {
-          if (this.odomCount > MAX_ODOM_COUNT * DRAW_FREQUENCY) {
+          if(this.odomPath.length > MAX_ODOM_COUNT) {
             this.odomPath.splice(0, 1)
           }
+          
           this.odomPath.push(latLng)
+          this.odomCount = 0;
         }
-
-        this.odomPath[this.odomPath.length - 1] = latLng
+        
       },
       // Deep will watch for changes in children of an object
       deep: true
     },
-    autonEnabled: {
-      handler: function () {
-        if (this.autonEnabled) {
-          this.searchPathPoints = []
-          this.gatePathPoints = []
-
-          this.post1 = null
-          this.post2 = null
-        }
-      }
-    }
   },
   created: function () {
     // Get Icons for Map
@@ -190,42 +165,13 @@ export default {
       iconAnchor: [32, 64],
       popupAnchor: [0, -32]
     })
-    this.searchPathIcon = L.icon({
-      iconUrl: 'map_marker_projected.png',
-      iconSize: [32, 32],
-      iconAnchor: [16, 16],
-      popupAnchor: [0, -32]
-    })
-
-    //   this.search_path_topic = new ROSLIB.Topic({
-    //     ros: this.$ros,
-    //     name: "/search_path",
-    //     messageType: "mrover/GPSPointList"
-    //   });
-
-    //   this.search_path_topic.subscribe((msg) => {
-    //     let newSearchPath = msg.point;
-    //     this.searchPathPoints = newSearchPath.map((search_path_point) => {
-    //       return {
-    //         latLng: L.latLng(
-    //           search_path_point.latitude_degrees,
-    //           search_path_point.longitude_degrees
-    //         )
-    //       };
-    //     });
-    //   });
-  },
-  // Pull objects from refs to be able to access data and change w functions
-  mounted: function () {
-   
   },
 
   methods: {
-
-    onMapReady: function(ready) {
+    onMapReady: function() {
+      // Pull objects from refs to be able to access data and change w functions
         this.$nextTick(() => {
         this.map = this.$refs.map.leafletObject
-        console.log(this.$refs.rover)
         this.roverMarker = this.$refs.rover.leafletObject
       })
     },
@@ -264,7 +210,7 @@ export default {
   height: 100%;
   display: grid;
   overflow: hidden;
-  min-height: 100%;
+  min-height: 40vh;
   grid-gap: 3px;
   grid-template-columns: auto;
   grid-template-rows: 94% 6%;
@@ -273,7 +219,7 @@ export default {
     'controls';
 }
 
-.custom-tooltip {
+/* .custom-tooltip {
   display: inline-block;
   margin: 10px 20px;
   opacity: 1;
@@ -286,7 +232,7 @@ export default {
 
 .custom-tooltip.top .tooltip-arrow {
   border-top-color: #0088cc;
-}
+} */
 
 /* Grid area declarations */
 .map {

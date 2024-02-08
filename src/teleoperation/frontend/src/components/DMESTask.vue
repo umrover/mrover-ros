@@ -93,7 +93,6 @@ export default defineComponent({
         longitude_deg: -110.7923723,
         bearing_deg: 0,
         altitude: 0,
-        speed: 0
       },
 
       // Default object isn't empty, so has to be initialized to ""
