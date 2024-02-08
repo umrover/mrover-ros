@@ -14,8 +14,6 @@ from navigation.recovery import RecoveryState
 from navigation.search import SearchState
 from navigation.state import DoneState, OffState, off_check
 from navigation.waypoint import WaypointState
-from navigation.approach_object import ApproachObjectState
-from navigation.long_range import LongRangeState
 
 
 class Navigation(threading.Thread):
@@ -32,35 +30,13 @@ class Navigation(threading.Thread):
         )
         self.state_machine.add_transitions(PostBackupState(), [WaypointState(), RecoveryState()])
         self.state_machine.add_transitions(
-            RecoveryState(),
-            [
-                WaypointState(),
-                SearchState(),
-                PostBackupState(),
-                ApproachPostState(),
-                ApproachObjectState(),
-                LongRangeState(),
-            ],
+            RecoveryState(), [WaypointState(), SearchState(), PostBackupState(), ApproachPostState()]
         )
-        self.state_machine.add_transitions(
-            SearchState(),
-            [ApproachPostState(), ApproachObjectState(), LongRangeState(), WaypointState(), RecoveryState()],
-        )
+        self.state_machine.add_transitions(SearchState(), [ApproachPostState(), WaypointState(), RecoveryState()])
         self.state_machine.add_transitions(DoneState(), [WaypointState()])
         self.state_machine.add_transitions(
-            WaypointState(),
-            [
-                PostBackupState(),
-                ApproachPostState(),
-                ApproachObjectState(),
-                LongRangeState(),
-                SearchState(),
-                RecoveryState(),
-                DoneState(),
-            ],
+            WaypointState(), [PostBackupState(), ApproachPostState(), SearchState(), RecoveryState(), DoneState()]
         )
-        self.state_machine.add_transitions(ApproachObjectState(), [DoneState(), SearchState()])
-        self.state_machine.add_transitions(LongRangeState(), [ApproachPostState()])
         self.state_machine.add_transitions(OffState(), [WaypointState(), DoneState()])
         self.state_machine.configure_off_switch(OffState(), off_check)
         self.state_machine_server = StatePublisher(self.state_machine, "nav_structure", 1, "nav_state", 10)

@@ -4,13 +4,12 @@ from dataclasses import dataclass
 from typing import Optional
 
 import numpy as np
-from mrover.msg import GPSPointList, WaypointType
-
+from mrover.msg import GPSPointList
 
 from util.ros_utils import get_rosparam
 from util.state_lib.state import State
 
-from navigation import approach_post, approach_object, recovery, waypoint, long_range
+from navigation import approach_post, recovery, waypoint
 from navigation.context import convert_cartesian_to_gps
 from navigation.trajectory import Trajectory
 
@@ -94,24 +93,14 @@ class SearchState(State):
 
     def on_enter(self, context) -> None:
         search_center = context.course.current_waypoint()
-
         if not self.is_recovering:
-            if search_center.type.val == WaypointType.POST:
-                self.traj = SearchTrajectory.spiral_traj(
-                    context.rover.get_pose().position[0:2],
-                    self.SPIRAL_COVERAGE_RADIUS,
-                    self.DISTANCE_BETWEEN_SPIRALS,
-                    self.SEGMENTS_PER_ROTATION,
-                    search_center.tag_id,
-                )
-            else:  # water bottle or mallet
-                self.traj = SearchTrajectory.spiral_traj(
-                    context.rover.get_pose().position[0:2],
-                    self.SPIRAL_COVERAGE_RADIUS / 2,
-                    self.DISTANCE_BETWEEN_SPIRALS / 2,
-                    self.SEGMENTS_PER_ROTATION,
-                    search_center.tag_id,
-                )
+            self.traj = SearchTrajectory.spiral_traj(
+                context.rover.get_pose().position[0:2],
+                self.SPIRAL_COVERAGE_RADIUS,
+                self.DISTANCE_BETWEEN_SPIRALS,
+                self.SEGMENTS_PER_ROTATION,
+                search_center.tag_id,
+            )
             self.prev_target = None
 
     def on_exit(self, context) -> None:
@@ -145,15 +134,6 @@ class SearchState(State):
         )
         context.rover.send_drive_command(cmd_vel)
 
-        current_waypoint = context.course.current_waypoint()
-        if current_waypoint.type.val == WaypointType.POST:
-            # if we see the tag in the ZED, go to ApproachPostState
-            # if context.env.current_target_pos() is not None and context.course.look_for_post():
-            #     return approach_post.ApproachPostState()
-            # if we see the tag in the long range camera, go to LongRangeState
-            if context.env.long_range_tags.get(current_waypoint.tag_id) is not None:
-                return long_range.LongRangeState()
-        else:
-            if context.env.current_target_pos() is not None and context.course.look_for_object():
-                return approach_object.ApproachObjectState()  # if we see the object
+        if context.env.current_fid_pos() is not None and context.course.look_for_post():
+            return approach_post.ApproachPostState()
         return self
