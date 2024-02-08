@@ -37,7 +37,7 @@ InvariantEKFNode::InvariantEKFNode() : mEKF(init_EKF()) {
     // set up subscribers and publishers
     mImuSub = mNh.subscribe("imu", 1, &InvariantEKFNode::imu_callback, this);
     mGpsSub = mNh.subscribe("gps", 1, &InvariantEKFNode::gps_callback, this);
-    mGpsSub = mNh.subscribe("mag", 1, &InvariantEKFNode::gps_callback, this);
+    mGpsSub = mNh.subscribe("mag", 1, &InvariantEKFNode::mag_callback, this);
 
 
     mOdometryPub = mNh.advertise<nav_msgs::Odometry>("odometry", 1);
