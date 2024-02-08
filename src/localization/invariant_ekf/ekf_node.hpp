@@ -25,6 +25,8 @@ private:
     void publish_odometry();
 
 public:
+    int main();
+    
     InvariantEKFNode();
 
     InvariantEKFNode(const InvariantEKFNode&) = delete;

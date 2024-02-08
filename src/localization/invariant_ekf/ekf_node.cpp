@@ -97,3 +97,5 @@ void InvariantEKFNode::run() {
         rate.sleep();
     }
 }
+
+int main(){}
