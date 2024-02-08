@@ -1,4 +1,6 @@
 #include "ekf_node.hpp"
+#include <Eigen/src/Core/Matrix.h>
+#include <sensor_msgs/MagneticField.h>
 
 InvariantEKF InvariantEKFNode::init_EKF() {
     // set initial position to zero and initial covariant to very high number
@@ -29,11 +31,14 @@ InvariantEKF InvariantEKFNode::init_EKF() {
 
 InvariantEKFNode::InvariantEKFNode() : mEKF(init_EKF()) {
     mLastImuTime = std::chrono::system_clock::now();
+    mLastMagTime = std::chrono::system_clock::now();
     mLastGpsTime = std::chrono::system_clock::now();
 
     // set up subscribers and publishers
     mImuSub = mNh.subscribe("imu", 1, &InvariantEKFNode::imu_callback, this);
     mGpsSub = mNh.subscribe("gps", 1, &InvariantEKFNode::gps_callback, this);
+    mGpsSub = mNh.subscribe("mag", 1, &InvariantEKFNode::gps_callback, this);
+
 
     mOdometryPub = mNh.advertise<nav_msgs::Odometry>("odometry", 1);
 }
@@ -46,6 +51,15 @@ void InvariantEKFNode::imu_callback(const sensor_msgs::Imu& msg) {
     Vector3d accel(msg.linear_acceleration.x, msg.linear_acceleration.y, msg.linear_acceleration.z);
     Vector3d gyro(msg.angular_velocity.x, msg.angular_velocity.y, msg.angular_velocity.z);
     mEKF.predict(accel, gyro, dt);
+}
+
+void InvariantEKFNode::mag_callback(const sensor_msgs::MagneticField& msg) {
+    auto now = std::chrono::system_clock::now();
+    double dt = Duration(now - mLastMagTime).count();
+    mLastMagTime = now;
+
+    Vector3d mag(msg.magnetic_field.x, msg.magnetic_field.y, msg.magnetic_field.z);
+    mEKF.update_mag(mag);
 }
 
 void InvariantEKFNode::gps_callback(const geometry_msgs::Pose& msg) {
