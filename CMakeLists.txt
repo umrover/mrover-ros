@@ -189,7 +189,7 @@ mrover_nodelet_link_libraries(zed_tag_detector opencv_core opencv_aruco opencv_i
 if (CUDA_FOUND)
     mrover_add_library(streaming src/esw/streaming/*.c* src/esw/streaming)
     #    target_link_libraries(streaming PUBLIC opencv_core opencv_cudacodec)
-    target_link_libraries(streaming PUBLIC cuda nvidia-encode opencv_core)
+    target_link_libraries(streaming PUBLIC cuda /usr/local/lib/libnvidia-encode.so opencv_core)
     target_include_directories(streaming SYSTEM PUBLIC deps/nvenc)
     target_compile_definitions(streaming PUBLIC BOOST_ASIO_NO_DEPRECATED)
 endif ()

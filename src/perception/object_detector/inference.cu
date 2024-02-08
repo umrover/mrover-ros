@@ -35,7 +35,7 @@ namespace mrover {
 
     auto Inference::createCudaEngine(std::filesystem::path const& onnxModelPath) -> ICudaEngine* {
 
-        mModelPath = onnxModelPath;
+        mModelPath = onnxModelPath.string();
 
         //Define the size of Batches
         constexpr auto explicitBatch = 1U << static_cast<std::uint32_t>(NetworkDefinitionCreationFlag::kEXPLICIT_BATCH);
