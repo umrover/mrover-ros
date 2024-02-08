@@ -23,7 +23,7 @@
     <div class="calibration imu">
       <IMUCalibration></IMUCalibration>
     </div>
-    <div class = "flightindicator">
+    <div class="flightindicator">
       <FlightAttitudeIndicator></FlightAttitudeIndicator>
     </div>
   </div>
@@ -32,12 +32,12 @@
 <script lang="ts">
 import { convertDMS } from '../utils.js'
 import { mapGetters } from 'vuex'
-import IMUCalibration from "./IMUCalibration.vue";
-import FlightAttitudeIndicator from "./FlightAttitudeIndicator.vue";
+import IMUCalibration from './IMUCalibration.vue'
+import FlightAttitudeIndicator from './FlightAttitudeIndicator.vue'
 export default {
   components: {
     FlightAttitudeIndicator,
-    IMUCalibration,
+    IMUCalibration
   },
   props: {
     odom: {
@@ -62,8 +62,8 @@ export default {
     sec_enabled: function () {
       return this.odom_format == 'DMS'
     },
-    alt_available: function() {
-      return !isNan(this.odom.altitude);
+    alt_available: function () {
+      return !isNan(this.odom.altitude)
     }
   }
 }
@@ -71,16 +71,13 @@ export default {
 
 <style scoped>
 .odom-wrap {
-  padding: 0px;
   padding-left: 10px;
   padding-right: 0px;
-  border: none;
   margin-top: 0.5rem;
   display: grid;
   grid-gap: 10px;
-  grid-template-columns: 300px 2fr 1.25fr 0.75fr;
-  grid-template-rows: 140px 2fr;
-  flex-direction: row;
+  grid-template-columns: auto auto;
+  grid-template-rows: auto auto;
   gap: 10px;
   grid-template-areas:
     'odom flightIndicator'

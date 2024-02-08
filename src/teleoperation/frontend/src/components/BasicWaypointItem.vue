@@ -4,7 +4,7 @@
       <p>{{ waypoint.name }}</p>
     </div>
     <div class="location">
-      <p>{{ waypoint.lat }}ºN, {{ waypoint.lon }}ºE</p>
+      <p>{{ waypoint.lat }}ºN, {{ waypoint.lon }}ºW</p>
     </div>
     <div class="text-center">
       <button class="btn btn-danger" @click="$emit('delete', { index: index })">X</button>
@@ -43,9 +43,7 @@ export default defineComponent({
 </script>
 
 <style scoped>
-
 button {
   margin: 0px 2px 0px 2px;
 }
-
 </style>

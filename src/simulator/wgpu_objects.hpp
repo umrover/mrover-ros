@@ -53,7 +53,7 @@ namespace mrover {
 
     // TODO(quintin): clean up shared behavior between this and other types in this file
     template<typename T>
-        // requires(sizeof(T) % 16 == 0) // Required by WGPU standard, if this does not pass add padding to your type
+        requires(sizeof(T) % 16 == 0) // Required by WGPU standard, if this does not pass add padding to your type
     struct Uniform {
         T value{};
 

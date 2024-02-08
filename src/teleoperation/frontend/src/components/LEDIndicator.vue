@@ -1,9 +1,7 @@
 <template>
   <div class="wrap">
     <span :class="['led', color]"></span>
-    <div>
-      <span class="name" v-if="show_name">{{ name }}</span>
-    </div>
+    <span class="mx-1" v-if="show_name">{{ name }}</span>
   </div>
 </template>
 
@@ -42,9 +40,5 @@ export default {
   height: 16px;
   border-radius: 8px;
   border: 1px solid;
-}
-
-.name {
-  margin-left: 5px;
 }
 </style>
