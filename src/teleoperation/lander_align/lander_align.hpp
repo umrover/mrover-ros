@@ -38,6 +38,8 @@ namespace mrover {
         void filterNormals(sensor_msgs::PointCloud2Ptr const& cloud);
 
         auto ransac(std::vector<Point const*> const& points, float distanceThreshold, int minInliers, int epochs) -> std::optional<Eigen::Vector3f>;
+
+        void sendTwist(Eigen::Vector3f const& mBestCenter);
     };
 
 } // namespace mrover
