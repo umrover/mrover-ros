@@ -27,5 +27,5 @@
             name="rqt_reconfigure" pkg="rqt_reconfigure" type="rqt_reconfigure" />
 
       <node pkg="tf" type="static_transform_publisher" name="map_odom_publisher"
-            args="1 0 0 0 0 0 map odom 100" />
+            args="1 0 0 0 0 0 base_link zed2i_left_camera_frame 100" />
 </launch>

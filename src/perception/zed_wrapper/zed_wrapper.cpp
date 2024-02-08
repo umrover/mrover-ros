@@ -52,7 +52,7 @@ namespace mrover {
             std::string svoFile{};
             mPnh.param("svo_file", svoFile, {});
             mSvoPath = svoFile.c_str();
-            mPnh.param("use_builtin_visual_odom", mUseBuiltinPosTracking, false);
+            mPnh.param("use_builtin_visual_odom", mUseBuiltinPosTracking, true);
             mPnh.param("use_area_memory", mUseAreaMemory, true);
             mPnh.param("use_pose_smoothing", mUsePoseSmoothing, true);
             mPnh.param("use_loop_profiler", mUseLoopProfiler, true);
@@ -257,7 +257,7 @@ namespace mrover {
                         try {
                             SE3 leftCameraInOdom{{translation.x, translation.y, translation.z},
                                                  Eigen::Quaterniond{orientation.w, orientation.x, orientation.y, orientation.z}.normalized()};
-                            SE3 leftCameraInBaseLink = SE3::fromTfTree(mTfBuffer, "base_link", "zed2i_left_camera_frame");
+                            SE3 leftCameraInBaseLink = SE3::fromTfTree(mTfBuffer, "base_link", "zed_left_camera_frame");
                             SE3 baseLinkInOdom = leftCameraInBaseLink * leftCameraInOdom;
                             SE3::pushToTfTree(mTfBroadcaster, "base_link", "odom", baseLinkInOdom);
                         } catch (tf2::TransformException& e) {
