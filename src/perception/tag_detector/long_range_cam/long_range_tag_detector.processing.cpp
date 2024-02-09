@@ -3,8 +3,6 @@
 #include <opencv2/core/types.hpp>
 #include <sensor_msgs/Image.h>
 
-#include <opencv2/imgproc.hpp>
-
 namespace mrover {
 
     /**
@@ -44,9 +42,7 @@ namespace mrover {
         assert(msg->width > 0);
 
         // TODO: Modify when going back to real cam
-        cv::Mat cvImage_C4 = cv::Mat{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC4, const_cast<uint8_t*>(msg->data.data())};
-        cv::Mat cvImage = cv::Mat();
-        cv::cvtColor(cvImage_C4, cvImage, cv::COLOR_BGRA2BGR);
+        cv::Mat cvImage = cv::Mat{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC3, const_cast<uint8_t*>(msg->data.data())};
 
         //Store to mImg member variable - unsure if necessary but need it to persist
         cvImage.copyTo(mImg);

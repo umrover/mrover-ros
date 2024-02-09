@@ -1,4 +1,5 @@
 #include "long_range_cam.hpp"
+#include <opencv2/imgproc.hpp>
 #include <opencv2/videoio.hpp>
 #include <ros/init.h>
 #include <ros/this_node.h>
@@ -44,7 +45,7 @@ namespace mrover {
         mNh = getMTNodeHandle();
         mPnh = getMTPrivateNodeHandle();
         mCamInfoPub = mNh.advertise<sensor_msgs::CameraInfo>("long_range_cam/camera_info", 1);
-        mImgPub = mNh.advertise<sensor_msgs::Image>("long_range_cam/image", 1);
+        mImgPub = mNh.advertise<sensor_msgs::Image>("long_range_image", 1);
         // While dtor not called
         while (ros::ok()) {
             cv::VideoCapture mCapture{std::format("v4l2src device=/dev/arducam ! videoconvert ! video/x-raw,width={},height={},format=I420,framerate={}/1 ! appsink", 1920, 1080, 5), cv::CAP_GSTREAMER};

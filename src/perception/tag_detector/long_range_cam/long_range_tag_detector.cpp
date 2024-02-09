@@ -21,8 +21,6 @@ namespace mrover {
         mImgPub = mNh.advertise<sensor_msgs::Image>("long_range_tag_detection", 1);
         mLongRangeTagsPub = mNh.advertise<LongRangeTags>("tags", 1);
 
-        // topic: long_range_cam/image
-        //todo
         mImgSub = mNh.subscribe("long_range_image", 1, &LongRangeTagDetectorNodelet::imageCallback, this);
         mDictionary = cv::makePtr<cv::aruco::Dictionary>(cv::aruco::getPredefinedDictionary(dictionaryNumber));
         mServiceEnableDetections = mNh.advertiseService("enable_detections", &LongRangeTagDetectorNodelet::enableDetectionsCallback, this);
