@@ -2,7 +2,7 @@ can:
   devices:
     - name: "jetson"
       bus: 0
-      id: 0x10
+      id: 0x0
     - name: "devboard"
       bus: 0
       id: 0x1

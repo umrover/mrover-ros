@@ -1,5 +1,6 @@
 #include "brushless.hpp"
 #include "moteus/moteus_protocol.h"
+#include <moteus/moteus_multiplex.h>
 #include <units/units.hpp>
 
 namespace mrover {
@@ -94,6 +95,18 @@ namespace mrover {
     }
 
     MoteusLimitSwitchInfo BrushlessController::getPressedLimitSwitchInfo() {
+        /*
+        Testing 2/9:
+        - Connected limit switch (common is input(black), NC to ground)
+        - Configured moteus to have all pins set as digital_input and pull_up
+        - When limit switch not pressed, aux2 = 0xD
+        - When limit switch pressed, aux1 = 0xF
+        - This was connected to just one moteus board, not the one with a motor on it.
+
+        Stuff for Limit Switches (from Guthrie)
+        - Read from config about limit switch settings
+        - Either 1 or 0 not forward/backward
+        */
         // TODO - implement this
         MoteusLimitSwitchInfo result;
     
@@ -125,11 +138,20 @@ namespace mrover {
         mDevice.publish_moteus_frame(setPositionFrame);
     }
 
+    void BrushlessController::sendQuery() {
+        moteus::Query::Format qFormat{};
+        qFormat.aux1_gpio = moteus::kInt8;
+        qFormat.aux2_gpio = moteus::kInt8;
+        moteus::CanFdFrame queryFrame = mController.MakeQuery(&qFormat);
+        mDevice.publish_moteus_frame(queryFrame);
+    }
+
     void BrushlessController::processCANMessage(CAN::ConstPtr const& msg) {
+        ROS_INFO("Message received");
         assert(msg->source == mControllerName);
         assert(msg->destination == mName);
         auto result = moteus::Query::Parse(msg->data.data(), msg->data.size());
-        ROS_INFO("controller: %s    %3d p/a/v/t=(%7.3f,%7.3f,%7.3f,%7.3f)  v/t/f=(%5.1f,%5.1f,%3d) GPIO: Aux1-%d , Aux2-%d",
+        ROS_INFO("controller: %s    %3d p/a/v/t=(%7.3f,%7.3f,%7.3f,%7.3f)  v/t/f=(%5.1f,%5.1f,%3d) GPIO: Aux1-%X , Aux2-%X",
                  mControllerName.c_str(),
                  result.mode,
                  result.position,
@@ -140,7 +162,7 @@ namespace mrover {
                  result.temperature,
                  result.fault,
                  result.aux1_gpio,
-                 result.aux2.gpio
+                 result.aux2_gpio
                  );
 
         mCurrentPosition = mrover::Revolutions{result.position}; // moteus stores position in revolutions.

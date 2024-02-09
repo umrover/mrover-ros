@@ -76,6 +76,7 @@ namespace mrover {
         void setBrake();
         MoteusLimitSwitchInfo getPressedLimitSwitchInfo();
         void adjust(Radians position) override;
+        void sendQuery();
 
     private:
         moteus::Controller mController{moteus::Controller::Options{}};
