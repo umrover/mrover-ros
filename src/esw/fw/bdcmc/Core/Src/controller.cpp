@@ -30,36 +30,42 @@ extern TIM_HandleTypeDef htim15;
 extern TIM_HandleTypeDef htim16;
 extern TIM_HandleTypeDef htim17;
 
-#define QUADRATURE_TICK_TIMER_1 &htim3 // Special encoder timer which externally reads quadrature encoder ticks
-// #define QUADRATURE_TIMER_2 &htim4
-#define QUADRATURE_ELAPSED_TIMER_1 &htim17 // Measures time since the lsat quadrature tick reading
-#define ABSOLUTE_ENCODER_TIMER &htim2
-// #define UPDATE_TIMER &htim6
+#define QUADRATURE_TICK_TIMER_0 &htim3 // Special encoder timer which externally reads quadrature encoder ticks
+#define QUADRATURE_TICK_TIMER_1 &htim4 // TODO update me!
+#define ENCODER_ELAPSED_TIMER_0 &htim17 // Measures time since the last tick reading
+#define ENCODER_ELAPSED_TIMER_1 &htim17 // TODO update me!
+#define ABSOLUTE_ENCODER_TIMER &htim2   // Defines rate in which we send I2C request to absolute encoder
 #define SEND_TIMER &htim7            // 100 Hz FDCAN repeating timer
-#define PWM_TIMER_1 &htim15          // H-Bridge PWM
+#define PWM_TIMER_0 &htim15          // H-Bridge PWM
+#define PWM_TIMER_1 &htim15          // TODO update me!
 #define FDCAN_WATCHDOG_TIMER &htim16 // FDCAN watchdog timer that needs to be reset every time a message is received
 
 namespace mrover {
 
-    // NOTE: Change This For Each Motor Controller
-    constexpr static std::uint8_t DEVICE_ID = 0x21; // currently set for joint_b
+    // NOTE: Change this for each motor controller
+    constexpr static std::uint8_t DEVICE_ID_0 = 0x21; // currently set for joint_b
+
+    // NOTE: Change this to 0x00 if there is no 2nd motor on the mcu
+    constexpr static std::uint8_t DEVICE_ID_1 = 0x01; // currently set for nothing
 
     // Usually this is the Jetson
     constexpr static std::uint8_t DESTINATION_DEVICE_ID = 0x10;
 
     FDCAN<InBoundMessage> fdcan_bus;
-    Controller controller;
+    Controller controller0;
+    std::optional<Controller> controller1;
 
     auto init() -> void {
-        fdcan_bus = FDCAN<InBoundMessage>{DEVICE_ID, DESTINATION_DEVICE_ID, &hfdcan1};
-        controller = Controller{
-                PWM_TIMER_1,
+        fdcan_bus = FDCAN<InBoundMessage>{0x00, DESTINATION_DEVICE_ID, &hfdcan1};
+
+        controller0 = Controller{
+                DEVICE_ID_0,
+                PWM_TIMER_0,
                 Pin{GPIOB, GPIO_PIN_15},
-                Pin{GPIOC, GPIO_PIN_6},
                 fdcan_bus,
                 FDCAN_WATCHDOG_TIMER,
-                QUADRATURE_TICK_TIMER_1,
-                QUADRATURE_ELAPSED_TIMER_1,
+                QUADRATURE_TICK_TIMER_0,
+                ENCODER_ELAPSED_TIMER_0,
                 ABSOLUTE_I2C,
                 {
                         LimitSwitch{Pin{LIMIT_0_0_GPIO_Port, LIMIT_0_0_Pin}},
@@ -68,6 +74,26 @@ namespace mrover {
                         // LimitSwitch{Pin{LIMIT_0_3_GPIO_Port, LIMIT_0_3_Pin}},
                 },
         };
+
+        if (DEVICE_ID_1 != 0x00) {
+            std::array<LimitSwitch, 4> controller_1_limits = {
+                LimitSwitch{Pin{LIMIT_1_0_GPIO_Port, LIMIT_1_0_Pin}},
+                LimitSwitch{Pin{LIMIT_1_1_GPIO_Port, LIMIT_1_1_Pin}},
+                // LimitSwitch{Pin{LIMIT_1_2_GPIO_Port, LIMIT_1_2_Pin}},
+                // LimitSwitch{Pin{LIMIT_1_3_GPIO_Port, LIMIT_1_3_Pin}},
+            };
+
+            controller1.emplace(
+                DEVICE_ID_1,
+                PWM_TIMER_1,
+                Pin{GPIOC, GPIO_PIN_6},
+                fdcan_bus,
+                FDCAN_WATCHDOG_TIMER,
+                QUADRATURE_TICK_TIMER_1,
+                ENCODER_ELAPSED_TIMER_1,
+                ABSOLUTE_I2C,
+                controller_1_limits);
+        }
 
         // TODO: these should probably be in the controller / encoders themselves
         // Necessary for the timer interrupt to work
@@ -84,46 +110,58 @@ namespace mrover {
 
         auto messageId = std::bit_cast<FDCAN<InBoundMessage>::MessageId>(header.Identifier);
 
-        if (messageId.destination == DEVICE_ID) {
-            controller.receive(message);
+        if (messageId.destination == DEVICE_ID_0) {
+            controller0.receive(message);
+        } else if (messageId.destination == DEVICE_ID_1 && controller1) {
+            controller1->receive(message);
         }
     }
 
     auto update_callback() -> void {
-        controller.update();
+        controller0.update();
+        if (controller1) controller1->update();
     }
 
     auto request_absolute_encoder_data_callback() -> void {
-        controller.request_absolute_encoder_data();
+        controller0.request_absolute_encoder_data();
+        if (controller1) controller1->request_absolute_encoder_data();
     }
 
     auto read_absolute_encoder_data_callback() -> void {
-        controller.read_absolute_encoder_data();
+        controller0.read_absolute_encoder_data();
+        if (controller1) controller1->read_absolute_encoder_data();
     }
 
     auto update_absolute_encoder_callback() -> void {
-        controller.update_absolute_encoder();
+        controller0.update_absolute_encoder();
+        if (controller1) controller1->update_absolute_encoder();
     }
 
-    auto update_quadrature_encoder_callback() -> void {
-        controller.update_quadrature_encoder();
+    auto update_quadrature_encoder_0_callback() -> void {
+        controller0.update_quadrature_encoder();
     }
 
-    auto quadrature_elapsed_timer_expired() -> void {
-        controller.quadrature_elapsed_timer_expired();
+    auto update_quadrature_encoder_1_callback() -> void {
+        if (controller1) controller1->update_quadrature_encoder();
+    }
+
+    auto elapsed_timer_0_expired() -> void {
+        controller0.elapsed_timer_expired();
+    }
+
+    auto elapsed_timer_1_expired() -> void {
+        if (controller1) controller1->elapsed_timer_expired();
     }
 
     auto send_callback() -> void {
-        controller.send();
+        controller0.send();
+        if (controller1) controller1->send();
     }
 
     auto fdcan_watchdog_expired() -> void {
-        controller.receive_watchdog_expired();
+        controller0.receive_watchdog_expired();
+        if (controller1) controller1->receive_watchdog_expired();
     }
-
-    // void calc_velocity() {
-    //     controller.calc_quadrature_velocity();
-    // }
 
 } // namespace mrover
 
@@ -150,8 +188,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim) {
         mrover::send_callback();
     } else if (htim == FDCAN_WATCHDOG_TIMER) {
         mrover::fdcan_watchdog_expired();
-    } else if (htim == QUADRATURE_ELAPSED_TIMER_1) {
-        mrover::quadrature_elapsed_timer_expired();
+    } else if (htim == ENCODER_ELAPSED_TIMER_0) {
+        mrover::elapsed_timer_0_expired();
+    } else if (htim == ENCODER_ELAPSED_TIMER_1) {
+        mrover::elapsed_timer_1_expired();
     } else if (htim == ABSOLUTE_ENCODER_TIMER) {
         mrover::request_absolute_encoder_data_callback();
     }
@@ -159,8 +199,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim) {
 }
 
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef* htim) {
-    if (htim == QUADRATURE_TICK_TIMER_1) {
-        mrover::update_quadrature_encoder_callback();
+    if (htim == QUADRATURE_TICK_TIMER_0) {
+        mrover::update_quadrature_encoder_0_callback();
+    } else if (htim == QUADRATURE_TICK_TIMER_1) {
+        mrover::update_quadrature_encoder_1_callback();
     }
 }
 
@@ -189,6 +231,7 @@ void HAL_I2C_SlaveRxCpltCallback(I2C_HandleTypeDef* hi2c) {}
 void HAL_I2C_SlaveTxCpltCallback(I2C_HandleTypeDef* hi2c) {}
 
 void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef* hi2c) {
+
     mrover::update_absolute_encoder_callback();
 }
 

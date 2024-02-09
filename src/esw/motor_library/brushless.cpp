@@ -18,16 +18,16 @@ namespace mrover {
         mMinPosition = Radians{xmlRpcValueToTypeOrDefault<double>(brushlessMotorData, "min_position", -1.0)};
         mMaxPosition = Radians{xmlRpcValueToTypeOrDefault<double>(brushlessMotorData, "max_position", 1.0)};
 
-        fwdLimitSwitchPresent = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "fwdLimitSwitchPresent", false);
-        bwdLimitSwitchPresent = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "bwdLimitSwitchPresent", false);
-        fwdLimitSwitchEnabled = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "fwdLimitSwitchEnabled", false);
-        bwdLimitSwitchEnabled = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "bwdLimitSwitchEnabled", false);
-        fwdLimitSwitchActiveHigh = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "fwdLimitSwitchActiveHigh", false);
-        bwdLimitSwitchActiveHigh = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "bwdLimitSwitchActiveHigh", false);
-        fwdLimitSwitchUsedForReadjustment = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "fwdLimitSwitchUsedForReadjustment", false);
-        bwdLimitSwitchUsedForReadjustment = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "bwdLimitSwitchUsedForReadjustment", false);
-        fwdLimitSwitchReadjustPosition = Radians{xmlRpcValueToTypeOrDefault<double>(brushlessMotorData, "fwdLimitSwitchReadjustPosition", 0.0)};
-        bwdLimitSwitchReadjustPosition = Radians{xmlRpcValueToTypeOrDefault<double>(brushlessMotorData, "bwdLimitSwitchReadjustPosition", 0.0)};
+        fwdLimitSwitchPresent = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "limit_fwd_present", false);
+        bwdLimitSwitchPresent = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "limit_bwd_present", false);
+        fwdLimitSwitchEnabled = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "limit_fwd_enabled", false);
+        bwdLimitSwitchEnabled = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "limit_bwd_enabled", false);
+        fwdLimitSwitchActiveHigh = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "limit_fwd_is_active_high", false);
+        bwdLimitSwitchActiveHigh = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "limit_bwd_is_active_high", false);
+        fwdLimitSwitchUsedForReadjustment = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "limit_fwd_used_for_readjustment", false);
+        bwdLimitSwitchUsedForReadjustment = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "limit_bwd_used_for_readjustment", false);
+        fwdLimitSwitchReadjustPosition = Radians{xmlRpcValueToTypeOrDefault<double>(brushlessMotorData, "limit_fwd_readjust_position", 0.0)};
+        bwdLimitSwitchReadjustPosition = Radians{xmlRpcValueToTypeOrDefault<double>(brushlessMotorData, "limit_bwd_readjust_position", 0.0)};
 
     }
 
@@ -111,6 +111,13 @@ namespace mrover {
             result.isBwdPressed = gpioState == fwdLimitSwitchActiveHigh;
         }
 
+        if (result.isFwdPressed) {
+            adjust(fwdLimitSwitchReadjustPosition);
+        }
+        else if (result.isBwdPressed) {
+            adjust(bwdLimitSwitchReadjustPosition);
+        }
+
         return result;
     }
 
@@ -129,7 +136,7 @@ namespace mrover {
         assert(msg->source == mControllerName);
         assert(msg->destination == mName);
         auto result = moteus::Query::Parse(msg->data.data(), msg->data.size());
-        ROS_INFO("controller: %s    %3d p/a/v/t=(%7.3f,%7.3f,%7.3f,%7.3f)  v/t/f=(%5.1f,%5.1f,%3d)",
+        ROS_INFO("controller: %s    %3d p/a/v/t=(%7.3f,%7.3f,%7.3f,%7.3f)  v/t/f=(%5.1f,%5.1f,%3d) GPIO: Aux1-%d , Aux2-%d",
                  mControllerName.c_str(),
                  result.mode,
                  result.position,
@@ -138,7 +145,10 @@ namespace mrover {
                  result.torque,
                  result.voltage,
                  result.temperature,
-                 result.fault);
+                 result.fault,
+                 result.aux1_gpio,
+                 result.aux2_gpio
+                 );
 
         mCurrentPosition = mrover::Revolutions{result.position}; // moteus stores position in revolutions.
         mCurrentVelocity = mrover::RevolutionsPerSecond{result.velocity}; // moteus stores position in revolutions.

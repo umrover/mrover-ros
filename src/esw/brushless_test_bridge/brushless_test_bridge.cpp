@@ -22,7 +22,7 @@ int main(int argc, char** argv) {
     // - rosrun mrover can_driver_node _interface:=can0
     // - roslaunch brushless_test.launch
 
-    auto brushlessController = std::make_unique<mrover::BrushlessController>(nh, "jetson", "joint_de_1");
+    auto brushlessController = std::make_unique<mrover::BrushlessController>(nh, "jetson", "devboard");
 
     int count = 0;
     ros::Rate rate{100};
