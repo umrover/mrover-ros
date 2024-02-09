@@ -83,10 +83,10 @@ namespace mrover {
         double mMeasuredEffort{};
         bool fwdLimitSwitchPresent{};
         bool bwdLimitSwitchPresent{};
-        bool fwdLimitSwitchEnabled{};
-        bool bwdLimitSwitchEnabled{};
-        bool fwdLimitSwitchActiveHigh{};
-        bool bwdLimitSwitchActiveHigh{};
+        bool fwdLimitSwitchEnabled{true};
+        bool bwdLimitSwitchEnabled{true};
+        bool fwdLimitSwitchActiveHigh{true};
+        bool bwdLimitSwitchActiveHigh{true};
         bool fwdLimitSwitchUsedForReadjustment{};
         bool bwdLimitSwitchUsedForReadjustment{};
         Radians fwdLimitSwitchReadjustPosition{};
