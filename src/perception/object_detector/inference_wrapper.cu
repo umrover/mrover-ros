@@ -13,11 +13,11 @@ using namespace nvinfer1;
 */
 namespace mrover {
 
-    InferenceWrapper::InferenceWrapper(std::string onnxModelPath) {
-        mInference.reset(new Inference(std::move(onnxModelPath)));
+    InferenceWrapper::InferenceWrapper(std::string onnxModelPath, std::string const& modelName) {
+        mInference.reset(new Inference(std::move(onnxModelPath), modelName));
     }
 
-    auto InferenceWrapper::doDetections(const cv::Mat& img) const -> void {
+    auto InferenceWrapper::doDetections(cv::Mat const& img) const -> void {
         // Execute the forward pass on the inference object
         mInference->doDetections(img);
     }

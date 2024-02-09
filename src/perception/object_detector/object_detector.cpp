@@ -18,9 +18,9 @@ namespace mrover {
         mNh.param<std::string>("model_name", mModelName, "yolov8n_mallet_bottle_better");
 
         std::filesystem::path packagePath = ros::package::getPath("mrover");
-        std::filesystem::path modelPath = packagePath / "data" / mModelName.append(".onnx");
+        std::filesystem::path modelPath = packagePath / "data" / (mModelName + ".onnx");
 
-        mInferenceWrapper = InferenceWrapper{modelPath};
+        mInferenceWrapper = InferenceWrapper{modelPath, mModelName};
 
         mImgSub = mNh.subscribe("/camera/left/points", 1, &ObjectDetectorNodelet::imageCallback, this);
         mDebugImgPub = mNh.advertise<sensor_msgs::Image>("/object_detector/debug_img", 1);

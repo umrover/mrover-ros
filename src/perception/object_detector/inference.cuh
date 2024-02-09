@@ -30,7 +30,7 @@ namespace mrover {
 
         static auto getBindingInputIndex(IExecutionContext const* context) -> int;
 
-        auto createCudaEngine(std::filesystem::path const& onnxModelPath) -> ICudaEngine*;
+        auto createCudaEngine(std::filesystem::path const& onnxModelPath, std::string const& modelName) -> ICudaEngine*;
 
         auto launchInference(cv::Mat const& input, cv::Mat const& output) const -> void;
 
@@ -51,7 +51,7 @@ namespace mrover {
         auto createExecutionContext() -> void;
 
     public:
-        explicit Inference(std::filesystem::path const& onnxModelPath);
+        explicit Inference(std::filesystem::path const& onnxModelPath, std::string const& modelName);
 
         auto doDetections(cv::Mat const& img) const -> void;
 

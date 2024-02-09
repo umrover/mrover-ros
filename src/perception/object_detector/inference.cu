@@ -16,9 +16,9 @@ namespace mrover {
     constexpr static char const* INPUT_BINDING_NAME = "images";
     constexpr static char const* OUTPUT_BINDING_NAME = "output0";
 
-    Inference::Inference(std::filesystem::path const& onnxModelPath) {
+    Inference::Inference(std::filesystem::path const& onnxModelPath, std::string const& modelName) {
         // Create the engine object from either the file or from onnx file
-        mEngine = std::unique_ptr<ICudaEngine>{createCudaEngine(onnxModelPath)};
+        mEngine = std::unique_ptr<ICudaEngine>{createCudaEngine(onnxModelPath, modelName)};
         if (!mEngine) throw std::runtime_error("Failed to create CUDA engine");
 
         mLogger.log(ILogger::Severity::kINFO, "Created CUDA Engine");
@@ -33,7 +33,7 @@ namespace mrover {
         prepTensors();
     }
 
-    auto Inference::createCudaEngine(std::filesystem::path const& onnxModelPath) -> ICudaEngine* {
+    auto Inference::createCudaEngine(std::filesystem::path const& onnxModelPath, std::string const& modelName) -> ICudaEngine* {
 
         mModelPath = onnxModelPath.string();
 
@@ -70,7 +70,8 @@ namespace mrover {
 
         //Define the engine file location relative to the mrover package
         std::filesystem::path packagePath = ros::package::getPath("mrover");
-        std::filesystem::path enginePath = packagePath / "data" / std::string("tensorrt-engine-").append(mModelPath).append(".engine");
+        std::filesystem::path enginePath = packagePath / "data" / std::string("tensorrt-engine-").append(modelName).append(".engine");
+        ROS_INFO_STREAM(enginePath);
 
         //Check if engine file exists
         if (!exists(enginePath)) {
