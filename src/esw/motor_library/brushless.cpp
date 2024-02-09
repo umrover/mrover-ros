@@ -19,16 +19,18 @@ namespace mrover {
         mMinPosition = Radians{xmlRpcValueToTypeOrDefault<double>(brushlessMotorData, "min_position", -1.0)};
         mMaxPosition = Radians{xmlRpcValueToTypeOrDefault<double>(brushlessMotorData, "max_position", 1.0)};
 
-        fwdLimitSwitchPresent = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "limit_fwd_present", false);
-        bwdLimitSwitchPresent = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "limit_bwd_present", false);
-        fwdLimitSwitchEnabled = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "limit_fwd_enabled", false);
-        bwdLimitSwitchEnabled = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "limit_bwd_enabled", false);
-        fwdLimitSwitchActiveHigh = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "limit_fwd_is_active_high", false);
-        bwdLimitSwitchActiveHigh = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "limit_bwd_is_active_high", false);
-        fwdLimitSwitchUsedForReadjustment = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "limit_fwd_used_for_readjustment", false);
-        bwdLimitSwitchUsedForReadjustment = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "limit_bwd_used_for_readjustment", false);
-        fwdLimitSwitchReadjustPosition = Radians{xmlRpcValueToTypeOrDefault<double>(brushlessMotorData, "limit_fwd_readjust_position", 0.0)};
-        bwdLimitSwitchReadjustPosition = Radians{xmlRpcValueToTypeOrDefault<double>(brushlessMotorData, "limit_bwd_readjust_position", 0.0)};
+        limitSwitch0Present = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "limit_0_present", false);
+        limitSwitch1Present = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "limit_1_present", false);
+        limitSwitch0Enabled = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "limit_0_enabled", true);
+        limitSwitch1Enabled = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "limit_1_enabled", true);
+        limitSwitch0LimitsFwd = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "limit_0_limits_fwd", false);
+        limitSwitch1LimitsFwd = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "limit_1_limits_fwd", false);
+        limitSwitch0ActiveHigh = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "limit_0_is_active_high", true);
+        limitSwitch1ActiveHigh = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "limit_1_is_active_high", true);
+        limitSwitch0UsedForReadjustment = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "limit_0_used_for_readjustment", false);
+        limitSwitch1UsedForReadjustment = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "limit_1_used_for_readjustment", false);
+        limitSwitch0ReadjustPosition = Radians{xmlRpcValueToTypeOrDefault<double>(brushlessMotorData, "limit_0_readjust_position", 0.0)};
+        limitSwitch1ReadjustPosition = Radians{xmlRpcValueToTypeOrDefault<double>(brushlessMotorData, "limit_1_readjust_position", 0.0)};
 
     }
 
@@ -114,25 +116,29 @@ namespace mrover {
         // TODO - implement this
         MoteusLimitSwitchInfo result;
     
+
         result.isFwdPressed = false;
         result.isBwdPressed = false;
 
-        if (fwdLimitSwitchPresent && fwdLimitSwitchEnabled) {
+        if (limitSwitch0Present && limitSwitch0Enabled) {
             // TODO
             bool gpioState = false;
-            result.isFwdPressed = gpioState == fwdLimitSwitchActiveHigh;
+            mLimitHit.at(0) = gpioState == limitSwitch0ActiveHigh;
         }
-        if (bwdLimitSwitchPresent && bwdLimitSwitchEnabled) {
+        if (limitSwitch1Present && limitSwitch1Enabled) {
             // TODO 
             bool gpioState = false;
-            result.isBwdPressed = gpioState == fwdLimitSwitchActiveHigh;
+            mLimitHit.at(1) = gpioState == limitSwitch1ActiveHigh;
         }
 
+        result.isFwdPressed = (mLimitHit.at(0) && limitSwitch0LimitsFwd) || (mLimitHit.at(1) && limitSwitch1LimitsFwd);
+        result.isBwdPressed = (mLimitHit.at(0) && !limitSwitch0LimitsFwd) || (mLimitHit.at(1) && !limitSwitch1LimitsFwd);
+
         if (result.isFwdPressed) {
-            adjust(fwdLimitSwitchReadjustPosition);
+            adjust(limitSwitch0ReadjustPosition);
         }
         else if (result.isBwdPressed) {
-            adjust(bwdLimitSwitchReadjustPosition);
+            adjust(limitSwitch1ReadjustPosition);
         }
 
         return result;
