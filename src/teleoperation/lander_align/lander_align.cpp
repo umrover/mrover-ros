@@ -1,9 +1,13 @@
 #include "lander_align.hpp"
 #include "pch.hpp"
 #include <Eigen/src/Core/Matrix.h>
+#include <algorithm>
+#include <cmath>
+#include <complex>
 #include <cstddef>
 #include <geometry_msgs/Vector3.h>
 #include <lie/se3.hpp>
+#include <math.h>
 #include <optional>
 #include <random>
 #include <ros/subscriber.h>
@@ -179,5 +183,19 @@ namespace mrover {
             angular_error = angle_to_rotate(rover_dir, target_dir);
         }
     }
+
+    // auto angleToRotate(Eigen::Vector2f v1, Eigen::Vector2f v2) -> float {
+    //     v1.normalize();
+    //     v2.normalize();
+
+    //     float smallestAngle = std::clamp(acosf(v1.dot(v2)), -1.0f, 1.0f);
+    //     float perpendicularAlignment = v2(0) * -v1(1) + v2(1) * v1(0);
+
+    //     int sign = std::signbit(perpendicularAlignment);
+
+    //     sign = (sign == 1) ? -1 : 1;
+
+    //     return smallestAngle * (float) sign;
+    // }
 
 } // namespace mrover
