@@ -21,24 +21,25 @@ extern I2C_HandleTypeDef hi2c1;
  * You must also set auto reload to true so the interurpt gets called on a cycle.
  */
 
+extern TIM_HandleTypeDef htim1;
 extern TIM_HandleTypeDef htim2;
-extern TIM_HandleTypeDef htim4;
 extern TIM_HandleTypeDef htim3;
+extern TIM_HandleTypeDef htim4;
 extern TIM_HandleTypeDef htim6;
 extern TIM_HandleTypeDef htim7;
 extern TIM_HandleTypeDef htim15;
 extern TIM_HandleTypeDef htim16;
 extern TIM_HandleTypeDef htim17;
 
-#define QUADRATURE_TICK_TIMER_0 &htim3 // Special encoder timer which externally reads quadrature encoder ticks
-#define QUADRATURE_TICK_TIMER_1 &htim4 // TODO update me!
-#define ENCODER_ELAPSED_TIMER_0 &htim17 // Measures time since the last tick reading
-#define ENCODER_ELAPSED_TIMER_1 &htim17 // TODO update me!
-#define ABSOLUTE_ENCODER_TIMER &htim2   // Defines rate in which we send I2C request to absolute encoder
-#define SEND_TIMER &htim7            // 100 Hz FDCAN repeating timer
-#define PWM_TIMER_0 &htim15          // H-Bridge PWM
-#define PWM_TIMER_1 &htim15          // TODO update me!
-#define FDCAN_WATCHDOG_TIMER &htim16 // FDCAN watchdog timer that needs to be reset every time a message is received
+#define QUADRATURE_TICK_TIMER_0 &htim3   // Special encoder timer which externally reads quadrature encoder ticks
+#define QUADRATURE_TICK_TIMER_1 &htim4   // TODO test that this timer works for encoder pos
+#define ENCODER_ELAPSED_TIMER_0 &htim17  // Measures time since the last tick reading
+#define ENCODER_ELAPSED_TIMER_1 &htim6   // TODO test that this timer works for encoder vel
+#define ABSOLUTE_ENCODER_TIMER &htim2    // Defines rate in which we send I2C request to absolute encoder
+#define SEND_TIMER &htim7                // 100 Hz FDCAN repeating timer
+#define PWM_TIMER_0 &htim15              // H-Bridge PWM
+#define PWM_TIMER_1 &htim1               // TODO test that this timer works for pwm output
+#define FDCAN_WATCHDOG_TIMER &htim16     // FDCAN watchdog timer that needs to be reset every time a message is received
 
 namespace mrover {
 
@@ -97,7 +98,6 @@ namespace mrover {
 
         // TODO: these should probably be in the controller / encoders themselves
         // Necessary for the timer interrupt to work
-        // check(HAL_TIM_Base_Start_IT(UPDATE_TIMER) == HAL_OK, Error_Handler);
         check(HAL_TIM_Base_Start_IT(SEND_TIMER) == HAL_OK, Error_Handler);
         check(HAL_TIM_Base_Start_IT(ABSOLUTE_ENCODER_TIMER) == HAL_OK, Error_Handler);
     }
