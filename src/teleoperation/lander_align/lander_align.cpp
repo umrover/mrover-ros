@@ -13,6 +13,8 @@
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
 
+#include <~/mrover/src/esw/fw/bdcmc/Core/Inc/pidf.hpp>
+
 
 namespace mrover {
 
@@ -154,6 +156,19 @@ namespace mrover {
         return bestPlane;
     }
 
+    auto angle_to_rotate(Eigen::Vector3f current, Eigen::Vector3f target) {
+        current[2] = 0;
+        target[2] = 0;
+        Eigen::Vector3f u1 = current.normalized();
+        Eigen::Vector3f u2 = target.normalized();
+        float theta = acos(u1.dot(u2));
+        float perp_alignment = u2[0] * -u1[1] + u2[1] * u1[0];
+        if (perp_alignment > 0) {
+            return theta;
+        }
+        return -theta;
+    }
+
     void LanderAlignNodelet::sendTwist(Eigen::Vector3f const& mBestCenter, Eigen::Vector3f const& offset) {
         tf2_ros::Buffer mTfBuffer;
         tf2_ros::TransformListener mTfListener{mTfBuffer};
@@ -164,19 +179,31 @@ namespace mrover {
 
         Eigen::Vector3f target_pos = mBestCenter - offset;
         Eigen::Vector3f rover_pos = rover.position();
-        Eigen::Vector3f target_dir = target_pos - rover_pos;
+        Eigen::Vector3f direction_vec = target_pos - rover_pos;
         Eigen::Vector3f rover_dir = rover.rotation().matrix().col(0);
 
-        auto linear_error = abs(target_dir.norm());
-        auto angular_error = angle_to_rotate(rover_dir, target_dir);
+        direction_vec[2] = 0;
+        rover_dir[2] = 0;
+
+        auto linear_error = abs(direction_vec.norm());
+        auto angular_error = angle_to_rotate(rover_dir, direction_vec);
+
+        PIDF<float, float> position_PID; // also need some time unit, set deadband and errors and stuff
+        PIDF<float, float> angle_PID;
+
 
         while (linear_error > linear_thresh && angular_error > angular_thresh) {
             rover_pos = rover.position();
-            target_dir = target_pos - rover_pos;
+            direction_vec = target_pos - rover_pos;
             rover_dir = rover.rotation().matrix().col(0);
+
             //Drive Command
-            linear_error = abs(target_dir.norm());
-            angular_error = angle_to_rotate(rover_dir, target_dir);
+            linear_error = abs(direction_vec.norm());
+            angular_error = angle_to_rotate(rover_dir, direction_vec);
+
+            // PID
+            float angle_command = position_PID.calculate(linear_error, 0);
+            float linear_command = angle_PID.calculate(angular_error, 0);
         }
     }
 
