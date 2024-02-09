@@ -70,6 +70,7 @@ namespace mrover {
         // TODO: use RANSAC to find the lander face, should be the closest, we may need to modify this to output more information, currently the output is the normal
         // takes 3 samples for every epoch and terminates after specified number of epochs
         Eigen::Vector3f bestPlane(0, 0, 0); // normal vector representing plane (initialize as zero vector?? default ctor??)
+        // Eigen::Vector3f currentCenter(0, 0, 0); // Keeps track of current center of plane in current epoch
         float offset;
 
         // define randomizer
@@ -81,6 +82,7 @@ namespace mrover {
         }
         while (bestPlane.isZero()) { // TODO add give up condition after X iter
             for (int i = 0; i < epochs; ++i) {
+                // currentCenter *= 0; // Set all vals in current center to zero at the start of each epoch
                 // sample 3 random points (potential inliers)
                 Point const* point1 = points[distribution(generator)];
                 Point const* point2 = points[distribution(generator)];
@@ -101,6 +103,10 @@ namespace mrover {
                     float distance = std::abs(normal.x() * p->x + normal.y() * p->y + normal.z() * p->z + offset);
 
                     if (distance < distanceThreshold) {
+                        // Add points to current planes center
+                        // currentCenter(0) += p->x;
+                        // currentCenter(1) += p->y;
+                        // currentCenter(2) += p->z;
                         ++numInliers; // count num of inliers that pass the "good enough fit" threshold
                     }
                 }
@@ -109,11 +115,14 @@ namespace mrover {
                 if (numInliers > minInliers) {
                     minInliers = numInliers;
                     bestPlane = normal.normalized();
+
+                    // If this is the new best plane, set mBestCenter
+                    // mBestCenter = currentCenter / static_cast<float>(minInliers);
                 }
             }
         }
 
-        // Run through one more loop to identify the center of the plane
+        // Run through one more loop to identify the center of the plane (one possibility for determining best center)
         int numInliers = 0;
         for (auto p: points) {
             // calculate distance of each point from potential plane
