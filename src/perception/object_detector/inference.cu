@@ -1,4 +1,5 @@
 #include "inference.cuh"
+#include <cassert>
 
 using namespace nvinfer1;
 
@@ -155,6 +156,7 @@ namespace mrover {
             std::size_t const size = std::reduce(extents, extents + rank, sizeof(float), std::multiplies<>());
             // Create GPU memory for TensorRT to operate on
             cudaMalloc(mBindings.data() + i, size);
+            assert(mBindings.data() + i);
         }
 
         assert(mContext);
