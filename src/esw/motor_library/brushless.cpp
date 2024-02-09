@@ -101,11 +101,15 @@ namespace mrover {
         - Configured moteus to have all pins set as digital_input and pull_up
         - When limit switch not pressed, aux2 = 0xD
         - When limit switch pressed, aux1 = 0xF
+        - Note: has to be active high, so in this scenario we have to flip this bit round.
         - This was connected to just one moteus board, not the one with a motor on it.
 
         Stuff for Limit Switches (from Guthrie)
         - Read from config about limit switch settings
         - Either 1 or 0 not forward/backward
+
+        - Add a member variable in Brushless.hpp to store limit switch value. Update this limit
+          switch variable every round in ProcessCANMessage.
         */
         // TODO - implement this
         MoteusLimitSwitchInfo result;
