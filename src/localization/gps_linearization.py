@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 from typing import Optional, Tuple
-
 import numpy as np
 import rospy
 from geometry_msgs.msg import PoseWithCovarianceStamped, PoseWithCovariance, Pose, Point, Quaternion
@@ -12,7 +11,8 @@ from util.SE3 import SE3
 from util.SO3 import SO3
 from util.np_utils import numpify
 import message_filters
-from rtkStatus.msg import rtkStatus
+from mrover.msg import rtkStatus
+from tf.transformations import *
 
 
 
@@ -24,14 +24,16 @@ class GPSLinearization:
     orientation into a pose estimate for the rover and publishes it.
     """
 
-    last_gps_msg: Optional[NavSatFix]
-    last_imu_msg: Optional[ImuAndMag]
+    last_gps_pose: Optional[np.ndarray]
+    last_gps_pose_fixed: Optional[np.ndarray]
     pose_publisher: rospy.Publisher
+
+    # itme
+    # last_gps_pose_fixed_time = rostime
 
     # offset
     rtk_offset: Optional[np.ndarray]
     calculate_offset: bool
-    last_gps_pose: Optional[np.ndarray]
 
     # reference coordinates
     ref_lat: float
@@ -54,21 +56,26 @@ class GPSLinearization:
         self.ref_alt = rospy.get_param("gps_linearization/reference_point_altitude")
         self.world_frame = rospy.get_param("world_frame")
         self.use_dop_covariance = rospy.get_param("global_ekf/use_gps_dop_covariance")
-        calculate_offset = False
 
         # config gps and imu convariance matrices
         self.config_gps_covariance = np.array(rospy.get_param("global_ekf/gps_covariance", None))
         self.config_imu_covariance = np.array(rospy.get_param("global_ekf/imu_orientation_covariance", None))
 
-        self.last_gps_msg = None
-        self.last_imu_msg = None
-        self.rtk_offset = None
+        # track last gps pose and last imu message
+        self.last_gps_pose = None
+        self.last_gps_pose_fixed = None
 
+        # rtk offset
+        self.rtk_offset = None
+        self.calculate_offset = False
+
+        # subscribe to topics
         right_gps_sub = message_filters.Subscriber("right_gps_driver/fix", NavSatFix)
         left_gps_sub = message_filters.Subscriber("left_gps_driver/fix", NavSatFix)
         left_rtk_fix_sub = message_filters.Subscriber("left_gps_driver/rtk_fix_status", rtkStatus)
         right_rtk_fix_sub = message_filters.Subscrier("right_gps_driver/rtk_fix_status", rtkStatus)
 
+        # sync subscribers
         sync_gps_sub = message_filters.ApproximateTimeSynchronizer([right_gps_sub, left_gps_sub, left_rtk_fix_sub, right_rtk_fix_sub], 10, 0.5)
         sync_gps_sub.registerCallback(self.gps_callback)
         
@@ -98,18 +105,18 @@ class GPSLinearization:
         )
 
         pose = GPSLinearization.compute_gps_pose(right_cartesian=right_cartesian, left_cartesian=left_cartesian)
-        last_gps_pose = pose
+        self.last_gps_pose = pose
 
         # if the fix status of both gps is 2 (fixed), update the offset with the next imu messsage
-        if (right_rtk_fix.RTK_FIX_TYPE == RTK_FIX and left_rtk_fix.RTK_FIX_TYPE == 2):
-            calculate_offset = True
+        if (right_rtk_fix.RTK_FIX_TYPE == 2 and left_rtk_fix.RTK_FIX_TYPE == 2):
+            self.calculate_offset = True
+            self.last_gps_pose_fixed = pose
             
-
         covariance_matrix = np.zeros((6, 6))
         covariance_matrix[:3, :3] = self.config_gps_covariance.reshape(3, 3)
         covariance_matrix[3:, 3:] = self.config_imu_covariance.reshape(3, 3)
         
-        # TODO: publish to ekf
+        # publish to ekf
         pose_msg = PoseWithCovarianceStamped(
             header=Header(stamp=rospy.Time.now(), frame_id=self.world_frame),
             pose=PoseWithCovariance(
@@ -120,6 +127,7 @@ class GPSLinearization:
                 covariance=covariance_matrix.flatten().tolist(),
             ),
         )
+
         # publish pose (rtk)
         self.pose_publisher.publish(pose_msg)
 
@@ -129,41 +137,46 @@ class GPSLinearization:
 
         :param msg: The Imu message containing IMU data that was just received
         """
-
-        if calculate_offset:
-            # calc offset from imu heading and last_gps_pose, store the offset
-            # how can we make sure these 2 headings are comparable??
-            calculate_offset = False
         
+        # how can we make sure these 2 headings are comparable??
+        if self.calculate_offset:
+            imu_heading = euler_from_quaternion(msg.imu.orientation)[2]
+            imu_heading_matrix = euler_matrix(0, 0, imu_heading, axes="sxyz")
+
+            gps_heading = euler_from_quaternion(Quaternion(*self.last_gps_pose_fixed.rotation.quaternion))[2]
+            gps_heading_matrix = euler_matrix(0, 0, gps_heading, axes="sxyz")
+
+            self.rtk_offset = np.malmul(inverse_matrix(gps_heading_matrix), imu_heading_matrix)
+            self.calculate_offset = False
+        
+        # if rtk_offset is set, apply offset
         if self.rtk_offset is not None:
-            # apply offset correction
+            imu_rotation_matrix = euler_from_quaternion(msg.imu.orientation)
+            offsetted_rotation_matrix = np.matmul(imu_rotation_matrix, self.rtk_offset)
+            offsetted_euler = euler_from_matrix(offsetted_rotation_matrix)
+            msg.imu.quaternion = quaternion_from_euler(offsetted_euler[0], offsetted_euler[1], offsetted_euler[2], axes="sxyz")
+            
 
-        self.last_imu_msg = msg
+        # imu quaternion
+        imu_quat = numpify(msg.imu.orientation)
+        imu_quat = imu_quat / np.linalg.norm(imu_quat)
 
-        # publish pose (corrected, imu)
-        self.publish_pose()
-
-
-
-    def publish_pose(self):
-        """
-        Publishes the linearized pose of the rover relative to the map frame,
-        as a PoseWithCovarianceStamped message.
-        """
-        ref_coord = np.array([self.ref_lat, self.ref_lon, self.ref_alt])
-        # use last_gps_pose instead of last_gps_msg
-        linearized_pose, covariance = self.get_linearized_pose_in_world(self.last_gps_msg, self.last_imu_msg, ref_coord)
+        covariance_matrix = np.zeros((6, 6))
+        covariance_matrix[:3, :3] = self.config_gps_covariance.reshape(3, 3)
+        covariance_matrix[3:, 3:] = self.config_imu_covariance.reshape(3, 3)
 
         pose_msg = PoseWithCovarianceStamped(
             header=Header(stamp=rospy.Time.now(), frame_id=self.world_frame),
             pose=PoseWithCovariance(
                 pose=Pose(
-                    position=Point(*linearized_pose.position),
-                    orientation=Quaternion(*linearized_pose.rotation.quaternion),
+                    position=Point(*self.last_gps_pose.position),
+                    orientation=Quaternion(*imu_quat),
                 ),
-                covariance=covariance.flatten().tolist(),
+                covariance=covariance_matrix.flatten().tolist(),
             ),
         )
+
+        # publish pose (imu with correction)
         self.pose_publisher.publish(pose_msg)
 
     @staticmethod
