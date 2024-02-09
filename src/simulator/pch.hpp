@@ -66,12 +66,14 @@
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
 
+#include <bimap.hpp>
 #include <loop_profiler.hpp>
 #include <params_utils.hpp>
 #include <point.hpp>
 #include <se3.hpp>
 #include <units.hpp>
 
+#include <mrover/ControllerState.h>
 #include <mrover/IK.h>
 #include <mrover/ImuAndMag.h>
 #include <mrover/MotorsStatus.h>

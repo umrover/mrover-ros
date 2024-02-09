@@ -61,6 +61,20 @@ namespace mrover {
         });
     }
 
+    auto SimulatorNodelet::mastPositionsCallback(Position::ConstPtr const& message) -> void {
+        assert(message->names == std::vector<std::string>{"mast_joint"});
+        assert(message->positions.size() == 1);
+        if (auto it = mUrdfs.find("rover"); it != mUrdfs.end()) {
+            URDF const& rover = it->second;
+
+            btMultibodyLink& link = rover.physics->getLink(rover.linkNameToMeta.at("zed_mini_camera").index);
+            auto* motor = std::bit_cast<btMultiBodyJointMotor*>(link.m_userPtr);
+            assert(motor);
+            motor->setMaxAppliedImpulse(0.5);
+            motor->setPositionTarget(message->positions.front(), 0.05);
+        }
+    }
+
     auto SimulatorNodelet::centerCursor() -> void {
         Eigen::Vector2i size;
         glfwGetWindowSize(mWindow.get(), &size.x(), &size.y());

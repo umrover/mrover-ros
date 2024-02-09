@@ -70,7 +70,7 @@ def main():
     and adds necessary metadata used for filtering.
     """
     orientation_covariance, gyro_covariance, accel_covariance, mag_pose_covariance = get_covariances()
-    world_frame = rospy.get_param("world_frame")
+    world_frame = rospy.get_param("global_ekf/world_frame")
 
     # publishers for all types of IMU data, queue size is 1 to make sure we don't publish old data
     imu_pub = rospy.Publisher("imu/data", ImuAndMag, queue_size=1)
@@ -88,14 +88,20 @@ def main():
 
     # create serial connection with Arduino
     ser = serial.Serial(port, baud)
+    if ser.is_open:
+        print("Serial connection successfully opened.")
+    else:
+        print("Failed to open serial connection.")
     attempts = 0
 
     while not rospy.is_shutdown():
         # try to read a line from the serial connection,
         # if this fails 100 times in a row then end the program
-        try:
+        try: 
             line = ser.readline()
             attempts = 0
+            
+            
         except SerialException:
             attempts += 1
             if attempts > 100:
@@ -112,18 +118,19 @@ def main():
 
         # partition data into different sensors, converting calibration data from float to int
         # if the indices of data don't exist, then skip this message
+        
         try:
             imu_orientation_data = data[:4]
             accel_data = data[4:7]
             gyro_data = data[7:10]
             mag_data = data[10:13]
             temp_data = data[13]
-            cal_data = [int(n) for n in data[14:18]]
+            cal_data = int(data[14])
 
         except IndexError:
             rospy.logerr("incomplete msg")
             continue
-
+        
         # rotate the imu orientation by 90 degrees about the Z axis to convert it to ENU frame
         enu_offset_quat = quaternion_about_axis(np.pi / 2, [0, 0, 1])
         enu_imu_orientation = quaternion_multiply(enu_offset_quat, imu_orientation_data)
@@ -156,7 +163,7 @@ def main():
 
         temp_msg = Temperature(header=header, temperature=temp_data)
 
-        calibration_msg = CalibrationStatus(header, *cal_data)
+        calibration_msg = CalibrationStatus(header, cal_data)
 
         # publish each message
         imu_pub.publish(imu_msg)

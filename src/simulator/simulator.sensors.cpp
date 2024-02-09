@@ -10,7 +10,7 @@ namespace mrover {
         camera.sceneUniforms.value.lightColor = {1, 1, 1, 1};
         camera.sceneUniforms.value.lightInWorld = {0, 0, 5, 1};
         float aspect = static_cast<float>(camera.resolution.x()) / static_cast<float>(camera.resolution.y());
-        camera.sceneUniforms.value.cameraToClip = computeCameraToClip(mFovDegrees * DEG_TO_RAD, aspect, NEAR, FAR).cast<float>();
+        camera.sceneUniforms.value.cameraToClip = computeCameraToClip(camera.fov * DEG_TO_RAD, aspect, NEAR, FAR).cast<float>();
         SE3 cameraInWorld = btTransformToSe3(camera.link->m_cachedWorldTransform);
         camera.sceneUniforms.value.worldToCamera = cameraInWorld.matrix().inverse().cast<float>();
         camera.sceneUniforms.value.cameraInWorld = cameraInWorld.position().cast<float>().homogeneous();
@@ -56,7 +56,7 @@ namespace mrover {
                 wgpu::BufferDescriptor descriptor;
                 descriptor.usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::MapRead;
                 descriptor.size = pointCloudBufferSize;
-                stereoCamera.base.stagingBuffer = mDevice.createBuffer(descriptor);
+                stereoCamera.pointCloudStagingBuffer = mDevice.createBuffer(descriptor);
             }
         }
 
@@ -84,7 +84,7 @@ namespace mrover {
 
         computePass.end();
 
-        encoder.copyBufferToBuffer(stereoCamera.pointCloudBuffer, 0, stereoCamera.base.stagingBuffer, 0, stereoCamera.pointCloudBuffer.getSize());
+        encoder.copyBufferToBuffer(stereoCamera.pointCloudBuffer, 0, stereoCamera.pointCloudStagingBuffer, 0, stereoCamera.pointCloudBuffer.getSize());
 
         bindGroup.release();
         computePass.release();
@@ -186,26 +186,73 @@ namespace mrover {
     auto SimulatorNodelet::motorStatusUpdate() -> void {
         if (auto lookup = getUrdf("rover"); lookup) {
             URDF const& rover = *lookup;
-            sensor_msgs::JointState jointState;
-            MotorsStatus status;
-            jointState.header.stamp = ros::Time::now();
-            jointState.header.frame_id = "map";
-            for (auto& position: {"front", "center", "back"}) {
-                for (auto& side: {"left", "right"}) {
-                    std::string linkName = std::format("{}_{}_wheel_link", position, side);
+
+            {
+                MotorsStatus status;
+                status.joint_states.header.stamp = ros::Time::now();
+                status.joint_states.header.frame_id = "map";
+                ControllerState driveControllerState;
+                for (auto& position: {"front", "center", "back"}) {
+                    for (auto& side: {"left", "right"}) {
+                        std::string linkName = std::format("{}_{}_wheel_link", position, side);
+                        int index = rover.linkNameToMeta.at(linkName).index;
+                        double pos = rover.physics->getJointPos(index);
+                        double vel = rover.physics->getJointVel(index);
+                        double torque = rover.physics->getJointTorque(index);
+
+                        status.name.push_back(linkName);
+                        status.joint_states.name.push_back(linkName);
+                        status.joint_states.position.push_back(pos);
+                        status.joint_states.velocity.push_back(vel);
+                        status.joint_states.effort.push_back(torque);
+
+                        status.moteus_states.name.push_back(linkName);
+                        status.moteus_states.state.emplace_back("Armed");
+                        status.moteus_states.error.emplace_back("None");
+
+                        driveControllerState.name.push_back(linkName);
+                        driveControllerState.state.emplace_back("Armed");
+                        driveControllerState.error.emplace_back("None");
+                        driveControllerState.limit_hit.push_back(0b000);
+                    }
+                }
+                mMotorStatusPub.publish(status);
+                mDriveControllerStatePub.publish(driveControllerState);
+            }
+            {
+                MotorsStatus status;
+                for (auto& linkName : {"zed_mini_camera"}) {
                     int index = rover.linkNameToMeta.at(linkName).index;
                     double pos = rover.physics->getJointPos(index);
                     double vel = rover.physics->getJointVel(index);
                     double torque = rover.physics->getJointTorque(index);
-                    status.name.push_back(linkName);
-                    jointState.name.push_back(linkName);
-                    jointState.position.push_back(pos);
-                    jointState.velocity.push_back(vel);
-                    jointState.effort.push_back(torque);
+
+                    status.name.emplace_back(linkName);
+                    status.joint_states.name.emplace_back(linkName);
+                    status.joint_states.position.push_back(pos);
+                    status.joint_states.velocity.push_back(vel);
+                    status.joint_states.effort.push_back(torque);
                 }
+                mMastStatusPub.publish(status);
             }
-            status.joint_states = jointState;
-            mMotorStatusPub.publish(status);
+            {
+                ControllerState armControllerState;
+                for (auto& linkName: {"arm_a_link", "arm_b_link", "arm_c_link", "arm_d_link", "arm_e_link"}) {
+                    armControllerState.name.emplace_back(armMsgToUrdf.backward(linkName).value());
+                    armControllerState.state.emplace_back("Armed");
+                    armControllerState.error.emplace_back("None");
+
+                    std::uint8_t limitSwitches = 0b000;
+                    if (auto limits = rover.model.getLink(linkName)->parent_joint->limits) {
+                        double joinPosition = rover.physics->getJointPos(rover.linkNameToMeta.at(linkName).index);
+                        constexpr double OFFSET = 0.05;
+                        if (joinPosition < limits->lower + OFFSET) limitSwitches |= 0b001;
+                        if (joinPosition > limits->upper - OFFSET) limitSwitches |= 0b010;
+                    }
+                    armControllerState.limit_hit.push_back(limitSwitches);
+                }
+                mArmControllerStatePub.publish(armControllerState);
+            }
         }
     }
 
