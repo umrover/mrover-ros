@@ -89,18 +89,6 @@ brushless_motors:
     front_left:
       min_velocity: -70.0
       max_velocity: 70.0
-      limit_0_present: true
-      limit_1_present: true
-      limit_0_enabled: true
-      limit_1_enabled: true
-      limit_0_limits_fwd: true
-      limit_1_limits_fwd: false
-      limit_0_is_active_high: true
-      limit_1_is_active_high: true
-      limit_0_used_for_readjustment: true
-      limit_1_used_for_readjustment: true
-      limit_0_readjust_position: 1.0 # meters
-      limit_1_readjust_position: 0.0 # meters
     front_right:
       min_velocity: -70.0
       max_velocity: 70.0
@@ -119,6 +107,24 @@ brushless_motors:
     joint_a:
       min_velocity: -70.0
       max_velocity: 70.0
+      is_linear: true
+      rad_to_meters_ratio: #TODO 5.0 = 5 motor radians -> 1 meter
+      limit_0_present: true
+      limit_1_present: true
+      limit_0_enabled: true
+      limit_1_enabled: true
+      limit_0_limits_fwd: true
+      limit_1_limits_fwd: false
+      limit_0_is_active_high: true
+      limit_1_is_active_high: true
+      limit_0_used_for_readjustment: true
+      limit_1_used_for_readjustment: true
+      limit_0_readjust_position: 1.0 # radians TODO
+      limit_1_readjust_position: 0.0 # raidans
+      limit_max_forward_pos: true
+      limit_max_backward_pos: true
+      max_forward_pos: 1.0
+      max_backward_pos: 0.0
     joint_c:
       min_velocity: -70.0
       max_velocity: 70.0
@@ -131,6 +137,8 @@ brushless_motors:
     sa_z:
       min_velocity: -1.0
       max_velocity: 1.0
+      is_linear: true
+      rad_to_meters_ratio: #TODO
       limit_0_present: true
       limit_1_present: true
       limit_0_enabled: true
@@ -141,8 +149,8 @@ brushless_motors:
       limit_1_is_active_high: true
       limit_0_used_for_readjustment: true
       limit_1_used_for_readjustment: true
-      limit_0_readjust_position: 1.0 # radians
-      limit_1_readjust_position: 0.0 # radians
+      limit_0_readjust_position: 1.0 # radians TODO
+      limit_1_readjust_position: 0.0 # radians TODO
 
 joint_de:
   pitch_offset: 0.0
@@ -228,6 +236,7 @@ brushed_motors:
       quad_ratio: 1.0 # encoder ratio compared to motor
       driver_voltage: 12.0 # used to calculate max pwm
       motor_max_voltage: 12.0 # used to calculate max pwm
+      calibration_throttle: 0.5  # throttle during calibration
     gripper:
       gear_ratio: 47.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
       quad_present: false
@@ -237,6 +246,7 @@ brushed_motors:
       quad_ratio: 1.0 # encoder ratio compared to motor
       driver_voltage: 12.0 # used to calculate max pwm
       motor_max_voltage: 12.0 # used to calculate max pwm
+      calibration_throttle: 0.5  # throttle during calibration
     mast_gimbal_x:
       gear_ratio: 1000.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
       limit_0_present: true
@@ -256,12 +266,15 @@ brushed_motors:
       quad_ratio: 1.0 # encoder ratio compared to motor
       driver_voltage: 12.0 # used to calculate max pwm
       motor_max_voltage: 12.0 # used to calculate max pwm
+      calibration_throttle: 0.5  # throttle during calibration
     mast_gimbal_y:
       gear_ratio: 1000.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
       driver_voltage: 12.0 # used to calculate max pwm
       motor_max_voltage: 12.0 # used to calculate max pwm
     sa_x:
       gear_ratio: 75.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
+      is_linear: true
+      rad_to_meters_ratio: #TODO 5.0 = 5 motor radians -> 1 meter
       limit_0_present: true
       limit_1_present: true
       limit_2_present: true
@@ -286,8 +299,11 @@ brushed_motors:
       motor_max_voltage: 6.0 # used to calculate max pwm
       min_velocity: -1.0
       max_velocity: 1.0
+      calibration_throttle: 0.5  # throttle during calibration
     sa_y:
       gear_ratio: 75.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
+      is_linear: true
+      rad_to_meters_ratio: #TODO 5.0 = 5 motor radians -> 1 meter
       limit_0_present: true
       limit_1_present: true
       limit_0_enabled: true
@@ -307,8 +323,11 @@ brushed_motors:
       motor_max_voltage: 6.0 # used to calculate max pwm
       min_velocity: -1.0
       max_velocity: 1.0
-    scoop:
+      calibration_throttle: 0.5  # throttle during calibration
+    sampler:
       gear_ratio: 75.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
+      is_linear: true
+      rad_to_meters_ratio: #TODO 5.0 = 5 motor radians -> 1 meter
       limit_0_present: true
       limit_1_present: true
       limit_0_enabled: true
@@ -326,6 +345,7 @@ brushed_motors:
       quad_ratio: 48.0 # encoder ratio compared to motor
       driver_voltage: 12.0 # used to calculate max pwm
       motor_max_voltage: 6.0 # used to calculate max pwm
+      calibration_throttle: 0.5  # throttle during calibration
     sensor_actuator:
       gear_ratio: 1.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
       limit_0_present: true

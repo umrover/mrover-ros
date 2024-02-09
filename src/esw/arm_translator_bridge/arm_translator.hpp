@@ -11,6 +11,7 @@
 #include "joint_de_translation.hpp"
 #include "matrix_helper.hpp"
 #include "read_from_ros_param.hpp"
+#include <linear_joint_translation.hpp>
 #include <mrover/AdjustMotor.h>
 #include <mrover/ControllerState.h>
 #include <mrover/Position.h>
@@ -37,6 +38,8 @@ namespace mrover {
 
         void processPositionCmd(Position::ConstPtr const& msg);
 
+        void processThrottleCmd(Throttle::ConstPtr const& msg);
+
         void processArmHWJointData(sensor_msgs::JointState::ConstPtr const& msg);
 
         bool adjustServiceCallback(AdjustMotor::Request& req, AdjustMotor::Response& res);
@@ -44,8 +47,7 @@ namespace mrover {
         
 
     private:
-        void processThrottleCmd(Throttle::ConstPtr const& msg);
-
+    
         static void clampValues(float& val1, float& val2, float minValue1, float maxValue1, float minValue2, float maxValue2);
         static void mapValue(float& val, float inputMinValue, float inputMaxValue, float outputMinValue, float outputMaxValue);
 
@@ -64,6 +66,7 @@ namespace mrover {
         const size_t mJointDE0Index = std::find(mArmHWNames.begin(), mArmHWNames.end(), "joint_de_0") - mArmHWNames.begin();
         const size_t mJointDE1Index = std::find(mArmHWNames.begin(), mArmHWNames.end(), "joint_de_1") - mArmHWNames.begin();
 
+        const size_t mJointAIndex = std::find(mArmHWNames.begin(), mArmHWNames.end(), "joint_a") - mArmHWNames.begin();
         std::optional<Radians> mJointDE0PosOffset = Radians{0};
         std::optional<Radians> mJointDE1PosOffset = Radians{0};
 
@@ -79,6 +82,8 @@ namespace mrover {
         RadiansPerSecond mMinRadPerSecDE1{};
         RadiansPerSecond mMaxRadPerSecDE0{};
         RadiansPerSecond mMaxRadPerSecDE1{};
+
+        RadiansPerMeter mJointALinMult{}; // TODO: need to be rev/meter for velocity....
 
         ros::Subscriber mJointDEPitchPosSub;
         ros::Subscriber mJointDERollPosSub;

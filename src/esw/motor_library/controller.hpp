@@ -41,6 +41,7 @@ namespace mrover {
             // mPublishDataTimer = mNh.createTimer(ros::Duration(0.1), &Controller::publishDataCallback, this);
 
             mAdjustServer = mNh.advertiseService(std::format("{}_adjust", mControllerName), &Controller::adjustServiceCallback, this);
+        
         }
 
         virtual ~Controller() = default;
@@ -87,6 +88,7 @@ namespace mrover {
                 ROS_ERROR("Position request at topic for %s ignored!", msg->names.at(0).c_str());
                 return;
             }
+
             setDesiredPosition(Radians{msg->positions.at(0)});
         }
 

@@ -93,6 +93,9 @@ namespace mrover {
         bool limitSwitch1UsedForReadjustment{};
         Radians limitSwitch0ReadjustPosition{};
         Radians limitSwitch1ReadjustPosition{};
+
+        char moteusAux1Info{};
+        char moteusAux2Info{};
         
         // Function to map throttle to velocity
         RadiansPerSecond mapThrottleToVelocity(Percent throttle);

@@ -123,12 +123,12 @@ namespace mrover {
         // TODO do both switch0 and switch1 use aux2?
         if (limitSwitch0Present && limitSwitch0Enabled) {
             int bit1 = 2; // 0b0010
-            bool gpioState = bit1 & result.aux2_gpio;
+            bool gpioState = bit1 & moteusAux1Info;
             mLimitHit.at(0) = gpioState == limitSwitch0ActiveHigh;
         }
         if (limitSwitch1Present && limitSwitch1Enabled) {
             int bit1 = 2; // 0b0010
-            bool gpioState = bit1 & result.aux2_gpio;
+            bool gpioState = bit1 & moteusAux2Info;
             mLimitHit.at(1) = gpioState == limitSwitch1ActiveHigh;
         }
 
@@ -188,6 +188,9 @@ namespace mrover {
 
         mErrorState = moteusErrorCodeToErrorState(result.mode, static_cast<ErrorCode>(result.fault));
         mState = moteusModeToState(result.mode);
+
+        moteusAux1Info = result.aux1_gpio;
+        moteusAux2Info = result.aux2_gpio;
 
         if (result.mode == moteus::Mode::kPositionTimeout || result.mode == moteus::Mode::kFault) {
             setStop();

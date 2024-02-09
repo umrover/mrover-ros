@@ -1,77 +1,42 @@
-#include "arm_translator.hpp"
+
+#include "sa_translator.hpp"
 
 namespace mrover {
 
-    ArmTranslator::ArmTranslator(ros::NodeHandle& nh) {
-        assert(mJointDEPitchIndex == mJointDE0Index);
-        assert(mJointDERollIndex == mJointDE1Index);
-        assert(mArmHWNames.size() == mRawArmNames.size());
-        for (size_t i = 0; i < mRawArmNames.size(); ++i) {
-            if (i != mJointDEPitchIndex && i != mJointDERollIndex) {
-                assert(mArmHWNames.at(i) == mRawArmNames.at(i));
-            }
+    SATranslator::SATranslator(ros::NodeHandle& nh) {
+        // assert(mJointDEPitchIndex == mJointDE0Index);
+        // assert(mJointDERollIndex == mJointDE1Index);
+        // assert(mArmHWNames.size() == mRawArmNames.size());
+        // for (size_t i = 0; i < mRawArmNames.size(); ++i) {
+        //     if (i != mJointDEPitchIndex && i != mJointDERollIndex) {
+        //         assert(mArmHWNames.at(i) == mRawArmNames.at(i));
+        //     }
 
-            // adjust and calibrate services
-            std::string rawName = static_cast<std::string>(mRawArmNames[i]);
-            mAdjustServersByRawArmNames[rawName] = std::make_unique<ros::ServiceServer>(nh.advertiseService(std::format("{}_adjust", rawName), &ArmTranslator::adjustServiceCallback, this));
+        //     // // adjust and calibrate services
+        //     // std::string rawName = static_cast<std::string>(mRawArmNames[i]);
+        //     // mAdjustServersByRawArmNames[rawName] = std::make_unique<ros::ServiceServer>(nh.advertiseService(std::format("{}_adjust", rawName), &ArmTranslator::adjustServiceCallback, this));
 
-            std::string hwName = static_cast<std::string>(mArmHWNames[i]);
-            mAdjustClientsByArmHWNames[hwName] = nh.serviceClient<mrover::AdjustMotor>(std::format("{}_adjust", hwName));
-        }
+        //     // std::string hwName = static_cast<std::string>(mArmHWNames[i]);
+        //     // mAdjustClientsByArmHWNames[hwName] = nh.serviceClient<mrover::AdjustMotor>(std::format("{}_adjust", hwName));
+        // }
 
 
-        mJointDEPitchOffset = Radians{getFloatFromRosParam(nh, "joint_de/pitch_offset")};
-        mJointDERollOffset = Radians{getFloatFromRosParam(nh, "joint_de/roll_offset")};
-
-        mMinRadPerSecDE0 = RadiansPerSecond{getFloatFromRosParam(nh, "brushless_motors/controllers/joint_de_0/min_velocity")};
-        mMaxRadPerSecDE0 = RadiansPerSecond{getFloatFromRosParam(nh, "brushless_motors/controllers/joint_de_0/max_velocity")};
-        mMinRadPerSecDE1 = RadiansPerSecond{getFloatFromRosParam(nh, "brushless_motors/controllers/joint_de_1/min_velocity")};
-        mMaxRadPerSecDE1 = RadiansPerSecond{getFloatFromRosParam(nh, "brushless_motors/controllers/joint_de_1/max_velocity")};
-
-        mJointDEPitchPosSub = nh.subscribe<std_msgs::Float32>("joint_de_pitch_raw_position_data", 1, &ArmTranslator::processPitchRawPositionData, this);
-        mJointDERollPosSub = nh.subscribe<std_msgs::Float32>("joint_de_roll_raw_position_data", 1, &ArmTranslator::processRollRawPositionData, this);
-
-        mJointALinMult = RadiansPerMeter{getFloatFromRosParam(nh, "brushless_motors/controllers/joint_a/rad_to_meters_ratio")};
+        mXAxisMult = RadiansPerMeter{getFloatFromRosParam(nh, "brushed_motors/controllers/sa_x/rad_to_meters_ratio")};
+        mYAxisMult = RadiansPerMeter{getFloatFromRosParam(nh, "brushed_motors/controllers/sa_y/rad_to_meters_ratio")};
+        mZAxisMult = RadiansPerMeter{getFloatFromRosParam(nh, "brushless_motors/controllers/sa_z/rad_to_meters_ratio")};
         
-        mThrottleSub = nh.subscribe<Throttle>("arm_throttle_cmd", 1, &ArmTranslator::processThrottleCmd, this);
-        mVelocitySub = nh.subscribe<Velocity>("arm_velocity_cmd", 1, &ArmTranslator::processVelocityCmd, this);
-        mPositionSub = nh.subscribe<Position>("arm_position_cmd", 1, &ArmTranslator::processPositionCmd, this);
-        mArmHWJointDataSub = nh.subscribe<sensor_msgs::JointState>("arm_hw_joint_data", 1, &ArmTranslator::processArmHWJointData, this);
+        mThrottleSub = nh.subscribe<Throttle>("sa_throttle_cmd", 1, &SATranslator::processThrottleCmd, this);
+        mVelocitySub = nh.subscribe<Velocity>("sa_velocity_cmd", 1, &SATranslator::processVelocityCmd, this);
+        mPositionSub = nh.subscribe<Position>("sa_position_cmd", 1, &SATranslator::processPositionCmd, this);
+        mSAHWJointDataSub = nh.subscribe<sensor_msgs::JointState>("sa_hw_joint_data", 1, &SATranslator::processSAHWJointData, this);
 
-        mThrottlePub = std::make_unique<ros::Publisher>(nh.advertise<Throttle>("arm_hw_throttle_cmd", 1));
-        mVelocityPub = std::make_unique<ros::Publisher>(nh.advertise<Velocity>("arm_hw_velocity_cmd", 1));
-        mPositionPub = std::make_unique<ros::Publisher>(nh.advertise<Position>("arm_hw_position_cmd", 1));
-        mJointDataPub = std::make_unique<ros::Publisher>(nh.advertise<sensor_msgs::JointState>("arm_joint_data", 1));
+        mThrottlePub = std::make_unique<ros::Publisher>(nh.advertise<Throttle>("sa_hw_throttle_cmd", 1));
+        mVelocityPub = std::make_unique<ros::Publisher>(nh.advertise<Velocity>("sa_hw_throttle_cmd", 1));
+        mPositionPub = std::make_unique<ros::Publisher>(nh.advertise<Position>("sa_hw_throttle_cmd", 1));
+        mJointDataPub = std::make_unique<ros::Publisher>(nh.advertise<sensor_msgs::JointState>("sa_joint_data", 1));
     }
 
-    void ArmTranslator::clampValues(float& val1, float& val2, float minValue1, float maxValue1, float minValue2, float maxValue2) {
-        // val1 = (val1 - (-80)) / (maxValue1 - minValue1) * ();
-        // val2 if (val1 < minValue1) {
-        //     float const ratio = minValue1 / val1;
-        //     val1 *= ratio;
-        //     val2 *= ratio;
-        // }
-        // if (maxValue1 < val1) {
-        //     float const ratio = maxValue1 / val1;
-        //     val1 *= ratio;
-        //     val2 *= ratio;
-        // }
-        // if (val2 < minValue2) {
-        //     float const ratio = minValue2 / val2;
-        //     val1 *= ratio;
-        //     val2 *= ratio;
-        // }
-        // if (maxValue2 < val2) {
-        //     float const ratio = maxValue2 / val2;
-        //     val1 *= ratio;
-        //     val2 *= ratio;
-        // }
-    }
-
-    void ArmTranslator::mapValue(float& val, float inputMinValue, float inputMaxValue, float outputMinValue, float outputMaxValue) {
-        val = (val - inputMinValue) / (inputMaxValue - inputMinValue) * (outputMaxValue - outputMinValue) + outputMinValue;
-    }
-
+   
     void ArmTranslator::processThrottleCmd(Throttle::ConstPtr const& msg) {
         if (mRawArmNames != msg->names || mRawArmNames.size() != msg->throttles.size()) {
             ROS_ERROR("Throttle requests for arm is ignored!");
@@ -111,35 +76,7 @@ namespace mrover {
         mThrottlePub->publish(throttle);
     }
 
-    bool ArmTranslator::jointDEIsCalibrated() {
-        return mJointDE0PosOffset.has_value() && mJointDE1PosOffset.has_value();
-    }
-
-    void ArmTranslator::updatePositionOffsets() {
-        if (!mCurrentRawJointDEPitch.has_value() || !mCurrentRawJointDERoll.has_value() || !mCurrentRawJointDE0Position.has_value() || !mCurrentRawJointDE1Position.has_value()) {
-            return;
-        }
-
-        std::pair<float, float> expected_motor_outputs = transformPitchRollToMotorOutputs(mCurrentRawJointDEPitch->get(), mCurrentRawJointDERoll->get());
-        if (mCurrentRawJointDE0Position.has_value()) {
-            mJointDE0PosOffset = *mCurrentRawJointDE0Position - Radians{expected_motor_outputs.first};
-        }
-        if (mCurrentRawJointDE1Position.has_value()) {
-            mJointDE1PosOffset = *mCurrentRawJointDE1Position - Radians{expected_motor_outputs.second};
-        }
-    }
-
-    void ArmTranslator::processPitchRawPositionData(std_msgs::Float32::ConstPtr const& msg) {
-        mCurrentRawJointDEPitch = Radians{msg->data};
-        updatePositionOffsets();
-    }
-
-    void ArmTranslator::processRollRawPositionData(std_msgs::Float32::ConstPtr const& msg) {
-        mCurrentRawJointDERoll = Radians{msg->data};
-        updatePositionOffsets();
-    }
-
-
+   
 
     void ArmTranslator::processVelocityCmd(Velocity::ConstPtr const& msg) {
         if (mRawArmNames != msg->names || mRawArmNames.size() != msg->velocities.size()) {
