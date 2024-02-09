@@ -154,23 +154,29 @@ namespace mrover {
         return bestPlane;
     }
 
-    void LanderAlignNodelet::sendTwist(Eigen::Vector3f const& mBestCenter) {
+    void LanderAlignNodelet::sendTwist(Eigen::Vector3f const& mBestCenter, Eigen::Vector3f const& offset) {
         tf2_ros::Buffer mTfBuffer;
         tf2_ros::TransformListener mTfListener{mTfBuffer};
         SE3 rover = SE3::fromTfTree(mTfBuffer, "map", "base_link");
 
         float linear_thresh = 0.1;
         float angular_thresh = 0.1;
-        Eigen::Vector3f offset = {-2, 0, 0};
 
         Eigen::Vector3f target_pos = mBestCenter - offset;
         Eigen::Vector3f rover_pos = rover.position();
         Eigen::Vector3f target_dir = target_pos - rover_pos;
-        auto rover_dir = rover.rotation();
+        Eigen::Vector3f rover_dir = rover.rotation().matrix().col(0);
 
-        while (target_dir.norm() > linear_thresh&&) {
+        auto linear_error = abs(target_dir.norm());
+        auto angular_error = angle_to_rotate(rover_dir, target_dir);
+
+        while (linear_error > linear_thresh && angular_error > angular_thresh) {
             rover_pos = rover.position();
             target_dir = target_pos - rover_pos;
+            rover_dir = rover.rotation().matrix().col(0);
+            //Drive Command
+            linear_error = abs(target_dir.norm());
+            angular_error = angle_to_rotate(rover_dir, target_dir);
         }
     }
 

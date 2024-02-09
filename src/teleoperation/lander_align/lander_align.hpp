@@ -39,7 +39,7 @@ namespace mrover {
 
         auto ransac(std::vector<Point const*> const& points, float distanceThreshold, int minInliers, int epochs) -> std::optional<Eigen::Vector3f>;
 
-        void sendTwist(Eigen::Vector3f const& mBestCenter);
+        void sendTwist(Eigen::Vector3f const& mBestCenter, Eigen::Vector3f const& offset);
     };
 
 } // namespace mrover
