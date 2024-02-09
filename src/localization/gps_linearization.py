@@ -28,9 +28,6 @@ class GPSLinearization:
     last_gps_pose_fixed: Optional[np.ndarray]
     pose_publisher: rospy.Publisher
 
-    # itme
-    # last_gps_pose_fixed_time = rostime
-
     # offset
     rtk_offset: Optional[np.ndarray]
     calculate_offset: bool
@@ -154,7 +151,7 @@ class GPSLinearization:
             imu_rotation_matrix = euler_from_quaternion(msg.imu.orientation)
             offsetted_rotation_matrix = np.matmul(imu_rotation_matrix, self.rtk_offset)
             offsetted_euler = euler_from_matrix(offsetted_rotation_matrix)
-            msg.imu.quaternion = quaternion_from_euler(offsetted_euler[0], offsetted_euler[1], offsetted_euler[2], axes="sxyz")
+            msg.imu.orientation = quaternion_from_euler(offsetted_euler[0], offsetted_euler[1], offsetted_euler[2], axes="sxyz")
             
 
         # imu quaternion
