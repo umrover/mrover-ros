@@ -34,7 +34,7 @@ class TipDetection:
         # read the orientation data from the given Imu message, store that value in `self.pose`, then publish that pose to the TF tree.
         self.hit_count = 0
         self.orientation_threshold = 0.5
-        self.z_orientation_threshold = 0.5 # may need to change this
+        self.z_orientation_threshold = 0.5  # may need to change this
         self.angular_velocity_threshold_x = 0.25  # pitch
         self.angular_velocity_threshold_y = 0.25  # roll
         self.time_threshold = 1
@@ -43,6 +43,7 @@ class TipDetection:
         self.time_counter = time.time()
 
         self.buffer = tf2_ros.Buffer()
+        self.tf_listener = tf2_ros.TransformListener(self.buffer)
         self.world_frame = rospy.get_param("world_frame")
         self.rover_frame = rospy.get_param("rover_frame")
         print(self.world_frame)
@@ -57,27 +58,19 @@ class TipDetection:
         while not rospy.is_shutdown():
             try:
                 # extract the  matrix by [0,0,1] (z vector). this could be completely wrong
-                self.old = SE3.from_tf_tree(self.buffer, self.world_frame, self.rover_frame)
-                self.transform = []
-                for i in range(3):
-                    for j in range(3):
-                        self.transform.append([[self.old[i][j] for b in range(j, j + 3)]
-                                          for a in range(i, i + 3)
-                                          ]
-                        )
-
+                self.old = SE3.from_tf_tree(self.buffer, self.world_frame, self.rover_frame).rotation.rotation_matrix()
                 # multiply this transform by the z vector [0, 0, 1]
-                self.transform = np.array([0, 0, 1]) * self.transform  # ?
+                self.transform = np.dot(np.array([0, 0, 1]), self.old)  # ?
+                print(self.transform[2])
 
                 # compare this new transform with our threshold to see if it's tipping, if so increment hit_count
-                if self.transform >= self.z_orientation_threshold:
-                    self.hit_count += 1
-                
-                print(SE3.from_tf_tree(self.buffer, self.world_frame, self.rover_frame))
+                # if self.transform >= self.z_orientation_threshold:
+                #     self.hit_count += 1
+
+                # print(SE3.from_tf_tree(self.buffer, self.world_frame, self.rover_frame))
             except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
                 print(e)
                 rate.sleep()
-        
 
     def imu_callback(self, msg: Imu):
         pass
@@ -184,7 +177,7 @@ def main():
     rospy.init_node("tip_detection")
     tip_detector = TipDetection()
 
-    # rospy.spin()  
+    rospy.spin()
 
 
 if __name__ == "__main__":
