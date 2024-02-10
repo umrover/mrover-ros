@@ -11,7 +11,7 @@
 #include "joint_de_translation.hpp"
 #include "matrix_helper.hpp"
 #include "read_from_ros_param.hpp"
-#include <linear_joint_translation.hpp>
+// #include <linear_joint_translation.hpp>
 #include <mrover/AdjustMotor.h>
 #include <mrover/ControllerState.h>
 #include <mrover/Position.h>

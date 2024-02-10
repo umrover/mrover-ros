@@ -174,8 +174,8 @@ namespace mrover {
         velocity.velocities.at(mJointDERollIndex) = joint_de_1_vel;
 
         // joint a convert linear velocity (meters/s) to revolution/s
-        auto joint_a_vel = convertLinVel(msg->velocities.at(mJointAIndex), mJointALinMult.get());
-        velocity.velocities.at(mJointAIndex) = joint_a_vel;
+        // auto joint_a_vel = convertLinVel(msg->velocities.at(mJointAIndex), mJointALinMult.get());
+        // velocity.velocities.at(mJointAIndex) = joint_a_vel;
 
         mVelocityPub->publish(velocity);
     }
@@ -207,8 +207,8 @@ namespace mrover {
         position.positions.at(mJointDERollIndex) = joint_de_1_pos;
 
         // joint a convert linear position (meters) to radians
-        auto joint_a_pos = convertLinVel(msg->positions.at(mJointAIndex), mJointALinMult.get());
-        position.positions.at(mJointAIndex) = joint_a_pos;
+        // auto joint_a_pos = convertLinVel(msg->positions.at(mJointAIndex), mJointALinMult.get());
+        // position.positions.at(mJointAIndex) = joint_a_pos;
 
         mPositionPub->publish(position);
     }
