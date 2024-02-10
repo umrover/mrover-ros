@@ -57,7 +57,6 @@ namespace mrover {
         dynamic_reconfigure::Server<mrover::DetectorParamsConfig> mConfigServer;
         dynamic_reconfigure::Server<mrover::DetectorParamsConfig>::CallbackType mCallbackType;
         LoopProfiler mProfiler{"Long Range Tag Detector"};
-        std::unordered_map<int, ros::Publisher> mThreshPubs; // Map from threshold scale to publisher
         ros::ServiceServer mServiceEnableDetections;
         bool mUseOdom{};
         std::string mOdomFrameId, mMapFrameId, mCameraFrameId;

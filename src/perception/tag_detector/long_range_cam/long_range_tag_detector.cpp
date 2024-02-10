@@ -9,7 +9,7 @@ namespace mrover {
         mPnh = getMTPrivateNodeHandle();
         mDetectorParams = new cv::aruco::DetectorParameters();
         auto defaultDetectorParams = cv::makePtr<cv::aruco::DetectorParameters>();
-        int dictionaryNumber;
+        int dictionaryNumber = 0;
 
         mPnh.param<bool>("publish_images", mPublishImages, true);
         mPnh.param<int>("min_hit_count_before_publish", mMinHitCountBeforePublish, 5);

@@ -31,7 +31,14 @@ namespace mrover {
         //Publish all tags that meet threshold
         publishPermanentTags();
 
+        size_t detectedCount = mImmediateIds.size();
+        NODELET_INFO_COND(!mPrevDetectedCount.has_value() ||
+                                  detectedCount != mPrevDetectedCount.value(),
+                          "Detected %zu markers", detectedCount);
+        mPrevDetectedCount = detectedCount;
+
         //PUBLISH TAGS
+        ++mSeqNum;
     }
 
     //HELPER FUNCTIONS
@@ -52,7 +59,6 @@ namespace mrover {
     }
 
     void LongRangeTagDetectorNodelet::runTagDetection() {
-        // std::cout << mDetectorParams->adaptiveThreshConstant << std::endl;
         cv::aruco::detectMarkers(mImg, mDictionary, mImmediateCorners, mImmediateIds, mDetectorParams);
     }
 
@@ -61,8 +67,6 @@ namespace mrover {
         //loop through all identified IDs
         for (size_t i = 0; i < mImmediateIds.size(); i++) {
             updateNewlyIdentifiedTags(i);
-            cv::Point2f center = getTagCenterPixels(mImmediateCorners[i]);
-            // std::cout << "bearing: " << getTagBearing(center) << "!!!" << std::endl;
         }
 
         //Now decrement all the hitcounts for tags that were not updated
@@ -98,8 +102,6 @@ namespace mrover {
         lrt.updated = true;
 
         lrt.imageCenter = getNormedTagCenterOffset(tagCorners);
-        std::cout << "lrt image center " << lrt.imageCenter.x << std::endl;
-
         return lrt;
     }
 
@@ -158,10 +160,7 @@ namespace mrover {
 
     float LongRangeTagDetectorNodelet::getTagBearing(cv::Point2f& tagCenter) const {
         //for HD720 resolution
-        auto imageWidth = (float) mImgMsg.width;
-        std::cout << "width: " << imageWidth << " tag center x: " << tagCenter.x << std::endl;
         float bearing = -1 * ((float) tagCenter.x + 0.5) * mLongRangeFov;
-        std::cout << "bearing: " << bearing << std::endl;
         return bearing;
     }
 
@@ -188,10 +187,6 @@ namespace mrover {
     }
 
     void LongRangeTagDetectorNodelet::publishTagsOnImage() {
-        // cv::Mat markedImage;
-        // markedImage.copyTo(mImg);
-        // std::cout << markedImage.total() << ", " << markedImage.channels() << std::endl;
-
         cv::aruco::drawDetectedMarkers(mImg, mImmediateCorners, mImmediateIds);
         mImgMsg.header.seq = mSeqNum;
         mImgMsg.header.stamp = ros::Time::now();
