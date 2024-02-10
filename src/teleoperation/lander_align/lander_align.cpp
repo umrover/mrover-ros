@@ -1,19 +1,21 @@
 #include "lander_align.hpp"
 #include "pch.hpp"
 #include <Eigen/src/Core/Matrix.h>
+#include <cmath>
 #include <cstddef>
+#include <geometry_msgs/Twist.h>
 #include <geometry_msgs/Vector3.h>
+
 #include <lie/se3.hpp>
 #include <optional>
 #include <random>
 #include <ros/subscriber.h>
+#include <tuple>
 #include <vector>
 
 #include <lie/se3.hpp>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
-
-#include <~/mrover/src/esw/fw/bdcmc/Core/Inc/pidf.hpp>
 
 
 namespace mrover {
@@ -24,6 +26,8 @@ namespace mrover {
         mThreshold = 10;
         mVectorSub = mNh.subscribe("/camera/left/points", 1, &LanderAlignNodelet::LanderCallback, this);
         mDebugVectorPub = mNh.advertise<geometry_msgs::Vector3>("/lander_align/Pose", 1);
+        mTwistPub = mNh.advertise<geometry_msgs::Twist>("/cmd_vel", 1);
+
 
         //TF Create the Reference Frames
         mNh.param<std::string>("camera_frame", mCameraFrameId, "zed2i_left_camera_frame");
@@ -156,9 +160,12 @@ namespace mrover {
         return bestPlane;
     }
 
-    auto angle_to_rotate(Eigen::Vector3f current, Eigen::Vector3f target) {
-        current[2] = 0;
-        target[2] = 0;
+    auto LanderAlignNodelet::PID::rotate_speed(float theta) const -> float {
+        return Angle_P * theta;
+    }
+
+
+    auto LanderAlignNodelet::PID::find_angle(Eigen::Vector3f current, Eigen::Vector3f target) -> float {
         Eigen::Vector3f u1 = current.normalized();
         Eigen::Vector3f u2 = target.normalized();
         float theta = acos(u1.dot(u2));
@@ -169,42 +176,91 @@ namespace mrover {
         return -theta;
     }
 
-    void LanderAlignNodelet::sendTwist(Eigen::Vector3f const& mBestCenter, Eigen::Vector3f const& offset) {
-        tf2_ros::Buffer mTfBuffer;
-        tf2_ros::TransformListener mTfListener{mTfBuffer};
-        SE3 rover = SE3::fromTfTree(mTfBuffer, "map", "base_link");
-
-        float linear_thresh = 0.1;
-        float angular_thresh = 0.1;
-
-        Eigen::Vector3f target_pos = mBestCenter - offset;
-        Eigen::Vector3f rover_pos = rover.position();
-        Eigen::Vector3f direction_vec = target_pos - rover_pos;
-        Eigen::Vector3f rover_dir = rover.rotation().matrix().col(0);
-
-        direction_vec[2] = 0;
-        rover_dir[2] = 0;
-
-        auto linear_error = abs(direction_vec.norm());
-        auto angular_error = angle_to_rotate(rover_dir, direction_vec);
-
-        PIDF<float, float> position_PID; // also need some time unit, set deadband and errors and stuff
-        PIDF<float, float> angle_PID;
-
-
-        while (linear_error > linear_thresh && angular_error > angular_thresh) {
-            rover_pos = rover.position();
-            direction_vec = target_pos - rover_pos;
-            rover_dir = rover.rotation().matrix().col(0);
-
-            //Drive Command
-            linear_error = abs(direction_vec.norm());
-            angular_error = angle_to_rotate(rover_dir, direction_vec);
-
-            // PID
-            float angle_command = position_PID.calculate(linear_error, 0);
-            float linear_command = angle_PID.calculate(angular_error, 0);
-        }
+    auto LanderAlignNodelet::PID::drive_speed(float distance) -> float {
+        return distance * Linear_P;
     }
 
+    auto LanderAlignNodelet::PID::find_distance(Eigen::Vector3f current, Eigen::Vector3f target) -> float {
+        Eigen::Vector3f difference = target - current;
+        float distance = difference.norm();
+        return distance;
+    }
+
+    // auto LanderAlignNodelet::PID::calculate(Eigen::Vector3f& input, Eigen::Vector3f& target) -> std::tuple<float> {
+    //     input[2] = 0;
+    //     target[2] = 0;
+
+    //     return {rotate_command(input, target), drive_speed(input, target)};
+    // }
+
+
+    void LanderAlignNodelet::sendTwist(Eigen::Vector3f const& planeNormal, Eigen::Vector3f const& planeCenterInWorld, Eigen::Vector3f const& offset) {
+        SE3 rover;
+
+        geometry_msgs::Twist twist;
+
+        float const linear_thresh = 0.1; // could be member variables
+        float const angular_thresh = 0.1;
+
+        Eigen::Vector3f rover_dir;
+
+        Eigen::Vector3f targetPosInWorld = planeCenterInWorld - offset;
+        targetPosInWorld[2] = 0;
+
+        PID pid(0.1, 0.1); // literally just P -- ugly class and probably needs restructuring in the future
+
+        ros::Rate rate(20); // ROS Rate at 20Hz
+        while (ros::ok()) {
+            rover = SE3::fromTfTree(mTfBuffer, "map", "base_link");
+            Eigen::Vector3f roverPosInWorld = rover.position();
+            roverPosInWorld[2] = 0;
+
+            switch (mLoopState) {
+                case RTRSTATE::turn1: {
+                    rover_dir = rover.rotation().matrix().col(0);
+                    rover_dir[2] = 0;
+                    float angle = pid.find_angle(rover_dir, targetPosInWorld - roverPosInWorld);
+                    float angle_rate = pid.rotate_speed(angle);
+
+                    twist.angular.z = angle_rate;
+
+                    if (abs(angle) < angular_thresh) {
+                        mLoopState = RTRSTATE::drive;
+                    }
+                }
+
+                case RTRSTATE::drive: {
+                    Eigen::Vector3f roverPosInWorld = rover.position();
+                    float distance = pid.find_distance(roverPosInWorld, targetPosInWorld - roverPosInWorld);
+                    float drive_rate = pid.drive_speed(distance);
+
+                    twist.linear.x = drive_rate;
+
+                    if (abs(distance) < linear_thresh) {
+                        mLoopState = RTRSTATE::turn2;
+                    }
+                }
+
+                case RTRSTATE::turn2: {
+                    rover_dir = rover.rotation().matrix().col(0);
+                    rover_dir[2] = 0;
+                    float angle = pid.find_angle(rover_dir, planeNormal);
+                    float angle_rate = pid.rotate_speed(angle);
+
+                    twist.angular.z = angle_rate;
+
+                    if (abs(angle) < angular_thresh) {
+                        mLoopState = RTRSTATE::done;
+                    }
+                }
+
+                case RTRSTATE::done:
+                    break;
+            }
+            mTwistPub.publish(twist);
+
+            ROS_INFO("Running turn/drive state machine...");
+            rate.sleep();
+        }
+    }
 } // namespace mrover
