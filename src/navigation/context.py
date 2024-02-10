@@ -9,10 +9,6 @@ import pymap3d
 import rospy
 import tf2_ros
 from geometry_msgs.msg import Twist
-from nav_msgs.msg import OccupancyGrid, MapMetaData
-from mrover.msg import Waypoint, GPSWaypoint, EnableAuton, WaypointType, GPSPointList
-from std_msgs.msg import Time, Bool
-from visualization_msgs.msg import Marker
 
 from util.SE3 import SE3
 
@@ -207,7 +203,6 @@ class Context:
     vis_publisher: rospy.Publisher
     course_listener: rospy.Subscriber
     stuck_listener: rospy.Subscriber
-    costmap_listener: rospy.Subscriber
 
     # Use these as the primary interfaces in states
     course: Optional[Course]
@@ -229,7 +224,6 @@ class Context:
         self.search_point_publisher = rospy.Publisher("search_path", GPSPointList, queue_size=1)
         self.enable_auton_service = rospy.Service("enable_auton", EnableAuton, self.recv_enable_auton)
         self.stuck_listener = rospy.Subscriber("nav_stuck", Bool, self.stuck_callback)
-        self.costmap_listener = rospy.Subscriber("costmap", OccupancyGrid, self.costmap_callback)
         self.course = None
         self.rover = Rover(self, False, "")
         self.env = Environment(self)
@@ -248,13 +242,3 @@ class Context:
 
     def stuck_callback(self, msg: Bool):
         self.rover.stuck = msg.data
-
-    def costmap_callback(self, msg: OccupancyGrid):
-        # update data structure
-        height = msg.info.height
-        width = msg.info.width
-        rospy.logerr(f"height: {height}, width: {width}")
-        costmap1D = np.array(msg.data)
-        costmap2D = costmap1D.reshape((height, width))
-        rospy.logerr(f"2D costmap: {costmap2D.shape}")
-        rospy.logerr(f"2D costmap: {costmap2D}")

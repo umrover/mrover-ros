@@ -27,7 +27,7 @@ water_bottle_search:
   drive_fwd_thresh: 0.34
   coverage_radius: 10
   segments_per_rotation: 8
-  distance_between_spirals: 1.25
+  distance_between_spirals: 3
 
 single_fiducial:
   stop_thresh: 1.0

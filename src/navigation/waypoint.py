@@ -3,7 +3,8 @@ import tf2_ros
 from util.ros_utils import get_rosparam
 from util.state_lib.state import State
 
-from navigation import search, recovery, approach_post, post_backup, state
+from navigation import search, recovery, approach_post, post_backup, state, water_bottle_search
+from mrover.msg import WaypointType
 
 
 class WaypointState(State):
@@ -48,11 +49,14 @@ class WaypointState(State):
                 self.DRIVE_FWD_THRESH,
             )
             if arrived:
-                if not context.course.look_for_post():
+                if current_waypoint.type.val == WaypointType.NO_SEARCH:
                     # We finished a regular waypoint, go onto the next one
                     context.course.increment_waypoint()
+                elif current_waypoint.type.val == WaypointType.WATER_BOTTLE:
+                    # We finished a waypoint associated with the water bottle, but we have not seen it yet
+                    return water_bottle_search.WaterBottleSearchState()
                 else:
-                    # We finished a waypoint associated with a tag id, but we have not seen it yet.
+                    # We finished a waypoint associated with a tag id or the mallet, but we have not seen it yet.
                     return search.SearchState()
 
             if context.rover.stuck:
