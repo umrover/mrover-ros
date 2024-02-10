@@ -51,8 +51,8 @@ namespace mrover {
 
         struct StateAfterConfig {
             Dimensionless gear_ratio;
-            Radians max_forward_pos;
-            Radians max_backward_pos;
+            Radians min_position;
+            Radians max_position;
         };
 
         // Present if and only if we are configured
@@ -112,8 +112,14 @@ namespace mrover {
 
             if (m_state_after_config) {
                 // TODO: verify this is correct
-                bool limit_forward = m_desired_output > 0_percent && std::ranges::any_of(m_limit_switches, [](LimitSwitch const& limit_switch) { return limit_switch.limit_forward(); });
-                bool limit_backward = m_desired_output < 0_percent && std::ranges::any_of(m_limit_switches, [](LimitSwitch const& limit_switch) { return limit_switch.limit_backward(); });
+                bool limit_forward = m_desired_output > 0_percent && (
+                                         std::ranges::any_of(m_limit_switches, &LimitSwitch::limit_forward)
+                                         || m_uncalib_position > m_state_after_config->max_position
+                                     );
+                bool limit_backward = m_desired_output < 0_percent && (
+                                          std::ranges::any_of(m_limit_switches, &LimitSwitch::limit_backward)
+                                          || m_uncalib_position < m_state_after_config->min_position
+                                      );
                 if (limit_forward || limit_backward) {
                     m_error = BDCMCErrorInfo::OUTPUT_SET_TO_ZERO_SINCE_EXCEEDING_LIMITS;
                 } else {
@@ -137,19 +143,19 @@ namespace mrover {
             // Initialize values
             StateAfterConfig config{.gear_ratio = message.gear_ratio};
 
-            if (message.quad_abs_enc_info.quad_present) {
-                Ratio multiplier = (message.quad_abs_enc_info.quad_is_forward_polarity ? 1 : -1) * message.quad_enc_out_ratio;
+            if (message.enc_info.quad_present) {
+                Ratio multiplier = (message.enc_info.quad_is_forward_polarity ? 1 : -1) * message.enc_info.quad_ratio;
                 if (!m_relative_encoder) m_relative_encoder.emplace(m_encoder_timer, multiplier, m_encoder_elapsed_timer);
             }
-            if (message.quad_abs_enc_info.abs_present) {
-                Ratio multiplier = (message.quad_abs_enc_info.abs_is_forward_polarity ? 1 : -1) * message.abs_enc_out_ratio;
-                if (!m_absolute_encoder) m_absolute_encoder.emplace(AbsoluteEncoderReader::AS5048B_Bus{m_absolute_encoder_i2c}, 0, 0, multiplier, m_encoder_elapsed_timer);
+            if (message.enc_info.abs_present) {
+                Ratio multiplier = (message.enc_info.abs_is_forward_polarity ? 1 : -1) * message.enc_info.abs_ratio;
+                if (!m_absolute_encoder) m_absolute_encoder.emplace(AbsoluteEncoderReader::AS5048B_Bus{m_absolute_encoder_i2c}, message.enc_info.abs_offset, multiplier, m_encoder_elapsed_timer);
             }
 
             m_motor_driver.change_max_pwm(message.max_pwm);
 
-            config.max_forward_pos = message.max_forward_pos;
-            config.max_backward_pos = message.max_backward_pos;
+            config.min_position = message.min_position;
+            config.max_position = message.max_position;
 
             // TODO: verify this is correct
             for (std::size_t i = 0; i < m_limit_switches.size(); ++i) {

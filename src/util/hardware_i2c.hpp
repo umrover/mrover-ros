@@ -33,6 +33,7 @@ namespace mrover {
         }
 
         auto blocking_receive(std::uint16_t address) -> TReceive {
+            // TODO(quintin): Error handling? Shouldn't this return an optional
         	if(TReceive receive{}; HAL_I2C_Master_Receive(m_i2c, address << 1 | 1, address_of<std::uint8_t>(receive), sizeof(receive), I2C_TIMEOUT) == HAL_OK){
 				return receive;
         	}
@@ -40,7 +41,6 @@ namespace mrover {
 
         auto blocking_transact(std::uint16_t address, TSend const& send) -> std::optional<TReceive> {
             if (HAL_I2C_Master_Transmit(m_i2c, address << 1, address_of<std::uint8_t>(send), sizeof(send), I2C_TIMEOUT) != HAL_OK) {
-                // TODO(quintin): Do we want a different error handler here?
                 return std::nullopt;
             }
 
