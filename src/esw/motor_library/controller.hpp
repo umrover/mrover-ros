@@ -130,8 +130,6 @@ namespace mrover {
         std::string mName, mControllerName;
         CanDevice mDevice;
         ros::Subscriber mIncomingCANSub;
-        RadiansPerSecond mMinVelocity{}, mMaxVelocity{};
-        Radians mMinPosition{}, mMaxPosition{};
         Radians mCurrentPosition{};
         RadiansPerSecond mCurrentVelocity{};
         Percent mCalibrationThrottle{};

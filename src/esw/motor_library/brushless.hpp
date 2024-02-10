@@ -96,7 +96,10 @@ namespace mrover {
 
         char moteusAux1Info{};
         char moteusAux2Info{};
-        
+
+        Radians mMinPosition, mMaxPosition;
+        RadiansPerSecond mMinVelocity, mMaxVelocity;
+
         // Function to map throttle to velocity
         RadiansPerSecond mapThrottleToVelocity(Percent throttle);
         // Converts moteus error codes and mode codes to std::string descriptions
