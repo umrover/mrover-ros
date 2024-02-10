@@ -5,9 +5,15 @@ gps_driver:
   frame_id: "base_link"
 
 imu_driver:
-  port: "/dev/imu"
+  port: "/dev/tty.usbmodem2101"
   baud: 115200
   frame_id: "imu_link"
+
+gps:
+  port: "/dev/tty.usbmodem101"
+  baud: 115200
+  useRMC: false # get covariance instead of velocity, see wiki for more info
+  frame_id: "base_link"
 
 can:
   devices:
