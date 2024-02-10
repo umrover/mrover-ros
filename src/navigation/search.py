@@ -86,11 +86,14 @@ class SearchState(State):
     prev_target: Optional[np.ndarray] = None
     is_recovering: bool = False
 
-    STOP_THRESH = get_rosparam("search/stop_thresh", 0.2)
+    STOP_THRESH = get_rosparam("search/stop_thresh", 0.5)
     DRIVE_FWD_THRESH = get_rosparam("search/drive_fwd_thresh", 0.34)  # 20 degrees
     SPIRAL_COVERAGE_RADIUS = get_rosparam("search/coverage_radius", 20)
     SEGMENTS_PER_ROTATION = get_rosparam("search/segments_per_rotation", 8)
-    DISTANCE_BETWEEN_SPIRALS = get_rosparam("search/distance_between_spirals", 2.5)
+    DISTANCE_BETWEEN_SPIRALS = get_rosparam("search/distance_between_spirals", 3)
+
+    OBJECT_SPIRAL_COVERAGE_RADIUS = get_rosparam("object_search/coverage_radius", 10)
+    OBJECT_DISTANCE_BETWEEN_SPIRALS = get_rosparam("object_search/distance_between_spirals", 3)
 
     def on_enter(self, context) -> None:
         search_center = context.course.current_waypoint()
@@ -107,8 +110,8 @@ class SearchState(State):
             else:  # water bottle or mallet
                 self.traj = SearchTrajectory.spiral_traj(
                     context.rover.get_pose().position[0:2],
-                    self.SPIRAL_COVERAGE_RADIUS / 2,
-                    self.DISTANCE_BETWEEN_SPIRALS / 2,
+                    self.OBJECT_SPIRAL_COVERAGE_RADIUS,
+                    self.OBJECT_DISTANCE_BETWEEN_SPIRALS,
                     self.SEGMENTS_PER_ROTATION,
                     search_center.tag_id,
                 )
@@ -145,15 +148,8 @@ class SearchState(State):
         )
         context.rover.send_drive_command(cmd_vel)
 
-        current_waypoint = context.course.current_waypoint()
-        if current_waypoint.type.val == WaypointType.POST:
-            # if we see the tag in the ZED, go to ApproachPostState
-            if context.env.current_target_pos() is not None and context.course.look_for_post():
-                return approach_post.ApproachPostState()
-            # if we see the tag in the long range camera, go to LongRangeState
-            if context.env.long_range_tags.get(current_waypoint.tag_id) is not None:
-                return long_range.LongRangeState()
-        else:
-            if context.env.current_target_pos() is not None and context.course.look_for_object():
-                return approach_object.ApproachObjectState()  # if we see the object
+        # returns either ApproachPostState, LongRangeState, ApproachObjectState, or None
+        if context.course.check_approach() is not None:
+            return context.course.check_approach()
+
         return self

@@ -4,6 +4,7 @@ from util.ros_utils import get_rosparam
 from util.state_lib.state import State
 from abc import abstractmethod
 from typing import Optional
+import numpy as np
 
 from navigation import search
 
@@ -20,7 +21,7 @@ class ApproachTargetBaseState(State):
         pass
 
     @abstractmethod
-    def get_target_pos(self, context) -> Optional[int]:
+    def get_target_pos(self, context) -> Optional[np.ndarray]:
         raise NotImplementedError
 
     @abstractmethod
@@ -53,6 +54,7 @@ class ApproachTargetBaseState(State):
                 context.course.increment_waypoint()
             else:
                 context.rover.send_drive_command(cmd_vel)
+
         except (
             tf2_ros.LookupException,
             tf2_ros.ConnectivityException,

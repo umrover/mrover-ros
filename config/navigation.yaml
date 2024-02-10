@@ -22,6 +22,10 @@ search:
   segments_per_rotation: 8
   distance_between_spirals: 3
 
+object_search:
+  coverage_radius: 10
+  distance_between_spirals: 3
+
 single_fiducial:
   stop_thresh: 1.0
   fiducial_stop_threshold: 1.75

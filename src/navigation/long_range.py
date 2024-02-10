@@ -6,7 +6,7 @@ from util.state_lib.state import State
 from util.np_utils import normalized
 from typing import Optional
 
-from navigation import approach_post
+from navigation import approach_post, recovery
 from navigation.approach_target_base import ApproachTargetBaseState
 import numpy as np
 
@@ -29,7 +29,7 @@ class LongRangeState(ApproachTargetBaseState):
     def on_exit(self, context):
         pass
 
-    def get_target_pos(self, context) -> Optional[int]:
+    def get_target_pos(self, context) -> Optional[np.ndarray]:
         tag_id = context.course.current_waypoint().tag_id
         tag = context.env.long_range_tags.get(tag_id)
         if tag is None:
@@ -60,5 +60,8 @@ class LongRangeState(ApproachTargetBaseState):
         fid_pos = context.env.current_target_pos()
         if fid_pos is None:
             return self
-        else:
-            return approach_post.ApproachPostState()
+        if context.rover.stuck:
+            context.rover.previous_state = self
+            return recovery.RecoveryState()
+
+        return approach_post.ApproachPostState()
