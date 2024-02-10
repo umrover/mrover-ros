@@ -7,6 +7,7 @@
 #include <geometry_msgs/Vector3.h>
 
 #include <lie/se3.hpp>
+#include <math.h>
 #include <optional>
 #include <random>
 #include <ros/subscriber.h>
