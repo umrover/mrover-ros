@@ -1,4 +1,6 @@
 #include "arm_translator.hpp"
+#include <numbers>
+#include <units/units.hpp>
 
 namespace mrover {
 
@@ -174,8 +176,8 @@ namespace mrover {
         velocity.velocities.at(mJointDERollIndex) = joint_de_1_vel;
 
         // joint a convert linear velocity (meters/s) to revolution/s
-        // auto joint_a_vel = convertLinVel(msg->velocities.at(mJointAIndex), mJointALinMult.get());
-        // velocity.velocities.at(mJointAIndex) = joint_a_vel;
+        auto joint_a_vel = convertLinVel(msg->velocities.at(mJointAIndex), static_cast<float>(mJointALinMult.get()/(2*std::numbers::pi)));
+        velocity.velocities.at(mJointAIndex) = joint_a_vel;
 
         mVelocityPub->publish(velocity);
     }
@@ -207,8 +209,8 @@ namespace mrover {
         position.positions.at(mJointDERollIndex) = joint_de_1_pos;
 
         // joint a convert linear position (meters) to radians
-        // auto joint_a_pos = convertLinVel(msg->positions.at(mJointAIndex), mJointALinMult.get());
-        // position.positions.at(mJointAIndex) = joint_a_pos;
+        auto joint_a_pos = convertLinPos(msg->positions.at(mJointAIndex), mJointALinMult.get());
+        position.positions.at(mJointAIndex) = joint_a_pos;
 
         mPositionPub->publish(position);
     }
@@ -218,6 +220,11 @@ namespace mrover {
             ROS_ERROR("Forwarding joint data for arm is ignored!");
             return;
         }
+
+        // Convert joint state of joint a from radians/revolutions to meters
+        auto jointALinVel = convertLinVel(static_cast<float>(msg->velocity.at(mJointAIndex)), static_cast<float>(mJointALinMult.get()/(2*std::numbers::pi)));
+        auto jointALinPos = convertLinPos(static_cast<float>(msg->position.at(mJointAIndex)), mJointALinMult.get());
+
 
         sensor_msgs::JointState jointState = *msg;
 
@@ -245,6 +252,9 @@ namespace mrover {
         jointState.effort.at(mJointDE0Index) = jointDEPitchEff;
         jointState.effort.at(mJointDE1Index) = jointDERollEff;
 
+        jointState.velocity.at(mJointAIndex) = jointALinVel;
+        jointState.position.at(mJointAIndex) = jointALinPos;
+
         mJointDataPub->publish(jointState);
     }
 
@@ -254,9 +264,17 @@ namespace mrover {
             mJointDERollAdjust = req.value;
         } else if (req.name == "joint_de_pitch") {
             mJointDEPitchAdjust = req.value;
-        } else {
-            AdjustMotor::Response controllerRes;
+        } else if (req.name == "joint_a") {
+            AdjustMotor::Request controllerReq;
+            AdjustMotor::Response controllerRes = res;
+            controllerReq.value = convertLinPos(static_cast<float>(req.value), mJointALinMult.get());
+
+            mAdjustClientsByArmHWNames[req.name].call(controllerReq, controllerRes);
+            res.success = controllerRes.success;
+        }
+        else {
             AdjustMotor::Request controllerReq = req;
+            AdjustMotor::Response controllerRes = res;
             mAdjustClientsByArmHWNames[req.name].call(controllerReq, controllerRes);
             res.success = controllerRes.success;
         }
