@@ -2,6 +2,7 @@
 
 #include "pch.hpp"
 #include <Eigen/src/Core/Matrix.h>
+#include <optional>
 #include <tuple>
 
 namespace mrover {
@@ -28,7 +29,13 @@ namespace mrover {
         //**
         float mBestOffset;
 
-        Eigen::Vector3f mBestCenter;
+        std::optional<Eigen::Vector3f> mBestCenterInZED;
+        std::optional<Eigen::Vector3f> mBestCenterInWorld;
+
+        std::optional<Eigen::Vector3f> mBestNormal;
+
+        SE3 mPlaneLocInZED;
+        SE3 mPlaneLocInWorld;
         //**
 
         //TF Member Variables
@@ -51,9 +58,9 @@ namespace mrover {
 
         void filterNormals(sensor_msgs::PointCloud2Ptr const& cloud);
 
-        auto ransac(std::vector<Point const*> const& points, float distanceThreshold, int minInliers, int epochs) -> std::optional<Eigen::Vector3f>;
+        void ransac(float distanceThreshold, int minInliers, int epochs);
 
-        void sendTwist(Eigen::Vector3f const& planeNormal, Eigen::Vector3f const& mBestCenter, Eigen::Vector3f const& offset);
+        void sendTwist(Eigen::Vector3f const& offset);
 
         class PID {
         private:
@@ -69,10 +76,10 @@ namespace mrover {
             [[nodiscard]] auto rotate_speed(float theta) const -> float;
 
 
-            auto find_angle(Eigen::Vector3f current, Eigen::Vector3f target) -> float;
+            auto find_angle(Eigen::Vector3f const& current, Eigen::Vector3f const& target) -> float;
 
 
-            auto find_distance(Eigen::Vector3f current, Eigen::Vector3f target) -> float;
+            auto find_distance(Eigen::Vector3f const& current, Eigen::Vector3f const& target) -> float;
 
             auto drive_speed(float) -> float;
         };

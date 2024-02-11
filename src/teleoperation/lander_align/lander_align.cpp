@@ -37,13 +37,16 @@ namespace mrover {
 
     void LanderAlignNodelet::LanderCallback(sensor_msgs::PointCloud2Ptr const& cloud) {
         filterNormals(cloud);
-        if (std::optional<Eigen::Vector3f> planeNorm = ransac(mFilteredPoints, 0.2, 10, 100); planeNorm) {
+        ransac(0.2, 10, 100);
+        if (mBestNormal.has_value()) {
             geometry_msgs::Vector3 vect;
-            vect.x = planeNorm.value().x();
-            vect.y = planeNorm.value().y();
-            vect.z = planeNorm.value().z();
+            vect.x = mBestNormal.value().x();
+            vect.y = mBestNormal.value().y();
+            vect.z = mBestNormal.value().z();
             mDebugVectorPub.publish(vect);
         }
+
+        sendTwist({1, 1, 0});
     }
 
     // deprecated/not needed anymore
@@ -73,27 +76,32 @@ namespace mrover {
         }
     }
 
-    auto LanderAlignNodelet::ransac(std::vector<Point const*> const& points, float const distanceThreshold, int minInliers, int const epochs) -> std::optional<Eigen::Vector3f> {
+    void LanderAlignNodelet::ransac(float const distanceThreshold, int minInliers, int const epochs) {
         // TODO: use RANSAC to find the lander face, should be the closest, we may need to modify this to output more information, currently the output is the normal
         // takes 3 samples for every epoch and terminates after specified number of epochs
-        Eigen::Vector3f bestPlane(0, 0, 0); // normal vector representing plane (initialize as zero vector?? default ctor??)
+        // Eigen::Vector3f mBestNormal(0, 0, 0); // normal vector representing plane (initialize as zero vector?? default ctor??)
         // Eigen::Vector3f currentCenter(0, 0, 0); // Keeps track of current center of plane in current epoch
         float offset;
 
         // define randomizer
         std::default_random_engine generator;
-        std::uniform_int_distribution<int> distribution(0, (int) points.size() - 1);
+        std::uniform_int_distribution<int> distribution(0, (int) mFilteredPoints.size() - 1);
 
-        if (points.size() < 3) {
-            return std::nullopt;
+        if (mFilteredPoints.size() < 3) {
+            mBestNormal = std::nullopt;
+            mBestCenterInZED = std::nullopt;
+            return;
         }
-        while (bestPlane.isZero()) { // TODO add give up condition after X iter
+
+        mBestNormal = std::make_optional<Eigen::Vector3f>(0, 0, 0);
+
+        while (mBestNormal.value().isZero()) { // TODO add give up condition after X iter
             for (int i = 0; i < epochs; ++i) {
                 // currentCenter *= 0; // Set all vals in current center to zero at the start of each epoch
                 // sample 3 random points (potential inliers)
-                Point const* point1 = points[distribution(generator)];
-                Point const* point2 = points[distribution(generator)];
-                Point const* point3 = points[distribution(generator)];
+                Point const* point1 = mFilteredPoints[distribution(generator)];
+                Point const* point2 = mFilteredPoints[distribution(generator)];
+                Point const* point3 = mFilteredPoints[distribution(generator)];
 
                 Eigen::Vector3f vec1{point1->x, point1->y, point1->z};
                 Eigen::Vector3f vec2{point2->x, point2->y, point2->z};
@@ -105,7 +113,7 @@ namespace mrover {
 
                 int numInliers = 0;
 
-                for (auto p: points) {
+                for (auto p: mFilteredPoints) {
                     // calculate distance of each point from potential plane
                     float distance = std::abs(normal.x() * p->x + normal.y() * p->y + normal.z() * p->z + offset);
 
@@ -121,44 +129,57 @@ namespace mrover {
                 // update best plane if better inlier count
                 if (numInliers > minInliers) {
                     minInliers = numInliers;
-                    bestPlane = normal.normalized();
+                    mBestNormal.value() = normal.normalized();
 
-                    // If this is the new best plane, set mBestCenter
-                    // mBestCenter = currentCenter / static_cast<float>(minInliers);
+                    // If this is the new best plane, set mBestCenterInZED
+                    // mBestCenterInZED = currentCenter / static_cast<float>(minInliers);
                 }
             }
         }
 
         // Run through one more loop to identify the center of the plane (one possibility for determining best center)
         int numInliers = 0;
-        for (auto p: points) {
+        for (auto p: mFilteredPoints) {
             // calculate distance of each point from potential plane
-            float distance = std::abs(bestPlane.x() * p->x + bestPlane.y() * p->y + bestPlane.z() * p->z + mBestOffset);
+            float distance = std::abs(mBestNormal.value().x() * p->x + mBestNormal.value().y() * p->y + mBestNormal.value().z() * p->z + mBestOffset);
 
             if (distance < distanceThreshold) {
-                mBestCenter(0) += p->x;
-                mBestCenter(1) += p->y;
-                mBestCenter(2) += p->z;
+                mBestCenterInZED.value().x() += p->x;
+                mBestCenterInZED.value().y() += p->y;
+                mBestCenterInZED.value().z() += p->z;
                 ++numInliers; // count num of inliers that pass the "good enough fit" threshold
             }
         }
 
         if (numInliers == 0) {
-            return std::nullopt;
+            mBestNormal = std::nullopt;
+            mBestCenterInZED = std::nullopt;
+            return;
         }
 
-        mBestCenter /= static_cast<float>(numInliers);
+        mBestCenterInZED.value() /= static_cast<float>(numInliers);
 
-        SE3 planeLoc{
-                {mBestCenter(0), mBestCenter(1), mBestCenter(2)},
+        if (mBestNormal.value().x() < 0) {
+            mBestNormal.value() *= -1;
+        }
+
+        mPlaneLocInZED = {
+                {mBestCenterInZED.value().x(), mBestCenterInZED.value().y(), mBestCenterInZED.value().z()},
                 {}};
 
-        std::string immediateFrameId = "immediatePlane";
-        SE3::pushToTfTree(mTfBroadcaster, immediateFrameId, mCameraFrameId, planeLoc);
+        std::string immediateFrameIdInZED = "immediatePlaneInZED";
+        SE3::pushToTfTree(mTfBroadcaster, immediateFrameIdInZED, mCameraFrameId, mPlaneLocInZED);
 
-        ROS_INFO("THE LOCATION OF THE PLANE IS AT: %f, %f, %f with normal vector %f, %f, %f", mBestCenter(0), mBestCenter(1), mBestCenter(2), bestPlane.x(), bestPlane.y(), bestPlane.z());
+        mPlaneLocInWorld = SE3::fromTfTree(mTfBuffer, immediateFrameIdInZED, mMapFrameId);
 
-        return bestPlane;
+        std::string immediateFrameIdInWorld = "immediatePlaneInWorld";
+        SE3::pushToTfTree(mTfBroadcaster, immediateFrameIdInWorld, mMapFrameId, mPlaneLocInWorld);
+
+        mBestCenterInWorld = {
+                static_cast<float>(mPlaneLocInWorld.position().x()),
+                static_cast<float>(mPlaneLocInWorld.position().y()),
+                static_cast<float>(mPlaneLocInWorld.position().z())};
+        ROS_INFO("THE LOCATION OF THE PLANE IS AT: %f, %f, %f with normal vector %f, %f, %f", mBestCenterInZED.value().x(), mBestCenterInZED.value().y(), mBestCenterInZED.value().z(), mBestNormal.value().x(), mBestNormal.value().y(), mBestNormal.value().z());
     }
 
     auto LanderAlignNodelet::PID::rotate_speed(float theta) const -> float {
@@ -166,10 +187,12 @@ namespace mrover {
     }
 
 
-    auto LanderAlignNodelet::PID::find_angle(Eigen::Vector3f current, Eigen::Vector3f target) -> float {
+    auto LanderAlignNodelet::PID::find_angle(Eigen::Vector3f const& current, Eigen::Vector3f const& target) -> float {
         Eigen::Vector3f u1 = current.normalized();
+        u1.z() = 0;
         Eigen::Vector3f u2 = target.normalized();
-        float theta = acos(u1.dot(u2));
+        u2.z() = 0;
+        float theta = fmod(acos(u1.dot(u2)), static_cast<float>(180));
         float perp_alignment = u2[0] * -u1[1] + u2[1] * u1[0];
         if (perp_alignment > 0) {
             return theta;
@@ -181,7 +204,7 @@ namespace mrover {
         return distance * Linear_P;
     }
 
-    auto LanderAlignNodelet::PID::find_distance(Eigen::Vector3f current, Eigen::Vector3f target) -> float {
+    auto LanderAlignNodelet::PID::find_distance(Eigen::Vector3f const& current, Eigen::Vector3f const& target) -> float {
         Eigen::Vector3f difference = target - current;
         float distance = difference.norm();
         return distance;
@@ -195,31 +218,33 @@ namespace mrover {
     // }
 
 
-    void LanderAlignNodelet::sendTwist(Eigen::Vector3f const& planeNormal, Eigen::Vector3f const& planeCenterInWorld, Eigen::Vector3f const& offset) {
-        SE3 rover;
+    void LanderAlignNodelet::sendTwist(Eigen::Vector3f const& offset) {
 
+        //Locations
+        SE3 rover;
+        Eigen::Vector3f rover_dir;
+        Eigen::Vector3f targetPosInWorld = mBestCenterInWorld.value() - offset;
+
+        //Final msg
         geometry_msgs::Twist twist;
 
+        //Thr
         float const linear_thresh = 0.1; // could be member variables
         float const angular_thresh = 0.1;
 
-        Eigen::Vector3f rover_dir;
 
-        Eigen::Vector3f targetPosInWorld = planeCenterInWorld - offset;
-        targetPosInWorld[2] = 0;
+        targetPosInWorld.z() = 0;
 
         PID pid(0.1, 0.1); // literally just P -- ugly class and probably needs restructuring in the future
 
         ros::Rate rate(20); // ROS Rate at 20Hz
         while (ros::ok()) {
             rover = SE3::fromTfTree(mTfBuffer, "map", "base_link");
-            Eigen::Vector3f roverPosInWorld = rover.position();
-            roverPosInWorld[2] = 0;
+            Eigen::Vector3f roverPosInWorld{static_cast<float>(rover.position().x()), static_cast<float>(rover.position().y()), 0};
 
             switch (mLoopState) {
                 case RTRSTATE::turn1: {
-                    rover_dir = rover.rotation().matrix().col(0);
-                    rover_dir[2] = 0;
+                    rover_dir = {static_cast<float>(rover.rotation().matrix().col(0).x()), static_cast<float>(rover.rotation().matrix().col(0).y()), 0};
                     float angle = pid.find_angle(rover_dir, targetPosInWorld - roverPosInWorld);
                     float angle_rate = pid.rotate_speed(angle);
 
@@ -228,10 +253,10 @@ namespace mrover {
                     if (abs(angle) < angular_thresh) {
                         mLoopState = RTRSTATE::drive;
                     }
+                    ROS_INFO("In state: turning to point...");
                 }
 
                 case RTRSTATE::drive: {
-                    Eigen::Vector3f roverPosInWorld = rover.position();
                     float distance = pid.find_distance(roverPosInWorld, targetPosInWorld - roverPosInWorld);
                     float drive_rate = pid.drive_speed(distance);
 
@@ -240,12 +265,13 @@ namespace mrover {
                     if (abs(distance) < linear_thresh) {
                         mLoopState = RTRSTATE::turn2;
                     }
+                    ROS_INFO("In state: driving to point...");
                 }
 
                 case RTRSTATE::turn2: {
-                    rover_dir = rover.rotation().matrix().col(0);
+                    rover_dir = {static_cast<float>(rover.rotation().matrix().col(0).x()), static_cast<float>(rover.rotation().matrix().col(0).y()), 0};
                     rover_dir[2] = 0;
-                    float angle = pid.find_angle(rover_dir, planeNormal);
+                    float angle = pid.find_angle(rover_dir, -mBestNormal.value()); // normal is pointing "towards" tehe rover, so we need to flip it to find angle
                     float angle_rate = pid.rotate_speed(angle);
 
                     twist.angular.z = angle_rate;
@@ -253,6 +279,7 @@ namespace mrover {
                     if (abs(angle) < angular_thresh) {
                         mLoopState = RTRSTATE::done;
                     }
+                    ROS_INFO("In state: turning to lander...");
                 }
 
                 case RTRSTATE::done:
@@ -260,7 +287,6 @@ namespace mrover {
             }
             mTwistPub.publish(twist);
 
-            ROS_INFO("Running turn/drive state machine...");
             rate.sleep();
         }
     }
