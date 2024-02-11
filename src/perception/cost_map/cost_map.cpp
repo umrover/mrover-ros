@@ -7,7 +7,7 @@ namespace mrover {
         mPnh = getMTPrivateNodeHandle(); // Unused for now
         mNh.param<bool>("publish_cost_map", mPublishCostMap, true);
         mNh.param<float>("resolution", mResolution, 0.5);
-        mNh.param<float>("map_width", mDimension, 60);
+        mNh.param<float>("map_width", mDimension, 30);
 
         mCostMapPub = mCmt.advertise<nav_msgs::OccupancyGrid>("costmap", 1); // We publish our results to "costmap"
 

@@ -143,7 +143,7 @@ namespace mrover {
                     fillPointCloudMessageFromGpu(mPcMeasures.leftPoints, mPcMeasures.leftImage, mPcMeasures.leftNormals, mPointCloudGpu, pointCloudMsg);
                     pointCloudMsg->header.seq = mPointCloudUpdateTick;
                     pointCloudMsg->header.stamp = mPcMeasures.time;
-                    pointCloudMsg->header.frame_id = "zed2i_left_camera_frame";
+                    pointCloudMsg->header.frame_id = "zed_left_camera_frame";
                     mPcThreadProfiler.measureEvent("Fill Message");
 
                     if (mLeftImgPub.getNumSubscribers()) {

@@ -37,22 +37,31 @@ namespace mrover {
             for (uint32_t i = 0; i < num_points; i++) {
                 double x = point_matrix(0, i);
                 double y = point_matrix(1, i);
+                double z = point_matrix(2, i);
                 Eigen::Vector4d n = normal_matrix.col(i);
 
                 if (x >= -1 * mDimension / 2 && x <= mDimension / 2 &&
-                    y >= -1 * mDimension / 2 && y <= mDimension / 2) {
+                    y >= -1 * mDimension / 2 && y <= mDimension / 2 &&
+                    z < 2) {
                     int x_index = floor((x - mGlobalGridMsg.info.origin.position.x) / mGlobalGridMsg.info.resolution);
                     int y_index = floor((y - mGlobalGridMsg.info.origin.position.y) / mGlobalGridMsg.info.resolution);
-                    auto i = mGlobalGridMsg.info.width * y_index + x_index;
+                    auto ind = mGlobalGridMsg.info.width * y_index + x_index;
 
                     Eigen::Vector3d normal{n.x(), n.y(), n.z()};
                     normal.normalize();
                     // get vertical component of (unit) normal vector
                     double z_comp = normal.z();
                     // small z component indicates largely horizontal normal (surface is vertical)
-                    signed char cost = z_comp < 0.5 ? 100 : 0;
+                    signed char cost = z_comp < 0.5 ? 1 : 0;
+                    // signed char cost = 0;
+                    // if (z_comp < 0.2)
+                    //     cost = 1;
+                    // else if (z_comp < 0.4)
+                    //     cost = 10;
+                    // else if (z_comp < 0.6)
+                    //     cost = 20;
 
-                    mGlobalGridMsg.data[i] = std::max(mGlobalGridMsg.data[i], cost);
+                    mGlobalGridMsg.data[ind] = std::max(mGlobalGridMsg.data[ind], cost);
                 }
             }
             mCostMapPub.publish(mGlobalGridMsg);
