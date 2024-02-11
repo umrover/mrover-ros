@@ -26,7 +26,7 @@ if __name__ == "__main__":
                 # ),
                 (
                     Waypoint(tag_id=10, type=WaypointType(val=WaypointType.POST)),
-                    SE3(position=np.array([2, 2, 0])),
+                    SE3(position=np.array([1, 1, 0])),
                 ),
                 # (
                 #     Waypoint(tag_id=8, type=WaypointType(val=WaypointType.POST)),

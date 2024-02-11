@@ -11,6 +11,10 @@ class Trajectory:
     cur_pt: int = field(default=0, init=False)
 
     def get_cur_pt(self) -> np.ndarray:
+        # print(self.coordinates)
+        # print()
+        # print()
+        # print()
         return self.coordinates[self.cur_pt]
 
     def get_next_pt(self) -> np.ndarray:
