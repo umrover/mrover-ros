@@ -51,7 +51,7 @@
     </div>
     <div class="shadow p-3 rounded moteus">
       <DriveMoteusStateTable :moteus-state-data="moteusState" />
-      <MotorsStatusTable :motorData="motorData" :vertical="true" />
+      <MotorsStatusTable :motor-data="motorData" :vertical="true" />
     </div>
   </div>
 </template>

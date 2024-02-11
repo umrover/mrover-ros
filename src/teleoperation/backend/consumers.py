@@ -24,7 +24,11 @@ from mrover.msg import (
     IK
 )
 from mrover.srv import EnableAuton
-from sensor_msgs.msg import NavSatFix
+from sensor_msgs.msg import (
+    NavSatFix,
+    Temperature,
+    RelativeHumidity
+)
 from std_msgs.msg import String, Bool
 from std_srvs.srv import SetBool, Trigger
 from mrover.srv import EnableDevice, AdjustMotor
@@ -81,6 +85,13 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.led_sub = rospy.Subscriber("/led", LED, self.led_callback)
             self.nav_state_sub = rospy.Subscriber("/nav_state", StateMachineStateUpdate, self.nav_state_callback)
             self.imu_calibration = rospy.Subscriber("imu/calibration", CalibrationStatus, self.imu_calibration_callback)
+            self.sa_temp_data = rospy.Subscriber("/sa_temp_data", Temperature, self.sa_temp_data_callback)
+            self.sa_humidity_data = rospy.Subscriber("/sa_humidity_data", RelativeHumidity, self.sa_humidity_data_callback)
+        
+            # Services
+            self.laser_service = rospy.ServiceProxy("enable_mosfet_device", SetBool)
+            self.calibrate_service = rospy.ServiceProxy("arm_calibrate", Trigger)
+            self.enable_auton = rospy.ServiceProxy("enable_auton", EnableAuton)
 
             # Services
             self.laser_service = rospy.ServiceProxy("enable_arm_laser", SetBool)
@@ -89,14 +100,13 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.calibrate_cache_srv = rospy.ServiceProxy("cache_calibrate", Trigger)
             self.cache_enable_limit = rospy.ServiceProxy("cache_enable_limit_switches", SetBool)
             self.calibrate_service = rospy.ServiceProxy("arm_calibrate", Trigger)
-
+            
             # ROS Parameters
             self.mappings = rospy.get_param("teleop/joystick_mappings")
             self.drive_config = rospy.get_param("teleop/drive_controls")
             self.max_wheel_speed = rospy.get_param("rover/max_speed")
             self.wheel_radius = rospy.get_param("wheel/radius")
-            self.max_angular_speed = self.max_wheel_speed / self.wheel_radius
-
+            self.max_angular_speed = self.max_wheel_speed / self.wheel_radius                    
             self.ra_config = rospy.get_param("teleop/ra_controls")
             self.ik_names = rospy.get_param("teleop/ik_multipliers")
             self.RA_NAMES = rospy.get_param("teleop/ra_names")
@@ -152,6 +162,8 @@ class GUIConsumer(JsonWebsocketConsumer):
                 self.mast_gimbal(message)
             elif message["type"] == "enable_limit_switch":
                 self.limit_switch(message)
+            elif message["type"] == "center_map":
+                self.send_center()
             elif message["type"] == "center_map":
                 self.send_center()
             elif message["type"] == "save_auton_waypoint_list":
@@ -543,6 +555,12 @@ class GUIConsumer(JsonWebsocketConsumer):
     def nav_state_callback(self, msg):
         self.send(text_data=json.dumps({"type": "nav_state", "state": msg.state}))
 
+    def sa_temp_data_callback(self, msg):
+        self.send(text_data=json.dumps(obj={"type": "temp_data", "temp_data": msg.temperature}))
+
+    def sa_humidity_data_callback(self, msg):
+        self.send(text_data=json.dumps(obj={"type": "relative_humidity", "humidity_data": msg.relative_humidity}))
+
     def auton_bearing(self):
         base_link_in_map = SE3.from_tf_tree(self.tf_buffer, "map", "base_link")
         self.send(
@@ -560,6 +578,12 @@ class GUIConsumer(JsonWebsocketConsumer):
         up_down_pwr = msg["throttles"][1] * pwr["up_down_pwr"]
         self.mast_gimbal_pub.publish(Throttle(["mast_gimbal_x", "mast_gimbal_y"], [rot_pwr, up_down_pwr]))
 
+    def send_center(self):
+        lat = rospy.get_param("gps_linearization/reference_point_latitude")
+        long = rospy.get_param("gps_linearization/reference_point_longitude")
+        self.send(text_data=json.dumps({"type":"center_map",
+                                            "latitude": lat, 
+                                            "longitude":long}))
     def send_center(self):
         lat = rospy.get_param("gps_linearization/reference_point_latitude")
         long = rospy.get_param("gps_linearization/reference_point_longitude")
