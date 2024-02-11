@@ -135,6 +135,9 @@ class GPSLinearization:
         :param msg: The Imu message containing IMU data that was just received
         """
 
+        if self.last_gps_pose is None:
+            return
+
         # how can we make sure these 2 headings are comparable??
         if self.calculate_offset:
             imu_heading = euler_from_quaternion(msg.imu.orientation)[2]
