@@ -63,8 +63,8 @@ class GPSLinearization:
         self.calculate_offset = False
 
         # subscribe to topics
-        right_gps_sub = message_filters.Subscriber("right_gps_driver/fix", NavSatFix)
-        left_gps_sub = message_filters.Subscriber("left_gps_driver/fix", NavSatFix)
+        right_gps_sub = message_filters.Subscriber("/gps/fix", NavSatFix)
+        left_gps_sub = message_filters.Subscriber("/gps/fix", NavSatFix)
         # left_rtk_fix_sub = message_filters.Subscriber("left_gps_driver/rtk_fix_status", rtkStatus)
         # right_rtk_fix_sub = message_filters.Subscrier("right_gps_driver/rtk_fix_status", rtkStatus)
 
@@ -87,6 +87,7 @@ class GPSLinearization:
         :param msg: The NavSatFix message containing GPS data that was just received
         TODO: Handle invalid PVTs
         """
+
         if np.any(np.isnan([right_gps_msg.latitude, right_gps_msg.longitude, right_gps_msg.altitude])):
             return
         if np.any(np.isnan([left_gps_msg.latitude, left_gps_msg.longitude, left_gps_msg.altitude])):
@@ -134,21 +135,39 @@ class GPSLinearization:
 
         :param msg: The Imu message containing IMU data that was just received
         """
+        # print(self.last_gps_pose)
+        if self.last_gps_pose is None:
+            return
 
         # how can we make sure these 2 headings are comparable??
         if self.calculate_offset:
-            imu_heading = euler_from_quaternion(msg.imu.orientation)[2]
+            # print("\n")
+            # print(msg.imu.orientation)
+            # print("\n")
+
+            imu_heading = euler_from_quaternion(numpify(msg.imu.orientation))[2]
             imu_heading_matrix = euler_matrix(0, 0, imu_heading, axes="sxyz")
 
-            gps_heading = euler_from_quaternion(Quaternion(*self.last_gps_pose_fixed.rotation.quaternion))[2]
-            gps_heading_matrix = euler_matrix(0, 0, gps_heading, axes="sxyz")
+            # print("\n")
+            # print(self.last_gps_pose_fixed)
+            # print("\n")
 
-            self.rtk_offset = np.malmul(inverse_matrix(gps_heading_matrix), imu_heading_matrix)
+            gps_heading = euler_from_quaternion(self.last_gps_pose_fixed.rotation.quaternion)[2]
+
+            gps_heading_matrix = euler_matrix(0, 0, gps_heading, axes="sxyz")
+            print(gps_heading_matrix)
+            print("\n")
+            self.rtk_offset = np.matmul(inverse_matrix(gps_heading_matrix), imu_heading_matrix)
             self.calculate_offset = False
 
         # if rtk_offset is set, apply offset
         if self.rtk_offset is not None:
-            imu_rotation_matrix = euler_from_quaternion(msg.imu.orientation)
+            imu_rotation = euler_from_quaternion(numpify(msg.imu.orientation))
+            imu_rotation_matrix = euler_matrix(ai=imu_rotation[0], aj=imu_rotation[1], ak=imu_rotation[2], axes="sxyz")
+            # print("\n")
+            # print(imu_rotation_matrix)
+            # print("\n")
+            # print(self.rtk_offset)
             offsetted_rotation_matrix = np.matmul(imu_rotation_matrix, self.rtk_offset)
             offsetted_euler = euler_from_matrix(offsetted_rotation_matrix)
             msg.imu.orientation = quaternion_from_euler(
@@ -156,8 +175,8 @@ class GPSLinearization:
             )
 
         # imu quaternion
-        imu_quat = numpify(msg.imu.orientation)
-        imu_quat = imu_quat / np.linalg.norm(imu_quat)
+        # imu_quat = msg.imu.orientation
+        imu_quat = msg.imu.orientation / np.linalg.norm(msg.imu.orientation)
 
         covariance_matrix = np.zeros((6, 6))
         covariance_matrix[:3, :3] = self.config_gps_covariance.reshape(3, 3)
