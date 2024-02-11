@@ -139,27 +139,13 @@ class GPSLinearization:
         if self.last_gps_pose is None:
             return
 
-        if self.last_gps_pose is None:
-            return
-
         # how can we make sure these 2 headings are comparable??
         if self.calculate_offset:
-            # print("\n")
-            # print(msg.imu.orientation)
-            # print("\n")
-
             imu_heading = euler_from_quaternion(numpify(msg.imu.orientation))[2]
             imu_heading_matrix = euler_matrix(0, 0, imu_heading, axes="sxyz")
 
-            # print("\n")
-            # print(self.last_gps_pose_fixed)
-            # print("\n")
-
             gps_heading = euler_from_quaternion(self.last_gps_pose_fixed.rotation.quaternion)[2]
-
             gps_heading_matrix = euler_matrix(0, 0, gps_heading, axes="sxyz")
-            print(gps_heading_matrix)
-            print("\n")
             self.rtk_offset = np.matmul(inverse_matrix(gps_heading_matrix), imu_heading_matrix)
             self.calculate_offset = False
 
@@ -167,18 +153,15 @@ class GPSLinearization:
         if self.rtk_offset is not None:
             imu_rotation = euler_from_quaternion(numpify(msg.imu.orientation))
             imu_rotation_matrix = euler_matrix(ai=imu_rotation[0], aj=imu_rotation[1], ak=imu_rotation[2], axes="sxyz")
-            # print("\n")
-            # print(imu_rotation_matrix)
-            # print("\n")
-            # print(self.rtk_offset)
+
             offsetted_rotation_matrix = np.matmul(imu_rotation_matrix, self.rtk_offset)
             offsetted_euler = euler_from_matrix(offsetted_rotation_matrix)
+
             msg.imu.orientation = quaternion_from_euler(
                 offsetted_euler[0], offsetted_euler[1], offsetted_euler[2], axes="sxyz"
             )
 
         # imu quaternion
-        # imu_quat = msg.imu.orientation
         imu_quat = msg.imu.orientation / np.linalg.norm(msg.imu.orientation)
 
         covariance_matrix = np.zeros((6, 6))
