@@ -147,7 +147,7 @@ export default defineComponent({
   watch: {
     message(msg) {
       if (msg.type == 'laser_service') {
-        if (!msg.result) {
+        if (!msg.success) {
           this.laser_enabled = !this.laser_enabled
           alert('Toggling Arm Laser failed.')
         }

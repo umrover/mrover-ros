@@ -102,11 +102,12 @@ export default defineComponent({
         altitude: 0
       },
 
-      moteusState: {
+      moteusDrive: {
         name: [] as string[],
         error: [] as string[],
         state: [] as string[],
-        limit_hit: [] as boolean[] /* Each motor stores an array of 4 indicating which limit switches are hit */
+        limit_hit:
+          [] as boolean[] /* Each motor stores an array of 4 indicating which limit switches are hit */
       },
 
       motorData: {
