@@ -18,7 +18,7 @@ namespace mrover {
                                      0, 0, 1, 0,                       // WGPU y = +ROS z
                                      1, 0, 0, 0,                       // WGPU z = +ROS x
                                      0, 0, 0, 1)
-            .finished();
+                                            .finished();
 
     static auto const COLOR_FORMAT = wgpu::TextureFormat::BGRA8Unorm;
     static auto const DEPTH_FORMAT = wgpu::TextureFormat::Depth32Float;
@@ -128,6 +128,7 @@ namespace mrover {
         PeriodicTask updateTask;
         ros::Publisher pub;
         float fov{};
+        std::string frameId;
 
         wgpu::Texture colorTexture = nullptr;
         wgpu::TextureView colorTextureView = nullptr;
@@ -141,7 +142,7 @@ namespace mrover {
 
         wgpu::Buffer stagingBuffer = nullptr;
 
-        std::unique_ptr<wgpu::BufferMapCallback> callback = nullptr;
+        std::unique_ptr<wgpu::BufferMapCallback> callback;
         bool needsMap = false;
 
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -149,8 +150,11 @@ namespace mrover {
 
     struct StereoCamera {
         Camera base;
+        ros::Publisher pcPub;
 
+        wgpu::Buffer pointCloudStagingBuffer = nullptr;
         wgpu::Buffer pointCloudBuffer = nullptr;
+        std::unique_ptr<wgpu::BufferMapCallback> pointCloudCallback;
 
         Uniform<ComputeUniforms> computeUniforms{};
         wgpu::BindGroup computeBindGroup = nullptr;
@@ -192,6 +196,8 @@ namespace mrover {
         bool mEnablePhysics = false;
         bool mRenderModels = true;
         bool mRenderWireframeColliders = false;
+        double mPublishHammerDistanceThreshold = 4;
+        double mPublishBottleDistanceThreshold = 4;
 
         float mFloat = 0.0f;
 
@@ -218,7 +224,6 @@ namespace mrover {
 
         R3 mGpsLinerizationReferencePoint{};
         double mGpsLinerizationReferenceHeading{};
-        double mPublishHammerDistanceThreshold{};
 
         PeriodicTask mGpsTask;
         PeriodicTask mImuTask;
@@ -358,6 +363,12 @@ namespace mrover {
         auto renderWireframeColliders(wgpu::RenderPassEncoder& pass) -> void;
 
         auto renderUpdate() -> void;
+
+        auto camerasUpdate(wgpu::CommandEncoder encoder,
+                           wgpu::RenderPassColorAttachment& colorAttachment,
+                           wgpu::RenderPassColorAttachment& normalAttachment,
+                           wgpu::RenderPassDepthStencilAttachment& depthStencilAttachment,
+                           wgpu::RenderPassDescriptor const& renderPassDescriptor) -> void;
 
         auto guiUpdate(wgpu::RenderPassEncoder& pass) -> void;
 

@@ -56,7 +56,7 @@ namespace mrover {
                 wgpu::BufferDescriptor descriptor;
                 descriptor.usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::MapRead;
                 descriptor.size = pointCloudBufferSize;
-                stereoCamera.base.stagingBuffer = mDevice.createBuffer(descriptor);
+                stereoCamera.pointCloudStagingBuffer = mDevice.createBuffer(descriptor);
             }
         }
 
@@ -84,7 +84,7 @@ namespace mrover {
 
         computePass.end();
 
-        encoder.copyBufferToBuffer(stereoCamera.pointCloudBuffer, 0, stereoCamera.base.stagingBuffer, 0, stereoCamera.pointCloudBuffer.getSize());
+        encoder.copyBufferToBuffer(stereoCamera.pointCloudBuffer, 0, stereoCamera.pointCloudStagingBuffer, 0, stereoCamera.pointCloudBuffer.getSize());
 
         bindGroup.release();
         computePass.release();

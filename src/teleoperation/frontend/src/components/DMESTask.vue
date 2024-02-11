@@ -34,7 +34,7 @@
       <PDBFuse />
     </div>
     <div class="shadow p-3 rounded drive-vel-data">
-      <MotorsStatusTable :motor-data="motorData" :vertical="true" />
+      <MotorsStatusTable :motorData="motorData" :vertical="true" />
     </div>
     <div v-if="type === 'DM'" class="shadow p-3 rounded waypoint-editor">
       <BasicWaypointEditor :odom="odom" />
@@ -57,7 +57,7 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue'
-import { mapState } from 'vuex'
+import { mapState, mapActions } from 'vuex'
 import PDBFuse from './PDBFuse.vue'
 import DriveMoteusStateTable from './DriveMoteusStateTable.vue'
 import ArmMoteusStateTable from './ArmMoteusStateTable.vue'
@@ -102,21 +102,18 @@ export default defineComponent({
         altitude: 0
       },
 
-      moteusDrive: {
+      moteusState: {
         name: [] as string[],
         error: [] as string[],
         state: [] as string[],
-        limit_hit:
-          [] as boolean[] /* Each motor stores an array of 4 indicating which limit switches are hit */
+        limit_hit: [] as boolean[] /* Each motor stores an array of 4 indicating which limit switches are hit */
       },
 
       motorData: {
         name: [] as string[],
         position: [] as number[],
         velocity: [] as number[],
-        effort: [] as number[],
-        state: [] as string[],
-        error: [] as string[]
+        effort: [] as number[]
       }
     }
   },
@@ -127,21 +124,27 @@ export default defineComponent({
 
   watch: {
     message(msg) {
-      if (msg.type == 'drive_status') {
+      if (msg.type == 'joint_state') {
         this.motorData.name = msg.name
         this.motorData.position = msg.position
         this.motorData.velocity = msg.velocity
         this.motorData.effort = msg.effort
-        this.motorData.state = msg.state
-        this.motorData.error = msg.error
       }
-      else if (msg.type == 'drive_moteus') {
-        this.moteusDrive.name = msg.name
-        this.moteusDrive.state = msg.state
-        this.moteusDrive.error = msg.error
-        this.moteusDrive.limit_hit = msg.limit_hit
+      else if (msg.type == "center_map") {
+        this.odom.latitude_deg = msg.latitude
+        this.odom.longitude_deg = msg.longitude
       }
     }
+  },
+
+  methods: {
+    ...mapActions('websocket', ['sendMessage'])
+  },
+
+  created: function () {
+    window.setTimeout(() => {
+      this.sendMessage({ "type": "center_map" });
+    }, 250)
   }
 })
 </script>

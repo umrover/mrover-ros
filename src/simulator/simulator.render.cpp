@@ -185,7 +185,6 @@ namespace mrover {
     }
 
     auto SimulatorNodelet::initWindow() -> void {
-        // TODO(quintin): call glfwTerminate via raii
         mGlfwInstance.init();
         glfwSetErrorCallback([](int error, char const* description) { throw std::runtime_error(std::format("GLFW Error {}: {}", error, description)); });
         NODELET_INFO_STREAM(std::format("Initialized GLFW Version: {}.{}.{}", GLFW_VERSION_MAJOR, GLFW_VERSION_MINOR, GLFW_VERSION_REVISION));
@@ -482,20 +481,170 @@ namespace mrover {
     struct Pool {
         boost::container::static_vector<T*, 32> container;
 
-        auto get() -> T* {
+        auto borrowFrom() -> T* {
             if (container.empty()) return new T{};
             T* result = container.back();
             container.pop_back();
             return result;
         }
 
-        auto give(T* t) -> void {
+        auto returnTo(T* t) -> void {
             container.push_back(t);
         }
     };
 
     Pool<sensor_msgs::PointCloud2> pointCloudPool;
     Pool<sensor_msgs::Image> imagePool;
+
+    auto SimulatorNodelet::camerasUpdate(wgpu::CommandEncoder encoder, wgpu::RenderPassColorAttachment& colorAttachment, wgpu::RenderPassColorAttachment& normalAttachment, wgpu::RenderPassDepthStencilAttachment& depthStencilAttachment, wgpu::RenderPassDescriptor const& renderPassDescriptor) -> void {
+        // TODO(quintin): Remote duplicate code
+        for (StereoCamera& stereoCamera: mStereoCameras) {
+            std::size_t imageSize = stereoCamera.base.resolution.x() * stereoCamera.base.resolution.y() * 4;
+            if (stereoCamera.pointCloudCallback) {
+                mWgpuInstance.processEvents();
+                if (stereoCamera.pointCloudStagingBuffer.getMapState() == wgpu::BufferMapState::Mapped && stereoCamera.base.stagingBuffer.getMapState() == wgpu::BufferMapState::Mapped) {
+                    {
+                        auto pointCloud = boost::shared_ptr<sensor_msgs::PointCloud2>{pointCloudPool.borrowFrom(), [](sensor_msgs::PointCloud2* msg) { pointCloudPool.returnTo(msg); }};
+                        pointCloud->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
+                        pointCloud->is_dense = true;
+                        pointCloud->width = stereoCamera.base.resolution.x();
+                        pointCloud->height = stereoCamera.base.resolution.y();
+                        pointCloud->header.stamp = ros::Time::now();
+                        pointCloud->header.frame_id = stereoCamera.base.frameId;
+                        fillPointCloudMessageHeader(pointCloud);
+
+                        auto* fromCompute = stereoCamera.pointCloudStagingBuffer.getConstMappedRange(0, stereoCamera.pointCloudStagingBuffer.getSize());
+                        auto* toMessage = pointCloud->data.data();
+                        std::memcpy(toMessage, fromCompute, stereoCamera.pointCloudStagingBuffer.getSize());
+                        stereoCamera.pointCloudStagingBuffer.unmap();
+                        stereoCamera.pointCloudCallback = nullptr;
+
+                        stereoCamera.pcPub.publish(pointCloud);
+                    }
+                    {
+                        auto image = boost::shared_ptr<sensor_msgs::Image>{imagePool.borrowFrom(), [](sensor_msgs::Image* msg) { imagePool.returnTo(msg); }};
+                        image->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
+                        image->encoding = sensor_msgs::image_encodings::BGRA8;
+                        image->width = stereoCamera.base.resolution.x();
+                        image->height = stereoCamera.base.resolution.y();
+                        image->step = stereoCamera.base.resolution.x() * 4;
+                        image->header.stamp = ros::Time::now();
+                        image->header.frame_id = stereoCamera.base.frameId;
+                        image->data.resize(imageSize);
+
+                        auto* fromRender = stereoCamera.base.stagingBuffer.getConstMappedRange(0, stereoCamera.base.stagingBuffer.getSize());
+                        auto* toMessage = image->data.data();
+                        std::memcpy(toMessage, fromRender, stereoCamera.base.stagingBuffer.getSize());
+                        stereoCamera.base.stagingBuffer.unmap();
+                        stereoCamera.base.callback = nullptr;
+
+                        stereoCamera.base.pub.publish(image);
+                    }
+                }
+            }
+            if (!stereoCamera.pointCloudCallback && !stereoCamera.base.callback && stereoCamera.base.updateTask.shouldUpdate()) {
+                {
+                    colorAttachment.view = stereoCamera.base.colorTextureView;
+                    normalAttachment.view = stereoCamera.base.normalTextureView;
+                    depthStencilAttachment.view = stereoCamera.base.depthTextureView;
+
+                    renderCamera(stereoCamera.base, encoder, renderPassDescriptor);
+                    computeStereoCamera(stereoCamera, encoder);
+
+                    stereoCamera.base.needsMap = true;
+                }
+                {
+                    colorAttachment.view = stereoCamera.base.colorTextureView;
+                    normalAttachment.view = stereoCamera.base.normalTextureView;
+                    depthStencilAttachment.view = stereoCamera.base.depthTextureView;
+
+                    renderCamera(stereoCamera.base, encoder, renderPassDescriptor);
+
+                    if (!stereoCamera.base.stagingBuffer) {
+                        wgpu::BufferDescriptor descriptor;
+                        descriptor.usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::MapRead;
+                        descriptor.size = imageSize;
+                        stereoCamera.base.stagingBuffer = mDevice.createBuffer(descriptor);
+                    }
+
+                    wgpu::ImageCopyTexture copyTexture;
+                    copyTexture.texture = stereoCamera.base.colorTexture;
+                    copyTexture.aspect = wgpu::TextureAspect::All;
+                    wgpu::ImageCopyBuffer copyBuffer;
+                    copyBuffer.buffer = stereoCamera.base.stagingBuffer;
+                    copyBuffer.layout.bytesPerRow = stereoCamera.base.resolution.x() * 4;
+                    copyBuffer.layout.rowsPerImage = stereoCamera.base.resolution.y();
+                    wgpu::Extent3D extent{
+                            static_cast<std::uint32_t>(stereoCamera.base.resolution.x()),
+                            static_cast<std::uint32_t>(stereoCamera.base.resolution.y()),
+                            1,
+                    };
+                    encoder.copyTextureToBuffer(copyTexture, copyBuffer, extent);
+
+                    stereoCamera.base.needsMap = true;
+                }
+            }
+        }
+        for (Camera& camera: mCameras) {
+            std::size_t area = camera.resolution.x() * camera.resolution.y();
+            if (camera.callback) {
+                mWgpuInstance.processEvents();
+                if (camera.stagingBuffer.getMapState() == wgpu::BufferMapState::Mapped) {
+                    auto image = boost::shared_ptr<sensor_msgs::Image>{imagePool.borrowFrom(), [](sensor_msgs::Image* msg) { imagePool.returnTo(msg); }};
+                    image->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
+                    image->encoding = sensor_msgs::image_encodings::BGR8;
+                    image->width = camera.resolution.x();
+                    image->height = camera.resolution.y();
+                    image->step = camera.resolution.x() * 3;
+                    image->header.stamp = ros::Time::now();
+                    image->header.frame_id = camera.frameId;
+                    image->data.resize(area * 3);
+
+                    // Convert from BGRA to BGR
+                    auto* fromRender = static_cast<cv::Vec4b const*>(camera.stagingBuffer.getConstMappedRange(0, camera.stagingBuffer.getSize()));
+                    auto* toMessage = reinterpret_cast<cv::Vec3b*>(image->data.data());
+                    std::for_each(std::execution::par_unseq, fromRender, fromRender + area, [&](cv::Vec4b const& from) {
+                        std::size_t index = &from - fromRender;
+                        toMessage[index] = {from[0], from[1], from[2]};
+                    });
+                    camera.stagingBuffer.unmap();
+                    camera.callback = nullptr;
+
+                    camera.pub.publish(image);
+                }
+            }
+            if (!camera.callback && camera.updateTask.shouldUpdate()) {
+                colorAttachment.view = camera.colorTextureView;
+                normalAttachment.view = camera.normalTextureView;
+                depthStencilAttachment.view = camera.depthTextureView;
+
+                renderCamera(camera, encoder, renderPassDescriptor);
+
+                if (!camera.stagingBuffer) {
+                    wgpu::BufferDescriptor descriptor;
+                    descriptor.usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::MapRead;
+                    descriptor.size = area * 4;
+                    camera.stagingBuffer = mDevice.createBuffer(descriptor);
+                }
+
+                wgpu::ImageCopyTexture copyTexture;
+                copyTexture.texture = camera.colorTexture;
+                copyTexture.aspect = wgpu::TextureAspect::All;
+                wgpu::ImageCopyBuffer copyBuffer;
+                copyBuffer.buffer = camera.stagingBuffer;
+                copyBuffer.layout.bytesPerRow = camera.resolution.x() * 4;
+                copyBuffer.layout.rowsPerImage = camera.resolution.y();
+                wgpu::Extent3D extent{
+                        static_cast<std::uint32_t>(camera.resolution.x()),
+                        static_cast<std::uint32_t>(camera.resolution.y()),
+                        1,
+                };
+                encoder.copyTextureToBuffer(copyTexture, copyBuffer, extent);
+
+                camera.needsMap = true;
+            }
+        }
+    }
 
     auto SimulatorNodelet::renderUpdate() -> void {
         wgpu::TextureView nextTexture = mSwapChain.getCurrentTextureView();
@@ -524,99 +673,9 @@ namespace mrover {
         renderPassDescriptor.depthStencilAttachment = &depthStencilAttachment;
 
         wgpu::CommandEncoder encoder = mDevice.createCommandEncoder();
-        {
-            // TODO(quintin): Remote duplicate code
-            for (StereoCamera& stereoCamera: mStereoCameras) {
-                if (stereoCamera.base.callback) {
-                    mWgpuInstance.processEvents();
-                    if (stereoCamera.base.stagingBuffer.getMapState() == wgpu::BufferMapState::Mapped) {
-                        auto pointCloud = boost::shared_ptr<sensor_msgs::PointCloud2>{pointCloudPool.get(), [](sensor_msgs::PointCloud2* msg) { pointCloudPool.give(msg); }};
-                        pointCloud->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
-                        pointCloud->is_dense = true;
-                        pointCloud->width = stereoCamera.base.resolution.x();
-                        pointCloud->height = stereoCamera.base.resolution.y();
-                        pointCloud->header.stamp = ros::Time::now();
-                        pointCloud->header.frame_id = "zed2i_left_camera_frame";
-                        fillPointCloudMessageHeader(pointCloud);
 
-                        auto* fromCompute = stereoCamera.base.stagingBuffer.getConstMappedRange(0, stereoCamera.base.stagingBuffer.getSize());
-                        auto* toMessage = pointCloud->data.data();
-                        std::memcpy(toMessage, fromCompute, stereoCamera.base.stagingBuffer.getSize());
-                        stereoCamera.base.stagingBuffer.unmap();
-                        stereoCamera.base.callback = nullptr;
+        camerasUpdate(encoder, colorAttachment, normalAttachment, depthStencilAttachment, renderPassDescriptor);
 
-                        stereoCamera.base.pub.publish(pointCloud);
-                    }
-                }
-                if (!stereoCamera.base.callback && stereoCamera.base.updateTask.shouldUpdate()) {
-                    // TODO(quintin): Move these into camera update
-                    colorAttachment.view = stereoCamera.base.colorTextureView;
-                    normalAttachment.view = stereoCamera.base.normalTextureView;
-                    depthStencilAttachment.view = stereoCamera.base.depthTextureView;
-
-                    renderCamera(stereoCamera.base, encoder, renderPassDescriptor);
-                    computeStereoCamera(stereoCamera, encoder);
-
-                    stereoCamera.base.needsMap = true;
-                }
-            }
-            for (Camera& camera: mCameras) {
-                constexpr std::size_t elementSize = 4;
-                std::size_t size = camera.resolution.x() * camera.resolution.y() * elementSize;
-                if (camera.callback) {
-                    mWgpuInstance.processEvents();
-                    if (camera.stagingBuffer.getMapState() == wgpu::BufferMapState::Mapped) {
-                        auto image = boost::shared_ptr<sensor_msgs::Image>{imagePool.get(), [](sensor_msgs::Image* msg) { imagePool.give(msg); }};
-                        image->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
-                        image->encoding = sensor_msgs::image_encodings::BGRA8;
-                        image->width = camera.resolution.x();
-                        image->height = camera.resolution.y();
-                        image->step = camera.resolution.x() * elementSize;
-                        image->header.stamp = ros::Time::now();
-                        image->header.frame_id = "zed2i_left_camera_frame";
-                        image->data.resize(size);
-
-                        auto* fromRender = camera.stagingBuffer.getConstMappedRange(0, camera.stagingBuffer.getSize());
-                        auto* toMessage = image->data.data();
-                        std::memcpy(toMessage, fromRender, camera.stagingBuffer.getSize());
-                        camera.stagingBuffer.unmap();
-                        camera.callback = nullptr;
-
-                        camera.pub.publish(image);
-                    }
-                }
-                if (!camera.callback && camera.updateTask.shouldUpdate()) {
-                    colorAttachment.view = camera.colorTextureView;
-                    normalAttachment.view = camera.normalTextureView;
-                    depthStencilAttachment.view = camera.depthTextureView;
-
-                    renderCamera(camera, encoder, renderPassDescriptor);
-
-                    if (!camera.stagingBuffer) {
-                        wgpu::BufferDescriptor descriptor;
-                        descriptor.usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::MapRead;
-                        descriptor.size = size;
-                        camera.stagingBuffer = mDevice.createBuffer(descriptor);
-                    }
-
-                    wgpu::ImageCopyTexture copyTexture;
-                    copyTexture.texture = camera.colorTexture;
-                    copyTexture.aspect = wgpu::TextureAspect::All;
-                    wgpu::ImageCopyBuffer copyBuffer;
-                    copyBuffer.buffer = camera.stagingBuffer;
-                    copyBuffer.layout.bytesPerRow = camera.resolution.x() * elementSize;
-                    copyBuffer.layout.rowsPerImage = camera.resolution.y();
-                    wgpu::Extent3D extent{
-                            static_cast<std::uint32_t>(camera.resolution.x()),
-                            static_cast<std::uint32_t>(camera.resolution.y()),
-                            1,
-                    };
-                    encoder.copyTextureToBuffer(copyTexture, copyBuffer, extent);
-
-                    camera.needsMap = true;
-                }
-            }
-        }
         {
             colorAttachment.view = nextTexture;
             normalAttachment.view = mNormalTextureView;
@@ -671,7 +730,10 @@ namespace mrover {
         // TODO(quintin): Remote duplicate code
         for (StereoCamera& stereoCamera: mStereoCameras) {
             if (stereoCamera.base.needsMap) {
+                stereoCamera.pointCloudCallback = stereoCamera.pointCloudStagingBuffer.mapAsync(wgpu::MapMode::Read, 0, stereoCamera.pointCloudStagingBuffer.getSize(), [](wgpu::BufferMapAsyncStatus const&) {});
+
                 stereoCamera.base.callback = stereoCamera.base.stagingBuffer.mapAsync(wgpu::MapMode::Read, 0, stereoCamera.base.stagingBuffer.getSize(), [](wgpu::BufferMapAsyncStatus const&) {});
+
                 stereoCamera.base.needsMap = false;
             }
         }
