@@ -74,6 +74,9 @@ topics = ["/left_gps_driver/rtk_fix_status", "/right_gps_driver/rtk_fix_status"]
 csv_file_left = "left_fix_status.csv"
 csv_file_right = "right_fix_status.csv"
 
+csv_file_left_coords = "left_position.csv"
+csv_file_right_coords = "right_position.csv"
+
 with open(csv_file_left, "w", newline="") as csv_file:
     csv_writer = csv.writer(csv_file)
 
@@ -91,5 +94,27 @@ with open(csv_file_right, "w", newline="") as csv_file:
     for _, msg, _ in bag.read_messages(topics="/right_gps_driver/rtk_fix_status"):
         rtk_fix_type = int(msg.RTK_FIX_TYPE)
         csv_writer.writerow(["/right_gps_driver/rtk_fix_status", rtk_fix_type])
+
+with open(csv_file_left_coords, "w", newline="") as csv_file:
+    csv_writer = csv.writer(csv_file)
+
+    csv_writer.writerow(["Topic Name", "Latitude", "Longitude", "Altitude"]);
+
+    for _, msg, _ in bag.read_messages(topics="/left_gps_driver/fix"):
+        latitude = msg.latitude
+        longitude = msg.longitude
+        altitude = msg.altitude
+        csv_writer.writerow(["/left_gps_driver/fix", latitude, longitude, altitude])
+
+with open(csv_file_right_coords, "w", newline="") as csv_file:
+    csv_writer = csv.writer(csv_file)
+
+    csv_writer.writerow(["Topic Name", "Latitude", "Longitude", "Altitude"])
+
+    for _, msg, _ in bag.read_messages(topics="/right_gps_driver/fix"):
+        latitude = msg.latitude
+        longitude = msg.longitude
+        altitude = msg.altitude
+        csv_writer.writerow(["/right_gps_driver/fix", latitude, longitude, altitude])
 
 bag.close()

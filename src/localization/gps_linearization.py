@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from typing import Optional, Tuple
+from typing import Optional
 import numpy as np
 import rospy
 from geometry_msgs.msg import PoseWithCovarianceStamped, PoseWithCovariance, Pose, Point, Quaternion
@@ -13,8 +13,6 @@ from util.np_utils import numpify
 import message_filters
 from mrover.msg import rtkStatus
 from tf.transformations import *
-
-
 
 
 class GPSLinearization:
@@ -43,9 +41,6 @@ class GPSLinearization:
     use_dop_covariance: bool
     config_gps_covariance: np.ndarray
 
-    
-    
-
     def __init__(self):
         # read required parameters, if they don't exist an error will be thrown
         self.ref_lat = rospy.get_param("gps_linearization/reference_point_latitude")
@@ -73,13 +68,17 @@ class GPSLinearization:
         right_rtk_fix_sub = message_filters.Subscrier("right_gps_driver/rtk_fix_status", rtkStatus)
 
         # sync subscribers
-        sync_gps_sub = message_filters.ApproximateTimeSynchronizer([right_gps_sub, left_gps_sub, left_rtk_fix_sub, right_rtk_fix_sub], 10, 0.5)
+        sync_gps_sub = message_filters.ApproximateTimeSynchronizer(
+            [right_gps_sub, left_gps_sub, left_rtk_fix_sub, right_rtk_fix_sub], 10, 0.5
+        )
         sync_gps_sub.registerCallback(self.gps_callback)
-        
+
         rospy.Subscriber("imu/data", ImuAndMag, self.imu_callback)
         self.pose_publisher = rospy.Publisher("linearized_pose", PoseWithCovarianceStamped, queue_size=1)
 
-    def gps_callback(self, right_gps_msg: NavSatFix, left_gps_msg: NavSatFix, left_rtk_fix: rtkStatus, right_rtk_fix: rtkStatus):
+    def gps_callback(
+        self, right_gps_msg: NavSatFix, left_gps_msg: NavSatFix, left_rtk_fix: rtkStatus, right_rtk_fix: rtkStatus
+    ):
         """
         Callback function that receives GPS messages, assigns their covariance matrix,
         and then publishes the linearized pose.
@@ -87,9 +86,15 @@ class GPSLinearization:
         :param msg: The NavSatFix message containing GPS data that was just received
         TODO: Handle invalid PVTs
         """
-        if np.any(np.isnan([right_gps_msg.latitude, right_gps_msg.longitude, right_gps_msg.altitude, right_rtk_fix.RTK_FIX_TYPE])):
+        if np.any(
+            np.isnan(
+                [right_gps_msg.latitude, right_gps_msg.longitude, right_gps_msg.altitude, right_rtk_fix.RTK_FIX_TYPE]
+            )
+        ):
             return
-        if np.any(np.isnan([left_gps_msg.latitude, left_gps_msg.longitude, left_gps_msg.altitude, left_rtk_fix.RTK_FIX_TYPE])):
+        if np.any(
+            np.isnan([left_gps_msg.latitude, left_gps_msg.longitude, left_gps_msg.altitude, left_rtk_fix.RTK_FIX_TYPE])
+        ):
             return
 
         ref_coord = np.array([self.ref_lat, self.ref_lon, self.ref_alt])
@@ -105,14 +110,14 @@ class GPSLinearization:
         self.last_gps_pose = pose
 
         # if the fix status of both gps is 2 (fixed), update the offset with the next imu messsage
-        if (right_rtk_fix.RTK_FIX_TYPE == 2 and left_rtk_fix.RTK_FIX_TYPE == 2):
+        if right_rtk_fix.RTK_FIX_TYPE == 2 and left_rtk_fix.RTK_FIX_TYPE == 2:
             self.calculate_offset = True
             self.last_gps_pose_fixed = pose
-            
+
         covariance_matrix = np.zeros((6, 6))
         covariance_matrix[:3, :3] = self.config_gps_covariance.reshape(3, 3)
         covariance_matrix[3:, 3:] = self.config_imu_covariance.reshape(3, 3)
-        
+
         # publish to ekf
         pose_msg = PoseWithCovarianceStamped(
             header=Header(stamp=rospy.Time.now(), frame_id=self.world_frame),
@@ -134,7 +139,7 @@ class GPSLinearization:
 
         :param msg: The Imu message containing IMU data that was just received
         """
-        
+
         # how can we make sure these 2 headings are comparable??
         if self.calculate_offset:
             imu_heading = euler_from_quaternion(msg.imu.orientation)[2]
@@ -145,14 +150,15 @@ class GPSLinearization:
 
             self.rtk_offset = np.malmul(inverse_matrix(gps_heading_matrix), imu_heading_matrix)
             self.calculate_offset = False
-        
+
         # if rtk_offset is set, apply offset
         if self.rtk_offset is not None:
             imu_rotation_matrix = euler_from_quaternion(msg.imu.orientation)
             offsetted_rotation_matrix = np.matmul(imu_rotation_matrix, self.rtk_offset)
             offsetted_euler = euler_from_matrix(offsetted_rotation_matrix)
-            msg.imu.orientation = quaternion_from_euler(offsetted_euler[0], offsetted_euler[1], offsetted_euler[2], axes="sxyz")
-            
+            msg.imu.orientation = quaternion_from_euler(
+                offsetted_euler[0], offsetted_euler[1], offsetted_euler[2], axes="sxyz"
+            )
 
         # imu quaternion
         imu_quat = numpify(msg.imu.orientation)
@@ -193,7 +199,7 @@ class GPSLinearization:
         rotation_matrix = np.hstack(
             (vector_perp, np.reshape(vector_connecting, (3, 1)), np.array(object=[[0], [0], [1]]))
         )
-        
+
         # temporary fix, assumes base_link is exactly in the middle of the two GPS antennas
         # TODO: use static tf from base_link to left_antenna instead
         rover_position = (left_cartesian + right_cartesian) / 2
