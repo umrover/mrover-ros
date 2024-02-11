@@ -1,8 +1,10 @@
 <template>
   <div class="wrap">
-    <h2>Arm Controls</h2>
+    <h2>SA Arm Controls</h2>
     <div class="controls-flex">
       <h4>Arm mode</h4>
+      <!-- Make opposite option disappear so that we cannot select both -->
+      <!-- Change to radio buttons in the future -->
       <div class="form-check">
         <input
           v-model="arm_mode"
@@ -12,10 +14,6 @@
           value="arm_disabled"
         />
         <label class="form-check-label" for="dis">Arm Disabled</label>
-      </div>
-      <div class="form-check">
-        <input v-model="arm_mode" class="form-check-input" type="radio" id="ik" value="ik" />
-        <label class="form-check-label" for="ik">IK</label>
       </div>
       <div class="form-check">
         <input v-model="arm_mode" class="form-check-input" type="radio" id="pos" value="position" />
@@ -31,58 +29,30 @@
       </div>
     </div>
     <div class="controls-flex" v-if="arm_mode === 'position'">
-      <div class="col" v-for="(joint, key) in temp_positions" :key="key">
-        <label>{{ key }}</label>
-        <input
-          class="form-control"
-          type="number"
-          :min="joint.min"
-          :max="joint.max"
-          @input="validateInput(joint, $event)"
-          v-model="joint.value"
-        />
-      </div>
-      <div class="col text-center">
-        <button class="btn btn-primary" @click="submit_positions">Submit</button>
-      </div>
-    </div>
-    <div class="controls-flex">
-      <h4>Misc. Controls</h4>
-      <ToggleButton
-        id="arm_laser"
-        :current-state="laser_enabled"
-        label-enable-text="Arm Laser On"
-        label-disable-text="Arm Laser Off"
-        @change="toggleArmLaser()"
-      />
-      <div class="limit-switch">
-        <h4 style="margin-right: 10px">Limit Switches</h4>
-        <!-- TODO: Make switch to toggle all switches on or off, will need to use refs or modify LimitSwitch.vue -->
-        <!-- <LimitSwitch :display_name="'All Switches'" :service_name="'all_ra'" /> -->
-        <div>
-          <LimitSwitch :display_name="'Joint A'" :service_name="'joint_a'" />
-          <LimitSwitch :display_name="'Joint B'" :service_name="'joint_b'" />
-          <LimitSwitch :display_name="'Joint C'" :service_name="'joint_c'" />
-          <LimitSwitch :display_name="'Joint DE Pitch'" :service_name="'joint_de_pitch'" />
-        </div>
-        <div>
-          <LimitSwitch :display_name="'Joint DE Roll'" :service_name="'joint_de_roll'" />
-          <LimitSwitch :display_name="'Allen Key'" :service_name="'allen_key'" />
-          <LimitSwitch :display_name="'Gripper'" :service_name="'gripper'" />
+      <div class="row">
+        <div class="col" v-for="(joint, key) in temp_positions" :key="key">
+          <label>{{ key }}</label>
+          <input
+            class="form-control"
+            type="number"
+            :min="joint.min"
+            :max="joint.max"
+            @input="validateInput(joint, $event)"
+            v-model="joint.value"
+          />
         </div>
       </div>
+      <button class="btn btn-primary mx-auto my-2" @click="submit_positions">Submit</button>
     </div>
     <div class="controls-flex">
-      <h4>Calibration</h4>
-      <CalibrationCheckbox name="All Joints Calibration" topic_name="all_ra" />
       <MotorAdjust
-        v-if="arm_mode === 'position'"
-        :motors="[
-          { esw_name: 'joint_a', display_name: 'Joint A' },
-          { esw_name: 'joint_b', display_name: 'Joint B' },
-          { esw_name: 'joint_c', display_name: 'Joint C' },
-          { esw_name: 'joint_de_pitch', display_name: 'Joint DE Pitch' },
-          { esw_name: 'joint_de_roll', display_name: 'Joint DE Yaw' }
+        v-if="arm_mode == 'position'"
+        :options="[
+          { esw_name: 'sa_x', display_name: 'X' },
+          { esw_name: 'sa_y', display_name: 'Y' },
+          { esw_name: 'sa_z', display_name: 'Z' },
+          { esw_name: 'scoop', display_name: 'Scoop' },
+          { esw_name: 'sensor_actuator', display_name: 'Sensor Actuator' }
         ]"
       />
     </div>
@@ -92,10 +62,8 @@
 <script lang="ts">
 import { defineComponent } from 'vue'
 import { mapActions, mapState } from 'vuex'
-import ToggleButton from './ToggleButton.vue'
 import CalibrationCheckbox from './CalibrationCheckbox.vue'
 import MotorAdjust from './MotorAdjust.vue'
-import LimitSwitch from './LimitSwitch.vue'
 
 // In seconds
 const updateRate = 0.1
@@ -103,55 +71,42 @@ let interval: number | undefined
 
 export default defineComponent({
   components: {
-    ToggleButton,
     CalibrationCheckbox,
     MotorAdjust,
-    LimitSwitch
   },
   data() {
     return {
       arm_mode: 'arm_disabled',
       laser_enabled: false,
+      /* Positions in degrees! */
       temp_positions: {
-        /* Positions in degrees! */
-        /* Joint A, allen_key and gripper don't need positioning */
-        joint_b: {
-          value: 0,
-          min: -45,
-          max: 0
-        },
-        joint_c: {
+        sa_x: {
           value: 0,
           min: -100,
-          max: 120
+          max: 100
         },
-        joint_de_pitch: {
+        sa_y: {
           value: 0,
-          min: -135,
-          max: 135
+          min: -100,
+          max: 100
         },
-        joint_de_roll: {
+        sa_z: {
           value: 0,
-          min: -135,
-          max: 135
+          min: -100,
+          max: 100
+        },
+        scoop: {
+          value: 0,
+          min: -100,
+          max: 100
+        },
+        sensor_actuator: {
+          value: 0,
+          min: -100,
+          max: 100
         }
       },
       positions: []
-    }
-  },
-
-  computed: {
-    ...mapState('websocket', ['message'])
-  },
-
-  watch: {
-    message(msg) {
-      if (msg.type == 'laser_service') {
-        if (!msg.success) {
-          this.laser_enabled = !this.laser_enabled
-          alert('Toggling Arm Laser failed.')
-        }
-      }
     }
   },
 
@@ -179,6 +134,21 @@ export default defineComponent({
     }, updateRate * 1000)
   },
 
+  computed: {
+    ...mapState('websocket', ['message'])
+  },
+
+  watch: {
+    message(msg) {
+      if (msg.type == 'laser_service') {
+        if (!msg.result) {
+          this.laser_enabled = !this.laser_enabled
+          alert('Toggling Arm Laser failed.')
+        }
+      }
+    }
+  },
+
   methods: {
     ...mapActions('websocket', ['sendMessage']),
 
@@ -194,17 +164,13 @@ export default defineComponent({
     publishJoystickMessage: function (axes: any, buttons: any, arm_mode: any, positions: any) {
       if (arm_mode != 'arm_disabled') {
         this.sendMessage({
-          type: 'arm_values',
+          type: 'sa_arm_values',
           axes: axes,
           buttons: buttons,
           arm_mode: arm_mode,
           positions: positions
         })
       }
-    },
-    toggleArmLaser: function () {
-      this.laser_enabled = !this.laser_enabled
-      this.sendMessage({ type: 'laser_service', data: this.laser_enabled })
     },
 
     submit_positions: function () {
@@ -251,9 +217,8 @@ export default defineComponent({
 
 .limit-switch {
   display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  margin-left: 30px;
+  flex-direction: column;
+  align-items: center;
 }
 
 .limit-switch h4 {
