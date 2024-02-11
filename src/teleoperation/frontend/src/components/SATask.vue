@@ -69,8 +69,14 @@
         <CalibrationCheckbox :name="'SA X Calibration'" :topic_name="'sa_calibrate_sa_x'" />
         <CalibrationCheckbox :name="'SA Y Calibration'" :topic_name="'sa_calibrate_sa_y'" />
         <CalibrationCheckbox :name="'SA Z Calibration'" :topic_name="'sa_calibrate_sa_z'" />
-        <CalibrationCheckbox :name="'SA Z Calibration'" :topic_name="'sa_calibrate_sa_z'" />
-        <CalibrationCheckbox :name="'SA Z Calibration'" :topic_name="'sa_calibrate_sa_z'" />
+        <CalibrationCheckbox
+          :name="'SA Sampler Calibration'"
+          :topic_name="'sa_calibrate_sampler'"
+        />
+        <CalibrationCheckbox
+          :name="'SA Sensor Actuator Calibration'"
+          :topic_name="'sa_calibrate_sensor_actuator'"
+        />
       </div>
       <!-- <MotorAdjust
         :options="[
