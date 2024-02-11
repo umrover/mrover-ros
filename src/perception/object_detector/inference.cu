@@ -1,5 +1,4 @@
 #include "inference.cuh"
-#include <cassert>
 
 using namespace nvinfer1;
 
@@ -18,6 +17,8 @@ namespace mrover {
     constexpr static char const* OUTPUT_BINDING_NAME = "output0";
 
     Inference::Inference(std::filesystem::path const& onnxModelPath, std::string const& modelName) {
+        mModelPath = onnxModelPath.string();
+
         // Create the engine object from either the file or from onnx file
         mEngine = std::unique_ptr<ICudaEngine>{createCudaEngine(onnxModelPath, modelName)};
         if (!mEngine) throw std::runtime_error("Failed to create CUDA engine");
@@ -35,8 +36,6 @@ namespace mrover {
     }
 
     auto Inference::createCudaEngine(std::filesystem::path const& onnxModelPath, std::string const& modelName) -> ICudaEngine* {
-
-        mModelPath = onnxModelPath.string();
 
         //Define the size of Batches
         constexpr auto explicitBatch = 1U << static_cast<std::uint32_t>(NetworkDefinitionCreationFlag::kEXPLICIT_BATCH);
@@ -73,7 +72,6 @@ namespace mrover {
         std::filesystem::path packagePath = ros::package::getPath("mrover");
         std::filesystem::path enginePath = packagePath / "data" / std::string("tensorrt-engine-").append(modelName).append(".engine");
         ROS_INFO_STREAM(enginePath);
-
         //Check if engine file exists
         if (!exists(enginePath)) {
             ROS_WARN_STREAM("Optimizing ONXX model for TensorRT. This make take a long time...");
@@ -109,6 +107,8 @@ namespace mrover {
     auto Inference::createExecutionContext() -> void {
         // Create Execution Context.
         mContext.reset(mEngine->createExecutionContext());
+        if (!mContext) throw std::runtime_error("Failed to create execution context");
+
 
         //Set up the input tensor sizing
         mContext->setInputShape(INPUT_BINDING_NAME, mEngine->getTensorShape(INPUT_BINDING_NAME));

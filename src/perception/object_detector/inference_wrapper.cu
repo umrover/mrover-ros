@@ -13,7 +13,7 @@ using namespace nvinfer1;
 */
 namespace mrover {
 
-    InferenceWrapper::InferenceWrapper(std::string onnxModelPath, std::string const& modelName) {
+    InferenceWrapper::InferenceWrapper(std::string const& onnxModelPath, std::string const& modelName) {
         mInference.reset(new Inference(std::move(onnxModelPath), modelName));
     }
 

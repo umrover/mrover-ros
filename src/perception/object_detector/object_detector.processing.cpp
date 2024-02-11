@@ -1,8 +1,5 @@
 #include "object_detector.hpp"
 
-#include "point.hpp"
-#include "inference_wrapper.hpp"
-
 namespace mrover {
 
     auto ObjectDetectorNodelet::imageCallback(sensor_msgs::PointCloud2ConstPtr const& msg) -> void {
@@ -153,10 +150,6 @@ namespace mrover {
             mLoopProfiler.measureEvent("Extract Detections");
         }
 
-        if (mEnableLoopProfiler) {
-            //mLoopProfiler.measureEvent("Push to TF START");
-        }
-
         std::vector seenObjects{false, false};
         //If there are detections locate them in 3D
         for (Detection const& detection: detections) {
@@ -164,19 +157,11 @@ namespace mrover {
             //Increment Object hit counts if theyre seen
             updateHitsObject(msg, detection, seenObjects);
 
-            if (mEnableLoopProfiler) {
-                //mLoopProfiler.measureEvent("Push to TF 1");
-            }
-
             //Decrement Object hit counts if they're not seen
             for (size_t i = 0; i < seenObjects.size(); i++) {
                 if (!seenObjects.at(i)) {
                     mObjectHitCounts.at(i) = std::max(0, mObjectHitCounts.at(i) - mObjDecrementWeight);
                 }
-            }
-
-            if (mEnableLoopProfiler) {
-                //mLoopProfiler.measureEvent("Push to TF 2");
             }
 
             //Draw the detected object's bounding boxes on the image for each of the objects detected
@@ -196,7 +181,7 @@ namespace mrover {
         }
 
         if (mEnableLoopProfiler) {
-            mLoopProfiler.measureEvent("Push to TF FINAL");
+            mLoopProfiler.measureEvent("Push to TF");
         }
 
         //We only want to publish the debug image if there is something lsitening, to reduce the operations going on
@@ -281,9 +266,6 @@ namespace mrover {
         auto centerWidth = static_cast<size_t>(center.first * static_cast<double>(msg->width) / imgSize.width);
         auto centerHeight = static_cast<size_t>(center.second * static_cast<double>(msg->height) / imgSize.height);
 
-        std::cout << mObjectHitCounts.at(0) << ", " << mObjectHitCounts.at(1) << std::endl;
-        ROS_INFO("%d, %d", mObjectHitCounts.at(0), mObjectHitCounts.at(1));
-
         if (!seenObjects.at(detection.classId)) {
             seenObjects.at(detection.classId) = true;
 
@@ -298,7 +280,7 @@ namespace mrover {
 
                     //Since the object is seen we need to increment the hit counter
                     mObjectHitCounts.at(detection.classId) = std::min(mObjMaxHitcount, mObjectHitCounts.at(detection.classId) + mObjIncrementWeight);
-                    ROS_INFO("PUSHED TO TF TEMP");
+
                     //Only publish to permament if we are confident in the object
                     if (mObjectHitCounts.at(detection.classId) > mObjHitThreshold) {
 

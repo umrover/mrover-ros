@@ -14,7 +14,7 @@ namespace mrover {
 
         ~InferenceWrapper() = default;
 
-        explicit InferenceWrapper(std::string onnxModelPath, std::string const& modelName);
+        explicit InferenceWrapper(std::string const& onnxModelPath, std::string const& modelName);
 
         auto doDetections(cv::Mat const& img) const -> void;
 

@@ -1,26 +1,23 @@
 #pragma once
 
-#include "inference_wrapper.hpp"
+#include "pch.hpp"
 
-namespace mrover
-{
+namespace mrover {
     //Data type for detection
-    struct Detection
-    {
+    struct Detection {
         int classId{0};
         std::string className;
         float confidence{0.0};
         cv::Rect box;
     };
 
-    class ObjectDetectorNodelet : public nodelet::Nodelet
-    {
+    class ObjectDetectorNodelet : public nodelet::Nodelet {
+
         std::string mModelName;
 
         LoopProfiler mLoopProfiler{"Object Detector", 1};
-        bool mEnableLoopProfiler = true;
+        bool mEnableLoopProfiler{};
 
-        // Mat for the image from the point cloud
         cv::Mat mImg;
 
         std::vector<std::string> classes{"Bottle", "Hammer"};
