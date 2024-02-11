@@ -178,7 +178,6 @@ class DriveController:
         :return: A tuple of the drive command and a boolean indicating whether the rover is at the target position.
         :modifies: self._last_angular_error
         """
-
         # get the direction vector of the rover and the target position, zero the Z components of both since our controller only assumes motion and control over the Rover in the XY plane
         rover_dir = rover_pose.rotation.direction_vector()
         rover_dir[2] = 0

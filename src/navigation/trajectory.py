@@ -14,8 +14,8 @@ class Trajectory:
         return self.coordinates[self.cur_pt]
 
     def get_next_pt(self) -> np.ndarray:
-        if self.cur_pt + 1 < self.coordinates.size():
-            return self.coordinates[self.cur_pt]
+        if self.cur_pt + 1 < self.coordinates.size:
+            return self.coordinates[self.cur_pt + 1]
         return None
 
     def increment_point(self) -> bool:
