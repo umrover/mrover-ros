@@ -34,6 +34,7 @@
         </l-tooltip>
       </l-marker>
 
+<<<<<<< HEAD
       <!-- Search Path Icons -->
       <l-marker
         v-for="(search_path_point, index) in searchPathPoints"
@@ -44,9 +45,11 @@
         <l-tooltip>Search Path {{ index }}</l-tooltip>
       </l-marker>
 
+=======
+>>>>>>> 6e58e74e38a44673384c89d9dee2dc8284f16c12
       <!-- Polylines -->
       <l-polyline :lat-lngs="polylinePath" :color="'red'" :dash-array="'5, 5'" />
-      <l-polyline :lat-lngs="odomPath" :color="'blue'" />
+      <l-polyline :lat-lngs="odomPath" :color="'blue'" :dash-array="'5, 5'" />
     </l-map>
     <!-- Controls that go directly under the map -->
     <div class="controls">
@@ -66,11 +69,11 @@ import {
   LTooltip,
   LControlScale
 } from '@vue-leaflet/vue-leaflet'
-import { mapGetters, mapMutations } from 'vuex'
+import { mapGetters, mapMutations, mapActions } from 'vuex'
 import 'leaflet/dist/leaflet.css'
 import L from '../leaflet-rotatedmarker'
 
-const MAX_ODOM_COUNT = 1000
+const MAX_ODOM_COUNT = 10
 const DRAW_FREQUENCY = 10
 // Options for the tilelayer object on the map
 const onlineUrl = 'http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}'
@@ -87,7 +90,6 @@ const offlineTileOptions = {
 
 export default {
   name: 'AutonRoverMap',
-
   components: {
     LMap,
     LTileLayer,
@@ -100,7 +102,7 @@ export default {
     odom: {
       type: Object,
       required: true
-    }
+    },
   },
   data() {
     return {
@@ -113,19 +115,11 @@ export default {
       offlineTileOptions: offlineTileOptions,
       roverMarker: null,
       waypointIcon: null,
-      searchPathIcon: null,
-      gatePathIcon: null,
+      locationIcon: null,
 
       map: null,
       odomCount: 0,
-      locationIcon: null,
       odomPath: [],
-
-      searchPathPoints: [],
-      gatePathPoints: [],
-
-      post1: null,
-      post2: null,
 
       findRover: false
     }
@@ -166,35 +160,24 @@ export default {
         }
 
         // Update the rover marker using bearing angle
-        // console.log(this.roverMarker)
-        this.roverMarker.setRotationAngle(angle)
-
-        this.roverMarker.setLatLng(latLng)
+        if (this.roverMarker !== null) {
+          this.roverMarker.setRotationAngle(angle)
+          this.roverMarker.setLatLng(latLng)
+        }
 
         // Update the rover path
         this.odomCount++
         if (this.odomCount % DRAW_FREQUENCY === 0) {
-          if (this.odomCount > MAX_ODOM_COUNT * DRAW_FREQUENCY) {
-            this.odomPath.splice(0, 1)
+          if (this.odomPath.length > MAX_ODOM_COUNT) {
+            this.odomPath = [...this.odomPath.slice(1), latLng] //remove oldest element
           }
-          this.odomPath.push(latLng)
-        }
 
-        this.odomPath[this.odomPath.length - 1] = latLng
+          this.odomPath = [...this.odomPath, latLng]
+          this.odomCount = 0
+        }
       },
       // Deep will watch for changes in children of an object
       deep: true
-    },
-    autonEnabled: {
-      handler: function () {
-        if (this.autonEnabled) {
-          this.searchPathPoints = []
-          this.gatePathPoints = []
-
-          this.post1 = null
-          this.post2 = null
-        }
-      }
     }
   },
   created: function () {
@@ -210,6 +193,7 @@ export default {
       iconAnchor: [32, 64],
       popupAnchor: [0, -32]
     })
+<<<<<<< HEAD
     this.searchPathIcon = L.icon({
       iconUrl: 'map_marker_projected.png',
       iconSize: [32, 32],
@@ -240,9 +224,15 @@ export default {
 
   methods: {
     onMapReady: function (ready) {
+=======
+  },
+
+  methods: {
+    onMapReady: function () {
+      // Pull objects from refs to be able to access data and change w functions
+>>>>>>> 6e58e74e38a44673384c89d9dee2dc8284f16c12
       this.$nextTick(() => {
         this.map = this.$refs.map.leafletObject
-        console.log(this.$refs.rover)
         this.roverMarker = this.$refs.rover.leafletObject
       })
     },
@@ -281,7 +271,7 @@ export default {
   height: 100%;
   display: grid;
   overflow: hidden;
-  min-height: 100%;
+  min-height: 40vh;
   grid-gap: 3px;
   grid-template-columns: auto;
   grid-template-rows: 94% 6%;
@@ -290,7 +280,8 @@ export default {
     'controls';
 }
 
-.custom-tooltip {
+/* .custom-tooltip {
+>>>>>>> 467f453fc814fb83532e90412d432c5622b2afcf
   display: inline-block;
   margin: 10px 20px;
   opacity: 1;
@@ -303,7 +294,7 @@ export default {
 
 .custom-tooltip.top .tooltip-arrow {
   border-top-color: #0088cc;
-}
+} */
 
 /* Grid area declarations */
 .map {

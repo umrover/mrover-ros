@@ -27,10 +27,17 @@ const quaternionToMapAngle = function (quaternion) {
   /*
     Convert a quaternion into euler display angles
   */
-  // quaternion = [quaternion.w, quaternion.x, quaternion.y, quaternion.z]
-  let euler = qte(quaternion)
-  // euler[2] == euler z component
-  return (Math.PI / 2.0 - euler[2]) * (180 / Math.PI)
+  const q0 = quaternion[0]
+  const q1 = quaternion[1]
+  const q2 = quaternion[2]
+  const q3 = quaternion[3]
+
+  const Rx = Math.atan2(2 * (q0 * q1 + q2 * q3), 1 - 2 * (q1 * q1 + q2 * q2))
+  const Ry = Math.asin(2 * (q0 * q2 - q3 * q1))
+  const Rz = Math.atan2(2 * (q0 * q3 + q1 * q2), 1 - 2 * (q2 * q2 + q3 * q3))
+
+  const euler = [Rx, Ry, Rz]
+  return (Math.PI / 2 - euler[0]) * (180 / Math.PI)
 }
 
 const disableAutonLED = function () {

@@ -23,7 +23,7 @@ export default {
   },
 
   created: function () {
-    const updateRate = 0.05
+    const UPDATE_RATE = 10 //100 Hz
 
     interval = window.setInterval(() => {
       const gamepads = navigator.getGamepads()
@@ -43,7 +43,7 @@ export default {
           this.sendMessage(joystickData)
         }
       }
-    }, updateRate * 1000)
+    }, UPDATE_RATE)
   }
 }
 </script>

@@ -1,10 +1,12 @@
 #pragma once
 
+#define GLFW_INCLUDE_NONE
+
 #include <charconv>
 #include <chrono>
 #include <execution>
 #include <filesystem>
-#include <format.hpp>
+#include <format>
 #include <fstream>
 #include <iostream>
 #include <memory>
@@ -13,8 +15,6 @@
 #include <stdexcept>
 #include <thread>
 #include <unordered_set>
-
-#include <boost_cpp23_workaround.hpp>
 
 #include <boost/circular_buffer.hpp>
 #include <boost/container/static_vector.hpp>
@@ -27,10 +27,10 @@
 #include <nodelet/nodelet.h>
 #include <ros/package.h>
 #include <ros/serialization.h>
+#include <sensor_msgs/Image.h>
 #include <sensor_msgs/JointState.h>
 #include <sensor_msgs/NavSatFix.h>
 #include <sensor_msgs/PointCloud2.h>
-#include <sensor_msgs/Image.h>
 #include <sensor_msgs/image_encodings.h>
 #include <sensor_msgs/point_cloud2_iterator.h>
 #include <tf2_ros/transform_broadcaster.h>
@@ -66,12 +66,14 @@
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
 
+#include <bimap.hpp>
 #include <loop_profiler.hpp>
 #include <params_utils.hpp>
 #include <point.hpp>
 #include <se3.hpp>
 #include <units.hpp>
 
+#include <mrover/ControllerState.h>
 #include <mrover/IK.h>
 #include <mrover/ImuAndMag.h>
 #include <mrover/MotorsStatus.h>
