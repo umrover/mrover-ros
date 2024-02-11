@@ -18,10 +18,10 @@ from mrover.msg import (
     StateMachineStateUpdate,
     Throttle,
     CalibrationStatus,
-    MotorsStatus
+    MotorsStatus,
 )
 from mrover.srv import EnableAuton
-from sensor_msgs.msg import NavSatFix
+from sensor_msgs.msg import NavSatFix, Temperature, RelativeHumidity
 from std_msgs.msg import String, Bool
 from std_srvs.srv import SetBool, Trigger
 from util.SE3 import SE3
@@ -55,7 +55,9 @@ class GUIConsumer(JsonWebsocketConsumer):
 
             # Subscribers
             self.pdb_sub = rospy.Subscriber("/pdb_data", PDLB, self.pdb_callback)
-            self.arm_moteus_sub = rospy.Subscriber("/arm_controller_data", ControllerState, self.arm_controller_callback)
+            self.arm_moteus_sub = rospy.Subscriber(
+                "/arm_controller_data", ControllerState, self.arm_controller_callback
+            )
             self.drive_moteus_sub = rospy.Subscriber(
                 "/drive_controller_data", ControllerState, self.drive_controller_callback
             )
@@ -64,6 +66,10 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.led_sub = rospy.Subscriber("/led", LED, self.led_callback)
             self.nav_state_sub = rospy.Subscriber("/nav_state", StateMachineStateUpdate, self.nav_state_callback)
             self.imu_calibration = rospy.Subscriber("imu/calibration", CalibrationStatus, self.imu_calibration_callback)
+            self.sa_temp_data = rospy.Subscriber("/sa_temp_data", Temperature, self.sa_temp_data_callback)
+            self.sa_humidity_data = rospy.Subscriber(
+                "/sa_humidity_data", RelativeHumidity, self.sa_humidity_data_callback
+            )
 
             # Services
             self.laser_service = rospy.ServiceProxy("enable_mosfet_device", SetBool)
@@ -81,7 +87,7 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
             self.flight_thread = threading.Thread(target=self.flight_attitude_listener)
             self.flight_thread.start()
-            
+
         except rospy.ROSException as e:
             rospy.logerr(e)
 
@@ -119,6 +125,8 @@ class GUIConsumer(JsonWebsocketConsumer):
                 self.auton_bearing()
             elif message["type"] == "mast_gimbal":
                 self.mast_gimbal(message)
+            elif message["type"] == "center_map":
+                self.send_center()
             elif message["type"] == "center_map":
                 self.send_center()
             elif message["type"] == "save_auton_waypoint_list":
@@ -201,10 +209,12 @@ class GUIConsumer(JsonWebsocketConsumer):
         for n in msg.limit_hit:
             temp = []
             for i in range(4):
-                temp.append((1 if n & (1 << i) != 0 else 0) )
+                temp.append((1 if n & (1 << i) != 0 else 0))
             hits.append(temp)
         self.send(
-            text_data=json.dumps({"type": "drive_moteus", "name": msg.name, "state": msg.state, "error": msg.error, "limit_hit": hits})
+            text_data=json.dumps(
+                {"type": "drive_moteus", "name": msg.name, "state": msg.state, "error": msg.error, "limit_hit": hits}
+            )
         )
 
     def enable_laser_callback(self, msg):
@@ -245,7 +255,7 @@ class GUIConsumer(JsonWebsocketConsumer):
                     "velocity": msg.joint_states.velocity,
                     "effort": msg.joint_states.effort,
                     "state": msg.moteus_states.state,
-                    "error": msg.moteus_states.error
+                    "error": msg.moteus_states.error,
                 }
             )
         )
@@ -284,6 +294,12 @@ class GUIConsumer(JsonWebsocketConsumer):
     def nav_state_callback(self, msg):
         self.send(text_data=json.dumps({"type": "nav_state", "state": msg.state}))
 
+    def sa_temp_data_callback(self, msg):
+        self.send(text_data=json.dumps(obj={"type": "temp_data", "temp_data": msg.temperature}))
+
+    def sa_humidity_data_callback(self, msg):
+        self.send(text_data=json.dumps(obj={"type": "relative_humidity", "humidity_data": msg.relative_humidity}))
+
     def auton_bearing(self):
         base_link_in_map = SE3.from_tf_tree(self.tf_buffer, "map", "base_link")
         self.send(
@@ -304,9 +320,13 @@ class GUIConsumer(JsonWebsocketConsumer):
     def send_center(self):
         lat = rospy.get_param("gps_linearization/reference_point_latitude")
         long = rospy.get_param("gps_linearization/reference_point_longitude")
-        self.send(text_data=json.dumps({"type":"center_map",
-                                            "latitude": lat, 
-                                            "longitude":long}))
+        self.send(text_data=json.dumps({"type": "center_map", "latitude": lat, "longitude": long}))
+
+    def send_center(self):
+        lat = rospy.get_param("gps_linearization/reference_point_latitude")
+        long = rospy.get_param("gps_linearization/reference_point_longitude")
+        self.send(text_data=json.dumps({"type": "center_map", "latitude": lat, "longitude": long}))
+
     def save_auton_waypoint_list(self, msg):
         AutonWaypoint.objects.all().delete()
         waypoints = []
