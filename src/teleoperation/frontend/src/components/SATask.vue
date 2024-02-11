@@ -81,6 +81,9 @@
     <div class="shadow p-3 rounded odom">
       <OdometryReading :odom="odom"></OdometryReading>
     </div>
+    <div>
+      <Cache></Cache>
+    </div>
   </div>
 </template>
 
@@ -102,6 +105,7 @@ import CalibrationCheckbox from './CalibrationCheckbox.vue'
 import MotorAdjust from './MotorAdjust.vue'
 import OdometryReading from './OdometryReading.vue'
 import SAArmControls from './SAArmControls.vue'
+import Cache from './SACache.vue'
 import { disableAutonLED, quaternionToMapAngle } from '../utils.js'
 
 export default {
@@ -109,6 +113,7 @@ export default {
     BasicMap,
     SoilData,
     BasicWaypointEditor,
+    Cache,
     Cameras,
     DriveControls,
     MastGimbalControls,
