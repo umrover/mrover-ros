@@ -81,9 +81,9 @@ namespace mrover {
 			}
 
 			/* send current and temperature over CAN */
-			osMutexAcquire(m_can_tx_mutex, osWaitForever);
+//			osMutexAcquire(m_can_tx_mutex, osWaitForever);
 			m_fdcan_bus.broadcast(OutBoundPDLBMessage{pdb_data});
-			osMutexRelease(m_can_tx_mutex);
+//			osMutexRelease(m_can_tx_mutex);
         }
 
         void blink_led_if_applicable() {
