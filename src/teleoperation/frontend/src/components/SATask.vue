@@ -23,6 +23,9 @@
     <div class="shadow p-3 rounded cameras">
       <Cameras :primary="true" />
     </div>
+    <div class="shadow p-3 rounded soildata">
+      <SoilData />
+    </div>
     <div>
       <DriveControls />
     </div>
@@ -32,8 +35,8 @@
     <div class="shadow p-3 rounded pdb">
       <PDBFuse />
     </div>
-    <div class="shadow p-3 rounded jointState">
-      <MotorsStatusTable :joint-state-data="jointState" :vertical="true" />
+    <div class="shadow p-3 rounded motorData">
+      <MotorsStatusTable :motor-data="motorData" :vertical="true" />
     </div>
     <div class="shadow p-3 rounded moteus">
       <DriveMoteusStateTable :moteus-state-data="moteusState" />
@@ -72,6 +75,7 @@
 
 <script lang="ts">
 import BasicMap from './BasicRoverMap.vue'
+import SoilData from './SoilData.vue'
 import BasicWaypointEditor from './BasicWaypointEditor.vue'
 import DriveControls from './DriveControls.vue'
 import MastGimbalControls from './MastGimbalControls.vue'
@@ -91,6 +95,7 @@ import { disableAutonLED, quaternionToMapAngle } from '../utils.js'
 export default {
   components: {
     BasicMap,
+    SoilData,
     BasicWaypointEditor,
     Cameras,
     DriveControls,
@@ -116,13 +121,19 @@ export default {
         altitude: 0
       },
 
-      jointState: {},
+      motorData: {
+        name: [] as string[],
+        position: [] as number[],
+        velocity: [] as number[],
+        effort: [] as number[]
+      },
       // Moteus state table is set up to look for specific keys in moteusState so it can't be empty
       moteusState: {
-        name: ['', '', '', '', '', ''],
-        error: ['', '', '', '', '', ''],
-        state: ['', '', '', '', '', '']
-      }
+        name: [] as string[],
+        error: [] as string[],
+        state: [] as string[],
+        limit_hit: [] as boolean[] /* Each motor stores an array of 4 indicating which limit switches are hit */
+      },
     }
   },
 
@@ -156,7 +167,7 @@ export default {
     //     messageType: "mrover/MotorsStatus"
     //   });
     //   this.brushless_motors_sub.subscribe((msg) => {
-    //     this.jointState = msg.joint_states;
+    //     this.motorData = msg.joint_states;
     //     this.moteusState = msg.moteus_states;
     //   });
   }
@@ -168,13 +179,14 @@ export default {
   display: grid;
   grid-gap: 10px;
   grid-template-columns: repeat(3, auto);
-  grid-template-rows: auto 50vh repeat(3, auto);
+  grid-template-rows: auto 50vh repeat(4, auto);
   grid-template-areas:
     'header header header'
     'map map waypoints'
     'odom cameras cameras'
     'arm limit calibration'
-    'pdb moteus jointState';
+    'pdb moteus motorData'
+    'pdb moteus soilData';
   font-family: sans-serif;
   height: auto;
 }
@@ -252,8 +264,8 @@ export default {
   grid-area: pdb;
 }
 
-.jointState {
-  grid-area: jointState;
+.motorData {
+  grid-area: motorData;
 }
 
 .moteus {
@@ -266,6 +278,10 @@ export default {
 
 .odom {
   grid-area: odom;
+}
+
+.soilData {
+  grid-area: soilData;
 }
 
 .calibration {
