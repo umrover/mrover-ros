@@ -193,12 +193,6 @@ if (CUDA_FOUND)
 endif ()
 
 if (ZED_FOUND)
-    mrover_add_library(streaming src/esw/streaming/*.c* src/esw/streaming)
-    #    target_link_libraries(streaming PUBLIC opencv_core opencv_cudacodec)
-    target_link_libraries(streaming PUBLIC cuda nvidia-encode opencv_core)
-    target_include_directories(streaming SYSTEM PUBLIC deps/nvenc)
-    target_compile_definitions(streaming PUBLIC BOOST_ASIO_NO_DEPRECATED)
-
     mrover_add_nodelet(zed src/perception/zed_wrapper/*.c* src/perception/zed_wrapper src/perception/zed_wrapper/pch.hpp)
     mrover_nodelet_include_directories(zed ${ZED_INCLUDE_DIRS} ${CUDA_INCLUDE_DIRS})
     mrover_nodelet_link_libraries(zed ${ZED_LIBRARIES} ${SPECIAL_OS_LIBS} lie)
