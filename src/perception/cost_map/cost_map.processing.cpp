@@ -33,13 +33,15 @@ namespace mrover {
             for (uint32_t i = 0; i < mNumPoints; i++) {
                 double x = point_matrix(0, i);
                 double y = point_matrix(1, i);
+                double z = point_matrix(2, i);
                 Eigen::Vector4d n = normal_matrix.col(i);
 
                 if (x >= mGlobalGridMsg.info.origin.position.x && x <= mGlobalGridMsg.info.origin.position.x + mDimension &&
-                    y >= mGlobalGridMsg.info.origin.position.y && y <= mGlobalGridMsg.info.origin.position.y + mDimension) {
+                    y >= mGlobalGridMsg.info.origin.position.y && y <= mGlobalGridMsg.info.origin.position.y + mDimension &&
+                    z < 2) {
                     int x_index = floor((x - mGlobalGridMsg.info.origin.position.x) / mGlobalGridMsg.info.resolution);
                     int y_index = floor((y - mGlobalGridMsg.info.origin.position.y) / mGlobalGridMsg.info.resolution);
-                    auto i = mGlobalGridMsg.info.width * y_index + x_index;
+                    auto ind = mGlobalGridMsg.info.width * y_index + x_index;
 
                     Eigen::Vector3d normal{n.x(), n.y(), n.z()};
                     // normal.normalize();
@@ -48,7 +50,7 @@ namespace mrover {
                     // small z component indicates largely horizontal normal (surface is vertical)
                     signed char cost = z_comp < mNormalThreshold ? 1 : 0;
 
-                    mGlobalGridMsg.data[i] = std::max(mGlobalGridMsg.data[i], cost);
+                    mGlobalGridMsg.data[ind] = std::max(mGlobalGridMsg.data[ind], cost);
                 }
             }
             mCostMapPub.publish(mGlobalGridMsg);
