@@ -30,11 +30,15 @@ namespace mrover {
     }
 
     void DiagTempSensor::update_science_temp() {
+<<<<<<< Updated upstream
     		float adc_cnt = m_adc_sensor->get_raw_channel_value(m_channel);
     		float measured_voltage = m_adc_sensor->get_raw_channel_value(m_channel) * 3.3f / 4096.0f;
-        	float measured_resistance = ((m_adc_sensor->get_raw_channel_value(m_channel) * 3.3f / 4096.0f) * RESISTANCE_25)/(3.3f - (m_adc_sensor->get_raw_channel_value(m_channel) * 3.3f / 4096.0f));
+=======
+>>>>>>> Stashed changes
+        	float measured_resistance = ((m_adc_sensor->get_raw_channel_value(m_channel) * 3.3f / 4096.0f) * RESISTANCE_25)/(3.3f - (m_adc_sensor->get_raw_channel_value(m_channel) * 3.3f / 4096.0f)) / 10;
         	m_temp = 1/(THRM_A + THRM_B*log(measured_resistance/RESISTANCE_25) + THRM_C*log((measured_resistance/RESISTANCE_25)*(measured_resistance/RESISTANCE_25)) + THRM_D*(((measured_resistance/RESISTANCE_25)*(measured_resistance/RESISTANCE_25)*(measured_resistance/RESISTANCE_25))));
-        	m_temp -= 273.15;
+//        	m_temp -= 273.15;
+        	m_temp = m_adc_sensor->get_raw_channel_value(m_channel) * 3.3f / 4096.0f;
     }
 
     float DiagTempSensor::get_temp() {
