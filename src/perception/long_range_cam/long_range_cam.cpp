@@ -1,11 +1,4 @@
 #include "long_range_cam.hpp"
-#include <opencv2/imgproc.hpp>
-#include <opencv2/videoio.hpp>
-#include <ros/init.h>
-#include <ros/this_node.h>
-#include <ros/time.h>
-#include <sensor_msgs/image_encodings.h>
-#include <thread>
 
 namespace mrover {
 
@@ -14,63 +7,54 @@ namespace mrover {
     /**
     * @brief Load config, open the camera, and start our threads
     */
-    void LongRangeCamNodelet::onInit() {
-        try {
-            mGrabThread = std::jthread(&LongRangeCamNodelet::grabUpdate, this);
-        } catch (std::exception const& e) {
-            NODELET_FATAL("Exception while starting: %s", e.what());
-            ros::shutdown();
-        }
+    auto LongRangeCamNodelet::onInit() -> void {
+        mGrabThread = std::jthread(&LongRangeCamNodelet::grabUpdate, this);
     }
 
-    void fillImageMessage(cv::Mat& bgra, sensor_msgs::ImagePtr const& msg) {
-        assert(msg);
+    auto fillImageMessage(cv::Mat const& bgrImage, sensor_msgs::ImagePtr const& imageMessage) -> void {
+        assert(!bgrImage.empty());
+        assert(bgrImage.isContinuous());
+        assert(bgrImage.type() == CV_8UC4);
+        assert(imageMessage);
 
-        msg->height = bgra.rows;
-        msg->width = bgra.cols;
-        msg->encoding = sensor_msgs::image_encodings::BGR8;
-        msg->step = bgra.step[0];
-        msg->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
-        auto* imgPtr = bgra.ptr<float>(0);
-        size_t size = msg->step * msg->height;
-        msg->data.resize(size);
-        memcpy(msg->data.data(), imgPtr, size);
+        imageMessage->height = bgrImage.rows;
+        imageMessage->width = bgrImage.cols;
+        imageMessage->encoding = sensor_msgs::image_encodings::BGR8;
+        imageMessage->step = bgrImage.step;
+        imageMessage->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
+        size_t size = imageMessage->step * imageMessage->height;
+        imageMessage->data.resize(size);
+        std::memcpy(imageMessage->data.data(), bgrImage.data, size);
     }
 
-    void LongRangeCamNodelet::grabUpdate() {
+    auto LongRangeCamNodelet::grabUpdate() -> void {
         // See: http://wiki.ros.org/roscpp/Overview/NodeHandles for public vs. private node handle
         // MT means multithreaded
         mNh = getMTNodeHandle();
         mPnh = getMTPrivateNodeHandle();
         mCamInfoPub = mNh.advertise<sensor_msgs::CameraInfo>("long_range_cam/camera_info", 1);
         mImgPub = mNh.advertise<sensor_msgs::Image>("long_range_image", 1);
-        // While dtor not called
-        cv::VideoCapture mCapture{std::format("v4l2src device=/dev/arducam ! videoconvert ! video/x-raw,width={},height={},format=I420,framerate={}/1 ! appsink", 1920, 1080, 5), cv::CAP_GSTREAMER};
-        if (!mCapture.isOpened()) {
-            throw std::runtime_error("Long range cam failed to open");
-        }
+        auto width = mPnh.param<int>("width", 1920);
+        auto height = mPnh.param<int>("height", 1080);
+        auto framerate = mPnh.param<int>("framerate", 5);
+        auto device = mPnh.param<std::string>("device", "/dev/arducam");
+        cv::VideoCapture capture{std::format("v4l2src device={} ! videoconvert ! video/x-raw,width={},height={},format=I420,framerate={}/1 ! appsink", device, width, height, framerate), cv::CAP_GSTREAMER};
+        if (!capture.isOpened()) throw std::runtime_error{"Long range cam failed to open"};
+
         cv::Mat frame;
         while (ros::ok()) {
-            // while (true) {
-            mCapture.read(frame);
-            if (frame.empty()) {
-                break;
-            }
+            capture.read(frame);
+            if (frame.empty()) break;
+
             if (mImgPub.getNumSubscribers()) {
-                auto imgMsg = boost::make_shared<sensor_msgs::Image>();
+                auto imageMessage = boost::make_shared<sensor_msgs::Image>();
                 cv::Mat bgr;
                 cv::cvtColor(frame, bgr, cv::COLOR_YUV2BGR_I420);
-                fillImageMessage(bgr, imgMsg);
-                imgMsg->header.frame_id = "long_range_cam_frame";
-                imgMsg->header.stamp = ros::Time::now();
-                imgMsg->header.seq = mGrabUpdateTick;
-                mImgPub.publish(imgMsg);
+                fillImageMessage(bgr, imageMessage);
+                imageMessage->header.frame_id = "long_range_cam_frame";
+                imageMessage->header.stamp = ros::Time::now();
+                mImgPub.publish(imageMessage);
             }
-            // if (cv::waitKey(1) == 's') {
-            //     break;
-            // }
-            ++mGrabUpdateTick;
-            // }
         }
     }
 

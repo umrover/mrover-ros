@@ -10,9 +10,7 @@ PLUGINLIB_EXPORT_CLASS(mrover::LongRangeCamNodelet, nodelet::Nodelet)
 int main(int argc, char** argv) {
     ros::init(argc, argv, "usb_camera");
 
-    // Start the ZED Nodelet
     nodelet::Loader nodelet;
-    std::cout << ros::this_node::getName() << std::endl;
     nodelet.load(ros::this_node::getName(), "mrover/LongRangeCamNodelet", ros::names::getRemappings(), {});
 
     ros::spin();
