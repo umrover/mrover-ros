@@ -23,7 +23,7 @@
     <div class="shadow p-3 rounded cameras">
       <Cameras :primary="true" />
     </div>
-    <div class="shadow p-3 rounded soil-data">
+    <div class="shadow p-3 rounded soildata">
       <SoilData />
     </div>
     <div>
@@ -186,7 +186,7 @@ export default {
     'odom cameras cameras'
     'arm limit calibration'
     'pdb moteus motorData'
-    'pdb moteus soil-data';
+    'pdb moteus soilData';
   font-family: sans-serif;
   height: auto;
 }
@@ -280,8 +280,8 @@ export default {
   grid-area: odom;
 }
 
-.soil-data {
-  grid-area: soil-data;
+.soilData {
+  grid-area: soilData;
 }
 
 .calibration {
