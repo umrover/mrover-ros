@@ -3,9 +3,6 @@
 // ROS Headers, ros namespace
 #include <ros/init.h>
 
-#include <opencv2/aruco.hpp>
-#include <opencv2/core.hpp>
-
 int main(int argc, char** argv) {
     ros::init(argc, argv, "starter_project_perception"); // Our node name (See: http://wiki.ros.org/Nodes)
 
@@ -50,7 +47,7 @@ namespace mrover {
     }
 
     void Perception::findTagsInImage(cv::Mat const& image, std::vector<StarterProjectTag>& tags) { // NOLINT(*-convert-member-functions-to-static)
-        // hint: take a look at OpenCV's documentation for the detectMarkers function that can be called on mTagDetector
+        // hint: take a look at OpenCV's documentation for the detectMarkers function
         // hint: you have mTagDictionary, mTagCorners, mTagIds, and mTagDetectorParams member variables already defined!
         // hint: write and use the "getCenterFromTagCorners" and "getClosenessMetricFromTagCorners" functions
 

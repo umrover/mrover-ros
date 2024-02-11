@@ -18,7 +18,7 @@ add_executable(starter_project_perception ${STARTER_PROJECT_PERCEPTION_SOURCES})
 # Ensure that our project builds after message generation
 add_dependencies(starter_project_perception ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 # Link needed libraries
-target_link_libraries(starter_project_perception ${catkin_LIBRARIES} opencv_core opencv_aruco)
+target_link_libraries(starter_project_perception ${catkin_LIBRARIES} ${OpenCV_LIBS})
 # Include needed directories
 target_include_directories(starter_project_perception PUBLIC ${catkin_INCLUDE_DIRS})
 
