@@ -37,8 +37,7 @@ namespace mrover {
                 Eigen::Vector4d n = normal_matrix.col(i);
 
                 if (x >= mGlobalGridMsg.info.origin.position.x && x <= mGlobalGridMsg.info.origin.position.x + mDimension &&
-                    y >= mGlobalGridMsg.info.origin.position.y && y <= mGlobalGridMsg.info.origin.position.y + mDimension &&
-                    z < 2) {
+                    y >= mGlobalGridMsg.info.origin.position.y && y <= mGlobalGridMsg.info.origin.position.y + mDimension) {
                     int x_index = floor((x - mGlobalGridMsg.info.origin.position.x) / mGlobalGridMsg.info.resolution);
                     int y_index = floor((y - mGlobalGridMsg.info.origin.position.y) / mGlobalGridMsg.info.resolution);
                     auto ind = mGlobalGridMsg.info.width * y_index + x_index;
