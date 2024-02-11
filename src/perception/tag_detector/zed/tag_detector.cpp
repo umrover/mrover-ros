@@ -2,7 +2,7 @@
 
 namespace mrover {
 
-    void TagDetectorNodelet::onInit() {
+    auto TagDetectorNodelet::onInit() -> void {
         mNh = getMTNodeHandle();
         mPnh = getMTPrivateNodeHandle();
         mDetectorParams = cv::makePtr<cv::aruco::DetectorParameters>();
@@ -12,7 +12,7 @@ namespace mrover {
         mNh.param<bool>("use_odom_frame", mUseOdom, false);
         mNh.param<std::string>("odom_frame", mOdomFrameId, "odom");
         mNh.param<std::string>("world_frame", mMapFrameId, "map");
-        mNh.param<std::string>("camera_frame", mCameraFrameId, "zed2i_left_camera_frame");
+        mNh.param<std::string>("camera_frame", mCameraFrameId, "zed_left_camera_frame");
 
         mPnh.param<bool>("publish_images", mPublishImages, true);
         mPnh.param<int>("dictionary", dictionaryNumber, static_cast<int>(cv::aruco::DICT_4X4_50));
@@ -93,7 +93,7 @@ namespace mrover {
         NODELET_INFO("Tag detection ready, use odom frame: %s, min hit count: %d, max hit count: %d, hit increment weight: %d, hit decrement weight: %d", mUseOdom ? "true" : "false", mMinHitCountBeforePublish, mMaxHitCount, mTagIncrementWeight, mTagDecrementWeight);
     }
 
-    void TagDetectorNodelet::configCallback(mrover::DetectorParamsConfig& config, uint32_t level) {
+    auto TagDetectorNodelet::configCallback(DetectorParamsConfig& config, uint32_t level) -> void {
         // Don't load initial config, since it will overwrite the rosparam settings
         if (level == std::numeric_limits<uint32_t>::max()) return;
 
@@ -127,7 +127,7 @@ namespace mrover {
         mDetectorParams->polygonalApproxAccuracyRate = config.polygonalApproxAccuracyRate;
     }
 
-    bool TagDetectorNodelet::enableDetectionsCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) {
+    auto TagDetectorNodelet::enableDetectionsCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) -> bool {
         mEnableDetections = req.data;
         if (mEnableDetections) {
             res.message = "Enabled tag detections.";

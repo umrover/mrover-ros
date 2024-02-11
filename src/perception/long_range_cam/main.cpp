@@ -7,7 +7,7 @@ PLUGINLIB_EXPORT_CLASS(mrover::LongRangeCamNodelet, nodelet::Nodelet)
 
 #else
 
-int main(int argc, char** argv) {
+auto main(int argc, char** argv) -> int {
     ros::init(argc, argv, "usb_camera");
 
     nodelet::Loader nodelet;

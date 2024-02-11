@@ -1,5 +1,4 @@
 #include "pch.hpp"
-#include <sensor_msgs/Image.h>
 
 namespace mrover {
 
@@ -31,42 +30,41 @@ namespace mrover {
         std::vector<std::vector<cv::Point2f>> mImmediateCorners;
         std::vector<int> mImmediateIds;
 
-
         // Message header information
-        uint32_t mSeqNum{};
         std::optional<size_t> mPrevDetectedCount; // Log spam prevention
-        dynamic_reconfigure::Server<mrover::DetectorParamsConfig> mConfigServer;
-        dynamic_reconfigure::Server<mrover::DetectorParamsConfig>::CallbackType mCallbackType;
+        dynamic_reconfigure::Server<DetectorParamsConfig> mConfigServer;
+        dynamic_reconfigure::Server<DetectorParamsConfig>::CallbackType mCallbackType;
         LoopProfiler mProfiler{"Long Range Tag Detector"};
         ros::ServiceServer mServiceEnableDetections;
 
         std::string mMapFrameId, mCameraFrameId;
 
-        void onInit() override;
+        auto onInit() -> void override;
 
         /**
         * Detects tags in an image, draws the detected markers onto the image, and publishes them to /long_range_tag_detection
         * 1. Updates mImg to store the underlying image matrix
         * @param msg   image message
         */
-        void imageCallback(sensor_msgs::ImageConstPtr const& msg);
+        auto imageCallback(sensor_msgs::ImageConstPtr const& msg) -> void;
 
         /**
         * Given the known tag information and the Long range cam FOV, calculate relative bearing of a detected tag
         * @param tagCorners reference to tag corners
         * @return float of tag bearing
         */
-        float getTagBearing(std::vector<cv::Point2f>& tagCorners) const;
+        auto getTagBearing(std::vector<cv::Point2f>& tagCorners) const -> float;
 
 
         /**
         * publishes the thresholded tags onto an image using OpenCV
         * only if mPublishImages and the topic has a subscriber
         */
-        void publishTagsOnImage();
+        auto publishTagsOnImage() -> void;
 
-        void configCallback(mrover::DetectorParamsConfig& config, uint32_t level);
+        auto configCallback(DetectorParamsConfig& config, uint32_t level) -> void;
 
-        bool enableDetectionsCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res);
+        auto enableDetectionsCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) -> bool;
     };
-}; // namespace mrover
+
+} // namespace mrover

@@ -4,7 +4,7 @@
 
 namespace mrover {
 
-    void LongRangeTagDetectorNodelet::onInit() {
+    auto LongRangeTagDetectorNodelet::onInit() -> void {
         mNh = getMTNodeHandle();
         mPnh = getMTPrivateNodeHandle();
         mDetectorParams = new cv::aruco::DetectorParameters();
@@ -22,7 +22,7 @@ namespace mrover {
         mServiceEnableDetections = mNh.advertiseService("enable_detections", &LongRangeTagDetectorNodelet::enableDetectionsCallback, this);
 
         // Lambda handles passing class pointer (implicit first parameter) to configCallback
-        mCallbackType = [this](mrover::DetectorParamsConfig& config, uint32_t level) { configCallback(config, level); };
+        mCallbackType = [this](DetectorParamsConfig& config, uint32_t level) { configCallback(config, level); };
         mConfigServer.setCallback(mCallbackType);
 
         mPnh.param<double>("adaptiveThreshConstant",
@@ -85,7 +85,7 @@ namespace mrover {
                            defaultDetectorParams->polygonalApproxAccuracyRate);
     }
 
-    void LongRangeTagDetectorNodelet::configCallback(mrover::DetectorParamsConfig& config, uint32_t level) {
+    auto LongRangeTagDetectorNodelet::configCallback(DetectorParamsConfig& config, uint32_t level) -> void {
         // Don't load initial config, since it will overwrite the rosparam settings
         if (level == std::numeric_limits<uint32_t>::max()) return;
 
@@ -119,7 +119,7 @@ namespace mrover {
         mDetectorParams->polygonalApproxAccuracyRate = config.polygonalApproxAccuracyRate;
     }
 
-    bool LongRangeTagDetectorNodelet::enableDetectionsCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) {
+    auto LongRangeTagDetectorNodelet::enableDetectionsCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) -> bool {
         mEnableDetections = req.data;
         if (mEnableDetections) {
             res.message = "Enabled tag detections.";
