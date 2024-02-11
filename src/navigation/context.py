@@ -20,14 +20,16 @@ from mrover.msg import (
 )
 from mrover.srv import EnableAuton, EnableAutonRequest, EnableAutonResponse
 from navigation.drive import DriveController
+from navigation import approach_post, long_range, approach_object
 from std_msgs.msg import Time, Bool
 from util.SE3 import SE3
 from visualization_msgs.msg import Marker
 from util.ros_utils import get_rosparam
+from util.state_lib.state import State
 
 TAG_EXPIRATION_TIME_SECONDS = 60
 
-TIME_THRESHOLD = get_rosparam("long_range/time_threshold", 5)
+LONG_RANGE_TAG_EXPIRATION_TIME_SECONDS = get_rosparam("long_range/time_threshold", 5)
 INCREMENT_WEIGHT = get_rosparam("long_range/increment_weight", 5)
 DECREMENT_WEIGHT = get_rosparam("long_range/decrement_weight", 1)
 MIN_HITS = get_rosparam("long_range/min_hits", 3)
@@ -167,7 +169,7 @@ class LongRangeTagStore:
         if (
             tag_id in self.__data
             and self.__data[tag_id].hit_count >= self.min_hits
-            and time_difference <= TIME_THRESHOLD
+            and time_difference <= LONG_RANGE_TAG_EXPIRATION_TIME_SECONDS
         ):
             return self.__data[tag_id].tag
         else:
@@ -201,7 +203,6 @@ class Course:
         """
         Returns the currently active waypoint
 
-        :param ud:  State machine user data
         :return:    Next waypoint to reach if we have an active course
         """
         if self.course_data is None or self.waypoint_index >= len(self.course_data.waypoints):
@@ -232,6 +233,24 @@ class Course:
 
     def is_complete(self) -> bool:
         return self.waypoint_index == len(self.course_data.waypoints)
+
+    def check_approach(self) -> Optional[State]:
+        """
+        Returns one of the approach states (ApproachPostState, LongRangeState, or ApproachObjectState)
+        if we are looking for a post or object and we see it in one of the cameras (ZED or long range)
+        """
+        current_waypoint = self.current_waypoint()
+        if self.look_for_post():
+            # if we see the tag in the ZED, go to ApproachPostState
+            if self.ctx.env.current_target_pos() is not None:
+                return approach_post.ApproachPostState()
+            # if we see the tag in the long range camera, go to LongRangeState
+            if self.ctx.env.long_range_tags.get(current_waypoint.tag_id) is not None:
+                return long_range.LongRangeState()
+        elif self.look_for_object():
+            if self.ctx.env.current_target_pos() is not None:
+                return approach_object.ApproachObjectState()  # if we see the object
+        return None
 
 
 def setup_course(ctx: Context, waypoints: List[Tuple[Waypoint, SE3]]) -> Course:

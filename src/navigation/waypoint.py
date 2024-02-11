@@ -34,15 +34,9 @@ class WaypointState(State):
             context.env.arrived_at_target = False
             return post_backup.PostBackupState()
 
-        if context.course.look_for_post():
-            if context.env.current_target_pos() is not None:
-                return approach_post.ApproachPostState()
-            # if we see the tag in the long range camera, go to LongRangeState
-            if context.env.long_range_tags.get(current_waypoint.tag_id) is not None:
-                return long_range.LongRangeState()
-        elif context.course.look_for_object():
-            if context.env.current_target_pos() is not None:
-                return approach_object.ApproachObjectState()
+        # returns either ApproachPostState, LongRangeState, ApproachObjectState, or None
+        if context.course.check_approach() is not None:
+            return context.course.check_approach()
 
         # Attempt to find the waypoint in the TF tree and drive to it
         try:
@@ -60,8 +54,6 @@ class WaypointState(State):
                 elif context.course.look_for_post() or context.course.look_for_object():
                     # We finished a waypoint associated with a post or mallet, but we have not seen it yet.
                     return search.SearchState()
-                # TODO elif looking for water bottle:
-                # return water_bottle_search.WaterBottleSearchState()
 
             if context.rover.stuck:
                 context.rover.previous_state = self
