@@ -1,6 +1,12 @@
 #include "ekf_node.hpp"
 #include <Eigen/src/Core/Matrix.h>
+#include <geometry_msgs/Quaternion.h>
+#include <geometry_msgs/TransformStamped.h>
+#include <geometry_msgs/Vector3.h>
 #include <sensor_msgs/MagneticField.h>
+#include <tf2_ros/buffer.h>
+#include <tf2_ros/transform_broadcaster.h>
+#include <tf2_ros/transform_listener.h>
 
 InvariantEKF InvariantEKFNode::init_EKF() {
     // set initial position to zero and initial covariant to very high number
@@ -38,7 +44,6 @@ InvariantEKFNode::InvariantEKFNode() : mEKF(init_EKF()) {
     mImuSub = mNh.subscribe("imu", 1, &InvariantEKFNode::imu_callback, this);
     mGpsSub = mNh.subscribe("gps", 1, &InvariantEKFNode::gps_callback, this);
     mMagSub = mNh.subscribe("mag", 1, &InvariantEKFNode::mag_callback, this);
-
 
     mOdometryPub = mNh.advertise<nav_msgs::Odometry>("odometry", 1);
 }
@@ -104,11 +109,41 @@ void InvariantEKFNode::publish_odometry() {
     mOdometryPub.publish(msg);
 }
 
+
+void InvariantEKFNode::publish_tf(){
+    //not using odom, publish map -> base_link
+    geometry_msgs::TransformStamped tf;
+
+    auto state = mEKF.get_state();
+    geometry_msgs::Vector3 pos = geometry_msgs::Vector3();
+    pos.x = state.x();
+    pos.y = state.y();
+    pos.z = state.z();
+
+    tf.transform.translation = pos;
+
+    geometry_msgs::Quaternion orientation = geometry_msgs::Quaternion();
+    orientation.w = state.quat().w();
+    orientation.x = state.quat().x();
+    orientation.y = state.quat().y();
+    orientation.z = state.quat().z();
+
+    tf.transform.rotation = orientation;
+
+    tf.header.stamp = ros::Time::now();
+    tf.header.frame_id = "map";
+    tf.child_frame_id = "base_link";
+
+    TfBroadcaster.sendTransform(tf);    
+
+}
+
 void InvariantEKFNode::run() {
     ros::Rate rate(100);
     while (ros::ok()) {
         ros::spinOnce();
         publish_odometry();
+        publish_tf();
         rate.sleep();
     }
 }
