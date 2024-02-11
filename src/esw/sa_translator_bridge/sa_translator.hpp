@@ -8,7 +8,7 @@
 
 #include "units/units.hpp"
 
-#include <../arm_translator_bridge/read_from_ros_param.hpp>
+#include <read_from_ros_param.hpp>
 #include <linear_joint_translation.hpp>
 #include <mrover/AdjustMotor.h>
 #include <mrover/ControllerState.h>
@@ -36,8 +36,6 @@ namespace mrover {
 
         void processSAHWJointData(sensor_msgs::JointState::ConstPtr const& msg);
 
-        bool adjustServiceCallback(AdjustMotor::Request& req, AdjustMotor::Response& res);
-
     private:
 
         const std::vector<std::string> mSAHWNames = {"sa_x", "sa_y", "sa_z", "sampler", "sensor_actuator"};
@@ -58,13 +56,6 @@ namespace mrover {
         ros::Subscriber mVelocitySub;
         ros::Subscriber mPositionSub;
         ros::Subscriber mSAHWJointDataSub;
-
-        // TODO:(owen) unique_ptr servers? unique_ptr clients? Both? Neither? The world may never know. (try to learn)
-        // std::unordered_map<std::string, std::unique_ptr<ros::ServiceServer>> mAdjustServersByRawArmNames;
-        std::unordered_map<std::string, std::unique_ptr<ros::ServiceServer> > mCalibrateSAServer;
-
-        std::unordered_map<std::string, ros::ServiceClient> mAdjustClientsBySAHWNames;
-        // std::unique_ptr<ros::ServiceClient> mCalibrateClient;
 
     };
 

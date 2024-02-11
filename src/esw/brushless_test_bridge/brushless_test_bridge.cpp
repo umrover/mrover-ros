@@ -42,15 +42,17 @@ int main(int argc, char** argv) {
 
     */
     brushlessController->setStop();
-    ros::Rate rate_0p5hz{0.5};
+    ros::Rate rate_0p5hz{10};
     while (ros::ok() && count < 5000) {
         // Motor should keep moving forward every 2 seconds. Repeats 10 times.
-        //brushlessController->setDesiredVelocity(mrover::RadiansPerSecond{1.0});
-        brushlessController->sendQuery();
+        
+        // brushlessController->sendQuery();
+        brushlessController->setDesiredVelocity(mrover::RadiansPerSecond{1.0});
+        // brushlessController->setDesiredVelocity(5.0);
         //brushlessController->setDesiredPosition(mrover::Radians{1.0});
         //brushlessController->adjust(mrover::Radians{0.0}); // Adjust code works!
         
-        count++;
+        // count++;
         ros::spinOnce();
         rate.sleep();
     }

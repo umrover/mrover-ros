@@ -8,7 +8,7 @@ namespace mrover {
         return velocity * multiplier;
     }
 
-    auto inline convertLinPos(Meters position, RadiansPerMeter multiplier) {
-        return Radians{position * multiplier};
+    auto inline convertLinPos(float position, float multiplier) {
+        return position * multiplier;
     }
 } // namespace mrover
