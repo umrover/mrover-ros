@@ -2,7 +2,7 @@
   <arg name="run_tag_detector" default="true" />
 
   <arg name="sim" default="false" />
-  <arg name="use_ekf" default="true" />
+  <arg name="use_ekf" default="false" />
   <arg name="ekf_start_delay" default="0" />
 
   <include file="$(find mrover)/launch/perception.launch">
