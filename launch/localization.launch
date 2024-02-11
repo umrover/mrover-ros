@@ -22,11 +22,11 @@
     <node name="gps_linearization" pkg="mrover" type="gps_linearization.py" output="screen" />
 
     <!-- Launch IMU driver -->
-    <node name="imu_driver" pkg="mrover" type="imu_driver.py" output="screen" />
+    <node unless="$(arg sim)" name="imu_driver" pkg="mrover" type="imu_driver.py" output="screen" />
 
     <!-- Launch GPS driver -->
     <group ns="gps">
-        <node name="gps_driver" pkg="mrover" type="gps_driver.py" output="screen" />
+        <node unless="$(arg sim)" name="gps_driver" pkg="mrover" type="gps_driver.py" output="screen" />
     </group>
 
 </launch>
