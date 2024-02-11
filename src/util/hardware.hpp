@@ -153,7 +153,7 @@ namespace mrover {
             std::bitset<16> destinationBits{m_destination};
             std::bitset<16> filter = source_bits << 8 | destinationBits;
 
-            std::bitset<15> mask; // 15 lowest bits set for source and destination, 16th (reply bit) and above should be ignored
+            std::bitset<15> mask; // 15 lowestc bits set for source and destination, 16th (reply bit) and above should be ignored
             mask.set();
 
             FDCAN_FilterTypeDef filter_config{

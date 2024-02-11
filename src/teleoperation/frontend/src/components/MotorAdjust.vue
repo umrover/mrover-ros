@@ -1,13 +1,13 @@
 <template>
   <div class="wrap">
-    <div v-if="options.length > 1">
+    <div v-if="motors.length > 1">
       <h4>Adjust Motor Angles</h4>
     </div>
     <div v-else>
-      <h4>Adjust {{ options[0].option }} Angle</h4>
+      <h4>Adjust {{ motors[0].option }} Angle</h4>
     </div>
     <div>
-      <div v-if="options.length > 1">
+      <div v-if="motors.length > 1">
         <label for="joint">Motor to adjust</label>
         <select v-model="selectedMotor">
           <option disabled value="">Select a motor</option>
@@ -19,7 +19,7 @@
       <div>
         <label for="angle">Angle (in Rad)</label>
         <input v-model="adjustmentAngle" type="number" :min="-2 * Math.PI" :max="2 * Math.PI" />
-        <button class="btn btn-primary" type="button" @click="publishAdjustmentMessage">
+        <button class="btn btn-primary mx-3" type="button" @click="publishAdjustmentMessage">
           Adjust
         </button>
       </div>
@@ -36,9 +36,6 @@ export default defineComponent({
     motors: {
       type: Array<{ esw_name: string; display_name: string }>,
       required: true,
-      // Default to empty array
-      // Should be array of object in format {name: "joint_a", option: "A"}
-      default: () => []
     }
   },
 

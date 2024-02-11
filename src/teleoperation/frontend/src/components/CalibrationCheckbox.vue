@@ -46,7 +46,7 @@ export default defineComponent({
     message(msg) {
       if (msg.type == 'calibrate_motors') {
         if(this.toggleEnabled){
-          if(Array.isArray(msg.result)&& msg.result.length >0){
+          if(Array.isArray(msg.result) && msg.result.length > 0){
               this.toggleEnabled = false
               for (var j = 0; j < msg.result.length; ++j) {
                 alert('ESW cannot calibrate motor ' + msg.result[j])

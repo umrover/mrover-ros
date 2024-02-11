@@ -51,7 +51,7 @@
     </div>
     <div class="shadow p-3 rounded moteus">
       <DriveMoteusStateTable :moteus-state-data="moteusState" />
-      <MotorsStatusTable :motorData="motorData" :vertical="true" />
+      <MotorsStatusTable :motor-data="motorData" :vertical="true" />
     </div>
   </div>
 </template>
@@ -118,7 +118,9 @@ export default defineComponent({
         name: [] as string[],
         position: [] as number[],
         velocity: [] as number[],
-        effort: [] as number[]
+        effort: [] as number[],
+        state: [] as string[],
+        error: [] as string[]
       }
     }
   },

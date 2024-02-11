@@ -5,7 +5,7 @@
 #include <std_msgs/Bool.h>
 #include <std_srvs/SetBool.h>
 
-static const std::string DONE_STATE = "DoneState";
+static std::string const DONE_STATE = "DoneState";
 
 ros::Publisher LEDPublisher;
 
@@ -39,12 +39,16 @@ auto update_led() -> void {
 
 auto state_machine_state_update(mrover::StateMachineStateUpdate::ConstPtr const& msg) -> void {
     navDone = msg->state == DONE_STATE;
+
     update_led();
 }
 
-auto teleop_enabled_update(std_msgs::Bool::ConstPtr const& msg) -> void {
-    teleop_enabled = msg->data;
+auto teleop_enabled_update(std_srvs::SetBoolRequest& request, std_srvs::SetBoolResponse& response) -> bool {
+    teleop_enabled = request.data;
+
     update_led();
+
+    return response.success = true;
 }
 
 auto main(int argc, char** argv) -> int {
@@ -53,7 +57,7 @@ auto main(int argc, char** argv) -> int {
     ros::NodeHandle nh;
 
     LEDPublisher = nh.advertise<mrover::CAN>("led", 1);
-    ros::ServiceServer teleopClient = nh.advertiseService<std_srvs::SetBool>("teleop_enabled", teleop_enabled_update);
+    ros::ServiceServer teleopClient = nh.advertiseService("teleop_enabled", teleop_enabled_update);
     ros::Subscriber stateMachineStateSubscriber = nh.subscribe<mrover::StateMachineStateUpdate>("nav_state", 1, state_machine_state_update);
 
     // Enter the ROS event loop
