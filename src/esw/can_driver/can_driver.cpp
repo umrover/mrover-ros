@@ -8,13 +8,13 @@ namespace mrover {
         return result;
     }
 
-    static void checkErrorCode(boost::system::error_code const& ec) {
+    static auto checkErrorCode(boost::system::error_code const& ec) -> void {
         if (ec.value() == boost::system::errc::success) return;
 
         throw std::runtime_error(std::format("Boost failure: {} {}", ec.value(), ec.message()));
     }
 
-    static std::uint8_t nearestFittingFdcanFrameSize(std::size_t size) {
+    static auto nearestFittingFdcanFrameSize(std::size_t size) -> std::uint8_t {
         if (size <= 8) return size;
         if (size <= 12) return 12;
         if (size <= 16) return 16;
@@ -26,7 +26,7 @@ namespace mrover {
         throw std::runtime_error("Too large!");
     }
 
-    void CanNodelet::onInit() {
+    auto CanNodelet::onInit() -> void {
         try {
             NODELET_INFO("CAN Node starting...");
 
@@ -213,9 +213,8 @@ namespace mrover {
             if (error.code() == boost::asio::error::no_buffer_space) {
                 NODELET_WARN_STREAM("No buffer space available to send CAN message");
                 return;
-            } else {
-                throw;
             }
+            throw;
         }
 
         ROS_DEBUG_STREAM("Sent CAN message");

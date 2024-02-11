@@ -4,11 +4,11 @@
 
 namespace mrover {
 
-    auto convertLinVel(float velocity, float multiplier) {
+    auto inline convertLinVel(float velocity, float multiplier) {
         return velocity * multiplier;
     }
 
-    auto convertLinPos(Meters position, RadiansPerMeter multiplier) {
+    auto inline convertLinPos(Meters position, RadiansPerMeter multiplier) {
         return Radians{position * multiplier};
     }
 } // namespace mrover

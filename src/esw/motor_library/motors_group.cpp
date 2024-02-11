@@ -15,19 +15,19 @@ namespace mrover {
         for (int i = 0; i < motorControllerNames.size(); ++i) {
             std::string name = static_cast<std::string>(motorControllerNames[i]);
             mIndexByName[name] = mControllerNames.size();
-            mControllerNames.push_back(static_cast<std::string>(name));
+            mControllerNames.push_back(name);
             mThrottlePubsByName[name] = mNh.advertise<Throttle>(std::format("{}_throttle_cmd", name), 1);
             mVelocityPubsByName[name] = mNh.advertise<Velocity>(std::format("{}_velocity_cmd", name), 1);
             mPositionPubsByName[name] = mNh.advertise<Position>(std::format("{}_position_cmd", name), 1);
             mJointDataSubsByName[name] = mNh.subscribe<sensor_msgs::JointState>(
                     std::format("{}_joint_data", name), 1,
                     [name, this](sensor_msgs::JointState::ConstPtr const& msg) {
-                        return MotorsGroup::processJointData(msg, name);
+                        return processJointData(msg, name);
                     });
             mControllerDataSubsByName[name] = mNh.subscribe<ControllerState>(
                     std::format("{}_controller_data", name), 1,
                     [name, this](ControllerState::ConstPtr const& msg) {
-                        return MotorsGroup::processControllerData(msg, name);
+                        return processControllerData(msg, name);
                     });
             mJointState.name.push_back(name);
             mControllerState.name.push_back(name);
@@ -57,24 +57,25 @@ namespace mrover {
             // TODO: avoid hard coding Jetson here - can move into constructor of MotorsGroup
             // and let the bridge nodes hardcode as jetson.
             if (type == "brushed") {
-                auto temp = std::make_unique<BrushedController>(nh, "jetson", name);
-                mControllers[name] = std::move(temp);
+                mControllers.emplace(name, std::make_unique<BrushedController>(mNh, "jetson", name));
             } else if (type == "brushless") {
-                auto temp = std::make_unique<BrushlessController>(nh, "jetson", name);
-                mControllers[name] = std::move(temp);
+                mControllers.emplace(name, std::make_unique<BrushlessController>(mNh, "jetson", name));
             }
         }
 
         mMoveThrottleSub = mNh.subscribe<Throttle>(std::format("{}_throttle_cmd", mGroupName), 1, &MotorsGroup::moveMotorsThrottle, this);
         mMoveVelocitySub = mNh.subscribe<Velocity>(std::format("{}_velocity_cmd", mGroupName), 1, &MotorsGroup::moveMotorsVelocity, this);
         mMovePositionSub = mNh.subscribe<Position>(std::format("{}_position_cmd", mGroupName), 1, &MotorsGroup::moveMotorsPosition, this);
+
+        mControllerDataPub = mNh.advertise<ControllerState>(std::format("{}_controller_data", mGroupName), 1);
+        mJointDataPub = mNh.advertise<sensor_msgs::JointState>(std::format("{}_joint_data", mGroupName), 1);
     }
 
-    Controller& MotorsGroup::getController(std::string const& name) {
+    auto MotorsGroup::getController(std::string const& name) const -> Controller& {
         return *mControllers.at(name);
     }
 
-    void MotorsGroup::moveMotorsThrottle(Throttle::ConstPtr const& msg) {
+    auto MotorsGroup::moveMotorsThrottle(Throttle::ConstPtr const& msg) -> void {
         for (size_t i = 0; i < msg->names.size(); ++i) {
             std::string const& name = msg->names[i];
             if (!mControllers.contains(name)) {
