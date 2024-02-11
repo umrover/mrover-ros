@@ -28,19 +28,22 @@ class TipDetection:
     hit_count_threshold: int
     reset_hit_count_threshold: int
     time_counter: time
+    current_time: time
 
     def __init__(self):
         rospy.Subscriber("imu/imu_only", Imu, self.imu_callback)
         # read the orientation data from the given Imu message, store that value in `self.pose`, then publish that pose to the TF tree.
         self.hit_count = 0
+        self.z_orientation_threshold = 0.7
+        self.hit_count_threshold = 5
+        self.reset_hit_count_threshold = 3
+        self.time_counter = time.time()
+        self.current_time = time.time()
+
         self.orientation_threshold = 0.5
-        self.z_orientation_threshold = 0.5  # may need to change this
         self.angular_velocity_threshold_x = 0.25  # pitch
         self.angular_velocity_threshold_y = 0.25  # roll
         self.time_threshold = 1
-        self.hit_count_threshold = 5
-        self.reset_hit_count_threshold = 10
-        self.time_counter = time.time()
 
         self.buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.buffer)
@@ -60,17 +63,21 @@ class TipDetection:
                 # extract the  matrix by [0,0,1] (z vector). this could be completely wrong
                 self.old = SE3.from_tf_tree(self.buffer, self.world_frame, self.rover_frame).rotation.rotation_matrix()
                 # multiply this transform by the z vector [0, 0, 1]
-                self.transform = np.dot(np.array([0, 0, 1]), self.old)  # ?
+                self.transform = np.dot(np.array([0, 0, 1]), self.old)
                 print(self.transform[2])
 
                 # compare this new transform with our threshold to see if it's tipping, if so increment hit_count
-                # if self.transform >= self.z_orientation_threshold:
-                #     self.hit_count += 1
+                if self.transform[2] <= self.z_orientation_threshold:
+                    self.hit_count += 1
+                    self.check_for_hit_count(self.hit_count)
 
                 # print(SE3.from_tf_tree(self.buffer, self.world_frame, self.rover_frame))
             except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
                 print(e)
                 rate.sleep()
+
+            self.current_time = time.time()
+            self.reset_hit_count_time(self.reset_hit_count_threshold, self.time_counter)
 
     def imu_callback(self, msg: Imu):
         pass
