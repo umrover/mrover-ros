@@ -1,4 +1,4 @@
-<!-- This launch file launches all nodes necessary for autonomous navigation. -->
+<!-- This launch file launches nodelets associated with the long range cam -->
 <launch>
   <!--
       ==========
@@ -13,7 +13,7 @@
     pkg="nodelet" type="nodelet" name="long_range_cam" respawn="true"
     args="load mrover/LongRangeCamNodelet perception_nodelet_manager" output="screen" />
   <node
-    pkg="nodelet" type="nodelet" name="tag_detector" respawn="true"
+    pkg="nodelet" type="nodelet" name="long_range_tag_detector" respawn="true"
     args="load mrover/LongRangeTagDetectorNodelet perception_nodelet_manager" output="screen" />
 </launch>
   

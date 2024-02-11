@@ -12,10 +12,6 @@ namespace mrover {
         int dictionaryNumber = 0;
 
         mPnh.param<bool>("publish_images", mPublishImages, true);
-        mPnh.param<int>("min_hit_count_before_publish", mMinHitCountBeforePublish, 5);
-        mPnh.param<int>("max_hit_count", mMaxHitCount, 5);
-        mPnh.param<int>("tag_increment_weight", mTagIncrementWeight, 2);
-        mPnh.param<int>("tag_decrement_weight", mTagDecrementWeight, 1);
         mPnh.param<float>("long_range_fov", mLongRangeFov, 80.0);
 
         mImgPub = mNh.advertise<sensor_msgs::Image>("long_range_tag_detection", 1);
@@ -87,8 +83,6 @@ namespace mrover {
         mPnh.param<double>("polygonalApproxAccuracyRate",
                            mDetectorParams->polygonalApproxAccuracyRate,
                            defaultDetectorParams->polygonalApproxAccuracyRate);
-
-        NODELET_INFO("Tag detection ready, use odom frame: %s, min hit count: %d, max hit count: %d, hit increment weight: %d, hit decrement weight: %d", mUseOdom ? "true" : "false", mMinHitCountBeforePublish, mMaxHitCount, mTagIncrementWeight, mTagDecrementWeight);
     }
 
     void LongRangeTagDetectorNodelet::configCallback(mrover::DetectorParamsConfig& config, uint32_t level) {

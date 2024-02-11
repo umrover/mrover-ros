@@ -45,7 +45,7 @@ namespace mrover {
         mCamInfoPub = mNh.advertise<sensor_msgs::CameraInfo>("long_range_cam/camera_info", 1);
         mImgPub = mNh.advertise<sensor_msgs::Image>("long_range_image", 1);
         // While dtor not called
-        cv::VideoCapture mCapture{std::format("v4l2src device=/dev/arducam ! h264parse ! nvh264dec ! nvvidconv ! video/x-raw,width={},height={},format=I420,framerate={}/1 ! appsink", 1920, 1080, 5), cv::CAP_GSTREAMER};
+        cv::VideoCapture mCapture{std::format("v4l2src device=/dev/arducam ! videoconvert ! video/x-raw,width={},height={},format=I420,framerate={}/1 ! appsink", 1920, 1080, 5), cv::CAP_GSTREAMER};
         if (!mCapture.isOpened()) {
             throw std::runtime_error("Long range cam failed to open");
         }
@@ -58,9 +58,9 @@ namespace mrover {
             }
             if (mImgPub.getNumSubscribers()) {
                 auto imgMsg = boost::make_shared<sensor_msgs::Image>();
-                cv::Mat bgra;
-                cv::cvtColor(frame, bgra, cv::COLOR_YUV2BGR_I420);
-                fillImageMessage(bgra, imgMsg);
+                cv::Mat bgr;
+                cv::cvtColor(frame, bgr, cv::COLOR_YUV2BGR_I420);
+                fillImageMessage(bgr, imgMsg);
                 imgMsg->header.frame_id = "long_range_cam_frame";
                 imgMsg->header.stamp = ros::Time::now();
                 imgMsg->header.seq = mGrabUpdateTick;
