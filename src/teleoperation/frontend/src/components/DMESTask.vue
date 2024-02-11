@@ -8,9 +8,16 @@
         <img src="/help.png" alt="Help" title="Help" width="48" height="48" />
       </div>
       <div class="helpscreen"></div>
-      <div class="helpimages" style="display: flex; align-items: center; justify-content: space-evenly">
-        <img src="/joystick.png" alt="Joystick" title="Joystick Controls"
-          style="width: auto; height: 70%; display: inline-block" />
+      <div
+        class="helpimages"
+        style="display: flex; align-items: center; justify-content: space-evenly"
+      >
+        <img
+          src="/joystick.png"
+          alt="Joystick"
+          title="Joystick Controls"
+          style="width: auto; height: 70%; display: inline-block"
+        />
       </div>
     </div>
 
@@ -27,7 +34,7 @@
       <PDBFuse />
     </div>
     <div class="shadow p-3 rounded drive-vel-data">
-      <MotorsStatusTable :joint-state-data="jointState" :vertical="true" />
+      <MotorsStatusTable :motorData="motorData" :vertical="true" />
     </div>
     <div v-if="type === 'DM'" class="shadow p-3 rounded waypoint-editor">
       <BasicWaypointEditor :odom="odom" />
@@ -39,7 +46,7 @@
       <ArmControls />
     </div>
     <div class="shadow p-3 rounded moteus">
-      <DriveMoteusStateTable :moteus-state-data="moteusState" />
+      <DriveMoteusStateTable :moteus-state-data="moteusDrive" />
       <ArmMoteusStateTable />
     </div>
     <div v-show="false">
@@ -50,7 +57,7 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue'
-import { mapState } from 'vuex'
+import { mapState, mapActions } from 'vuex'
 import PDBFuse from './PDBFuse.vue'
 import DriveMoteusStateTable from './DriveMoteusStateTable.vue'
 import ArmMoteusStateTable from './ArmMoteusStateTable.vue'
@@ -95,18 +102,19 @@ export default defineComponent({
         altitude: 0
       },
 
-      // Default object isn't empty, so has to be initialized to ""
-      moteusState: {
-        name: ['', '', '', '', '', ''],
-        error: ['', '', '', '', '', ''],
-        state: ['', '', '', '', '', '']
+      moteusDrive: {
+        name: [] as string[],
+        error: [] as string[],
+        state: [] as string[],
+        limit_hit:
+          [] as boolean[] /* Each motor stores an array of 4 indicating which limit switches are hit */
       },
 
-      jointState: {
-        name: [],
-        position: [],
-        velocity: [],
-        effort: []
+      motorData: {
+        name: [] as string[],
+        position: [] as number[],
+        velocity: [] as number[],
+        effort: [] as number[]
       }
     }
   },
@@ -118,12 +126,26 @@ export default defineComponent({
   watch: {
     message(msg) {
       if (msg.type == 'joint_state') {
-        this.jointState.name = msg.name
-        this.jointState.position = msg.position
-        this.jointState.velocity = msg.velocity
-        this.jointState.effort = msg.effort
+        this.motorData.name = msg.name
+        this.motorData.position = msg.position
+        this.motorData.velocity = msg.velocity
+        this.motorData.effort = msg.effort
+      }
+      else if (msg.type == "center_map") {
+        this.odom.latitude_deg = msg.latitude
+        this.odom.longitude_deg = msg.longitude
       }
     }
+  },
+
+  methods: {
+    ...mapActions('websocket', ['sendMessage'])
+  },
+
+  created: function () {
+    window.setTimeout(() => {
+      this.sendMessage({ "type": "center_map" });
+    }, 250)
   }
 })
 </script>
@@ -195,8 +217,8 @@ export default defineComponent({
   cursor: pointer;
 }
 
-.help:hover~.helpscreen,
-.help:hover~.helpimages {
+.help:hover ~ .helpscreen,
+.help:hover ~ .helpimages {
   visibility: visible;
 }
 
