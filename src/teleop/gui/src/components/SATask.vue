@@ -68,7 +68,7 @@
       <LimitSwitch :switch_name="'sa_joint_1'" :name="'Joint 1 Switch'" />
       <LimitSwitch :switch_name="'sa_joint_2'" :name="'Joint 2 Switch'" />
       <LimitSwitch :switch_name="'sa_joint_3'" :name="'Joint 3 Switch'" />
-      <LimitSwitch :switch_name="'scoop'" :name="'Scoop Switch'" />
+      <LimitSwitch :switch_name="'sampler'" :name="'Sampler Switch'" />
     </div>
     <div class="box light-bg calibration">
       <h3>Calibrations</h3>

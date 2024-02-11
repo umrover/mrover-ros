@@ -212,7 +212,7 @@ class GUIConsumer(JsonWebsocketConsumer):
             )
 
     def handle_sa_arm_message(self, msg):
-        SA_NAMES = ["sa_x", "sa_y", "sa_z", "scoop", "sensor_actuator"]
+        SA_NAMES = ["sa_x", "sa_y", "sa_z", "sampler", "sensor_actuator"]
         raw_left_trigger = msg["axes"][self.xbox_mappings["left_trigger"]]
         left_trigger = raw_left_trigger if raw_left_trigger > 0 else 0
         raw_right_trigger = msg["axes"][self.xbox_mappings["right_trigger"]]
@@ -237,7 +237,7 @@ class GUIConsumer(JsonWebsocketConsumer):
                 self.to_velocity(
                     self.filter_xbox_axis(msg["axes"][self.sa_config["sa_z"]["xbox_index"]]), "sa_z", False
                 ),
-                self.sa_config["scoop"]["multiplier"] * (right_trigger - left_trigger),
+                self.sa_config["sampler"]["multiplier"] * (right_trigger - left_trigger),
                 self.sa_config["sensor_actuator"]["multiplier"]
                 * self.filter_xbox_button(msg["buttons"], "right_bumper", "left_bumper"),
             ]
@@ -255,7 +255,7 @@ class GUIConsumer(JsonWebsocketConsumer):
             ]
             sa_throttle_cmd.throttles.extend(
                 [
-                    self.sa_config["scoop"]["multiplier"] * (right_trigger - left_trigger),
+                    self.sa_config["sampler"]["multiplier"] * (right_trigger - left_trigger),
                     self.sa_config["sensor_actuator"]["multiplier"]
                     * self.filter_xbox_button(msg["buttons"], "right_bumper", "left_bumper"),
                 ]
