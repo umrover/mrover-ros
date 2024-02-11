@@ -11,7 +11,8 @@ from util.SE3 import SE3
 from util.SO3 import SO3
 from util.np_utils import numpify
 import message_filters
-from mrover.msg import rtkStatus
+
+# from mrover.msg import rtkStatus
 from tf.transformations import *
 
 
@@ -64,20 +65,20 @@ class GPSLinearization:
         # subscribe to topics
         right_gps_sub = message_filters.Subscriber("right_gps_driver/fix", NavSatFix)
         left_gps_sub = message_filters.Subscriber("left_gps_driver/fix", NavSatFix)
-        left_rtk_fix_sub = message_filters.Subscriber("left_gps_driver/rtk_fix_status", rtkStatus)
-        right_rtk_fix_sub = message_filters.Subscrier("right_gps_driver/rtk_fix_status", rtkStatus)
+        # left_rtk_fix_sub = message_filters.Subscriber("left_gps_driver/rtk_fix_status", rtkStatus)
+        # right_rtk_fix_sub = message_filters.Subscrier("right_gps_driver/rtk_fix_status", rtkStatus)
 
         # sync subscribers
-        sync_gps_sub = message_filters.ApproximateTimeSynchronizer(
-            [right_gps_sub, left_gps_sub, left_rtk_fix_sub, right_rtk_fix_sub], 10, 0.5
-        )
+        sync_gps_sub = message_filters.ApproximateTimeSynchronizer([right_gps_sub, left_gps_sub], 10, 0.5)
         sync_gps_sub.registerCallback(self.gps_callback)
 
         rospy.Subscriber("imu/data", ImuAndMag, self.imu_callback)
         self.pose_publisher = rospy.Publisher("linearized_pose", PoseWithCovarianceStamped, queue_size=1)
 
     def gps_callback(
-        self, right_gps_msg: NavSatFix, left_gps_msg: NavSatFix, left_rtk_fix: rtkStatus, right_rtk_fix: rtkStatus
+        self,
+        right_gps_msg: NavSatFix,
+        left_gps_msg: NavSatFix,
     ):
         """
         Callback function that receives GPS messages, assigns their covariance matrix,
@@ -86,15 +87,9 @@ class GPSLinearization:
         :param msg: The NavSatFix message containing GPS data that was just received
         TODO: Handle invalid PVTs
         """
-        if np.any(
-            np.isnan(
-                [right_gps_msg.latitude, right_gps_msg.longitude, right_gps_msg.altitude, right_rtk_fix.RTK_FIX_TYPE]
-            )
-        ):
+        if np.any(np.isnan([right_gps_msg.latitude, right_gps_msg.longitude, right_gps_msg.altitude])):
             return
-        if np.any(
-            np.isnan([left_gps_msg.latitude, left_gps_msg.longitude, left_gps_msg.altitude, left_rtk_fix.RTK_FIX_TYPE])
-        ):
+        if np.any(np.isnan([left_gps_msg.latitude, left_gps_msg.longitude, left_gps_msg.altitude])):
             return
 
         ref_coord = np.array([self.ref_lat, self.ref_lon, self.ref_alt])
@@ -110,9 +105,9 @@ class GPSLinearization:
         self.last_gps_pose = pose
 
         # if the fix status of both gps is 2 (fixed), update the offset with the next imu messsage
-        if right_rtk_fix.RTK_FIX_TYPE == 2 and left_rtk_fix.RTK_FIX_TYPE == 2:
-            self.calculate_offset = True
-            self.last_gps_pose_fixed = pose
+        # if right_rtk_fix.RTK_FIX_TYPE == 2 and left_rtk_fix.RTK_FIX_TYPE == 2:
+        self.calculate_offset = True
+        self.last_gps_pose_fixed = pose
 
         covariance_matrix = np.zeros((6, 6))
         covariance_matrix[:3, :3] = self.config_gps_covariance.reshape(3, 3)
