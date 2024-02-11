@@ -22,13 +22,13 @@
         </visual>
         <collision>
             <geometry>
-                <cylinder radius="0.025" length="0.5"/>
+                <cylinder radius="0.024" length="0.5"/>
             </geometry>
         </collision>
         <collision>
-            <origin rpy="${TAU / 4} 0 0" xyz="0 0 0.275"/>
+            <origin rpy="${TAU / 4} 0 0" xyz="0 0 0.28"/>
             <geometry>
-                <cylinder radius="0.05" length="0.17"/>
+                <cylinder radius="0.057" length="0.185"/>
             </geometry>
         </collision>
     </link>

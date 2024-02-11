@@ -27,8 +27,9 @@
  * SOFTWARE.
  */
 
-#ifndef _glfw3_webgpu_h_
-#define _glfw3_webgpu_h_
+#pragma once
+
+#define GLFW_INCLUDE_NONE
 
 #include <GLFW/glfw3.h>
 #include <webgpu/webgpu.h>
@@ -45,5 +46,3 @@ WGPUSurface glfwGetWGPUSurface(WGPUInstance instance, GLFWwindow* window);
 #ifdef __cplusplus
 }
 #endif
-
-#endif // _glfw3_webgpu_h_

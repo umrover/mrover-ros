@@ -1,55 +1,44 @@
 <template>
-    <div class="wrap">
-      <span :class="['led', color]"></span>
-      <div>
-        <span class="name" v-if="show_name">{{ name }}</span>
-      </div>
-    </div>
-  </template>
-  
-  <script lang = "ts">
-  export default {
-    props: {
-      connected: {
-        type: Boolean,
-        required: true,
-      },
-      name: {
-        type: String,
-        required: true,
-      },
-      show_name: {
-        type: Boolean,
-        required: true,
-      }
+  <div class="wrap">
+    <span :class="['led', color]"></span>
+    <span class="mx-1" v-if="show_name">{{ name }}</span>
+  </div>
+</template>
+
+<script lang="ts">
+export default {
+  props: {
+    connected: {
+      type: Boolean,
+      required: true
     },
-    computed: {
-      color: function () {
-        return this.connected ? "green" : "red";
-      },
+    name: {
+      type: String,
+      required: false
     },
-  };
-  </script>
-  
-  <style scoped>
-  .wrap {
-    display: flex;
-    align-items: center;
-    height: 100%;
+    show_name: {
+      type: Boolean,
+      required: false
+    }
+  },
+  computed: {
+    color: function () {
+      return this.connected ? 'bg-success' : 'bg-danger'
+    }
   }
-  .led {
-    width: 16px;
-    height: 16px;
-    border-radius: 8px;
-    border: 1px solid;
-  }
-  .green {
-    background-color: lightgreen;
-  }
-  .red {
-    background-color: red;
-  }
-  .name {
-    margin-left: 5px;
-  }
-  </style>
+}
+</script>
+
+<style scoped>
+.wrap {
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+.led {
+  width: 16px;
+  height: 16px;
+  border-radius: 8px;
+  border: 1px solid;
+}
+</style>

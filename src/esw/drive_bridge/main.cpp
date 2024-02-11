@@ -67,9 +67,9 @@ void moveDrive(geometry_msgs::Twist::ConstPtr const& msg) {
     auto turn = RadiansPerSecond{msg->angular.z};
     // TODO(quintin)    Don't ask me to explain perfectly why we need to cancel out a meters unit in the numerator
     //                  I think it comes from the fact that there is a unit vector in the denominator of the equation
-    auto delta = turn * WHEEL_DISTANCE_INNER / Meters{1};
-    RadiansPerSecond left = forward * WHEEL_LINEAR_TO_ANGULAR - delta;
-    RadiansPerSecond right = forward * WHEEL_LINEAR_TO_ANGULAR + delta;
+    auto delta = (turn/Radians{1}) * WHEEL_DISTANCE_INNER; // should be in m/s
+    RadiansPerSecond left = (forward-delta) * WHEEL_LINEAR_TO_ANGULAR;
+    RadiansPerSecond right = (forward+delta) * WHEEL_LINEAR_TO_ANGULAR;
 
     std::unordered_map<std::string, RadiansPerSecond> driveCommandVelocities{
             {"front_left", left},
@@ -79,6 +79,8 @@ void moveDrive(geometry_msgs::Twist::ConstPtr const& msg) {
             {"back_left", left},
             {"back_right", right},
     };
+
+    ROS_INFO("m/s %f", forward.get());
 
     for (auto [name, angularVelocity]: driveCommandVelocities) {
         // Set the desired speed for the motor
