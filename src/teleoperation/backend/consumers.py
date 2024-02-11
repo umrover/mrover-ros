@@ -57,8 +57,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.accept()
         # Publishers
         self.twist_pub = rospy.Publisher("/cmd_vel", Twist, queue_size=1)
-        self.led_pub = rospy.Publisher("/auton_led_cmd", String, queue_size=1)
-        self.teleop_pub = rospy.Publisher("/teleop_enabled", Bool, queue_size=1)
+        self.led_pub = rospy.Publisher("/auton_led_cmd", String, queue_size=1))
         self.mast_gimbal_pub = rospy.Publisher("/mast_gimbal_throttle_cmd", Throttle, queue_size=1)
         self.arm_throttle_cmd_pub = rospy.Publisher("arm_throttle_cmd", Throttle, queue_size=1)
         self.arm_velocity_cmd_pub = rospy.Publisher("arm_velocity_cmd", Velocity, queue_size=1)
@@ -477,7 +476,12 @@ class GUIConsumer(JsonWebsocketConsumer):
         )
 
     def send_teleop_enabled(self, msg):
-        self.teleop_pub.publish(msg["data"])
+        rospy.wait_for_service("enable_teleop")
+        try:
+            enable_teleop = rospy.ServiceProxy("enable_teleop", rospy.std_srvs.SetBool)
+            enable_teleop(msg["data"])
+        except rospy.ServiceException as e:
+            rospy.logerr(f"Service call failed: {e}")
 
     def led_callback(self, msg):
         self.send(
