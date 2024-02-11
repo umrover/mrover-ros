@@ -139,6 +139,9 @@ class GPSLinearization:
         if self.last_gps_pose is None:
             return
 
+        if self.last_gps_pose is None:
+            return
+
         # how can we make sure these 2 headings are comparable??
         if self.calculate_offset:
             # print("\n")
