@@ -211,7 +211,7 @@ namespace mrover {
         } catch (boost::system::system_error const& error) {
             // check if ran out of buffer space
             if (error.code() == boost::asio::error::no_buffer_space) {
-                NODELET_WARN_STREAM("No buffer space available to send CAN message");
+                NODELET_WARN_STREAM_THROTTLE(1, "No buffer space available to send CAN message");
                 return;
             }
             throw;

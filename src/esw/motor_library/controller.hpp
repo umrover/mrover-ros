@@ -59,7 +59,6 @@ namespace mrover {
             if (auto duration = std::chrono::high_resolution_clock::now() - mLastConnection;
                 duration > std::chrono::milliseconds(100)) {
                 setDesiredThrottle(0_percent);
-                ROS_WARN("TIMEOUT with controller %s\n", mControllerName.c_str());
             }
         }
 
