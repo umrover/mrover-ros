@@ -1,52 +1,23 @@
 <template>
   <div class="wrap">
     <!-- Leaflet Map Definition-->
-    <l-map
-      @ready="onMapReady"
-      ref="map"
-      class="map"
-      :zoom="22"
-      :center="center"
-      @click="getClickedLatLon($event)"
-    >
+    <l-map @ready="onMapReady" ref="map" class="map" :zoom="22" :center="center" @click="getClickedLatLon($event)">
       <l-control-scale :imperial="false" />
       <!-- Tile Layer for map background -->
-      <l-tile-layer
-        ref="tileLayer"
-        :url="online ? onlineUrl : offlineUrl"
-        :attribution="attribution"
-        :options="online ? onlineTileOptions : offlineTileOptions"
-      />
+      <l-tile-layer ref="tileLayer" :url="online ? onlineUrl : offlineUrl" :attribution="attribution"
+        :options="online ? onlineTileOptions : offlineTileOptions" />
 
       <!-- Markers for rover location -->
       <!-- TODO: Figure out if we still want these -->
       <l-marker ref="rover" :lat-lng="odomLatLng" :icon="locationIcon" />
 
       <!-- Waypoint Icons -->
-      <l-marker
-        v-for="(waypoint, index) in waypointList"
-        :key="index"
-        :lat-lng="waypoint.latLng"
-        :icon="waypointIcon"
-      >
+      <l-marker v-for="(waypoint, index) in waypointList" :key="index" :lat-lng="waypoint.latLng" :icon="waypointIcon">
         <l-tooltip :options="{ permanent: 'true', direction: 'top' }">
           {{ waypoint.name }}, {{ index }}
         </l-tooltip>
       </l-marker>
 
-<<<<<<< HEAD
-      <!-- Search Path Icons -->
-      <l-marker
-        v-for="(search_path_point, index) in searchPathPoints"
-        :key="index"
-        :lat-lng="search_path_point.latLng"
-        :icon="searchPathIcon"
-      >
-        <l-tooltip>Search Path {{ index }}</l-tooltip>
-      </l-marker>
-
-=======
->>>>>>> 6e58e74e38a44673384c89d9dee2dc8284f16c12
       <!-- Polylines -->
       <l-polyline :lat-lngs="polylinePath" :color="'red'" :dash-array="'5, 5'" />
       <l-polyline :lat-lngs="odomPath" :color="'blue'" :dash-array="'5, 5'" />
@@ -193,44 +164,11 @@ export default {
       iconAnchor: [32, 64],
       popupAnchor: [0, -32]
     })
-<<<<<<< HEAD
-    this.searchPathIcon = L.icon({
-      iconUrl: 'map_marker_projected.png',
-      iconSize: [32, 32],
-      iconAnchor: [16, 16],
-      popupAnchor: [0, -32]
-    })
-
-    //   this.search_path_topic = new ROSLIB.Topic({
-    //     ros: this.$ros,
-    //     name: "/search_path",
-    //     messageType: "mrover/GPSPointList"
-    //   });
-
-    //   this.search_path_topic.subscribe((msg) => {
-    //     let newSearchPath = msg.point;
-    //     this.searchPathPoints = newSearchPath.map((search_path_point) => {
-    //       return {
-    //         latLng: L.latLng(
-    //           search_path_point.latitude_degrees,
-    //           search_path_point.longitude_degrees
-    //         )
-    //       };
-    //     });
-    //   });
-  },
-  // Pull objects from refs to be able to access data and change w functions
-  mounted: function () {},
-
-  methods: {
-    onMapReady: function (ready) {
-=======
   },
 
   methods: {
     onMapReady: function () {
       // Pull objects from refs to be able to access data and change w functions
->>>>>>> 6e58e74e38a44673384c89d9dee2dc8284f16c12
       this.$nextTick(() => {
         this.map = this.$refs.map.leafletObject
         this.roverMarker = this.$refs.rover.leafletObject

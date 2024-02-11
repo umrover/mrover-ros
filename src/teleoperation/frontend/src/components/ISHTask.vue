@@ -6,27 +6,12 @@
         <CommReadout class="comms"></CommReadout> -->
       <img class="logo" src="/mrover.png" alt="MRover" title="MRover" width="200" />
       <div class="help">
-<<<<<<< HEAD
-        <img src="help.png" alt="Help" title="Help" width="48" height="48" />
-=======
         <img src="/help.png" alt="Help" title="Help" width="48" height="48" />
->>>>>>> 6e58e74e38a44673384c89d9dee2dc8284f16c12
       </div>
       <div class="helpscreen"></div>
-      <div
-        class="helpimages"
-        style="display: flex; align-items: center; justify-content: space-evenly"
-      >
-        <img
-<<<<<<< HEAD
-          src="joystick.png"
-=======
-          src="/joystick.png"
->>>>>>> 6e58e74e38a44673384c89d9dee2dc8284f16c12
-          alt="Joystick"
-          title="Joystick Controls"
-          style="width: auto; height: 70%; display: inline-block"
-        />
+      <div class="helpimages" style="display: flex; align-items: center; justify-content: space-evenly">
+        <img src="/joystick.png" alt="Joystick" title="Joystick Controls"
+          style="width: auto; height: 70%; display: inline-block" />
       </div>
     </div>
     <!-- <div class="shadow p-3 rounded siteSelect">
@@ -186,8 +171,8 @@ export default {
   cursor: pointer;
 }
 
-.help:hover ~ .helpscreen,
-.help:hover ~ .helpimages {
+.help:hover~.helpscreen,
+.help:hover~.helpimages {
   visibility: visible;
 }
 
