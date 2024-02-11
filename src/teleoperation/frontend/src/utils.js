@@ -34,7 +34,7 @@ const quaternionToMapAngle = function (quaternion) {
 }
 
 const disableAutonLED = function () {
-  store.dispatch('sendMessage', { type: 'disable_auton_led' });
+  store.dispatch('sendMessage', { type: 'disable_auton_led' })
 }
 
 export { convertDMS, quaternionToMapAngle, disableAutonLED }

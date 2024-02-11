@@ -1,26 +1,46 @@
 <template>
   <div class="wrap">
     <!-- Leaflet Map Definition-->
-    <l-map @ready="onMapReady" ref="map" class="map" :zoom="22" :center="center" @click="getClickedLatLon($event)">
+    <l-map
+      @ready="onMapReady"
+      ref="map"
+      class="map"
+      :zoom="22"
+      :center="center"
+      @click="getClickedLatLon($event)"
+    >
       <l-control-scale :imperial="false" />
       <!-- Tile Layer for map background -->
-      <l-tile-layer ref="tileLayer" :url="online ? onlineUrl : offlineUrl" :attribution="attribution"
-        :options="online ? onlineTileOptions : offlineTileOptions" />
+      <l-tile-layer
+        ref="tileLayer"
+        :url="online ? onlineUrl : offlineUrl"
+        :attribution="attribution"
+        :options="online ? onlineTileOptions : offlineTileOptions"
+      />
 
       <!-- Markers for rover location -->
       <!-- TODO: Figure out if we still want these -->
       <l-marker ref="rover" :lat-lng="odomLatLng" :icon="locationIcon" />
 
       <!-- Waypoint Icons -->
-      <l-marker v-for="(waypoint, index) in waypointList" :key="index" :lat-lng="waypoint.latLng" :icon="waypointIcon">
+      <l-marker
+        v-for="(waypoint, index) in waypointList"
+        :key="index"
+        :lat-lng="waypoint.latLng"
+        :icon="waypointIcon"
+      >
         <l-tooltip :options="{ permanent: 'true', direction: 'top' }">
           {{ waypoint.name }}, {{ index }}
         </l-tooltip>
       </l-marker>
 
       <!-- Search Path Icons -->
-      <l-marker v-for="(search_path_point, index) in searchPathPoints" :key="index" :lat-lng="search_path_point.latLng"
-        :icon="searchPathIcon">
+      <l-marker
+        v-for="(search_path_point, index) in searchPathPoints"
+        :key="index"
+        :lat-lng="search_path_point.latLng"
+        :icon="searchPathIcon"
+      >
         <l-tooltip>Search Path {{ index }}</l-tooltip>
       </l-marker>
 
@@ -216,14 +236,11 @@ export default {
     //   });
   },
   // Pull objects from refs to be able to access data and change w functions
-  mounted: function () {
-   
-  },
+  mounted: function () {},
 
   methods: {
-
-    onMapReady: function(ready) {
-        this.$nextTick(() => {
+    onMapReady: function (ready) {
+      this.$nextTick(() => {
         this.map = this.$refs.map.leafletObject
         console.log(this.$refs.rover)
         this.roverMarker = this.$refs.rover.leafletObject

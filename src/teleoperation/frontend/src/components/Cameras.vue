@@ -4,41 +4,69 @@
     <div class="row justify-content-md-left">
       <div class="form-group col-md-4">
         <label for="Camera Name">Camera name</label>
-        <input v-model="cameraName" type="message" class="form-control" id="CameraName" placeholder="Enter Camera Name">
+        <input
+          v-model="cameraName"
+          type="message"
+          class="form-control"
+          id="CameraName"
+          placeholder="Enter Camera Name"
+        />
         <small id="cameraDescrip" class="form-text text-muted"></small>
       </div>
       <div class="form-group col-md-4">
         <label for="Camera ID">Camera ID</label>
-        <input v-model="cameraIdx" type="Number" min="0" max="8" class="form-control" id="CameraIdx"
-          placeholder="Camera ID">
+        <input
+          v-model="cameraIdx"
+          type="Number"
+          min="0"
+          max="8"
+          class="form-control"
+          id="CameraIdx"
+          placeholder="Camera ID"
+        />
       </div>
-      <button class="btn btn-primary custom-btn" @click="addCameraName()">
-        Change Name
-      </button>
+      <button class="btn btn-primary custom-btn" @click="addCameraName()">Change Name</button>
     </div>
     <div class="cameraselection">
-      <CameraSelection :cams-enabled="camsEnabled" :names="names" :capacity="capacity" @cam_index="setCamIndex($event)" />
+      <CameraSelection
+        :cams-enabled="camsEnabled"
+        :names="names"
+        :capacity="capacity"
+        @cam_index="setCamIndex($event)"
+      />
     </div>
     <h3>All Cameras</h3>
     Capacity:
     <div class="row justify-content-md-left">
       <div class="form-group col-md-4">
-        <input v-model="capacity" type="Number" min="2" max="streamOrder.length" class="form-control" />
+        <input
+          v-model="capacity"
+          type="Number"
+          min="2"
+          max="streamOrder.length"
+          class="form-control"
+        />
       </div>
     </div>
     <!-- <input v-model="capacity" type="Number" min="2" :max="streamOrder.length" /> -->
     <div v-for="i in camsEnabled.length" :key="i">
-      <CameraInfo v-if="camsEnabled[i - 1]" :id="i - 1" :name="names[i - 1]" :stream="getStreamNum(i - 1)"
-        @newQuality="changeQuality($event)" @swapStream="swapStream($event)"></CameraInfo>
+      <CameraInfo
+        v-if="camsEnabled[i - 1]"
+        :id="i - 1"
+        :name="names[i - 1]"
+        :stream="getStreamNum(i - 1)"
+        @newQuality="changeQuality($event)"
+        @swapStream="swapStream($event)"
+      ></CameraInfo>
     </div>
   </div>
 </template>
-  
+
 <script lang="ts">
-import CameraSelection from "../components/CameraSelection.vue";
-import CameraInfo from "../components/CameraInfo.vue";
-import { mapActions, mapState } from "vuex";
-import { reactive } from "vue";
+import CameraSelection from '../components/CameraSelection.vue'
+import CameraInfo from '../components/CameraInfo.vue'
+import { mapActions, mapState } from 'vuex'
+import { reactive } from 'vue'
 
 export default {
   components: {
@@ -55,29 +83,29 @@ export default {
   data() {
     return {
       camsEnabled: reactive(new Array(9).fill(false)),
-      names: reactive(Array.from({ length: 9 }, (_, i) => "Camera: " + i)),
+      names: reactive(Array.from({ length: 9 }, (_, i) => 'Camera: ' + i)),
       cameraIdx: 0,
-      cameraName: "",
+      cameraName: '',
       capacity: 2,
       qualities: reactive(new Array(9).fill(-1)),
       streamOrder: reactive([]),
 
       available_sub: null,
       num_available: -1
-    };
+    }
   },
 
   watch: {
     message(msg) {
-      if (msg.type == "max_streams") {
-        this.streamOrder = new Array(msg.streams).fill(-1);
+      if (msg.type == 'max_streams') {
+        this.streamOrder = new Array(msg.streams).fill(-1)
       }
     },
     capacity: function (newCap, oldCap) {
       if (newCap < oldCap) {
-        var numStreaming = this.streamOrder.filter((index) => index != -1);
-        var ind = numStreaming.length - 1;
-        this.setCamIndex(numStreaming[ind]);
+        var numStreaming = this.streamOrder.filter((index) => index != -1)
+        var ind = numStreaming.length - 1
+        this.setCamIndex(numStreaming[ind])
       }
     }
   },
@@ -91,7 +119,7 @@ export default {
 
   created: function () {
     window.setTimeout(() => {
-      this.sendMessage({ "type": "max_streams" });
+      this.sendMessage({ type: 'max_streams' })
     }, 250)
   },
 
@@ -100,52 +128,54 @@ export default {
 
     setCamIndex: function (index: number) {
       // every time a button is pressed, it changes cam status and adds/removes from stream
-      this.camsEnabled[index] = !this.camsEnabled[index];
-      if (this.camsEnabled[index]) this.qualities[index] = 2; //if enabling camera, turn on medium quality
-      this.changeStream(index);
+      this.camsEnabled[index] = !this.camsEnabled[index]
+      if (this.camsEnabled[index]) this.qualities[index] = 2 //if enabling camera, turn on medium quality
+      this.changeStream(index)
     },
 
     sendCameras: function (index: number) {
       this.sendMessage({
-        type: "sendCameras", primary: this.primary,
-        device: index, resolution: this.qualities[index]
-      });
+        type: 'sendCameras',
+        primary: this.primary,
+        device: index,
+        resolution: this.qualities[index]
+      })
     },
 
     addCameraName: function () {
-      this.names[this.cameraIdx] = this.cameraName;
+      this.names[this.cameraIdx] = this.cameraName
     },
 
     changeQuality({ index, value }) {
-      this.qualities[index] = value;
-      this.sendCameras(index);
+      this.qualities[index] = value
+      this.sendCameras(index)
     },
 
     swapStream({ prev, newest }) {
-      var temp = this.streamOrder[prev];
+      var temp = this.streamOrder[prev]
       // Vue.set(this.streamOrder, prev, this.streamOrder[newest]);
-      this.streamOrder[prev] = this.streamOrder[newest];
-      this.streamOrder[newest] = temp;
+      this.streamOrder[prev] = this.streamOrder[newest]
+      this.streamOrder[newest] = temp
     },
 
     changeStream(index: number) {
-      const found = this.streamOrder.includes(index);
+      const found = this.streamOrder.includes(index)
       if (found) {
-        this.streamOrder.splice(this.streamOrder.indexOf(index), 1);
-        this.streamOrder.push(-1);
-        this.qualities[index] = -1; //close the stream when sending it to comms
-      } else this.streamOrder[this.streamOrder.indexOf(-1)] = index;
-      this.sendCameras(index);
+        this.streamOrder.splice(this.streamOrder.indexOf(index), 1)
+        this.streamOrder.push(-1)
+        this.qualities[index] = -1 //close the stream when sending it to comms
+      } else this.streamOrder[this.streamOrder.indexOf(-1)] = index
+      this.sendCameras(index)
     },
 
-    getStreamNum(index: number) { //TODO: check this out
-      return this.streamOrder.indexOf(index);
+    getStreamNum(index: number) {
+      //TODO: check this out
+      return this.streamOrder.indexOf(index)
     }
-
   }
-};
+}
 </script>
-  
+
 <style scoped>
 .cameraselection {
   margin: 10px;

@@ -407,15 +407,15 @@ export default {
       this.setRoute(waypoints)
     },
 
-    storedWaypoints: { 
+    storedWaypoints: {
       handler: function (newList) {
-      const waypoints = newList.map((waypoint: { lat: any; lon: any; name: any }) => {
-        const lat = waypoint.lat
-        const lon = waypoint.lon
-        return { latLng: L.latLng(lat, lon), name: waypoint.name }
-      })
-      this.setWaypointList(waypoints)
-    },
+        const waypoints = newList.map((waypoint: { lat: any; lon: any; name: any }) => {
+          const lat = waypoint.lat
+          const lon = waypoint.lon
+          return { latLng: L.latLng(lat, lon), name: waypoint.name }
+        })
+        this.setWaypointList(waypoints)
+      },
       deep: true
     },
 
