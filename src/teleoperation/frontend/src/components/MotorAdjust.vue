@@ -19,7 +19,7 @@
       <div>
         <label for="angle">Angle (in Rad)</label>
         <input v-model="adjustmentAngle" type="number" :min="-2 * Math.PI" :max="2 * Math.PI" />
-        <button class="btn btn-primary" type="button" @click="publishAdjustmentMessage">
+        <button class="btn btn-primary mx-3" type="button" @click="publishAdjustmentMessage">
           Adjust
         </button>
       </div>
