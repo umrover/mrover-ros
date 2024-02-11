@@ -87,6 +87,8 @@ export default defineComponent({
     MastGimbalControls
   },
 
+  // add prop where map has the center property and autontask sends it once it gets it
+
   data() {
     return {
       // Default coordinates are at MDRS
@@ -158,6 +160,9 @@ export default defineComponent({
         this.odom.altitude = msg.altitude
       } else if (msg.type == 'auton_tfclient') {
         this.odom.bearing_deg = quaternionToMapAngle(msg.rotation)
+      } else if (msg.type == "center_map") {
+        this.odom.latitude_deg = msg.latitude
+        this.odom.longitude_deg = msg.longitude
       }
     }
   },
@@ -171,11 +176,15 @@ export default defineComponent({
     window.clearInterval(interval)
   },
 
-  created() {
-    interval = setInterval(() => {
-      this.sendMessage({ type: 'auton_tfclient' })
-    }, 1000)
-  }
+  created: function () {
+    window.setTimeout(() => {
+      this.sendMessage({ "type": "center_map" });
+    }, 250)
+  },
+
+  // interval = setInterval(() => {
+  //   this.sendMessage({ type: 'auton_tfclient' })
+  // }, 1000)
 })
 </script>
 

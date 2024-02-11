@@ -100,7 +100,6 @@ namespace mrover {
                         }
 
                         auto* meshShape = simulator.makeBulletObject<btBvhTriangleMeshShape>(simulator.mCollisionShapes, triangleMesh, true);
-                        // TODO(quintin): Configure this in the URDF
                         meshShape->setMargin(0.01);
                         shapes.emplace_back(meshShape, urdfPoseToBtTransform(collision->origin));
                         simulator.mMeshToUri.emplace(meshShape, fileUri);
@@ -157,13 +156,21 @@ namespace mrover {
             auto [it, was_inserted] = linkNameToMeta.emplace(link->name, linkIndex);
             assert(was_inserted);
 
+            // TODO(quintin): Configure this from a plugins XML file
             if (link->name.contains("camera"sv)) {
                 Camera camera = makeCameraForLink(simulator, &multiBody->getLink(linkIndex));
-                if (link->name.contains("zed")) {
-                    camera.pub = simulator.mNh.advertise<sensor_msgs::PointCloud2>("camera/left/points", 1);
-                    simulator.mStereoCameras.emplace_back(std::move(camera));
+                if (link->name.contains("zed"sv)) {
+                    camera.frameId = "zed2i_left_camera_frame";
+                    camera.pub = simulator.mNh.advertise<sensor_msgs::Image>("camera/left/image", 1);
+                    camera.fov = 60;
+                    StereoCamera stereoCamera;
+                    stereoCamera.base = std::move(camera);
+                    stereoCamera.pcPub = simulator.mNh.advertise<sensor_msgs::PointCloud2>("camera/left/points", 1);
+                    simulator.mStereoCameras.emplace_back(std::move(stereoCamera));
                 } else {
+                    camera.frameId = "long_range_camera_link";
                     camera.pub = simulator.mNh.advertise<sensor_msgs::Image>("long_range_image", 1);
+                    camera.fov = 15;
                     simulator.mCameras.push_back(std::move(camera));
                 }
             }

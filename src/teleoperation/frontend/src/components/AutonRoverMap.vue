@@ -1,34 +1,18 @@
 <template>
   <div class="wrap">
     <!-- Leaflet Map Definition-->
-    <l-map
-      @ready="onMapReady"
-      ref="map"
-      class="map"
-      :zoom="22"
-      :center="center"
-      @click="getClickedLatLon($event)"
-    >
+    <l-map @ready="onMapReady" ref="map" class="map" :zoom="22" :center="center" @click="getClickedLatLon($event)">
       <l-control-scale :imperial="false" />
       <!-- Tile Layer for map background -->
-      <l-tile-layer
-        ref="tileLayer"
-        :url="online ? onlineUrl : offlineUrl"
-        :attribution="attribution"
-        :options="online ? onlineTileOptions : offlineTileOptions"
-      />
+      <l-tile-layer ref="tileLayer" :url="online ? onlineUrl : offlineUrl" :attribution="attribution"
+        :options="online ? onlineTileOptions : offlineTileOptions" />
 
       <!-- Markers for rover location -->
       <!-- TODO: Figure out if we still want these -->
       <l-marker ref="rover" :lat-lng="odomLatLng" :icon="locationIcon" />
 
       <!-- Waypoint Icons -->
-      <l-marker
-        v-for="(waypoint, index) in waypointList"
-        :key="index"
-        :lat-lng="waypoint.latLng"
-        :icon="waypointIcon"
-      >
+      <l-marker v-for="(waypoint, index) in waypointList" :key="index" :lat-lng="waypoint.latLng" :icon="waypointIcon">
         <l-tooltip :options="{ permanent: 'true', direction: 'top' }">
           {{ waypoint.name }}, {{ index }}
         </l-tooltip>
@@ -56,7 +40,7 @@ import {
   LTooltip,
   LControlScale
 } from '@vue-leaflet/vue-leaflet'
-import { mapGetters, mapMutations } from 'vuex'
+import { mapGetters, mapMutations, mapActions } from 'vuex'
 import 'leaflet/dist/leaflet.css'
 import L from '../leaflet-rotatedmarker'
 
@@ -77,7 +61,6 @@ const offlineTileOptions = {
 
 export default {
   name: 'AutonRoverMap',
-
   components: {
     LMap,
     LTileLayer,
@@ -90,7 +73,7 @@ export default {
     odom: {
       type: Object,
       required: true
-    }
+    },
   },
   data() {
     return {
@@ -236,6 +219,7 @@ export default {
 }
 
 /* .custom-tooltip {
+>>>>>>> 467f453fc814fb83532e90412d432c5622b2afcf
   display: inline-block;
   margin: 10px 20px;
   opacity: 1;
