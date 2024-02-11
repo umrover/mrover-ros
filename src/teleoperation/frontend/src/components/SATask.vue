@@ -9,9 +9,16 @@
         <img src="/help.png" alt="Help" title="Help" width="48" height="48" />
       </div>
       <div class="helpscreen"></div>
-      <div class="helpimages" style="display: flex; align-items: center; justify-content: space-evenly">
-        <img src="/joystick.png" alt="Joystick" title="Joystick Controls"
-          style="width: auto; height: 70%; display: inline-block" />
+      <div
+        class="helpimages"
+        style="display: flex; align-items: center; justify-content: space-evenly"
+      >
+        <img
+          src="/joystick.png"
+          alt="Joystick"
+          title="Joystick Controls"
+          style="width: auto; height: 70%; display: inline-block"
+        />
       </div>
     </div>
     <div class="shadow p-3 rounded map">
@@ -33,7 +40,7 @@
       <PDBFuse />
     </div>
     <div class="shadow p-3 rounded jointState">
-      <MotorsStatusTable :joint-state-data="jointState" :vertical="true" />
+      <MotorsStatusTable :motorData="motorData" :vertical="true" />
     </div>
     <div class="shadow p-3 rounded moteus">
       <DriveMoteusStateTable :moteus-state-data="moteusState" />
@@ -46,20 +53,31 @@
       <LimitSwitch :switch_name="'scoop'" :name="'Scoop Switch'" />
     </div>
     <div class="shadow p-3 rounded calibration">
-      <h3>Calibrations</h3>
+      <h3 style="margin-bottom: 25px">Calibrations</h3>
       <div class="calibration-checkboxes">
-        <CalibrationCheckbox :name="'Joint 1 Calibration'" :joint_name="'sa_joint_1'"
-          :calibrate_topic="'sa_is_calibrated'" />
-        <CalibrationCheckbox :name="'Joint 2 Calibration'" :joint_name="'sa_joint_2'"
-          :calibrate_topic="'sa_is_calibrated'" />
-        <CalibrationCheckbox :name="'Joint 3 Calibration'" :joint_name="'sa_joint_3'"
-          :calibrate_topic="'sa_is_calibrated'" />
+        <CalibrationCheckbox
+          :name="'Joint 1 Calibration'"
+          :joint_name="'sa_joint_1'"
+          :calibrate_topic="'sa_is_calibrated'"
+        />
+        <CalibrationCheckbox
+          :name="'Joint 2 Calibration'"
+          :joint_name="'sa_joint_2'"
+          :calibrate_topic="'sa_is_calibrated'"
+        />
+        <CalibrationCheckbox
+          :name="'Joint 3 Calibration'"
+          :joint_name="'sa_joint_3'"
+          :calibrate_topic="'sa_is_calibrated'"
+        />
       </div>
-      <MotorAdjust :options="[
-        { name: 'sa_joint_1', option: 'Joint 1' },
-        { name: 'sa_joint_2', option: 'Joint 2' },
-        { name: 'sa_joint_3', option: 'Joint 3' }
-      ]" />
+      <MotorAdjust
+        :options="[
+          { name: 'sa_joint_1', option: 'Joint 1' },
+          { name: 'sa_joint_2', option: 'Joint 2' },
+          { name: 'sa_joint_3', option: 'Joint 3' }
+        ]"
+      />
     </div>
     <div v-show="false">
       <MastGimbalControls></MastGimbalControls>
@@ -117,11 +135,20 @@ export default {
       },
 
       jointState: {},
-      // Moteus state table is set up to look for specific keys in moteusState so it can't be empty
+
       moteusState: {
-        name: ['', '', '', '', '', ''],
-        error: ['', '', '', '', '', ''],
-        state: ['', '', '', '', '', '']
+        name: [] as string[],
+        error: [] as string[],
+        state: [] as string[],
+        limit_hit:
+          [] as boolean[] /* Each motor stores an array of 4 indicating which limit switches are hit */
+      },
+
+      motorData: {
+        name: [] as string[],
+        position: [] as number[],
+        velocity: [] as number[],
+        effort: [] as number[]
       }
     }
   },
@@ -227,8 +254,8 @@ export default {
   cursor: pointer;
 }
 
-.help:hover~.helpscreen,
-.help:hover~.helpimages {
+.help:hover ~ .helpscreen,
+.help:hover ~ .helpimages {
   visibility: visible;
 }
 
