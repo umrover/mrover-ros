@@ -169,7 +169,7 @@ namespace mrover {
                 mMinRadPerSecDE1.get(),
                 mMaxRadPerSecDE1.get());
 
-        ROS_INFO("max velocity: %f", joint_de_0_vel);
+        // ROS_INFO("max velocity: %f", joint_de_0_vel);
         velocity.names.at(mJointDEPitchIndex) = "joint_de_0";
         velocity.names.at(mJointDERollIndex) = "joint_de_1";
         velocity.velocities.at(mJointDEPitchIndex) = joint_de_0_vel;

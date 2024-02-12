@@ -19,7 +19,7 @@ can:
   devices:
     - name: "jetson"
       bus: 0
-      id: 0x10
+      id: 0x0 # 0x10 originally
     - name: "front_left"
       bus: 0
       id: 0x11
@@ -114,7 +114,7 @@ brushless_motors:
       min_velocity: -70.0
       max_velocity: 70.0
       is_linear: true
-      rad_to_meters_ratio: #TODO 5.0 = 5 motor radians -> 1 meter
+      rad_to_meters_ratio: 1.0 #TODO 5.0 = 5 motor radians -> 1 meter
       limit_0_present: true
       limit_1_present: true
       limit_0_enabled: true
@@ -135,16 +135,16 @@ brushless_motors:
       min_velocity: -70.0
       max_velocity: 70.0
     joint_de_0:
-      min_velocity: -70.0
-      max_velocity: 70.0
+      min_velocity: -100.0
+      max_velocity: 100.0
     joint_de_1:
-      min_velocity: -70.0
-      max_velocity: 70.0
+      min_velocity: -100.0
+      max_velocity: 100.0
     sa_z:
       min_velocity: -1.0
       max_velocity: 1.0
       is_linear: true
-      rad_to_meters_ratio: #TODO
+      #rad_to_meters_ratio: #TODO
       limit_0_present: true
       limit_1_present: true
       limit_0_enabled: true
@@ -281,7 +281,7 @@ brushed_motors:
     sa_x:
       gear_ratio: 75.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
       is_linear: true
-      rad_to_meters_ratio: #TODO 5.0 = 5 motor radians -> 1 meter
+      # rad_to_meters_ratio: #TODO 5.0 = 5 motor radians -> 1 meter
       limit_0_present: true
       limit_1_present: true
       limit_2_present: true
@@ -310,7 +310,7 @@ brushed_motors:
     sa_y:
       gear_ratio: 75.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
       is_linear: true
-      rad_to_meters_ratio: #TODO 5.0 = 5 motor radians -> 1 meter
+      #rad_to_meters_ratio: #TODO 5.0 = 5 motor radians -> 1 meter
       limit_0_present: true
       limit_1_present: true
       limit_0_enabled: true
@@ -334,7 +334,7 @@ brushed_motors:
     sampler:
       gear_ratio: 75.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
       is_linear: true
-      rad_to_meters_ratio: #TODO 5.0 = 5 motor radians -> 1 meter
+      #rad_to_meters_ratio: #TODO 5.0 = 5 motor radians -> 1 meter
       limit_0_present: true
       limit_1_present: true
       limit_0_enabled: true

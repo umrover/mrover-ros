@@ -72,18 +72,23 @@ namespace mrover {
             return;
         }
 
+        // ROS_INFO("my velocity rev s = %f", velocity.get()); 
+
         RevolutionsPerSecond velocity_rev_s = std::clamp(velocity, mMinVelocity, mMaxVelocity);
         // ROS_WARN("%7.3f   %7.3f",
         //  velocity.get(), velocity_rev_s.get());
         if (abs(velocity_rev_s).get() < 1e-5) {
             setBrake();
+            ROS_INFO("In brake mode because velocity_rev_s = %f", velocity_rev_s.get());
         } else {
             moteus::PositionMode::Command command{
                     .position = std::numeric_limits<double>::quiet_NaN(),
                     .velocity = velocity_rev_s.get(),
+                    .maximum_torque = 0.5,
             };
 
             moteus::CanFdFrame positionFrame = mController.MakePosition(command);
+            ROS_INFO("sending this velocity: %f", command.velocity);
             mDevice.publish_moteus_frame(positionFrame);
         }
     }
@@ -96,7 +101,7 @@ namespace mrover {
         moteus::CanFdFrame setBrakeFrame = mController.MakeBrake();
         mDevice.publish_moteus_frame(setBrakeFrame);
 
-        ROS_INFO("In brake mode");
+        // ROS_INFO("In brake mode");
     }
 
     MoteusLimitSwitchInfo BrushlessController::getPressedLimitSwitchInfo() {
@@ -113,13 +118,16 @@ namespace mrover {
         - Read from config about limit switch settings
         - Either 1 or 0 not forward/backward
 
-        - Add a member variable in Brushless.hpp to store limit switch value. Update this limit
-          switch variable every round in ProcessCANMessage.
+        - Add a member variable in Brushless.hpp to store limit switch value. 
+          pdate this limit switch variable every round in ProcessCANMessage.
+        
+        - Note: we can get aux pin info even without sending a query command. 
+          Tested with sending velocity commands.
         */
         // TODO - implement this
         MoteusLimitSwitchInfo result;
     
-        ROS_INFO("moteusAux1Info: %i, moteusAux2Info: %i", moteusAux1Info, moteusAux2Info);
+        //ROS_INFO("moteusAux1Info: %i, moteusAux2Info: %i", moteusAux1Info, moteusAux2Info);
         result.isFwdPressed = false;
         result.isBwdPressed = false;
 
@@ -147,7 +155,7 @@ namespace mrover {
             adjust(limitSwitch1ReadjustPosition);
         }
 
-        ROS_INFO("isFwdPressed: %i  isBwdPress: %i", result.isFwdPressed, result.isBwdPressed);
+        //ROS_INFO("isFwdPressed: %i  isBwdPress: %i", result.isFwdPressed, result.isBwdPressed);
 
         return result;
     }
@@ -176,19 +184,19 @@ namespace mrover {
         assert(msg->source == mControllerName);
         assert(msg->destination == mName);
         auto result = moteus::Query::Parse(msg->data.data(), msg->data.size());
-        // ROS_INFO("controller: %s    %3d p/a/v/t=(%7.3f,%7.3f,%7.3f,%7.3f)  v/t/f=(%5.1f,%5.1f,%3d) GPIO: Aux1-%X , Aux2-%X",
-        //          mControllerName.c_str(),
-        //          result.mode,
-        //          result.position,
-        //          result.abs_position,
-        //          result.velocity,
-        //          result.torque,
-        //          result.voltage,
-        //          result.temperature,
-        //          result.fault,
-        //          result.aux1_gpio,
-        //          result.aux2_gpio
-        //          );
+        ROS_INFO("controller: %s    %3d p/a/v/t=(%7.3f,%7.3f,%7.3f,%7.3f)  v/t/f=(%5.1f,%5.1f,%3d) GPIO: Aux1-%X , Aux2-%X",
+                 mControllerName.c_str(),
+                 result.mode,
+                 result.position,
+                 result.abs_position,
+                 result.velocity,
+                 result.torque,
+                 result.voltage,
+                 result.temperature,
+                 result.fault,  
+                 result.aux1_gpio,
+                 result.aux2_gpio
+                 );
 
         mCurrentPosition = mrover::Revolutions{result.position}; // moteus stores position in revolutions.
         mCurrentVelocity = mrover::RevolutionsPerSecond{result.velocity}; // moteus stores position in revolutions.
