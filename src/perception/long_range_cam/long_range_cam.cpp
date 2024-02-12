@@ -14,7 +14,7 @@ namespace mrover {
     auto fillImageMessage(cv::Mat const& bgrImage, sensor_msgs::ImagePtr const& imageMessage) -> void {
         assert(!bgrImage.empty());
         assert(bgrImage.isContinuous());
-        assert(bgrImage.type() == CV_8UC4);
+        assert(bgrImage.type() == CV_8UC3);
         assert(imageMessage);
 
         imageMessage->height = bgrImage.rows;
@@ -63,8 +63,3 @@ namespace mrover {
     }
 
 } // namespace mrover
-
-#ifdef MROVER_IS_NODELET
-#include <pluginlib/class_list_macros.h>
-PLUGINLIB_EXPORT_CLASS(mrover::LongRangeCamNodelet, nodelet::Nodelet)
-#endif

@@ -5,11 +5,11 @@
     <!-- Nodelet to detect AR tags and publish them to the TF tree -->
     <node if="$(arg run_tag_detector)"
         pkg="nodelet" type="nodelet" name="zed_tag_detector"
-        args="load mrover/TagDetectorNodelet nodelet_manager" output="screen" />
+        args="load mrover/TagDetectorNodelet perception_nodelet_manager" output="screen" />
 
     <node if="$(arg run_tag_detector)"
         pkg="nodelet" type="nodelet" name="long_range_tag_detector"
-        args="load mrover/LongRangeTagDetectorNodelet nodelet_manager" output="screen" />
+        args="load mrover/LongRangeTagDetectorNodelet perception_nodelet_manager" output="screen" />
 
     <node if="$(arg run_object_detector)"
         pkg="nodelet" type="nodelet" name="object_detector" respawn="true"

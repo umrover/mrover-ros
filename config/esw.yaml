@@ -1,16 +1,10 @@
-gps_driver:
-  port: "/dev/gps"
-  baud: 115200
-  useRMC: false # get covariance instead of velocity, see wiki for more info
-  frame_id: "base_link"
-
 imu_driver:
-  port: "/dev/tty.usbmodem2101"
+  port: "/dev/imu"
   baud: 115200
   frame_id: "imu_link"
 
 gps:
-  port: "/dev/tty.usbmodem101"
+  port: "/dev/gps"
   baud: 115200
   useRMC: false # get covariance instead of velocity, see wiki for more info
   frame_id: "base_link"
@@ -93,26 +87,26 @@ can:
 brushless_motors:
   controllers:
     front_left:
-      min_velocity: -70.0
-      max_velocity: 70.0
+      min_velocity: -169.0
+      max_velocity: 169.0
     front_right:
-      min_velocity: -70.0
-      max_velocity: 70.0
+      min_velocity: -169.0
+      max_velocity: 169.0
     middle_left:
-      min_velocity: -70.0
-      max_velocity: 70.0
+      min_velocity: -169.0
+      max_velocity: 169.0
     middle_right:
-      min_velocity: -70.0
-      max_velocity: 70.0
+      min_velocity: -169.0
+      max_velocity: 169.0
     back_left:
-      min_velocity: -70.0
-      max_velocity: 70.0
+      min_velocity: -169.0
+      max_velocity: 169.0
     back_right:
-      min_velocity: -70.0
-      max_velocity: 70.0
+      min_velocity: -169.0
+      max_velocity: 169.0
     joint_a:
-      min_velocity: -70.0
-      max_velocity: 70.0
+      min_velocity: -169.0
+      max_velocity: 169.0
       is_linear: true
       rad_to_meters_ratio: 1.0 #TODO 5.0 = 5 motor radians -> 1 meter
       limit_0_present: true

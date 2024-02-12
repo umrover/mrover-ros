@@ -58,7 +58,7 @@ auto main(int argc, char** argv) -> int {
     ros::init(argc, argv, "led");
     ros::NodeHandle nh;
 
-    led_publisher = nh.advertise<mrover::CAN>("led", 1);
+    led_publisher = nh.advertise<mrover::LED>("led", 1);
     ros::ServiceServer teleop_enabled_client = nh.advertiseService("teleop_enabled", teleop_enabled_update);
     ros::Subscriber state_machine_update_sub = nh.subscribe<mrover::StateMachineStateUpdate>("nav_state", 1, state_machine_state_update);
 
