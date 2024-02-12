@@ -74,7 +74,7 @@ can:
     - name: "sa_z"
       bus: 0
       id: 0x31
-    - name: "scoop"
+    - name: "sampler"
       bus: 0
       id: 0x32
     - name: "sensor_actuator"
@@ -517,7 +517,7 @@ wheel:
   gear_ratio: 50.0
   radius: 0.13
 
-arm:
+arm_hw:
   controllers:
     joint_a:
       multiplier: 1.0
@@ -532,6 +532,31 @@ arm:
     allen_key:
       multiplier: 1.0
     gripper:
+      multiplier: 1.0
+
+mast_gimbal:
+  controllers:
+    mast_gimbal_x:
+      multiplier: 1.0
+    mast_gimbal_y:
+      multiplier: 1.0
+
+cache:
+  controllers:
+    cache_motor:
+      multiplier: 1.0
+
+sa:
+  controllers:
+    sa_x:
+      multiplier: 1.0
+    sa_y:
+      multiplier: 1.0
+    sa_z:
+      multiplier: 1.0
+    sampler:
+      multiplier: 1.0
+    sensor_actuator:
       multiplier: 1.0
 
 drive:
@@ -567,7 +592,7 @@ motors_group:
     - "sa_x"
     - "sa_y"
     - "sa_z"
-    - "scoop"
+    - "sampler"
     - "sensor_actuator"
   drive:
     - "front_left"
@@ -615,7 +640,7 @@ motors:
       type: "brushed"
     sa_z:
       type: "brushless"
-    scoop:
+    sampler:
       type: "brushed"
     sensor_actuator:
       type: "brushed"
