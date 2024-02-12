@@ -1,0 +1,19 @@
+<!-- 
+	This launch file should be run on the Jetson in order to start our drive, control, and auton
+software
+	on the physical rover.
+ -->
+<launch>
+  <!-- launch rover core nodes -->
+  <!--  <include file="$(find mrover)/launch/rover_core.launch"/>-->
+
+  <!-- params for hardware interfaces including IMU, GPS, and moteus -->
+  <rosparam command="load" file="$(find mrover)/config/esw.yaml"/>
+
+  <!-- <node name="can_driver" pkg="mrover" type="can_driver" />   -->
+  <!-- TODO - how are you supposed to launch a nodelet? -->
+  <node name="drive_bridge" pkg="mrover" type="drive_bridge"/>
+  <node name="mast_gimbal_bridge" pkg="mrover" type="mast_gimbal_bridge"/>
+  <node name="pdb_bridge" pkg="mrover" type="pdb_bridge"/>
+  <!--  <node name="cameras" pkg="mrover" type="cameras.py"/>-->
+</launch>

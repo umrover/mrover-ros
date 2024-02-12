@@ -1,0 +1,4 @@
+<launch>
+    <rosparam command="load" file="$(find mrover)/config/esw.yaml" />
+    <node pkg="mrover" type="brushless_test_bridge" name="brushless_test_bridge" />
+</launch>

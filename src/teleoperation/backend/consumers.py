@@ -156,10 +156,8 @@ class GUIConsumer(JsonWebsocketConsumer):
                 self.auton_bearing()
             elif message["type"] == "mast_gimbal":
                 self.mast_gimbal(message)
-            elif message["type"] == "enable_limit_switch":
+            elif message['type'] == 'enable_limit_switch':
                 self.limit_switch(message)
-            elif message["type"] == "center_map":
-                self.send_center()
             elif message["type"] == "center_map":
                 self.send_center()
             elif message["type"] == "save_auton_waypoint_list":
@@ -331,16 +329,14 @@ class GUIConsumer(JsonWebsocketConsumer):
                 ra_slow_mode = False
 
             arm_throttle_cmd.throttles = [
-                self.ra_config[name]["multiplier"] * self.filter_xbox_axis(msg["axes"][info["xbox_index"]])
-                for name, info in self.ra_config.items()
-                if name.startswith("joint")
+                self.filter_xbox_axis(msg["axes"][self.ra_config["joint_a"]["xbox_index"]]),
+                self.filter_xbox_axis(msg["axes"][self.ra_config["joint_b"]["xbox_index"]]),
+                self.filter_xbox_axis(msg["axes"][self.ra_config["joint_c"]["xbox_index"]]),
+                self.filter_xbox_axis(msg["axes"][self.ra_config["joint_de_pitch"]["xbox_index"]]),
+                self.filter_xbox_axis(msg["axes"][self.ra_config["joint_de_roll"]["xbox_index"]]),
+                self.ra_config["allen_key"]["multiplier"] * self.filter_xbox_button(msg["buttons"], "y", "a"),
+                self.ra_config["gripper"]["multiplier"] * self.filter_xbox_button(msg["buttons"], "b", "x"),
             ]
-            arm_throttle_cmd.throttles.extend(
-                [
-                    self.ra_config["allen_key"]["multiplier"] * self.filter_xbox_button(msg["buttons"], "y", "a"),
-                    self.ra_config["gripper"]["multiplier"] * self.filter_xbox_button(msg["buttons"], "b", "x"),
-                ]
-            )
 
             for i, name in enumerate(self.RA_NAMES):
                 if ra_slow_mode:
@@ -539,7 +535,12 @@ class GUIConsumer(JsonWebsocketConsumer):
         )
 
     def send_teleop_enabled(self, msg):
-        self.teleop_pub.publish(msg["data"])
+        rospy.wait_for_service("enable_teleop")
+        try:
+            enable_teleop = rospy.ServiceProxy("enable_teleop", rospy.std_srvs.SetBool)
+            enable_teleop(msg["data"])
+        except rospy.ServiceException as e:
+            rospy.logerr(f"Service call failed: {e}")
 
     def led_callback(self, msg):
         self.send(
