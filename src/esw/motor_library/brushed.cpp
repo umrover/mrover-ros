@@ -10,6 +10,11 @@ namespace mrover {
         mNh.getParam(std::format("brushed_motors/controllers/{}", mControllerName), brushedMotorData);
         assert(brushedMotorData.getType() == XmlRpc::XmlRpcValue::TypeStruct);
 
+        mVelocityMultiplier = Dimensionless{xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "velocity_multiplier", 1.0)};
+        if (mVelocityMultiplier.get() == 0) {
+            throw std::runtime_error("Velocity multiplier can't be 0!");
+        }
+
         mConfigCommand.gear_ratio = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "gear_ratio");
 
         for (std::size_t i = 0; i < 4; ++i) {
@@ -102,6 +107,8 @@ namespace mrover {
 
         assert(velocity >= mConfigCommand.min_velocity && velocity <= mConfigCommand.max_velocity);
 
+        velocity = velocity * mVelocityMultiplier;
+
         mDevice.publish_message(InBoundMessage{VelocityCommand{
                 .velocity = velocity,
                 .p = static_cast<float>(mVelocityGains.p),
@@ -131,7 +138,7 @@ namespace mrover {
 
     void BrushedController::processMessage(ControllerDataState const& state) {
         mCurrentPosition = state.position;
-        mCurrentVelocity = state.velocity;
+        mCurrentVelocity = state.velocity / mVelocityMultiplier;
         ROS_INFO("Vel: %f | Pos: %f", mCurrentVelocity.get(), mCurrentPosition.get());
         ConfigCalibErrorInfo configCalibErrInfo = state.config_calib_error_data;
         mIsConfigured = configCalibErrInfo.configured;
