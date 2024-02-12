@@ -9,14 +9,31 @@ import pymap3d
 import rospy
 import tf2_ros
 from geometry_msgs.msg import Twist
-from mrover.msg import Waypoint, GPSWaypoint, WaypointType, GPSPointList, Course as CourseMsg
+from mrover.msg import (
+    Waypoint,
+    GPSWaypoint,
+    WaypointType,
+    GPSPointList,
+    Course as CourseMsg,
+    LongRangeTag,
+    LongRangeTags,
+)
 from mrover.srv import EnableAuton, EnableAutonRequest, EnableAutonResponse
 from navigation.drive import DriveController
+from navigation import approach_post, long_range, approach_object
 from std_msgs.msg import Time, Bool
 from util.SE3 import SE3
 from visualization_msgs.msg import Marker
+from util.ros_utils import get_rosparam
+from util.state_lib.state import State
 
 TAG_EXPIRATION_TIME_SECONDS = 60
+
+LONG_RANGE_TAG_EXPIRATION_TIME_SECONDS = get_rosparam("long_range/time_threshold", 5)
+INCREMENT_WEIGHT = get_rosparam("long_range/increment_weight", 5)
+DECREMENT_WEIGHT = get_rosparam("long_range/decrement_weight", 1)
+MIN_HITS = get_rosparam("long_range/min_hits", 3)
+MAX_HITS = get_rosparam("long_range/max_hits", 10)
 
 REF_LAT = rospy.get_param("gps_linearization/reference_point_latitude")
 REF_LON = rospy.get_param("gps_linearization/reference_point_longitude")
@@ -59,24 +76,24 @@ class Environment:
     """
 
     ctx: Context
+    long_range_tags: LongRangeTagStore
     NO_FIDUCIAL: ClassVar[int] = -1
-    arrived_at_post: bool = False
-    last_post_location: Optional[np.ndarray] = None
+    arrived_at_target: bool = False
+    last_target_location: Optional[np.ndarray] = None
 
-    def get_fid_pos(self, fid_id: int, in_odom_frame: bool = True) -> Optional[np.ndarray]:
+    def get_target_pos(self, id: str, in_odom_frame: bool = True) -> Optional[np.ndarray]:
         """
-        Retrieves the pose of the given fiducial ID from the TF tree in the odom frame
-        if in_odom_frame is True otherwise in the world frame
-        if it exists and is more recent than TAG_EXPIRATION_TIME_SECONDS, otherwise returns None
+        Retrieves the pose of the given target from the TF tree in the odom frame (if in_odom_frame is True otherwise in
+        the world frame) if it exists and is more recent than TAG_EXPIRATION_TIME_SECONDS, otherwise returns None
+        :param id: id of what we want from the TF tree. Could be for a fiducial, the hammer, or the water bottle
+        :param in_odom_frame: bool for if we are in the odom fram or world frame
+        :return: pose of the target or None
         """
         try:
             parent_frame = self.ctx.odom_frame if in_odom_frame else self.ctx.world_frame
-            fid_pose, time = SE3.from_tf_time(
-                self.ctx.tf_buffer, parent_frame=parent_frame, child_frame=f"fiducial{fid_id}"
-            )
+            target_pose, time = SE3.from_tf_time(self.ctx.tf_buffer, parent_frame=parent_frame, child_frame=id)
             now = rospy.Time.now()
             if now.to_sec() - time.to_sec() >= TAG_EXPIRATION_TIME_SECONDS:
-                print(f"TAG EXPIRED {fid_id}!")
                 return None
         except (
             tf2_ros.LookupException,
@@ -84,11 +101,11 @@ class Environment:
             tf2_ros.ExtrapolationException,
         ) as e:
             return None
-        return fid_pose.position
+        return target_pose.position
 
-    def current_fid_pos(self, odom_override: bool = True) -> Optional[np.ndarray]:
+    def current_target_pos(self, odom_override: bool = True) -> Optional[np.ndarray]:
         """
-        Retrieves the position of the current fiducial (and we are looking for it)
+        Retrieves the position of the current fiducial or object (and we are looking for it)
         :param: odom_override if false will force it to be in the map frame
         """
         assert self.ctx.course
@@ -98,7 +115,65 @@ class Environment:
             print("CURRENT WAYPOINT IS NONE")
             return None
 
-        return self.get_fid_pos(current_waypoint.tag_id, in_odom)
+        if current_waypoint.type.val == WaypointType.POST:
+            return self.get_target_pos(f"fiducial{current_waypoint.tag_id}", in_odom)
+        elif current_waypoint.type.val == WaypointType.MALLET:
+            return self.get_target_pos("hammer", in_odom)
+        elif current_waypoint.type == WaypointType.WATER_BOTTLE:
+            return self.get_target_pos("bottle", in_odom)
+        else:
+            return None
+
+
+class LongRangeTagStore:
+    @dataclass
+    class TagData:
+        hit_count: int
+        tag: LongRangeTag
+        time: rospy.Time
+
+    ctx: Context
+    __data: dict[int, TagData]
+    min_hits: int
+    max_hits: int
+
+    def __init__(self, ctx: Context, min_hits: int = MIN_HITS, max_hits: int = MAX_HITS) -> None:
+        self.ctx = ctx
+        self.__data = {}
+        self.min_hits = min_hits
+        self.max_hits = max_hits
+
+    def push_frame(self, tags: List[LongRangeTag]) -> None:
+        for _, cur_tag in list(self.__data.items()):
+            tags_ids = [tag.id for tag in tags]
+            if cur_tag.tag.id not in tags_ids:
+                cur_tag.hit_count -= DECREMENT_WEIGHT
+                if cur_tag.hit_count <= 0:
+                    del self.__data[cur_tag.tag.id]
+            else:
+                cur_tag.hit_count += INCREMENT_WEIGHT
+                cur_tag.time = rospy.get_time()
+                if cur_tag.hit_count > self.max_hits:
+                    cur_tag.hit_count = self.max_hits
+
+        for tag in tags:
+            if tag.id not in self.__data:
+                self.__data[tag.id] = self.TagData(hit_count=INCREMENT_WEIGHT, tag=tag, time=rospy.get_time())
+
+    def get(self, tag_id: int) -> Optional[LongRangeTag]:
+        if len(self.__data) == 0:
+            return None
+        if tag_id not in self.__data:
+            return None
+        time_difference = rospy.get_time() - self.__data[tag_id].time
+        if (
+            tag_id in self.__data
+            and self.__data[tag_id].hit_count >= self.min_hits
+            and time_difference <= LONG_RANGE_TAG_EXPIRATION_TIME_SECONDS
+        ):
+            return self.__data[tag_id].tag
+        else:
+            return None
 
 
 @dataclass
@@ -128,7 +203,6 @@ class Course:
         """
         Returns the currently active waypoint
 
-        :param ud:  State machine user data
         :return:    Next waypoint to reach if we have an active course
         """
         if self.course_data is None or self.waypoint_index >= len(self.course_data.waypoints):
@@ -146,8 +220,37 @@ class Course:
         else:
             return False
 
+    def look_for_object(self) -> bool:
+        """
+        Returns whether the currently active waypoint (if it exists) indicates
+        that we should go to either the mallet or the water bottle.
+        """
+        waypoint = self.current_waypoint()
+        if waypoint is not None:
+            return waypoint.type.val == WaypointType.MALLET or waypoint.type.val == WaypointType.WATER_BOTTLE
+        else:
+            return False
+
     def is_complete(self) -> bool:
         return self.waypoint_index == len(self.course_data.waypoints)
+
+    def check_approach(self) -> Optional[State]:
+        """
+        Returns one of the approach states (ApproachPostState, LongRangeState, or ApproachObjectState)
+        if we are looking for a post or object and we see it in one of the cameras (ZED or long range)
+        """
+        current_waypoint = self.current_waypoint()
+        if self.look_for_post():
+            # if we see the tag in the ZED, go to ApproachPostState
+            if self.ctx.env.current_target_pos() is not None:
+                return approach_post.ApproachPostState()
+            # if we see the tag in the long range camera, go to LongRangeState
+            if self.ctx.env.long_range_tags.get(current_waypoint.tag_id) is not None:
+                return long_range.LongRangeState()
+        elif self.look_for_object():
+            if self.ctx.env.current_target_pos() is not None:
+                return approach_object.ApproachObjectState()  # if we see the object
+        return None
 
 
 def setup_course(ctx: Context, waypoints: List[Tuple[Waypoint, SE3]]) -> Course:
@@ -200,6 +303,7 @@ class Context:
     vis_publisher: rospy.Publisher
     course_listener: rospy.Subscriber
     stuck_listener: rospy.Subscriber
+    tag_data_listener: rospy.Subscriber
 
     # Use these as the primary interfaces in states
     course: Optional[Course]
@@ -223,12 +327,13 @@ class Context:
         self.stuck_listener = rospy.Subscriber("nav_stuck", Bool, self.stuck_callback)
         self.course = None
         self.rover = Rover(self, False, "")
-        self.env = Environment(self)
+        self.env = Environment(self, long_range_tags=LongRangeTagStore(self))
         self.disable_requested = False
         self.use_odom = rospy.get_param("use_odom_frame")
         self.world_frame = rospy.get_param("world_frame")
         self.odom_frame = rospy.get_param("odom_frame")
         self.rover_frame = rospy.get_param("rover_frame")
+        self.tag_data_listener = rospy.Subscriber("tags", LongRangeTags, self.tag_data_callback)
 
     def recv_enable_auton(self, req: EnableAutonRequest) -> EnableAutonResponse:
         if req.enable:
@@ -239,3 +344,6 @@ class Context:
 
     def stuck_callback(self, msg: Bool):
         self.rover.stuck = msg.data
+
+    def tag_data_callback(self, tags: LongRangeTags) -> None:
+        self.env.long_range_tags.push_frame(tags.longRangeTags)

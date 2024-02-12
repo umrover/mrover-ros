@@ -1,6 +1,6 @@
-<library path="lib/libtag_detector_nodelet">
+<library path="lib/libzed_tag_detector_nodelet">
     <class name="mrover/TagDetectorNodelet"
-           type="mrover::TagDetectorNodelet"
-           base_class_type="nodelet::Nodelet">
+        type="mrover::TagDetectorNodelet"
+        base_class_type="nodelet::Nodelet">
     </class>
 </library>

@@ -9,12 +9,13 @@ from navigation import state, recovery
 from navigation.approach_target_base import ApproachTargetBaseState
 
 
-class ApproachPostState(ApproachTargetBaseState):
+class ApproachObjectState(ApproachTargetBaseState):
     """
-    State for when the tag is seen in the ZED camera.
+    State for when we see an object (mallet or water bottle).
+    We are only using the ZED camera.
     Transitions:
     -If arrived at target: DoneState
-    -Did not arrive at target: ApproachPostState
+    -Did not arrive at target: ApproachObjectState
     """
 
     def on_enter(self, context):
@@ -24,9 +25,8 @@ class ApproachPostState(ApproachTargetBaseState):
         pass
 
     def get_target_pos(self, context) -> Optional[np.ndarray]:
-        # return fid_pos, either position or None
-        fid_pos = context.env.current_target_pos()
-        return fid_pos
+        object_pos = context.env.current_target_pos()
+        return object_pos
 
     def determine_next(self, context, finished: bool) -> State:
         if finished:

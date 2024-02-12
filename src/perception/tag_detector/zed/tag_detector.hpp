@@ -1,3 +1,5 @@
+#pragma once
+
 #include "pch.hpp"
 
 namespace mrover {
@@ -10,7 +12,7 @@ namespace mrover {
     };
 
     class TagDetectorNodelet : public nodelet::Nodelet {
-    private:
+
         ros::NodeHandle mNh, mPnh;
 
         ros::Publisher mImgPub;
@@ -39,7 +41,6 @@ namespace mrover {
         cv::Mat mGrayImg;
         sensor_msgs::Image mImgMsg;
         sensor_msgs::Image mThreshMsg;
-        uint32_t mSeqNum{};
         std::optional<size_t> mPrevDetectedCount; // Log spam prevention
         std::vector<std::vector<cv::Point2f>> mImmediateCorners;
         std::vector<int> mImmediateIds;
@@ -49,22 +50,22 @@ namespace mrover {
 
         LoopProfiler mProfiler{"Tag Detector"};
 
-        void onInit() override;
+        auto onInit() -> void override;
 
-        void publishThresholdedImage();
+        auto publishThresholdedImage() -> void;
 
-        std::optional<SE3> getTagInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t u, size_t v);
+        auto getTagInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t u, size_t v) const -> std::optional<SE3>;
 
     public:
         TagDetectorNodelet() = default;
 
         ~TagDetectorNodelet() override = default;
 
-        void pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg);
+        auto pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg) -> void;
 
-        void configCallback(mrover::DetectorParamsConfig& config, uint32_t level);
+        auto configCallback(DetectorParamsConfig& config, uint32_t level) -> void;
 
-        bool enableDetectionsCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res);
+        auto enableDetectionsCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) -> bool;
     };
 
 } // namespace mrover

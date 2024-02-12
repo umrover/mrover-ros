@@ -1,14 +1,16 @@
 #include "tag_detector.hpp"
 
+#include "point.hpp"
+
 namespace mrover {
 
     /**
-     * @brief       Retrieve the pose of the tag in camera space
-     * @param msg   3D Point Cloud with points stored relative to the camera
-     * @param u     X Pixel Position
-     * @param v     Y Pixel Position
+     * @brief           Retrieve the pose of the tag in camera space
+     * @param cloudPtr  3D Point Cloud with points stored relative to the camera
+     * @param u         X Pixel Position
+     * @param v         Y Pixel Position
      */
-    std::optional<SE3> TagDetectorNodelet::getTagInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t u, size_t v) {
+    auto TagDetectorNodelet::getTagInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t u, size_t v) const -> std::optional<SE3> {
         assert(cloudPtr);
 
         if (u >= cloudPtr->width || v >= cloudPtr->height) {
@@ -16,7 +18,7 @@ namespace mrover {
             return std::nullopt;
         }
 
-        auto point = reinterpret_cast<Point const*>(cloudPtr->data.data())[u + v * cloudPtr->width];
+        Point point = reinterpret_cast<Point const*>(cloudPtr->data.data())[u + v * cloudPtr->width];
 
         if (!std::isfinite(point.x) || !std::isfinite(point.y) || !std::isfinite(point.z)) {
             NODELET_WARN("Tag center point not finite: [%f %f %f]", point.x, point.y, point.z);
@@ -32,7 +34,7 @@ namespace mrover {
      *
      * @param msg   Point cloud message
      */
-    void TagDetectorNodelet::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg) {
+    auto TagDetectorNodelet::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg) -> void {
         assert(msg);
         assert(msg->height > 0);
         assert(msg->width > 0);
@@ -43,8 +45,8 @@ namespace mrover {
 
         NODELET_DEBUG("Got point cloud %d", msg->header.seq);
 
-        // OpenCV needs a dense BGR image |BGR|...| but out point cloud is |BGRAXYZ...|...|
-        // So we need to copy the data into the correct format
+        // OpenCV needs a dense BGR image |BGR|...| but out point cloud is
+        // |BGRAXYZ...|...| So we need to copy the data into the correct format
         if (static_cast<int>(msg->height) != mImg.rows || static_cast<int>(msg->width) != mImg.cols) {
             NODELET_INFO("Image size changed from [%d %d] to [%u %u]", mImg.cols, mImg.rows, msg->width, msg->height);
             mImg = cv::Mat{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC3, cv::Scalar{0, 0, 0}};
@@ -80,7 +82,7 @@ namespace mrover {
 
             if (tag.tagInCam) {
                 // Publish tag to immediate
-                std::string immediateFrameId = "immediateFiducial" + std::to_string(tag.id);
+                std::string immediateFrameId = std::format("immediateFiducial{}", tag.id);
                 SE3::pushToTfTree(mTfBroadcaster, immediateFrameId, mCameraFrameId, tag.tagInCam.value());
             }
         }
@@ -89,8 +91,7 @@ namespace mrover {
         // Decrement their hit count and remove if they hit zero
         auto it = mTags.begin();
         while (it != mTags.end()) {
-            auto& [id, tag] = *it;
-            if (std::ranges::find(mImmediateIds, id) == mImmediateIds.end()) {
+            if (auto& [id, tag] = *it; std::ranges::find(mImmediateIds, id) == mImmediateIds.end()) {
                 tag.hitCount -= mTagDecrementWeight;
                 tag.tagInCam = std::nullopt;
                 if (tag.hitCount <= 0) {
@@ -105,11 +106,11 @@ namespace mrover {
         for (auto const& [id, tag]: mTags) {
             if (tag.hitCount >= mMinHitCountBeforePublish && tag.tagInCam) {
                 try {
-                    std::string immediateFrameId = "immediateFiducial" + std::to_string(tag.id);
+                    std::string immediateFrameId = std::format("immediateFiducial{}", tag.id);
                     // Publish tag to odom
                     std::string const& parentFrameId = mUseOdom ? mOdomFrameId : mMapFrameId;
                     SE3 tagInParent = SE3::fromTfTree(mTfBuffer, parentFrameId, immediateFrameId);
-                    SE3::pushToTfTree(mTfBroadcaster, "fiducial" + std::to_string(id), parentFrameId, tagInParent);
+                    SE3::pushToTfTree(mTfBroadcaster, std::format("fiducial{}", id), parentFrameId, tagInParent);
                 } catch (tf2::ExtrapolationException const&) {
                     NODELET_WARN("Old data for immediate tag");
                 } catch (tf2::LookupException const&) {
@@ -131,21 +132,19 @@ namespace mrover {
                 for (auto& [id, tag]: mTags) {
                     cv::Scalar color{255, 0, 0};
                     cv::Point pt{tagBoxWidth * tagCount, mImg.rows / 10};
-                    std::string text = "id" + std::to_string(id) + ":" + std::to_string(tag.hitCount);
+                    std::string text = std::format("id{}:{}", id, tag.hitCount);
                     cv::putText(mImg, text, pt, cv::FONT_HERSHEY_COMPLEX, mImg.cols / 800.0, color, mImg.cols / 300);
-
                     ++tagCount;
                 }
             }
-            mImgMsg.header.seq = mSeqNum;
             mImgMsg.header.stamp = ros::Time::now();
-            mImgMsg.header.frame_id = "zed2i_left_camera_frame";
+            mImgMsg.header.frame_id = "zed_left_camera_frame";
             mImgMsg.height = mImg.rows;
             mImgMsg.width = mImg.cols;
             mImgMsg.encoding = sensor_msgs::image_encodings::BGR8;
             mImgMsg.step = mImg.step;
             mImgMsg.is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
-            size_t size = mImgMsg.step * mImgMsg.height;
+            std::size_t size = mImgMsg.step * mImgMsg.height;
             mImgMsg.data.resize(size);
             std::memcpy(mImgMsg.data.data(), mImg.data, size);
             mImgPub.publish(mImgMsg);
@@ -156,8 +155,6 @@ namespace mrover {
         mPrevDetectedCount = detectedCount;
 
         mProfiler.measureEvent("Publish");
-
-        mSeqNum++;
     }
 
 } // namespace mrover
