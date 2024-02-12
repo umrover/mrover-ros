@@ -22,8 +22,8 @@ int main(int argc, char** argv) {
     // - rosrun mrover can_driver_node _interface:=can0
     // - roslaunch brushless_test.launch
 
-    auto brushlessController_de0 = std::make_unique<mrover::BrushlessController>(nh, "jetson", "joint_de_0");
-    auto brushlessController_de1 = std::make_unique<mrover::BrushlessController>(nh, "jetson", "joint_de_1");
+    // auto brushlessController_de0 = std::make_unique<mrover::BrushlessController>(nh, "jetson", "joint_de_0");
+    // auto brushlessController_de1 = std::make_unique<mrover::BrushlessController>(nh, "jetson", "joint_de_1");
     
     // fake DE publisher:
 
@@ -33,11 +33,11 @@ int main(int argc, char** argv) {
 
     mrover::Velocity msg;
     msg.names = {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll", "allen_key", "gripper"};
-    msg.velocities = {0, 0, 0, 20, 20, 0, 0};
+    msg.velocities = {0, 0, 0, 0, 30, 0, 0};
     
 
     int count = 0;
-    ros::Rate rate{102};
+    // ros::Rate rate{102};
 
     /*
     // Different positions test
@@ -53,21 +53,21 @@ int main(int argc, char** argv) {
     }
 
     */
-    brushlessController_de0->setStop();
-    brushlessController_de1->setStop();
-    ros::Rate rate_0p5hz{1000};
+    // brushlessController_de0->setStop();
+    // brushlessController_de1->setStop();
+    ros::Rate rate{10};
     while (ros::ok()) {
         // Motor should keep moving forward every 2 seconds. Repeats 10 times.
         
         // brushlessController->sendQuery();
-        brushlessController_de0->setDesiredVelocity(mrover::RadiansPerSecond{60.0});
-        brushlessController_de1->setDesiredVelocity(mrover::RadiansPerSecond{60.0});
+        // brushlessController_de0->setDesiredVelocity(mrover::RadiansPerSecond{60.0});
+        // brushlessController_de1->setDesiredVelocity(mrover::RadiansPerSecond{60.0});
         // brushlessController->setDesiredVelocity(5.0);
         //brushlessController->setDesiredPosition(mrover::Radians{1.0});
         //brushlessController->adjust(mrover::Radians{0.0}); // Adjust code works!
         
         // publish DE velocity:
-        // DEPub->publish(msg);
+        DEPub->publish(msg);
         // count++;
         ros::spinOnce();
         rate.sleep();

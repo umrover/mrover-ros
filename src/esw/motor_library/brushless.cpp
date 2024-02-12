@@ -77,6 +77,7 @@ namespace mrover {
         RevolutionsPerSecond velocity_rev_s = std::clamp(velocity, mMinVelocity, mMaxVelocity);
         // ROS_WARN("%7.3f   %7.3f",
         //  velocity.get(), velocity_rev_s.get());
+        ROS_INFO("velocity_rev_s: %f", velocity_rev_s.get());
         if (abs(velocity_rev_s).get() < 1e-5) {
             setBrake();
             ROS_INFO("In brake mode because velocity_rev_s = %f", velocity_rev_s.get());
@@ -85,6 +86,7 @@ namespace mrover {
                     .position = std::numeric_limits<double>::quiet_NaN(),
                     .velocity = velocity_rev_s.get(),
                     .maximum_torque = 0.5,
+                    .watchdog_timeout = 1000.0,
             };
 
             moteus::CanFdFrame positionFrame = mController.MakePosition(command);

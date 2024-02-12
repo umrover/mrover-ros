@@ -281,11 +281,7 @@ brushed_motors:
     sa_x:
       gear_ratio: 75.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
       is_linear: true
-<<<<<<< HEAD
-      # rad_to_meters_ratio: #TODO 5.0 = 5 motor radians -> 1 meter
-=======
       rad_to_meters_ratio: 1.0 #TODO 5.0 = 5 motor radians -> 1 meter
->>>>>>> f7ecc541e175254dcc2d0206018bb4df8773eea5
       limit_0_present: true
       limit_1_present: true
       limit_2_present: true
@@ -532,7 +528,7 @@ arm:
     joint_de_0:
       multiplier: 1.0
     joint_de_1:
-      multiplier: 1.0
+      multiplier: -1.0
     allen_key:
       multiplier: 1.0
     gripper:
