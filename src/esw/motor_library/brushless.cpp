@@ -24,6 +24,9 @@ namespace mrover {
         mMinPosition = Radians{xmlRpcValueToTypeOrDefault<double>(brushlessMotorData, "min_position", -1.0)};
         mMaxPosition = Radians{xmlRpcValueToTypeOrDefault<double>(brushlessMotorData, "max_position", 1.0)};
 
+        mMaxTorque = xmlRpcValueToTypeOrDefault<double>(brushlessMotorData, "max_torque", 0.3);
+        mWatchdogTimeout = xmlRpcValueToTypeOrDefault<double>(brushlessMotorData, "watchdog_timeout", 0.1);
+
         limitSwitch0Present = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "limit_0_present", false);
         limitSwitch1Present = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "limit_1_present", false);
         limitSwitch0Enabled = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "limit_0_enabled", true);
@@ -57,6 +60,8 @@ namespace mrover {
         moteus::PositionMode::Command command{
                 .position = position_revs.get(),
                 .velocity = 0.0,
+                .maximum_torque = mMaxTorque,
+                .watchdog_timeout = mWatchdogTimeout,
         };
         moteus::CanFdFrame positionFrame = mController.MakePosition(command);
         mDevice.publish_moteus_frame(positionFrame);
@@ -90,6 +95,8 @@ namespace mrover {
             moteus::PositionMode::Command command{
                     .position = std::numeric_limits<double>::quiet_NaN(),
                     .velocity = velocity_rev_s.get(),
+                    .maximum_torque = mMaxTorque,
+                    .watchdog_timeout = mWatchdogTimeout,
             };
 
             moteus::CanFdFrame positionFrame = mController.MakePosition(command);

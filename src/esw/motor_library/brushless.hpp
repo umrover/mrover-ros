@@ -94,6 +94,9 @@ namespace mrover {
         Radians limitSwitch0ReadjustPosition{};
         Radians limitSwitch1ReadjustPosition{};
 
+        double mMaxTorque{0.3};
+        double mWatchdogTimeout{0.1};
+
         int8_t moteusAux1Info{0};
         int8_t moteusAux2Info{0};
 
