@@ -38,10 +38,9 @@ namespace mrover {
             mJointDataPub = mNh.advertise<sensor_msgs::JointState>(std::format("{}_joint_data", mControllerName), 1);
             mControllerDataPub = mNh.advertise<ControllerState>(std::format("{}_controller_data", mControllerName), 1);
 
-            // mPublishDataTimer = mNh.createTimer(ros::Duration(0.1), &Controller::publishDataCallback, this);
+            mPublishDataTimer = mNh.createTimer(ros::Duration(0.1), &Controller::publishDataCallback, this);
 
             mAdjustServer = mNh.advertiseService(std::format("{}_adjust", mControllerName), &Controller::adjustServiceCallback, this);
-        
         }
 
         virtual ~Controller() = default;
@@ -57,10 +56,9 @@ namespace mrover {
         }
 
         void heartbeatCallback(ros::TimerEvent const&) {
-            auto duration = std::chrono::high_resolution_clock::now() - mLastConnection;
-            if (duration < std::chrono::milliseconds(100)) {
+            if (auto duration = std::chrono::high_resolution_clock::now() - mLastConnection;
+                duration > std::chrono::milliseconds(100)) {
                 setDesiredThrottle(0_percent);
-                ROS_WARN("TIMEOUT with controller %s\n", mControllerName.c_str());
             }
         }
 
@@ -92,26 +90,29 @@ namespace mrover {
             setDesiredPosition(Radians{msg->positions.at(0)});
         }
 
-        void publishDataCallback(ros::TimerEvent const&) {
-            sensor_msgs::JointState joint_state;
-            ControllerState controller_state;
-            joint_state.name.push_back(mName);
-            joint_state.position.push_back(mCurrentPosition.get());
-            joint_state.velocity.push_back(mCurrentVelocity.get());
-            joint_state.effort.push_back(getEffort());
-
-            controller_state.name.push_back(mName);
-            controller_state.state.push_back(mState);
-            controller_state.error.push_back(mErrorState);
-            std::uint8_t limit_hit{};
-            for (int i = 0; i < 4; ++i) {
-                limit_hit |= mLimitHit.at(i) << i;
+        auto publishDataCallback(ros::TimerEvent const&) -> void {
+            {
+                sensor_msgs::JointState jointState;
+                jointState.header.stamp = ros::Time::now();
+                jointState.name = {mControllerName};
+                jointState.position = {mCurrentPosition.get()};
+                jointState.velocity = {mCurrentVelocity.get()};
+                jointState.effort = {getEffort()};
+                mJointDataPub.publish(jointState);
             }
-            controller_state.limit_hit.push_back(limit_hit);
+            {
+                ControllerState controllerState;
+                controllerState.name = {mControllerName};
+                controllerState.state = {mState};
+                controllerState.error = {mErrorState};
+                std::uint8_t limit_hit{};
+                for (int i = 0; i < 4; ++i) {
+                    limit_hit |= mLimitHit.at(i) << i;
+                }
+                controllerState.limit_hit = {limit_hit};
 
-
-            mJointDataPub.publish(joint_state);
-            mControllerDataPub.publish(controller_state);
+                mControllerDataPub.publish(controllerState);
+            }
         }
 
         bool adjustServiceCallback(AdjustMotor::Request& req, AdjustMotor::Response& res) {

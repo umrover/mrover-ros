@@ -46,7 +46,7 @@
       <ArmControls />
     </div>
     <div class="shadow p-3 rounded moteus">
-      <DriveMoteusStateTable :moteus-state-data="moteusState" />
+      <DriveMoteusStateTable :moteus-state-data="moteusDrive" />
       <ArmMoteusStateTable />
     </div>
     <div v-show="false">
@@ -102,7 +102,7 @@ export default defineComponent({
         altitude: 0
       },
 
-      moteusState: {
+      moteusDrive: {
         name: [] as string[],
         error: [] as string[],
         state: [] as string[],

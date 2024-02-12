@@ -56,15 +56,27 @@
         @change="toggleArmLaser()"
       />
       <div class="limit-switch">
-        <h4>Limit Switches</h4>
-        <LimitSwitch :name="'All Switches'" :switch_name="'all_ra'" />
+        <h4 style="margin-right: 10px">Limit Switches</h4>
+        <!-- TODO: Make switch to toggle all switches on or off, will need to use refs or modify LimitSwitch.vue -->
+        <!-- <LimitSwitch :display_name="'All Switches'" :service_name="'all_ra'" /> -->
+        <div>
+          <LimitSwitch :display_name="'Joint A'" :service_name="'joint_a'" />
+          <LimitSwitch :display_name="'Joint B'" :service_name="'joint_b'" />
+          <LimitSwitch :display_name="'Joint C'" :service_name="'joint_c'" />
+          <LimitSwitch :display_name="'Joint DE Pitch'" :service_name="'joint_de_pitch'" />
+        </div>
+        <div>
+          <LimitSwitch :display_name="'Joint DE Roll'" :service_name="'joint_de_roll'" />
+          <LimitSwitch :display_name="'Allen Key'" :service_name="'allen_key'" />
+          <LimitSwitch :display_name="'Gripper'" :service_name="'gripper'" />
+        </div>
       </div>
     </div>
     <div class="controls-flex">
       <h4>Calibration</h4>
-      <CalibrationCheckbox name="All Joints Calibration" topic_name = "all_ra" />
+      <CalibrationCheckbox name="All Joints Calibration" topic_name="all_ra" />
       <MotorAdjust
-        v-if="arm_mode == 'position'"
+        v-if="arm_mode === 'position'"
         :motors="[
           { esw_name: 'joint_a', display_name: 'Joint A' },
           { esw_name: 'joint_b', display_name: 'Joint B' },
@@ -79,7 +91,7 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue'
-import { mapActions } from 'vuex'
+import { mapActions, mapState } from 'vuex'
 import ToggleButton from './ToggleButton.vue'
 import CalibrationCheckbox from './CalibrationCheckbox.vue'
 import MotorAdjust from './MotorAdjust.vue'
@@ -98,9 +110,7 @@ export default defineComponent({
   },
   data() {
     return {
-      websocket: new WebSocket('ws://localhost:8000/ws/gui'),
       arm_mode: 'arm_disabled',
-      joints_array: [false, false, false, false, false, false],
       laser_enabled: false,
       temp_positions: {
         /* Positions in degrees! */
@@ -130,16 +140,22 @@ export default defineComponent({
     }
   },
 
-  created: function () {
-    this.websocket.onmessage = (event) => {
-      const msg = JSON.parse(event.data)
+  computed: {
+    ...mapState('websocket', ['message'])
+  },
+
+  watch: {
+    message(msg) {
       if (msg.type == 'laser_service') {
-        if (!msg.result) {
+        if (!msg.success) {
           this.laser_enabled = !this.laser_enabled
           alert('Toggling Arm Laser failed.')
         }
       }
     }
+  },
+
+  created: function () {
     interval = window.setInterval(() => {
       const gamepads = navigator.getGamepads()
       for (let i = 0; i < 4; i++) {
@@ -235,8 +251,9 @@ export default defineComponent({
 
 .limit-switch {
   display: flex;
-  flex-direction: column;
-  align-items: center;
+  flex-direction: row;
+  justify-content: space-between;
+  margin-left: 30px;
 }
 
 .limit-switch h4 {

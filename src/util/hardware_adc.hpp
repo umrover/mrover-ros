@@ -28,8 +28,8 @@ namespace mrover {
 
 		void update() {
 
-//			HAL_ADC_Start_DMA(m_hadc);
-			HAL_ADC_Start_DMA(m_hadc, reinterpret_cast<uint32_t*>(m_values.data()), m_channels / (sizeof(uint32_t) / sizeof(uint16_t)));
+			HAL_ADC_Start_DMA(m_hadc, reinterpret_cast<uint32_t*>(m_values.data()), m_channels);
+//			HAL_ADC_Start_DMA(m_hadc, reinterpret_cast<uint32_t*>(m_values.data()), m_channels / (sizeof(uint32_t) / sizeof(uint16_t)));
 		}
 
 	private:

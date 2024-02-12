@@ -144,7 +144,7 @@ brushless_motors:
       min_velocity: -1.0
       max_velocity: 1.0
       is_linear: true
-      #rad_to_meters_ratio: #TODO
+      rad_to_meters_ratio: 1.0 #TODO
       limit_0_present: true
       limit_1_present: true
       limit_0_enabled: true
@@ -281,7 +281,11 @@ brushed_motors:
     sa_x:
       gear_ratio: 75.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
       is_linear: true
+<<<<<<< HEAD
       # rad_to_meters_ratio: #TODO 5.0 = 5 motor radians -> 1 meter
+=======
+      rad_to_meters_ratio: 1.0 #TODO 5.0 = 5 motor radians -> 1 meter
+>>>>>>> f7ecc541e175254dcc2d0206018bb4df8773eea5
       limit_0_present: true
       limit_1_present: true
       limit_2_present: true
@@ -310,7 +314,7 @@ brushed_motors:
     sa_y:
       gear_ratio: 75.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
       is_linear: true
-      #rad_to_meters_ratio: #TODO 5.0 = 5 motor radians -> 1 meter
+      rad_to_meters_ratio: 1.0 #TODO 5.0 = 5 motor radians -> 1 meter
       limit_0_present: true
       limit_1_present: true
       limit_0_enabled: true
@@ -334,7 +338,7 @@ brushed_motors:
     sampler:
       gear_ratio: 75.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
       is_linear: true
-      #rad_to_meters_ratio: #TODO 5.0 = 5 motor radians -> 1 meter
+      rad_to_meters_ratio: 1.0 #TODO 5.0 = 5 motor radians -> 1 meter
       limit_0_present: true
       limit_1_present: true
       limit_0_enabled: true
@@ -385,6 +389,7 @@ brushed_motors:
       limit_1_readjust_position: 0.0 # radians
       driver_voltage: 12.0 # used to calculate max pwm
       motor_max_voltage: 6.0 # used to calculate max pwm
+
 cameras:
   camera_type_info:
     # vendor_id and vendor is obtained by running `udevadm info --query=all /dev/video0`

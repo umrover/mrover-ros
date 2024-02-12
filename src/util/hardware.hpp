@@ -138,7 +138,7 @@ namespace mrover {
         explicit FDCAN(std::uint8_t source, std::uint8_t destination, FDCAN_HandleTypeDef* fdcan)
             : m_fdcan{fdcan}, m_source{source}, m_destination{destination} {
 
-            configure_filter();
+            // configure_filter();
 
             check(HAL_FDCAN_ActivateNotification(m_fdcan, FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0) == HAL_OK, Error_Handler);
             check(HAL_FDCAN_Start(m_fdcan) == HAL_OK, Error_Handler);
@@ -149,22 +149,22 @@ namespace mrover {
          * We have limited queue space, so we want to filter out messages that are not intended for us.
          */
         auto configure_filter() const -> void {
-            //            std::bitset<16> source_bits{m_source};
-            //            std::bitset<16> destinationBits{m_destination};
-            //            std::bitset<16> filter = source_bits << 8 | destinationBits;
-            //
-            //            std::bitset<15> mask; // 15 lowest bits set for source and destination, 16th (reply bit) and above should be ignored
-            //            mask.set();
-            //
-            //            FDCAN_FilterTypeDef filter_config{
-            //                    .IdType = FDCAN_EXTENDED_ID,
-            //                    .FilterIndex = 0,
-            //                    .FilterType = FDCAN_FILTER_MASK, // Classic filter: FilterID1 = filter, FilterID2 = mask
-            //                    .FilterConfig = FDCAN_FILTER_TO_RXFIFO0,
-            //                    .FilterID1 = filter.to_ulong(), // Choose which bits to examine from the incoming ID
-            //                    .FilterID2 = mask.to_ulong(),   // Ensure that bits that survive the filter match the mask
-            //            };
-            //            check(HAL_FDCAN_ConfigFilter(m_fdcan, &filter_config) == HAL_OK, Error_Handler);
+            std::bitset<16> source_bits{m_source};
+            std::bitset<16> destinationBits{m_destination};
+            std::bitset<16> filter = source_bits << 8 | destinationBits;
+
+            std::bitset<15> mask; // 15 lowestc bits set for source and destination, 16th (reply bit) and above should be ignored
+            mask.set();
+
+            FDCAN_FilterTypeDef filter_config{
+                    .IdType = FDCAN_EXTENDED_ID,
+                    .FilterIndex = 0,
+                    .FilterType = FDCAN_FILTER_MASK, // Classic filter: FilterID1 = filter, FilterID2 = mask
+                    .FilterConfig = FDCAN_FILTER_TO_RXFIFO0,
+                    .FilterID1 = filter.to_ulong(), // Choose which bits to examine from the incoming ID
+                    .FilterID2 = mask.to_ulong(),   // Ensure that bits that survive the filter match the mask
+            };
+            check(HAL_FDCAN_ConfigFilter(m_fdcan, &filter_config) == HAL_OK, Error_Handler);
         }
 
         /**
@@ -177,8 +177,11 @@ namespace mrover {
                 return std::nullopt;
 
             FDCAN_RxHeaderTypeDef header{};
-            TReceive receive{};
-            check(HAL_FDCAN_GetRxMessage(m_fdcan, FDCAN_RX_FIFO0, &header, address_of<std::uint8_t>(receive)) == HAL_OK, Error_Handler);
+            union {
+                TReceive receive{};
+                std::array<std::uint8_t, FDCAN_MAX_FRAME_SIZE> bytes;
+            };
+            check(HAL_FDCAN_GetRxMessage(m_fdcan, FDCAN_RX_FIFO0, &header, bytes.data()) == HAL_OK, Error_Handler);
             return std::make_pair(header, receive);
         }
 

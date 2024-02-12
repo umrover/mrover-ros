@@ -105,8 +105,7 @@
           <button class="btn btn-primary" @click="addWaypoint(formatted_odom)">
             Drop Waypoint
           </button>
-          <!-- Disabled until Competion entry modal is redone -->
-          <!-- <button class="btn btn-primary" @click="openModal">Competition Waypoint Entry</button> -->
+          <button class="btn btn-primary" @click="openModal">Competition Waypoint Entry</button>
         </div>
       </div>
       <div class="box">
@@ -346,11 +345,11 @@ export default {
         'Start',
         'Waypoint 1',
         'Waypoint 2',
-        'Waypoint 3',
         'Post 1',
         'Post 2',
         'Post 3',
-        'Gate'
+        'Mallet',
+        'Water Bottle'
       ],
       compModalLatDeg: Array(8).fill(0),
       compModalLatMin: Array(8).fill(0),
