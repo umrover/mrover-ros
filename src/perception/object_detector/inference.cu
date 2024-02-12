@@ -133,7 +133,7 @@ namespace mrover {
         assert(mContext);
 
         //Get the binding id for the input tensor
-        int const inputId = getBindingInputIndex(mContext.get());
+        int inputId = getBindingInputIndex(mContext.get());
 
         //Memcpy the input tensor from the host to the gpu
         cudaMemcpy(mBindings[inputId], input.data, input.total() * input.elemSize(), cudaMemcpyHostToDevice);
@@ -155,23 +155,23 @@ namespace mrover {
             // This is essentially: element count * size of each element
             std::size_t const size = std::reduce(extents, extents + rank, sizeof(float), std::multiplies<>());
             // Create GPU memory for TensorRT to operate on
-            cudaMalloc(mBindings.data() + i, size);
-            assert(mBindings.data() + i);
+            if (cudaError_t result = cudaMalloc(mBindings.data() + i, size); result != cudaSuccess)
+                throw std::runtime_error{"Failed to allocate GPU memory: " + std::string{cudaGetErrorString(result)}};
         }
 
         assert(mContext);
         // Create an appropriately sized output tensor
-        Dims const outputTensorDims = mEngine->getTensorShape(OUTPUT_BINDING_NAME);
-        for (int i = 0; i < outputTensorDims.nbDims; i++) {
-            char message[512];
-            std::snprintf(message, sizeof(message), "Size %d %d", i, outputTensorDims.d[i]);
-            mLogger.log(ILogger::Severity::kINFO, message);
+        auto const [nbDims, d] = mEngine->getTensorShape(OUTPUT_BINDING_NAME);
+        for (int i = 0; i < nbDims; i++) {
+            std::array<char, 512> message;
+            std::snprintf(message.data(), message.size(), "Size %d %d", i, d[i]);
+            mLogger.log(ILogger::Severity::kINFO, message.data());
         }
 
         // Create the mat wrapper around the output matrix for ease of use
-        assert(outputTensorDims.nbDims == 3);
-        assert(outputTensorDims.d[0] == 1);
-        mOutputTensor = cv::Mat::zeros(outputTensorDims.d[1], outputTensorDims.d[2], CV_32FC1);
+        assert(nbDims == 3);
+        assert(d[0] == 1);
+        mOutputTensor = cv::Mat::zeros(d[1], d[2], CV_32FC1);
     }
 
     auto Inference::getBindingInputIndex(IExecutionContext const* context) -> int {
