@@ -78,7 +78,7 @@ class EKF_Test:
 
         # subscribe to both odometry topics and synchronize them
         raw_sub = message_filters.Subscriber("linearized_pose", PoseWithCovarianceStamped)
-        ekf_sub = message_filters.Subscriber("global_ekf/odometry", Odometry)
+        ekf_sub = message_filters.Subscriber("odometry", Odometry)
         rospy.Subscriber("smach/container_status", SmachContainerStatus, self.nav_status_callback)
 
         subs = [raw_sub, ekf_sub]
