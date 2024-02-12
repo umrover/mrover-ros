@@ -89,39 +89,39 @@ brushless_motors:
     front_left:
       max_torque: 0.3
       watchdog_timeout: 0.1
-      velocity_multiplier: -1.0
-      min_velocity: -70.0
-      max_velocity: 70.0
+      velocity_multiplier: 1.0
+      min_velocity: -169.0
+      max_velocity: 169.0
     front_right:
       max_torque: 0.3
       watchdog_timeout: 0.1
-      velocity_multiplier: 1.0
-      min_velocity: -70.0
-      max_velocity: 70.0
+      velocity_multiplier: -1.0
+      min_velocity: -169.0
+      max_velocity: 169.0
     middle_left:
       max_torque: 0.3
       watchdog_timeout: 0.1
-      velocity_multiplier: -1.0
-      min_velocity: -70.0
-      max_velocity: 70.0
+      velocity_multiplier: 1.0
+      min_velocity: -169.0
+      max_velocity: 169.0
     middle_right:
       max_torque: 0.3
       watchdog_timeout: 0.1
-      velocity_multiplier: 1.0
-      min_velocity: -70.0
-      max_velocity: 70.0
+      velocity_multiplier: -1.0
+      min_velocity: -169.0
+      max_velocity: 169.0
     back_left:
       max_torque: 0.3
       watchdog_timeout: 0.1
-      velocity_multiplier: -1.0
-      min_velocity: -70.0
-      max_velocity: 70.0
+      velocity_multiplier: 1.0
+      min_velocity: -169.0
+      max_velocity: 169.0
     back_right:
       max_torque: 0.3
       watchdog_timeout: 0.1
-      velocity_multiplier: 1.0
-      min_velocity: -70.0
-      max_velocity: 70.0
+      velocity_multiplier: -1.0
+      min_velocity: -169.0
+      max_velocity: 169.0
     joint_a:
       max_torque: 0.3
       watchdog_timeout: 0.1
