@@ -32,7 +32,7 @@ namespace mrover {
 
         MotorsGroup(ros::NodeHandle const& nh, std::string groupName);
 
-        Controller& getController(std::string const& name);
+        Controller& getController(std::string const& name) const;
 
         void moveMotorsThrottle(Throttle::ConstPtr const& msg);
 

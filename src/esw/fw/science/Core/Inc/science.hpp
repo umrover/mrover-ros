@@ -17,7 +17,7 @@ namespace mrover {
     class Science {
     private:
 
-    	FDCAN m_fdcan_bus;
+    	FDCAN<InBoundScienceMessage> m_fdcan_bus;
         std::array<Spectral, 3> m_spectral_sensors;
         std::shared_ptr<ADCSensor> m_adc_sensor;
         std::array<Heater, 6> m_heaters;
@@ -76,7 +76,7 @@ namespace mrover {
     public:
         Science() = default;
 
-        Science(FDCAN const& fdcan_bus,
+        Science(FDCAN<InBoundScienceMessage> const& fdcan_bus,
         		std::array<Spectral, 3> spectral_sensors,
 				std::shared_ptr<ADCSensor> adc_sensor,
 				std::array<DiagTempSensor, 6> diag_temp_sensors,

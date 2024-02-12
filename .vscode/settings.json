@@ -33,7 +33,6 @@
     "python.analysis.typeCheckingMode": "off",
     //// Miscellaneous
     "redhat.telemetry.enabled": false,
-    "editor.formatOnSave": true,
     "git.ignoreSubmodules": true,
     "git.detectSubmodules": false,
     "cSpell.words": [
