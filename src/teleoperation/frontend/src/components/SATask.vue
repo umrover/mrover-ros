@@ -9,9 +9,16 @@
         <img src="/help.png" alt="Help" title="Help" width="48" height="48" />
       </div>
       <div class="helpscreen"></div>
-      <div class="helpimages" style="display: flex; align-items: center; justify-content: space-evenly">
-        <img src="/joystick.png" alt="Joystick" title="Joystick Controls"
-          style="width: auto; height: 70%; display: inline-block" />
+      <div
+        class="helpimages"
+        style="display: flex; align-items: center; justify-content: space-evenly"
+      >
+        <img
+          src="/joystick.png"
+          alt="Joystick"
+          title="Joystick Controls"
+          style="width: auto; height: 70%; display: inline-block"
+        />
       </div>
     </div>
     <div class="shadow p-3 rounded map">
@@ -23,43 +30,61 @@
     <div class="shadow p-3 rounded cameras">
       <Cameras :primary="true" />
     </div>
+    <div class="shadow p-3 rounded soildata">
+      <SoilData />
+    </div>
     <div>
       <DriveControls />
     </div>
-    <!-- <div class="shadow p-3 rounded arm">
-        <SAArmControls />
-      </div> -->
+    <div class="shadow p-3 rounded arm">
+      <SAArmControls />
+    </div>
     <div class="shadow p-3 rounded pdb">
       <PDBFuse />
     </div>
-    <div class="shadow p-3 rounded jointState">
-      <MotorsStatusTable :joint-state-data="jointState" :vertical="true" />
+    <div class="shadow p-3 rounded motorData">
+      <MotorsStatusTable :motor-data="motorData" :vertical="true" />
     </div>
     <div class="shadow p-3 rounded moteus">
       <DriveMoteusStateTable :moteus-state-data="moteusState" />
     </div>
     <div class="shadow p-3 rounded limit">
       <h3>Limit Switches</h3>
-      <LimitSwitch :switch_name="'sa_joint_1'" :name="'Joint 1 Switch'" />
-      <LimitSwitch :switch_name="'sa_joint_2'" :name="'Joint 2 Switch'" />
-      <LimitSwitch :switch_name="'sa_joint_3'" :name="'Joint 3 Switch'" />
-      <LimitSwitch :switch_name="'scoop'" :name="'Scoop Switch'" />
+      <LimitSwitch :service_name="'sa_enable_limit_switch_sa_x'" :display_name="'SA X Switch'" />
+      <LimitSwitch :service_name="'sa_enable_limit_switch_sa_y'" :display_name="'SA Y Switch'" />
+      <LimitSwitch :service_name="'sa_enable_limit_switch_sa_z'" :display_name="'SA Z Switch'" />
+      <LimitSwitch
+        :service_name="'sa_enable_limit_switch_sampler'"
+        :display_name="'Sampler Switch'"
+      />
+      <LimitSwitch
+        :service_name="'sa_enable_limit_switch_sensor_actuator'"
+        :display_name="'Sensor Actuator Switch'"
+      />
     </div>
     <div class="shadow p-3 rounded calibration">
       <h3>Calibrations</h3>
+      <br />
       <div class="calibration-checkboxes">
-        <CalibrationCheckbox :name="'Joint 1 Calibration'" :joint_name="'sa_joint_1'"
-          :calibrate_topic="'sa_is_calibrated'" />
-        <CalibrationCheckbox :name="'Joint 2 Calibration'" :joint_name="'sa_joint_2'"
-          :calibrate_topic="'sa_is_calibrated'" />
-        <CalibrationCheckbox :name="'Joint 3 Calibration'" :joint_name="'sa_joint_3'"
-          :calibrate_topic="'sa_is_calibrated'" />
+        <CalibrationCheckbox :name="'SA X Calibration'" :topic_name="'sa_calibrate_sa_x'" />
+        <CalibrationCheckbox :name="'SA Y Calibration'" :topic_name="'sa_calibrate_sa_y'" />
+        <CalibrationCheckbox :name="'SA Z Calibration'" :topic_name="'sa_calibrate_sa_z'" />
+        <CalibrationCheckbox
+          :name="'SA Sampler Calibration'"
+          :topic_name="'sa_calibrate_sampler'"
+        />
+        <CalibrationCheckbox
+          :name="'SA Sensor Actuator Calibration'"
+          :topic_name="'sa_calibrate_sensor_actuator'"
+        />
       </div>
-      <MotorAdjust :options="[
-        { name: 'sa_joint_1', option: 'Joint 1' },
-        { name: 'sa_joint_2', option: 'Joint 2' },
-        { name: 'sa_joint_3', option: 'Joint 3' }
-      ]" />
+      <!-- <MotorAdjust
+        :options="[
+          { name: 'sa_joint_1', option: 'Joint 1' },
+          { name: 'sa_joint_2', option: 'Joint 2' },
+          { name: 'sa_joint_3', option: 'Joint 3' }
+        ]"
+      /> -->
     </div>
     <div v-show="false">
       <MastGimbalControls></MastGimbalControls>
@@ -72,6 +97,7 @@
 
 <script lang="ts">
 import BasicMap from './BasicRoverMap.vue'
+import SoilData from './SoilData.vue'
 import BasicWaypointEditor from './BasicWaypointEditor.vue'
 import DriveControls from './DriveControls.vue'
 import MastGimbalControls from './MastGimbalControls.vue'
@@ -86,25 +112,27 @@ import CalibrationCheckbox from './CalibrationCheckbox.vue'
 //   import MCUReset from "./MCUReset.vue";
 import MotorAdjust from './MotorAdjust.vue'
 import OdometryReading from './OdometryReading.vue'
+import SAArmControls from './SAArmControls.vue'
 import { disableAutonLED, quaternionToMapAngle } from '../utils.js'
 
 export default {
   components: {
     BasicMap,
+    SoilData,
     BasicWaypointEditor,
     Cameras,
     DriveControls,
-    MotorsStatusTable,
     MastGimbalControls,
     DriveMoteusStateTable,
     PDBFuse,
-    //   SAArmControls,
+    SAArmControls,
     LimitSwitch,
     CalibrationCheckbox,
     //   CommReadout,
     //   MCUReset,
     MotorAdjust,
-    OdometryReading
+    OdometryReading,
+    MotorsStatusTable
   },
   data() {
     return {
@@ -116,12 +144,19 @@ export default {
         altitude: 0
       },
 
-      jointState: {},
+      motorData: {
+        name: [] as string[],
+        position: [] as number[],
+        velocity: [] as number[],
+        effort: [] as number[]
+      },
       // Moteus state table is set up to look for specific keys in moteusState so it can't be empty
       moteusState: {
-        name: ['', '', '', '', '', ''],
-        error: ['', '', '', '', '', ''],
-        state: ['', '', '', '', '', '']
+        name: [] as string[],
+        error: [] as string[],
+        state: [] as string[],
+        limit_hit:
+          [] as boolean[] /* Each motor stores an array of 4 indicating which limit switches are hit */
       }
     }
   },
@@ -156,7 +191,7 @@ export default {
     //     messageType: "mrover/MotorsStatus"
     //   });
     //   this.brushless_motors_sub.subscribe((msg) => {
-    //     this.jointState = msg.joint_states;
+    //     this.motorData = msg.joint_states;
     //     this.moteusState = msg.moteus_states;
     //   });
   }
@@ -168,13 +203,14 @@ export default {
   display: grid;
   grid-gap: 10px;
   grid-template-columns: repeat(3, auto);
-  grid-template-rows: auto 50vh repeat(3, auto);
+  grid-template-rows: auto 50vh repeat(4, auto);
   grid-template-areas:
     'header header header'
     'map map waypoints'
     'odom cameras cameras'
     'arm limit calibration'
-    'pdb moteus jointState';
+    'pdb moteus motorData'
+    'pdb moteus soilData';
   font-family: sans-serif;
   height: auto;
 }
@@ -227,8 +263,8 @@ export default {
   cursor: pointer;
 }
 
-.help:hover~.helpscreen,
-.help:hover~.helpimages {
+.help:hover ~ .helpscreen,
+.help:hover ~ .helpimages {
   visibility: visible;
 }
 
@@ -252,8 +288,8 @@ export default {
   grid-area: pdb;
 }
 
-.jointState {
-  grid-area: jointState;
+.motorData {
+  grid-area: motorData;
 }
 
 .moteus {
@@ -266,6 +302,10 @@ export default {
 
 .odom {
   grid-area: odom;
+}
+
+.soilData {
+  grid-area: soilData;
 }
 
 .calibration {

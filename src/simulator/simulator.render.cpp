@@ -586,24 +586,27 @@ namespace mrover {
             }
         }
         for (Camera& camera: mCameras) {
-            constexpr int pixelSize = 4;
-            std::size_t size = camera.resolution.x() * camera.resolution.y() * pixelSize;
+            std::size_t area = camera.resolution.x() * camera.resolution.y();
             if (camera.callback) {
                 mWgpuInstance.processEvents();
                 if (camera.stagingBuffer.getMapState() == wgpu::BufferMapState::Mapped) {
                     auto image = boost::shared_ptr<sensor_msgs::Image>{imagePool.borrowFrom(), [](sensor_msgs::Image* msg) { imagePool.returnTo(msg); }};
                     image->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
-                    image->encoding = sensor_msgs::image_encodings::BGRA8;
+                    image->encoding = sensor_msgs::image_encodings::BGR8;
                     image->width = camera.resolution.x();
                     image->height = camera.resolution.y();
-                    image->step = camera.resolution.x() * pixelSize;
+                    image->step = camera.resolution.x() * 3;
                     image->header.stamp = ros::Time::now();
                     image->header.frame_id = camera.frameId;
-                    image->data.resize(size);
+                    image->data.resize(area * 3);
 
-                    auto* fromRender = camera.stagingBuffer.getConstMappedRange(0, camera.stagingBuffer.getSize());
-                    auto* toMessage = image->data.data();
-                    std::memcpy(toMessage, fromRender, camera.stagingBuffer.getSize());
+                    // Convert from BGRA to BGR
+                    auto* fromRender = static_cast<cv::Vec4b const*>(camera.stagingBuffer.getConstMappedRange(0, camera.stagingBuffer.getSize()));
+                    auto* toMessage = reinterpret_cast<cv::Vec3b*>(image->data.data());
+                    std::for_each(std::execution::par_unseq, fromRender, fromRender + area, [&](cv::Vec4b const& from) {
+                        std::size_t index = &from - fromRender;
+                        toMessage[index] = {from[0], from[1], from[2]};
+                    });
                     camera.stagingBuffer.unmap();
                     camera.callback = nullptr;
 
@@ -620,7 +623,7 @@ namespace mrover {
                 if (!camera.stagingBuffer) {
                     wgpu::BufferDescriptor descriptor;
                     descriptor.usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::MapRead;
-                    descriptor.size = size;
+                    descriptor.size = area * 4;
                     camera.stagingBuffer = mDevice.createBuffer(descriptor);
                 }
 
@@ -629,7 +632,7 @@ namespace mrover {
                 copyTexture.aspect = wgpu::TextureAspect::All;
                 wgpu::ImageCopyBuffer copyBuffer;
                 copyBuffer.buffer = camera.stagingBuffer;
-                copyBuffer.layout.bytesPerRow = camera.resolution.x() * pixelSize;
+                copyBuffer.layout.bytesPerRow = camera.resolution.x() * 4;
                 copyBuffer.layout.rowsPerImage = camera.resolution.y();
                 wgpu::Extent3D extent{
                         static_cast<std::uint32_t>(camera.resolution.x()),

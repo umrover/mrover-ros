@@ -63,7 +63,6 @@ set(MROVER_MESSAGE_DEPENDENCIES
 
 set(MROVER_PARAMETERS
         config/DetectorParams.cfg
-        config/TagDetectorParams.cfg
         config/ObjectDetectorParams.cfg
 )
 
@@ -183,13 +182,13 @@ endif ()
 
 ## Perception
 
-mrover_add_nodelet(zed_tag_detector src/perception/tag_detector/zed/*.cpp src/perception/tag_detector/zed src/perception/tag_detector/zed/pch.hpp)
-mrover_nodelet_link_libraries(zed_tag_detector opencv_core opencv_aruco opencv_imgproc tbb lie)
+mrover_add_nodelet(tag_detector src/perception/tag_detector/*.cpp src/perception/tag_detector src/perception/tag_detector/pch.hpp)
+mrover_nodelet_link_libraries(tag_detector opencv_core opencv_objdetect opencv_aruco opencv_imgproc opencv_highgui lie)
 
 if (CUDA_FOUND)
     mrover_add_library(streaming src/esw/streaming/*.c* src/esw/streaming)
     #    target_link_libraries(streaming PUBLIC opencv_core opencv_cudacodec)
-    target_link_libraries(streaming PUBLIC cuda /usr/local/lib/libnvidia-encode.so opencv_core)
+    target_link_libraries(streaming PUBLIC cuda nvidia-encode opencv_core)
     target_include_directories(streaming SYSTEM PUBLIC deps/nvenc)
     target_compile_definitions(streaming PUBLIC BOOST_ASIO_NO_DEPRECATED)
 endif ()
@@ -200,7 +199,6 @@ if (ZED_FOUND)
     mrover_nodelet_defines(object_detector
             __CUDA_INCLUDE_COMPILER_INTERNAL_HEADERS__ # Eigen includes some files it should not, ignore
     )
-#    set_target_properties(object_detector_nodelet PROPERTIES CXX_STANDARD 11)
     # Temporary
     mrover_nodelet_link_libraries(object_detector PRIVATE opencv_imgcodecs opencv_highgui)
 

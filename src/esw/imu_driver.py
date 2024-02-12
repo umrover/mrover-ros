@@ -82,7 +82,7 @@ def main():
     rospy.init_node("imu_driver")
 
     # read serial connection info and IMU frame from parameter server
-    port = rospy.get_param("imu_driver/port", "/dev/imu")
+    port = rospy.get_param("imu_driver/port")
     baud = rospy.get_param("imu_driver/baud", 115200)
     imu_frame = rospy.get_param("imu_driver/frame_id", "imu_link")
 
@@ -132,9 +132,9 @@ def main():
             continue
         
         # rotate the imu orientation by 90 degrees about the Z axis to convert it to ENU frame
-        enu_offset_quat = quaternion_about_axis(np.pi / 2, [0, 0, 1])
-        enu_imu_orientation = quaternion_multiply(enu_offset_quat, imu_orientation_data)
-
+        # enu_offset_quat = quaternion_about_axis(np.pi / 2, [0, 0, 1])
+        # enu_imu_orientation = quaternion_multiply(enu_offset_quat, imu_orientation_data)
+        
         # similarly rotate the magnetometer vector into the ENU frame
         R = rotation_matrix(np.pi / 2, [0, 0, 1])
         h_mag_vec = np.append(mag_data, 1)
@@ -151,7 +151,7 @@ def main():
             header=header,
             imu=Imu(
                 header=header,
-                orientation=Quaternion(*enu_imu_orientation),
+                orientation=Quaternion(*imu_orientation_data),
                 linear_acceleration=Vector3(*accel_data),
                 angular_velocity=Vector3(*gyro_data),
                 orientation_covariance=orientation_covariance,
