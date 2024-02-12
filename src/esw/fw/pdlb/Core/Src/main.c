@@ -135,6 +135,27 @@ int main(void)
   SCB->VTOR = FLASH_BASE;
 #endif
 
+  if ((FLASH->OPTR & FLASH_OPTR_nSWBOOT0_Msk) != 0x0 || ((FLASH->OPTR & FLASH_OPTR_nBOOT0_Msk) == 0x0))
+      {
+          while ((FLASH->SR & FLASH_SR_BSY_Msk) != 0x0) { ; }
+          FLASH->KEYR = 0x45670123;
+          while ((FLASH->SR & FLASH_SR_BSY_Msk) != 0x0) { ; }
+          FLASH->KEYR = 0xCDEF89AB;
+
+          while ((FLASH->SR & FLASH_SR_BSY_Msk) != 0x0) { ; }
+          FLASH->OPTKEYR = 0x08192A3B;
+          while ((FLASH->SR & FLASH_SR_BSY_Msk) != 0x0) { ; }
+          FLASH->OPTKEYR = 0x4C5D6E7F;
+
+          while ((FLASH->SR & FLASH_SR_BSY_Msk) != 0x0) { ; }
+          FLASH->OPTR = (FLASH->OPTR & ~(FLASH_OPTR_nSWBOOT0_Msk)) | FLASH_OPTR_nBOOT0_Msk;
+
+          while ((FLASH->SR & FLASH_SR_BSY_Msk) != 0x0) { ; }
+          FLASH->CR = FLASH->CR | FLASH_CR_OPTSTRT;
+
+          while ((FLASH->SR & FLASH_SR_BSY_Msk) != 0x0) { ; }
+      }
+
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
