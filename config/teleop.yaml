@@ -59,7 +59,7 @@ teleop:
 
   drive_controls:
     forward_back:
-      multiplier: 1
+      multiplier: -1
     left_right:
       # Can be disabled here since left_right axis sucks
       enabled: true
@@ -84,8 +84,8 @@ teleop:
     y: 3
 
   joystick_mappings:
-    left_right: 1
-    forward_back: 0
+    left_right: 0
+    forward_back: 1
     twist: 2
     dampen: 3
     pan: 4
