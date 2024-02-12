@@ -74,7 +74,7 @@ namespace mrover {
         auto modelShapeHeight = static_cast<float>(imgSize.height);
 
         //Set model thresholds
-        float modelScoreThreshold = 0.50;
+        float modelScoreThreshold = 0.75;
         float modelNMSThreshold = 0.50;
 
         //Get x and y scale factors
