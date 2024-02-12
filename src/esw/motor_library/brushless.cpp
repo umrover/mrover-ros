@@ -13,6 +13,11 @@ namespace mrover {
         mNh.getParam(std::format("brushless_motors/controllers/{}", mControllerName), brushlessMotorData);
         assert(brushlessMotorData.getType() == XmlRpc::XmlRpcValue::TypeStruct);
 
+        mVelocityMultiplier = Dimensionless{xmlRpcValueToTypeOrDefault<double>(brushlessMotorData, "velocity_multiplier", 1.0)};
+        if (mVelocityMultiplier.get() == 0) {
+            throw std::runtime_error("Velocity multiplier can't be 0!");
+        }
+
         mMinVelocity = RadiansPerSecond{xmlRpcValueToTypeOrDefault<double>(brushlessMotorData, "min_velocity", -1.0)};
         mMaxVelocity = RadiansPerSecond{xmlRpcValueToTypeOrDefault<double>(brushlessMotorData, "max_velocity", 1.0)};
 
@@ -71,6 +76,10 @@ namespace mrover {
             setBrake();
             return;
         }
+
+        velocity = velocity * mVelocityMultiplier;
+
+        // ROS_INFO("my velocity rev s = %f", velocity.get()); 
 
         RevolutionsPerSecond velocity_rev_s = std::clamp(velocity, mMinVelocity, mMaxVelocity);
         // ROS_WARN("%7.3f   %7.3f",
@@ -191,7 +200,7 @@ namespace mrover {
         //          );
 
         mCurrentPosition = mrover::Revolutions{result.position}; // moteus stores position in revolutions.
-        mCurrentVelocity = mrover::RevolutionsPerSecond{result.velocity}; // moteus stores position in revolutions.
+        mCurrentVelocity = mrover::RevolutionsPerSecond{result.velocity} / mVelocityMultiplier; // moteus stores position in revolutions.
 
         mErrorState = moteusErrorCodeToErrorState(result.mode, static_cast<ErrorCode>(result.fault));
         mState = moteusModeToState(result.mode);

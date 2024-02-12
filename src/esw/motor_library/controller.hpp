@@ -127,6 +127,7 @@ namespace mrover {
         }
 
     protected:
+        Dimensionless mVelocityMultiplier;
         ros::NodeHandle mNh;
         std::string mName, mControllerName;
         CanDevice mDevice;

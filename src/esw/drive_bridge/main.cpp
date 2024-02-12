@@ -11,8 +11,6 @@ void moveDrive(geometry_msgs::Twist::ConstPtr const& msg);
 std::unique_ptr<MotorsGroup> driveManager;
 std::vector<std::string> driveNames{"front_left", "front_right", "middle_left", "middle_right", "back_left", "back_right"};
 
-std::unordered_map<std::string, Dimensionless> motorMultipliers; // Store the multipliers for each motor
-
 Meters WHEEL_DISTANCE_INNER;
 Meters WHEEL_DISTANCE_OUTER;
 compound_unit<Radians, inverse<Meters>> WHEEL_LINEAR_TO_ANGULAR;
@@ -22,17 +20,6 @@ int main(int argc, char** argv) {
     // Initialize the ROS node
     ros::init(argc, argv, "drive_bridge");
     ros::NodeHandle nh;
-
-    // Load motor multipliers from the ROS parameter server
-    XmlRpc::XmlRpcValue driveControllers;
-    assert(nh.hasParam("drive/controllers"));
-    nh.getParam("drive/controllers", driveControllers);
-    assert(driveControllers.getType() == XmlRpc::XmlRpcValue::TypeStruct);
-    for (auto const& driveName: driveNames) {
-        assert(driveControllers.hasMember(driveName));
-        assert(driveControllers[driveName].getType() == XmlRpc::XmlRpcValue::TypeStruct);
-        motorMultipliers[driveName] = Dimensionless{xmlRpcValueToTypeOrDefault<double>(driveControllers[driveName], "multiplier", 1.0)};
-    }
 
     // Load rover dimensions and other parameters from the ROS parameter server
     auto roverWidth = requireParamAsUnit<Meters>(nh, "rover/width");
@@ -83,10 +70,6 @@ void moveDrive(geometry_msgs::Twist::ConstPtr const& msg) {
     ROS_INFO("m/s %f", forward.get());
 
     for (auto [name, angularVelocity]: driveCommandVelocities) {
-        // Set the desired speed for the motor
-        Dimensionless multiplier = motorMultipliers[name];
-        RadiansPerSecond scaledAngularVelocity = angularVelocity * multiplier; // currently in rad/s
-
-        driveManager->getController(name).setDesiredVelocity(scaledAngularVelocity);
+        driveManager->getController(name).setDesiredVelocity(angularVelocity);
     }
 }
