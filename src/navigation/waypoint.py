@@ -35,8 +35,9 @@ class WaypointState(State):
             return post_backup.PostBackupState()
 
         # returns either ApproachPostState, LongRangeState, ApproachObjectState, or None
-        if context.course.check_approach() is not None:
-            return context.course.check_approach()
+        approach_state = context.course.get_approach_target_state()
+        if approach_state is not None:
+            return approach_state
 
         # Attempt to find the waypoint in the TF tree and drive to it
         try:
@@ -51,7 +52,7 @@ class WaypointState(State):
                 if not context.course.look_for_post() and not context.course.look_for_object():
                     # We finished a regular waypoint, go onto the next one
                     context.course.increment_waypoint()
-                elif context.course.look_for_post() or context.course.look_for_object():
+                else:
                     # We finished a waypoint associated with a post or mallet, but we have not seen it yet.
                     return search.SearchState()
 
