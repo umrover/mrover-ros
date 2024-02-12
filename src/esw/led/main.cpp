@@ -37,6 +37,7 @@ auto update_led() -> void {
     led_msg.red = led_mode == LEDMode::Red;
     led_msg.green = led_mode == LEDMode::BlinkingGreen;
     led_msg.blue = led_mode == LEDMode::Blue;
+    led_msg.is_blinking = led_mode == LEDMode::BlinkingGreen;
     led_publisher.publish(led_msg);
 }
 
@@ -59,7 +60,7 @@ auto main(int argc, char** argv) -> int {
     ros::NodeHandle nh;
 
     led_publisher = nh.advertise<mrover::LED>("led", 1);
-    ros::ServiceServer teleop_enabled_client = nh.advertiseService("teleop_enabled", teleop_enabled_update);
+    ros::ServiceServer teleop_enabled_client = nh.advertiseService("enable_teleop", teleop_enabled_update);
     ros::Subscriber state_machine_update_sub = nh.subscribe<mrover::StateMachineStateUpdate>("nav_state", 1, state_machine_state_update);
 
     ros::spin();
