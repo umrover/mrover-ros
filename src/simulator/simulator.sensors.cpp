@@ -2,93 +2,92 @@
 
 namespace mrover {
 
-    auto SimulatorNodelet::cameraUpdate(Camera& camera, wgpu::CommandEncoder& encoder, wgpu::RenderPassDescriptor const& passDescriptor) -> void {
-        {
-            wgpu::RenderPassEncoder colorPass = encoder.beginRenderPass(passDescriptor);
-            colorPass.setPipeline(mPbrPipeline);
+    auto SimulatorNodelet::renderCamera(Camera& camera, wgpu::CommandEncoder& encoder, wgpu::RenderPassDescriptor const& passDescriptor) -> void {
+        wgpu::RenderPassEncoder colorPass = encoder.beginRenderPass(passDescriptor);
+        colorPass.setPipeline(mPbrPipeline);
 
-            if (!camera.sceneUniforms.buffer) camera.sceneUniforms.init(mDevice);
-            camera.sceneUniforms.value.lightColor = {1, 1, 1, 1};
-            camera.sceneUniforms.value.lightInWorld = {0, 0, 5, 1};
-            float aspect = static_cast<float>(camera.resolution.x()) / static_cast<float>(camera.resolution.y());
-            camera.sceneUniforms.value.cameraToClip = computeCameraToClip(mFovDegrees * DEG_TO_RAD, aspect, NEAR, FAR).cast<float>();
-            SE3 cameraInWorld = btTransformToSe3(camera.link->m_cachedWorldTransform);
-            camera.sceneUniforms.value.worldToCamera = cameraInWorld.matrix().inverse().cast<float>();
-            camera.sceneUniforms.value.cameraInWorld = cameraInWorld.position().cast<float>().homogeneous();
-            camera.sceneUniforms.enqueueWrite();
+        if (!camera.sceneUniforms.buffer) camera.sceneUniforms.init(mDevice);
+        camera.sceneUniforms.value.lightColor = {1, 1, 1, 1};
+        camera.sceneUniforms.value.lightInWorld = {0, 0, 5, 1};
+        float aspect = static_cast<float>(camera.resolution.x()) / static_cast<float>(camera.resolution.y());
+        camera.sceneUniforms.value.cameraToClip = computeCameraToClip(camera.fov * DEG_TO_RAD, aspect, NEAR, FAR).cast<float>();
+        SE3 cameraInWorld = btTransformToSe3(camera.link->m_cachedWorldTransform);
+        camera.sceneUniforms.value.worldToCamera = cameraInWorld.matrix().inverse().cast<float>();
+        camera.sceneUniforms.value.cameraInWorld = cameraInWorld.position().cast<float>().homogeneous();
+        camera.sceneUniforms.enqueueWrite();
 
-            wgpu::BindGroupEntry entry;
-            entry.binding = 0;
-            entry.buffer = camera.sceneUniforms.buffer;
-            entry.size = sizeof(SceneUniforms);
-            wgpu::BindGroupDescriptor descriptor;
-            descriptor.layout = mPbrPipeline.getBindGroupLayout(1);
-            descriptor.entryCount = 1;
-            descriptor.entries = &entry;
-            wgpu::BindGroup bindGroup = mDevice.createBindGroup(descriptor);
-            colorPass.setBindGroup(1, bindGroup, 0, nullptr);
+        wgpu::BindGroupEntry entry;
+        entry.binding = 0;
+        entry.buffer = camera.sceneUniforms.buffer;
+        entry.size = sizeof(SceneUniforms);
+        wgpu::BindGroupDescriptor descriptor;
+        descriptor.layout = mPbrPipeline.getBindGroupLayout(1);
+        descriptor.entryCount = 1;
+        descriptor.entries = &entry;
+        wgpu::BindGroup bindGroup = mDevice.createBindGroup(descriptor);
+        colorPass.setBindGroup(1, bindGroup, 0, nullptr);
 
-            renderModels(colorPass);
+        renderModels(colorPass);
 
-            colorPass.end();
+        colorPass.end();
 
-            bindGroup.release();
-            colorPass.release();
-        }
-        {
-            wgpu::ComputePassEncoder computePass = encoder.beginComputePass();
-            computePass.setPipeline(mPointCloudPipeline);
+        bindGroup.release();
+        colorPass.release();
+    }
 
-            if (!camera.computeUniforms.buffer) camera.computeUniforms.init(mDevice);
-            camera.computeUniforms.value.resolution = camera.resolution;
-            camera.computeUniforms.value.clipToCamera = camera.sceneUniforms.value.cameraToClip.inverse();
-            camera.computeUniforms.enqueueWrite();
+    auto SimulatorNodelet::computeStereoCamera(StereoCamera& stereoCamera, wgpu::CommandEncoder& encoder) -> void {
+        wgpu::ComputePassEncoder computePass = encoder.beginComputePass();
+        computePass.setPipeline(mPointCloudPipeline);
 
-            std::size_t pointCloudBufferSize = camera.resolution.x() * camera.resolution.y() * sizeof(Point);
-            if (!camera.pointCloudBuffer) {
-                {
-                    wgpu::BufferDescriptor descriptor;
-                    descriptor.usage = wgpu::BufferUsage::Storage | wgpu::BufferUsage::CopySrc;
-                    descriptor.size = pointCloudBufferSize;
-                    camera.pointCloudBuffer = mDevice.createBuffer(descriptor);
-                }
-                {
-                    wgpu::BufferDescriptor descriptor;
-                    descriptor.usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::MapRead;
-                    descriptor.size = pointCloudBufferSize;
-                    camera.pointCloudBufferStaging = mDevice.createBuffer(descriptor);
-                }
+        if (!stereoCamera.computeUniforms.buffer) stereoCamera.computeUniforms.init(mDevice);
+        stereoCamera.computeUniforms.value.resolution = stereoCamera.base.resolution;
+        stereoCamera.computeUniforms.value.clipToCamera = stereoCamera.base.sceneUniforms.value.cameraToClip.inverse();
+        stereoCamera.computeUniforms.enqueueWrite();
+
+        std::size_t pointCloudBufferSize = stereoCamera.base.resolution.x() * stereoCamera.base.resolution.y() * sizeof(Point);
+        if (!stereoCamera.pointCloudBuffer) {
+            {
+                wgpu::BufferDescriptor descriptor;
+                descriptor.usage = wgpu::BufferUsage::Storage | wgpu::BufferUsage::CopySrc;
+                descriptor.size = pointCloudBufferSize;
+                stereoCamera.pointCloudBuffer = mDevice.createBuffer(descriptor);
             }
-
-            std::array<wgpu::BindGroupEntry, 5> entries;
-            entries[0].binding = 0;
-            entries[0].buffer = camera.computeUniforms.buffer;
-            entries[0].size = sizeof(ComputeUniforms);
-            entries[1].binding = 1;
-            entries[1].textureView = camera.colorTextureView;
-            entries[2].binding = 2;
-            entries[2].textureView = camera.normalTextureView;
-            entries[3].binding = 3;
-            entries[3].textureView = camera.depthTextureView;
-            entries[4].binding = 4;
-            entries[4].buffer = camera.pointCloudBuffer;
-            entries[4].size = camera.resolution.x() * camera.resolution.y() * sizeof(Point);
-            wgpu::BindGroupDescriptor descriptor;
-            descriptor.layout = mPointCloudPipeline.getBindGroupLayout(0);
-            descriptor.entryCount = entries.size();
-            descriptor.entries = entries.data();
-            wgpu::BindGroup bindGroup = mDevice.createBindGroup(descriptor);
-            computePass.setBindGroup(0, bindGroup, 0, nullptr);
-
-            computePass.dispatchWorkgroups(camera.resolution.x(), camera.resolution.y(), 1);
-
-            computePass.end();
-
-            encoder.copyBufferToBuffer(camera.pointCloudBuffer, 0, camera.pointCloudBufferStaging, 0, camera.pointCloudBuffer.getSize());
-
-            bindGroup.release();
-            computePass.release();
+            {
+                wgpu::BufferDescriptor descriptor;
+                descriptor.usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::MapRead;
+                descriptor.size = pointCloudBufferSize;
+                stereoCamera.pointCloudStagingBuffer = mDevice.createBuffer(descriptor);
+            }
         }
+
+        std::array<wgpu::BindGroupEntry, 5> entries;
+        entries[0].binding = 0;
+        entries[0].buffer = stereoCamera.computeUniforms.buffer;
+        entries[0].size = sizeof(ComputeUniforms);
+        entries[1].binding = 1;
+        entries[1].textureView = stereoCamera.base.colorTextureView;
+        entries[2].binding = 2;
+        entries[2].textureView = stereoCamera.base.normalTextureView;
+        entries[3].binding = 3;
+        entries[3].textureView = stereoCamera.base.depthTextureView;
+        entries[4].binding = 4;
+        entries[4].buffer = stereoCamera.pointCloudBuffer;
+        entries[4].size = stereoCamera.base.resolution.x() * stereoCamera.base.resolution.y() * sizeof(Point);
+        wgpu::BindGroupDescriptor descriptor;
+        descriptor.layout = mPointCloudPipeline.getBindGroupLayout(0);
+        descriptor.entryCount = entries.size();
+        descriptor.entries = entries.data();
+        wgpu::BindGroup bindGroup = mDevice.createBindGroup(descriptor);
+        computePass.setBindGroup(0, bindGroup, 0, nullptr);
+
+        computePass.dispatchWorkgroups(stereoCamera.base.resolution.x(), stereoCamera.base.resolution.y(), 1);
+
+        computePass.end();
+
+        encoder.copyBufferToBuffer(stereoCamera.pointCloudBuffer, 0, stereoCamera.pointCloudStagingBuffer, 0, stereoCamera.pointCloudBuffer.getSize());
+
+        bindGroup.release();
+        computePass.release();
     }
 
     auto cartesianToGeodetic(R3 const& cartesian, Eigen::Vector3d const& referenceGeodetic, double referenceHeadingDegrees) -> Eigen::Vector3d {
@@ -112,11 +111,11 @@ namespace mrover {
         return {lat, lon, alt};
     }
 
-    auto computeNavSatFix(SE3 const& gpsInMap, Eigen::Vector3d const& referenceGeodetic, double referenceHeadingDegrees) -> sensor_msgs::NavSatFix {
+    auto computeNavSatFix(SE3 const& gpuInMap, Eigen::Vector3d const& referenceGeodetic, double referenceHeadingDegrees) -> sensor_msgs::NavSatFix {
         sensor_msgs::NavSatFix gpsMessage;
         gpsMessage.header.stamp = ros::Time::now();
         gpsMessage.header.frame_id = "map";
-        auto geodetic = cartesianToGeodetic(gpsInMap.position(), referenceGeodetic, referenceHeadingDegrees);
+        auto geodetic = cartesianToGeodetic(gpuInMap.position(), referenceGeodetic, referenceHeadingDegrees);
         gpsMessage.latitude = geodetic(0);
         gpsMessage.longitude = geodetic(1);
         gpsMessage.altitude = geodetic(2);
@@ -149,27 +148,26 @@ namespace mrover {
     }
 
     auto SimulatorNodelet::gpsAndImusUpdate(Clock::duration dt) -> void {
-        if (auto lookup = getUrdf("rover"); lookup) {
+        if (auto lookup = getUrdf("rover")) {
             URDF const& rover = *lookup;
 
-            if (mLinearizedPosePub) {
+            {
                 SE3 baseLinkInMap = rover.linkInWorld("base_link");
-                geometry_msgs::PoseWithCovarianceStamped pose;
-                pose.header.stamp = ros::Time::now();
-                pose.header.frame_id = "map";
+                nav_msgs::Odometry odometry;
+                odometry.header.stamp = ros::Time::now();
+                odometry.header.frame_id = "map";
                 R3 p = baseLinkInMap.position();
-                pose.pose.pose.position.x = p.x();
-                pose.pose.pose.position.y = p.y();
-                pose.pose.pose.position.z = p.z();
+                odometry.pose.pose.position.x = p.x();
+                odometry.pose.pose.position.y = p.y();
+                odometry.pose.pose.position.z = p.z();
                 S3 q = baseLinkInMap.rotation().quaternion();
-                pose.pose.pose.orientation.w = q.w();
-                pose.pose.pose.orientation.x = q.x();
-                pose.pose.pose.orientation.y = q.y();
-                pose.pose.pose.orientation.z = q.z();
-                // TODO(quintin, riley): fill in covariance
-                mLinearizedPosePub.publish(pose);
+                odometry.pose.pose.orientation.w = q.w();
+                odometry.pose.pose.orientation.x = q.x();
+                odometry.pose.pose.orientation.y = q.y();
+                odometry.pose.pose.orientation.z = q.z();
+                // TODO(quintin, riley): fill in twist?
+                mGroundTruthPub.publish(odometry);
             }
-
             if (mGpsTask.shouldUpdate()) {
                 SE3 leftGpsInMap = rover.linkInWorld("left_gps");
                 mLeftGpsPub.publish(computeNavSatFix(leftGpsInMap, mGpsLinerizationReferencePoint, mGpsLinerizationReferenceHeading));
@@ -185,6 +183,60 @@ namespace mrover {
                 SE3 imuInMap = rover.linkInWorld("imu");
                 mImuPub.publish(computeImu(imuInMap, imuAngularVelocity, imuLinearAcceleration, imuInMap.rotation().matrix().transpose().col(1)));
             }
+        }
+    }
+
+    auto SimulatorNodelet::motorStatusUpdate() -> void {
+        if (auto lookup = getUrdf("rover"); lookup) {
+            URDF const& rover = *lookup;
+
+            MotorsStatus status;
+            status.joint_states.header.stamp = ros::Time::now();
+            status.joint_states.header.frame_id = "map";
+            ControllerState driveControllerState;
+            for (auto& position: {"front", "center", "back"}) {
+                for (auto& side: {"left", "right"}) {
+                    std::string linkName = std::format("{}_{}_wheel_link", position, side);
+                    int index = rover.linkNameToMeta.at(linkName).index;
+                    double pos = rover.physics->getJointPos(index);
+                    double vel = rover.physics->getJointVel(index);
+                    double torque = rover.physics->getJointTorque(index);
+
+                    status.name.push_back(linkName);
+                    status.joint_states.name.push_back(linkName);
+                    status.joint_states.position.push_back(pos);
+                    status.joint_states.velocity.push_back(vel);
+                    status.joint_states.effort.push_back(torque);
+
+                    status.moteus_states.name.push_back(linkName);
+                    status.moteus_states.state.emplace_back("Armed");
+                    status.moteus_states.error.emplace_back("None");
+
+                    driveControllerState.name.push_back(linkName);
+                    driveControllerState.state.emplace_back("Armed");
+                    driveControllerState.error.emplace_back("None");
+                    driveControllerState.limit_hit.push_back(0b000);
+                }
+            }
+            mMotorStatusPub.publish(status);
+            mDriveControllerStatePub.publish(driveControllerState);
+
+            ControllerState armControllerState;
+            for (auto& linkName: {"arm_a_link", "arm_b_link", "arm_c_link", "arm_d_link", "arm_e_link"}) {
+                armControllerState.name.emplace_back(armMsgToUrdf.backward(linkName).value());
+                armControllerState.state.emplace_back("Armed");
+                armControllerState.error.emplace_back("None");
+
+                std::uint8_t limitSwitches = 0b000;
+                if (auto limits = rover.model.getLink(linkName)->parent_joint->limits) {
+                    double joinPosition = rover.physics->getJointPos(rover.linkNameToMeta.at(linkName).index);
+                    constexpr double OFFSET = 0.05;
+                    if (joinPosition < limits->lower + OFFSET) limitSwitches |= 0b001;
+                    if (joinPosition > limits->upper - OFFSET) limitSwitches |= 0b010;
+                }
+                armControllerState.limit_hit.push_back(limitSwitches);
+            }
+            mArmControllerStatePub.publish(armControllerState);
         }
     }
 

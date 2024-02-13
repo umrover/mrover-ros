@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="rover">
+    <xacro:property name="mass" value="1.36078"/>\
+    <xacro:property name="TAU" value="6.2831855"/>
+
+    <xacro:macro name="cylinder_inertia" params="m r h xyz">
+        <inertial>
+            <origin xyz="${xyz}"/>
+            <mass value="${m}"/>
+            <inertia ixx="${m*(3*r*r+h*h)/12}" ixy="0" ixz="0"
+                     iyy="${m*(3*r*r+h*h)/12}" iyz="0"
+                     izz="${m*r*r/2}"/>
+        </inertial>
+    </xacro:macro>
+
+    <link name="base_link">
+        <xacro:cylinder_inertia m="${mass}" r="0.025" h="0.5" xyz="0 0 0.25"/>
+        <visual>
+            <geometry>
+                <mesh filename="package://mrover/urdf/meshes/bottle.fbx"/>
+            </geometry>
+        </visual>
+        <collision>
+            <geometry>
+                <cylinder radius="0.09" length="0.31"/>
+            </geometry>
+        </collision>
+        <collision>
+            <origin rpy="0 0 0" xyz="0 0 0.16"/>
+            <geometry>
+                <cylinder radius="0.07" length="0.05"/>
+            </geometry>
+        </collision>
+    </link>
+</robot>

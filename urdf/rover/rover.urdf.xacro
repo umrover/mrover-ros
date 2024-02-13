@@ -214,65 +214,79 @@
   <xacro:arm_link name="e" m="1" x="0.15" y="0.155" z="0.032" />
 
   <joint name="chassis_link_to_arm_a_link" type="prismatic">
-    <origin xyz="0.164882 0.200235 0.051497" />
-    <parent link="chassis_link" />
-    <child link="arm_a_link" />
-    <axis xyz="0 1 0" />
-    <limit lower="0" upper="0.5" effort="0" velocity="0" />
+    <origin xyz="0.164882 0.200235 0.051497"/>
+    <parent link="chassis_link"/>
+    <child link="arm_a_link"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-0.45" upper="0" effort="0" velocity="0"/>
   </joint>
 
   <xacro:arm_revolute_joint parent="arm_a" child="arm_b"
     x="0.034346" y="0" z="0.049024"
     lower="${-TAU / 8}" upper="0" />
   <xacro:arm_revolute_joint parent="arm_b" child="arm_c"
-    x="0.534365" y="0" z="0.009056"
-    lower="0" upper="${TAU / 2}" />
+                            x="0.534365" y="0" z="0.009056"
+                            lower="-0.959931" upper="2.87979"/>
   <xacro:arm_revolute_joint parent="arm_c" child="arm_d"
-    x="0.546033" y="0" z="0.088594"
-    lower="0" upper="0" />
+                            x="0.546033" y="0" z="0.088594"
+                            lower="-2.35619" upper="2.35619"/>
   <xacro:arm_revolute_joint parent="arm_d" child="arm_e"
-    x="0.044886" y="0" z="0"
-    lower="0" upper="0" />
+                            x="0.044886" y="0" z="0"
+                            lower="-2.35619" upper="2.35619"/>
 
   <xacro:wheels side="left" reflect="1" />
   <xacro:wheels side="right" reflect="-1" />
 
   <joint name="chassis_link_to_left_gps" type="fixed">
-    <origin xyz="0 1 0" />
-    <parent link="chassis_link" />
-    <child link="left_gps" />
+    <origin xyz="0 0.1 0"/>
+    <parent link="chassis_link"/>
+    <child link="left_gps"/>
   </joint>
 
-  <link name="left_gps" />
+  <link name="left_gps"/>
 
   <joint name="chassis_link_to_right_gps" type="fixed">
-    <origin xyz="0 -1 0" />
-    <parent link="chassis_link" />
-    <child link="right_gps" />
+    <origin xyz="0 -0.1 0"/>
+    <parent link="chassis_link"/>
+    <child link="right_gps"/>
   </joint>
 
-  <link name="right_gps" />
+  <link name="right_gps"/>
 
   <joint name="chassis_link_to_imu" type="fixed">
-    <origin xyz="0 0 0" />
-    <parent link="chassis_link" />
-    <child link="imu" />
+    <origin xyz="0 0 0"/>
+    <parent link="chassis_link"/>
+    <child link="imu"/>
   </joint>
 
-  <link name="imu" />
+  <link name="imu"/>
 
   <!-- TODO(quintin): Import the ZED URDF here -->
 
-  <joint name="chassis_link_to_camera_link" type="fixed">
-    <origin xyz="0.3 0 0" />
-    <parent link="chassis_link" />
-    <child link="zed2i_left_camera_frame" />
+  <joint name="chassis_link_to_zed2i_left_camera_frame" type="fixed">
+    <origin xyz="0.3 0 0"/>
+    <parent link="chassis_link"/>
+    <child link="zed2i_left_camera_frame"/>
   </joint>
 
   <link name="zed2i_left_camera_frame">
     <collision>
       <geometry>
         <box size="0.01 0.1 0.01" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="chassis_link_to_long_range_camera_link" type="fixed">
+    <origin xyz="0.3 0 1"/>
+    <parent link="chassis_link"/>
+    <child link="long_range_camera_link"/>
+  </joint>
+
+  <link name="long_range_camera_link">
+    <collision>
+      <geometry>
+        <box size="0.01 0.01 0.01"/>
       </geometry>
     </collision>
   </link>

@@ -9,19 +9,20 @@ namespace mrover {
         mSaveTask = PeriodicTask{mPnh.param<float>("save_rate", 5)};
         mSaveHistory = boost::circular_buffer<SaveData>{static_cast<std::size_t>(mPnh.param<int>("save_history", 4096))};
 
-        // for (std::string channel: {"/can/back_left/out", "/can/back_right/out", "/can/middle_left/out", "/can/middle_right/out", "/can/front_left/out", "/can/front_right/out"}) {
-        //     mCanSubs.emplace_back(mNh.scribe<CAN>(channel, 1, [this, channel](CAN::ConstPtr const& msg) { canCallback(*msg, channel); }));
-        // }
         mTwistSub = mNh.subscribe<geometry_msgs::Twist>("/cmd_vel", 1, &SimulatorNodelet::twistCallback, this);
-        mJointPositionsSub = mNh.subscribe<Position>("/arm_position_cmd", 1, &SimulatorNodelet::jointPositionsCallback, this);
+        mArmPositionsSub = mNh.subscribe<Position>("/arm_position_cmd", 1, &SimulatorNodelet::armPositionsCallback, this);
+        mArmVelocitiesSub = mNh.subscribe<Velocity>("/arm_velocity_cmd", 1, &SimulatorNodelet::armVelocitiesCallback, this);
+        mArmThrottlesSub = mNh.subscribe<Throttle>("/arm_throttle_cmd", 1, &SimulatorNodelet::armThrottlesCallback, this);
 
-        // mLinearizedPosePub = mNh.advertise<geometry_msgs::PoseWithCovarianceStamped>("/linearized_pose", 1);
-
+        mGroundTruthPub = mNh.advertise<nav_msgs::Odometry>("/ground_truth", 1);
         mLeftGpsPub = mNh.advertise<sensor_msgs::NavSatFix>("/left_gps_driver/fix", 1);
         mRightGpsPub = mNh.advertise<sensor_msgs::NavSatFix>("/right_gps_driver/fix", 1);
-        mImuPub = mNh.advertise<ImuAndMag>("/imu", 1);
+        mImuPub = mNh.advertise<ImuAndMag>("/imu/data", 1);
         mGpsTask = PeriodicTask{mPnh.param<float>("gps_rate", 10)};
         mImuTask = PeriodicTask{mPnh.param<float>("imu_rate", 100)};
+        mMotorStatusPub = mNh.advertise<MotorsStatus>("/drive_status", 1);
+        mDriveControllerStatePub = mNh.advertise<ControllerState>("/drive_controller_data", 1);
+        mArmControllerStatePub = mNh.advertise<ControllerState>("/arm_controller_data", 1);
 
         mIkTargetPub = mNh.advertise<IK>("/arm_ik", 1);
 
@@ -32,6 +33,8 @@ namespace mrover {
         initRender();
 
         parseParams();
+
+        twistCallback(boost::make_shared<geometry_msgs::Twist>());
 
         mRunThread = std::thread{&SimulatorNodelet::run, this};
 
@@ -70,27 +73,6 @@ namespace mrover {
             // glfwSetInputMode(mWindow.get(), GLFW_CURSOR, mInGui ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
             mLoopProfiler.measureEvent("GLFW Events");
 
-            IK ik;
-            ik.pose.position.x = mIkTarget.x();
-            ik.pose.position.y = mIkTarget.y();
-            ik.pose.position.z = mIkTarget.z();
-            mIkTargetPub.publish(ik);
-            // if (auto it = mUrdfs.find("rover"); it != mUrdfs.end()) {
-            //     URDF const& rover = it->second;
-            //
-            //     for (auto const& name: {"arm_a_link"s, "arm_b_link"s, "arm_c_link"s, "arm_d_link"s, "arm_e_link"s}) {
-            //         auto* motor = std::bit_cast<btMultiBodyJointMotor*>(rover.physics->getLink(rover.linkNameToIndex.at(name)).m_userPtr);
-            //         motor->setMaxAppliedImpulse(0.5);
-            //         if (name == "arm_b_link") {
-            //             motor->setPositionTarget(-TAU * 0.125, 0.5);
-            //         } else if (name == "arm_c_link") {
-            //             motor->setPositionTarget(TAU * 0.4, 0.5);
-            //         } else {
-            //             motor->setPositionTarget(0);
-            //         }
-            //     }
-            // }
-
             userControls(dt);
             mLoopProfiler.measureEvent("Controls");
 
@@ -117,6 +99,15 @@ namespace mrover {
         ImGui_ImplWGPU_Shutdown();
         ImGui_ImplGlfw_Shutdown();
         ImGui::DestroyContext();
+
+        for (int i = mDynamicsWorld->getNumConstraints() - 1; i >= 0; --i) {
+            mDynamicsWorld->removeConstraint(mDynamicsWorld->getConstraint(i));
+        }
+
+        for (int i = mDynamicsWorld->getNumCollisionObjects() - 1; i >= 0; --i) {
+            btCollisionObject* object = mDynamicsWorld->getCollisionObjectArray()[i];
+            mDynamicsWorld->removeCollisionObject(object);
+        }
     }
 
 } // namespace mrover

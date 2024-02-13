@@ -33,10 +33,21 @@
     "python.analysis.typeCheckingMode": "off",
     //// Miscellaneous
     "redhat.telemetry.enabled": false,
-    "editor.formatOnSave": true,
+    "git.ignoreSubmodules": true,
+    "git.detectSubmodules": false,
     "cSpell.words": [
         "Eigen",
         "GLFW",
         "wgpu"
     ],
+    "search.exclude": {
+        "**/node_modules": true,
+        "**/bower_components": true,
+        "**/*.code-search": true,
+        "deps/dawn": true,
+    },
+    "python.autoComplete.extraPaths": [
+        "/home/eric/catkin_ws/devel/lib/python3/dist-packages",
+        "/opt/ros/noetic/lib/python3/dist-packages"
+    ]
 }

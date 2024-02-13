@@ -70,13 +70,12 @@ class RunningState(State):
 
 
 if __name__ == "__main__":
-    sm = StateMachine(WaitingState(), "RandomForeverStateMachine")
+    context = Context()
+    sm = StateMachine[Context](WaitingState(), "RandomForeverStateMachine", context)
     sm.add_transition(WaitingState(), RunningState())
     sm.add_transition(RunningState(), WaitingState())
     sm.add_transition(RunningState(), RunningState())
     sm.add_transition(WaitingState(), WaitingState())
-    context = Context()
-    sm.set_context(context)
     thread = Thread(target=context.stateCapture.random_loop)
     thread.start()
     sm.run()

@@ -12,12 +12,12 @@ extern FDCAN_HandleTypeDef hfdcan1;
 namespace mrover {
 
     // NOTE: Change this for the PDLB controller
-    constexpr static std::uint8_t DEVICE_ID = 0x32;
+    constexpr static std::uint8_t DEVICE_ID = 0x50;
 
     // Usually this is the Jetson
     constexpr static std::uint8_t DESTINATION_DEVICE_ID = 0x10;
 
-    FDCAN fdcan_bus;
+    FDCAN<InBoundPDLBMessage> fdcan_bus;
     PDLB pdlb;
 
     void init() {
@@ -55,7 +55,7 @@ namespace mrover {
 				DiagTempSensor{adc_sensor_2, 1},
         };
 
-        fdcan_bus = FDCAN{DEVICE_ID, DESTINATION_DEVICE_ID, &hfdcan1};
+        fdcan_bus = FDCAN<InBoundPDLBMessage>{DEVICE_ID, DESTINATION_DEVICE_ID, &hfdcan1};
         pdlb = PDLB{fdcan_bus, Pin{ARM_LASER_GPIO_Port, ARM_LASER_Pin},
         	auton_led, adc_sensor_1, adc_sensor_2,
 			current_sensors, diag_temp_sensors};
@@ -70,9 +70,9 @@ namespace mrover {
 	}
 
     void receive_message() {
-    	if (std::optional received = fdcan_bus.receive<InBoundPDLBMessage>()) {
+    	if (std::optional received = fdcan_bus.receive()) {
 			auto const& [header, message] = received.value();
-			auto messageId = std::bit_cast<FDCAN::MessageId>(header.Identifier);
+			auto messageId = std::bit_cast<FDCAN<InBoundPDLBMessage>::MessageId>(header.Identifier);
 			if (messageId.destination == DEVICE_ID)
 				pdlb.receive(message);
 		}

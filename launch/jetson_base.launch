@@ -1,0 +1,3 @@
+<launch>
+    <include file="$(find mrover)/launch/esw_base.launch" />
+</launch>
