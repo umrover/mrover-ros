@@ -34,8 +34,8 @@ class TipDetection:
         rospy.Subscriber("imu/imu_only", Imu, self.imu_callback)
         # read the orientation data from the given Imu message, store that value in `self.pose`, then publish that pose to the TF tree.
         self.hit_count = 0
-        self.z_orientation_threshold = 0.7
-        self.hit_count_threshold = 5
+        self.z_orientation_threshold = 0.65
+        self.hit_count_threshold = 100
         self.reset_hit_count_threshold = 3
         self.time_counter = time.time()
         self.current_time = time.time()
@@ -167,9 +167,9 @@ class TipDetection:
         if hit_count > self.hit_count_threshold:
             rospy.loginfo("tipping")
             rospy.loginfo(hit_count)
-        else:
-            rospy.loginfo("not tipping")
-            rospy.loginfo(hit_count)
+        # else:
+        #     rospy.loginfo("not tipping")
+        #     rospy.loginfo(hit_count)
 
     def reset_hit_count_time(self, reset_hit_count_threshold, time_counter):
         print(f"time {time.time()- self.time_counter}")
