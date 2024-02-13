@@ -21,14 +21,8 @@
 #include <boost/range/combine.hpp>
 #include <boost/thread.hpp>
 #include <boost/thread/future.hpp>
-<<<<<<< HEAD
-#include <geometry_msgs/PoseWithCovarianceStamped.h>
-#include <geometry_msgs/TwistStamped.h>
-#include <sensor_msgs/NavSatFix.h>
-=======
 #include <geometry_msgs/TwistStamped.h>
 #include <nav_msgs/Odometry.h>
->>>>>>> integration
 #include <nodelet/loader.h>
 #include <nodelet/nodelet.h>
 #include <ros/package.h>
