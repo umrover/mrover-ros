@@ -189,6 +189,9 @@ endif ()
 mrover_add_nodelet(tag_detector src/perception/tag_detector/*.cpp src/perception/tag_detector src/perception/tag_detector/pch.hpp)
 mrover_nodelet_link_libraries(tag_detector opencv_core opencv_objdetect opencv_aruco opencv_imgproc opencv_highgui lie)
 
+mrover_add_nodelet(click_ik src/perception/click_ik/*.cpp src/perception/click_ik src/perception/click_ik/pch.hpp)
+mrover_nodelet_link_libraries(click_ik lie)
+
 if (CUDA_FOUND)
     mrover_add_library(streaming src/esw/streaming/*.c* src/esw/streaming)
     #    target_link_libraries(streaming PUBLIC opencv_core opencv_cudacodec)
