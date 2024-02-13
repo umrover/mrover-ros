@@ -94,6 +94,8 @@ namespace mrover {
         }
 
         mBestNormal = std::make_optional<Eigen::Vector3f>(0, 0, 0);
+        mBestCenterInZED = std::make_optional<Eigen::Vector3f>(0, 0, 0);
+
 
         while (mBestNormal.value().isZero()) { // TODO add give up condition after X iter
             for (int i = 0; i < epochs; ++i) {
