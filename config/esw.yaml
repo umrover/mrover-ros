@@ -5,7 +5,7 @@ gps_driver:
   frame_id: "base_link"
 
 right_gps_driver:
-  port: "/dev/ttyACM0"
+  port: "/dev/ttyACM1"
   baud: 38400
   frame_id: "base_link"
 
@@ -14,9 +14,8 @@ left_gps_driver:
   baud: 38400
   frame_id: "base_link"
 
-
 basestation_gps_driver:
-  port: "/dev/ttyACM1"
+  port: "/dev/ttyUSB1"
   baud: 38400
   frame_id: "base_link"
 

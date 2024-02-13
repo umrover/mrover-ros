@@ -4,9 +4,9 @@
     conn_name: MRover
     state: present
     type: ethernet
-    ifname: eth0
+    ifname: enp1s0
     autoconnect: yes
-    ip4: 10.0.0.10/24
+    ip4: 10.0.0.10/8
     gw4: 10.0.0.2
     dns4: [10.0.0.2]
     method6: disabled
