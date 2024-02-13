@@ -46,7 +46,7 @@ namespace mrover {
             mDebugVectorPub.publish(vect);
         }
 
-        sendTwist({1, 1, 0});
+        //sendTwist({1, 1, 0});
     }
 
     // deprecated/not needed anymore
@@ -94,6 +94,7 @@ namespace mrover {
         }
 
         mBestNormal = std::make_optional<Eigen::Vector3f>(0, 0, 0);
+        mBestCenterInZED = std::make_optional<Eigen::Vector3f>(0, 0, 0);
 
         while (mBestNormal.value().isZero()) { // TODO add give up condition after X iter
             for (int i = 0; i < epochs; ++i) {
@@ -170,10 +171,10 @@ namespace mrover {
         std::string immediateFrameIdInZED = "immediatePlaneInZED";
         SE3::pushToTfTree(mTfBroadcaster, immediateFrameIdInZED, mCameraFrameId, mPlaneLocInZED);
 
-        mPlaneLocInWorld = SE3::fromTfTree(mTfBuffer, immediateFrameIdInZED, mMapFrameId);
+        //mPlaneLocInWorld = SE3::fromTfTree(mTfBuffer, immediateFrameIdInZED, mMapFrameId);
 
-        std::string immediateFrameIdInWorld = "immediatePlaneInWorld";
-        SE3::pushToTfTree(mTfBroadcaster, immediateFrameIdInWorld, mMapFrameId, mPlaneLocInWorld);
+        //std::string immediateFrameIdInWorld = "immediatePlaneInWorld";
+        //SE3::pushToTfTree(mTfBroadcaster, immediateFrameIdInWorld, mMapFrameId, mPlaneLocInWorld);
 
         mBestCenterInWorld = {
                 static_cast<float>(mPlaneLocInWorld.position().x()),
@@ -210,6 +211,9 @@ namespace mrover {
         return distance;
     }
 
+    LanderAlignNodelet::PID::PID(float angle_P, float linear_P) : Angle_P(angle_P), Linear_P(linear_P) {
+    }
+
     // auto LanderAlignNodelet::PID::calculate(Eigen::Vector3f& input, Eigen::Vector3f& target) -> std::tuple<float> {
     //     input[2] = 0;
     //     target[2] = 0;
@@ -234,9 +238,9 @@ namespace mrover {
 
 
         targetPosInWorld.z() = 0;
-
+        ROS_INFO("Here");
         PID pid(0.1, 0.1); // literally just P -- ugly class and probably needs restructuring in the future
-
+        ROS_INFO("Here");
         ros::Rate rate(20); // ROS Rate at 20Hz
         while (ros::ok()) {
             rover = SE3::fromTfTree(mTfBuffer, "map", "base_link");
