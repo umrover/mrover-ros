@@ -10,8 +10,10 @@
 #include <math.h>
 #include <optional>
 #include <random>
+#include <ros/duration.h>
 #include <ros/subscriber.h>
 #include <tuple>
+#include <unistd.h>
 #include <vector>
 
 #include <lie/se3.hpp>
@@ -24,7 +26,7 @@ namespace mrover {
     auto LanderAlignNodelet::onInit() -> void {
         mNh = getMTNodeHandle();
         mPnh = getMTPrivateNodeHandle();
-        mThreshold = 10;
+        mZThreshold = .2;
         mVectorSub = mNh.subscribe("/camera/left/points", 1, &LanderAlignNodelet::LanderCallback, this);
         mDebugVectorPub = mNh.advertise<geometry_msgs::Vector3>("/lander_align/Pose", 1);
         mTwistPub = mNh.advertise<geometry_msgs::Twist>("/cmd_vel", 1);
@@ -37,7 +39,7 @@ namespace mrover {
 
     void LanderAlignNodelet::LanderCallback(sensor_msgs::PointCloud2Ptr const& cloud) {
         filterNormals(cloud);
-        ransac(0.2, 10, 100);
+        ransac(0.05, 10, 100);
         if (mBestNormal.has_value()) {
             geometry_msgs::Vector3 vect;
             vect.x = mBestNormal.value().x();
@@ -46,7 +48,7 @@ namespace mrover {
             mDebugVectorPub.publish(vect);
         }
 
-        //sendTwist({1, 1, 0});
+        // sendTwist({1, 1, 0});>
     }
 
     // deprecated/not needed anymore
@@ -63,17 +65,20 @@ namespace mrover {
         // TODO: OPTIMIZE; doing this maobject_detector/debug_imgny push_back calls could slow things down
         mFilteredPoints.clear();
         auto* cloudData = reinterpret_cast<Point const*>(cloud->data.data());
+        ROS_INFO("Point cloud size: %i", cloud->height * cloud->width);
 
         // define randomizer
         std::default_random_engine generator;
-        std::uniform_int_distribution<int> distribution(0, (int) 200);
+        std::uniform_int_distribution<int> distribution(0, (int) 10);
 
         for (auto point = cloudData; point < cloudData + (cloud->height * cloud->width); point += distribution(generator)) {
             bool isPointInvalid = (!std::isfinite(point->x) || !std::isfinite(point->y) || !std::isfinite(point->z));
-            if (point->normal_z < mThreshold && !isPointInvalid) {
+            if (abs(point->normal_z) < mZThreshold && !isPointInvalid) {
                 mFilteredPoints.push_back(point);
+                // ROS_INFO("Filtered point: %f, %f, %f", point->normal_x, point->normal_y, point->normal_z);
             }
         }
+        ROS_INFO("Filtered vector size: %lu", mFilteredPoints.size());
     }
 
     void LanderAlignNodelet::ransac(float const distanceThreshold, int minInliers, int const epochs) {
@@ -131,7 +136,7 @@ namespace mrover {
                 // update best plane if better inlier count
                 if (numInliers > minInliers) {
                     minInliers = numInliers;
-                    mBestNormal.value() = normal.normalized();
+                    mBestNormal.value() = normal;
 
                     // If this is the new best plane, set mBestCenterInZED
                     // mBestCenterInZED = currentCenter / static_cast<float>(minInliers);
@@ -161,7 +166,7 @@ namespace mrover {
 
         mBestCenterInZED.value() /= static_cast<float>(numInliers);
 
-        if (mBestNormal.value().x() < 0) {
+        if (mBestNormal.value().x() < 0) { // ALSO NEED TO FLIP THE Y VALUE
             mBestNormal.value() *= -1;
         }
 
@@ -172,15 +177,18 @@ namespace mrover {
         std::string immediateFrameIdInZED = "immediatePlaneInZED";
         SE3::pushToTfTree(mTfBroadcaster, immediateFrameIdInZED, mCameraFrameId, mPlaneLocInZED);
 
-        //mPlaneLocInWorld = SE3::fromTfTree(mTfBuffer, immediateFrameIdInZED, mMapFrameId);
+        ros::Duration(.1).sleep(); // THIS IS INCREDIBLY FUCKED please actually do math :)
+        mPlaneLocInWorld = SE3::fromTfTree(mTfBuffer, immediateFrameIdInZED, mMapFrameId);
 
-        //std::string immediateFrameIdInWorld = "immediatePlaneInWorld";
-        //SE3::pushToTfTree(mTfBroadcaster, immediateFrameIdInWorld, mMapFrameId, mPlaneLocInWorld);
+        std::string immediateFrameIdInWorld = "immediatePlaneInWorld";
+        SE3::pushToTfTree(mTfBroadcaster, immediateFrameIdInWorld, mMapFrameId, mPlaneLocInWorld);
 
         mBestCenterInWorld = {
                 static_cast<float>(mPlaneLocInWorld.position().x()),
                 static_cast<float>(mPlaneLocInWorld.position().y()),
                 static_cast<float>(mPlaneLocInWorld.position().z())};
+
+        ROS_INFO("Max inliers: %i", minInliers);
         ROS_INFO("THE LOCATION OF THE PLANE IS AT: %f, %f, %f with normal vector %f, %f, %f", mBestCenterInZED.value().x(), mBestCenterInZED.value().y(), mBestCenterInZED.value().z(), mBestNormal.value().x(), mBestNormal.value().y(), mBestNormal.value().z());
     }
 
@@ -258,7 +266,7 @@ namespace mrover {
                     if (abs(angle) < angular_thresh) {
                         mLoopState = RTRSTATE::drive;
                     }
-                    ROS_INFO("In state: turning to point...");
+                    // ROS_INFO("In state: turning to point...");
                 }
 
                 case RTRSTATE::drive: {
@@ -270,7 +278,7 @@ namespace mrover {
                     if (abs(distance) < linear_thresh) {
                         mLoopState = RTRSTATE::turn2;
                     }
-                    ROS_INFO("In state: driving to point...");
+                    // ROS_INFO("In state: driving to point...");
                 }
 
                 case RTRSTATE::turn2: {
@@ -284,12 +292,14 @@ namespace mrover {
                     if (abs(angle) < angular_thresh) {
                         mLoopState = RTRSTATE::done;
                     }
-                    ROS_INFO("In state: turning to lander...");
+                    // ROS_INFO("In state: turning to lander...");
                 }
 
                 case RTRSTATE::done:
                     break;
             }
+            ROS_INFO("THE TWIST IS: Angular: %f, with linear %f,", twist.angular.z, twist.linear.x);
+
             mTwistPub.publish(twist);
 
             rate.sleep();

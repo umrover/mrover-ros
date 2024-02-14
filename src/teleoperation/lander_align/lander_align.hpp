@@ -45,7 +45,7 @@ namespace mrover {
         std::string mCameraFrameId;
         std::string mMapFrameId;
 
-        float mThreshold;
+        float mZThreshold;
 
         std::vector<Point const*> mFilteredPoints;
 
