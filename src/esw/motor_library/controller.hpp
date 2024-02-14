@@ -29,7 +29,7 @@ namespace mrover {
                       mNh.subscribe<CAN>(
                               std::format("can/{}/in", mControllerName), 16, &Controller::processCANMessage, this)} {
             updateLastConnection();
-            // mHeartbeatTimer = mNh.createTimer(ros::Duration(0.1), &Controller::heartbeatCallback, this);
+            mHeartbeatTimer = mNh.createTimer(ros::Duration(0.), &Controller::heartbeatCallback, this);
             // Subscribe to the ROS topic for commands
             mMoveThrottleSub = mNh.subscribe<Throttle>(std::format("{}_throttle_cmd", mControllerName), 1, &Controller::moveMotorsThrottle, this);
             mMoveVelocitySub = mNh.subscribe<Velocity>(std::format("{}_velocity_cmd", mControllerName), 1, &Controller::moveMotorsVelocity, this);
@@ -44,21 +44,41 @@ namespace mrover {
         }
 
         virtual ~Controller() = default;
-
-        virtual void setDesiredThrottle(Percent throttle) = 0;          // from -1.0 to 1.0
-        virtual void setDesiredVelocity(RadiansPerSecond velocity) = 0; // joint output
-        virtual void setDesiredPosition(Radians position) = 0;          // joint output
         virtual void processCANMessage(CAN::ConstPtr const& msg) = 0;
         virtual double getEffort() = 0;
         virtual void adjust(Radians position) = 0;
+        
+
         void updateLastConnection() {
             mLastConnection = std::chrono::high_resolution_clock::now();
         }
 
         void heartbeatCallback(ros::TimerEvent const&) {
-            if (auto duration = std::chrono::high_resolution_clock::now() - mLastConnection;
-                duration > std::chrono::milliseconds(100)) {
+            auto duration = std::chrono::high_resolution_clock::now() - mLastConnection;
+            if (duration > std::chrono::milliseconds(100)) {
                 setDesiredThrottle(0_percent);
+                // ROS_ERROR("ENTER WATCHDOG");
+            }
+            else {
+                std::visit([this](auto&& arg) {
+                    using T = std::decay_t<decltype(arg)>;
+                    if constexpr (std::is_same_v<T, Throttle>) {
+                        if (arg.throttles.size() != 1) {
+                            return;
+                        }
+                        this->setDesiredThrottle(arg.throttles.at(0));
+                    } else if constexpr (std::is_same_v<T, Velocity>) {
+                        if (arg.velocities.size() != 1) {
+                            return;
+                        }
+                        this->setDesiredVelocity(RadiansPerSecond{arg.velocities.at(0)});
+                    } else if constexpr (std::is_same_v<T, Position>) {
+                        if (arg.positions.size() != 1) {
+                            return;
+                        }
+                        this->setDesiredPosition(Radians{arg.positions.at(0)});
+                    }
+                }, mLastRequestedCommand);
             }
         }
 
@@ -67,8 +87,8 @@ namespace mrover {
                 ROS_ERROR("Throttle request at topic for %s ignored!", msg->names.at(0).c_str());
                 return;
             }
-
-            setDesiredThrottle(msg->throttles.at(0));
+            updateLastConnection();
+            mLastRequestedCommand = *msg;
         }
 
 
@@ -77,8 +97,8 @@ namespace mrover {
                 ROS_ERROR("Velocity request at topic for %s ignored!", msg->names.at(0).c_str());
                 return;
             }
-
-            setDesiredVelocity(RadiansPerSecond{msg->velocities.at(0)});
+            updateLastConnection();
+            mLastRequestedCommand = *msg;
         }
 
         void moveMotorsPosition(Position::ConstPtr const& msg) {
@@ -86,8 +106,8 @@ namespace mrover {
                 ROS_ERROR("Position request at topic for %s ignored!", msg->names.at(0).c_str());
                 return;
             }
-
-            setDesiredPosition(Radians{msg->positions.at(0)});
+            updateLastConnection();
+            mLastRequestedCommand = *msg;
         }
 
         auto publishDataCallback(ros::TimerEvent const&) -> void {
@@ -121,10 +141,17 @@ namespace mrover {
                 res.success = false;
                 return true;
             }
+            updateLastConnection();
             adjust(Radians{req.value});
             res.success = true;
             return true;
         }
+
+    private:
+
+        virtual void setDesiredThrottle(Percent throttle) = 0;          // from -1.0 to 1.0
+        virtual void setDesiredVelocity(RadiansPerSecond velocity) = 0; // joint output
+        virtual void setDesiredPosition(Radians position) = 0;          // joint output
 
     protected:
         Dimensionless mVelocityMultiplier;
@@ -141,6 +168,7 @@ namespace mrover {
         std::string mState;
         std::array<bool, 4> mLimitHit{};
         std::chrono::high_resolution_clock::time_point mLastConnection;
+    
         ros::Timer mHeartbeatTimer;
 
         ros::Subscriber mMoveThrottleSub;
@@ -151,6 +179,9 @@ namespace mrover {
         ros::Timer mPublishDataTimer;
 
         ros::ServiceServer mAdjustServer;
+
+        std::variant<Throttle, Velocity, Position> mLastRequestedCommand;
+        
     };
 
 } // namespace mrover
