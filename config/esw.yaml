@@ -1,10 +1,16 @@
+gps_driver:
+  port: "/dev/gps"
+  baud: 115200
+  useRMC: false # get covariance instead of velocity, see wiki for more info
+  frame_id: "base_link"
+
 imu_driver:
-  port: "/dev/imu"
+  port: "/dev/tty.usbmodem2101"
   baud: 115200
   frame_id: "imu_link"
 
 gps:
-  port: "/dev/gps"
+  port: "/dev/tty.usbmodem101"
   baud: 115200
   useRMC: false # get covariance instead of velocity, see wiki for more info
   frame_id: "base_link"
@@ -13,123 +19,109 @@ can:
   devices:
     - name: "jetson"
       bus: 0
-      id: 0x10
+      id: 0x0 # 0x10 originally
     - name: "front_left"
       bus: 0
-      id: 0x12
+      id: 0x11
     - name: "front_right"
       bus: 0
-      id: 0x11
+      id: 0x12
     - name: "middle_left"
       bus: 0
-      id: 0x14
+      id: 0x13
     - name: "middle_right"
       bus: 0
-      id: 0x13
+      id: 0x14
     - name: "back_left"
       bus: 0
-      id: 0x16
+      id: 0x15
     - name: "back_right"
       bus: 0
-      id: 0x15
+      id: 0x16
     - name: "joint_a"
-      bus: 1
+      bus: 0
       id: 0x20
     - name: "joint_b"
-      bus: 1
+      bus: 0
       id: 0x21
     - name: "joint_c"
-      bus: 1
+      bus: 0
       id: 0x22
     - name: "joint_de_0"
-      bus: 1
+      bus: 0
       id: 0x23
     - name: "joint_de_1"
-      bus: 1
+      bus: 0
       id: 0x24
     - name: "allen_key"
-      bus: 1
+      bus: 0
       id: 0x25
     - name: "gripper"
-      bus: 1
+      bus: 0
       id: 0x26
     - name: "mast_gimbal_x"
-      bus: 1
+      bus: 0
       id: 0x27
     - name: "mast_gimbal_y"
-      bus: 1
+      bus: 0
       id: 0x28
     - name: "sa_x"
-      bus: 1
+      bus: 0
       id: 0x29
     - name: "sa_y"
-      bus: 1
+      bus: 0
       id: 0x30
     - name: "sa_z"
-      bus: 1
+      bus: 0
       id: 0x31
-    - name: "scoop"
-      bus: 1
+    - name: "sampler"
+      bus: 0
       id: 0x32
     - name: "sensor_actuator"
-      bus: 1
+      bus: 0
       id: 0x33
     - name: "cache"
-      bus: 1
+      bus: 0
       id: 0x34
     - name: "pdlb"
-      bus: 1
+      bus: 0
       id: 0x50
     - name: "science"
-      bus: 1
+      bus: 0
       id: 0x51
 
 brushless_motors:
   controllers:
     front_left:
-      max_torque: 0.3
-      watchdog_timeout: 0.1
       velocity_multiplier: -1.0
-      min_velocity: -169.0
-      max_velocity: 169.0
+      min_velocity: -70.0
+      max_velocity: 70.0
     front_right:
-      max_torque: 0.3
-      watchdog_timeout: 0.1
-      velocity_multiplier: 1.0
-      min_velocity: -169.0
-      max_velocity: 169.0
-    middle_left:
-      max_torque: 0.3
-      watchdog_timeout: 0.1
-      velocity_multiplier: -1.0
-      min_velocity: -169.0
-      max_velocity: 169.0
-    middle_right:
-      max_torque: 0.3
-      watchdog_timeout: 0.1
-      velocity_multiplier: 1.0
-      min_velocity: -169.0
-      max_velocity: 169.0
-    back_left:
-      max_torque: 0.3
-      watchdog_timeout: 0.1
-      velocity_multiplier: -1.0
-      min_velocity: -169.0
-      max_velocity: 169.0
-    back_right:
-      max_torque: 0.3
-      watchdog_timeout: 0.1
-      velocity_multiplier: 1.0
-      min_velocity: -169.0
-      max_velocity: 169.0
-    joint_a:
-      max_torque: 0.3
-      watchdog_timeout: 0.1
       velocity_multiplier: 1.0
       min_velocity: -70.0
       max_velocity: 70.0
+    middle_left:
+      velocity_multiplier: -1.0
+      min_velocity: -70.0
+      max_velocity: 70.0
+    middle_right:
+      velocity_multiplier: 1.0
+      min_velocity: -70.0
+      max_velocity: 70.0
+    back_left:
+      velocity_multiplier: -1.0
+      min_velocity: -70.0
+      max_velocity: 70.0
+    back_right:
+      velocity_multiplier: 1.0
+      min_velocity: -70.0
+      max_velocity: 70.0
+    joint_a:
+      velocity_multiplier: 1.0
+      min_velocity: -100.0
+      max_velocity: 100.0
       is_linear: true
-      rad_to_meters_ratio: 1.0 #TODO 5.0 = 5 motor radians -> 1 meter
+      rad_to_meters_ratio: 1236.8475 # 5.0 = 5 motor radians -> 1 meter
       limit_0_present: true
       limit_1_present: true
       limit_0_enabled: true
@@ -147,26 +139,18 @@ brushless_motors:
       max_forward_pos: 1.0
       max_backward_pos: 0.0
     joint_c:
-      max_torque: 0.3
-      watchdog_timeout: 0.1
       velocity_multiplier: 1.0
       min_velocity: -70.0
       max_velocity: 70.0
     joint_de_0:
-      max_torque: 0.3
-      watchdog_timeout: 0.1
       velocity_multiplier: 1.0
       min_velocity: -100.0
       max_velocity: 100.0
     joint_de_1:
-      max_torque: 0.3
-      watchdog_timeout: 0.1
       velocity_multiplier: -1.0
       min_velocity: -100.0
       max_velocity: 100.0
     sa_z:
-      max_torque: 0.3
-      watchdog_timeout: 0.1
       velocity_multiplier: 1.0
       min_velocity: -1.0
       max_velocity: 1.0
@@ -571,7 +555,7 @@ motors_group:
     - "sa_x"
     - "sa_y"
     - "sa_z"
-    - "scoop"
+    - "sampler"
     - "sensor_actuator"
   drive:
     - "front_left"
@@ -619,7 +603,7 @@ motors:
       type: "brushed"
     sa_z:
       type: "brushless"
-    scoop:
+    sampler:
       type: "brushed"
     sensor_actuator:
       type: "brushed"

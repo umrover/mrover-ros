@@ -174,15 +174,15 @@ namespace mrover {
                 mMinRadPerSecDE1.get(),
                 mMaxRadPerSecDE1.get());
 
-        ROS_INFO("max velocity: %f", joint_de_0_vel);
         velocity.names.at(mJointDEPitchIndex) = "joint_de_0";
         velocity.names.at(mJointDERollIndex) = "joint_de_1";
         velocity.velocities.at(mJointDEPitchIndex) = joint_de_0_vel;
         velocity.velocities.at(mJointDERollIndex) = joint_de_1_vel;
 
         // joint a convert linear velocity (meters/s) to revolution/s
-        auto joint_a_vel = convertLinVel(msg->velocities.at(mJointAIndex), static_cast<float>(mJointALinMult.get() / (2 * std::numbers::pi)));
+        auto joint_a_vel = convertLinVel(msg->velocities.at(mJointAIndex), static_cast<float>(mJointALinMult.get()));
         velocity.velocities.at(mJointAIndex) = joint_a_vel;
+        ROS_INFO("joint a velocity after conversion: %f", joint_a_vel);
 
         mVelocityPub->publish(velocity);
     }
@@ -226,7 +226,7 @@ namespace mrover {
         }
 
         // Convert joint state of joint a from radians/revolutions to meters
-        auto jointALinVel = convertLinVel(static_cast<float>(msg->velocity.at(mJointAIndex)), static_cast<float>(mJointALinMult.get() / (2 * std::numbers::pi)));
+        auto jointALinVel = convertLinVel(static_cast<float>(msg->velocity.at(mJointAIndex)), mJointALinMult.get());
         auto jointALinPos = convertLinPos(static_cast<float>(msg->position.at(mJointAIndex)), mJointALinMult.get());
 
 
