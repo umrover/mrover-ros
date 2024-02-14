@@ -70,7 +70,6 @@ namespace mrover {
     }
 
     void BrushedController::setDesiredThrottle(Percent throttle) {
-        updateLastConnection();
         if (!mIsConfigured) {
             sendConfiguration();
             return;
@@ -82,7 +81,6 @@ namespace mrover {
     }
 
     void BrushedController::setDesiredPosition(Radians position) {
-        updateLastConnection();
         if (!mIsConfigured) {
             sendConfiguration();
             return;
@@ -99,7 +97,6 @@ namespace mrover {
     }
 
     void BrushedController::setDesiredVelocity(RadiansPerSecond velocity) {
-        updateLastConnection();
         if (!mIsConfigured) {
             sendConfiguration();
             return;
@@ -125,7 +122,6 @@ namespace mrover {
     }
 
     void BrushedController::adjust(Radians position) {
-        updateLastConnection();
         if (!mIsConfigured) {
             sendConfiguration();
             return;

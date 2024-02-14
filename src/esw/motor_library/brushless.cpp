@@ -43,12 +43,10 @@ namespace mrover {
     }
 
     void BrushlessController::setDesiredThrottle(Percent throttle) {
-        updateLastConnection();
         setDesiredVelocity(mapThrottleToVelocity(throttle));
     }
 
     void BrushlessController::setDesiredPosition(Radians position) {
-        updateLastConnection();
         sendQuery();
         MoteusLimitSwitchInfo limitSwitchInfo = getPressedLimitSwitchInfo();
         if ((mCurrentPosition < position && limitSwitchInfo.isFwdPressed) || (mCurrentPosition > position && limitSwitchInfo.isBwdPressed)) {
@@ -73,7 +71,6 @@ namespace mrover {
     // Nan          0.0         = Don't move
 
     void BrushlessController::setDesiredVelocity(RadiansPerSecond velocity) {
-        updateLastConnection();
         sendQuery();
 
         MoteusLimitSwitchInfo limitSwitchInfo = getPressedLimitSwitchInfo();
@@ -113,7 +110,7 @@ namespace mrover {
         moteus::CanFdFrame setBrakeFrame = mController.MakeBrake();
         mDevice.publish_moteus_frame(setBrakeFrame);
 
-        ROS_INFO("In brake mode");
+        // ROS_INFO("In brake mode");
     }
 
     MoteusLimitSwitchInfo BrushlessController::getPressedLimitSwitchInfo() {
@@ -136,7 +133,7 @@ namespace mrover {
         // TODO - implement this
         MoteusLimitSwitchInfo result;
     
-        ROS_INFO("moteusAux1Info: %x, moteusAux2Info: %x", moteusAux1Info, moteusAux2Info);
+        // ROS_INFO("moteusAux1Info: %i, moteusAux2Info: %i", moteusAux1Info, moteusAux2Info);
         result.isFwdPressed = false;
         result.isBwdPressed = false;
 
@@ -164,13 +161,12 @@ namespace mrover {
             adjust(limitSwitch1ReadjustPosition);
         }
 
-        ROS_INFO("isFwdPressed: %i  isBwdPress: %i", result.isFwdPressed, result.isBwdPressed);
+        // ROS_INFO("isFwdPressed: %i  isBwdPress: %i", result.isFwdPressed, result.isBwdPressed);
 
         return result;
     }
 
     void BrushlessController::adjust(Radians commandedPosition) {
-        updateLastConnection();
         Revolutions commandedPosition_rev = std::clamp(commandedPosition, mMinPosition, mMaxPosition);
         moteus::OutputExact::Command command{
                 .position = commandedPosition_rev.get(),
