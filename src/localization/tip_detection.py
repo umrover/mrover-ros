@@ -28,8 +28,7 @@ class TipDetection:
     tip_publisher: rospy.Publisher
 
     def __init__(self):
-        rospy.Subscriber("imu/imu_only", Imu, self.imu_callback)
-        self.tip_publisher = rospy.Publisher("tipping", int, queue_size=1)
+        self.tip_publisher = rospy.Publisher("tipping", Bool, queue_size=1)
 
         self.hit_count = 0
         self.z_orientation_threshold = 0.8
@@ -55,6 +54,7 @@ class TipDetection:
                 self.transform = np.dot(np.array([0, 0, 1]), self.old)
 
                 # compare this new transform with our threshold to see if it's tipping, if so increment hit_count
+                print(self.transform[2])
                 if self.transform[2] <= self.z_orientation_threshold:
                     self.hit_count += 1
                     self.check_for_hit_count(self.hit_count)
@@ -71,8 +71,10 @@ class TipDetection:
         if hit_count > self.hit_count_threshold:
             rospy.loginfo("tipping")
             rospy.loginfo(hit_count)
-            # publishing into tip_publisher that rover is tipping, true(1)
-            self.tip_publisher.publish(1)
+            # publishing into tip_publisher that rover is tipping, True
+            self.tip_publisher.publish(True)
+        else: # else print False
+            self.tip_publisher.publish(False)
 
     # resetting hit_count each reset_hit_count_threshold seconds
     def reset_hit_count_time(self, reset_hit_count_threshold, time_counter):
