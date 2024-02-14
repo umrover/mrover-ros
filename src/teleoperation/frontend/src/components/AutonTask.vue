@@ -16,9 +16,9 @@
     </div>
     <div :class="['shadow p-3 rounded data', ledColor]">
       <h2>Nav State: {{ navState }}</h2>
-      <div style="display: inline-block">
+      <!-- <div style="display: inline-block">
         <CameraFeed></CameraFeed>
-      </div>
+      </div> -->
       <div style="display: inline-block; vertical-align: top">
         <p style="margin-top: 6px">Joystick Values</p>
         <JoystickValues />

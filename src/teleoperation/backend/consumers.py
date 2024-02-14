@@ -84,11 +84,6 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.sa_humidity_data = rospy.Subscriber("/sa_humidity_data", RelativeHumidity, self.sa_humidity_data_callback)
         
             # Services
-            self.laser_service = rospy.ServiceProxy("enable_mosfet_device", SetBool)
-            self.calibrate_service = rospy.ServiceProxy("arm_calibrate", Trigger)
-            self.enable_auton = rospy.ServiceProxy("enable_auton", EnableAuton)
-
-            # Services
             self.laser_service = rospy.ServiceProxy("enable_arm_laser", SetBool)
             self.enable_auton = rospy.ServiceProxy("enable_auton", EnableAuton)
             self.change_heater_srv = rospy.ServiceProxy("science_change_heater_auto_shutoff_state", SetBool)
