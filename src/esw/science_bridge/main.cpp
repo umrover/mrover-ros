@@ -28,6 +28,8 @@ bool enableScienceDeviceCallback(std_srvs::SetBool::Request& req, std_srvs::SetB
     scienceCanDevice->publish_message(mrover::InBoundScienceMessage{mrover::EnableScienceDeviceCommand{.science_device = scienceDevice, .enable = static_cast<bool>(req.data)}});
     res.success = true;
     res.message = "DONE";
+
+    ROS_INFO("Turning on device");
     return true;
 }
 
@@ -63,13 +65,15 @@ void processMessage(mrover::ThermistorData const& message) {
 
 void processCANData(mrover::CAN::ConstPtr const& msg) {
 
-    assert(msg->source == "science");
-    assert(msg->destination == "jetson");
+    // TODO - fix in future
+    ROS_ERROR("Source: %s Destination: %s", msg->source.c_str(), msg->destination.c_str());
+    // assert(msg->source == "jetson");
+    // assert(msg->destination == "science");
 
-    mrover::OutBoundScienceMessage const& message = *reinterpret_cast<mrover::OutBoundScienceMessage const*>(msg->data.data());
+    // mrover::OutBoundScienceMessage const& message = *reinterpret_cast<mrover::OutBoundScienceMessage const*>(msg->data.data());
 
     // This calls the correct process function based on the current value of the alternative
-    std::visit([&](auto const& messageAlternative) { processMessage(messageAlternative); }, message);
+    // std::visit([&](auto const& messageA lternative) { processMessage(messageAlternative); }, message);
 }
 
 

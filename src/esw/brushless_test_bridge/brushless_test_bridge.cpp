@@ -1,9 +1,31 @@
+#include <ros/node_handle.h>
 #include <ros/rate.h>
 #include <ros/ros.h>
 
 #include <iostream>
 #include <motors_group.hpp>
 #include <units/units.hpp>
+
+
+void test_joint_de(ros::NodeHandle& nh) {
+
+    auto brushlessController_de0 = std::make_unique<mrover::BrushlessController>(nh, "jetson", "joint_de_0");
+    auto brushlessController_de1 = std::make_unique<mrover::BrushlessController>(nh, "jetson", "joint_de_1");
+    
+    brushlessController_de0->setStop();
+    brushlessController_de1->setStop();
+    
+    ros::Rate rate{20};
+    while (ros::ok()) {
+        brushlessController_de0->setDesiredVelocity(mrover::RadiansPerSecond{60.0});
+        brushlessController_de1->setDesiredVelocity(mrover::RadiansPerSecond{60.0});
+        
+        ros::spinOnce();
+        rate.sleep();
+    }
+
+    
+}
 
 int main(int argc, char** argv) {
     // Initialize the ROS node
@@ -22,9 +44,6 @@ int main(int argc, char** argv) {
     // - rosrun mrover can_driver_node _interface:=can0
     // - roslaunch brushless_test.launch
 
-    // auto brushlessController_de0 = std::make_unique<mrover::BrushlessController>(nh, "jetson", "joint_de_0");
-    // auto brushlessController_de1 = std::make_unique<mrover::BrushlessController>(nh, "jetson", "joint_de_1");
-    
     // fake DE publisher:
 
     // std::unique_ptr<ros::Publisher> DEPub;
@@ -35,9 +54,7 @@ int main(int argc, char** argv) {
     msg.names = {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll", "allen_key", "gripper"};
     msg.velocities = {0, 0, 0, 0, 30, 0, 0};
     
-
-    int count = 0;
-    // ros::Rate rate{102};
+    test_joint_de(nh);
 
     /*
     // Different positions test
@@ -53,8 +70,7 @@ int main(int argc, char** argv) {
     }
 
     */
-    // brushlessController_de0->setStop();
-    // brushlessController_de1->setStop();
+    /*
     ros::Rate rate{10};
     while (ros::ok()) {
         // Motor should keep moving forward every 2 seconds. Repeats 10 times.
@@ -72,6 +88,7 @@ int main(int argc, char** argv) {
         ros::spinOnce();
         rate.sleep();
     }
+    */
 
     return EXIT_SUCCESS;
 }
