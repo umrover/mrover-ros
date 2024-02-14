@@ -9,6 +9,11 @@ namespace mrover {
 
         ros::Subscriber mPcSub;
 
+        // IK publisher
+        ros::Publisher mPcPub;
+
+        const Point* points{};
+        
     public:
         ClickIkNodelet() = default;
 
@@ -17,6 +22,8 @@ namespace mrover {
         void onInit() override;
 
         auto pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg) -> void;
+
+        void executeGoal(auto g);
     };
 
 } // namespace mrover
