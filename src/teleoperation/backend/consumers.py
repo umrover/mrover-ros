@@ -8,6 +8,8 @@ from channels.generic.websocket import JsonWebsocketConsumer
 
 import rospy
 import tf2_ros
+from cv2
+from cv_bridge import CvBridge
 from geometry_msgs.msg import Twist
 from mrover.msg import (
     PDLB,
@@ -21,11 +23,12 @@ from mrover.msg import (
     MotorsStatus,
     CameraCmd
 )
-from mrover.srv import EnableAuton, ChangeCameras
+from mrover.srv import EnableAuton, ChangeCameras, CapturePanorama
 from sensor_msgs.msg import (
     NavSatFix,
     Temperature,
-    RelativeHumidity
+    RelativeHumidity,
+    Image
 )
 from std_msgs.msg import String, Bool
 from std_srvs.srv import SetBool, Trigger
@@ -77,6 +80,7 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.calibrate_service = rospy.ServiceProxy("arm_calibrate", Trigger)
             self.enable_auton = rospy.ServiceProxy("enable_auton", EnableAuton)
             self.change_cameras_srv = rospy.ServiceProxy("change_cameras", ChangeCameras)
+            self.capture_panorama_srv: Any = rospy.ServiceProxy("capture_panorama", CapturePanorama)
 
             # ROS Parameters
             self.mappings = rospy.get_param("teleop/joystick_mappings")
@@ -336,6 +340,31 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.send(text_data=json.dumps({"type": "max_resolution", "res": res}))
         self.send(text_data=json.dumps({"type": "max_streams", "streams": streams}))
     
+    def capture_panorama(self) -> None:
+        try:
+            response = self.capture_panorama_srv()
+            image = response.panorama 
+            self.image_callback(image)
+        except rospy.ServiceException as e:
+            print(f"Service call failed: {e}")
+
+    def image_callback(self, msg):
+        bridge = CvBridge()
+        try:
+            # Convert the image to OpenCV standard format
+            cv_image = bridge.imgmsg_to_cv2(msg, desired_encoding='passthrough')
+        except Exception as e:
+            rospy.logerr("Could not convert image message to OpenCV image: " + str(e))
+            return
+
+        # Save the image to a file (you could change 'png' to 'jpg' or other formats)
+        image_filename = "panorama.png"
+        try:
+            cv2.imwrite(image_filename, cv_image)
+            rospy.loginfo("Saved image to {}".format(image_filename))
+        except Exception as e:
+            rospy.logerr("Could not save image: " + str(e))
+
     def send_center(self):
         lat = rospy.get_param("gps_linearization/reference_point_latitude")
         long = rospy.get_param("gps_linearization/reference_point_longitude")
