@@ -142,8 +142,8 @@ namespace mrover {
 
         // TODO do both switch0 and switch1 use aux2?
         if (limitSwitch0Present && limitSwitch0Enabled) {
-            int bitMask = 1; // 0b0001
-            bool gpioState = bitMask & moteusAux2Info;
+            int bitMask = 2; // 0b0010
+            bool gpioState = bitMask & moteusAux1Info;
             mLimitHit.at(0) = gpioState == limitSwitch0ActiveHigh;
         }
         if (limitSwitch1Present && limitSwitch1Enabled) {
