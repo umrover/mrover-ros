@@ -208,7 +208,8 @@ namespace mrover {
         ros::Subscriber mTwistSub, mArmPositionsSub, mArmVelocitiesSub, mArmThrottlesSub;
 
         ros::Publisher mGroundTruthPub;
-        ros::Publisher mGpsPub;
+        ros::Publisher mLeftGpsPub;
+        ros::Publisher mRightGpsPub;
         ros::Publisher mImuPub;
         ros::Publisher mMotorStatusPub;
         ros::Publisher mDriveControllerStatePub;
@@ -388,7 +389,7 @@ namespace mrover {
                 {"joint_b", "arm_b_link"},
                 {"joint_c", "arm_c_link"},
                 {"joint_de_pitch", "arm_d_link"},
-                {"joint_de_yaw", "arm_e_link"},
+                {"joint_de_roll", "arm_e_link"},
         };
 
         template<typename F, typename N, typename V>

@@ -4,6 +4,7 @@
 
 #ifdef __APPLE__
 
+#include <algorithm>
 namespace std {
 
     enum class execution {

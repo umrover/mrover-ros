@@ -66,6 +66,9 @@ void update_and_send_heater();
 
 void receive_message();
 
+// Used for testing while CAN isn't working
+void receive_message_debug(int device, int enable);
+
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
@@ -75,42 +78,42 @@ void receive_message();
 #define DEBUG_LED_1_GPIO_Port GPIOC
 #define DEBUG_LED_2_Pin GPIO_PIN_15
 #define DEBUG_LED_2_GPIO_Port GPIOC
-#define THERM_N2_Pin GPIO_PIN_0
-#define THERM_N2_GPIO_Port GPIOF
-#define UV_LED_2_Pin GPIO_PIN_0
-#define UV_LED_2_GPIO_Port GPIOA
+#define THERM_N0_Pin GPIO_PIN_0
+#define THERM_N0_GPIO_Port GPIOF
+#define UV_LED_0_Pin GPIO_PIN_0
+#define UV_LED_0_GPIO_Port GPIOA
 #define UV_LED_1_Pin GPIO_PIN_1
 #define UV_LED_1_GPIO_Port GPIOA
-#define UV_LED_0_Pin GPIO_PIN_2
-#define UV_LED_0_GPIO_Port GPIOA
-#define THERM_B2_Pin GPIO_PIN_3
-#define THERM_B2_GPIO_Port GPIOA
-#define WHITE_LED_2_Pin GPIO_PIN_6
-#define WHITE_LED_2_GPIO_Port GPIOA
+#define UV_LED_2_Pin GPIO_PIN_2
+#define UV_LED_2_GPIO_Port GPIOA
+#define THERM_B0_Pin GPIO_PIN_3
+#define THERM_B0_GPIO_Port GPIOA
+#define WHITE_LED_0_Pin GPIO_PIN_6
+#define WHITE_LED_0_GPIO_Port GPIOA
 #define WHITE_LED_1_Pin GPIO_PIN_7
 #define WHITE_LED_1_GPIO_Port GPIOA
-#define WHITE_LED_0_Pin GPIO_PIN_4
-#define WHITE_LED_0_GPIO_Port GPIOC
-#define THERM_N0_Pin GPIO_PIN_0
-#define THERM_N0_GPIO_Port GPIOB
+#define WHITE_LED_2_Pin GPIO_PIN_4
+#define WHITE_LED_2_GPIO_Port GPIOC
+#define THERM_N2_Pin GPIO_PIN_0
+#define THERM_N2_GPIO_Port GPIOB
 #define THERM_N1_Pin GPIO_PIN_1
 #define THERM_N1_GPIO_Port GPIOB
-#define THERM_B0_Pin GPIO_PIN_11
-#define THERM_B0_GPIO_Port GPIOB
+#define THERM_B0B11_Pin GPIO_PIN_11
+#define THERM_B0B11_GPIO_Port GPIOB
 #define THERM_B1_Pin GPIO_PIN_12
 #define THERM_B1_GPIO_Port GPIOB
-#define HEATER_B2_Pin GPIO_PIN_13
-#define HEATER_B2_GPIO_Port GPIOB
-#define HEATER_N2_Pin GPIO_PIN_14
-#define HEATER_N2_GPIO_Port GPIOB
+#define HEATER_B0_Pin GPIO_PIN_13
+#define HEATER_B0_GPIO_Port GPIOB
+#define HEATER_N0_Pin GPIO_PIN_14
+#define HEATER_N0_GPIO_Port GPIOB
 #define HEATER_B1_Pin GPIO_PIN_15
 #define HEATER_B1_GPIO_Port GPIOB
 #define HEATER_N1_Pin GPIO_PIN_6
 #define HEATER_N1_GPIO_Port GPIOC
-#define HEATER_B0_Pin GPIO_PIN_8
-#define HEATER_B0_GPIO_Port GPIOA
-#define HEATER_N0_Pin GPIO_PIN_9
-#define HEATER_N0_GPIO_Port GPIOA
+#define HEATER_B2_Pin GPIO_PIN_8
+#define HEATER_B2_GPIO_Port GPIOA
+#define HEATER_N2_Pin GPIO_PIN_9
+#define HEATER_N2_GPIO_Port GPIOA
 #define CAN_STANDBY_Pin GPIO_PIN_15
 #define CAN_STANDBY_GPIO_Port GPIOA
 #define I2C_MUX_RST_Pin GPIO_PIN_7

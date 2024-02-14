@@ -185,10 +185,10 @@ class GPSLinearization:
     @staticmethod
     def compute_gps_pose(right_cartesian, left_cartesian) -> np.ndarray:
         # TODO: give simulated GPS non zero altitude so we can stop erasing the z component
-        left_cartesian[2] = 0
-        right_cartesian[2] = 0
+        # left_cartesian[2] = 0
+        # right_cartesian[2] = 0
         vector_connecting = left_cartesian - right_cartesian
-        # vector_connecting[2] = 0
+        vector_connecting[2] = 0
         magnitude = np.linalg.norm(vector_connecting)
         vector_connecting = vector_connecting / magnitude
 

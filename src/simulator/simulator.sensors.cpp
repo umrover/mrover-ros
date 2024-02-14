@@ -169,8 +169,11 @@ namespace mrover {
                 mGroundTruthPub.publish(odometry);
             }
             if (mGpsTask.shouldUpdate()) {
-                SE3 gpsInMap = rover.linkInWorld("chassis_link");
-                mGpsPub.publish(computeNavSatFix(gpsInMap, mGpsLinerizationReferencePoint, mGpsLinerizationReferenceHeading));
+                SE3 leftGpsInMap = rover.linkInWorld("left_gps");
+                mLeftGpsPub.publish(computeNavSatFix(leftGpsInMap, mGpsLinerizationReferencePoint, mGpsLinerizationReferenceHeading));
+
+                SE3 rightGpsInMap = rover.linkInWorld("right_gps");
+                mRightGpsPub.publish(computeNavSatFix(rightGpsInMap, mGpsLinerizationReferencePoint, mGpsLinerizationReferenceHeading));
             }
             if (mImuTask.shouldUpdate()) {
                 R3 imuAngularVelocity = btVector3ToR3(rover.physics->getBaseOmega());

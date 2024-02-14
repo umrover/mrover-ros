@@ -9,7 +9,7 @@ int main(int argc, char** argv) {
     ros::NodeHandle nh;
 
     // Load motor controllers configuration from the ROS parameter server
-    [[maybe_unused]] auto SAManager = std::make_unique<mrover::MotorsGroup>(nh, "sa");
+    [[maybe_unused]] auto SAManager = std::make_unique<mrover::MotorsGroup>(nh, "sa_hw");
     // Enter the ROS event loop
     ros::spin();
 

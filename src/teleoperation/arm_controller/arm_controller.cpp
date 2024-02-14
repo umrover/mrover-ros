@@ -37,7 +37,7 @@ namespace mrover {
 
     auto ik_callback(IK const& ik_target) -> void {
         Position positions;
-        positions.names = {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_yaw"};
+        positions.names = {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll"};
         positions.positions.resize(positions.names.size(), 0.f);
 
         double x = ik_target.pose.position.x;

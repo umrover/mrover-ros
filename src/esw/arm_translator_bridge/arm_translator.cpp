@@ -1,4 +1,6 @@
 #include "arm_translator.hpp"
+#include <numbers>
+#include <units/units.hpp>
 
 namespace mrover {
 
@@ -10,7 +12,15 @@ namespace mrover {
             if (i != mJointDEPitchIndex && i != mJointDERollIndex) {
                 assert(mArmHWNames.at(i) == mRawArmNames.at(i));
             }
+
+            // adjust and calibrate services
+            std::string rawName = static_cast<std::string>(mRawArmNames[i]);
+            mAdjustServersByRawArmNames[rawName] = std::make_unique<ros::ServiceServer>(nh.advertiseService(std::format("{}_adjust", rawName), &ArmTranslator::adjustServiceCallback, this));
+
+            std::string hwName = static_cast<std::string>(mArmHWNames[i]);
+            mAdjustClientsByArmHWNames[hwName] = nh.serviceClient<mrover::AdjustMotor>(std::format("{}_adjust", hwName));
         }
+
 
         mJointDEPitchOffset = Radians{getFloatFromRosParam(nh, "joint_de/pitch_offset")};
         mJointDERollOffset = Radians{getFloatFromRosParam(nh, "joint_de/roll_offset")};
@@ -23,6 +33,8 @@ namespace mrover {
         mJointDEPitchPosSub = nh.subscribe<std_msgs::Float32>("joint_de_pitch_raw_position_data", 1, &ArmTranslator::processPitchRawPositionData, this);
         mJointDERollPosSub = nh.subscribe<std_msgs::Float32>("joint_de_roll_raw_position_data", 1, &ArmTranslator::processRollRawPositionData, this);
 
+        mJointALinMult = RadiansPerMeter{getFloatFromRosParam(nh, "brushless_motors/controllers/joint_a/rad_to_meters_ratio")};
+        
         mThrottleSub = nh.subscribe<Throttle>("arm_throttle_cmd", 1, &ArmTranslator::processThrottleCmd, this);
         mVelocitySub = nh.subscribe<Velocity>("arm_velocity_cmd", 1, &ArmTranslator::processVelocityCmd, this);
         mPositionSub = nh.subscribe<Position>("arm_position_cmd", 1, &ArmTranslator::processPositionCmd, this);
@@ -35,26 +47,31 @@ namespace mrover {
     }
 
     void ArmTranslator::clampValues(float& val1, float& val2, float minValue1, float maxValue1, float minValue2, float maxValue2) {
-        if (val1 < minValue1) {
-            float const ratio = minValue1 / val1;
-            val1 *= ratio;
-            val2 *= ratio;
-        }
-        if (maxValue1 < val1) {
-            float const ratio = maxValue1 / val1;
-            val1 *= ratio;
-            val2 *= ratio;
-        }
-        if (val2 < minValue2) {
-            float const ratio = minValue2 / val2;
-            val1 *= ratio;
-            val2 *= ratio;
-        }
-        if (maxValue2 < val2) {
-            float const ratio = maxValue2 / val2;
-            val1 *= ratio;
-            val2 *= ratio;
-        }
+        // val1 = (val1 - (-80)) / (maxValue1 - minValue1) * ();
+        // val2 if (val1 < minValue1) {
+        //     float const ratio = minValue1 / val1;
+        //     val1 *= ratio;
+        //     val2 *= ratio;
+        // }
+        // if (maxValue1 < val1) {
+        //     float const ratio = maxValue1 / val1;
+        //     val1 *= ratio;
+        //     val2 *= ratio;
+        // }
+        // if (val2 < minValue2) {
+        //     float const ratio = minValue2 / val2;
+        //     val1 *= ratio;
+        //     val2 *= ratio;
+        // }
+        // if (maxValue2 < val2) {
+        //     float const ratio = maxValue2 / val2;
+        //     val1 *= ratio;
+        //     val2 *= ratio;
+        // }
+    }
+
+    void ArmTranslator::mapValue(float& val, float inputMinValue, float inputMaxValue, float outputMinValue, float outputMaxValue) {
+        val = (val - inputMinValue) / (inputMaxValue - inputMinValue) * (outputMaxValue - outputMinValue) + outputMinValue;
     }
 
     void ArmTranslator::processThrottleCmd(Throttle::ConstPtr const& msg) {
@@ -64,16 +81,25 @@ namespace mrover {
         }
 
         Throttle throttle = *msg;
+        ROS_INFO("pitch throttle: %f    roll throttle: %f", msg->throttles.at(mJointDEPitchIndex), msg->throttles.at(mJointDERollIndex));
 
         auto [joint_de_0_throttle, joint_de_1_throttle] = transformPitchRollToMotorOutputs(
                 msg->throttles.at(mJointDEPitchIndex),
                 msg->throttles.at(mJointDERollIndex));
 
-        clampValues(
+        ROS_INFO("pre-mapped values: de_0 %f   de_1 %f", joint_de_0_throttle, joint_de_1_throttle);
+
+        mapValue(
                 joint_de_0_throttle,
-                joint_de_1_throttle,
+                -80.0f,
+                80.0f,
                 -1.0f,
-                1.0f,
+                1.0f);
+
+        mapValue(
+                joint_de_1_throttle,
+                -80.0f,
+                80.0f,
                 -1.0f,
                 1.0f);
 
@@ -81,6 +107,8 @@ namespace mrover {
         throttle.names.at(mJointDERollIndex) = "joint_de_1";
         throttle.throttles.at(mJointDEPitchIndex) = joint_de_0_throttle;
         throttle.throttles.at(mJointDERollIndex) = joint_de_1_throttle;
+
+        ROS_INFO("post-mapped values: de_0 %f   de_1 %f", joint_de_0_throttle, joint_de_1_throttle);
 
         mThrottlePub->publish(throttle);
     }
@@ -113,6 +141,8 @@ namespace mrover {
         updatePositionOffsets();
     }
 
+
+
     void ArmTranslator::processVelocityCmd(Velocity::ConstPtr const& msg) {
         if (mRawArmNames != msg->names || mRawArmNames.size() != msg->velocities.size()) {
             ROS_ERROR("Velocity requests for arm is ignored!");
@@ -125,18 +155,29 @@ namespace mrover {
                 msg->velocities.at(mJointDEPitchIndex),
                 msg->velocities.at(mJointDERollIndex));
 
-        clampValues(
+        mapValue(
                 joint_de_0_vel,
-                joint_de_1_vel,
-                mMinRadPerSecDE0.get(),
-                mMaxRadPerSecDE0.get(),
+                -800.0,
+                800.0,
                 mMinRadPerSecDE1.get(),
                 mMaxRadPerSecDE1.get());
 
+        mapValue(
+                joint_de_1_vel,
+                -800.0,
+                800.0,
+                mMinRadPerSecDE1.get(),
+                mMaxRadPerSecDE1.get());
+
+        ROS_INFO("max velocity: %f", joint_de_0_vel);
         velocity.names.at(mJointDEPitchIndex) = "joint_de_0";
         velocity.names.at(mJointDERollIndex) = "joint_de_1";
         velocity.velocities.at(mJointDEPitchIndex) = joint_de_0_vel;
         velocity.velocities.at(mJointDERollIndex) = joint_de_1_vel;
+
+        // joint a convert linear velocity (meters/s) to revolution/s
+        auto joint_a_vel = convertLinVel(msg->velocities.at(mJointAIndex), static_cast<float>(mJointALinMult.get()/(2*std::numbers::pi)));
+        velocity.velocities.at(mJointAIndex) = joint_a_vel;
 
         mVelocityPub->publish(velocity);
     }
@@ -167,6 +208,10 @@ namespace mrover {
         position.positions.at(mJointDEPitchIndex) = joint_de_0_pos;
         position.positions.at(mJointDERollIndex) = joint_de_1_pos;
 
+        // joint a convert linear position (meters) to radians
+        auto joint_a_pos = convertLinPos(msg->positions.at(mJointAIndex), mJointALinMult.get());
+        position.positions.at(mJointAIndex) = joint_a_pos;
+
         mPositionPub->publish(position);
     }
 
@@ -175,6 +220,11 @@ namespace mrover {
             ROS_ERROR("Forwarding joint data for arm is ignored!");
             return;
         }
+
+        // Convert joint state of joint a from radians/revolutions to meters
+        auto jointALinVel = convertLinVel(static_cast<float>(msg->velocity.at(mJointAIndex)), static_cast<float>(mJointALinMult.get()/(2*std::numbers::pi)));
+        auto jointALinPos = convertLinPos(static_cast<float>(msg->position.at(mJointAIndex)), mJointALinMult.get());
+
 
         sensor_msgs::JointState jointState = *msg;
 
@@ -202,7 +252,62 @@ namespace mrover {
         jointState.effort.at(mJointDE0Index) = jointDEPitchEff;
         jointState.effort.at(mJointDE1Index) = jointDERollEff;
 
+        jointState.velocity.at(mJointAIndex) = jointALinVel;
+        jointState.position.at(mJointAIndex) = jointALinPos;
+
         mJointDataPub->publish(jointState);
+    }
+
+    bool ArmTranslator::adjustServiceCallback(AdjustMotor::Request& req, AdjustMotor::Response& res) {
+
+        if (req.name == "joint_de_roll") {
+            mJointDERollAdjust = req.value;
+        } else if (req.name == "joint_de_pitch") {
+            mJointDEPitchAdjust = req.value;
+        } else if (req.name == "joint_a") {
+            AdjustMotor::Request controllerReq;
+            AdjustMotor::Response controllerRes = res;
+            controllerReq.value = convertLinPos(static_cast<float>(req.value), mJointALinMult.get());
+
+            mAdjustClientsByArmHWNames[req.name].call(controllerReq, controllerRes);
+            res.success = controllerRes.success;
+        }
+        else {
+            AdjustMotor::Request controllerReq = req;
+            AdjustMotor::Response controllerRes = res;
+            mAdjustClientsByArmHWNames[req.name].call(controllerReq, controllerRes);
+            res.success = controllerRes.success;
+        }
+
+        if (mJointDEPitchAdjust && mJointDERollAdjust) {
+            // convert DE_roll and DE_pitch into DE_0 and DE_1 (outgoing message to arm_hw_bridge)
+            auto [joint_de_0_raw_value, joint_de_1_raw_value] = transformPitchRollToMotorOutputs(
+                    mJointDEPitchAdjust.value(),
+                    mJointDERollAdjust.value());
+            mJointDEPitchAdjust = std::nullopt;
+            mJointDERollAdjust = std::nullopt;
+
+            float joint_de_0_value = joint_de_0_raw_value + mJointDE0PosOffset->get();
+            float joint_de_1_value = joint_de_1_raw_value + mJointDE1PosOffset->get();
+
+            AdjustMotor::Response controllerResDE0;
+            AdjustMotor::Request controllerReqDE0;
+            controllerReqDE0.name = "joint_de_0";
+            controllerReqDE0.value = joint_de_0_value;
+            mAdjustClientsByArmHWNames[controllerReqDE0.name].call(controllerResDE0, controllerReqDE0);
+
+            AdjustMotor::Response controllerResDE1;
+            AdjustMotor::Request controllerReqDE1;
+            controllerReqDE1.name = "joint_de_1";
+            controllerReqDE1.value = joint_de_1_value;
+            mAdjustClientsByArmHWNames[controllerReqDE1.name].call(controllerReqDE1, controllerResDE1);
+
+            res.success = controllerResDE0.success && controllerResDE1.success;
+        } else {
+            // adjust service was for de, but both de joints have not adjusted yet
+            res.success = false;
+        }
+        return true;
     }
 
 
