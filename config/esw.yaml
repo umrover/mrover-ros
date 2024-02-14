@@ -121,7 +121,7 @@ brushless_motors:
       min_velocity: -70.0
       max_velocity: 70.0
       is_linear: true
-      rad_to_meters_ratio: 1.0 #TODO 5.0 = 5 motor radians -> 1 meter
+      rad_to_meters_ratio: 1236.8475 #TODO 5.0 = 5 motor radians -> 1 meter
       limit_0_present: true
       limit_1_present: true
       limit_0_enabled: true

@@ -52,7 +52,7 @@ int main(int argc, char** argv) {
 
     mrover::Velocity msg;
     msg.names = {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll", "allen_key", "gripper"};
-    msg.velocities = {0, 0, 0, 0, 30, 0, 0};
+    msg.velocities = {0.05, 0, 0, 0, 30, 0, 0};
     
     test_joint_de(nh);
 
