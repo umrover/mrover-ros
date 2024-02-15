@@ -1,7 +1,6 @@
 <launch>
+  <include file="$(find mrover)/launch/esw_generic.launch"/>
 
-    <include file="$(find mrover)/launch/esw_generic.launch" />
-    <node name="arm_hw_bridge" pkg="mrover" type="arm_hw_bridge" />
-    <node name="arm_translator_bridge" pkg="mrover" type="arm_translator_bridge" />
-
+  <node name="arm_hw_bridge" pkg="mrover" type="arm_hw_bridge"/>
+  <node name="arm_translator_bridge" pkg="mrover" type="arm_translator_bridge"/>
 </launch>

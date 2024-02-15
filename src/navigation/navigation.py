@@ -24,8 +24,7 @@ class Navigation(threading.Thread):
     def __init__(self, context: Context):
         super().__init__()
         self.name = "NavigationThread"
-        self.state_machine = StateMachine(OffState(), "NavStateMachine")
-        self.state_machine.set_context(context)
+        self.state_machine = StateMachine[Context](OffState(), "NavStateMachine", context)
         self.state_machine.add_transitions(
             ApproachPostState(), [WaypointState(), SearchState(), RecoveryState(), DoneState()]
         )

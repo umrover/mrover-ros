@@ -5,8 +5,6 @@
 
 #include <units/units.hpp>
 
-#include "stm32g4xx_hal.h"
-
 namespace mrover {
 
     /**
@@ -29,7 +27,7 @@ namespace mrover {
         compound_unit<OutputUnit, inverse<InputUnit>> m_p{};
         compound_unit<OutputUnit, inverse<InputUnit>, inverse<TimeUnit>> m_i{};
         compound_unit<OutputUnit, inverse<compound_unit<InputUnit, inverse<TimeUnit>>>> m_d{};
-        compound_unit<OutputUnit, inverse<InputUnit>> m_f{};
+        compound_unit<OutputUnit, inverse<InputUnit>> m_ff{};
         InputUnit m_dead_band{};
         std::pair<OutputUnit, OutputUnit> m_output_bound{};
         std::optional<std::pair<InputUnit, InputUnit>> m_input_bound;
@@ -38,6 +36,15 @@ namespace mrover {
         InputUnit m_last_error{};
         TimeUnit m_last_time{};
 
+    public:
+        /**
+         * TODO: documentation
+         *
+         * @param input     Current value
+         * @param target    Desired final value
+         * @param dt        Time since last call
+         * @return          Output value to control the input to move to the target
+         */
         auto calculate(InputUnit input, InputUnit target, TimeUnit dt) -> OutputUnit {
             InputUnit error = target - input;
 
@@ -60,46 +67,29 @@ namespace mrover {
             }
 
             InputUnit error_for_p = abs(error) < m_dead_band ? InputUnit{} : error;
-            OutputUnit result = m_p * error_for_p + m_i * m_total_error + m_d * (error - m_last_error) / dt + m_f * target;
+            OutputUnit result = m_p * error_for_p + m_i * m_total_error + m_d * (error - m_last_error) / dt + m_ff * target;
             m_last_error = error;
 
             return clamp(result, out_min, out_max);
         }
 
-    public:
-        /**
-         * TODO: documentation
-         *
-         * @param input     Current value
-         * @param target    Desired final value
-         * @return          Output value to control the input to move to the target
-         */
-        auto calculate(InputUnit input, InputUnit target) -> OutputUnit {
-            double current_ticks = HAL_GetTick();
-            IsUnit auto tick_frequency = Hertz{HAL_GetTickFreq()};
-            TimeUnit now = current_ticks / tick_frequency;
-            TimeUnit dt = now - m_last_time;
-            m_last_time = now;
-            return calculate(input, target, now);
-        }
-
         auto with_p(double p) -> PIDF& {
-            m_p = p;
+            m_p = decltype(m_p){p};
             return *this;
         }
 
         auto with_i(double i) -> PIDF& {
-            m_i = i;
+            m_i = decltype(m_i){i};
             return *this;
         }
 
         auto with_d(double d) -> PIDF& {
-            m_d = d;
+            m_d = decltype(m_d){d};
             return *this;
         }
 
-        auto with_f(double f) -> PIDF& {
-            m_f = f;
+        auto with_ff(double ff) -> PIDF& {
+            m_ff = decltype(m_ff){ff};
             return *this;
         }
 
@@ -113,7 +103,7 @@ namespace mrover {
             return *this;
         }
 
-        auto with_output_bound(double min, double max) -> PIDF& {
+        auto with_output_bound(OutputUnit min, OutputUnit max) -> PIDF& {
             m_output_bound = {min, max};
             return *this;
         }

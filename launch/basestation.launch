@@ -2,19 +2,23 @@
     This launch file should be run on the basestation in order to interface with and control the rover.
  -->
 <launch>
-    <rosparam command="load" file="$(find mrover)/config/teleop.yaml" />
+  <arg name="run_rviz" default="false" />
+  <arg name="run_network_monitor" default="false" />
 
-    <rosparam command="load" file="$(find mrover)/config/esw.yaml" />
+  <rosparam command="load" file="$(find mrover)/config/esw.yaml" />
+  <rosparam command="load" file="$(find mrover)/config/teleop.yaml" />
+  <rosparam command="load" file="$(find mrover)/config/localization.yaml" />
 
-    <!-- run the teleop gui by starting the rosbridge server and then launching with a bash script -->
-    <node name="gui_frontend" pkg="mrover" type="gui_frontend.sh" cwd="node" />
-    <node name="gui_backend" pkg="mrover" type="gui_backend.sh" cwd="node" />
+  <node name="gui_frontend" pkg="mrover" type="gui_frontend.sh" cwd="node" required="true" />
+  <node name="gui_backend" pkg="mrover" type="gui_backend.sh" cwd="node" required="true" />
 
-    <!-- run RViz with the specified config file -->
+  <group if="$(arg run_rviz)">
     <arg name="rvizconfig" default="$(find mrover)/config/rviz/basestation.rviz" />
-    <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" required="true" />
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" />
     <node name="topic_services" pkg="mrover" type="topic_services.py" />
+  </group>
 
-    <!-- network monitor node-->
-    <node name="network_monitor" pkg="mrover" type="network_monitor.py"></node>
+  <!-- network monitor node-->
+  <node if="$(arg run_network_monitor)"
+    name="network_monitor" pkg="mrover" type="network_monitor.py" />
 </launch>

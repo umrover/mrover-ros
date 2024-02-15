@@ -66,12 +66,13 @@ namespace mrover {
         linksToTfUpdate();
 
         gpsAndImusUpdate(dt);
+
+        motorStatusUpdate();
     }
 
     auto SimulatorNodelet::linksToTfUpdate() -> void {
 
         for (auto const& [_, urdf]: mUrdfs) {
-
             auto publishLink = [&](auto&& self, urdf::LinkConstSharedPtr const& link) -> void {
                 if (link->parent_joint) {
                     int index = urdf.linkNameToMeta.at(link->name).index;
@@ -86,8 +87,33 @@ namespace mrover {
                     self(self, urdf.model.getLink(child_joint->child_link_name));
                 }
             };
-
             publishLink(publishLink, urdf.model.getRoot());
+        }
+
+        if (auto roverOpt = getUrdf("rover")) {
+            URDF const& rover = *roverOpt;
+
+            auto publishModel = [&](std::string const& modelName, double threshold) {
+                if (auto modelOpt = getUrdf(modelName)) {
+                    URDF const& model = *modelOpt;
+
+                    SE3d modelInMap = btTransformToSe3(model.physics->getBaseWorldTransform());
+                    SE3d roverInMap = btTransformToSe3(rover.physics->getBaseWorldTransform());
+
+                    R3 roverToModel = modelInMap.translation() - roverInMap.translation();
+                    double roverDistanceToModel = roverToModel.norm();
+                    roverToModel /= roverDistanceToModel;
+                    R3 roverForward = roverInMap.rotation().matrix().col(0);
+                    double roverDotModel = roverToModel.dot(roverForward);
+
+                    if (roverDotModel > 0 && roverDistanceToModel < threshold) {
+                        SE3Conversions::pushToTfTree(mTfBroadcaster, modelName, "map", modelInMap);
+                    }
+                }
+            };
+
+            if (mPublishBottleDistanceThreshold > 0) publishModel("bottle", mPublishBottleDistanceThreshold);
+            if (mPublishHammerDistanceThreshold > 0) publishModel("hammer", mPublishHammerDistanceThreshold);
         }
     }
 
