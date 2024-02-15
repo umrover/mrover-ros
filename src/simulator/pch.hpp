@@ -71,7 +71,7 @@
 #include <params_utils.hpp>
 #include <point.hpp>
 #include <se3.hpp>
-#include <units.hpp>
+#include <units/units.hpp>
 
 #include <mrover/ControllerState.h>
 #include <mrover/IK.h>

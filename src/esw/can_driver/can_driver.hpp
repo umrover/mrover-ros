@@ -54,8 +54,6 @@ namespace mrover {
 
         std::string mInterface;
         bool mIsExtendedFrame{};
-        std::uint32_t mBitrate{};
-        std::uint32_t mBitratePrescaler{};
 
         canfd_frame mReadFrame{};
         CanNetLink mCanNetLink;
