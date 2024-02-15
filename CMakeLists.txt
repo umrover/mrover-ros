@@ -73,7 +73,7 @@ set(MROVER_CMAKE_INCLUDES
 
 if (MROVER_BUILD_SIM)
     include(cmake/webgpu.cmake)
-    add_subdirectory(deps/glfw3webgpu)
+    add_subdirectory(deps/glfw3webgpu SYSTEM)
     find_package(Assimp REQUIRED)
     find_package(Bullet REQUIRED)
     find_package(glfw3 REQUIRED)
@@ -81,7 +81,7 @@ endif ()
 find_package(OpenCV REQUIRED)
 find_package(ZED QUIET)
 find_package(Eigen3 REQUIRED)
-find_package(manif REQUIRED)
+add_subdirectory(deps/manif SYSTEM)
 find_package(PkgConfig REQUIRED)
 pkg_search_module(NetLink libnl-3.0)
 pkg_search_module(NetLinkRoute libnl-route-3.0)
@@ -131,7 +131,7 @@ catkin_package()
 ## Libraries
 
 mrover_add_library(lie src/util/lie/*.cpp src/util/lie)
-mrover_add_header_only_library(manif ${manif_INCLUDE_DIRS})
+target_link_libraries(lie PUBLIC manif)
 
 ## ESW
 

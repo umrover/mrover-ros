@@ -6,3 +6,7 @@
 	path = deps/dawn
 	url = https://dawn.googlesource.com/dawn
 	shallow = true
+[submodule "deps/manif"]
+	path = deps/manif
+	url = https://github.com/artivis/manif.git
+	shallow = true

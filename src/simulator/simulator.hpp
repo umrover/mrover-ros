@@ -291,10 +291,7 @@ namespace mrover {
             return it->second;
         }
 
-        SO3d test = SO3d::Identity();
-        // SE3d mCameraInWorld{R3{-3.0, 0.0, 1.5}, test};
-        SE3d mCameraInWorld{R3{-3.0, 0.0, 1.5}, SO3d{0, 0, 0, 1}};
-        // SE3d mCameraInWorld{R3{-3.0, 0.0, 1.5}, SO3d::Identity()};
+        SE3d mCameraInWorld{R3{-3.0, 0.0, 1.5}, SO3d::Identity()};
 
         std::vector<Camera> mCameras;
 

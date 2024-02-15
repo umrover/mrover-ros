@@ -79,22 +79,22 @@ namespace mrover {
     auto SimulatorNodelet::freeLook(Clock::duration dt) -> void {
         float flySpeed = mFlySpeed * std::chrono::duration_cast<std::chrono::duration<float>>(dt).count();
         if (glfwGetKey(mWindow.get(), mCamRightKey) == GLFW_PRESS) {
-            mCameraInWorld = SE3d{R3{0.0, -flySpeed, 0}, SO3d{}} * mCameraInWorld;
+            mCameraInWorld = mCameraInWorld * SE3d{R3{0.0, -flySpeed, 0}, SO3d::Identity()};
         }
         if (glfwGetKey(mWindow.get(), mCamLeftKey) == GLFW_PRESS) {
-            mCameraInWorld = SE3d{R3{0.0, flySpeed, 0}, SO3d{}} * mCameraInWorld;
+            mCameraInWorld = mCameraInWorld * SE3d{R3{0.0, flySpeed, 0}, SO3d::Identity()};
         }
         if (glfwGetKey(mWindow.get(), mCamForwardKey) == GLFW_PRESS) {
-            mCameraInWorld = SE3d{R3{flySpeed, 0.0, 0.0}, SO3d{}} * mCameraInWorld;
+            mCameraInWorld = mCameraInWorld * SE3d{R3{flySpeed, 0.0, 0.0}, SO3d::Identity()};
         }
         if (glfwGetKey(mWindow.get(), mCamBackwardKey) == GLFW_PRESS) {
-            mCameraInWorld = SE3d{R3{-flySpeed, 0.0, 0.0}, SO3d{}} * mCameraInWorld;
+            mCameraInWorld = mCameraInWorld * SE3d{R3{-flySpeed, 0.0, 0.0}, SO3d::Identity()};
         }
         if (glfwGetKey(mWindow.get(), mCamUpKey) == GLFW_PRESS) {
-            mCameraInWorld = mCameraInWorld * SE3d{R3{0.0, 0.0, flySpeed}, SO3d{}};
+            mCameraInWorld = SE3d{R3{0.0, 0.0, flySpeed}, SO3d::Identity()} * mCameraInWorld;
         }
         if (glfwGetKey(mWindow.get(), mCamDownKey) == GLFW_PRESS) {
-            mCameraInWorld = mCameraInWorld * SE3d{R3{0.0, 0.0, -flySpeed}, SO3d{}};
+            mCameraInWorld = SE3d{R3{0.0, 0.0, -flySpeed}, SO3d::Identity()} * mCameraInWorld;
         }
 
         Eigen::Vector2i size;
@@ -108,14 +108,11 @@ namespace mrover {
         Eigen::Vector2d delta = (mouse - center) * mLookSense;
 
         // TODO(quintin): use lie algebra more here? we have a perturbation in the tangent space
-        R3 p = mCameraInWorld.translation();
-        Eigen::Matrix3d Ry = Eigen::AngleAxisd{delta.y(), Eigen::Vector3d::UnitY()}.toRotationMatrix();
-        Eigen::Matrix3d Rz = Eigen::AngleAxisd{-delta.x(), Eigen::Vector3d::UnitZ()}.toRotationMatrix();
-        Eigen::Matrix3d R0 = mCameraInWorld.rotation();
-        static_assert(R0.RowsAtCompileTime == 3 && R0.ColsAtCompileTime == 3);
-        Eigen::Matrix3d R = Ry * mCameraInWorld.rotation() * Rz;
-        // SO3d q{SO3d{Eigen::AngleAxisd{delta.y(), Eigen::Vector3d::UnitY()}}.rotation() * mCameraInWorld.rotation() * SO3d{Eigen::AngleAxisd{-delta.x(), Eigen::Vector3d::UnitZ()}}.rotation()};
-        mCameraInWorld = SE3d{p, SO3d{Eigen::Quaterniond(R)}};
+        R3 P = mCameraInWorld.translation();
+        SO3d R = mCameraInWorld.asSO3();
+        SO3d::Tangent RX = Eigen::Vector3d::UnitZ() * -delta.x();
+        SO3d::Tangent RY = Eigen::Vector3d::UnitY() * delta.y();
+        mCameraInWorld = SE3d{P, RX + R + RY};
 
         centerCursor();
     }

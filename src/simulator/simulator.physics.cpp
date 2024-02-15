@@ -5,7 +5,9 @@ namespace mrover {
     auto btTransformToSe3(btTransform const& transform) -> SE3d {
         btVector3 const& p = transform.getOrigin();
         btQuaternion const& q = transform.getRotation();
-        return SE3d{R3{p.x(), p.y(), p.z()}, SO3d{q.w(), q.x(), q.y(), q.z()}};
+        // Note: Must convert the Bullet quaternion (floats) to a normalized Eigen quaternion (doubles).
+        //       Otherwise the normality check will fail in the SO3 constructor.
+        return SE3d{R3{p.x(), p.y(), p.z()}, Eigen::Quaterniond{q.w(), q.x(), q.y(), q.z()}.normalized()};
     }
 
     auto SimulatorNodelet::initPhysics() -> void {
