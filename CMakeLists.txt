@@ -168,7 +168,8 @@ endif ()
 
 ## Perception
 
-mrover_add_nodelet(tag_detector src/perception/tag_detector/*.cpp src/perception/tag_detector src/perception/tag_detector/pch.hpp src/util/se3_ros_utils.hpp src/util/se3_ros_utils.cpp)
+# mrover_add_nodelet(tag_detector src/perception/tag_detector/*.cpp src/perception/tag_detector src/perception/tag_detector/pch.hpp src/util/se3_ros_utils.hpp src/util/se3_ros_utils.cpp)
+mrover_add_nodelet(tag_detector src/perception/tag_detector/*.cpp src/perception/tag_detector src/perception/tag_detector/pch.hpp)
 mrover_nodelet_link_libraries(tag_detector opencv_core opencv_objdetect opencv_aruco opencv_imgproc opencv_highgui lie manif)
 
 if (CUDA_FOUND)
