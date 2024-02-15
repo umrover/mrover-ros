@@ -17,8 +17,5 @@ namespace mrover {
         points = reinterpret_cast<Point const*>(msg->data.data());
     }
 
-    void executeGoal(auto g) {
-        
-    }
-
+    
 } // namespace mrover
