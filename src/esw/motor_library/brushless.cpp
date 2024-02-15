@@ -47,11 +47,16 @@ namespace mrover {
     }
 
     void BrushlessController::setDesiredPosition(Radians position) {
-        sendQuery();
-        MoteusLimitSwitchInfo limitSwitchInfo = getPressedLimitSwitchInfo();
-        if ((mCurrentPosition < position && limitSwitchInfo.isFwdPressed) || (mCurrentPosition > position && limitSwitchInfo.isBwdPressed)) {
-            setBrake();
-            return;
+        
+        // only check for limit switches if at least one limit switch exists and is enabled
+        if ((limitSwitch0Enabled && limitSwitch0Present) || (limitSwitch1Enabled && limitSwitch0Present)) {
+            sendQuery();
+
+            MoteusLimitSwitchInfo limitSwitchInfo = getPressedLimitSwitchInfo();
+            if ((mCurrentPosition < position && limitSwitchInfo.isFwdPressed) || (mCurrentPosition > position && limitSwitchInfo.isBwdPressed)) {
+                setBrake();
+                return;
+            }
         }
 
         Revolutions position_revs = std::clamp(position, mMinPosition, mMaxPosition);
@@ -71,13 +76,18 @@ namespace mrover {
     // Nan          0.0         = Don't move
 
     void BrushlessController::setDesiredVelocity(RadiansPerSecond velocity) {
-        sendQuery();
 
-        MoteusLimitSwitchInfo limitSwitchInfo = getPressedLimitSwitchInfo();
-        if ((velocity > Radians{0} && limitSwitchInfo.isFwdPressed) || (velocity < Radians{0} && limitSwitchInfo.isBwdPressed)) {
-            setBrake();
-            return;
+        // only check for limit switches if at least one limit switch exists and is enabled
+        if ((limitSwitch0Enabled && limitSwitch0Present) || (limitSwitch1Enabled && limitSwitch0Present)) {
+            sendQuery();
+
+            MoteusLimitSwitchInfo limitSwitchInfo = getPressedLimitSwitchInfo();
+            if ((velocity > Radians{0} && limitSwitchInfo.isFwdPressed) || (velocity < Radians{0} && limitSwitchInfo.isBwdPressed)) {
+                setBrake();
+                return;
+            }
         }
+        
 
         velocity = velocity * mVelocityMultiplier;
 

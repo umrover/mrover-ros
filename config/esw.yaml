@@ -132,8 +132,8 @@ brushless_motors:
       limit_1_is_active_high: true
       limit_0_used_for_readjustment: true
       limit_1_used_for_readjustment: true
-      limit_0_readjust_position: 1.0 # radians TODO
-      limit_1_readjust_position: 0.0 # raidans
+      limit_0_readjust_position: 0.0 # radians TODO
+      limit_1_readjust_position: 494.739 # radians
       limit_max_forward_pos: true
       limit_max_backward_pos: true
       max_forward_pos: 1.0
@@ -166,7 +166,7 @@ brushless_motors:
       limit_1_is_active_high: true
       limit_0_used_for_readjustment: true
       limit_1_used_for_readjustment: true
-      limit_0_readjust_position: 1.0 # radians TODO
+      limit_0_readjust_position: 0.0 # radians TODO
       limit_1_readjust_position: 0.0 # radians TODO
 
 joint_de:
