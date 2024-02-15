@@ -27,33 +27,17 @@ int main(int argc, char** argv) {
     
     // fake DE publisher:
 
-    // std::unique_ptr<ros::Publisher> DEPub;
     auto DEPub = std::make_unique<ros::Publisher>(nh.advertise<mrover::Velocity>("arm_velocity_cmd", 1));
 
 
     mrover::Velocity msg;
     msg.names = {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll", "allen_key", "gripper"};
-    msg.velocities = {0.2, 0, 0, 0, 0, 0, 0};
-    
-    // ros::Rate rate{102};
+    msg.velocities = {0, 0, 0, 0, 10, 0, 0};
 
-    /*
-    // Different positions test
-    std::array<float, 4> positions = {1.0, 2.0, 3.0, 4.0};
-    while (ros::ok()) {
-        // Throttle test
-        //brushlessController->setDesiredThrottle(mrover::Percent{((float) count) / 500.0});
-        brushlessController->setDesiredVelocity(mrover::RadiansPerSecond{5.0});
-        // brushlessController->setDesiredPosition(mrover::Radians{positions.at(count / 400)});
-        count++;
-        ros::spinOnce();
-        rate.sleep();
-    }
-
-    */
     // brushlessController_de0->setStop();
     // brushlessController_de1->setStop();
-    ros::Rate rate{10};
+
+    ros::Rate rate{1};
 
     int count = 0;
 
