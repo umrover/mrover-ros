@@ -29,7 +29,7 @@ namespace mrover {
                       mNh.subscribe<CAN>(
                               std::format("can/{}/in", mControllerName), 16, &Controller::processCANMessage, this)} {
             updateLastConnection();
-            mHeartbeatTimer = mNh.createTimer(ros::Duration(0.), &Controller::heartbeatCallback, this);
+            mHeartbeatTimer = mNh.createTimer(ros::Duration(0.1), &Controller::heartbeatCallback, this);
             // Subscribe to the ROS topic for commands
             mMoveThrottleSub = mNh.subscribe<Throttle>(std::format("{}_throttle_cmd", mControllerName), 1, &Controller::moveMotorsThrottle, this);
             mMoveVelocitySub = mNh.subscribe<Velocity>(std::format("{}_velocity_cmd", mControllerName), 1, &Controller::moveMotorsVelocity, this);
@@ -57,7 +57,6 @@ namespace mrover {
             auto duration = std::chrono::high_resolution_clock::now() - mLastConnection;
             if (duration > std::chrono::milliseconds(100)) {
                 setDesiredThrottle(0_percent);
-                // ROS_ERROR("ENTER WATCHDOG");
             }
             else {
                 std::visit([this](auto&& arg) {
