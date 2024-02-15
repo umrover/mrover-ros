@@ -427,7 +427,7 @@ namespace mrover {
         }
     }
 
-    auto SimulatorNodelet::renderWireframeColliders(wgpu::position& pass) -> void {
+    auto SimulatorNodelet::renderWireframeColliders(wgpu::RenderPassEncoder& pass) -> void {
         pass.setPipeline(mWireframePipeline);
 
         for (auto& [_, urdf]: mUrdfs) {
