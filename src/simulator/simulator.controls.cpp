@@ -1,5 +1,7 @@
 #include "simulator.hpp"
 
+using manif::SE3d, manif::SO3d;
+
 namespace mrover {
 
     auto SimulatorNodelet::twistCallback(geometry_msgs::Twist::ConstPtr const& twist) -> void {
@@ -77,22 +79,22 @@ namespace mrover {
     auto SimulatorNodelet::freeLook(Clock::duration dt) -> void {
         float flySpeed = mFlySpeed * std::chrono::duration_cast<std::chrono::duration<float>>(dt).count();
         if (glfwGetKey(mWindow.get(), mCamRightKey) == GLFW_PRESS) {
-            mCameraInWorld = SE3{R3{0.0, -flySpeed, 0}, SO3{}} * mCameraInWorld;
+            mCameraInWorld = SE3d{R3{0.0, -flySpeed, 0}, SO3d{}} * mCameraInWorld;
         }
         if (glfwGetKey(mWindow.get(), mCamLeftKey) == GLFW_PRESS) {
-            mCameraInWorld = SE3{R3{0.0, flySpeed, 0}, SO3{}} * mCameraInWorld;
+            mCameraInWorld = SE3d{R3{0.0, flySpeed, 0}, SO3d{}} * mCameraInWorld;
         }
         if (glfwGetKey(mWindow.get(), mCamForwardKey) == GLFW_PRESS) {
-            mCameraInWorld = SE3{R3{flySpeed, 0.0, 0.0}, SO3{}} * mCameraInWorld;
+            mCameraInWorld = SE3d{R3{flySpeed, 0.0, 0.0}, SO3d{}} * mCameraInWorld;
         }
         if (glfwGetKey(mWindow.get(), mCamBackwardKey) == GLFW_PRESS) {
-            mCameraInWorld = SE3{R3{-flySpeed, 0.0, 0.0}, SO3{}} * mCameraInWorld;
+            mCameraInWorld = SE3d{R3{-flySpeed, 0.0, 0.0}, SO3d{}} * mCameraInWorld;
         }
         if (glfwGetKey(mWindow.get(), mCamUpKey) == GLFW_PRESS) {
-            mCameraInWorld = mCameraInWorld * SE3{R3{0.0, 0.0, flySpeed}, SO3{}};
+            mCameraInWorld = mCameraInWorld * SE3d{R3{0.0, 0.0, flySpeed}, SO3d{}};
         }
         if (glfwGetKey(mWindow.get(), mCamDownKey) == GLFW_PRESS) {
-            mCameraInWorld = mCameraInWorld * SE3{R3{0.0, 0.0, -flySpeed}, SO3{}};
+            mCameraInWorld = mCameraInWorld * SE3d{R3{0.0, 0.0, -flySpeed}, SO3d{}};
         }
 
         Eigen::Vector2i size;
@@ -106,9 +108,14 @@ namespace mrover {
         Eigen::Vector2d delta = (mouse - center) * mLookSense;
 
         // TODO(quintin): use lie algebra more here? we have a perturbation in the tangent space
-        R3 p = mCameraInWorld.position();
-        SO3 q = SO3{delta.y(), Eigen::Vector3d::UnitY()} * mCameraInWorld.rotation() * SO3{-delta.x(), Eigen::Vector3d::UnitZ()};
-        mCameraInWorld = SE3{p, q};
+        R3 p = mCameraInWorld.translation();
+        Eigen::Matrix3d Ry = Eigen::AngleAxisd{delta.y(), Eigen::Vector3d::UnitY()}.toRotationMatrix();
+        Eigen::Matrix3d Rz = Eigen::AngleAxisd{-delta.x(), Eigen::Vector3d::UnitZ()}.toRotationMatrix();
+        Eigen::Matrix3d R0 = mCameraInWorld.rotation();
+        static_assert(R0.RowsAtCompileTime == 3 && R0.ColsAtCompileTime == 3);
+        Eigen::Matrix3d R = Ry * mCameraInWorld.rotation() * Rz;
+        // SO3d q{SO3d{Eigen::AngleAxisd{delta.y(), Eigen::Vector3d::UnitY()}}.rotation() * mCameraInWorld.rotation() * SO3d{Eigen::AngleAxisd{-delta.x(), Eigen::Vector3d::UnitZ()}}.rotation()};
+        mCameraInWorld = SE3d{p, SO3d{Eigen::Quaterniond(R)}};
 
         centerCursor();
     }

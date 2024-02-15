@@ -13,7 +13,7 @@
 #include <Eigen/Geometry>
 #include <manif/SE3.h>
 
-using manif::SE3d;
+using manif::SE3d, manif::SO3d;
 
 using R3 = Eigen::Vector3d;
 using S3 = Eigen::Quaterniond;

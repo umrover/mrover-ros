@@ -2,10 +2,10 @@
 
 namespace mrover {
 
-    auto btTransformToSe3(btTransform const& transform) -> SE3 {
+    auto btTransformToSe3(btTransform const& transform) -> SE3d {
         btVector3 const& p = transform.getOrigin();
         btQuaternion const& q = transform.getRotation();
-        return SE3{R3{p.x(), p.y(), p.z()}, SO3{q.w(), q.x(), q.y(), q.z()}};
+        return SE3d{R3{p.x(), p.y(), p.z()}, SO3d{q.w(), q.x(), q.y(), q.z()}};
     }
 
     auto SimulatorNodelet::initPhysics() -> void {
@@ -75,9 +75,9 @@ namespace mrover {
                     int index = urdf.linkNameToMeta.at(link->name).index;
                     // TODO(quintin): figure out why we need to negate rvector
                     btTransform parentToChild{urdf.physics->getParentToLocalRot(index), -urdf.physics->getRVector(index)};
-                    SE3 childInParent = btTransformToSe3(parentToChild.inverse());
+                    SE3d childInParent = btTransformToSe3(parentToChild.inverse());
 
-                    SE3::pushToTfTree(mTfBroadcaster, link->name, link->getParent()->name, childInParent);
+                    SE3Conversions::pushToTfTree(mTfBroadcaster, link->name, link->getParent()->name, childInParent);
                 }
 
                 for (urdf::JointSharedPtr const& child_joint: link->child_joints) {
@@ -89,7 +89,7 @@ namespace mrover {
         }
     }
 
-    auto URDF::linkInWorld(std::string const& linkName) const -> SE3 {
+    auto URDF::linkInWorld(std::string const& linkName) const -> SE3d {
         int index = linkNameToMeta.at(linkName).index;
         return btTransformToSe3(index == -1 ? physics->getBaseWorldTransform() : physics->getLink(index).m_cachedWorldTransform);
     }

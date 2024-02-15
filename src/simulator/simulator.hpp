@@ -2,8 +2,8 @@
 
 #include "pch.hpp"
 
-#include "wgpu_objects.hpp"
 #include "glfw_pointer.hpp"
+#include "wgpu_objects.hpp"
 
 using namespace std::literals;
 
@@ -98,7 +98,7 @@ namespace mrover {
 
         auto makeCameraForLink(SimulatorNodelet& simulator, btMultibodyLink const* link) -> Camera;
 
-        [[nodiscard]] auto linkInWorld(std::string const& linkName) const -> SE3;
+        [[nodiscard]] auto linkInWorld(std::string const& linkName) const -> SE3d;
     };
 
     struct PeriodicTask {
@@ -291,7 +291,7 @@ namespace mrover {
             return it->second;
         }
 
-        SE3 mCameraInWorld{R3{-3.0, 0.0, 1.5}, SO3{}};
+        SE3d mCameraInWorld{R3{-3.0, 0.0, 1.5}, SO3d{}};
 
         std::vector<Camera> mCameras;
 
@@ -370,7 +370,7 @@ namespace mrover {
 
     auto urdfPoseToBtTransform(urdf::Pose const& pose) -> btTransform;
 
-    auto btTransformToSe3(btTransform const& transform) -> SE3;
+    auto btTransformToSe3(btTransform const& transform) -> SE3d;
 
     auto computeCameraToClip(float fovY, float aspect, float zNear, float zFar) -> Eigen::Matrix4f;
 
