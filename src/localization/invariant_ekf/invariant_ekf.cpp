@@ -19,8 +19,18 @@ void InvariantEKF::predict(const Vector3d& accel, const Vector3d& gyro, double d
     Vector3d delta_rot = gyro * dt;
     Vector3d delta_v = accel_body * dt;
 
+    Eigen::Matrix3d accLinCross = manif::skew(delta_pos);
+    Eigen::Vector3d gLin = R.transpose()*g*dt;
+    Eigen::Matrix3d gCross = manif::skew(gLin);
+
+
     SE_2_3Tangentd u;
     manif::SE_2_3d::Jacobian F, J_x_x, J_x_u, J_u_x;
+
+    J_u_x.setZero();
+    J_u_x.block<3, 3>(0, 3) = accLinCross;
+    J_u_x.block<3, 3>(0, 6) = Eigen::Matrix3d::Identity()*dt;
+    J_u_x.block<3, 3>(6, 3) = gCross;
 
     // increment state with right plus operation and compute jacobians
     u << delta_pos, delta_rot, delta_v;
@@ -46,7 +56,7 @@ void InvariantEKF::update_gps(Eigen::Vector3d const& observed_gps, Matrix3d cons
     Eigen::Matrix<double, 3, 9> H = J_e_x;
 
     //innovation
-    auto z = observed_gps - e; 
+    auto z = observed_gps - e;
 
     //innovation cov
     auto S_n = (H * mP * H.transpose()) + R_gps;
@@ -74,18 +84,18 @@ void InvariantEKF::update_accel(Eigen::Vector3d const& observed_accel, Matrix3d 
     manif::SO3<double> rot = mX.asSO3();
     manif::SO3<double>::Jacobian J_xi_x;
     manif::SO3<double>::Jacobian J_e_xi;
-    
+
     Vector3d e = rot.inverse(J_xi_x).act(g, J_e_xi);
     auto rot_J_e_x = J_e_xi * J_xi_x;
 
     //final jacobian
     Eigen::Matrix<double, 3, 9> J_e_x;
     J_e_x.setZero();
-    J_e_x.block(0,0,3,3) = J_e_x;
+    J_e_x.block(0, 0, 3, 3) = J_e_x;
     Eigen::Matrix<double, 3, 9> H = J_e_x;
 
     //innovation
-    auto z = observed_accel - e; 
+    auto z = observed_accel - e;
 
     //innovation cov
     auto S_n = (H * mP * H.transpose()) + R_accel;
@@ -101,7 +111,6 @@ void InvariantEKF::update_accel(Eigen::Vector3d const& observed_accel, Matrix3d 
 
     //cov update
     mP = mP - K_n * S_n * K_n.transpose();
-
 }
 
 void InvariantEKF::update_accel(Eigen::Vector3d const& observed_accel) {
@@ -115,7 +124,7 @@ void InvariantEKF::update_mag(Eigen::Vector3d const& observed_mag, Matrix3d cons
     manif::SO3<double> rot = mX.asSO3();
     manif::SO3<double>::Jacobian J_xi_x;
     manif::SO3<double>::Jacobian J_e_xi;
-    
+
     Vector3d e = rot.inverse(J_xi_x).act(north, J_e_xi);
     auto rot_J_e_x = J_e_xi * J_xi_x;
 
@@ -123,11 +132,11 @@ void InvariantEKF::update_mag(Eigen::Vector3d const& observed_mag, Matrix3d cons
     //source: https://arxiv.org/pdf/2007.14097.pdf
     Eigen::Matrix<double, 3, 9> J_e_x;
     J_e_x.setZero();
-    J_e_x.block(0,0,3,3) = J_e_x;
+    J_e_x.block(0, 0, 3, 3) = J_e_x;
     Eigen::Matrix<double, 3, 9> H = J_e_x;
 
     //innovation
-    auto z = observed_mag - e; 
+    auto z = observed_mag - e;
 
     //innovation cov
     auto S_n = (H * mP * H.transpose()) + R_mag;
