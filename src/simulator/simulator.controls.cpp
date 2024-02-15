@@ -1,7 +1,5 @@
 #include "simulator.hpp"
 
-using manif::SE3d, manif::SO3d;
-
 namespace mrover {
 
     auto SimulatorNodelet::twistCallback(geometry_msgs::Twist::ConstPtr const& twist) -> void {
@@ -78,23 +76,32 @@ namespace mrover {
 
     auto SimulatorNodelet::freeLook(Clock::duration dt) -> void {
         float flySpeed = mFlySpeed * std::chrono::duration_cast<std::chrono::duration<float>>(dt).count();
-        if (glfwGetKey(mWindow.get(), mCamRightKey) == GLFW_PRESS) {
-            mCameraInWorld = mCameraInWorld * SE3d{R3{0.0, -flySpeed, 0}, SO3d::Identity()};
-        }
-        if (glfwGetKey(mWindow.get(), mCamLeftKey) == GLFW_PRESS) {
-            mCameraInWorld = mCameraInWorld * SE3d{R3{0.0, flySpeed, 0}, SO3d::Identity()};
-        }
+        SE3d::Tangent delta_x, delta_y, delta_z;
+        delta_x << Eigen::Vector3d::UnitX(), Eigen::Vector3d::Zero();
+        delta_y << Eigen::Vector3d::UnitY(), Eigen::Vector3d::Zero();
+        delta_z << Eigen::Vector3d::UnitZ(), Eigen::Vector3d::Zero();
+
+        // TODO: turn this into a single rplus and lplus operation
+        // overloaded rplus for movement relative to camera frame
         if (glfwGetKey(mWindow.get(), mCamForwardKey) == GLFW_PRESS) {
-            mCameraInWorld = mCameraInWorld * SE3d{R3{flySpeed, 0.0, 0.0}, SO3d::Identity()};
+            mCameraInWorld += delta_x * flySpeed;
         }
         if (glfwGetKey(mWindow.get(), mCamBackwardKey) == GLFW_PRESS) {
-            mCameraInWorld = mCameraInWorld * SE3d{R3{-flySpeed, 0.0, 0.0}, SO3d::Identity()};
+            mCameraInWorld += delta_x * -flySpeed;
         }
+        if (glfwGetKey(mWindow.get(), mCamLeftKey) == GLFW_PRESS) {
+            mCameraInWorld += delta_y * flySpeed;
+        }
+        if (glfwGetKey(mWindow.get(), mCamRightKey) == GLFW_PRESS) {
+            mCameraInWorld += delta_y * -flySpeed;
+        }
+
+        // overloaded lplus for movement relative to world frame
         if (glfwGetKey(mWindow.get(), mCamUpKey) == GLFW_PRESS) {
-            mCameraInWorld = SE3d{R3{0.0, 0.0, flySpeed}, SO3d::Identity()} * mCameraInWorld;
+            mCameraInWorld = delta_z * flySpeed + mCameraInWorld;
         }
         if (glfwGetKey(mWindow.get(), mCamDownKey) == GLFW_PRESS) {
-            mCameraInWorld = SE3d{R3{0.0, 0.0, -flySpeed}, SO3d::Identity()} * mCameraInWorld;
+            mCameraInWorld = delta_z * -flySpeed + mCameraInWorld;
         }
 
         Eigen::Vector2i size;
@@ -107,12 +114,10 @@ namespace mrover {
 
         Eigen::Vector2d delta = (mouse - center) * mLookSense;
 
-        // TODO(quintin): use lie algebra more here? we have a perturbation in the tangent space
-        R3 P = mCameraInWorld.translation();
-        SO3d R = mCameraInWorld.asSO3();
-        SO3d::Tangent RX = Eigen::Vector3d::UnitZ() * -delta.x();
-        SO3d::Tangent RY = Eigen::Vector3d::UnitY() * delta.y();
-        mCameraInWorld = SE3d{P, RX + R + RY};
+        // lplus for tilt in camera frame, rplus for pan in world frame
+        SO3d::Tangent delta_Ry = Eigen::Vector3d::UnitY() * delta.y();
+        SO3d::Tangent delta_Rz = Eigen::Vector3d::UnitZ() * -delta.x();
+        mCameraInWorld.asSO3() = delta_Rz + mCameraInWorld.asSO3() + delta_Ry;
 
         centerCursor();
     }
