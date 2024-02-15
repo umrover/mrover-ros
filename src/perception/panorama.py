@@ -140,7 +140,7 @@ def capture_panorama(request: CapturePanoramaRequest) -> CapturePanoramaResponse
 
     position_subscriber = rospy.Subscriber("/mast_status", MotorsStatus, received_motor_position, queue_size=1)
     image_subscriber = rospy.Subscriber("/camera/left/points", PointCloud2, received_point_cloud, queue_size=1)
-    mast_throttle = rospy.Publisher("/mast_position_cmd", Position, queue_size=1)
+    mast_throttle = rospy.Publisher("/mast_gimbal_position_cmd", Position, queue_size=1)
     # TODO, make motors spin around
     if (len(image_list) < 2):
         rospy.sleep(1)

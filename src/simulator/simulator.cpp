@@ -14,7 +14,8 @@ namespace mrover {
         mArmVelocitiesSub = mNh.subscribe<Velocity>("/arm_velocity_cmd", 1, &SimulatorNodelet::armVelocitiesCallback, this);
         mArmThrottlesSub = mNh.subscribe<Throttle>("/arm_throttle_cmd", 1, &SimulatorNodelet::armThrottlesCallback, this);
 
-        mMastPositionsSub = mNh.subscribe<Position>("/mast_position_cmd", 1, &SimulatorNodelet::mastPositionsCallback, this);
+        mMastPositionsSub = mNh.subscribe<Position>("/mast_gimbal_throttle_cmd", 1, &SimulatorNodelet::mastPositionsCallback, this);
+        mMastThrottleSub = mNh.subscribe<Throttle>("/mast_gimbal_throttle_cmd", 1, &SimulatorNodelet::mastThrottleCallback, this);
 
         mGroundTruthPub = mNh.advertise<nav_msgs::Odometry>("/ground_truth", 1);
         mGpsPub = mNh.advertise<sensor_msgs::NavSatFix>("/gps/fix", 1);

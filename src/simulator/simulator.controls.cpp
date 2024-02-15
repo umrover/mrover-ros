@@ -38,7 +38,7 @@ namespace mrover {
     }
 
     auto SimulatorNodelet::armPositionsCallback(Position::ConstPtr const& message) -> void {
-        forEachWithMotor(message->names, message->positions, [&](btMultiBodyJointMotor* motor, float position) {
+        forEachArmMotor(message->names, message->positions, [&](btMultiBodyJointMotor* motor, float position) {
             motor->setMaxAppliedImpulse(0.5);
             motor->setPositionTarget(position, 0.05);
             motor->setVelocityTarget(0, 1);
@@ -46,7 +46,7 @@ namespace mrover {
     }
 
     auto SimulatorNodelet::armVelocitiesCallback(Velocity::ConstPtr const& message) -> void {
-        forEachWithMotor(message->names, message->velocities, [&](btMultiBodyJointMotor* motor, float velocity) {
+        forEachArmMotor(message->names, message->velocities, [&](btMultiBodyJointMotor* motor, float velocity) {
             motor->setMaxAppliedImpulse(0.5);
             motor->setPositionTarget(0, 0);
             motor->setVelocityTarget(velocity, 0.5);
@@ -54,7 +54,7 @@ namespace mrover {
     }
 
     auto SimulatorNodelet::armThrottlesCallback(Throttle::ConstPtr const& message) -> void {
-        forEachWithMotor(message->names, message->throttles, [&](btMultiBodyJointMotor* motor, float throttle) {
+        forEachArmMotor(message->names, message->throttles, [&](btMultiBodyJointMotor* motor, float throttle) {
             motor->setMaxAppliedImpulse(0.5);
             motor->setPositionTarget(0, 0);
             motor->setVelocityTarget(throttle, 0.5);
@@ -72,6 +72,21 @@ namespace mrover {
             assert(motor);
             motor->setMaxAppliedImpulse(0.5);
             motor->setPositionTarget(message->positions.front(), 0.05);
+        }
+    }
+
+    // TODO(quintin): Remove this duplication
+    auto SimulatorNodelet::mastThrottleCallback(Throttle::ConstPtr const& message) -> void {
+        assert(message->names == std::vector<std::string>{"mast_joint"});
+        assert(message->throttles.size() == 1);
+        if (auto it = mUrdfs.find("rover"); it != mUrdfs.end()) {
+            URDF const& rover = it->second;
+
+            btMultibodyLink& link = rover.physics->getLink(rover.linkNameToMeta.at("zed_mini_camera").index);
+            auto* motor = std::bit_cast<btMultiBodyJointMotor*>(link.m_userPtr);
+            assert(motor);
+            motor->setMaxAppliedImpulse(0.5);
+            motor->setVelocityTarget(message->throttles.front() * 0.1, 0.5);
         }
     }
 
