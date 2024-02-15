@@ -62,31 +62,47 @@ namespace mrover {
     }
 
     auto SimulatorNodelet::mastPositionsCallback(Position::ConstPtr const& message) -> void {
-        assert(message->names == std::vector<std::string>{"mast_joint"});
-        assert(message->positions.size() == 1);
         if (auto it = mUrdfs.find("rover"); it != mUrdfs.end()) {
             URDF const& rover = it->second;
 
-            btMultibodyLink& link = rover.physics->getLink(rover.linkNameToMeta.at("zed_mini_camera").index);
-            auto* motor = std::bit_cast<btMultiBodyJointMotor*>(link.m_userPtr);
-            assert(motor);
-            motor->setMaxAppliedImpulse(0.5);
-            motor->setPositionTarget(message->positions.front(), 0.05);
+            assert(message->names.size() == message->positions.size());
+            for (std::size_t i = 0; i < message->names.size(); ++i) {
+                if (std::string const& name = message->names[i]; name == "mast_gimbal_z") {
+                    float position = message->positions[i];
+                    btMultibodyLink& link = rover.physics->getLink(rover.linkNameToMeta.at("zed_mini_camera").index);
+                    auto* motor = std::bit_cast<btMultiBodyJointMotor*>(link.m_userPtr);
+                    assert(motor);
+                    motor->setMaxAppliedImpulse(0.5);
+                    motor->setPositionTarget(position, 0.05);
+                } else if (name == "mast_gimbal_y") {
+
+                } else {
+                    ROS_WARN_STREAM(std::format("Unknown mast joint: {}", name));
+                }
+            }
         }
     }
 
     // TODO(quintin): Remove this duplication
     auto SimulatorNodelet::mastThrottleCallback(Throttle::ConstPtr const& message) -> void {
-        assert(message->names == std::vector<std::string>{"mast_joint"});
-        assert(message->throttles.size() == 1);
         if (auto it = mUrdfs.find("rover"); it != mUrdfs.end()) {
             URDF const& rover = it->second;
 
-            btMultibodyLink& link = rover.physics->getLink(rover.linkNameToMeta.at("zed_mini_camera").index);
-            auto* motor = std::bit_cast<btMultiBodyJointMotor*>(link.m_userPtr);
-            assert(motor);
-            motor->setMaxAppliedImpulse(0.5);
-            motor->setVelocityTarget(message->throttles.front() * 0.1, 0.5);
+            assert(message->names.size() == message->throttles.size());
+            for (std::size_t i = 0; i < message->names.size(); ++i) {
+                if (std::string const& name = message->names[i]; name == "mast_gimbal_z") {
+                    float position = message->throttles[i];
+                    btMultibodyLink& link = rover.physics->getLink(rover.linkNameToMeta.at("zed_mini_camera").index);
+                    auto* motor = std::bit_cast<btMultiBodyJointMotor*>(link.m_userPtr);
+                    assert(motor);
+                    motor->setMaxAppliedImpulse(0.5);
+                    motor->setPositionTarget(position, 0.05);
+                } else if (name == "mast_gimbal_y") {
+
+                } else {
+                    ROS_WARN_STREAM(std::format("Unknown mast joint: {}", name));
+                }
+            }
         }
     }
 
