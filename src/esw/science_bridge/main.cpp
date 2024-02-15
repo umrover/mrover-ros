@@ -34,16 +34,19 @@ bool enableScienceDeviceCallback(std_srvs::SetBool::Request& req, std_srvs::SetB
 }
 
 void processMessage(mrover::HeaterStateData const& message) {
+    // ROS_ERROR("heater!");
     mrover::HeaterData heaterData;
-    heaterData.state.resize(6);
-    for (int i = 0; i < 6; ++i) {
-        heaterData.state.at(i) = GET_BIT_AT_INDEX(message.heater_state_info.on, i);
-    }
+    // TODO - this crashes program!
+    // heaterData.state.resize(6);
+    // for (int i = 0; i < 6; ++i) {
+    //     heaterData.state.at(i) = GET_BIT_AT_INDEX(message.heater_state_info.on, i);
+    // }
 
-    heaterDataPublisher->publish(heaterData);
+    // heaterDataPublisher->publish(heaterData);
 }
 
 void processMessage(mrover::SpectralData const& message) {
+    // ROS_ERROR("spectral!");
     mrover::SpectralGroup spectralData;
     for (int i = 0; i < 3; ++i) {
         for (int j = 0; j < 6; ++j) {
@@ -55,6 +58,7 @@ void processMessage(mrover::SpectralData const& message) {
 }
 
 void processMessage(mrover::ThermistorData const& message) {
+    // ROS_ERROR("Thermistors!");
     mrover::ScienceThermistors scienceThermistors;
     scienceThermistors.temps.resize(6);
     for (int i = 0; i < 6; ++i) {
@@ -66,14 +70,14 @@ void processMessage(mrover::ThermistorData const& message) {
 void processCANData(mrover::CAN::ConstPtr const& msg) {
 
     // TODO - fix in future
-    ROS_ERROR("Source: %s Destination: %s", msg->source.c_str(), msg->destination.c_str());
-    // assert(msg->source == "jetson");
-    // assert(msg->destination == "science");
+    // ROS_ERROR("Source: %s Destination: %s", msg->source.c_str(), msg->destination.c_str());
+    assert(msg->source == "science");
+    assert(msg->destination == "jetson");
 
-    // mrover::OutBoundScienceMessage const& message = *reinterpret_cast<mrover::OutBoundScienceMessage const*>(msg->data.data());
+    mrover::OutBoundScienceMessage const& message = *reinterpret_cast<mrover::OutBoundScienceMessage const*>(msg->data.data());
 
     // This calls the correct process function based on the current value of the alternative
-    // std::visit([&](auto const& messageA lternative) { processMessage(messageAlternative); }, message);
+    std::visit([&](auto const& messageAlternative) { processMessage(messageAlternative); }, message);
 }
 
 
@@ -102,7 +106,7 @@ int main(int argc, char** argv) {
     services.reserve(scienceDeviceByName.size() + 1);
 
     for (auto const& [deviceName, scienceDevice]: scienceDeviceByName) {
-        // Advertise services and set the callback using a la0mbda function
+        // Advertise services and set the callback using a lambda function
         services.emplace_back(nh.advertiseService<std_srvs::SetBool::Request, std_srvs::SetBool::Response>(
                 "science_enable_" + deviceName,
                 [scienceDevice](std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) {
@@ -116,7 +120,7 @@ int main(int argc, char** argv) {
     spectralDataPublisher = std::make_unique<ros::Publisher>(nh.advertise<mrover::SpectralGroup>("science_spectral", 1));
     thermistorDataPublisher = std::make_unique<ros::Publisher>(nh.advertise<mrover::ScienceThermistors>("science_thermistors", 1));
 
-    ros::Subscriber CANSubscriber = nh.subscribe<mrover::CAN>("can/pdlb/in", 1, processCANData);
+    ros::Subscriber CANSubscriber = nh.subscribe<mrover::CAN>("can/science/in", 1, processCANData);
 
     // Enter the ROS event loop
     ros::spin();
