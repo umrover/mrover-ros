@@ -299,7 +299,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         pwr = rospy.get_param("teleop/mast_gimbal_power")
         rot_pwr = msg["throttles"][0] * pwr["rotation_pwr"]
         up_down_pwr = msg["throttles"][1] * pwr["up_down_pwr"]
-        self.mast_gimbal_pub.publish(Throttle(["mast_gimbal_x", "mast_gimbal_y"], [rot_pwr, up_down_pwr]))
+        self.mast_gimbal_pub.publish(Throttle(["mast_gimbal_y", "mast_gimbal_z"], [rot_pwr, up_down_pwr]))
 
     def send_center(self):
         lat = rospy.get_param("gps_linearization/reference_point_latitude")
