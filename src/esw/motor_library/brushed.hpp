@@ -5,6 +5,8 @@
 #include <params_utils.hpp>
 #include <std_srvs/Trigger.h>
 
+#include <units/units.hpp>
+
 #include "controller.hpp"
 
 namespace mrover {

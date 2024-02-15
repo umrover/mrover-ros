@@ -5,7 +5,7 @@
 
 if grep -q "source ~/catkin_ws/src/mrover/ansible/roles/basestation_networks/files/networking_setup_basestation.sh" ~/.zshrc; then
     echo "Removing basestation networking script from .zshrc"
-    sed -i '/source ~/catkin_ws/src/mrover/ansible/roles/basestation_networks/files/networking_setup_basestation.sh/d' ~/.zshrc
+    sed -i '/source ~\/catkin_ws\/src\/mrover\/ansible\/roles\/basestation_networks\/files\/networking_setup_basestation.sh/d' ~/.zshrc
 else
     echo "Adding basestation networking script to .zshrc"
     echo "source ~/catkin_ws/src/mrover/ansible/roles/basestation_networks/files/networking_setup_basestation.sh" >> ~/.zshrc

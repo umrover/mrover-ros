@@ -1,8 +1,11 @@
 #include <geometry_msgs/Twist.h>
 #include <ros/ros.h>
+#include <mrover/Velocity.h>
 
+#include <unordered_map>
 #include <can_device.hpp>
 #include <motors_group.hpp>
+#include <params_utils.hpp>
 
 using namespace mrover;
 
@@ -10,16 +13,20 @@ void moveDrive(geometry_msgs::Twist::ConstPtr const& msg);
 
 std::unique_ptr<MotorsGroup> driveManager;
 std::vector<std::string> driveNames{"front_left", "front_right", "middle_left", "middle_right", "back_left", "back_right"};
-
+std::unordered_map<std::string, ros::Publisher> drivePublishersByName;
 Meters WHEEL_DISTANCE_INNER;
 Meters WHEEL_DISTANCE_OUTER;
 compound_unit<Radians, inverse<Meters>> WHEEL_LINEAR_TO_ANGULAR;
 RadiansPerSecond MAX_MOTOR_SPEED;
 
-int main(int argc, char** argv) {
+auto main(int argc, char** argv) -> int {
     // Initialize the ROS node
     ros::init(argc, argv, "drive_bridge");
     ros::NodeHandle nh;
+
+    for (auto name: driveNames) {
+        drivePublishersByName[name] = nh.advertise<Velocity>(std::format("{}_velocity_cmd", name), 1);
+    }
 
     // Load rover dimensions and other parameters from the ROS parameter server
     auto roverWidth = requireParamAsUnit<Meters>(nh, "rover/width");
@@ -67,9 +74,10 @@ void moveDrive(geometry_msgs::Twist::ConstPtr const& msg) {
             {"back_right", right},
     };
 
-    ROS_INFO("m/s %f", forward.get());
-
     for (auto [name, angularVelocity]: driveCommandVelocities) {
-        driveManager->getController(name).setDesiredVelocity(angularVelocity);
+        Velocity msg;
+        msg.names.push_back(name);
+        msg.velocities.push_back(angularVelocity.get());
+        drivePublishersByName.at(name).publish(msg);
     }
 }

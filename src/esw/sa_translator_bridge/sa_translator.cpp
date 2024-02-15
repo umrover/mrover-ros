@@ -87,7 +87,7 @@ namespace mrover {
         auto yAxisLinVel = convertLinVel(static_cast<float>(msg->velocity.at(mYAxisIndex)), mYAxisMult.get());
         auto yAxisLinPos = convertLinPos(static_cast<float>(msg->position.at(mYAxisIndex)), mYAxisMult.get());
 
-        auto zAxisLinVel = convertLinVel(static_cast<float>(msg->velocity.at(mZAxisIndex)), static_cast<float>(mZAxisMult.get()/(2*std::numbers::pi)));
+        auto zAxisLinVel = convertLinVel(static_cast<float>(msg->velocity.at(mZAxisIndex)), mZAxisMult.get());
         auto zAxisLinPos = convertLinPos(static_cast<float>(msg->position.at(mZAxisIndex)), mZAxisMult.get());
 
         sensor_msgs::JointState jointState = *msg;

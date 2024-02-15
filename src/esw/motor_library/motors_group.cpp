@@ -1,5 +1,10 @@
 #include "motors_group.hpp"
 
+#include <brushed.hpp>
+#include <brushless.hpp>
+
+#include <params_utils.hpp>
+
 namespace mrover {
 
     using namespace std::chrono_literals;
@@ -13,7 +18,7 @@ namespace mrover {
         mNh.getParam(std::format("motors_group/{}", mGroupName), motorControllerNames);
         assert(motorControllerNames.getType() == XmlRpc::XmlRpcValue::TypeArray);
         for (int i = 0; i < motorControllerNames.size(); ++i) {
-            std::string name = static_cast<std::string>(motorControllerNames[i]);
+            auto name = static_cast<std::string>(motorControllerNames[i]);
             mIndexByName[name] = mControllerNames.size();
             mControllerNames.push_back(name);
             mThrottlePubsByName[name] = mNh.advertise<Throttle>(std::format("{}_throttle_cmd", name), 1);
@@ -98,7 +103,6 @@ namespace mrover {
                 continue;
             }
 
-
             Velocity velocity;
             velocity.names = {name};
             velocity.velocities = {msg->velocities[i]};
@@ -144,7 +148,7 @@ namespace mrover {
             return;
         }
 
-        auto index = mIndexByName.at(name);
+        std::size_t index = mIndexByName.at(name);
 
         mControllerState.state[index] = msg->state[0];
         mControllerState.error[index] = msg->error[0];

@@ -6,12 +6,8 @@
 #include <XmlRpcValue.h>
 #include <ros/ros.h>
 
-#include "units/units.hpp"
+#include <units/units.hpp>
 
-#include "joint_de_translation.hpp"
-#include "matrix_helper.hpp"
-#include <read_from_ros_param.hpp>
-#include <linear_joint_translation.hpp>
 #include <mrover/AdjustMotor.h>
 #include <mrover/ControllerState.h>
 #include <mrover/Position.h>
@@ -19,8 +15,6 @@
 #include <mrover/Velocity.h>
 #include <sensor_msgs/JointState.h>
 #include <std_msgs/Float32.h>
-#include <std_srvs/Trigger.h>
-
 
 namespace mrover {
 
@@ -28,35 +22,33 @@ namespace mrover {
     public:
         ArmTranslator() = default;
 
-        ArmTranslator(ros::NodeHandle& nh);
+        explicit ArmTranslator(ros::NodeHandle& nh);
 
-        void processPitchRawPositionData(std_msgs::Float32::ConstPtr const& msg);
+        auto processPitchRawPositionData(std_msgs::Float32::ConstPtr const& msg) -> void;
 
-        void processRollRawPositionData(std_msgs::Float32::ConstPtr const& msg);
+        auto processRollRawPositionData(std_msgs::Float32::ConstPtr const& msg) -> void;
 
-        void processVelocityCmd(Velocity::ConstPtr const& msg);
+        auto processVelocityCmd(Velocity::ConstPtr const& msg) -> void;
 
-        void processPositionCmd(Position::ConstPtr const& msg);
+        auto processPositionCmd(Position::ConstPtr const& msg) -> void;
 
-        void processThrottleCmd(Throttle::ConstPtr const& msg);
+        auto processThrottleCmd(Throttle::ConstPtr const& msg) -> void;
 
-        void processArmHWJointData(sensor_msgs::JointState::ConstPtr const& msg);
+        auto processArmHWJointData(sensor_msgs::JointState::ConstPtr const& msg) -> void;
 
-        bool adjustServiceCallback(AdjustMotor::Request& req, AdjustMotor::Response& res);
-
-        
+        auto adjustServiceCallback(AdjustMotor::Request& req, AdjustMotor::Response& res) -> bool;
 
     private:
-    
-        static void clampValues(float& val1, float& val2, float minValue1, float maxValue1, float minValue2, float maxValue2);
-        static void mapValue(float& val, float inputMinValue, float inputMaxValue, float outputMinValue, float outputMaxValue);
+        static auto clampValues(float& val1, float& val2, float minValue1, float maxValue1, float minValue2, float maxValue2) -> void;
 
-        bool jointDEIsCalibrated();
+        static auto mapValue(float& val, float inputMinValue, float inputMaxValue, float outputMinValue, float outputMaxValue) -> void;
 
-        void updatePositionOffsets();
+        auto jointDEIsCalibrated() const -> bool;
 
-        const std::vector<std::string> mRawArmNames = {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll", "allen_key", "gripper"};
-        const std::vector<std::string> mArmHWNames = {"joint_a", "joint_b", "joint_c", "joint_de_0", "joint_de_1", "allen_key", "gripper"};
+        auto updatePositionOffsets() -> void;
+
+        const std::vector<std::string> mRawArmNames{"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll", "allen_key", "gripper"};
+        const std::vector<std::string> mArmHWNames{"joint_a", "joint_b", "joint_c", "joint_de_0", "joint_de_1", "allen_key", "gripper"};
         std::unique_ptr<ros::Publisher> mThrottlePub;
         std::unique_ptr<ros::Publisher> mVelocityPub;
         std::unique_ptr<ros::Publisher> mPositionPub;

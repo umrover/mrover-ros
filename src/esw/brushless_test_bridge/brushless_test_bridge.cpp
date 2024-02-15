@@ -22,10 +22,20 @@ int main(int argc, char** argv) {
     // - rosrun mrover can_driver_node _interface:=can0
     // - roslaunch brushless_test.launch
 
-    auto brushlessController = std::make_unique<mrover::BrushlessController>(nh, "jetson", "devboard");
+    // auto brushlessController_de0 = std::make_unique<mrover::BrushlessController>(nh, "jetson", "joint_de_0");
+    // auto brushlessController_de1 = std::make_unique<mrover::BrushlessController>(nh, "jetson", "joint_de_1");
+    
+    // fake DE publisher:
 
-    int count = 0;
-    ros::Rate rate{100};
+    // std::unique_ptr<ros::Publisher> DEPub;
+    auto DEPub = std::make_unique<ros::Publisher>(nh.advertise<mrover::Velocity>("arm_velocity_cmd", 1));
+
+
+    mrover::Velocity msg;
+    msg.names = {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll", "allen_key", "gripper"};
+    msg.velocities = {0.2, 0, 0, 0, 0, 0, 0};
+    
+    // ros::Rate rate{102};
 
     /*
     // Different positions test
@@ -41,21 +51,27 @@ int main(int argc, char** argv) {
     }
 
     */
-    brushlessController->setStop();
-    ros::Rate rate_0p5hz{10};
-    while (ros::ok() && count < 5000) {
-        // Motor should keep moving forward every 2 seconds. Repeats 10 times.
-        
-        // brushlessController->sendQuery();
-        brushlessController->setDesiredVelocity(mrover::RadiansPerSecond{1.0});
-        // brushlessController->setDesiredVelocity(5.0);
-        //brushlessController->setDesiredPosition(mrover::Radians{1.0});
-        //brushlessController->adjust(mrover::Radians{0.0}); // Adjust code works!
-        
-        // count++;
+    // brushlessController_de0->setStop();
+    // brushlessController_de1->setStop();
+    ros::Rate rate{10};
+
+    int count = 0;
+
+    while(ros::ok()){
+        // publish DE velocity:
+        DEPub->publish(msg);
+
+        count++;
+
+        if(count > 50) {
+            msg.velocities[0] *= -1;
+            count = 0;
+        }   
+
         ros::spinOnce();
         rate.sleep();
     }
 
     return EXIT_SUCCESS;
 }
+

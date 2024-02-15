@@ -2,10 +2,11 @@
 #include <ros/node_handle.h>
 
 #include <motors_group.hpp>
+#include <brushed.hpp>
 
 using namespace mrover;
 
-int main(int argc, char** argv) {
+auto main(int argc, char** argv) -> int {
     ros::init(argc, argv, "brushed_test_bridge");
     ros::NodeHandle nh;
 
