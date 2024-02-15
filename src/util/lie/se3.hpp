@@ -11,6 +11,9 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 #include <Eigen/Geometry>
+#include <manif/SE3.h>
+
+using manif::SE3d;
 
 using R3 = Eigen::Vector3d;
 using S3 = Eigen::Quaterniond;
@@ -96,6 +99,25 @@ public:
     [[nodiscard]] auto inverse() const -> SE3;
 
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+};
+
+class SE3Conversions {
+public:
+    static SE3d fromTf(geometry_msgs::Transform const& transform);
+
+    static SE3d fromPose(geometry_msgs::Pose const& pose);
+
+    [[nodiscard]] static geometry_msgs::Pose toPose(SE3d const& tf);
+
+    [[nodiscard]] static geometry_msgs::Transform toTransform(SE3d const& tf);
+
+    [[nodiscard]] static geometry_msgs::PoseStamped toPoseStamped(SE3d const& tf, std::string const& frameId);
+
+    [[nodiscard]] static geometry_msgs::TransformStamped toTransformStamped(SE3d const& tf, std::string const& parentFrameId, std::string const& childFrameId);
+
+    [[nodiscard]] static SE3d fromTfTree(tf2_ros::Buffer const& buffer, std::string const& fromFrameId, std::string const& toFrameId);
+
+    static void pushToTfTree(tf2_ros::TransformBroadcaster& broadcaster, std::string const& childFrameId, std::string const& parentFrameId, SE3d const& tf);
 };
 
 class SIM3 {
