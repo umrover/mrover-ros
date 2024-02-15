@@ -106,7 +106,7 @@ void StartDefaultTask(void *argument);
 void SpectralPollingTask(void *argument);
 void SpectralTask(void *argument);
 void ThermistorAndAutoShutoffTask(void *argument);
-//void HeaterUpdatesTask(void *argument);
+void HeaterUpdatesTask(void *argument);
 
 /* USER CODE END PFP */
 
@@ -191,7 +191,7 @@ int main(void)
   // TODO - Using spectral causes a hardfault!!!
 //  SpectralTaskHandle = osThreadNew(SpectralTask, NULL, &SpectralTask_attributes);
 //  SpectralPollingTaskHandle = osThreadNew(SpectralPollingTask, NULL, &SpectralPollingTask_attributes);
-  HeaterUpdatesTaskHandle = osThreadNew(HeaterUpdatesTask, NULL, &HeaterUpdatesTask_attributes);
+//  HeaterUpdatesTaskHandle = osThreadNew(HeaterUpdatesTask, NULL, &HeaterUpdatesTask_attributes);
   ThermistorAndAutoShutoffTaskHandle = osThreadNew(ThermistorAndAutoShutoffTask, NULL, &ThermistorAndAutoShutoffTask_attributes);
 
   /* add threads, ... */
@@ -576,7 +576,7 @@ void ThermistorAndAutoShutoffTask(void *argument) {
 	for(;;) {
 		tick += osKernelGetTickFreq(); // 1 Hz
 
-//		update_and_send_heater();
+		update_and_send_heater();
 		update_and_send_thermistor_and_auto_shutoff_if_applicable();
 		osDelayUntil(tick);
 	}

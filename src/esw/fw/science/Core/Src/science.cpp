@@ -90,11 +90,15 @@ namespace mrover {
 	}
 
     void receive_message() {
-		if (std::optional received = fdcan_bus.receive()) {
-			auto const& [header, message] = received.value();
-			auto messageId = std::bit_cast<FDCAN<InBoundScienceMessage>::MessageId>(header.Identifier);
-			if (messageId.destination == DEVICE_ID)
-				science.receive(message);
+    	std::optional<std::pair<FDCAN_RxHeaderTypeDef, InBoundScienceMessage>> received = fdcan_bus.receive();
+		if (!received) Error_Handler(); // This function is called WHEN we receive a message so this should never happen
+
+		auto const& [header, message] = received.value();
+
+		auto messageId = std::bit_cast<FDCAN<InBoundScienceMessage>::MessageId>(header.Identifier);
+
+		if (messageId.destination == DEVICE_ID) {
+			science.receive(message);
 		}
 	}
 
