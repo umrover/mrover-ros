@@ -4,7 +4,6 @@
 
 #include "glfw_pointer.hpp"
 #include "wgpu_objects.hpp"
-#include "glfw_pointer.hpp"
 
 using namespace std::literals;
 

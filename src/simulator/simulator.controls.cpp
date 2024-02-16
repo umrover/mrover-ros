@@ -83,32 +83,32 @@ namespace mrover {
 
     auto SimulatorNodelet::freeLook(Clock::duration dt) -> void {
         float flySpeed = mFlySpeed * std::chrono::duration_cast<std::chrono::duration<float>>(dt).count();
-        SE3d::Tangent delta_x, delta_y, delta_z;
-        delta_x << Eigen::Vector3d::UnitX(), Eigen::Vector3d::Zero();
-        delta_y << Eigen::Vector3d::UnitY(), Eigen::Vector3d::Zero();
-        delta_z << Eigen::Vector3d::UnitZ(), Eigen::Vector3d::Zero();
+        SE3d::Tangent deltaX, deltaY, deltaZ;
+        deltaX << Eigen::Vector3d::UnitX(), Eigen::Vector3d::Zero();
+        deltaY << Eigen::Vector3d::UnitY(), Eigen::Vector3d::Zero();
+        deltaZ << Eigen::Vector3d::UnitZ(), Eigen::Vector3d::Zero();
 
         // TODO: turn this into a single rplus and lplus operation
         // overloaded rplus for movement relative to camera frame
         if (glfwGetKey(mWindow.get(), mCamForwardKey) == GLFW_PRESS) {
-            mCameraInWorld += delta_x * flySpeed;
+            mCameraInWorld += deltaX * flySpeed;
         }
         if (glfwGetKey(mWindow.get(), mCamBackwardKey) == GLFW_PRESS) {
-            mCameraInWorld += delta_x * -flySpeed;
+            mCameraInWorld += deltaX * -flySpeed;
         }
         if (glfwGetKey(mWindow.get(), mCamLeftKey) == GLFW_PRESS) {
-            mCameraInWorld += delta_y * flySpeed;
+            mCameraInWorld += deltaY * flySpeed;
         }
         if (glfwGetKey(mWindow.get(), mCamRightKey) == GLFW_PRESS) {
-            mCameraInWorld += delta_y * -flySpeed;
+            mCameraInWorld += deltaY * -flySpeed;
         }
 
         // overloaded lplus for movement relative to world frame
         if (glfwGetKey(mWindow.get(), mCamUpKey) == GLFW_PRESS) {
-            mCameraInWorld = delta_z * flySpeed + mCameraInWorld;
+            mCameraInWorld = deltaZ * flySpeed + mCameraInWorld;
         }
         if (glfwGetKey(mWindow.get(), mCamDownKey) == GLFW_PRESS) {
-            mCameraInWorld = delta_z * -flySpeed + mCameraInWorld;
+            mCameraInWorld = deltaZ * -flySpeed + mCameraInWorld;
         }
 
         Eigen::Vector2i size;
@@ -122,9 +122,9 @@ namespace mrover {
         Eigen::Vector2d delta = (mouse - center) * mLookSense;
 
         // lplus for tilt in camera frame, rplus for pan in world frame
-        SO3d::Tangent delta_Ry = Eigen::Vector3d::UnitY() * delta.y();
-        SO3d::Tangent delta_Rz = Eigen::Vector3d::UnitZ() * -delta.x();
-        mCameraInWorld.asSO3() = delta_Rz + mCameraInWorld.asSO3() + delta_Ry;
+        SO3d::Tangent deltaRy = Eigen::Vector3d::UnitY() * delta.y();
+        SO3d::Tangent deltaRz = Eigen::Vector3d::UnitZ() * -delta.x();
+        mCameraInWorld.asSO3() = deltaRz + mCameraInWorld.asSO3() + deltaRy;
 
         centerCursor();
     }

@@ -134,13 +134,6 @@ namespace mrover {
                 }
             }
 
-            {
-                R3 rayStart = mCameraInWorld.translation();
-                R3 rayEnd = rayStart + mCameraInWorld.rotation().matrix().col(0);
-                // btMul
-                // mDynamicsWorld->rayTest(r3ToBtVector3(rayStart), r3ToBtVector3(rayEnd), [
-            }
-
             for (Camera const& camera: mCameras) {
                 float aspect = static_cast<float>(camera.resolution.x()) / static_cast<float>(camera.resolution.y());
                 ImGui::Image(camera.colorTextureView, {320, 320 / aspect}, {0, 0}, {1, 1});
