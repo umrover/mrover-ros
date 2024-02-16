@@ -180,11 +180,11 @@ export default defineComponent({
     window.setTimeout(() => {
       this.sendMessage({ "type": "center_map" });
     }, 250)
+      interval = setInterval(() => {
+      this.sendMessage({ type: 'auton_tfclient' })
+    }, 1000)
   },
 
-  // interval = setInterval(() => {
-  //   this.sendMessage({ type: 'auton_tfclient' })
-  // }, 1000)
 })
 </script>
 
