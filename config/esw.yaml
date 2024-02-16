@@ -16,22 +16,22 @@ can:
       id: 0x0 # 0x10 originally
     - name: "front_left"
       bus: 0
-      id: 0x11
+      id: 0x12
     - name: "front_right"
       bus: 0
-      id: 0x12
+      id: 0x11
     - name: "middle_left"
       bus: 0
-      id: 0x13
+      id: 0x14
     - name: "middle_right"
       bus: 0
-      id: 0x14
+      id: 0x13
     - name: "back_left"
       bus: 0
-      id: 0x15
+      id: 0x16
     - name: "back_right"
       bus: 0
-      id: 0x16
+      id: 0x15
     - name: "joint_a"
       bus: 0
       id: 0x20
