@@ -1,7 +1,5 @@
 #include "pch.hpp"
 
-using manif::SE3d;
-
 namespace mrover {
 
     struct Tag {
