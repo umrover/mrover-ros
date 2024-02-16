@@ -1,6 +1,7 @@
 #pragma once
 
 #include "pch.hpp"
+#include <actionlib/server/simple_action_server.h>
 
 namespace mrover {
 
@@ -10,9 +11,11 @@ namespace mrover {
         ros::Subscriber mPcSub;
 
         // IK publisher
-        ros::Publisher mPcPub;
+        ros::Publisher mIkPub;
 
-        const Point* points{};
+        const Point* mPoints{};
+
+        std::size_t mNumPoints{};
         
     public:
         ClickIkNodelet() = default;
@@ -23,7 +26,7 @@ namespace mrover {
 
         auto pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg) -> void;
 
-        void executeGoal(auto g);
+        void executeGoal();
     };
 
 } // namespace mrover
