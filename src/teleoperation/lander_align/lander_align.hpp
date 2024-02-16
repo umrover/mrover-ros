@@ -29,13 +29,17 @@ namespace mrover {
         //**
         float mBestOffset;
 
-        std::optional<Eigen::Vector3f> mBestCenterInZED;
-        std::optional<Eigen::Vector3f> mBestCenterInWorld;
+        std::optional<Eigen::Vector3d> mBestCenterInZED;
+        std::optional<Eigen::Vector3d> mBestCenterInWorld;
 
-        std::optional<Eigen::Vector3f> mBestNormal;
+        std::optional<Eigen::Vector3d> mBestNormalInZED;
+        std::optional<Eigen::Vector3d> mBestNormalInWorld;
 
-        SE3 mPlaneLocInZED;
-        SE3 mPlaneLocInWorld;
+
+        // SE3 mPlaneLocInZED;
+        // SE3 mPlaneLocInWorld;
+        Eigen::Vector3d mPlaneLocInZED;
+        Eigen::Vector3d mPlaneLocInWorld;
         //**
 
         //TF Member Variables
@@ -60,7 +64,7 @@ namespace mrover {
 
         void ransac(float distanceThreshold, int minInliers, int epochs);
 
-        void sendTwist(Eigen::Vector3f const& offset);
+        void sendTwist(float const& offset);
 
         class PID {
         private:
