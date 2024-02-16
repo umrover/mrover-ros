@@ -13,7 +13,10 @@ can:
   devices:
     - name: "jetson"
       bus: 0
-      id: 0x0 # 0x10 originally
+      id: 0x10
+    - name: "jetson"
+      bus: 1
+      id: 0x10
     - name: "front_left"
       bus: 0
       id: 0x12
