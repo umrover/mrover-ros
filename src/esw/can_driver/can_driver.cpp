@@ -44,9 +44,8 @@ namespace mrover {
 
                     auto bus = xmlRpcValueToTypeOrDefault<std::uint8_t>(canDevice, "bus");
 
-                    if (std::uint8_t interfaceNumber = mInterface.back() - '0'; bus != interfaceNumber) {
-                        continue;
-                    }
+                    mBus = mInterface.back() - '0';
+                    if (bus != mBus) continue;
 
                     assert(canDevice.getType() == XmlRpc::XmlRpcValue::TypeStruct);
 
@@ -139,7 +138,7 @@ namespace mrover {
         auto messageId = std::bit_cast<CanFdMessageId>(static_cast<std::uint16_t>(rawId.identifier));
 
         optional_ref<std::string> sourceDeviceName = mDevices.backward(CanFdAddress{
-                .bus = 0, // TODO set correct bus
+                .bus = mBus, // TODO set correct bus
                 .id = messageId.source,
         });
         if (!sourceDeviceName) {
@@ -148,7 +147,7 @@ namespace mrover {
         }
 
         optional_ref<std::string> destinationDeviceName = mDevices.backward(CanFdAddress{
-                .bus = 0, // TODO set correct bus
+                .bus = mBus, // TODO set correct bus
                 .id = messageId.destination,
         });
         if (!destinationDeviceName) {

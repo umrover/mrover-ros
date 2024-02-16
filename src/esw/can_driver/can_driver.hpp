@@ -53,6 +53,7 @@ namespace mrover {
         ros::NodeHandle mNh, mPnh;
 
         std::string mInterface;
+        std::uint8_t mBus{};
         bool mIsExtendedFrame{};
 
         canfd_frame mReadFrame{};
@@ -68,7 +69,7 @@ namespace mrover {
                 mDevices;
         std::unordered_map<std::string, CanFdPubSub> mDevicesPubSub;
 
-        [[nodiscard]] int setupSocket() const;
+        [[nodiscard]] auto setupSocket() const -> int;
 
         void onInit() override;
 
