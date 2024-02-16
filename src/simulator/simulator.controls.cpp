@@ -82,49 +82,33 @@ namespace mrover {
     }
 
     auto SimulatorNodelet::freeLook(Clock::duration dt) -> void {
+        auto axis = [this](int positive, int negative) -> double {
+            return (glfwGetKey(mWindow.get(), positive) == GLFW_PRESS) - (glfwGetKey(mWindow.get(), negative) == GLFW_PRESS);
+        };
+
         float flySpeed = mFlySpeed * std::chrono::duration_cast<std::chrono::duration<float>>(dt).count();
-        SE3d::Tangent deltaX, deltaY, deltaZ;
-        deltaX << Eigen::Vector3d::UnitX(), Eigen::Vector3d::Zero();
-        deltaY << Eigen::Vector3d::UnitY(), Eigen::Vector3d::Zero();
-        deltaZ << Eigen::Vector3d::UnitZ(), Eigen::Vector3d::Zero();
+        R3 keyDelta = R3{axis(mCamForwardKey, mCamBackwardKey), axis(mCamLeftKey, mCamRightKey), axis(mCamUpKey, mCamDownKey)} * flySpeed;
 
-        // TODO: turn this into a single rplus and lplus operation
-        // overloaded rplus for movement relative to camera frame
-        if (glfwGetKey(mWindow.get(), mCamForwardKey) == GLFW_PRESS) {
-            mCameraInWorld += deltaX * flySpeed;
-        }
-        if (glfwGetKey(mWindow.get(), mCamBackwardKey) == GLFW_PRESS) {
-            mCameraInWorld += deltaX * -flySpeed;
-        }
-        if (glfwGetKey(mWindow.get(), mCamLeftKey) == GLFW_PRESS) {
-            mCameraInWorld += deltaY * flySpeed;
-        }
-        if (glfwGetKey(mWindow.get(), mCamRightKey) == GLFW_PRESS) {
-            mCameraInWorld += deltaY * -flySpeed;
-        }
-
-        // overloaded lplus for movement relative to world frame
-        if (glfwGetKey(mWindow.get(), mCamUpKey) == GLFW_PRESS) {
-            mCameraInWorld = deltaZ * flySpeed + mCameraInWorld;
-        }
-        if (glfwGetKey(mWindow.get(), mCamDownKey) == GLFW_PRESS) {
-            mCameraInWorld = deltaZ * -flySpeed + mCameraInWorld;
-        }
-
-        Eigen::Vector2i size;
-        glfwGetWindowSize(mWindow.get(), &size.x(), &size.y());
-
-        Eigen::Vector2d center = (size / 2).cast<double>();
-
+        Eigen::Vector2i windowSize;
+        glfwGetWindowSize(mWindow.get(), &windowSize.x(), &windowSize.y());
+        Eigen::Vector2d windowCenter = (windowSize / 2).cast<double>();
         Eigen::Vector2d mouse;
         glfwGetCursorPos(mWindow.get(), &mouse.x(), &mouse.y());
+        Eigen::Vector2d mouseDelta = (mouse - windowCenter) * mLookSense;
 
-        Eigen::Vector2d delta = (mouse - center) * mLookSense;
+        SE3d::Tangent cameraRelativeTwist;
+        cameraRelativeTwist << keyDelta.x(), keyDelta.y(), 0.0, 0.0, mouseDelta.y(), 0.0;
 
-        // lplus for tilt in camera frame, rplus for pan in world frame
-        SO3d::Tangent deltaRy = Eigen::Vector3d::UnitY() * delta.y();
-        SO3d::Tangent deltaRz = Eigen::Vector3d::UnitZ() * -delta.x();
-        mCameraInWorld.asSO3() = deltaRz + mCameraInWorld.asSO3() + deltaRy;
+        SE3d::Tangent worldRelativeTwist;
+        worldRelativeTwist << 0.0, 0.0, keyDelta.z(), 0.0, 0.0, 0.0;
+
+        mCameraInWorld = worldRelativeTwist + mCameraInWorld + cameraRelativeTwist;
+
+        SO3d::Tangent worldRelativeAngularVelocity;
+        worldRelativeAngularVelocity << 0.0, 0.0, -mouseDelta.x();
+
+        // TODO: Is there a way to combine this with the above?
+        mCameraInWorld.asSO3() = worldRelativeAngularVelocity + mCameraInWorld.asSO3();
 
         centerCursor();
     }
