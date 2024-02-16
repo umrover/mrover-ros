@@ -1,4 +1,4 @@
-#include "se3.hpp"
+#include "lie.hpp"
 
 SIM3::SIM3(SE3d const& se3, R3 const& scale) {
     mTransform.fromPositionOrientationScale(se3.translation(), se3.rotation(), scale);
