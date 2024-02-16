@@ -15,6 +15,7 @@
 #include <stdexcept>
 #include <thread>
 #include <unordered_set>
+#include <random>
 
 #include <boost/circular_buffer.hpp>
 #include <boost/container/static_vector.hpp>
