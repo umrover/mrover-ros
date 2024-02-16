@@ -4,22 +4,6 @@ gps_driver:
   useRMC: false # get covariance instead of velocity, see wiki for more info
   frame_id: "base_link"
 
-right_gps_driver:
-  port: "/dev/ttyACM0"
-  baud: 38400
-  frame_id: "base_link"
-
-left_gps_driver:
-  port: "/dev/ttyACM0"
-  baud: 38400
-  frame_id: "base_link"
-
-
-basestation_gps_driver:
-  port: "/dev/ttyACM1"
-  baud: 38400
-  frame_id: "base_link"
-
 imu_driver:
   port: "/dev/tty.usbmodem2101"
   baud: 115200
