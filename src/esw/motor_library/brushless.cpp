@@ -47,7 +47,6 @@ namespace mrover {
     }
 
     void BrushlessController::setDesiredPosition(Radians position) {
-        
         // only check for limit switches if at least one limit switch exists and is enabled
         if ((limitSwitch0Enabled && limitSwitch0Present) || (limitSwitch1Enabled && limitSwitch0Present)) {
             sendQuery();
@@ -76,7 +75,6 @@ namespace mrover {
     // Nan          0.0         = Don't move
 
     void BrushlessController::setDesiredVelocity(RadiansPerSecond velocity) {
-
         // only check for limit switches if at least one limit switch exists and is enabled
         if ((limitSwitch0Enabled && limitSwitch0Present) || (limitSwitch1Enabled && limitSwitch0Present)) {
             sendQuery();
@@ -120,7 +118,7 @@ namespace mrover {
         moteus::CanFdFrame setBrakeFrame = mController.MakeBrake();
         mDevice.publish_moteus_frame(setBrakeFrame);
 
-        // ROS_INFO("In brake mode");
+        ROS_INFO("In brake mode");
     }
 
     MoteusLimitSwitchInfo BrushlessController::getPressedLimitSwitchInfo() {
@@ -143,7 +141,7 @@ namespace mrover {
         // TODO - implement this
         MoteusLimitSwitchInfo result;
     
-        // ROS_INFO("moteusAux1Info: %i, moteusAux2Info: %i", moteusAux1Info, moteusAux2Info);
+        ROS_INFO("moteusAux1Info: %i, moteusAux2Info: %i", moteusAux1Info, moteusAux2Info);
         result.isFwdPressed = false;
         result.isBwdPressed = false;
 
@@ -171,7 +169,7 @@ namespace mrover {
             adjust(limitSwitch1ReadjustPosition);
         }
 
-        // ROS_INFO("isFwdPressed: %i  isBwdPress: %i", result.isFwdPressed, result.isBwdPressed);
+        ROS_INFO("isFwdPressed: %i  isBwdPress: %i", result.isFwdPressed, result.isBwdPressed);
 
         return result;
     }
