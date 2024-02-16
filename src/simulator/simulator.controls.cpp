@@ -102,6 +102,10 @@ namespace mrover {
         SE3d::Tangent worldRelativeTwist;
         worldRelativeTwist << 0.0, 0.0, keyDelta.z(), 0.0, 0.0, 0.0;
 
+        // The plus operator is overloaded and corresponds to lplus and rplus in the micro Lie paper
+        // It applies the exponential map to the tangent space element
+        // The result can be acted upon a group element (in this case SE3)
+        // The side of the plus operator determines word vs. camera space application
         mCameraInWorld = worldRelativeTwist + mCameraInWorld + cameraRelativeTwist;
 
         SO3d::Tangent worldRelativeAngularVelocity;
