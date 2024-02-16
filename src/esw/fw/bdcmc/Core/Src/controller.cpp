@@ -9,7 +9,7 @@
 
 extern FDCAN_HandleTypeDef hfdcan1;
 
-extern I2C_HandleTypeDef hi2c1;
+extern I2C_HandleTypweDef hi2c1;
 #define ABSOLUTE_I2C &hi2c1
 
 /**
