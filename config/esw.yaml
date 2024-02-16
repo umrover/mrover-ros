@@ -13,7 +13,10 @@ can:
   devices:
     - name: "jetson"
       bus: 0
-      id: 0x0 # 0x10 originally
+      id: 0x10
+    - name: "jetson"
+      bus: 1
+      id: 0x10
     - name: "front_left"
       bus: 0
       id: 0x12
@@ -33,55 +36,55 @@ can:
       bus: 0
       id: 0x15
     - name: "joint_a"
-      bus: 0
+      bus: 1
       id: 0x20
     - name: "joint_b"
-      bus: 0
+      bus: 1
       id: 0x21
     - name: "joint_c"
-      bus: 0
+      bus: 1
       id: 0x22
     - name: "joint_de_0"
-      bus: 0
+      bus: 1
       id: 0x23
     - name: "joint_de_1"
-      bus: 0
+      bus: 1
       id: 0x24
     - name: "allen_key"
-      bus: 0
+      bus: 1
       id: 0x25
     - name: "gripper"
-      bus: 0
+      bus: 1
       id: 0x26
     - name: "mast_gimbal_y"
-      bus: 0
+      bus: 1
       id: 0x27
     - name: "mast_gimbal_z"
-      bus: 0
+      bus: 1
       id: 0x28
     - name: "sa_x"
-      bus: 0
+      bus: 1
       id: 0x29
     - name: "sa_y"
-      bus: 0
+      bus: 1
       id: 0x30
     - name: "sa_z"
-      bus: 0
+      bus: 1
       id: 0x31
     - name: "sampler"
-      bus: 0
+      bus: 1
       id: 0x32
     - name: "sensor_actuator"
-      bus: 0
+      bus: 1
       id: 0x33
     - name: "cache"
-      bus: 0
+      bus: 1
       id: 0x34
     - name: "pdlb"
-      bus: 0
+      bus: 1
       id: 0x50
     - name: "science"
-      bus: 0
+      bus: 1
       id: 0x51
 
 brushless_motors:

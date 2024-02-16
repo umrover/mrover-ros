@@ -144,8 +144,8 @@ class GUIConsumer(JsonWebsocketConsumer):
                 self.handle_sa_arm_message(message)
             elif message["type"] == "auton_command":
                 self.send_auton_command(message)
-            # elif message["type"] == "teleop_enabled":
-            #     self.send_teleop_enabled(message)
+            elif message["type"] == "teleop_enabled":
+                self.send_teleop_enabled(message)
             elif message["type"] == "auton_tfclient":
                 self.auton_bearing()
             elif message["type"] == "mast_gimbal":
