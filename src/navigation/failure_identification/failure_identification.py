@@ -39,10 +39,8 @@ class FailureIdentifier:
 
     def __init__(self):
         nav_status_sub = message_filters.Subscriber("nav_state", StateMachineStateUpdate)
-        cmd_vel_sub = rospy.Subscriber("cmd_vel", Twist, self.cmd_vel_update)
         drive_status_sub = message_filters.Subscriber("drive_status", MotorsStatus)
         odometry_sub = message_filters.Subscriber("global_ekf/odometry", Odometry)
-        stuck_button_sub = rospy.Subscriber("/rover_stuck", Bool, self.stuck_button_update)
 
         ts = message_filters.ApproximateTimeSynchronizer(
             [nav_status_sub, drive_status_sub, odometry_sub], 10, 1.0, allow_headerless=True
