@@ -289,7 +289,7 @@ namespace mrover {
 
                         //Grab the object inside of the camera frame and push it into the map frame
                         SE3 objectInsideCamera = SE3::fromTfTree(mTfBuffer, mMapFrameId, immediateFrameId);
-                        SE3::pushToTfTree(mTfBroadcaster, permanentFrameId, mCameraFrameId, objectInsideCamera);
+                        SE3::pushToTfTree(mTfBroadcaster, permanentFrameId, mMapFrameId, objectInsideCamera);
                     }
 
                 } catch (tf2::ExtrapolationException const&) {
