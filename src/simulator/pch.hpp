@@ -68,9 +68,10 @@
 
 #include <bimap.hpp>
 #include <loop_profiler.hpp>
+#include <manif/manif.h>
 #include <params_utils.hpp>
 #include <point.hpp>
-#include <se3.hpp>
+#include <lie.hpp>
 #include <units.hpp>
 
 #include <mrover/ControllerState.h>

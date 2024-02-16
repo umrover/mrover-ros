@@ -97,7 +97,7 @@ namespace mrover {
 
         auto makeCameraForLink(SimulatorNodelet& simulator, btMultibodyLink const* link) -> Camera;
 
-        [[nodiscard]] auto linkInWorld(std::string const& linkName) const -> SE3;
+        [[nodiscard]] auto linkInWorld(std::string const& linkName) const -> SE3d;
     };
 
     struct PeriodicTask {
@@ -305,7 +305,7 @@ namespace mrover {
 
         auto getUrdf(std::string const& name) -> std::optional<std::reference_wrapper<URDF>>;
 
-        SE3 mCameraInWorld{R3{-3.0, 0.0, 1.5}, SO3{}};
+        SE3d mCameraInWorld{R3{-3.0, 0.0, 1.5}, SO3d::Identity()};
 
         std::vector<StereoCamera> mStereoCameras;
         std::vector<Camera> mCameras;
@@ -432,7 +432,7 @@ namespace mrover {
 
     auto urdfPoseToBtTransform(urdf::Pose const& pose) -> btTransform;
 
-    auto btTransformToSe3(btTransform const& transform) -> SE3;
+    auto btTransformToSe3(btTransform const& transform) -> SE3d;
 
     auto computeCameraToClip(float fovY, float aspect, float zNear, float zFar) -> Eigen::Matrix4f;
 

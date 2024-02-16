@@ -11,9 +11,9 @@ namespace mrover {
         camera.sceneUniforms.value.lightInWorld = {0, 0, 5, 1};
         float aspect = static_cast<float>(camera.resolution.x()) / static_cast<float>(camera.resolution.y());
         camera.sceneUniforms.value.cameraToClip = computeCameraToClip(camera.fov * DEG_TO_RAD, aspect, NEAR, FAR).cast<float>();
-        SE3 cameraInWorld = btTransformToSe3(camera.link->m_cachedWorldTransform);
-        camera.sceneUniforms.value.worldToCamera = cameraInWorld.matrix().inverse().cast<float>();
-        camera.sceneUniforms.value.cameraInWorld = cameraInWorld.position().cast<float>().homogeneous();
+        SE3d cameraInWorld = btTransformToSe3(camera.link->m_cachedWorldTransform);
+        camera.sceneUniforms.value.worldToCamera = cameraInWorld.inverse().transform().cast<float>();
+        camera.sceneUniforms.value.cameraInWorld = cameraInWorld.translation().cast<float>().homogeneous();
         camera.sceneUniforms.enqueueWrite();
 
         wgpu::BindGroupEntry entry;
@@ -111,22 +111,22 @@ namespace mrover {
         return {lat, lon, alt};
     }
 
-    auto computeNavSatFix(SE3 const& gpuInMap, Eigen::Vector3d const& referenceGeodetic, double referenceHeadingDegrees) -> sensor_msgs::NavSatFix {
+    auto computeNavSatFix(SE3d const& gpsInMap, Eigen::Vector3d const& referenceGeodetic, double referenceHeadingDegrees) -> sensor_msgs::NavSatFix {
         sensor_msgs::NavSatFix gpsMessage;
         gpsMessage.header.stamp = ros::Time::now();
         gpsMessage.header.frame_id = "map";
-        auto geodetic = cartesianToGeodetic(gpuInMap.position(), referenceGeodetic, referenceHeadingDegrees);
+        auto geodetic = cartesianToGeodetic(gpsInMap.translation(), referenceGeodetic, referenceHeadingDegrees);
         gpsMessage.latitude = geodetic(0);
         gpsMessage.longitude = geodetic(1);
         gpsMessage.altitude = geodetic(2);
         return gpsMessage;
     }
 
-    auto computeImu(SE3 const& imuInMap, R3 const& imuAngularVelocity, R3 const& linearAcceleration, R3 const& magneticField) -> ImuAndMag {
+    auto computeImu(SE3d const& imuInMap, R3 const& imuAngularVelocity, R3 const& linearAcceleration, R3 const& magneticField) -> ImuAndMag {
         ImuAndMag imuMessage;
         imuMessage.header.stamp = ros::Time::now();
         imuMessage.header.frame_id = "map";
-        S3 q = imuInMap.rotation().quaternion();
+        S3 q = imuInMap.quat();
         imuMessage.imu.orientation.w = q.w();
         imuMessage.imu.orientation.x = q.x();
         imuMessage.imu.orientation.y = q.y();
@@ -152,15 +152,15 @@ namespace mrover {
             URDF const& rover = *lookup;
 
             {
-                SE3 baseLinkInMap = rover.linkInWorld("base_link");
+                SE3d baseLinkInMap = rover.linkInWorld("base_link");
                 nav_msgs::Odometry odometry;
                 odometry.header.stamp = ros::Time::now();
                 odometry.header.frame_id = "map";
-                R3 p = baseLinkInMap.position();
+                R3 p = baseLinkInMap.translation();
                 odometry.pose.pose.position.x = p.x();
                 odometry.pose.pose.position.y = p.y();
                 odometry.pose.pose.position.z = p.z();
-                S3 q = baseLinkInMap.rotation().quaternion();
+                S3 q = baseLinkInMap.quat();
                 odometry.pose.pose.orientation.w = q.w();
                 odometry.pose.pose.orientation.x = q.x();
                 odometry.pose.pose.orientation.y = q.y();
@@ -169,7 +169,7 @@ namespace mrover {
                 mGroundTruthPub.publish(odometry);
             }
             if (mGpsTask.shouldUpdate()) {
-                SE3 gpsInMap = rover.linkInWorld("chassis_link");
+                SE3d gpsInMap = rover.linkInWorld("chassis_link");
                 mGpsPub.publish(computeNavSatFix(gpsInMap, mGpsLinerizationReferencePoint, mGpsLinerizationReferenceHeading));
             }
             if (mImuTask.shouldUpdate()) {
@@ -177,8 +177,8 @@ namespace mrover {
                 R3 roverLinearVelocity = btVector3ToR3(rover.physics->getBaseVel());
                 R3 imuLinearAcceleration = (roverLinearVelocity - mRoverLinearVelocity) / std::chrono::duration_cast<std::chrono::duration<float>>(dt).count();
                 mRoverLinearVelocity = roverLinearVelocity;
-                SE3 imuInMap = rover.linkInWorld("imu");
-                mImuPub.publish(computeImu(imuInMap, imuAngularVelocity, imuLinearAcceleration, imuInMap.rotation().matrix().transpose().col(1)));
+                SE3d imuInMap = rover.linkInWorld("imu");
+                mImuPub.publish(computeImu(imuInMap, imuAngularVelocity, imuLinearAcceleration, imuInMap.asSO3().inverse().rotation().col(1)));
             }
         }
     }

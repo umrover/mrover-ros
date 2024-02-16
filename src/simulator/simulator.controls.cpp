@@ -82,40 +82,37 @@ namespace mrover {
     }
 
     auto SimulatorNodelet::freeLook(Clock::duration dt) -> void {
+        auto axis = [this](int positive, int negative) -> double {
+            return (glfwGetKey(mWindow.get(), positive) == GLFW_PRESS) - (glfwGetKey(mWindow.get(), negative) == GLFW_PRESS);
+        };
+
         float flySpeed = mFlySpeed * std::chrono::duration_cast<std::chrono::duration<float>>(dt).count();
-        if (glfwGetKey(mWindow.get(), mCamRightKey) == GLFW_PRESS) {
-            mCameraInWorld = SE3{R3{0, -flySpeed, 0}, SO3{}} * mCameraInWorld;
-        }
-        if (glfwGetKey(mWindow.get(), mCamLeftKey) == GLFW_PRESS) {
-            mCameraInWorld = SE3{R3{0, flySpeed, 0}, SO3{}} * mCameraInWorld;
-        }
-        if (glfwGetKey(mWindow.get(), mCamForwardKey) == GLFW_PRESS) {
-            mCameraInWorld = SE3{R3{flySpeed, 0, 0}, SO3{}} * mCameraInWorld;
-        }
-        if (glfwGetKey(mWindow.get(), mCamBackwardKey) == GLFW_PRESS) {
-            mCameraInWorld = SE3{R3{-flySpeed, 0, 0}, SO3{}} * mCameraInWorld;
-        }
-        if (glfwGetKey(mWindow.get(), mCamUpKey) == GLFW_PRESS) {
-            mCameraInWorld = mCameraInWorld * SE3{R3{0, 0, flySpeed}, SO3{}};
-        }
-        if (glfwGetKey(mWindow.get(), mCamDownKey) == GLFW_PRESS) {
-            mCameraInWorld = mCameraInWorld * SE3{R3{0, 0, -flySpeed}, SO3{}};
-        }
+        R3 keyDelta = R3{axis(mCamForwardKey, mCamBackwardKey), axis(mCamLeftKey, mCamRightKey), axis(mCamUpKey, mCamDownKey)} * flySpeed;
 
-        Eigen::Vector2i size;
-        glfwGetWindowSize(mWindow.get(), &size.x(), &size.y());
-
-        Eigen::Vector2d center = (size / 2).cast<double>();
-
+        Eigen::Vector2i windowSize;
+        glfwGetWindowSize(mWindow.get(), &windowSize.x(), &windowSize.y());
+        Eigen::Vector2d windowCenter = (windowSize / 2).cast<double>();
         Eigen::Vector2d mouse;
         glfwGetCursorPos(mWindow.get(), &mouse.x(), &mouse.y());
+        Eigen::Vector2d mouseDelta = (mouse - windowCenter) * mLookSense;
 
-        Eigen::Vector2d delta = (mouse - center) * mLookSense;
+        SE3d::Tangent cameraRelativeTwist;
+        cameraRelativeTwist << keyDelta.x(), keyDelta.y(), 0.0, 0.0, mouseDelta.y(), 0.0;
 
-        // TODO(quintin): use lie algebra more here? we have a perturbation in the tangent space
-        R3 p = mCameraInWorld.position();
-        SO3 q = SO3{delta.y(), R3::UnitY()} * mCameraInWorld.rotation() * SO3{-delta.x(), R3::UnitZ()};
-        mCameraInWorld = SE3{p, q};
+        SE3d::Tangent worldRelativeTwist;
+        worldRelativeTwist << 0.0, 0.0, keyDelta.z(), 0.0, 0.0, 0.0;
+
+        // The plus operator is overloaded and corresponds to lplus and rplus in the micro Lie paper
+        // It applies the exponential map to the tangent space element
+        // The result can be acted upon a group element (in this case SE3)
+        // The side of the plus operator determines word vs. camera space application
+        mCameraInWorld = worldRelativeTwist + mCameraInWorld + cameraRelativeTwist;
+
+        SO3d::Tangent worldRelativeAngularVelocity;
+        worldRelativeAngularVelocity << 0.0, 0.0, -mouseDelta.x();
+
+        // TODO: Is there a way to combine this with the above?
+        mCameraInWorld.asSO3() = worldRelativeAngularVelocity + mCameraInWorld.asSO3();
 
         centerCursor();
     }
