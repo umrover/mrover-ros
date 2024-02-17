@@ -1,16 +1,4 @@
 #include "invariant_ekf.hpp"
-#include <chrono>
-#include <geometry_msgs/Pose.h>
-#include <nav_msgs/Odometry.h>
-#include <ros/ros.h>
-#include <sensor_msgs/Imu.h>
-#include <sensor_msgs/MagneticField.h>
-#include <boost_cpp23_workaround.hpp>
-#include <tf2_ros/transform_broadcaster.h>
-#include <tf2_ros/transform_listener.h>
-#include <tf2_ros/buffer.h>
-
-
 
 using TimePoint = std::chrono::time_point<std::chrono::system_clock>;
 using Duration = std::chrono::duration<double>;
@@ -27,6 +15,8 @@ private:
     TimePoint mLastImuTime, mLastGpsTime, mLastMagTime;
 
     InvariantEKF init_EKF();
+
+    void imu_mag_callback(const mrover::ImuAndMag& msg);
 
     void imu_callback(const sensor_msgs::Imu& msg);
 

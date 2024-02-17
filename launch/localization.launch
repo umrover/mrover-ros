@@ -9,11 +9,13 @@
     <rosparam unless="$(arg sim)" command="load" file="$(find mrover)/config/ekf.yaml" />
 
     <!-- Global EKF -->
-    <node if="$(arg use_ekf)"
+    <!-- <node if="$(arg use_ekf)"
         pkg="robot_localization" type="ekf_localization_node" name="global_ekf"
         clear_params="true" launch-prefix="bash -c 'sleep $(arg ekf_start_delay); $0 $@'">
         <remap from="odometry/filtered" to="global_ekf/odometry" />
-    </node>
+    </node> -->
+    <node if="$(arg use_ekf)" name="inv_ekf" pkg="mrover" type="invariant_ekf" output="screen" />
+
     <!-- Passthrough filter to replace EKF in data path -->
     <node unless="$(arg use_ekf)" pkg="mrover" type="passthrough_filter.py"
         name="passthrough_filter" />

@@ -8,7 +8,7 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 #include <Eigen/Geometry>
-#include <manif/SE3.h>
+#include <manif/manif.h>
 
 using manif::SE3d, manif::SO3d;
 

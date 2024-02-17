@@ -1,5 +1,4 @@
-#include <Eigen/Dense>
-#include <manif/manif.h>
+#include "pch.hpp"
 
 using Eigen::Matrix3d, Eigen::Vector3d;
 using manif::SE_2_3d, manif::SE_2_3Tangentd;

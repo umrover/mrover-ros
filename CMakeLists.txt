@@ -188,7 +188,7 @@ endif ()
 ## Localization
 
 mrover_add_node(invariant_ekf src/localization/invariant_ekf/*.cpp src/localization/invariant_ekf/*.hpp)
-target_include_directories(invariant_ekf SYSTEM PRIVATE ${manif_INCLUDE_DIRS})
+target_link_libraries(invariant_ekf PRIVATE lie manif)
 
 ## Perception
 

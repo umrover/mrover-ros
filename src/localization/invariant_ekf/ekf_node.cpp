@@ -1,12 +1,4 @@
 #include "ekf_node.hpp"
-#include <Eigen/src/Core/Matrix.h>
-#include <geometry_msgs/Quaternion.h>
-#include <geometry_msgs/TransformStamped.h>
-#include <geometry_msgs/Vector3.h>
-#include <sensor_msgs/MagneticField.h>
-#include <tf2_ros/buffer.h>
-#include <tf2_ros/transform_broadcaster.h>
-#include <tf2_ros/transform_listener.h>
 
 InvariantEKF InvariantEKFNode::init_EKF() {
     // set initial position to zero and initial covariant to very high number
@@ -41,8 +33,8 @@ InvariantEKFNode::InvariantEKFNode() : mEKF(init_EKF()) {
     mLastGpsTime = std::chrono::system_clock::now();
 
     // set up subscribers and publishers
-    mImuSub = mNh.subscribe("imu", 1, &InvariantEKFNode::imu_callback, this);
-    mGpsSub = mNh.subscribe("gps", 1, &InvariantEKFNode::gps_callback, this);
+    mImuSub = mNh.subscribe("imu/data", 1, &InvariantEKFNode::imu_callback, this);
+    mGpsSub = mNh.subscribe("gps/fix", 1, &InvariantEKFNode::gps_callback, this);
     mMagSub = mNh.subscribe("mag", 1, &InvariantEKFNode::mag_callback, this);
 
     mOdometryPub = mNh.advertise<nav_msgs::Odometry>("odometry", 1);
