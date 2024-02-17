@@ -5,6 +5,8 @@ using manif::SE_2_3d;
 using Matrix9d = Eigen::Matrix<double, 9, 9>;
 using Matrix39d = Eigen::Matrix<double, 3, 9>;
 
+constexpr double g = 9.81;
+
 class InvariantEKF {
 public:
     InvariantEKF(const SE_2_3d& x0, const Matrix9d& P0, const Matrix9d& Q, const Matrix3d& R_gps_default, const Matrix3d& R_accel_default, const Matrix3d& R_mag_default);

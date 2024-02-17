@@ -6,9 +6,10 @@ InvariantEKF::InvariantEKF(SE_2_3d const& x0, Matrix9d const& P0, Matrix9d const
 void InvariantEKF::predict(const R3& accel, const R3& gyro, double dt) {
     // subtract gravity vector from measured acceleration
     // TODO: make static member variable?
-    const R3 g(0, 0, -9.81);
+    const R3 accel_g(0, 0, g);
     Matrix3d R = mX.rotation();
-    R3 accel_body = accel + R.transpose() * g;
+    R3 accel_body = accel + R.transpose() * accel_g;
+    std::cout << "accel_body: " << accel_body << std::endl;
 
     // use kinematics to compute increments to each state component
     R3 delta_pos = (R.transpose() * mX.linearVelocity() * dt) + (0.5 * accel_body * dt * dt);
@@ -16,7 +17,7 @@ void InvariantEKF::predict(const R3& accel, const R3& gyro, double dt) {
     R3 delta_v = accel_body * dt;
 
     Matrix3d accLinCross = manif::skew(delta_pos);
-    R3 gLin = R.transpose() * g * dt;
+    R3 gLin = R.transpose() * accel_g * dt;
     Matrix3d gCross = manif::skew(gLin);
 
 

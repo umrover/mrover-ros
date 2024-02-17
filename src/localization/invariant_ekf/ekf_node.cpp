@@ -43,7 +43,7 @@ InvariantEKFNode::InvariantEKFNode() : mEKF(init_EKF()) {
 
 void InvariantEKFNode::imu_mag_callback(mrover::ImuAndMag const& msg) {
     imu_callback(msg.imu);
-    mag_callback(msg.mag);
+    // mag_callback(msg.mag);
 }
 
 void InvariantEKFNode::imu_callback(sensor_msgs::Imu const& msg) {
@@ -54,7 +54,7 @@ void InvariantEKFNode::imu_callback(sensor_msgs::Imu const& msg) {
     Vector3d accel(msg.linear_acceleration.x, msg.linear_acceleration.y, msg.linear_acceleration.z);
     Vector3d gyro(msg.angular_velocity.x, msg.angular_velocity.y, msg.angular_velocity.z);
     mEKF.predict(accel, gyro, dt);
-    mEKF.update_accel(accel);
+    // mEKF.update_accel(accel);
 }
 
 void InvariantEKFNode::mag_callback(sensor_msgs::MagneticField const& msg) {
@@ -73,7 +73,7 @@ void InvariantEKFNode::gps_callback(geometry_msgs::PoseWithCovarianceStamped con
 
     auto p = msg.pose.pose.position;
     R3 z{p.x, p.y, p.z};
-    mEKF.update_gps(z);
+    // mEKF.update_gps(z);
 }
 
 void InvariantEKFNode::publish_odometry() {

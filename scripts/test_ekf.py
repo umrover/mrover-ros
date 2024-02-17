@@ -14,46 +14,46 @@ from util.SE3 import SE3
 
 SQUARE_PATH = [
     (
-        Waypoint(fiducial_id=0, type=WaypointType(val=WaypointType.NO_SEARCH)),
+        Waypoint(tag_id=0, type=WaypointType(val=WaypointType.NO_SEARCH)),
         SE3(position=np.array([3, 3, 0])),
     ),
     (
-        Waypoint(fiducial_id=1, type=WaypointType(val=WaypointType.NO_SEARCH)),
+        Waypoint(tag_id=1, type=WaypointType(val=WaypointType.NO_SEARCH)),
         SE3(position=np.array([0, 6, 0])),
     ),
     (
-        Waypoint(fiducial_id=2, type=WaypointType(val=WaypointType.NO_SEARCH)),
+        Waypoint(tag_id=2, type=WaypointType(val=WaypointType.NO_SEARCH)),
         SE3(position=np.array([-3, 3, 0])),
     ),
     (
-        Waypoint(fiducial_id=3, type=WaypointType(val=WaypointType.NO_SEARCH)),
+        Waypoint(tag_id=3, type=WaypointType(val=WaypointType.NO_SEARCH)),
         SE3(position=np.array([0, 0, 0])),
     ),
 ]
 ANGLE_PATH = [
     (
-        Waypoint(fiducial_id=0, type=WaypointType(val=WaypointType.NO_SEARCH)),
+        Waypoint(tag_id=0, type=WaypointType(val=WaypointType.NO_SEARCH)),
         SE3(position=np.array([6, 0, 0])),
     ),
     (
-        Waypoint(fiducial_id=3, type=WaypointType(val=WaypointType.NO_SEARCH)),
+        Waypoint(tag_id=3, type=WaypointType(val=WaypointType.NO_SEARCH)),
         SE3(position=np.array([10, 9, 0])),
     ),
 ]
 LINE_PATH = [
     (
-        Waypoint(fiducial_id=0, type=WaypointType(val=WaypointType.NO_SEARCH)),
+        Waypoint(tag_id=0, type=WaypointType(val=WaypointType.NO_SEARCH)),
         SE3(position=np.array([7, 3.7, 0])),
     ),
 ]
 
 SIM_LINE_PATH = [
     (
-        Waypoint(fiducial_id=0, type=WaypointType(val=WaypointType.NO_SEARCH)),
+        Waypoint(tag_id=0, type=WaypointType(val=WaypointType.NO_SEARCH)),
         SE3(position=np.array([-3.2, 1.4, 0])),
     ),
     (
-        Waypoint(fiducial_id=0, type=WaypointType(val=WaypointType.NO_SEARCH)),
+        Waypoint(tag_id=0, type=WaypointType(val=WaypointType.NO_SEARCH)),
         SE3(position=np.array([-1, 5, 0])),
     ),
 ]

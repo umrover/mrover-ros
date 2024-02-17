@@ -191,6 +191,11 @@ namespace mrover {
                 SO3d imuInMap = rover.linkInWorld("imu").asSO3();
                 R3 roverMagVector = imuInMap.inverse().rotation().col(1);
 
+                constexpr double g = 9.81;
+                R3 gravityInMap{0, 0, g};
+                R3 gravityInRover = imuInMap.inverse().rotation() * gravityInMap;
+                roverLinearAcceleration += gravityInRover;
+
                 R3 accelNoise{mAccelDist(mRNG), mAccelDist(mRNG), mAccelDist(mRNG)},
                         gyroNoise{mGyroDist(mRNG), mGyroDist(mRNG), mGyroDist(mRNG)},
                         magNoise{mMagDist(mRNG), mMagDist(mRNG), mMagDist(mRNG)};
