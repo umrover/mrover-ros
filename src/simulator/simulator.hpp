@@ -225,6 +225,16 @@ namespace mrover {
         R3 mGpsLinerizationReferencePoint{};
         double mGpsLinerizationReferenceHeading{};
 
+        // TODO: make variances configurable
+        std::default_random_engine mRNG;
+        std::normal_distribution<double> mGPSDist{0, 0.2},
+                mAccelDist{0, 0.05},
+                mGyroDist{0, 0.02},
+                mMagDist{0, 0.1},
+                mRollDist{0, 0.05},
+                mPitchDist{0, 0.05},
+                mYawDist{0, 0.1};
+
         PeriodicTask mGpsTask;
         PeriodicTask mImuTask;
 
