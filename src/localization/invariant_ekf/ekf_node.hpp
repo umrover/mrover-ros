@@ -6,11 +6,11 @@ using Duration = std::chrono::duration<double>;
 class InvariantEKFNode {
 private:
     ros::NodeHandle mNh, mPnh;
-    ros::Subscriber mImuSub, mGpsSub, mMagSub;
+    ros::Subscriber mImuSub, mGpsSub;
     ros::Publisher mOdometryPub;
-    tf2_ros::TransformBroadcaster TfBroadcaster;
-    tf2_ros::Buffer TfBuffer;
-    tf2_ros::TransformListener TfListener{TfBuffer};
+    tf2_ros::TransformBroadcaster mTfBroadcaster;
+    tf2_ros::Buffer mTfBuffer;
+    tf2_ros::TransformListener mTfListener{mTfBuffer};
     InvariantEKF mEKF;
     TimePoint mLastImuTime, mLastGpsTime, mLastMagTime;
 
@@ -20,7 +20,7 @@ private:
 
     void imu_callback(const sensor_msgs::Imu& msg);
 
-    void gps_callback(const geometry_msgs::Pose& msg);
+    void gps_callback(const geometry_msgs::PoseWithCovarianceStamped& msg);
 
     void mag_callback(const sensor_msgs::MagneticField& msg);
 

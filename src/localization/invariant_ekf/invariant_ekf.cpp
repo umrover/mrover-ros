@@ -6,7 +6,7 @@ InvariantEKF::InvariantEKF(const SE_2_3d& x0, const Matrix9d& P0, const Matrix9d
 void InvariantEKF::predict(const Vector3d& accel, const Vector3d& gyro, double dt) {
     // subtract gravity vector from measured acceleration
     // TODO: make static member variable?
-    const Eigen::Vector3d g(0, 0, -9.81);
+    const R3 g(0, 0, -9.81);
     Matrix3d R = mX.rotation();
     Vector3d accel_body = accel + R.transpose() * g;
 
@@ -40,19 +40,16 @@ void InvariantEKF::predict(const Vector3d& accel, const Vector3d& gyro, double d
 
 //pos
 void InvariantEKF::update_gps(Eigen::Vector3d const& observed_gps, Matrix3d const& R_gps) {
-    //Yk = h_x + noise
-    Vector3d h_x = mX.translation(); //what is the jacobian of this
-
     Eigen::Vector3d zero = Eigen::Vector3d::Zero();
     Eigen::Matrix<double, 3, 9> J_e_x;
     J_e_x.setZero();
 
     //R(0) + t = t
-    Vector3d e = mX.act(zero, J_e_x);
+    Vector3d expected_gps = mX.act(zero, J_e_x);
     Eigen::Matrix<double, 3, 9> H = J_e_x;
 
     //innovation
-    auto z = observed_gps - e;
+    auto z = observed_gps - expected_gps;
 
     //innovation cov
     auto S_n = (H * mP * H.transpose()) + R_gps;
@@ -77,21 +74,20 @@ void InvariantEKF::update_gps(Eigen::Vector3d const& observed_gps) {
 //vel
 void InvariantEKF::update_accel(Eigen::Vector3d const& observed_accel, Matrix3d const& R_accel) {
     const Vector3d g(0, 0, 1);
-    manif::SO3<double> rot = mX.asSO3();
-    manif::SO3<double>::Jacobian J_xi_x;
-    manif::SO3<double>::Jacobian J_e_xi;
+    SO3d R = mX.asSO3();
+    SO3d::Jacobian J_Ri_R, J_e_Ri, J_e_R;
 
-    Vector3d e = rot.inverse(J_xi_x).act(g, J_e_xi);
-    auto rot_J_e_x = J_e_xi * J_xi_x;
+    Vector3d predicted_accel = R.inverse(J_Ri_R).act(g, J_e_Ri);
+    J_e_R = J_e_Ri * J_Ri_R;
 
-    //final jacobian
+    // final jacobian
     Eigen::Matrix<double, 3, 9> J_e_x;
     J_e_x.setZero();
-    J_e_x.block(0, 0, 3, 3) = J_e_x;
+    J_e_x.block(0, 0, 3, 3) = J_e_R;
     Eigen::Matrix<double, 3, 9> H = J_e_x;
 
     //innovation
-    auto z = observed_accel - e;
+    auto z = observed_accel - predicted_accel;
 
     //innovation cov
     auto S_n = (H * mP * H.transpose()) + R_accel;
@@ -117,18 +113,17 @@ void InvariantEKF::update_accel(Eigen::Vector3d const& observed_accel) {
 //orientation
 void InvariantEKF::update_mag(Eigen::Vector3d const& observed_mag, Matrix3d const& R_mag) {
     const Vector3d north(0, 1, 0);
-    manif::SO3<double> rot = mX.asSO3();
-    manif::SO3<double>::Jacobian J_xi_x;
-    manif::SO3<double>::Jacobian J_e_xi;
+    SO3d R = mX.asSO3();
+    SO3d::Jacobian J_Ri_R, J_e_Ri, J_e_R;
 
-    Vector3d e = rot.inverse(J_xi_x).act(north, J_e_xi);
-    auto rot_J_e_x = J_e_xi * J_xi_x;
+    Vector3d e = R.inverse(J_Ri_R).act(north, J_e_Ri);
+    J_e_R = J_e_Ri * J_Ri_R;
 
     //final jacobian
     //source: https://arxiv.org/pdf/2007.14097.pdf
     Eigen::Matrix<double, 3, 9> J_e_x;
     J_e_x.setZero();
-    J_e_x.block(0, 0, 3, 3) = J_e_x;
+    J_e_x.block(0, 0, 3, 3) = J_e_R;
     Eigen::Matrix<double, 3, 9> H = J_e_x;
 
     //innovation

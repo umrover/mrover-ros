@@ -2,6 +2,7 @@
 
 InvariantEKF InvariantEKFNode::init_EKF() {
     // set initial position to zero and initial covariant to very high number
+    // TODO: make this a param
     auto x0 = SE_2_3d::Identity();
     auto P0 = Matrix9d::Identity() * 1e6;
 
@@ -33,14 +34,19 @@ InvariantEKFNode::InvariantEKFNode() : mEKF(init_EKF()) {
     mLastGpsTime = std::chrono::system_clock::now();
 
     // set up subscribers and publishers
-    mImuSub = mNh.subscribe("imu/data", 1, &InvariantEKFNode::imu_callback, this);
-    mGpsSub = mNh.subscribe("gps/fix", 1, &InvariantEKFNode::gps_callback, this);
-    mMagSub = mNh.subscribe("mag", 1, &InvariantEKFNode::mag_callback, this);
+    mImuSub = mNh.subscribe("imu/data", 1, &InvariantEKFNode::imu_mag_callback, this);
+    mGpsSub = mNh.subscribe("linearized_pose", 1, &InvariantEKFNode::gps_callback, this);
+    // mMagSub = mNh.subscribe("mag", 1, &InvariantEKFNode::mag_callback, this);
 
     mOdometryPub = mNh.advertise<nav_msgs::Odometry>("odometry", 1);
 }
 
-void InvariantEKFNode::imu_callback(const sensor_msgs::Imu& msg) {
+void InvariantEKFNode::imu_mag_callback(mrover::ImuAndMag const& msg) {
+    imu_callback(msg.imu);
+    mag_callback(msg.mag);
+}
+
+void InvariantEKFNode::imu_callback(sensor_msgs::Imu const& msg) {
     auto now = std::chrono::system_clock::now();
     double dt = Duration(now - mLastImuTime).count();
     mLastImuTime = now;
@@ -51,7 +57,7 @@ void InvariantEKFNode::imu_callback(const sensor_msgs::Imu& msg) {
     mEKF.update_accel(accel);
 }
 
-void InvariantEKFNode::mag_callback(const sensor_msgs::MagneticField& msg) {
+void InvariantEKFNode::mag_callback(sensor_msgs::MagneticField const& msg) {
     auto now = std::chrono::system_clock::now();
     double dt = Duration(now - mLastMagTime).count();
     mLastMagTime = now;
@@ -60,12 +66,13 @@ void InvariantEKFNode::mag_callback(const sensor_msgs::MagneticField& msg) {
     mEKF.update_mag(mag);
 }
 
-void InvariantEKFNode::gps_callback(const geometry_msgs::Pose& msg) {
+void InvariantEKFNode::gps_callback(geometry_msgs::PoseWithCovarianceStamped const& msg) {
     auto now = std::chrono::system_clock::now();
     double dt = Duration(now - mLastGpsTime).count();
     mLastGpsTime = now;
 
-    Vector3d z(msg.position.x, msg.position.y, msg.position.z);
+    auto p = msg.pose.pose.position;
+    R3 z{p.x, p.y, p.z};
     mEKF.update_gps(z);
 }
 
@@ -102,32 +109,10 @@ void InvariantEKFNode::publish_odometry() {
 }
 
 
-void InvariantEKFNode::publish_tf(){
-    //not using odom, publish map -> base_link
-    geometry_msgs::TransformStamped tf;
-
+void InvariantEKFNode::publish_tf() {
     auto state = mEKF.get_state();
-    geometry_msgs::Vector3 pos = geometry_msgs::Vector3();
-    pos.x = state.x();
-    pos.y = state.y();
-    pos.z = state.z();
-
-    tf.transform.translation = pos;
-
-    geometry_msgs::Quaternion orientation = geometry_msgs::Quaternion();
-    orientation.w = state.quat().w();
-    orientation.x = state.quat().x();
-    orientation.y = state.quat().y();
-    orientation.z = state.quat().z();
-
-    tf.transform.rotation = orientation;
-
-    tf.header.stamp = ros::Time::now();
-    tf.header.frame_id = "map";
-    tf.child_frame_id = "base_link";
-
-    TfBroadcaster.sendTransform(tf);    
-
+    SE3d pose{state.translation(), state.quat()};
+    SE3Conversions::pushToTfTree(mTfBroadcaster, "base_link", "map", pose);
 }
 
 void InvariantEKFNode::run() {
@@ -140,4 +125,8 @@ void InvariantEKFNode::run() {
     }
 }
 
-int main(){}
+int main(int argc, char** argv) {
+    ros::init(argc, argv, "invariant_ekf_node");
+    InvariantEKFNode node;
+    node.run();
+}
