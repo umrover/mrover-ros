@@ -141,18 +141,18 @@ brushless_motors:
       max_velocity: 70.0
     joint_de_0:
       velocity_multiplier: 1.0
-      min_velocity: -100.0
-      max_velocity: 100.0
+      min_velocity: -67.0
+      max_velocity: 67.0
     joint_de_1:
       velocity_multiplier: -1.0
-      min_velocity: -100.0
-      max_velocity: 100.0
+      min_velocity: -67.0
+      max_velocity: 67.0
     sa_z:
       velocity_multiplier: 1.0
-      min_velocity: -1.0
-      max_velocity: 1.0
+      min_velocity: -100.0
+      max_velocity: 100.0
       is_linear: true
-      rad_to_meters_ratio: 1.0 #TODO
+      rad_to_meters_ratio: 157.48 #rad/m
       limit_0_present: true
       limit_1_present: true
       limit_0_enabled: true

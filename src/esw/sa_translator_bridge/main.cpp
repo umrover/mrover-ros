@@ -1,17 +1,17 @@
-#include "can_device.hpp"
-#include <motors_group.hpp>
 #include <ros/ros.h>
-#include <std_srvs/SetBool.h>
+
+#include "arm_translator.hpp"
+#include <memory.h>
 
 int main(int argc, char** argv) {
     // Initialize the ROS node
-    ros::init(argc, argv, "sa_bridge");
+    ros::init(argc, argv, "sa_translator_bridge");
     ros::NodeHandle nh;
 
-    // Load motor controllers configuration from the ROS parameter server
-    [[maybe_unused]] auto SAManager = std::make_unique<mrover::MotorsGroup>(nh, "sa_hw");
+    [[maybe_unused]] auto saTranslator = std::make_unique<mrover::SATranslator>(nh);
+
     // Enter the ROS event loop
     ros::spin();
 
-    return 0;
+    return EXIT_SUCCESS;
 }

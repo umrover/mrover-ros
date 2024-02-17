@@ -28,11 +28,15 @@ int main(int argc, char** argv) {
     // fake DE publisher:
 
     auto DEPub = std::make_unique<ros::Publisher>(nh.advertise<mrover::Velocity>("arm_velocity_cmd", 1));
+    auto SAPub = std::make_unique<ros::Publisher>(nh.advertise<mrover::Velocity>("sa_velocity_cmd", 1));
 
 
-    mrover::Velocity msg;
-    msg.names = {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll", "allen_key", "gripper"};
-    msg.velocities = {0, 0, 0, 0, 10, 0, 0};
+    mrover::Velocity armMsg, saMsg;
+    armMsg.names = {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll", "allen_key", "gripper"};
+    armMsg.velocities = {0, 0, 0, 0, 10, 0, 0};
+
+    saMsg.names = {"sa_x", "sa_y", "sa_z", "sampler", "sensor_actuator"};
+    saMsg.velocities = {0, 0, 0.05, 0, 0};
 
     // brushlessController_de0->setStop();
     // brushlessController_de1->setStop();
@@ -43,12 +47,12 @@ int main(int argc, char** argv) {
 
     while(ros::ok()){
         // publish DE velocity:
-        DEPub->publish(msg);
-
+        DEPub->publish(armMsg);
+        SAPub->pubhlish(saMsg);
         count++;
 
         if(count > 50) {
-            msg.velocities[0] *= -1;
+            armMsg.velocities[0] *= -1;
             count = 0;
         }   
 
