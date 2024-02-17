@@ -6,7 +6,10 @@
   <!-- Launch the simulator with no window or interaction -->
   <include file="$(find mrover)/launch/simulator.launch">
     <arg name="headless" value="true"/>
+    <arg name="run_rviz" value="false"/>
   </include>
+
+  <node name="led" pkg="mrover" type="led" />
 
   <test test-name="integration" pkg="mrover" type="integration.py"/>
 </launch>
