@@ -1,8 +1,9 @@
 #include "pch.hpp"
 
 using Eigen::Matrix3d, Eigen::Vector3d;
-using manif::SE_2_3d, manif::SE_2_3Tangentd;
+using manif::SE_2_3d;
 using Matrix9d = Eigen::Matrix<double, 9, 9>;
+using Matrix39d = Eigen::Matrix<double, 3, 9>;
 
 class InvariantEKF {
 public:
@@ -11,16 +12,17 @@ public:
     InvariantEKF(const InvariantEKF&) = default;
     InvariantEKF& operator=(const InvariantEKF&) = delete;
 
-    void predict(const Vector3d& accel, const Vector3d& gyro, double dt);
+    void predict(const R3& accel, const R3& gyro, double dt);
 
-    void update_gps(const Vector3d& observed_gps, const Matrix3d& R_gps);
-    void update_gps(const Vector3d& observed_gps);
+    void update_gps(const R3& observed_gps, const Matrix3d& R_gps);
+    void update_gps(const R3& observed_gps);
 
-    void update_accel(const Vector3d& observed_accel, const Matrix3d& R_accel);
-    void update_accel(const Vector3d& observed_accel);
+    void update(const R3& innovation, const Matrix39d& H, const Matrix3d& R);
+    void update_accel(const R3& observed_accel, const Matrix3d& R_accel);
+    void update_accel(const R3& observed_accel);
 
-    void update_mag(const Vector3d& observed_mag, const Matrix3d& R_mag);
-    void update_mag(const Vector3d& observed_mag);
+    void update_mag(const R3& observed_mag, const Matrix3d& R_mag);
+    void update_mag(const R3& observed_mag);
 
     [[nodiscard]] const SE_2_3d& get_state() const;
     [[nodiscard]] const Matrix9d& get_covariance() const;
