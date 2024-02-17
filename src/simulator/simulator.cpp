@@ -25,13 +25,28 @@ namespace mrover {
 
         mIkTargetPub = mNh.advertise<IK>("/arm_ik", 1);
 
-        initWindow();
+        mIsHeadless = mPnh.param<bool>("headless", false);
+        mEnablePhysics = mIsHeadless;
+        {
+            XmlRpc::XmlRpcValue gpsLinearization;
+            mNh.getParam("gps_linearization", gpsLinearization);
+            if (gpsLinearization.getType() != XmlRpc::XmlRpcValue::TypeStruct) throw std::invalid_argument{"GPS lineraization must be a struct. Did you rosparam load a localization config file properly?"};
+
+            mGpsLinerizationReferencePoint = {
+                    xmlRpcValueToTypeOrDefault<double>(gpsLinearization, "reference_point_latitude"),
+                    xmlRpcValueToTypeOrDefault<double>(gpsLinearization, "reference_point_longitude"),
+                    xmlRpcValueToTypeOrDefault<double>(gpsLinearization, "reference_point_altitude"),
+            };
+            mGpsLinerizationReferenceHeading = xmlRpcValueToTypeOrDefault<double>(gpsLinearization, "reference_heading");
+        }
+
+        if (!mIsHeadless) initWindow();
 
         initPhysics();
 
         initRender();
 
-        parseParams();
+        initUrdfsFromParams();
 
         twistCallback(boost::make_shared<geometry_msgs::Twist>());
 
@@ -58,18 +73,21 @@ namespace mrover {
             // Note(quintin):
             // Apple sucks and does not support polling on a non-main thread (which we are currently on)
             // Instead add to ROS's global callback queue which I think will be served by the main thread
+            if (!mIsHeadless) {
 #ifdef __APPLE__
-            struct PollGlfw : ros::CallbackInterface {
-                auto call() -> CallResult override {
-                    glfwPollEvents();
-                    return Success;
-                }
-            };
-            ros::getGlobalCallbackQueue()->addCallback(boost::make_shared<PollGlfw>());
+                struct PollGlfw : ros::CallbackInterface {
+                    auto call() -> CallResult override {
+                        glfwPollEvents();
+                        return Success;
+                    }
+                };
+                ros::getGlobalCallbackQueue()->addCallback(boost::make_shared<PollGlfw>());
 #else
-            glfwPollEvents();
+                glfwPollEvents();
 #endif
-            // glfwSetInputMode(mWindow.get(), GLFW_CURSOR, mInGui ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
+            }
+            // Comments this out while debugging segfaults, otherwise it captures your cursor
+            glfwSetInputMode(mWindow.get(), GLFW_CURSOR, mInGui ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
             mLoopProfiler.measureEvent("GLFW Events");
 
             userControls(dt);

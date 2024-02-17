@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 import numpy as np
+import rospy
 import tf2_ros
 from shapely.geometry import Point, LineString
 
@@ -49,7 +50,6 @@ class AvoidPostTrajectory(Trajectory):
 
         rover_pos = rover_pose.position
         rover_direction = rover_pose.rotation.direction_vector()
-        print(rover_pos, post_pos, waypoint_pos)
 
         # Converting to 2d arrays
         post_pos = post_pos[:2]
@@ -88,7 +88,6 @@ class AvoidPostTrajectory(Trajectory):
 
         # add a z coordinate of 0 to all the coords
         coords = np.hstack((coords, np.zeros((coords.shape[0], 1))))
-        print(coords)
         return AvoidPostTrajectory(coords)
 
 
@@ -128,7 +127,7 @@ class PostBackupState(State):
                 drive_back=drive_backwards,
             )
             if arrived:
-                print(f"ARRIVED AT POINT {point_index}")
+                rospy.loginfo(f"Arrived at point indexed: {point_index}")
                 if self.traj.increment_point():
                     self.traj = None
                     return waypoint.WaypointState()
@@ -141,8 +140,8 @@ class PostBackupState(State):
             context.rover.send_drive_command(cmd_vel)
             return self
         except (
-            tf2_ros.LookupException,
-            tf2_ros.ConnectivityException,
-            tf2_ros.ExtrapolationException,
+                tf2_ros.LookupException,
+                tf2_ros.ConnectivityException,
+                tf2_ros.ExtrapolationException,
         ):
             return self

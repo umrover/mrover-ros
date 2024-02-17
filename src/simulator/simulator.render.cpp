@@ -248,7 +248,7 @@ namespace mrover {
             mWgpuInstance = wgpu::createInstance(descriptor);
             if (!mWgpuInstance) throw std::runtime_error("Failed to create WGPU instance");
         }
-        {
+        if (!mIsHeadless) {
             mSurface = glfwGetWGPUSurface(mWgpuInstance, mWindow.get());
             if (!mSurface) throw std::runtime_error("Failed to create WGPU surface");
         }
@@ -277,10 +277,11 @@ namespace mrover {
         mQueue = mDevice.getQueue();
         if (!mQueue) throw std::runtime_error("Failed to get WGPU queue");
 
-        int width, height;
-        glfwGetFramebufferSize(mWindow.get(), &width, &height);
-
-        makeFramebuffers(width, height);
+        if (!mIsHeadless) {
+            int width, height;
+            glfwGetFramebufferSize(mWindow.get(), &width, &height);
+            makeFramebuffers(width, height);
+        }
 
         {
             wgpu::ShaderModuleWGSLDescriptor shaderSourceDescriptor;
@@ -647,9 +648,6 @@ namespace mrover {
     }
 
     auto SimulatorNodelet::renderUpdate() -> void {
-        wgpu::TextureView nextTexture = mSwapChain.getCurrentTextureView();
-        if (!nextTexture) throw std::runtime_error("Failed to get WGPU next texture view");
-
         std::array<wgpu::RenderPassColorAttachment, 2> colorAttachments{};
         auto& [colorAttachment, normalAttachment] = colorAttachments;
         colorAttachment.loadOp = wgpu::LoadOp::Clear;
@@ -676,7 +674,10 @@ namespace mrover {
 
         camerasUpdate(encoder, colorAttachment, normalAttachment, depthStencilAttachment, renderPassDescriptor);
 
-        {
+        if (!mIsHeadless) {
+            wgpu::TextureView nextTexture = mSwapChain.getCurrentTextureView();
+            if (!nextTexture) throw std::runtime_error("Failed to get WGPU next texture view");
+
             colorAttachment.view = nextTexture;
             normalAttachment.view = mNormalTextureView;
             depthStencilAttachment.view = mDepthTextureView;
@@ -718,14 +719,14 @@ namespace mrover {
             pass.release();
 
             bindGroup.release();
-        }
 
-        nextTexture.release();
+            nextTexture.release();
+        }
 
         wgpu::CommandBuffer commands = encoder.finish();
         mQueue.submit(commands);
 
-        mSwapChain.present();
+        if (!mIsHeadless) mSwapChain.present();
 
         // TODO(quintin): Remote duplicate code
         for (StereoCamera& stereoCamera: mStereoCameras) {

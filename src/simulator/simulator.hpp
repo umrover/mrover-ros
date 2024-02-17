@@ -193,7 +193,7 @@ namespace mrover {
         float mLookSense = 0.004f;
         float mFovDegrees = 60.0f;
         btVector3 mGravityAcceleration{0.0f, 0.0f, -9.81f};
-        bool mEnablePhysics = false;
+        bool mEnablePhysics{};
         bool mRenderModels = true;
         bool mRenderWireframeColliders = false;
         double mPublishHammerDistanceThreshold = 4;
@@ -227,6 +227,8 @@ namespace mrover {
 
         PeriodicTask mGpsTask;
         PeriodicTask mImuTask;
+
+        bool mIsHeadless{};
 
         // Rendering
 
@@ -346,7 +348,7 @@ namespace mrover {
 
         auto initPhysics() -> void;
 
-        auto parseParams() -> void;
+        auto initUrdfsFromParams() -> void;
 
         auto onInit() -> void override;
 
