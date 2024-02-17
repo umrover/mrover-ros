@@ -63,22 +63,22 @@ can:
       bus: 1
       id: 0x28
     - name: "sa_x"
-      bus: 1
+      bus: 0
       id: 0x29
     - name: "sa_y"
-      bus: 1
+      bus: 0
       id: 0x30
     - name: "sa_z"
-      bus: 1
+      bus: 0
       id: 0x31
     - name: "sampler"
-      bus: 1
+      bus: 0
       id: 0x32
     - name: "sensor_actuator"
-      bus: 1
+      bus: 0
       id: 0x33
     - name: "cache"
-      bus: 1
+      bus: 0
       id: 0x34
     - name: "pdlb"
       bus: 1
@@ -125,8 +125,8 @@ brushless_motors:
       limit_1_enabled: true
       limit_0_limits_fwd: true
       limit_1_limits_fwd: false
-      limit_0_is_active_high: true
-      limit_1_is_active_high: true
+      limit_0_is_active_high: false
+      limit_1_is_active_high: false
       limit_0_used_for_readjustment: true
       limit_1_used_for_readjustment: true
       limit_0_readjust_position: 0.0 # radians TODO
@@ -159,8 +159,8 @@ brushless_motors:
       limit_1_enabled: true
       limit_0_limits_fwd: true
       limit_1_limits_fwd: false
-      limit_0_is_active_high: true
-      limit_1_is_active_high: true
+      limit_0_is_active_high: false
+      limit_1_is_active_high: false
       limit_0_used_for_readjustment: true
       limit_1_used_for_readjustment: true
       limit_0_readjust_position: 0.0 # radians TODO
@@ -217,7 +217,7 @@ brushed_motors:
       gear_ratio: 1.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
       limit_0_present: false
       limit_0_enabled: false
-      limit_0_is_active_high: true
+      limit_0_is_active_high: false
       limit_0_limits_fwd: false
       limit_0_used_for_readjustment: true
       abs_present: true
@@ -240,8 +240,8 @@ brushed_motors:
       limit_1_present: true
       limit_0_enabled: true
       limit_1_enabled: true
-      limit_0_is_active_high: true
-      limit_1_is_active_high: true
+      limit_0_is_active_high: false
+      limit_1_is_active_high: false
       limit_0_limits_fwd: true
       limit_1_limits_fwd: true
       limit_0_used_for_readjustment: true
@@ -272,8 +272,8 @@ brushed_motors:
       limit_1_present: true
       limit_0_enabled: true
       limit_1_enabled: true
-      limit_0_is_active_high: true
-      limit_1_is_active_high: true
+      limit_0_is_active_high: false
+      limit_1_is_active_high: false
       limit_0_limits_fwd: true
       limit_1_limits_fwd: false
       limit_0_used_for_readjustment: true
@@ -302,9 +302,9 @@ brushed_motors:
       limit_0_enabled: true
       limit_1_enabled: true
       limit_2_enabled: true
-      limit_0_is_active_high: true
-      limit_1_is_active_high: true
-      limit_2_is_active_high: true
+      limit_0_is_active_high: false
+      limit_1_is_active_high: false
+      limit_2_is_active_high: false
       limit_0_limits_fwd: true
       limit_1_limits_fwd: false
       limit_2_limits_fwd: true
@@ -330,8 +330,8 @@ brushed_motors:
       limit_1_present: false
       limit_0_enabled: true
       limit_1_enabled: true
-      limit_0_is_active_high: true
-      limit_1_is_active_high: true
+      limit_0_is_active_high: false
+      limit_1_is_active_high: false
       limit_0_limits_fwd: true
       limit_1_limits_fwd: false
       limit_0_used_for_readjustment: true
@@ -354,8 +354,8 @@ brushed_motors:
       limit_1_present: false
       limit_0_enabled: true
       limit_1_enabled: true
-      limit_0_is_active_high: true
-      limit_1_is_active_high: true
+      limit_0_is_active_high: false
+      limit_1_is_active_high: false
       limit_0_limits_fwd: true
       limit_1_limits_fwd: false
       limit_0_used_for_readjustment: true
@@ -375,8 +375,8 @@ brushed_motors:
       limit_1_present: false
       limit_0_enabled: true
       limit_1_enabled: true
-      limit_0_is_active_high: true
-      limit_1_is_active_high: true
+      limit_0_is_active_high: false
+      limit_1_is_active_high: false
       limit_0_limits_fwd: true
       limit_1_limits_fwd: false
       limit_0_used_for_readjustment: true
@@ -392,8 +392,8 @@ brushed_motors:
       limit_1_present: false
       limit_0_enabled: true
       limit_1_enabled: true
-      limit_0_is_active_high: true
-      limit_1_is_active_high: true
+      limit_0_is_active_high: false
+      limit_1_is_active_high: false
       limit_0_limits_fwd: true
       limit_1_limits_fwd: false
       limit_0_used_for_readjustment: true

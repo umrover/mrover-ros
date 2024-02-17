@@ -3,7 +3,8 @@
 
     <!-- NOTE(quintin): this was failing an assert so I commented it out -->
     <!-- <node name="cache_bridge" pkg="mrover" type="cache_bridge" /> -->
-    <node name="sa_bridge" pkg="mrover" type="sa_bridge" />
+    <node name="sa_hw_bridge" pkg="mrover" type="sa_hw_bridge" />
+    <node name="sa_translator_bridge" pkg="mrover" type="sa_translator_bridge" />
     <node name="science_bridge" pkg="mrover" type="science_bridge" />
 
     <!-- TODO(guthrie): FIGURE OUT HOW TO ADD THE DIRT SENSOR NODE -->
