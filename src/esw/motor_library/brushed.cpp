@@ -181,7 +181,7 @@ namespace mrover {
         }
     }
 
-    auto BrushedController::calibrateServiceCallback(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res) -> bool {
+    auto BrushedController::calibrateServiceCallback([[maybe_unused]] std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res) -> bool {
         if (!mhasLimit) {
             res.success = false;
             res.message = mControllerName + " does not have limit switches, cannot calibrate";

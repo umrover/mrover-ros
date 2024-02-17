@@ -32,7 +32,7 @@ if (MROVER_CI)
     list(APPEND MROVER_CPP_COMPILE_OPTIONS -Werror)
 endif ()
 
-if (EXISTS ${CMAKE_CURRENT_LIST_DIR}/deps/dawn/out/Release)
+if (EXISTS ${CMAKE_CURRENT_LIST_DIR}/deps/dawn/out/Release OR EXISTS /usr/include/dawn)
     set(MROVER_BUILD_SIM ON)
 else ()
     set(MROVER_BUILD_SIM OFF)

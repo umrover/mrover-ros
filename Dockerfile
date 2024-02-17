@@ -1,4 +1,4 @@
-FROM ros:noetic-ros-core
+FROM ubuntu:focal
 
 # DEBIAN_FRONTEND=noninteractive and keyboard-configuration are needed to prevent stdin prompting later on
 # This was super annoying to figure out because otherwise the build would hang
@@ -27,10 +27,11 @@ ADD --chown=mrover:mrover ./src/teleoperation/frontend/package.json ./src/teleop
 ADD --chown=mrover:mrover ./ansible ./ansible
 ADD --chown=mrover:mrover ./ansible.sh .
 RUN ./ansible.sh build.yml
-# Build Dawn
-RUN ./scripts/build_dawn.sh
 
 USER root
+# Dawn
+ADD ./dawn.deb /tmp/
+RUN apt-get install -f /tmp/dawn.deb -y && rm /tmp/dawn.deb
 # Remove apt cache to free up space in the image
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 

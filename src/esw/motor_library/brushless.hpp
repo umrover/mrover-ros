@@ -80,7 +80,6 @@ namespace mrover {
 
     private:
         moteus::Controller mController{moteus::Controller::Options{}};
-        double mMeasuredEffort{};
         bool limitSwitch0Present{};
         bool limitSwitch1Present{};
         bool limitSwitch0Enabled{true};
