@@ -1,7 +1,3 @@
-auton_led_driver:
-  port: "/dev/auton_led"
-  baud: 115200
-
 gps_driver:
   port: "/dev/gps"
   baud: 115200
@@ -9,184 +5,387 @@ gps_driver:
   frame_id: "base_link"
 
 imu_driver:
-  port: "/dev/imu"
+  port: "/dev/tty.usbmodem2101"
   baud: 115200
   frame_id: "imu_link"
 
+gps:
+  port: "/dev/tty.usbmodem101"
+  baud: 115200
+  useRMC: false # get covariance instead of velocity, see wiki for more info
+  frame_id: "base_link"
+
+can:
+  devices:
+    - name: "jetson"
+      bus: 0
+      id: 0x10
+    - name: "front_left"
+      bus: 0
+      id: 0x11
+    - name: "front_right"
+      bus: 0
+      id: 0x12
+    - name: "middle_left"
+      bus: 0
+      id: 0x13
+    - name: "middle_right"
+      bus: 0
+      id: 0x14
+    - name: "back_left"
+      bus: 0
+      id: 0x15
+    - name: "back_right"
+      bus: 0
+      id: 0x16
+    - name: "joint_a"
+      bus: 0
+      id: 0x20
+    - name: "joint_b"
+      bus: 0
+      id: 0x21
+    - name: "joint_c"
+      bus: 0
+      id: 0x22
+    - name: "joint_de_0"
+      bus: 0
+      id: 0x23
+    - name: "joint_de_1"
+      bus: 0
+      id: 0x24
+    - name: "allen_key"
+      bus: 0
+      id: 0x25
+    - name: "gripper"
+      bus: 0
+      id: 0x26
+    - name: "mast_gimbal_x"
+      bus: 0
+      id: 0x27
+    - name: "mast_gimbal_y"
+      bus: 0
+      id: 0x28
+    - name: "sa_x"
+      bus: 0
+      id: 0x29
+    - name: "sa_y"
+      bus: 0
+      id: 0x30
+    - name: "sa_z"
+      bus: 0
+      id: 0x31
+    - name: "scoop"
+      bus: 0
+      id: 0x32
+    - name: "sensor_actuator"
+      bus: 0
+      id: 0x33
+    - name: "cache"
+      bus: 0
+      id: 0x34
+    - name: "pdlb"
+      bus: 0
+      id: 0x50
+    - name: "science"
+      bus: 0
+      id: 0x51
+
+brushless_motors:
+  controllers:
+    front_left:
+      min_velocity: -70.0
+      max_velocity: 70.0
+    front_right:
+      min_velocity: -70.0
+      max_velocity: 70.0
+    middle_left:
+      min_velocity: -70.0
+      max_velocity: 70.0
+    middle_right:
+      min_velocity: -70.0
+      max_velocity: 70.0
+    back_left:
+      min_velocity: -70.0
+      max_velocity: 70.0
+    back_right:
+      min_velocity: -70.0
+      max_velocity: 70.0
+    joint_a:
+      min_velocity: -70.0
+      max_velocity: 70.0
+      is_linear: true
+      rad_to_meters_ratio: 1.0 #TODO 5.0 = 5 motor radians -> 1 meter
+      limit_0_present: true
+      limit_1_present: true
+      limit_0_enabled: true
+      limit_1_enabled: true
+      limit_0_limits_fwd: true
+      limit_1_limits_fwd: false
+      limit_0_is_active_high: true
+      limit_1_is_active_high: true
+      limit_0_used_for_readjustment: true
+      limit_1_used_for_readjustment: true
+      limit_0_readjust_position: 1.0 # radians TODO
+      limit_1_readjust_position: 0.0 # raidans
+      limit_max_forward_pos: true
+      limit_max_backward_pos: true
+      max_forward_pos: 1.0
+      max_backward_pos: 0.0
+    joint_c:
+      min_velocity: -70.0
+      max_velocity: 70.0
+    joint_de_0:
+      min_velocity: -70.0
+      max_velocity: 70.0
+    joint_de_1:
+      min_velocity: -70.0
+      max_velocity: 70.0
+    sa_z:
+      min_velocity: -1.0
+      max_velocity: 1.0
+      is_linear: true
+      rad_to_meters_ratio: 1.0 #TODO
+      limit_0_present: true
+      limit_1_present: true
+      limit_0_enabled: true
+      limit_1_enabled: true
+      limit_0_limits_fwd: true
+      limit_1_limits_fwd: false
+      limit_0_is_active_high: true
+      limit_1_is_active_high: true
+      limit_0_used_for_readjustment: true
+      limit_1_used_for_readjustment: true
+      limit_0_readjust_position: 1.0 # radians TODO
+      limit_1_readjust_position: 0.0 # radians TODO
+
+joint_de:
+  pitch_offset: 0.0
+  roll_offset: 0.0
+
 brushed_motors:
   controllers:
-    - name: "cache"
-      driver_voltage: 12.0
-      motor_max_voltage: 12.0
-      mcu_id: 2
-      motor_id: 2
-      inversion: 1.0
-      limit_a_present: true
-      limit_b_present: false
-      active_limit_a: false
-      counts_limit_a: 0
-      limit_a_is_fwd: true
-      calibration_vel: 0.25
-    - name: "carousel"
-      driver_voltage: 12.0
-      motor_max_voltage: 12.0
-      mcu_id: 2
-      motor_id: 1
-      inversion: 1.0
-      limit_a_present: true
-      limit_b_present: false
-      active_limit_a: true
-      counts_limit_a: 0
-      limit_a_is_fwd: true
-      calibration_vel: 0.25
-    - name: "joint_a"
-      driver_voltage: 36.0
-      motor_max_voltage: 24.0
-      voltage_multiplier: 0.75
-      mcu_id: 1
-      motor_id: 0
-      quad_cpr: -28800.0
-      kP: -0.005
-      kI: -0.0
-      inversion: -1.0
-      limit_a_present: false
-      limit_b_present: false
-    - name: "joint_b"
-      driver_voltage: 36.0
-      motor_max_voltage: 12.0
-      mcu_id: 2
-      motor_id: 0
-      quad_cpr: 4096.0
-      kP: -0.1
-      kI: -0.0
-      inversion: 1.0
-      limit_a_present: true
-      limit_b_present: false
-      active_limit_a: false
-      counts_limit_a: 0
-      limit_a_is_fwd: true
-      calibration_vel: 0.25
-    - name: "joint_f"
-      driver_voltage: 12.0
-      motor_max_voltage: 8.0
-      mcu_id: 1
-      motor_id: 1
-      quad_cpr: -2048.0
-      kP: 0.05
-      kI: 0.0
-      inversion: 1.0
-      limit_a_present: false
-      limit_b_present: false
-    - name: "finger"
-      driver_voltage: 12.0
-      motor_max_voltage: 12.0
-      mcu_id: 1
-      motor_id: 3
-      inversion: -1.0
-      limit_a_present: true
-      limit_b_present: true
-      active_limit_a: false
-      active_limit_b: false
-      counts_limit_a: 0
-      counts_limit_b: 0
-      limit_a_is_fwd: true
-      calibration_vel: 0.25
-    - name: "gripper"
-      driver_voltage: 12.0
-      motor_max_voltage: 12.0
-      mcu_id: 1
-      motor_id: 2
-      inversion: 1.0
-      limit_a_present: false
-      limit_b_present: false
-    - name: "mast_gimbal_up_down"
-      driver_voltage: 12.0
-      motor_max_voltage: 12.0
-      mcu_id: 2
-      motor_id: 4
-      inversion: 1.0
-      limit_a_present: false
-      limit_b_present: false
-    - name: "mast_gimbal_left_right"
-      driver_voltage: 12.0
-      motor_max_voltage: 12.0
-      mcu_id: 2
-      motor_id: 3
-      inversion: -1.0
-      limit_a_present: false
-      limit_b_present: false
-    - name: "microscope"
-      driver_voltage: 12.0
-      motor_max_voltage: 12.0
-      mcu_id: 1
-      motor_id: 4
-      inversion: 1.0
-      limit_a_present: true
-      limit_b_present: true
-      active_limit_a: false
-      active_limit_b: false
-      counts_limit_a: 0
-      counts_limit_b: 0
-      limit_a_is_fwd: false
-      calibration_vel: 0.25
-    - name: "sa_joint_1"
-      driver_voltage: 36.0
-      motor_max_voltage: 12.0
-      mcu_id: 1
-      motor_id: 0
-      quad_cpr: -32653.0
-      inversion: 1.0
-      limit_a_present: true
-      limit_b_present: false
-      active_limit_a: false
-      counts_limit_a: 0
-      limit_a_is_fwd: true
-      calibration_vel: 0.25
-    - name: "sa_joint_2"
-      driver_voltage: 12.0
-      motor_max_voltage: 12.0
-      mcu_id: 1
-      motor_id: 1
-      quad_cpr: -75600.0
-      inversion: -1.0
-      limit_a_present: true
-      limit_b_present: false
-      active_limit_a: false
-      counts_limit_a: 0
-      limit_a_is_fwd: false
-      calibration_vel: 0.25
-    - name: "sa_joint_3"
-      driver_voltage: 12.0
-      motor_max_voltage: 12.0
-      mcu_id: 1
-      motor_id: 2
-      quad_cpr: 97960.0
-      inversion: -1.0
-      limit_a_present: true
-      limit_b_present: false
-      active_limit_a: false
-      counts_limit_a: 0
-      limit_a_is_fwd: true
-      calibration_vel: 0.25
-    - name: "scoop"
-      driver_voltage: 12.0
-      motor_max_voltage: 12.0
-      mcu_id: 1
-      motor_id: 3
-      inversion: 1.0
-      limit_a_present: true
-      limit_b_present: true
-      active_limit_a: false
-      active_limit_b: false
-      counts_limit_a: 0
-      counts_limit_b: 0
-      limit_a_is_fwd: false
-      calibration_vel: 0.25
-  i2c_device_file: "/dev/i2c-1"
-  uart_device_file: "/dev/ttyACM0"
-  use_uart_and_send_only: true
-  test: false
-  
+    # example_name:
+    #   gear_ratio: 1.0  # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
+    #   limit_0_present: false
+    #   limit_1_present: false
+    #   limit_2_present: false
+    #   limit_3_present: false
+    #   limit_0_enabled: false
+    #   limit_1_enabled: false
+    #   limit_2_enabled: false
+    #   limit_3_enabled: false
+    #   limit_0_is_active_high: true
+    #   limit_1_is_active_high: true
+    #   limit_2_is_active_high: true
+    #   limit_3_is_active_high: true
+    #   limit_0_limits_fwd: true
+    #   limit_1_limits_fwd: true
+    #   limit_2_limits_fwd: true
+    #   limit_3_limits_fwd: true
+    #   limit_0_used_for_readjustment: false
+    #   limit_1_used_for_readjustment: false
+    #   limit_2_used_for_readjustment: false
+    #   limit_3_used_for_readjustment: false
+    #   quad_present: false
+    #   quad_is_fwd_polarity: true
+    #   abs_present: false
+    #   abs_is_fwd_polarity: true
+    #   limit_0_readjust_position: 0.0  # radians
+    #   limit_1_readjust_position: 0.0  # radians
+    #   limit_2_readjust_position: 0.0  # radians
+    #   limit_3_readjust_position: 0.0  # radians
+    #   quad_ratio: 1.0  # encoder ratio compared to motor
+    #   abs_ratio: 1.0  # encoder ratio compared to motor
+    #   abs_offset: 0.0 # 0 for joint position corresponds to this radians reading by absolute encoder
+    #   driver_voltage: 12.0  # used to calculate max pwm
+    #   motor_max_voltage: 12.0  # used to calculate max pwm
+    #   limit_max_forward_pos: false
+    #   limit_max_backward_pos: false
+    #   max_forward_pos: 1.0
+    #   max_backward_pos: 0.0
+    #   calibration_throttle: 5.0
+    joint_b:
+      gear_ratio: 1.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
+      limit_0_present: false
+      limit_0_enabled: false
+      limit_0_is_active_high: true
+      limit_0_limits_fwd: false
+      limit_0_used_for_readjustment: true
+      abs_present: true
+      abs_is_fwd_polarity: true
+      limit_0_readjust_position: 0.0 # radians
+      abs_ratio: 1.0 # encoder ratio compared to motor
+      abs_offset: 0.0 # 0 for joint position corresponds to this radians reading by absolute encoder
+      driver_voltage: 12.0 # used to calculate max pwm
+      motor_max_voltage: 12.0 # used to calculate max pwm
+      limit_max_forward_pos: true
+      min_position: -0.7853981633974483
+      max_position: 0.0
+      min_velocity: -1.0
+      max_velocity: 1.0
+      calibration_throttle: 0.5  # throttle during calibration
+    allen_key:
+      gear_ratio: 30.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
+      limit_0_present: true
+      limit_1_present: true
+      limit_0_enabled: true
+      limit_1_enabled: true
+      limit_0_is_active_high: true
+      limit_1_is_active_high: true
+      limit_0_limits_fwd: true
+      limit_1_limits_fwd: true
+      limit_0_used_for_readjustment: true
+      limit_1_used_for_readjustment: true
+      quad_present: true
+      quad_is_fwd_polarity: true
+      limit_0_readjust_position: 0.0 # radians
+      limit_1_readjust_position: 0.0 # radians
+      quad_ratio: 1.0 # encoder ratio compared to motor
+      driver_voltage: 12.0 # used to calculate max pwm
+      motor_max_voltage: 12.0 # used to calculate max pwm
+      calibration_throttle: 0.5  # throttle during calibration
+    gripper:
+      gear_ratio: 47.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
+      quad_present: false
+      quad_is_fwd_polarity: true
+      abs_present: false
+      abs_is_fwd_polarity: true
+      quad_ratio: 1.0 # encoder ratio compared to motor
+      driver_voltage: 12.0 # used to calculate max pwm
+      motor_max_voltage: 12.0 # used to calculate max pwm
+      calibration_throttle: 0.5  # throttle during calibration
+    mast_gimbal_x:
+      gear_ratio: 1000.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
+      limit_0_present: true
+      limit_1_present: true
+      limit_0_enabled: true
+      limit_1_enabled: true
+      limit_0_is_active_high: true
+      limit_1_is_active_high: true
+      limit_0_limits_fwd: true
+      limit_1_limits_fwd: false
+      limit_0_used_for_readjustment: true
+      limit_1_used_for_readjustment: true
+      quad_present: true
+      quad_is_fwd_polarity: true
+      limit_0_readjust_position: 0.0 # radians
+      limit_1_readjust_position: 6.28 # radians
+      quad_ratio: 1.0 # encoder ratio compared to motor
+      driver_voltage: 12.0 # used to calculate max pwm
+      motor_max_voltage: 12.0 # used to calculate max pwm
+      calibration_throttle: 0.5  # throttle during calibration
+    mast_gimbal_y:
+      gear_ratio: 1000.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
+      driver_voltage: 12.0 # used to calculate max pwm
+      motor_max_voltage: 12.0 # used to calculate max pwm
+    sa_x:
+      gear_ratio: 75.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
+      is_linear: true
+      rad_to_meters_ratio: 1.0 #TODO 5.0 = 5 motor radians -> 1 meter
+      limit_0_present: true
+      limit_1_present: true
+      limit_2_present: true
+      limit_0_enabled: true
+      limit_1_enabled: true
+      limit_2_enabled: true
+      limit_0_is_active_high: true
+      limit_1_is_active_high: true
+      limit_2_is_active_high: true
+      limit_0_limits_fwd: true
+      limit_1_limits_fwd: false
+      limit_2_limits_fwd: true
+      limit_0_used_for_readjustment: true
+      limit_1_used_for_readjustment: true
+      limit_2_used_for_readjustment: false
+      quad_present: true
+      quad_is_fwd_polarity: true
+      limit_0_readjust_position: 0.0 # radians
+      limit_1_readjust_position: 0.0 # radians
+      quad_ratio: 48.0 # encoder ratio compared to motor
+      driver_voltage: 12.0 # used to calculate max pwm
+      motor_max_voltage: 6.0 # used to calculate max pwm
+      min_velocity: -1.0
+      max_velocity: 1.0
+      calibration_throttle: 0.5  # throttle during calibration
+    sa_y:
+      gear_ratio: 75.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
+      is_linear: true
+      rad_to_meters_ratio: 1.0 #TODO 5.0 = 5 motor radians -> 1 meter
+      limit_0_present: true
+      limit_1_present: true
+      limit_0_enabled: true
+      limit_1_enabled: true
+      limit_0_is_active_high: true
+      limit_1_is_active_high: true
+      limit_0_limits_fwd: true
+      limit_1_limits_fwd: false
+      limit_0_used_for_readjustment: true
+      limit_1_used_for_readjustment: true
+      quad_present: true
+      quad_is_fwd_polarity: true
+      limit_0_readjust_position: 0.0 # radians
+      limit_1_readjust_position: 0.0 # radians
+      quad_ratio: 48.0 # encoder ratio compared to motor
+      driver_voltage: 12.0 # used to calculate max pwm
+      motor_max_voltage: 6.0 # used to calculate max pwm
+      min_velocity: -1.0
+      max_velocity: 1.0
+      calibration_throttle: 0.5  # throttle during calibration
+    sampler:
+      gear_ratio: 75.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
+      is_linear: true
+      rad_to_meters_ratio: 1.0 #TODO 5.0 = 5 motor radians -> 1 meter
+      limit_0_present: true
+      limit_1_present: true
+      limit_0_enabled: true
+      limit_1_enabled: true
+      limit_0_is_active_high: true
+      limit_1_is_active_high: true
+      limit_0_limits_fwd: true
+      limit_1_limits_fwd: false
+      limit_0_used_for_readjustment: true
+      limit_1_used_for_readjustment: true
+      quad_present: true
+      quad_is_fwd_polarity: true
+      limit_0_readjust_position: 0.0 # radians
+      limit_1_readjust_position: 0.0 # radians
+      quad_ratio: 48.0 # encoder ratio compared to motor
+      driver_voltage: 12.0 # used to calculate max pwm
+      motor_max_voltage: 6.0 # used to calculate max pwm
+      calibration_throttle: 0.5  # throttle during calibration
+    sensor_actuator:
+      gear_ratio: 1.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
+      limit_0_present: true
+      limit_1_present: true
+      limit_0_enabled: true
+      limit_1_enabled: true
+      limit_0_is_active_high: true
+      limit_1_is_active_high: true
+      limit_0_limits_fwd: true
+      limit_1_limits_fwd: false
+      limit_0_used_for_readjustment: true
+      limit_1_used_for_readjustment: true
+      limit_0_readjust_position: 0.0 # radians
+      limit_1_readjust_position: 0.0 # radians
+      driver_voltage: 12.0 # used to calculate max pwm
+      motor_max_voltage: 6.0 # used to calculate max pwm
+    cache:
+      gear_ratio: 1.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
+      limit_0_present: true
+      limit_1_present: true
+      limit_0_enabled: true
+      limit_1_enabled: true
+      limit_0_is_active_high: true
+      limit_1_is_active_high: true
+      limit_0_limits_fwd: true
+      limit_1_limits_fwd: false
+      limit_0_used_for_readjustment: true
+      limit_1_used_for_readjustment: true
+      limit_0_readjust_position: 0.0 # radians
+      limit_1_readjust_position: 0.0 # radians
+      driver_voltage: 12.0 # used to calculate max pwm
+      motor_max_voltage: 6.0 # used to calculate max pwm
+
 cameras:
   camera_type_info:
     # vendor_id and vendor is obtained by running `udevadm info --query=all /dev/video0`
@@ -309,46 +508,6 @@ cameras:
     primary: "10.0.0.7"
     secondary: "10.0.0.8"
 
-science:
-  auton_color_ids:
-    red: 0
-    green: 1
-    blue: 2
-    "off": 3
-  device_mosfet_numbers:
-    arm_laser: 6
-    raman_laser: 0
-    uv_led_carousel: 1
-    uv_led_end_effector: 6
-    white_led: 2
-  # How fast the GUI should send heater service requests in ms
-  heater_service_request_interval: 1000
-  serial:
-    baud_rate: 9600
-    timeout: 0
-    port: "/dev/ttyTHS0" 
-  # These position are random for now
-  servo_id_by_site:  # This is in degrees
-    A: 2
-    B: 1
-    C: 0
-  servo_positions:
-    - pushed: 70
-      start: 100
-    - pushed: 60
-      start: 90
-    - pushed: 0
-      start: 80
-  info:
-    mcu_active_timeout_s: 2
-    mcu_reset_period_s: 20
-    num_diag_current: 3
-    num_diag_thermistors: 3
-    num_science_thermistors: 3
-    num_spectral: 1
-    sleep: 0.01
-    uart_transmit_msg_len: 30
-
 rover:
   length: 0.86
   width: 0.86
@@ -358,63 +517,109 @@ wheel:
   gear_ratio: 50.0
   radius: 0.13
 
-brushless:
-  using_pi3_hat: true
+arm:
+  controllers:
+    joint_a:
+      multiplier: 1.0
+    joint_b:
+      multiplier: 1.0
+    joint_c:
+      multiplier: 1.0
+    joint_de_0:
+      multiplier: 1.0
+    joint_de_1:
+      multiplier: 1.0
+    allen_key:
+      multiplier: 1.0
+    gripper:
+      multiplier: 1.0
+
+drive:
+  controllers:
+    front_left:
+      multiplier: -1.0
+    front_right:
+      multiplier: 1.0
+    middle_left:
+      multiplier: -1.0
+    middle_right:
+      multiplier: 1.0
+    back_left:
+      multiplier: -1.0
+    back_right:
+      multiplier: 1.0
+
+motors_group:
+  arm_hw:
+    - "joint_a"
+    - "joint_b"
+    - "joint_c"
+    - "joint_de_0"
+    - "joint_de_1"
+    - "allen_key"
+    - "gripper"
+  mast_gimbal:
+    - "mast_gimbal_x"
+    - "mast_gimbal_y"
+  cache:
+    - "cache_motor"
+  sa:
+    - "sa_x"
+    - "sa_y"
+    - "sa_z"
+    - "scoop"
+    - "sensor_actuator"
   drive:
-    max_torque: 0.3
-    controllers:
-      FrontLeft:
-        id: 2
-        bus: 5
-        multiplier: -1
-        gear_ratio: 50
-      FrontRight:
-        id: 3
-        bus: 2
-        multiplier: 1
-        gear_ratio: 50
-      MiddleLeft:
-        id: 1
-        bus: 5
-        multiplier: -1
-        gear_ratio: 50
-      MiddleRight:
-        id: 4
-        bus: 2
-        multiplier: -1
-        gear_ratio: 50
-      BackLeft:
-        id: 0
-        bus: 5
-        multiplier: -1
-        gear_ratio: 50
-      BackRight:
-        id: 5
-        bus: 2
-        multiplier: 1
-        gear_ratio: 50
-  arm:
-    controllers:
-      joint_c:
-        id: 6
-        bus: 3
-        max_rps: 80
-        max_torque: 0.7
-        multiplier: -1
-        gear_ratio: 484
-      joint_d:
-        id: 7
-        bus: 3
-        max_rps: 80
-        max_torque: 0.3
-        multiplier: -1
-        gear_ratio: 484
-      joint_e:
-        id: 8
-        bus: 3
-        max_rps: 80
-        max_torque: 0.3
-        multiplier: 1
-        gear_ratio: 484
+    - "front_left"
+    - "front_right"
+    - "middle_left"
+    - "middle_right"
+    - "back_left"
+    - "back_right"
+
+motors:
+  controllers:
+    joint_a:
+      type: "brushless"
+    joint_b:
+      type: "brushed"
+    joint_c:
+      type: "brushless"
+    joint_de_0:
+      type: "brushless"
+    joint_de_1:
+      type: "brushless"
+    allen_key:
+      type: "brushed"
+    gripper:
+      type: "brushed"
+    front_left:
+      type: "brushless"
+    front_right:
+      type: "brushless"
+    middle_left:
+      type: "brushless"
+    middle_right:
+      type: "brushless"
+    back_left:
+      type: "brushless"
+    back_right:
+      type: "brushless"
+    mast_gimbal_x:
+      type: "brushed"
+    mast_gimbal_y:
+      type: "brushed"
+    sa_x:
+      type: "brushed"
+    sa_y:
+      type: "brushed"
+    sa_z:
+      type: "brushless"
+    scoop:
+      type: "brushed"
+    sensor_actuator:
+      type: "brushed"
+    cache_motor:
+      type: "brushed"
 
 default_network_iface: "enp0s31f6"

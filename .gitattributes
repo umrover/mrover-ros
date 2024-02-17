@@ -3,4 +3,6 @@ text=auto
 *.dae filter=lfs diff=lfs merge=lfs -text
 *.blend filter=lfs diff=lfs merge=lfs -text
 *.stl filter=lfs diff=lfs merge=lfs -text
-
+*.glb filter=lfs diff=lfs merge=lfs -text
+*.fbx filter=lfs diff=lfs merge=lfs -text
+ansible/roles/esw/files/bin/fdcanusb_daemon filter=lfs diff=lfs merge=lfs -text

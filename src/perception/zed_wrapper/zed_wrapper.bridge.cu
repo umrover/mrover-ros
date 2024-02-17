@@ -1,5 +1,4 @@
 // Be careful what you include in this file, it is compiled with nvcc (NVIDIA CUDA compiler)
-// For example OpenCV and lie includes cause problems
 
 #include "zed_wrapper.hpp"
 
@@ -47,7 +46,7 @@ namespace mrover {
         msg->height = bgraGpu.getHeight();
         msg->width = bgraGpu.getWidth();
         fillPointCloudMessageHeader(msg);
-        size_t size = msg->width * msg->height;
+        std::size_t size = msg->width * msg->height;
 
         pcGpu.resize(size);
         Point* pcGpuPtr = pcGpu.data().get();

@@ -1,4 +1,0 @@
-# This controller publishes joint_states topic from gazebo
-joint_state_controller:
-  type: joint_state_controller/JointStateController
-  publish_rate: 50

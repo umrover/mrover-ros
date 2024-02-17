@@ -1,13 +1,10 @@
 #pragma once
 
 #include <cassert>
-#include <chrono>
 #include <condition_variable>
 #include <cstdint>
 #include <mutex>
 #include <thread>
-
-#include <boost_cpp23_workaround.hpp>
 
 #include <sl/Camera.hpp>
 #include <thrust/device_vector.h>
@@ -28,4 +25,4 @@
 #include <tf2_ros/transform_listener.h>
 
 #include <loop_profiler.hpp>
-#include <se3.hpp>
+#include <point.hpp>

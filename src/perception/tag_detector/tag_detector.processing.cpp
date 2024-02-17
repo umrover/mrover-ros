@@ -1,7 +1,5 @@
 #include "tag_detector.hpp"
 
-#include "../point.hpp"
-
 namespace mrover {
 
     /**
@@ -10,7 +8,7 @@ namespace mrover {
      * @param u     X Pixel Position
      * @param v     Y Pixel Position
      */
-    std::optional<SE3> TagDetectorNodelet::getTagInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t u, size_t v) {
+    std::optional<SE3d> TagDetectorNodelet::getTagInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t u, size_t v) {
         assert(cloudPtr);
 
         if (u >= cloudPtr->width || v >= cloudPtr->height) {
@@ -18,14 +16,14 @@ namespace mrover {
             return std::nullopt;
         }
 
-        Point point = reinterpret_cast<Point const*>(cloudPtr->data.data())[u + v * cloudPtr->width];
+        auto point = reinterpret_cast<Point const*>(cloudPtr->data.data())[u + v * cloudPtr->width];
 
         if (!std::isfinite(point.x) || !std::isfinite(point.y) || !std::isfinite(point.z)) {
             NODELET_WARN("Tag center point not finite: [%f %f %f]", point.x, point.y, point.z);
             return std::nullopt;
         }
 
-        return std::make_optional<SE3>(R3{point.x, point.y, point.z}, SO3{});
+        return std::make_optional<SE3d>(R3{point.x, point.y, point.z}, SO3d::Identity());
     }
 
     /**
@@ -83,7 +81,7 @@ namespace mrover {
             if (tag.tagInCam) {
                 // Publish tag to immediate
                 std::string immediateFrameId = "immediateFiducial" + std::to_string(tag.id);
-                SE3::pushToTfTree(mTfBroadcaster, immediateFrameId, mCameraFrameId, tag.tagInCam.value());
+                SE3Conversions::pushToTfTree(mTfBroadcaster, immediateFrameId, mCameraFrameId, tag.tagInCam.value());
             }
         }
 
@@ -110,13 +108,13 @@ namespace mrover {
                     std::string immediateFrameId = "immediateFiducial" + std::to_string(tag.id);
                     // Publish tag to odom
                     std::string const& parentFrameId = mUseOdom ? mOdomFrameId : mMapFrameId;
-                    SE3 tagInParent = SE3::fromTfTree(mTfBuffer, parentFrameId, immediateFrameId);
-                    SE3::pushToTfTree(mTfBroadcaster, "fiducial" + std::to_string(id), parentFrameId, tagInParent);
+                    SE3d tagInParent = SE3Conversions::fromTfTree(mTfBuffer, parentFrameId, immediateFrameId);
+                    SE3Conversions::pushToTfTree(mTfBroadcaster, "fiducial" + std::to_string(id), parentFrameId, tagInParent);
                 } catch (tf2::ExtrapolationException const&) {
                     NODELET_WARN("Old data for immediate tag");
                 } catch (tf2::LookupException const&) {
                     NODELET_WARN("Expected transform for immediate tag");
-                } catch (tf::ConnectivityException const&) {
+                } catch (tf2::ConnectivityException const&) {
                     NODELET_WARN("Expected connection to odom frame. Is visual odometry running?");
                 }
             }
@@ -149,7 +147,7 @@ namespace mrover {
             mImgMsg.is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
             size_t size = mImgMsg.step * mImgMsg.height;
             mImgMsg.data.resize(size);
-            std::uninitialized_copy(std::execution::par_unseq, mImg.data, mImg.data + size, mImgMsg.data.begin());
+            std::memcpy(mImgMsg.data.data(), mImg.data, size);
             mImgPub.publish(mImgMsg);
         }
 

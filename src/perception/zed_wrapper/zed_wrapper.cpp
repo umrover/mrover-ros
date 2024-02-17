@@ -1,8 +1,9 @@
 #include "zed_wrapper.hpp"
 
-namespace mrover {
+#include <manif/manif.h>
+#include <lie.hpp>
 
-    using namespace std::chrono_literals;
+namespace mrover {
 
     /**
      * Allows us to store enums as strings in the config file.
@@ -13,7 +14,7 @@ namespace mrover {
      * @return          Enum value
      */
     template<typename TEnum>
-    [[nodiscard]] TEnum stringToZedEnum(std::string_view string) {
+    [[nodiscard]] auto stringToZedEnum(std::string_view string) -> TEnum {
         using int_t = std::underlying_type_t<TEnum>;
         for (int_t i = 0; i < static_cast<int_t>(TEnum::LAST); ++i) {
             if (sl::String{string.data()} == sl::toString(static_cast<TEnum>(i))) {
@@ -26,7 +27,7 @@ namespace mrover {
     /**
      * @brief Load config, open the ZED, and start our threads
      */
-    void ZedNodelet::onInit() {
+    auto ZedNodelet::onInit() -> void {
         try {
             // See: http://wiki.ros.org/roscpp/Overview/NodeHandles for public vs. private node handle
             // MT means multithreaded
@@ -122,14 +123,14 @@ namespace mrover {
      * Takes in the GPU pointers to the image and the point cloud.
      * It fuses these into a point cloud 2 message which is published.
      */
-    void ZedNodelet::pointCloudUpdate() {
+    auto ZedNodelet::pointCloudUpdate() -> void {
         try {
             NODELET_INFO("Starting point cloud thread");
 
             while (ros::ok()) {
                 mPcThreadProfiler.beginLoop();
 
-                // TODO: probably bad that this allocation, best case optimized by tcache
+                // TODO(quintin): May be bad to allocate every update, best case optimized by tcache
                 // Needed because publish directly shares the pointer to other nodelets running in this process
                 auto pointCloudMsg = boost::make_shared<sensor_msgs::PointCloud2>();
 
@@ -206,7 +207,7 @@ namespace mrover {
      * As such we retrieve the image and point cloud on the GPU to send to the other thread for processing.
      * This only happens if the other thread is ready to avoid blocking, hence the try lock.
      */
-    void ZedNodelet::grabUpdate() {
+    auto ZedNodelet::grabUpdate() -> void {
         try {
             NODELET_INFO("Starting grab thread");
             while (ros::ok()) {
@@ -254,11 +255,11 @@ namespace mrover {
                         sl::Translation const& translation = pose.getTranslation();
                         sl::Orientation const& orientation = pose.getOrientation();
                         try {
-                            SE3 leftCameraInOdom{{translation.x, translation.y, translation.z},
-                                                 Eigen::Quaterniond{orientation.w, orientation.x, orientation.y, orientation.z}.normalized()};
-                            SE3 leftCameraInBaseLink = SE3::fromTfTree(mTfBuffer, "base_link", "zed2i_left_camera_frame");
-                            SE3 baseLinkInOdom = leftCameraInBaseLink * leftCameraInOdom;
-                            SE3::pushToTfTree(mTfBroadcaster, "base_link", "odom", baseLinkInOdom);
+                            SE3d leftCameraInOdom{{translation.x, translation.y, translation.z},
+                                                  Eigen::Quaterniond{orientation.w, orientation.x, orientation.y, orientation.z}.normalized()};
+                            SE3d baseLinkToLeftCamera = SE3Conversions::fromTfTree(mTfBuffer, "base_link", "zed2i_left_camera_frame");
+                            SE3d baseLinkInOdom = leftCameraInOdom * baseLinkToLeftCamera;
+                            SE3Conversions::pushToTfTree(mTfBroadcaster, "base_link", "odom", baseLinkInOdom);
                         } catch (tf2::TransformException& e) {
                             NODELET_WARN_STREAM("Failed to get transform: " << e.what());
                         }
@@ -309,11 +310,11 @@ namespace mrover {
         mGrabThread.join();
     }
 
-    ZedNodelet::Measures::Measures(ZedNodelet::Measures&& other) noexcept {
+    ZedNodelet::Measures::Measures(Measures&& other) noexcept {
         *this = std::move(other);
     }
 
-    ZedNodelet::Measures& ZedNodelet::Measures::operator=(ZedNodelet::Measures&& other) noexcept {
+    auto ZedNodelet::Measures::operator=(Measures&& other) noexcept -> Measures& {
         sl::Mat::swap(other.leftImage, leftImage);
         sl::Mat::swap(other.rightImage, rightImage);
         sl::Mat::swap(other.leftPoints, leftPoints);
@@ -321,20 +322,3 @@ namespace mrover {
         return *this;
     }
 } // namespace mrover
-
-int main(int argc, char** argv) {
-    ros::init(argc, argv, "zed_wrapper");
-
-    // Start the ZED Nodelet
-    nodelet::Loader nodelet;
-    nodelet.load(ros::this_node::getName(), "mrover/ZedNodelet", ros::names::getRemappings(), {});
-
-    ros::spin();
-
-    return EXIT_SUCCESS;
-}
-
-#ifdef MROVER_IS_NODELET
-#include <pluginlib/class_list_macros.h>
-PLUGINLIB_EXPORT_CLASS(mrover::ZedNodelet, nodelet::Nodelet)
-#endif

@@ -1,3 +1,4 @@
-uint8 bus
-uint16 message_id
+string source
+string destination
 uint8[] data
+bool reply_required

@@ -1,0 +1,89 @@
+gpioa: GPIOPort.STM32_GPIOPort @ sysbus <0x48000000, +0x400>
+
+greenled: Miscellaneous.LED @ gpioa 0x5
+
+gpioa:
+    5 -> greenled@0
+
+nvic: IRQControllers.NVIC @ sysbus 0xe000e000
+    -> cpu0@0
+
+cpu0: CPU.CortexM @ sysbus
+    cpuType: "cortex-m4f"
+    nvic: nvic
+
+sram0: Memory.MappedMemory @ sysbus 0x20000000
+    size: 0x8000
+
+gpiob: GPIOPort.STM32_GPIOPort @ sysbus <0x48000400, +0x400>
+
+gpioc: GPIOPort.STM32_GPIOPort @ sysbus <0x48000800, +0x400>
+
+gpiod: GPIOPort.STM32_GPIOPort @ sysbus <0x48000c00, +0x400>
+
+gpioe: GPIOPort.STM32_GPIOPort @ sysbus <0x48001000, +0x400>
+
+gpiof: GPIOPort.STM32_GPIOPort @ sysbus <0x48001400, +0x400>
+
+gpiog: GPIOPort.STM32_GPIOPort @ sysbus <0x48001800, +0x400>
+
+i2c1: I2C.STM32F7_I2C @ sysbus 0x40005400
+    EventInterrupt->nvic@31
+    ErrorInterrupt->nvic@32
+
+lpuart1: UART.STM32F7_USART @ sysbus 0x40008000
+    frequency: 200000000
+    IRQ->nvic@91
+
+flash0: Memory.MappedMemory @ sysbus 0x8000000
+    size: 0x20000
+
+rcc: Python.PythonPeripheral @ sysbus 0x40021000
+    size: 0x400
+    initable: true
+    filename: "scripts/pydev/flipflop.py"
+
+rng: Miscellaneous.STM32F4_RNG @ sysbus 0x50060800
+    ->nvic@90
+
+fdcan1: CAN.STMCAN @ sysbus <0x40006400, +0x400>
+
+fdcan2: CAN.STMCAN @ sysbus <0x40006800, +0x400>
+
+fdcan3: CAN.STMCAN @ sysbus <0x40006C00, +0x400>
+
+rtc: Timers.STM32F4_RTC @ sysbus 0x40002800
+    AlarmIRQ->nvic@41
+
+spi1: SPI.STM32SPI @ sysbus 0x40013000
+    IRQ->nvic@35
+
+spi2: SPI.STM32SPI @ sysbus 0x40003800
+    IRQ->nvic@36
+
+spi3: SPI.STM32SPI @ sysbus 0x40003c00
+    IRQ->nvic@51
+
+timers2: Timers.STM32_Timer @ sysbus <0x40000000, +0x400>
+    frequency: 10000000
+    initialLimit: 0xFFFFFFFF
+    ->nvic@28
+
+usart1: UART.STM32F7_USART @ sysbus 0x40013800
+    frequency: 200000000
+    IRQ->nvic@37
+
+iwdg: Timers.STM32_IndependentWatchdog @ sysbus 0x40003000
+    frequency: 32000
+
+// st,stm32g4 overlay
+
+clk_lse: Python.PythonPeripheral @ sysbus 0x40007000
+    size: 0x4
+    initable: true
+    filename: "scripts/pydev/rolling-bit.py"
+
+// cortex-m overlay
+
+dwt: Miscellaneous.DWT @ sysbus 0xE0001000
+    frequency: 72000000
