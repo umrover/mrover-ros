@@ -1,6 +1,6 @@
 #include <ros/ros.h>
 
-#include "arm_translator.hpp"
+#include "sa_translator.hpp"
 #include <memory.h>
 
 int main(int argc, char** argv) {

@@ -31,24 +31,25 @@ int main(int argc, char** argv) {
     auto SAPub = std::make_unique<ros::Publisher>(nh.advertise<mrover::Velocity>("sa_velocity_cmd", 1));
 
 
-    mrover::Velocity armMsg, saMsg;
+    mrover::Velocity armMsg;
+    mrover::Velocity saMsg;
     armMsg.names = {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll", "allen_key", "gripper"};
     armMsg.velocities = {0, 0, 0, 0, 10, 0, 0};
 
     saMsg.names = {"sa_x", "sa_y", "sa_z", "sampler", "sensor_actuator"};
-    saMsg.velocities = {0, 0, 0.05, 0, 0};
+    saMsg.velocities = {0, 0, 0.07, 0, 0};
 
     // brushlessController_de0->setStop();
     // brushlessController_de1->setStop();
 
-    ros::Rate rate{1};
+    ros::Rate rate{15};
 
     int count = 0;
 
     while(ros::ok()){
         // publish DE velocity:
         DEPub->publish(armMsg);
-        SAPub->pubhlish(saMsg);
+        SAPub->publish(saMsg);
         count++;
 
         if(count > 50) {

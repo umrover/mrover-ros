@@ -153,8 +153,8 @@ brushless_motors:
       max_velocity: 100.0
       is_linear: true
       rad_to_meters_ratio: 157.48 #rad/m
-      limit_0_present: true
-      limit_1_present: true
+      limit_0_present: false
+      limit_1_present: false
       limit_0_enabled: true
       limit_1_enabled: true
       limit_0_limits_fwd: true
@@ -165,7 +165,7 @@ brushless_motors:
       limit_1_used_for_readjustment: true
       limit_0_readjust_position: 0.0 # radians TODO
       limit_1_readjust_position: 0.0 # radians TODO
-
+      max_torque: 0.5
 joint_de:
   pitch_offset: 0.0
   roll_offset: 0.0
@@ -296,9 +296,9 @@ brushed_motors:
       gear_ratio: 75.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
       is_linear: true
       rad_to_meters_ratio: 1.0 #TODO 5.0 = 5 motor radians -> 1 meter
-      limit_0_present: true
-      limit_1_present: true
-      limit_2_present: true
+      limit_0_present: false
+      limit_1_present: false
+      limit_2_present: false
       limit_0_enabled: true
       limit_1_enabled: true
       limit_2_enabled: true
@@ -326,8 +326,8 @@ brushed_motors:
       gear_ratio: 75.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
       is_linear: true
       rad_to_meters_ratio: 1.0 #TODO 5.0 = 5 motor radians -> 1 meter
-      limit_0_present: true
-      limit_1_present: true
+      limit_0_present: false
+      limit_1_present: false
       limit_0_enabled: true
       limit_1_enabled: true
       limit_0_is_active_high: true
@@ -350,8 +350,8 @@ brushed_motors:
       gear_ratio: 75.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
       is_linear: true
       rad_to_meters_ratio: 1.0 #TODO 5.0 = 5 motor radians -> 1 meter
-      limit_0_present: true
-      limit_1_present: true
+      limit_0_present: false
+      limit_1_present: false
       limit_0_enabled: true
       limit_1_enabled: true
       limit_0_is_active_high: true
@@ -371,8 +371,8 @@ brushed_motors:
     sensor_actuator:
       velocity_multiplier: 1.0
       gear_ratio: 1.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
-      limit_0_present: true
-      limit_1_present: true
+      limit_0_present: false
+      limit_1_present: false
       limit_0_enabled: true
       limit_1_enabled: true
       limit_0_is_active_high: true
@@ -388,8 +388,8 @@ brushed_motors:
     cache:
       velocity_multiplier: 1.0
       gear_ratio: 1.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
-      limit_0_present: true
-      limit_1_present: true
+      limit_0_present: false
+      limit_1_present: false
       limit_0_enabled: true
       limit_1_enabled: true
       limit_0_is_active_high: true
@@ -548,7 +548,7 @@ motors_group:
     - "mast_gimbal_z"
   cache:
     - "cache_motor"
-  sa:
+  sa_hw:
     - "sa_x"
     - "sa_y"
     - "sa_z"
