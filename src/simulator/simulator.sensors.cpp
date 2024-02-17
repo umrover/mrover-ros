@@ -90,7 +90,7 @@ namespace mrover {
         computePass.release();
     }
 
-    auto cartesianToGeodetic(R3 const& cartesian, Eigen::Vector3d const& referenceGeodetic, double referenceHeadingDegrees) -> Eigen::Vector3d {
+    auto cartesianToGeodetic(R3 const& cartesian, R3 const& referenceGeodetic, double referenceHeadingDegrees) -> R3 {
         constexpr double equatorialRadius = 6378137.0;
         constexpr double flattening = 1.0 / 298.257223563;
         constexpr double eccentricity2 = 2 * flattening - flattening * flattening;
@@ -111,7 +111,7 @@ namespace mrover {
         return {lat, lon, alt};
     }
 
-    auto computeNavSatFix(R3 const& gpsInMap, Eigen::Vector3d const& referenceGeodetic, double referenceHeadingDegrees) -> sensor_msgs::NavSatFix {
+    auto computeNavSatFix(R3 const& gpsInMap, R3 const& referenceGeodetic, double referenceHeadingDegrees) -> sensor_msgs::NavSatFix {
         sensor_msgs::NavSatFix gpsMessage;
         gpsMessage.header.stamp = ros::Time::now();
         gpsMessage.header.frame_id = "map";
@@ -122,7 +122,7 @@ namespace mrover {
         return gpsMessage;
     }
 
-    auto computeImu(SO3d const& imuInMap, Eigen::Vector3d const& imuAngularVelocity, Eigen::Vector3d const& linearAcceleration, Eigen::Vector3d const& magneticField) -> ImuAndMag {
+    auto computeImu(SO3d const& imuInMap, R3 const& imuAngularVelocity, R3 const& linearAcceleration, R3 const& magneticField) -> ImuAndMag {
         ImuAndMag imuMessage;
         imuMessage.header.stamp = ros::Time::now();
         imuMessage.header.frame_id = "map";
@@ -165,11 +165,11 @@ namespace mrover {
                 odometry.pose.pose.orientation.x = q.x();
                 odometry.pose.pose.orientation.y = q.y();
                 odometry.pose.pose.orientation.z = q.z();
-                Eigen::Vector3d v = btVector3ToR3(rover.physics->getBaseVel());
+                R3 v = btVector3ToR3(rover.physics->getBaseVel());
                 odometry.twist.twist.linear.x = v.x();
                 odometry.twist.twist.linear.y = v.y();
                 odometry.twist.twist.linear.z = v.z();
-                Eigen::Vector3d w = btVector3ToR3(rover.physics->getBaseOmega());
+                R3 w = btVector3ToR3(rover.physics->getBaseOmega());
                 odometry.twist.twist.angular.x = w.x();
                 odometry.twist.twist.angular.y = w.y();
                 odometry.twist.twist.angular.z = w.z();
@@ -184,17 +184,16 @@ namespace mrover {
                 mGpsPub.publish(computeNavSatFix(gpsInMap, mGpsLinerizationReferencePoint, mGpsLinerizationReferenceHeading));
             }
             if (mImuTask.shouldUpdate()) {
-                Eigen::Vector3d roverAngularVelocity = btVector3ToR3(rover.physics->getBaseOmega());
-                Eigen::Vector3d roverLinearVelocity = btVector3ToR3(rover.physics->getBaseVel());
-                Eigen::Vector3d roverLinearAcceleration = (roverLinearVelocity - mRoverLinearVelocity) / std::chrono::duration_cast<std::chrono::duration<float>>(dt).count();
+                R3 roverAngularVelocity = btVector3ToR3(rover.physics->getBaseOmega());
+                R3 roverLinearVelocity = btVector3ToR3(rover.physics->getBaseVel());
+                R3 roverLinearAcceleration = (roverLinearVelocity - mRoverLinearVelocity) / std::chrono::duration_cast<std::chrono::duration<float>>(dt).count();
                 mRoverLinearVelocity = roverLinearVelocity;
                 SO3d imuInMap = rover.linkInWorld("imu").asSO3();
-                Eigen::Vector3d roverMagVector = imuInMap.inverse().rotation().col(1);
+                R3 roverMagVector = imuInMap.inverse().rotation().col(1);
 
-                Eigen::Vector3d accelNoise, gyroNoise, magNoise;
-                accelNoise << mAccelDist(mRNG), mAccelDist(mRNG), mAccelDist(mRNG);
-                gyroNoise << mGyroDist(mRNG), mGyroDist(mRNG), mGyroDist(mRNG);
-                magNoise << mMagDist(mRNG), mMagDist(mRNG), mMagDist(mRNG);
+                R3 accelNoise{mAccelDist(mRNG), mAccelDist(mRNG), mAccelDist(mRNG)},
+                        gyroNoise{mGyroDist(mRNG), mGyroDist(mRNG), mGyroDist(mRNG)},
+                        magNoise{mMagDist(mRNG), mMagDist(mRNG), mMagDist(mRNG)};
                 roverLinearAcceleration += accelNoise;
                 roverAngularVelocity += gyroNoise;
                 roverMagVector += magNoise;
