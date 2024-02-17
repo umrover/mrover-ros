@@ -1,15 +1,12 @@
 <launch>
     <rosparam command="load" file="$(find mrover)/config/esw.yaml" />
 
-    <node name="can_driver_0" pkg="mrover" type="can_driver">
+    <node name="can_driver_0" pkg="mrover" type="can_driver_0">
         <param name="interface" value="can0" />
     </node>
-<?ignore
-    <node name="can_driver_1" pkg="mrover" type="can_driver">
+    <node name="can_driver_1" pkg="mrover" type="can_driver_1">
         <param name="interface" value="can1" />
     </node>
-?>
+
     <node name="drive_bridge" pkg="mrover" type="drive_bridge" />
-    <node name="mast_gimbal_bridge" pkg="mrover" type="mast_gimbal_bridge" />
-    <node name="pdb_bridge" pkg="mrover" type="pdb_bridge" />
 </launch>
