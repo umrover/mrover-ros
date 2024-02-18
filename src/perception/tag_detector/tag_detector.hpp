@@ -1,3 +1,5 @@
+#pragma once
+
 #include "pch.hpp"
 
 namespace mrover {
@@ -10,7 +12,6 @@ namespace mrover {
     };
 
     class TagDetectorNodelet : public nodelet::Nodelet {
-    private:
         ros::NodeHandle mNh, mPnh;
 
         ros::Publisher mImgPub;
@@ -44,8 +45,8 @@ namespace mrover {
         std::vector<std::vector<cv::Point2f>> mImmediateCorners;
         std::vector<int> mImmediateIds;
         std::unordered_map<int, Tag> mTags;
-        dynamic_reconfigure::Server<mrover::DetectorParamsConfig> mConfigServer;
-        dynamic_reconfigure::Server<mrover::DetectorParamsConfig>::CallbackType mCallbackType;
+        dynamic_reconfigure::Server<DetectorParamsConfig> mConfigServer;
+        dynamic_reconfigure::Server<DetectorParamsConfig>::CallbackType mCallbackType;
 
         LoopProfiler mProfiler{"Tag Detector"};
 

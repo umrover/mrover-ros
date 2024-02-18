@@ -54,15 +54,19 @@ set(MROVER_ROS_DEPENDENCIES
         tf2
         tf2_ros
         tf2_geometry_msgs
+        actionlib_msgs
 )
 
 extract_filenames(msg/*.msg MROVER_MESSAGE_FILES)
 
 extract_filenames(srv/*.srv MROVER_SERVICE_FILES)
 
+extract_filenames(action/*.action MROVER_ACTION_FILES)
+
 set(MROVER_MESSAGE_DEPENDENCIES
         std_msgs
         sensor_msgs
+        actionlib_msgs
 )
 
 set(MROVER_PARAMETERS
@@ -122,13 +126,15 @@ endforeach ()
 
 set(BUILD_SHARED_LIBS ON)
 
-### ======== ###
-### Messages ###
-### ======== ###
+### ================================ ###
+### Messages & Actions & Reconfigure ###
+### ================================ ###
 
 add_message_files(FILES ${MROVER_MESSAGE_FILES})
 
 add_service_files(FILES ${MROVER_SERVICE_FILES})
+
+add_action_files(DIRECTORY action FILES ${MROVER_ACTION_FILES})
 
 generate_messages(DEPENDENCIES ${MROVER_MESSAGE_DEPENDENCIES})
 
@@ -189,6 +195,9 @@ endif ()
 
 mrover_add_nodelet(tag_detector src/perception/tag_detector/*.cpp src/perception/tag_detector src/perception/tag_detector/pch.hpp)
 mrover_nodelet_link_libraries(tag_detector opencv_core opencv_objdetect opencv_aruco opencv_imgproc opencv_highgui lie manif)
+
+mrover_add_nodelet(click_ik src/perception/click_ik/*.cpp src/perception/click_ik src/perception/click_ik/pch.hpp)
+mrover_nodelet_link_libraries(click_ik lie)
 
 if (CUDA_FOUND)
     mrover_add_library(streaming src/esw/streaming/*.c* src/esw/streaming)
