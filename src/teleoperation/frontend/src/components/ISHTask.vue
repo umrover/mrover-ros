@@ -40,6 +40,10 @@
     <!-- <div class="shadow p-3 rounded amino">
         <Amino :site="site" :site-index="siteIndex" />
       </div> -->
+      <div class="shadow p-3 rounded cache-controls">
+        <h3>Cache Controls</h3>
+        <CacheControls/>
+      </div>
   </div>
 </template>
 
@@ -53,6 +57,7 @@ import Cameras from '../components/Cameras.vue'
 //   import CommReadout from "./CommReadout.vue";
 //   import MCUReset from "./MCUReset.vue"
 import { disableAutonLED } from '../utils.js'
+import CacheControls from './CacheControls.vue'
 
 type StringIntDictionary = {
   [key: string]: number
@@ -65,7 +70,8 @@ export default {
     //   Cache,
     //   Chlorophyll,
     //   Amino,
-    Cameras
+    Cameras,
+    CacheControls,
     //   CommReadout,
     //   MCUReset,
   },
@@ -131,8 +137,8 @@ export default {
     'cameras siteSelect'
     'cameras raman'
     'cameras chlorophyll'
-    'carousel chlorophyll'
-    'carousel amino'
+    'cache-controls chlorophyll'
+    'cache-controls amino'
     'cache amino';
   font-family: sans-serif;
   height: auto;
@@ -193,6 +199,10 @@ export default {
 
 .cameras {
   grid-area: cameras;
+}
+
+.cache-controls{
+  grid-area: cache-controls;
 }
 
 .siteSelect {

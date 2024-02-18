@@ -100,6 +100,7 @@ export default defineComponent({
   padding: 1% 0 1% 0;
   display: flex;
   flex-direction: row;
+  /* width: 100%; */
 }
 
 .led {
