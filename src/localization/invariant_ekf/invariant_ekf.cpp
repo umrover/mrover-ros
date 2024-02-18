@@ -9,10 +9,10 @@ void InvariantEKF::predict(const R3& accel, const R3& gyro, double dt) {
     const R3 accel_g(0, 0, g);
     Matrix3d R = mX.rotation();
     R3 accel_body = accel - R.transpose() * accel_g;
-    std::cout << "accel_body: " << accel_body << std::endl;
+    // std::cout << "accel_body: " << accel_body << std::endl;
 
     // use kinematics to compute increments to each state component
-    R3 delta_pos = (R.transpose() * mX.linearVelocity() * dt) + (0.5 * accel_body * dt * dt);
+    R3 delta_pos = R.transpose() * mX.linearVelocity() * dt + 0.5 * accel_body * dt * dt;
     R3 delta_rot = gyro * dt;
     R3 delta_v = accel_body * dt;
 
@@ -42,14 +42,15 @@ void InvariantEKF::predict(const R3& accel, const R3& gyro, double dt) {
 
 void InvariantEKF::update(const R3& innovation, Matrix39d const& H, Matrix3d const& R) {
     // innovation covariance
-    auto S = (H * mP * H.transpose()) + R;
+    Matrix3d S = H * mP * H.transpose() + R;
 
     // Kalman gain
-    auto K = mP * H.transpose() * S.inverse();
+    Matrix93d K = mP * H.transpose() * S.inverse();
 
     // update state mean (overloaded rplus)
     SE_2_3d::Tangent dx = K * innovation;
     mX += dx;
+    // mX.normalize();
 
     // update state covariance
     mP = mP - K * S * K.transpose();
@@ -62,6 +63,7 @@ void InvariantEKF::update_gps(R3 const& observed_gps, Matrix3d const& R_gps) {
     //R(0) + t = t
     R3 predicted_gps = mX.act(origin, J_e_x);
     Matrix39d H = J_e_x;
+    std::cout << J_e_x << std::endl;
     update(observed_gps - predicted_gps, H, R_gps);
 }
 

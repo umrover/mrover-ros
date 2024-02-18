@@ -4,6 +4,7 @@ using Eigen::Matrix3d, Eigen::Vector3d;
 using manif::SE_2_3d;
 using Matrix9d = Eigen::Matrix<double, 9, 9>;
 using Matrix39d = Eigen::Matrix<double, 3, 9>;
+using Matrix93d = Eigen::Matrix<double, 9, 3>;
 
 constexpr double g = 9.81;
 

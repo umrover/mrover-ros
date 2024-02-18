@@ -1,10 +1,10 @@
 #include "ekf_node.hpp"
 
 InvariantEKF InvariantEKFNode::init_EKF() {
-    // set initial position to zero and initial covariant to very high number
+    // set initial position to zero and initial covariance to very high number
     // TODO: make this a param
     auto x0 = SE_2_3d::Identity();
-    auto P0 = Matrix9d::Identity() * 1e6;
+    auto P0 = Matrix9d::Identity() * 2;
 
     // load covariance matrices from rosparam
     std::vector<double> Q_vec, R_gps_vec, R_accel_vec, R_mag_vec;
@@ -73,7 +73,8 @@ void InvariantEKFNode::gps_callback(geometry_msgs::PoseWithCovarianceStamped con
 
     auto p = msg.pose.pose.position;
     R3 z{p.x, p.y, p.z};
-    // mEKF.update_gps(z);
+    std::cout << "gps: " << z << std::endl;
+    mEKF.update_gps(z);
 }
 
 void InvariantEKFNode::publish_odometry() {
@@ -87,23 +88,22 @@ void InvariantEKFNode::publish_odometry() {
     msg.pose.pose.position.y = x.translation().y();
     msg.pose.pose.position.z = x.translation().z();
 
-    Eigen::Quaterniond q(x.rotation());
+    S3 q = x.quat();
     msg.pose.pose.orientation.x = q.x();
     msg.pose.pose.orientation.y = q.y();
     msg.pose.pose.orientation.z = q.z();
     msg.pose.pose.orientation.w = q.w();
 
-    // TODO: use row major data instead of manually filling each element
+    msg.twist.twist.linear.x = x.linearVelocity().x();
+    msg.twist.twist.linear.y = x.linearVelocity().y();
+    msg.twist.twist.linear.z = x.linearVelocity().z();
+
     auto P = mEKF.get_covariance();
-    msg.pose.covariance[0] = P(0, 0);
-    msg.pose.covariance[1] = P(0, 1);
-    msg.pose.covariance[2] = P(0, 2);
-    msg.pose.covariance[6] = P(1, 0);
-    msg.pose.covariance[7] = P(1, 1);
-    msg.pose.covariance[8] = P(1, 2);
-    msg.pose.covariance[12] = P(2, 0);
-    msg.pose.covariance[13] = P(2, 1);
-    msg.pose.covariance[14] = P(2, 2);
+    auto P_pose = P.block<6, 6>(0, 0);
+    Eigen::Matrix<double, 6, 6, Eigen::RowMajor>::Map(msg.pose.covariance.data()) = P_pose;
+
+    auto P_twist = P.block<3, 3>(6, 6);
+    Eigen::Matrix<double, 3, 3, Eigen::RowMajor>::Map(msg.twist.covariance.data()) = P_twist;
 
     mOdometryPub.publish(msg);
 }
