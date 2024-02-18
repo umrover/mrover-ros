@@ -1,12 +1,21 @@
-# !/usr/bin/env bash
+# !/usr/bin/env zsh
 
 # Script to add or remove ROS basestation networking script from bashrc
 # TODO: make this work for bash and other catkin workspace locations
 
-if grep -q "source ~/catkin_ws/src/mrover/ansible/roles/basestation_networks/files/networking_setup_basestation.sh" ~/.zshrc; then
+CATKIN_WORKSPACE_PATH=~/catkin_ws
+network_script_path="${CATKIN_WORKSPACE_PATH}/src/mrover/ansible/roles/basestation_networks/files/networking_setup_basestation"
+enable_message="Basestation network setup enabled, disable with scripts/toggle_basestation_networking"
+
+if grep -q "source ${network_script_path}" ~/.zshrc; then
     echo "Removing basestation networking script from .zshrc"
-    sed -i '/source ~/catkin_ws/src/mrover/ansible/roles/basestation_networks/files/networking_setup_basestation.sh/d' ~/.zshrc
+    sed -i "\:source ${network_script_path}:d" ~/.zshrc
+    sed -i "\:echo '${enable_message}':d" ~/.zshrc
 else
     echo "Adding basestation networking script to .zshrc"
-    echo "source ~/catkin_ws/src/mrover/ansible/roles/basestation_networks/files/networking_setup_basestation.sh" >> ~/.zshrc
+    if [[ $(tail -c1 ~/.zshrc | wc -l) -eq 0 ]]; then
+        echo "\n" >> ~/.zshrc
+    fi
+    echo "echo '${enable_message}'" >> ~/.zshrc
+    echo "source ${network_script_path}" >> ~/.zshrc
 fi
