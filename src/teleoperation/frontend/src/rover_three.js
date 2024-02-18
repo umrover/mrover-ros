@@ -17,8 +17,9 @@ export function threeSetup(containerId) {
   const camera = new THREE.PerspectiveCamera(75, canvas.width / canvas.height, 0.1, 1000);
   camera.up.set(0, 0, 1);
 
-  const light = new THREE.AmbientLight(0x404040); // soft white light
-  scene.add(light);
+  const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+  directionalLight.position.set(1, 2, 3);
+  scene.add(directionalLight);
 
   const renderer = new THREE.WebGLRenderer();
   renderer.setSize(canvas.width, canvas.height);
@@ -80,6 +81,7 @@ export function threeSetup(containerId) {
       // Traverse the loaded scene to find meshes or objects
       fbx.traverse((child)=>  {
         if (child.isMesh) {
+          child.material = new THREE.MeshStandardMaterial({color: 0xffffff});
           scene.add(child);
           child.scale.set(1, 1, 1);
           child.position.set(0, 0, 0);
@@ -111,16 +113,16 @@ export function threeSetup(containerId) {
 
     let cumulativeMatrix = new THREE.Matrix4();
 
-    console.log(positions);
-
     positions.forEach((newAngle, i) => {
       let mesh = scene.getObjectByName(joints[i].name);
 
       let localMatrix = new THREE.Matrix4();
 
-      // Assume rotation around Y-axis, create rotation matrix from the angle
       let rotationAngle = newAngle; // Angle for this joint
-      if (joints[i].name == "d") {
+      if(joints[i].name == "chassis") {
+        localMatrix.makeTranslation(0,rotationAngle,0);
+      }
+      else if (joints[i].name == "d") {
         localMatrix.makeRotationX(rotationAngle);
       }
       else {
@@ -129,7 +131,9 @@ export function threeSetup(containerId) {
 
       let offset = new THREE.Vector3().fromArray(joints[i].translation);
 
-      localMatrix.setPosition(offset.x, offset.y, offset.z);
+      localMatrix.setPosition(
+        new THREE.Vector3().setFromMatrixPosition(localMatrix).add(offset)
+      );
 
       mesh.matrixAutoUpdate = false;
       mesh.matrix = cumulativeMatrix.clone();
