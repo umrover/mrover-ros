@@ -5,14 +5,17 @@ import heapq
 import numpy as np
 import random
 import rospy
-from mrover.msg import GPSPointList
+from mrover.msg import GPSPointList, Costmap2D
 from util.ros_utils import get_rosparam
 from util.state_lib.state import State
-from nav_msgs.msg import OccupancyGrid, MapMetaData
+from nav_msgs.msg import OccupancyGrid, MapMetaData, Path
+from geometry_msgs.msg import Pose, PoseStamped
 from navigation import approach_post, recovery, waypoint
 from navigation.context import convert_cartesian_to_gps
 from navigation.trajectory import Trajectory, SearchTrajectory
 from navigation.context import Context
+from threading import Lock
+from util.SE3 import SE3
 
 
 class Node:
@@ -52,6 +55,11 @@ class WaterBottleSearchState(State):
     resolution: int = 0  # resolution of occupancy
     origin: np.ndarray = np.array([])  # hold the inital rover pose
     context: Context
+    listener: rospy.Subscriber
+    costmap_pub: rospy.Publisher
+    time_last_updated: rospy.Time
+    costmap_lock: Lock
+    path_pub: rospy.Publisher
 
     STOP_THRESH = get_rosparam("water_bottle_search/stop_thresh", 0.5)
     DRIVE_FWD_THRESH = get_rosparam("water_bottle_search/drive_fwd_thresh", 0.34)
@@ -97,7 +105,7 @@ class WaterBottleSearchState(State):
         half_res = np.array([self.resolution / 2, -1 * self.resolution / 2])  # [r/2, -r/2]
         return ((self.origin - width_height) + resolution_conversion + half_res) * np.array([1, -1])
 
-    def return_path(self, current_node):
+    def return_path(self, current_node, maze):
         """
         Return the path given from A-Star in reverse through current node's parents
         :param current_node: end point of path which contains parents to retrieve path
@@ -109,6 +117,27 @@ class WaterBottleSearchState(State):
             current = current.parent
         reversed_path = path[::-1]
         print("ij:", reversed_path[1:])
+
+        for step in reversed_path[1:]:
+            maze[step[0]][step[1]] = 2
+        maze[reversed_path[1][0]][reversed_path[1][1]] = 3  # start
+        maze[reversed_path[-1][0]][reversed_path[-1][1]] = 4  # end
+
+        for row in maze:
+            line = []
+            for col in row:
+                if col == 1:
+                    line.append("\u2588")
+                elif col == 0:
+                    line.append(" ")
+                elif col == 2:
+                    line.append(".")
+                elif col == 3:
+                    line.append("S")
+                elif col == 4:
+                    line.append("E")
+            print("".join(line))
+
         return reversed_path[1:]  # Return reversed path except the starting point (we are already there)
 
     def a_star(self, costmap2d: np.ndarray, start: np.ndarray, end: np.ndarray) -> list | None:
@@ -183,8 +212,7 @@ class WaterBottleSearchState(State):
 
             # found the goal
             if current_node == end_node:
-                print("Found goal!")
-                return self.return_path(current_node)
+                return self.return_path(current_node, costmap2d)
 
             # generate children
             children = []
@@ -238,29 +266,58 @@ class WaterBottleSearchState(State):
         Callback function for the occupancy grid perception sends
         :param msg: Occupancy Grid representative of a 30 x 30m square area with origin at GNSS waypoint. Values are 0, 1, -1
         """
-        self.resolution = msg.info.resolution  # meters/cell
-        self.height = msg.info.height  # cells
-        self.width = msg.info.width  # cells
-        costmap2D = np.array(msg.data).reshape(int(self.height), int(self.width)).astype(np.float32)
-        # change all unidentified points to have a cost of 0.5
-        costmap2D[costmap2D == -1.0] = 0.5
+        if rospy.get_time() - self.time_last_updated > 5:
+            print("RUN ASTAR")
+            self.resolution = msg.info.resolution  # meters/cell
+            self.height = msg.info.height  # cells
+            self.width = msg.info.width  # cells
+            with self.costmap_lock:
+                costmap2D = np.array(msg.data).reshape(int(self.height), int(self.width)).astype(np.float32)
+                # change all unidentified points to have a cost of 0.5
+                print("SHAPE", costmap2D.shape)
+                costmap2D[costmap2D == -1.0] = 0.5
 
-        cur_rover_pose = self.context.rover.get_pose().position[0:2]
-        end_point = self.traj.get_cur_pt()
+                cur_rover_pose = self.context.rover.get_pose().position[0:2]
+                end_point = self.traj.get_cur_pt()
 
-        # call A-STAR
-        occupancy_list = self.a_star(costmap2D, cur_rover_pose, end_point[0:2])
-        if occupancy_list is None:
-            self.star_traj = Trajectory(np.array([]))
-        else:
-            cartesian_coords = self.ij_to_cartesian(np.array(occupancy_list))
-            print(f"{cartesian_coords}, shape: {cartesian_coords.shape}")
-            self.star_traj = Trajectory(
-                np.hstack((cartesian_coords, np.zeros((cartesian_coords.shape[0], 1))))
-            )  # current point gets set back to 0
+                print("XXXXXXXXXXXXXXXXXXXXX START COSTMAP XXXXXXXXXXXXXXXXXXXXX")
+                for row in costmap2D:
+                    line = []
+                    for col in row:
+                        if col == 1:
+                            line.append("\u2588")
+                        elif col == 0:
+                            line.append(" ")
+                    print("".join(line))
+                print("XXXXXXXXXXXXXXXXXXXXX END COSTMAP XXXXXXXXXXXXXXXXXXXXX")
+
+                # call A-STAR
+                occupancy_list = self.a_star(costmap2D, cur_rover_pose, end_point[0:2])
+                if occupancy_list is None:
+                    self.star_traj = Trajectory(np.array([]))
+                else:
+                    cartesian_coords = self.ij_to_cartesian(np.array(occupancy_list))
+                    print(f"{cartesian_coords}, shape: {cartesian_coords.shape}")
+                    self.star_traj = Trajectory(
+                        np.hstack((cartesian_coords, np.zeros((cartesian_coords.shape[0], 1))))
+                    )  # current point gets set back to 0
+                    self.costmap_pub.publish(costmap2D.flatten())
+
+                    path = Path()
+                    poses = []
+                    for coord in cartesian_coords:
+                        pose = SE3.from_pos_quat(coord, [0, 0, 0, 1])
+                        pose_stamped = PoseStamped()
+                        pose_stamped.pose = Pose(pose.position, pose.rotation.quaternion)
+                        poses.append(pose_stamped)
+                    path.poses = poses
+                    self.path_pub.publish(path)
+
+                self.time_last_updated = rospy.get_time()
 
     def on_enter(self, context) -> None:
         self.context = context
+        self.costmap_lock = Lock()
         search_center = context.course.current_waypoint()
         if not self.is_recovering:
             self.traj = SearchTrajectory.spiral_traj(
@@ -274,7 +331,10 @@ class WaterBottleSearchState(State):
             print(f"ORIGIN: {self.origin}")
             self.prev_target = None
         self.star_traj = Trajectory(np.array([]))
+        self.time_last_updated = rospy.get_time()
         self.listener = rospy.Subscriber("costmap", OccupancyGrid, self.costmap_callback)
+        self.costmap_pub = rospy.Publisher("costmap2D", Costmap2D, queue_size=1)
+        self.path_pub = rospy.Publisher("path", Path, queue_size=1)
 
     def on_exit(self, context) -> None:
         pass
