@@ -53,7 +53,10 @@
       <LimitSwitch :service_name="'sa_enable_limit_switch_sa_x'" :display_name="'SA X Switch'" />
       <LimitSwitch :service_name="'sa_enable_limit_switch_sa_y'" :display_name="'SA Y Switch'" />
       <LimitSwitch :service_name="'sa_enable_limit_switch_sa_z'" :display_name="'SA Z Switch'" />
-      <LimitSwitch :service_name="'sa_enable_limit_switch_scoop'" :display_name="'Scoop Switch'" />
+      <LimitSwitch
+        :service_name="'sa_enable_limit_switch_sampler'"
+        :display_name="'Sampler Switch'"
+      />
       <LimitSwitch
         :service_name="'sa_enable_limit_switch_sensor_actuator'"
         :display_name="'Sensor Actuator Switch'"
@@ -66,6 +69,14 @@
         <CalibrationCheckbox :name="'SA X Calibration'" :topic_name="'sa_calibrate_sa_x'" />
         <CalibrationCheckbox :name="'SA Y Calibration'" :topic_name="'sa_calibrate_sa_y'" />
         <CalibrationCheckbox :name="'SA Z Calibration'" :topic_name="'sa_calibrate_sa_z'" />
+        <CalibrationCheckbox
+          :name="'SA Sampler Calibration'"
+          :topic_name="'sa_calibrate_sampler'"
+        />
+        <CalibrationCheckbox
+          :name="'SA Sensor Actuator Calibration'"
+          :topic_name="'sa_calibrate_sensor_actuator'"
+        />
       </div>
       <!-- <MotorAdjust
         :options="[
@@ -149,8 +160,9 @@ export default {
         name: [] as string[],
         error: [] as string[],
         state: [] as string[],
-        limit_hit: [] as boolean[] /* Each motor stores an array of 4 indicating which limit switches are hit */
-      },
+        limit_hit:
+          [] as boolean[] /* Each motor stores an array of 4 indicating which limit switches are hit */
+      }
     }
   },
 

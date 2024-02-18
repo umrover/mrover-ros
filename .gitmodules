@@ -8,3 +8,7 @@
 	url = https://dawn.googlesource.com/dawn
 	shallow = true
 	branch = chromium/6108
+[submodule "deps/manif"]
+	path = deps/manif
+	url = https://github.com/artivis/manif.git
+	shallow = true

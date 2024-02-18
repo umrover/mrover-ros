@@ -50,7 +50,7 @@ teleop:
       multiplier: -1
       slow_mode_multiplier: 0.5
       xbox_index: 4
-    scoop:
+    sampler:
       multiplier: 1
       slow_mode_multiplier: 1.0
     sensor_actuator:
