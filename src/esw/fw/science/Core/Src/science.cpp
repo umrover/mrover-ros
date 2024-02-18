@@ -137,23 +137,23 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef* hfdcan, uint32_t RxFifo0ITs)
     }
 }
 
-void HAL_I2C_MasterTXCpltCallback(I2C_HandleTypeDef *hi2c) {
-	HAL_I2C_Master_Receive_IT(hi2c, (mrover::Spectral::SPECTRAL_7b_ADDRESS << 1 | 1), (uint8_t*)spectral_status_buffer, sizeof(spectral_status_buffer));
-}
-
-void HAL_I2C_MasterRXCpltCallback(I2C_HandleTypeDef *hi2c) {
-	// If we want to use this for anything else than checking spectral status reg,
-	// then this function needs additional logic
-
-	if ((spectral_status_buffer[0] & mrover::Spectral::I2C_AS72XX_SLAVE_TX_VALID) == 0) {
-		osSemaphoreRelease(spectral_write_status);
-	}
-
-	if ((spectral_status_buffer[0] & mrover::Spectral::I2C_AS72XX_SLAVE_RX_VALID) == 0) {
-		osSemaphoreRelease(spectral_read_status);
-	}
-
-}
+//void HAL_I2C_MasterTXCpltCallback(I2C_HandleTypeDef *hi2c) {
+//	HAL_I2C_Master_Receive_IT(hi2c, (mrover::Spectral::SPECTRAL_7b_ADDRESS << 1 | 1), (uint8_t*)spectral_status_buffer, sizeof(spectral_status_buffer));
+//}
+//
+//void HAL_I2C_MasterRXCpltCallback(I2C_HandleTypeDef *hi2c) {
+//	// If we want to use this for anything else than checking spectral status reg,
+//	// then this function needs additional logic
+//
+//	if ((spectral_status_buffer[0] & mrover::Spectral::I2C_AS72XX_SLAVE_TX_VALID) == 0) {
+//		osSemaphoreRelease(spectral_write_status);
+//	}
+//
+//	if ((spectral_status_buffer[0] & mrover::Spectral::I2C_AS72XX_SLAVE_RX_VALID) == 0) {
+//		osSemaphoreRelease(spectral_read_status);
+//	}
+//
+//}
 
 void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c) {
 	// Something is most likely wrong with the I2C bus

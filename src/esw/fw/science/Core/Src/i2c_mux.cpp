@@ -16,15 +16,6 @@ namespace mrover {
     	else{
     		// Error handling
     	}
-
-    	// Clear read and write semaphore so that tasks need to re-acquire them
-    	if(osSemaphoreGetCount(spectral_read_status) > 0){
-    		osSemaphoreAcquire(spectral_read_status, osWaitForever);
-    	}
-
-    	if(osSemaphoreGetCount(spectral_write_status) > 0){
-			osSemaphoreAcquire(spectral_write_status, osWaitForever);
-		}
     }
 } // namespace mrover
 

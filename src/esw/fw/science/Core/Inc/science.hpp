@@ -110,7 +110,8 @@ namespace mrover {
 
         void update_and_send_spectral() {
         	SpectralData spectral_data;
-        	for (int i = 0; i < 3; ++i) {
+        	// TEST just 2 spectral (id 0), replace with 0 - 3 later
+        	for (int i = 2; i < 3; ++i) {
         		m_spectral_sensors.at(i).update_channel_data();
 
 				spectral_data.spectrals.at(i).error =
