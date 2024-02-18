@@ -8,9 +8,9 @@ namespace mrover {
     // Constants
 
     // From: arm.urdf.xacro
-    constexpr double LINK_AB = 0.58;
-    constexpr double LINK_BC = 0.55;
-    constexpr double LINK_CD = 0.142;
+    constexpr double LINK_AB = 0.534;
+    constexpr double LINK_BC = 0.553;
+    constexpr double LINK_CD = 0.044886000454425812;
     constexpr double TAU = std::numbers::pi * 2;
     double const OFFSET = std::atan2(0.09, LINK_BC);
     constexpr double JOINT_A_MIN = -1;
@@ -58,6 +58,11 @@ namespace mrover {
         double z = ik_target.pose.position.z;
         SE3d pos{{x, y, z}, SO3d::Identity()};
         SE3Conversions::pushToTfTree(tfBroadcaster, "arm_target", "chassis_link", pos);
+
+        // SE3d link_ab = SE3Conversions::fromTfTree(buffer, "arm_a_link", "arm_b_link");
+        // SE3d link_bc = SE3Conversions::fromTfTree(buffer, "arm_b_link", "arm_c_link");
+        // SE3d link_cd = SE3Conversions::fromTfTree(buffer, "arm_c_link", "arm_d_link");
+        // SE3d link_de = SE3Conversions::fromTfTree(buffer, "arm_d_link", "arm_e_link");
 
         // double C = x * x + z * z - LINK_AB * LINK_AB - LINK_BC * LINK_BC;
         // double q2 = std::acos(C / (2 * LINK_AB * LINK_BC));
