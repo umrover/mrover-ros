@@ -44,7 +44,7 @@ namespace mrover {
             cv::VideoCapture capture{std::format("v4l2src device={} ! videoconvert ! video/x-raw,width={},height={},format=I420,framerate={}/1 ! appsink", device, width, height, framerate), cv::CAP_GSTREAMER};
             if (!capture.isOpened()) throw std::runtime_error{"Long range cam failed to open"};
 
-            NODELET_INFO_STREAM(std::format("Long range cam opened: {}x{} @ {} fps", width, height, framerate));
+            NODELET_INFO_STREAM(std::format("USB camera opened: {}x{} @ {} fps", width, height, framerate));
 
             cv::Mat frame;
             while (ros::ok()) {
