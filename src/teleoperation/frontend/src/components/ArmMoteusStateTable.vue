@@ -7,20 +7,26 @@
       <tbody>
         <tr>
           <th class="table-secondary">Motor</th>
-          <td v-for="(name, i) in moteusStateName" :key="i">
+          <td v-for="(name, i) in moteusName" :key="i">
             {{ name }}
           </td>
         </tr>
         <tr>
           <th class="table-secondary">State</th>
-          <td v-for="(state, i) in moteusStateState" :key="i">
+          <td v-for="(state, i) in moteusState" :key="i">
             {{ state }}
           </td>
         </tr>
         <tr>
           <th class="table-secondary">Error</th>
-          <td v-for="(error, i) in moteusStateError" :key="i">
+          <td v-for="(error, i) in moteusError" :key="i">
             {{ error }}
+          </td>
+        </tr>
+        <tr>
+          <th class="table-secondary">Limit Hits</th>
+          <td v-for="(limits, i) in moteusLimits" :key="i">
+            {{ limits }}
           </td>
         </tr>
       </tbody>
@@ -43,9 +49,10 @@ export default defineComponent({
 
   data() {
     return {
-      moteusStateName: [] as string[],
-      moteusStateState: [] as string[],
-      moteusStateError: [] as string[]
+      moteusName: [] as string[],
+      moteusState: [] as string[],
+      moteusError: [] as string[],
+      moteusLimits: [] as boolean[]
     }
   },
 
@@ -56,30 +63,13 @@ export default defineComponent({
   watch: {
     message(msg) {
       if (msg.type == 'arm_moteus') {
-        let index = this.moteusStateName.findIndex((n) => n === msg.name)
-
-        if (this.moteusStateName.length == 4 || index != -1) {
-          //if all joints are in table or there's an update to one before all are in
-          this.update(msg, index)
-        } else {
-          this.moteusStateName.push(msg.name)
-          this.moteusStateState.push(msg.state)
-          this.moteusStateError.push(msg.error)
-        }
+        this.moteusName = msg.name
+        this.moteusState = msg.state
+        this.moteusError = msg.error
+        this.moteusLimits = msg.limit_hit
       }
     }
   },
-
-  methods: {
-    update(msg: { name: string; state: string; error: string }, index: number) {
-      if (index !== -1) {
-        this.moteusStateState[index] = msg.state
-        this.moteusStateError[index] = msg.error
-      } else {
-        console.log('Invalid arm moteus name: ' + msg.name)
-      }
-    }
-  }
 })
 </script>
 

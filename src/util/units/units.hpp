@@ -345,6 +345,7 @@ namespace mrover {
 
     using RevolutionsPerSecond = compound_unit<Revolutions, inverse<Seconds>>;
     using MetersPerSecond = compound_unit<Meters, inverse<Seconds>>;
+    using RadiansPerMeter = compound_unit<Radians, inverse<Meters>>;
 
     //
     // Literals

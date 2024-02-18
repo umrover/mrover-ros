@@ -1,5 +1,8 @@
 #include "zed_wrapper.hpp"
 
+#include <manif/manif.h>
+#include <lie.hpp>
+
 namespace mrover {
 
     /**
@@ -252,11 +255,11 @@ namespace mrover {
                         sl::Translation const& translation = pose.getTranslation();
                         sl::Orientation const& orientation = pose.getOrientation();
                         try {
-                            SE3 leftCameraInOdom{{translation.x, translation.y, translation.z},
-                                                 Eigen::Quaterniond{orientation.w, orientation.x, orientation.y, orientation.z}.normalized()};
-                            SE3 leftCameraInBaseLink = SE3::fromTfTree(mTfBuffer, "base_link", "zed2i_left_camera_frame");
-                            SE3 baseLinkInOdom = leftCameraInBaseLink * leftCameraInOdom;
-                            SE3::pushToTfTree(mTfBroadcaster, "base_link", "odom", baseLinkInOdom);
+                            SE3d leftCameraInOdom{{translation.x, translation.y, translation.z},
+                                                  Eigen::Quaterniond{orientation.w, orientation.x, orientation.y, orientation.z}.normalized()};
+                            SE3d baseLinkToLeftCamera = SE3Conversions::fromTfTree(mTfBuffer, "base_link", "zed2i_left_camera_frame");
+                            SE3d baseLinkInOdom = leftCameraInOdom * baseLinkToLeftCamera;
+                            SE3Conversions::pushToTfTree(mTfBroadcaster, "base_link", "odom", baseLinkInOdom);
                         } catch (tf2::TransformException& e) {
                             NODELET_WARN_STREAM("Failed to get transform: " << e.what());
                         }

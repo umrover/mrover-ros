@@ -51,7 +51,7 @@
     </div>
     <div class="shadow p-3 rounded moteus">
       <DriveMoteusStateTable :moteus-state-data="moteusState" />
-      <MotorsStatusTable :motorData="motorData" :vertical="true" />
+      <MotorsStatusTable :motor-data="motorData" :vertical="true" />
     </div>
   </div>
 </template>
@@ -118,7 +118,9 @@ export default defineComponent({
         name: [] as string[],
         position: [] as number[],
         velocity: [] as number[],
-        effort: [] as number[]
+        effort: [] as number[],
+        state: [] as string[],
+        error: [] as string[]
       }
     }
   },
@@ -147,10 +149,8 @@ export default defineComponent({
         this.moteusState.error = msg.error
         this.moteusState.limit_hit = msg.limit_hit
       } else if (msg.type == 'led') {
-        if (msg.red)
-          this.ledColor = 'bg-danger' //red
-        else if (msg.green)
-          this.ledColor = 'blink' //blinking green
+        if (msg.red) this.ledColor = 'bg-danger' //red
+        else if (msg.green) this.ledColor = 'blink' //blinking green
         else if (msg.blue) this.ledColor = 'bg-primary' //blue
       } else if (msg.type == 'nav_state') {
         this.navState = msg.state
@@ -291,7 +291,6 @@ h2 {
 .map {
   grid-area: map;
 }
-
 .waypoints {
   grid-area: waypoints;
 }
@@ -312,3 +311,4 @@ h2 {
   grid-area: data;
 }
 </style>
+>>>>>>> 9720704e91b679513a528bf4bb0e7521bcdaec68
