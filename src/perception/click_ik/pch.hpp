@@ -25,6 +25,6 @@
 
 #include <loop_profiler.hpp>
 #include <point.hpp>
-#include <se3.hpp>
+#include <lie.hpp>
 
 #include <mrover/ClickIkAction.h>

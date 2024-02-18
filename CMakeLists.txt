@@ -196,8 +196,8 @@ endif ()
 mrover_add_nodelet(tag_detector src/perception/tag_detector/*.cpp src/perception/tag_detector src/perception/tag_detector/pch.hpp)
 mrover_nodelet_link_libraries(tag_detector opencv_core opencv_objdetect opencv_aruco opencv_imgproc opencv_highgui lie manif)
 
-mrover_add_nodelet(click_ik src/perception/click_ik/*.cpp src/perception/click_ik src/perception/click_ik/pch.hpp)
-mrover_nodelet_link_libraries(click_ik lie)
+# mrover_add_nodelet(click_ik src/perception/click_ik/*.cpp src/perception/click_ik src/perception/click_ik/pch.hpp)
+# mrover_nodelet_link_libraries(click_ik lie)
 
 if (CUDA_FOUND)
     mrover_add_library(streaming src/esw/streaming/*.c* src/esw/streaming)
@@ -220,6 +220,7 @@ endif ()
 ## Teleoperation
 
 mrover_add_node(arm_controller src/teleoperation/arm_controller/*.cpp)
+target_link_libraries(arm_controller PRIVATE lie)
 
 ## Simulator
 

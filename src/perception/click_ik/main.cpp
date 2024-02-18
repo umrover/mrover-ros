@@ -15,8 +15,8 @@ auto main(int argc, char** argv) -> int {
     nodelet.load(ros::this_node::getName(), "mrover/ClickIkNodelet", ros::names::getRemappings(), {});
     // Start ActionServer
     ros::NodeHandle n;
-    Server server(n, "do_click_ik", boost::bind(&execute, _1, &server), false);
-    server.start();
+    // Server server(n, "do_click_ik", boost::bind(&execute, _1, &server), false);
+    // server.start();
 
     ros::spin();
 
