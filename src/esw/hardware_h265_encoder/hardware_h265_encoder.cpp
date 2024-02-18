@@ -28,9 +28,13 @@ auto imageCallback(sensor_msgs::ImageConstPtr const& msg) -> void {
         cv::Mat bgraFrame;
         cv::cvtColor(bgrFrame, bgraFrame, cv::COLOR_BGR2BGRA);
 
-        Encoder::BitstreamView view = encoder->feed(bgraFrame);
-        std::span span{static_cast<std::byte*>(view.lockParams.bitstreamBufferPtr), view.lockParams.bitstreamSizeInBytes};
-        streamServer->feed(span);
+        bool feedSuccessful = false;
+        {
+            Encoder::BitstreamView view = encoder->feed(bgraFrame);
+            std::span span{static_cast<std::byte*>(view.lockParams.bitstreamBufferPtr), view.lockParams.bitstreamSizeInBytes};
+            feedSuccessful = streamServer->feed(span);
+        }
+        if (!feedSuccessful) encoder.reset();
 
     } catch (std::exception const& e) {
         ROS_ERROR_STREAM(std::format("Exception encoding frame: {}", e.what()));

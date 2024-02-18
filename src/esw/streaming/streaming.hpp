@@ -25,5 +25,5 @@ class StreamServer {
 public:
     StreamServer(std::string_view host, std::uint16_t port);
 
-    void feed(std::span<std::byte> data);
+    auto feed(std::span<std::byte> data) -> bool;
 };

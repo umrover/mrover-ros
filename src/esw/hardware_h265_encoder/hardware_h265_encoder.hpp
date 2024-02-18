@@ -26,7 +26,6 @@ public:
 
 private:
     cv::Size m_size;
-    NV_ENCODE_API_FUNCTION_LIST m_nvenc{.version = NV_ENCODE_API_FUNCTION_LIST_VER};
     void* m_encoder = nullptr;
     NV_ENC_INPUT_PTR m_input = nullptr;
     NV_ENC_OUTPUT_PTR m_output = nullptr;
