@@ -241,9 +241,9 @@ class GUIConsumer(JsonWebsocketConsumer):
             sa_throttle_cmd.names = SA_NAMES
 
             sa_throttle_cmd.throttles = [
-                self.sa_config[name]["multiplier"] * self.filter_xbox_axis(msg["axes"][info["xbox_index"]], 0.15, True)
-                for name, info in self.sa_config.items()
-                if name.startswith("sa")
+                self.sa_config[name]["multiplier"] * self.filter_xbox_axis(msg["axes"][self.sa_config["sa_x"]["xbox_index"]], 0.15, True),
+                self.sa_config[name]["multiplier"] * self.filter_xbox_axis(msg["axes"][self.sa_config["sa_y"]["xbox_index"]], 0.15, True),
+                self.sa_config[name]["multiplier"] * self.filter_xbox_axis(msg["axes"][self.sa_config["sa_z"]["xbox_index"]], 0.15, True),
             ]
             sa_throttle_cmd.throttles.extend(
                 [
