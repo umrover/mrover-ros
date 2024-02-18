@@ -41,11 +41,11 @@ teleop:
     sa_x:
       multiplier: 1
       slow_mode_multiplier: 0.5
-      xbox_index: 0
+      xbox_index: 1
     sa_y:
       multiplier: -1
       slow_mode_multiplier: 0.5
-      xbox_index: 1
+      xbox_index: 0
     sa_z:
       multiplier: -1
       slow_mode_multiplier: 0.5
@@ -53,9 +53,11 @@ teleop:
     sampler:
       multiplier: 1
       slow_mode_multiplier: 1.0
+      xbox_index: 5
     sensor_actuator:
       multiplier: 1
       slow_mode_multiplier: 0.5
+      xbox_index: 5
 
   drive_controls:
     forward_back:

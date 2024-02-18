@@ -84,7 +84,7 @@ can:
       bus: 1
       id: 0x50
     - name: "science"
-      bus: 1
+      bus: 0
       id: 0x51
 
 brushless_motors:
@@ -322,7 +322,7 @@ brushed_motors:
       max_velocity: 1.0
       calibration_throttle: 0.5  # throttle during calibration
     sa_y:
-      velocity_multiplier: 1.0
+      velocity_multiplier: -1.0
       gear_ratio: 75.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
       is_linear: true
       rad_to_meters_ratio: 1.0 #TODO 5.0 = 5 motor radians -> 1 meter
