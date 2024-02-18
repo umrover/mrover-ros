@@ -115,7 +115,7 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
             self.flight_thread = threading.Thread(target=self.flight_attitude_listener)
             self.flight_thread.start()
-        except rospy.ROSException as e:
+        except Exception as e:
             rospy.logerr(e)
 
     def disconnect(self, close_code):
