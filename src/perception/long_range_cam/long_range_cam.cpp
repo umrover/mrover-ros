@@ -11,20 +11,20 @@ namespace mrover {
         mGrabThread = std::jthread(&LongRangeCamNodelet::grabUpdate, this);
     }
 
-    auto fillImageMessage(cv::Mat const& bgrImage, sensor_msgs::ImagePtr const& imageMessage) -> void {
-        assert(!bgrImage.empty());
-        assert(bgrImage.isContinuous());
-        assert(bgrImage.type() == CV_8UC3);
+    auto fillImageMessage(cv::Mat const& bgraImage, sensor_msgs::ImagePtr const& imageMessage) -> void {
+        assert(!bgraImage.empty());
+        assert(bgraImage.isContinuous());
+        assert(bgraImage.type() == CV_8UC4);
         assert(imageMessage);
 
-        imageMessage->height = bgrImage.rows;
-        imageMessage->width = bgrImage.cols;
-        imageMessage->encoding = sensor_msgs::image_encodings::BGR8;
-        imageMessage->step = bgrImage.step;
+        imageMessage->height = bgraImage.rows;
+        imageMessage->width = bgraImage.cols;
+        imageMessage->encoding = sensor_msgs::image_encodings::BGRA8;
+        imageMessage->step = bgraImage.step;
         imageMessage->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
         size_t size = imageMessage->step * imageMessage->height;
         imageMessage->data.resize(size);
-        std::memcpy(imageMessage->data.data(), bgrImage.data, size);
+        std::memcpy(imageMessage->data.data(), bgraImage.data, size);
     }
 
     auto LongRangeCamNodelet::grabUpdate() -> void {
@@ -53,9 +53,9 @@ namespace mrover {
 
                 if (mImgPub.getNumSubscribers()) {
                     auto imageMessage = boost::make_shared<sensor_msgs::Image>();
-                    cv::Mat bgr;
-                    cv::cvtColor(frame, bgr, cv::COLOR_YUV2BGR_I420);
-                    fillImageMessage(bgr, imageMessage);
+                    cv::Mat bgra;
+                    cv::cvtColor(frame, bgra, cv::COLOR_YUV2BGRA_I420);
+                    fillImageMessage(bgra, imageMessage);
                     imageMessage->header.frame_id = "long_range_cam_frame";
                     imageMessage->header.stamp = ros::Time::now();
                     mImgPub.publish(imageMessage);

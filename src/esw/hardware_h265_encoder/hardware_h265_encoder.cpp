@@ -18,15 +18,13 @@ std::optional<Encoder> encoder;
 
 auto imageCallback(sensor_msgs::ImageConstPtr const& msg) -> void {
     try {
-        if (msg->encoding != sensor_msgs::image_encodings::BGR8) throw std::runtime_error{"Unsupported encoding"};
+        if (msg->encoding != sensor_msgs::image_encodings::BGRA8) throw std::runtime_error{"Unsupported encoding"};
 
         cv::Size size{static_cast<int>(msg->width), static_cast<int>(msg->height)};
 
         if (!encoder) encoder.emplace(size);
 
-        cv::Mat bgrFrame{size, CV_8UC3, const_cast<std::uint8_t*>(msg->data.data()), msg->step};
-        cv::Mat bgraFrame;
-        cv::cvtColor(bgrFrame, bgraFrame, cv::COLOR_BGR2BGRA);
+        cv::Mat bgraFrame{size, CV_8UC4, const_cast<std::uint8_t*>(msg->data.data()), msg->step};
 
         bool feedSuccessful = false;
         {

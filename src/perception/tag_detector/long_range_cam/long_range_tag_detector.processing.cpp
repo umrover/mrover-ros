@@ -13,10 +13,11 @@ namespace mrover {
         assert(msg);
         assert(msg->height > 0);
         assert(msg->width > 0);
+        assert(msg->encoding == sensor_msgs::image_encodings::BGRA8);
 
         //Store image contents to member variables
-        cv::Mat cvImage{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC3, const_cast<std::uint8_t*>(msg->data.data())};
-        cvImage.copyTo(mImg);
+        cv::Mat bgraImage{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC4, const_cast<std::uint8_t*>(msg->data.data())};
+        cv::cvtColor(bgraImage, mImg, cv::COLOR_BGRA2BGR);
 
         // Detect tags
         cv::aruco::detectMarkers(mImg, mDictionary, mImmediateCorners, mImmediateIds, mDetectorParams);
