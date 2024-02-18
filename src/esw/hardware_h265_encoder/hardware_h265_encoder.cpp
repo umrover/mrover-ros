@@ -20,6 +20,8 @@ auto imageCallback(sensor_msgs::ImageConstPtr const& msg) -> void {
     try {
         if (msg->encoding != sensor_msgs::image_encodings::BGRA8) throw std::runtime_error{"Unsupported encoding"};
 
+        if (!encoder) encoder.emplace(cv::Size{static_cast<int>(msg->width), static_cast<int>(msg->height)});
+
         cv::Size size{static_cast<int>(msg->width), static_cast<int>(msg->height)};
 
         cv::Mat bgraFrame{size, CV_8UC4, const_cast<std::uint8_t*>(msg->data.data()), msg->step};
@@ -34,35 +36,35 @@ auto imageCallback(sensor_msgs::ImageConstPtr const& msg) -> void {
     }
 }
 
-auto capture() -> void {
-    cv::VideoCapture cap{std::format("v4l2src ! videoconvert ! video/x-raw,width={},height={},format=I420,framerate=30/1 ! appsink", 640, 480), cv::CAP_GSTREAMER};
-    if (!cap.isOpened()) throw std::runtime_error{"Failed to open capture"};
-
-    while (cap.isOpened()) {
-        cv::Mat i420Frame;
-        if (!cap.read(i420Frame)) throw std::runtime_error{"Failed to read frame"};
-
-        cv::Mat bgraFrame;
-        cvtColor(i420Frame, bgraFrame, cv::COLOR_YUV2BGRA_I420);
-
-        Encoder::BitstreamView view = encoder->feed(bgraFrame);
-        std::span span{static_cast<std::byte*>(view.lockParams.bitstreamBufferPtr), view.lockParams.bitstreamSizeInBytes};
-        streamServer->feed(span);
-
-        ros::spinOnce();
-    }
-}
+// auto capture() -> void {
+//     cv::VideoCapture cap{std::format("v4l2src ! videoconvert ! video/x-raw,width={},height={},format=I420,framerate=30/1 ! appsink", 640, 480), cv::CAP_GSTREAMER};
+//     if (!cap.isOpened()) throw std::runtime_error{"Failed to open capture"};
+//
+//     while (cap.isOpened()) {
+//         cv::Mat i420Frame;
+//         if (!cap.read(i420Frame)) throw std::runtime_error{"Failed to read frame"};
+//
+//         cv::Mat bgraFrame;
+//         cvtColor(i420Frame, bgraFrame, cv::COLOR_YUV2BGRA_I420);
+//
+//         Encoder::BitstreamView view = encoder->feed(bgraFrame);
+//         std::span span{static_cast<std::byte*>(view.lockParams.bitstreamBufferPtr), view.lockParams.bitstreamSizeInBytes};
+//         streamServer->feed(span);
+//
+//         ros::spinOnce();
+//     }
+// }
 
 auto main(int argc, char** argv) -> int {
     try {
         ros::init(argc, argv, "software_h265_encoder");
-        ros::NodeHandle nh;
+        ros::NodeHandle nh, pnh{"~"};
+
+        std::string imageTopic = pnh.param("image_topic", std::string{"/camera/left/image"});
 
         streamServer.emplace("0.0.0.0", 8080);
 
-        encoder.emplace(cv::Size{640, 480});
-
-        ros::Subscriber imageSubscriber = nh.subscribe("/camera/left/image", 1, imageCallback);
+        ros::Subscriber imageSubscriber = nh.subscribe(imageTopic, 1, imageCallback);
 
         // capture();
 

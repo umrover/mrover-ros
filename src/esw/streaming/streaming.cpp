@@ -4,8 +4,9 @@
 #include <iostream>
 
 #include <boost/asio/ip/tcp.hpp>
-#include <boost/beast/core/tcp_stream.hpp>
 #include <boost/beast/websocket.hpp>
+
+#include <ros/console.h>
 
 StreamServer::StreamServer(std::string_view host, std::uint16_t port)
     : m_acceptor{m_context} {
@@ -14,7 +15,7 @@ StreamServer::StreamServer(std::string_view host, std::uint16_t port)
     beast::error_code ec;
     tcp::endpoint endpoint{net::ip::make_address(host), port};
 
-    std::cout << "Starting H.265 streaming server @" << endpoint << std::endl;
+    ROS_INFO_STREAM("Starting H.265 streaming server @" << endpoint);
 
     m_acceptor.open(endpoint.protocol(), ec);
     if (ec) throw std::runtime_error{std::format("Failed to open acceptor: {}", ec.message())};
@@ -35,12 +36,14 @@ StreamServer::StreamServer(std::string_view host, std::uint16_t port)
     m_client->set_option(websocket::stream_base::decorator([](websocket::response_type& res) {
         res.set(http::field::server, std::format("{} {}", BOOST_BEAST_VERSION_STRING, "mrover-stream-server"));
     }));
-    m_client->accept();
-
-    std::cout << "Client connected" << std::endl;
 }
 
 void StreamServer::feed(std::span<std::byte> data) {
+    if (!m_client->is_open()) {
+        m_client->accept();
+        ROS_INFO_STREAM("Client connected");
+    }
+
     net::mutable_buffer buffer{data.data(), data.size()};
     m_client->write(buffer);
 }
