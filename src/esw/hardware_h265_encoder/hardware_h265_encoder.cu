@@ -1,4 +1,4 @@
-#include "encoding.hpp"
+#include "hardware_h265_encoder.hpp"
 
 #include <algorithm>
 #include <cstdint>
@@ -7,14 +7,10 @@
 #include <unordered_map>
 #include <vector>
 
+#include <ros/console.h>
+
 #include <cuda.h>
 #include <nvEncodeAPI.h>
-
-void NvCheck(NVENCSTATUS status) {
-    if (status != NV_ENC_SUCCESS) {
-        throw std::runtime_error("NvEnc failed");
-    }
-}
 
 void cuCheck(CUresult status) {
     if (status != CUDA_SUCCESS) {
@@ -28,10 +24,16 @@ void cudaCheck(cudaError_t status) {
     }
 }
 
+void NvCheck(NVENCSTATUS status) {
+    if (status != NV_ENC_SUCCESS) {
+        throw std::runtime_error("NvEnc failed");
+    }
+}
+
 namespace std {
     template<>
     struct equal_to<GUID> {
-        bool operator()(GUID const& g1, GUID const& g2) const {
+        auto operator()(GUID const& g1, GUID const& g2) const -> bool {
             return g1.Data1 == g2.Data1 && g1.Data2 == g2.Data2 && g1.Data3 == g2.Data3 &&
                    g1.Data4[0] == g2.Data4[0] && g1.Data4[1] == g2.Data4[1] && g1.Data4[2] == g2.Data4[2] &&
                    g1.Data4[3] == g2.Data4[3] && g1.Data4[4] == g2.Data4[4] && g1.Data4[5] == g2.Data4[5] &&
@@ -41,13 +43,13 @@ namespace std {
 
     template<>
     struct hash<GUID> {
-        std::size_t operator()(GUID const& g) const {
+        auto operator()(GUID const& g) const noexcept -> std::size_t {
             std::size_t seed = 0;
             seed ^= std::hash<std::uint32_t>{}(g.Data1);
             seed ^= std::hash<std::uint16_t>{}(g.Data2);
             seed ^= std::hash<std::uint16_t>{}(g.Data3);
-            for (std::size_t i = 0; i < 8; ++i) {
-                seed ^= std::hash<std::uint8_t>{}(g.Data4[i]);
+            for (unsigned char i: g.Data4) {
+                seed ^= std::hash<std::uint8_t>{}(i);
             }
             return seed;
         }
@@ -60,34 +62,39 @@ std::unordered_map<GUID, std::string> GUID_TO_NAME{
         {NV_ENC_CODEC_AV1_GUID, "AV1"},
 };
 
-NvEncoder::NvEncoder(cv::Size const& size) : m_size{size} {
-    cudaCheck(cudaSetDevice(0));
-    CUcontext context;
-    cuCheck(cuCtxGetCurrent(&context));
+NV_ENCODE_API_FUNCTION_LIST NVENV_API{.version = NV_ENCODE_API_FUNCTION_LIST_VER};
+CUcontext CUDA_CONTEXT = nullptr;
 
-    NvCheck(NvEncodeAPICreateInstance(&m_nvenc));
+Encoder::Encoder(cv::Size const& size) : m_size{size} {
+    if (!CUDA_CONTEXT) {
+        cudaCheck(cudaSetDevice(0));
+        cuCheck(cuCtxGetCurrent(&CUDA_CONTEXT));
+
+        NvCheck(NvEncodeAPICreateInstance(&NVENV_API));
+    }
+
     NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS params{
             .version = NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS_VER,
             .deviceType = NV_ENC_DEVICE_TYPE_CUDA,
-            .device = context,
+            .device = CUDA_CONTEXT,
             .apiVersion = NVENCAPI_VERSION,
     };
-    NvCheck(m_nvenc.nvEncOpenEncodeSessionEx(&params, &m_encoder));
+    NvCheck(NVENV_API.nvEncOpenEncodeSessionEx(&params, &m_encoder));
     if (!m_encoder) {
         throw std::runtime_error("No encoder");
     }
 
     std::uint32_t guidCount;
-    NvCheck(m_nvenc.nvEncGetEncodeGUIDCount(m_encoder, &guidCount));
+    NvCheck(NVENV_API.nvEncGetEncodeGUIDCount(m_encoder, &guidCount));
     if (guidCount == 0) {
         throw std::runtime_error("No GUIDs");
     }
 
     std::vector<GUID> guids(guidCount);
-    NvCheck(m_nvenc.nvEncGetEncodeGUIDs(m_encoder, guids.data(), guidCount, &guidCount));
-    std::cout << "Supported encoders:" << std::endl;
+    NvCheck(NVENV_API.nvEncGetEncodeGUIDs(m_encoder, guids.data(), guidCount, &guidCount));
+    ROS_INFO("Supported encoders:");
     for (GUID const& guid: guids) {
-        std::cout << "\t" << GUID_TO_NAME[guid] << std::endl;
+        ROS_INFO_STREAM("\t" << GUID_TO_NAME[guid]);
     }
 
     GUID desiredEncodeGuid = NV_ENC_CODEC_HEVC_GUID;
@@ -100,9 +107,9 @@ NvEncoder::NvEncoder(cv::Size const& size) : m_size{size} {
     }
 
     std::uint32_t presetCount;
-    NvCheck(m_nvenc.nvEncGetEncodePresetCount(m_encoder, desiredEncodeGuid, &presetCount));
+    NvCheck(NVENV_API.nvEncGetEncodePresetCount(m_encoder, desiredEncodeGuid, &presetCount));
     std::vector<GUID> presetGuids(presetCount);
-    NvCheck(m_nvenc.nvEncGetEncodePresetGUIDs(m_encoder, desiredEncodeGuid, presetGuids.data(), presetCount, &presetCount));
+    NvCheck(NVENV_API.nvEncGetEncodePresetGUIDs(m_encoder, desiredEncodeGuid, presetGuids.data(), presetCount, &presetCount));
     if (std::none_of(presetGuids.begin(), presetGuids.end(), [&](const GUID& guid) {
             return std::equal_to<GUID>{}(guid, desiredPresetGuid);
         })) {
@@ -116,7 +123,7 @@ NvEncoder::NvEncoder(cv::Size const& size) : m_size{size} {
                     .version = NV_ENC_CONFIG_VER,
             },
     };
-    NvCheck(m_nvenc.nvEncGetEncodePresetConfigEx(m_encoder, desiredEncodeGuid, desiredPresetGuid, tuningInfo, &presetConfig));
+    NvCheck(NVENV_API.nvEncGetEncodePresetConfigEx(m_encoder, desiredEncodeGuid, desiredPresetGuid, tuningInfo, &presetConfig));
 
     NV_ENC_INITIALIZE_PARAMS initEncParams{
             .version = NV_ENC_INITIALIZE_PARAMS_VER,
@@ -130,46 +137,46 @@ NvEncoder::NvEncoder(cv::Size const& size) : m_size{size} {
             .encodeConfig = &presetConfig.presetCfg,
             .tuningInfo = tuningInfo,
     };
-    NvCheck(m_nvenc.nvEncInitializeEncoder(m_encoder, &initEncParams));
+    NvCheck(NVENV_API.nvEncInitializeEncoder(m_encoder, &initEncParams));
 
     NV_ENC_CREATE_INPUT_BUFFER createInputBufferParams{
             .version = NV_ENC_CREATE_INPUT_BUFFER_VER,
             .width = static_cast<std::uint32_t>(m_size.width),
             .height = static_cast<std::uint32_t>(m_size.height),
-            .bufferFmt = NV_ENC_BUFFER_FORMAT_IYUV,
+            .bufferFmt = NV_ENC_BUFFER_FORMAT_ARGB,
     };
-    NvCheck(m_nvenc.nvEncCreateInputBuffer(m_encoder, &createInputBufferParams));
+    NvCheck(NVENV_API.nvEncCreateInputBuffer(m_encoder, &createInputBufferParams));
     m_input = createInputBufferParams.inputBuffer;
 
     NV_ENC_CREATE_BITSTREAM_BUFFER createBitstreamBufferParams{
             .version = NV_ENC_CREATE_BITSTREAM_BUFFER_VER,
     };
-    NvCheck(m_nvenc.nvEncCreateBitstreamBuffer(m_encoder, &createBitstreamBufferParams));
+    NvCheck(NVENV_API.nvEncCreateBitstreamBuffer(m_encoder, &createBitstreamBufferParams));
     m_output = createBitstreamBufferParams.bitstreamBuffer;
 }
 
-NvEncoder::BitstreamView NvEncoder::feed(cv::InputArray frameI420) {
-    if (!frameI420.isContinuous()) throw std::runtime_error("Frame is not continuous");
-    if (frameI420.type() != CV_8UC1) throw std::runtime_error("Not single channel, note that YUV420 is expected");
-    if (frameI420.size() != cv::Size{m_size.width, m_size.height + m_size.height / 2}) throw std::runtime_error("Wrong size, note that YUV420 is expected");
+auto Encoder::feed(cv::InputArray frameBgra) -> BitstreamView {
+    if (!frameBgra.isContinuous()) throw std::runtime_error("Frame is not continuous");
+    // if (frameI420.type() != CV_8UC1) throw std::runtime_error("Not single channel, note that YUV420 is expected");
+    // if (frameI420.size() != cv::Size{m_size.width, m_size.height + m_size.height / 2}) throw std::runtime_error("Wrong size, note that YUV420 is expected");
 
     NV_ENC_LOCK_INPUT_BUFFER lockInputBufferParams{
             .version = NV_ENC_LOCK_INPUT_BUFFER_VER,
             .inputBuffer = m_input,
     };
-    NvCheck(m_nvenc.nvEncLockInputBuffer(m_encoder, &lockInputBufferParams));
-    for (int r = 0; r < frameI420.rows(); ++r) {
-        std::byte* row = static_cast<std::byte*>(lockInputBufferParams.bufferDataPtr) + r * lockInputBufferParams.pitch;
-        std::memcpy(row, frameI420.getMat().ptr(r), frameI420.cols());
+    NvCheck(NVENV_API.nvEncLockInputBuffer(m_encoder, &lockInputBufferParams));
+    for (int r = 0; r < frameBgra.rows(); ++r) {
+        auto* row = static_cast<std::byte*>(lockInputBufferParams.bufferDataPtr) + r * lockInputBufferParams.pitch;
+        std::memcpy(row, frameBgra.getMat().ptr(r), frameBgra.cols() * 4);
     }
-    NvCheck(m_nvenc.nvEncUnlockInputBuffer(m_encoder, m_input));
+    NvCheck(NVENV_API.nvEncUnlockInputBuffer(m_encoder, m_input));
 
     NV_ENC_PIC_PARAMS picParams{
             .version = NV_ENC_PIC_PARAMS_VER,
             .inputWidth = static_cast<std::uint32_t>(m_size.width),
             .inputHeight = static_cast<std::uint32_t>(m_size.height),
             .frameIdx = m_frame_index++,
-            .inputTimeStamp = static_cast<std::uint64_t>(m_clock.now().time_since_epoch().count()),
+            .inputTimeStamp = static_cast<std::uint64_t>(std::chrono::high_resolution_clock::now().time_since_epoch().count()),
             .inputBuffer = m_input,
             .outputBitstream = m_output,
             .completionEvent = nullptr,
@@ -177,27 +184,27 @@ NvEncoder::BitstreamView NvEncoder::feed(cv::InputArray frameI420) {
             .pictureStruct = NV_ENC_PIC_STRUCT_FRAME,
     };
 
-    NvCheck(m_nvenc.nvEncEncodePicture(m_encoder, &picParams));
+    NvCheck(NVENV_API.nvEncEncodePicture(m_encoder, &picParams));
 
-    return {&m_nvenc, m_encoder, m_output};
+    return {&NVENV_API, m_encoder, m_output};
 }
 
-NvEncoder::BitstreamView::BitstreamView(NV_ENCODE_API_FUNCTION_LIST* nvenc, void* encoder, NV_ENC_OUTPUT_PTR output)
+Encoder::BitstreamView::BitstreamView(NV_ENCODE_API_FUNCTION_LIST* nvenc, void* encoder, NV_ENC_OUTPUT_PTR output)
     : nvenc{nvenc}, encoder{encoder}, output{output}, lockParams{.version = NV_ENC_LOCK_BITSTREAM_VER, .outputBitstream = output} {
     NvCheck(nvenc->nvEncLockBitstream(encoder, &lockParams));
 }
 
-NvEncoder::BitstreamView::~BitstreamView() {
+Encoder::BitstreamView::~BitstreamView() {
     if (nvenc && encoder && output) {
         NvCheck(nvenc->nvEncUnlockBitstream(encoder, output));
     }
 }
 
-NvEncoder::BitstreamView::BitstreamView(NvEncoder::BitstreamView&& other) noexcept {
+Encoder::BitstreamView::BitstreamView(BitstreamView&& other) noexcept {
     *this = std::move(other);
 }
 
-NvEncoder::BitstreamView& NvEncoder::BitstreamView::operator=(NvEncoder::BitstreamView&& other) noexcept {
+auto Encoder::BitstreamView::operator=(BitstreamView&& other) noexcept -> BitstreamView& {
     std::swap(nvenc, other.nvenc);
     std::swap(encoder, other.encoder);
     std::swap(output, other.output);
@@ -205,8 +212,8 @@ NvEncoder::BitstreamView& NvEncoder::BitstreamView::operator=(NvEncoder::Bitstre
     return *this;
 }
 
-NvEncoder::~NvEncoder() {
-    NvCheck(m_nvenc.nvEncDestroyInputBuffer(m_encoder, m_input));
-    NvCheck(m_nvenc.nvEncDestroyBitstreamBuffer(m_encoder, m_output));
-    NvCheck(m_nvenc.nvEncDestroyEncoder(m_encoder));
+Encoder::~Encoder() {
+    NvCheck(NVENV_API.nvEncDestroyInputBuffer(m_encoder, m_input));
+    NvCheck(NVENV_API.nvEncDestroyBitstreamBuffer(m_encoder, m_output));
+    NvCheck(NVENV_API.nvEncDestroyEncoder(m_encoder));
 }

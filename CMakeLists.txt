@@ -86,18 +86,15 @@ if (MROVER_BUILD_SIM)
     if (NOT Assimp_FOUND AND NOT assimp_FOUND)
         message(FATAL_ERROR "Assimp not found")
     endif ()
-
     find_package(Bullet REQUIRED)
-
     find_package(glfw3 REQUIRED)
-
     include(cmake/webgpu.cmake)
-
-    add_subdirectory(deps/glfw3webgpu)
+    add_subdirectory(deps/glfw3webgpu SYSTEM)
 endif ()
 find_package(OpenCV REQUIRED)
 find_package(ZED QUIET)
 find_package(Eigen3 REQUIRED)
+add_subdirectory(deps/manif SYSTEM)
 find_package(PkgConfig REQUIRED)
 pkg_search_module(NetLink libnl-3.0)
 pkg_search_module(NetLinkRoute libnl-route-3.0)
@@ -147,6 +144,7 @@ catkin_package()
 ## Libraries
 
 mrover_add_library(lie src/util/lie/*.cpp src/util/lie)
+target_link_libraries(lie PUBLIC manif)
 
 ## ESW
 
@@ -188,6 +186,9 @@ endif ()
 
 ## Perception
 
+mrover_add_library(streaming src/esw/streaming/*.cpp src/esw/streaming)
+target_compile_definitions(streaming PUBLIC BOOST_ASIO_NO_DEPRECATED)
+
 mrover_add_nodelet(zed_tag_detector src/perception/tag_detector/zed/*.cpp src/perception/tag_detector/zed src/perception/tag_detector/zed/pch.hpp)
 mrover_nodelet_link_libraries(zed_tag_detector opencv_core opencv_objdetect opencv_aruco opencv_imgproc tbb lie)
 
@@ -197,12 +198,17 @@ mrover_nodelet_link_libraries(long_range_tag_detector opencv_core opencv_objdete
 mrover_add_nodelet(usb_camera src/perception/long_range_cam/*.cpp src/perception/long_range_cam src/perception/long_range_cam/pch.hpp)
 mrover_nodelet_link_libraries(usb_camera opencv_core opencv_objdetect opencv_aruco opencv_imgproc opencv_highgui tbb lie)
 if (CUDA_FOUND)
-    mrover_add_library(streaming src/esw/streaming/*.c* src/esw/streaming)
-    #    target_link_libraries(streaming PUBLIC opencv_core opencv_cudacodec)
-    target_link_libraries(streaming PUBLIC cuda nvidia-encode opencv_core)
-    target_include_directories(streaming SYSTEM PUBLIC deps/nvenc)
-    target_compile_definitions(streaming PUBLIC BOOST_ASIO_NO_DEPRECATED)
+    mrover_add_node(hardware_h265_encoder src/esw/hardware_h265_encoder/*.c*)
+    target_link_libraries(hardware_h265_encoder PUBLIC cuda nvidia-encode opencv_core opencv_imgproc opencv_imgcodecs opencv_videoio streaming)
+    target_include_directories(hardware_h265_encoder SYSTEM PUBLIC deps/nvenc)
 endif ()
+
+add_subdirectory(deps/libde265)
+include_directories(deps/libde265/extra deps/libde265 SYSTEM)
+
+mrover_add_node(software_h265_encoder src/esw/software_h265_encoder/*.c*)
+target_link_libraries(software_h265_encoder PUBLIC opencv_core opencv_imgproc opencv_imgcodecs de265 streaming)
+target_include_directories(software_h265_encoder SYSTEM PUBLIC deps/nvenc)
 
 if (ZED_FOUND)
     mrover_add_nodelet(object_detector src/perception/object_detector/*.c* src/perception/object_detector src/perception/object_detector/pch.hpp)

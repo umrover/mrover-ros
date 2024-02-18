@@ -1,4 +1,5 @@
 #include "object_detector.hpp"
+#include "lie.hpp"
 
 namespace mrover {
 
@@ -195,7 +196,7 @@ namespace mrover {
         }
     } // namespace mrover
 
-    auto ObjectDetectorNodelet::getObjectInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t u, size_t v, size_t width, size_t height) -> std::optional<SE3> {
+    auto ObjectDetectorNodelet::getObjectInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t u, size_t v, size_t width, size_t height) -> std::optional<SE3d> {
         assert(cloudPtr);
         if (u >= cloudPtr->width || v >= cloudPtr->height) {
             NODELET_WARN("Tag center out of bounds: [%zu %zu]", u, v);
@@ -206,7 +207,7 @@ namespace mrover {
         return spiralSearchInImg(cloudPtr, u, v, width, height);
     }
 
-    auto ObjectDetectorNodelet::spiralSearchInImg(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t xCenter, size_t yCenter, size_t width, size_t height) -> std::optional<SE3> {
+    auto ObjectDetectorNodelet::spiralSearchInImg(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t xCenter, size_t yCenter, size_t width, size_t height) -> std::optional<SE3d> {
         size_t currX = xCenter;
         size_t currY = yCenter;
         size_t radius = 0;
@@ -243,7 +244,7 @@ namespace mrover {
             }
         }
 
-        return std::make_optional<SE3>(R3{point.x, point.y, point.z}, SO3{});
+        return std::make_optional<SE3d>(R3{point.x, point.y, point.z}, SO3d::Identity());
     }
 
     auto ObjectDetectorNodelet::convertPointCloudToRGBA(sensor_msgs::PointCloud2ConstPtr const& msg, cv::Mat& img) -> void {
@@ -270,12 +271,12 @@ namespace mrover {
             seenObjects.at(detection.classId) = true;
 
             //Get the object's position in 3D from the point cloud and run this statement if the optional has a value
-            if (std::optional<SE3> objectLocation = getObjectInCamFromPixel(msg, centerWidth, centerHeight, box.width, box.height); objectLocation) {
+            if (std::optional<SE3d> objectLocation = getObjectInCamFromPixel(msg, centerWidth, centerHeight, box.width, box.height)) {
                 try {
-                    std::string immediateFrameId = "immediateDetectedObject" + classes.at(detection.classId);
+                    std::string immediateFrameId = std::format("immediateDetectedObject{}", classes.at(detection.classId));
 
                     //Push the immediate detections to the zed frame
-                    SE3::pushToTfTree(mTfBroadcaster, immediateFrameId, mCameraFrameId, objectLocation.value());
+                    SE3Conversions::pushToTfTree(mTfBroadcaster, immediateFrameId, mCameraFrameId, objectLocation.value());
 
 
                     //Since the object is seen we need to increment the hit counter
@@ -284,12 +285,11 @@ namespace mrover {
                     //Only publish to permament if we are confident in the object
                     if (mObjectHitCounts.at(detection.classId) > mObjHitThreshold) {
 
-                        std::string permanentFrameId = "detectedObject" + classes.at(detection.classId);
-
+                        std::string permanentFrameId = std::format("detectedObject{}", classes.at(detection.classId));
 
                         //Grab the object inside of the camera frame and push it into the map frame
-                        SE3 objectInsideCamera = SE3::fromTfTree(mTfBuffer, mMapFrameId, immediateFrameId);
-                        SE3::pushToTfTree(mTfBroadcaster, permanentFrameId, mCameraFrameId, objectInsideCamera);
+                        SE3d objectInsideCamera = SE3Conversions::fromTfTree(mTfBuffer, mMapFrameId, immediateFrameId);
+                        SE3Conversions::pushToTfTree(mTfBroadcaster, permanentFrameId, mCameraFrameId, objectInsideCamera);
                     }
 
                 } catch (tf2::ExtrapolationException const&) {

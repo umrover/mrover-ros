@@ -97,7 +97,7 @@ namespace mrover {
 
         auto makeCameraForLink(SimulatorNodelet& simulator, btMultibodyLink const* link) -> Camera;
 
-        [[nodiscard]] auto linkInWorld(std::string const& linkName) const -> SE3;
+        [[nodiscard]] auto linkInWorld(std::string const& linkName) const -> SE3d;
     };
 
     struct PeriodicTask {
@@ -225,6 +225,16 @@ namespace mrover {
         R3 mGpsLinerizationReferencePoint{};
         double mGpsLinerizationReferenceHeading{};
 
+        // TODO: make variances configurable
+        std::default_random_engine mRNG;
+        std::normal_distribution<double> mGPSDist{0, 0.2},
+                mAccelDist{0, 0.05},
+                mGyroDist{0, 0.02},
+                mMagDist{0, 0.1},
+                mRollDist{0, 0.05},
+                mPitchDist{0, 0.05},
+                mYawDist{0, 0.1};
+
         PeriodicTask mGpsTask;
         PeriodicTask mImuTask;
 
@@ -305,7 +315,7 @@ namespace mrover {
 
         auto getUrdf(std::string const& name) -> std::optional<std::reference_wrapper<URDF>>;
 
-        SE3 mCameraInWorld{R3{-3.0, 0.0, 1.5}, SO3{}};
+        SE3d mCameraInWorld{R3{-3.0, 0.0, 1.5}, SO3d::Identity()};
 
         std::vector<StereoCamera> mStereoCameras;
         std::vector<Camera> mCameras;
@@ -432,7 +442,7 @@ namespace mrover {
 
     auto urdfPoseToBtTransform(urdf::Pose const& pose) -> btTransform;
 
-    auto btTransformToSe3(btTransform const& transform) -> SE3;
+    auto btTransformToSe3(btTransform const& transform) -> SE3d;
 
     auto computeCameraToClip(float fovY, float aspect, float zNear, float zFar) -> Eigen::Matrix4f;
 

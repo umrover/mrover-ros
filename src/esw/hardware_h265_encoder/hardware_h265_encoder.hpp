@@ -1,13 +1,12 @@
 #pragma once
 
 #include <chrono>
-#include <string_view>
 
 #include <nvEncodeAPI.h>
 #include <opencv2/core/mat.hpp>
 
-struct NvEncoder {
-
+class Encoder {
+public:
     struct BitstreamView {
         NV_ENCODE_API_FUNCTION_LIST* nvenc = nullptr;
         void* encoder = nullptr;
@@ -19,24 +18,24 @@ struct NvEncoder {
         ~BitstreamView();
 
         BitstreamView(BitstreamView const&) = delete;
-        BitstreamView& operator=(BitstreamView const&) = delete;
+        auto operator=(BitstreamView const&) -> BitstreamView& = delete;
 
         BitstreamView(BitstreamView&& other) noexcept;
-        BitstreamView& operator=(BitstreamView&& other) noexcept;
+        auto operator=(BitstreamView&& other) noexcept -> BitstreamView&;
     };
 
+private:
     cv::Size m_size;
-    NV_ENCODE_API_FUNCTION_LIST m_nvenc{.version = NV_ENCODE_API_FUNCTION_LIST_VER};
     void* m_encoder = nullptr;
     NV_ENC_INPUT_PTR m_input = nullptr;
     NV_ENC_OUTPUT_PTR m_output = nullptr;
-    uint32_t m_frame_index = 0;
+    std::uint32_t m_frame_index = 0;
     std::chrono::high_resolution_clock m_clock;
 
 public:
-    NvEncoder(cv::Size const& size);
+    explicit Encoder(cv::Size const& size);
 
-    [[nodiscard]] BitstreamView feed(cv::InputArray frameI420);
+    [[nodiscard]] auto feed(cv::InputArray frameBgra) -> BitstreamView;
 
-    ~NvEncoder();
+    ~Encoder();
 };

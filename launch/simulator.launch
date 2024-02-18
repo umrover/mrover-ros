@@ -1,4 +1,5 @@
 <launch>
+    <arg name="run_rviz" default="true" />
     <rosparam command="load" file="$(find mrover)/config/simulator/simulator.yaml" />
 
     <include file="$(find mrover)/launch/autonomy.launch">
@@ -13,4 +14,9 @@
           args="load mrover/SimulatorNodelet perception_nodelet_manager" output="screen" />
 
     <node name="arm_controller" pkg="mrover" type="arm_controller" output="screen" />
+
+    <group if="$(arg run_rviz)">
+        <arg name="rvizconfig" default="$(find mrover)/config/rviz/auton_sim.rviz" />
+        <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" />
+    </group>
 </launch>

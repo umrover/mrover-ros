@@ -53,10 +53,10 @@ namespace mrover {
         auto onInit() -> void override;
 
         auto getObjectInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr,
-                                     size_t u, size_t v, size_t width, size_t height) -> std::optional<SE3>;
+                                     size_t u, size_t v, size_t width, size_t height) -> std::optional<SE3d>;
 
         auto spiralSearchInImg(sensor_msgs::PointCloud2ConstPtr const& cloudPtr,
-                               size_t xCenter, size_t yCenter, size_t width, size_t height) -> std::optional<SE3>;
+                               size_t xCenter, size_t yCenter, size_t width, size_t height) -> std::optional<SE3d>;
 
         static auto convertPointCloudToRGBA(sensor_msgs::PointCloud2ConstPtr const& msg, cv::Mat& img) -> void;
 

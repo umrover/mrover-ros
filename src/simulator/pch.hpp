@@ -15,6 +15,7 @@
 #include <stdexcept>
 #include <thread>
 #include <unordered_set>
+#include <random>
 
 #include <boost/circular_buffer.hpp>
 #include <boost/container/static_vector.hpp>
@@ -68,9 +69,10 @@
 
 #include <bimap.hpp>
 #include <loop_profiler.hpp>
+#include <manif/manif.h>
 #include <params_utils.hpp>
 #include <point.hpp>
-#include <se3.hpp>
+#include <lie.hpp>
 #include <units/units.hpp>
 
 #include <mrover/ControllerState.h>
