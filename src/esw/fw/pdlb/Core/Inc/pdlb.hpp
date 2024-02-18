@@ -18,7 +18,7 @@ namespace mrover {
     class PDLB {
     private:
 
-    	FDCAN m_fdcan_bus;
+    	FDCAN<InBoundPDLBMessage> m_fdcan_bus;
         Pin m_arm_laser_pin;
         AutonLed m_auton_led;
         std::shared_ptr<ADCSensor> m_adc_sensor_1;
@@ -41,7 +41,7 @@ namespace mrover {
     public:
         PDLB() = default;
 
-        PDLB(FDCAN const& fdcan_bus,
+        PDLB(FDCAN<InBoundPDLBMessage> const& fdcan_bus,
         		Pin arm_laser_pin,
         		AutonLed auton_led,
 				std::shared_ptr<ADCSensor> adc_sensor_1,
@@ -81,9 +81,9 @@ namespace mrover {
 			}
 
 			/* send current and temperature over CAN */
-			osMutexAcquire(m_can_tx_mutex, osWaitForever);
+//			osMutexAcquire(m_can_tx_mutex, osWaitForever);
 			m_fdcan_bus.broadcast(OutBoundPDLBMessage{pdb_data});
-			osMutexRelease(m_can_tx_mutex);
+//			osMutexRelease(m_can_tx_mutex);
         }
 
         void blink_led_if_applicable() {

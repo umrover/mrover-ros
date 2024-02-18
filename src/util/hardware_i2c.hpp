@@ -1,6 +1,5 @@
 #pragma once
 
-#include <any>
 #include <cstdint>
 #include <optional>
 
@@ -13,6 +12,7 @@ namespace mrover {
     template<typename T>
     concept IsI2CSerializable = IsSerializable<T> && sizeof(T) <= I2C_MAX_FRAME_SIZE;
 
+    template<IsI2CSerializable TSend, IsI2CSerializable TReceive>
     class SMBus {
         constexpr static std::uint32_t I2C_TIMEOUT = 500, I2C_REBOOT_DELAY = 5;
 
@@ -28,22 +28,19 @@ namespace mrover {
             HAL_I2C_Init(m_i2c);
         }
 
-        template<IsI2CSerializable TSend>
         auto blocking_transmit(std::uint16_t address, TSend const& send) -> void {
         	HAL_I2C_Master_Transmit(m_i2c, address << 1, address_of<std::uint8_t>(send), sizeof(send), I2C_TIMEOUT);
         }
 
-        template<IsI2CSerializable TReceive>
         auto blocking_receive(std::uint16_t address) -> TReceive {
+            // TODO(quintin): Error handling? Shouldn't this return an optional
         	if(TReceive receive{}; HAL_I2C_Master_Receive(m_i2c, address << 1 | 1, address_of<std::uint8_t>(receive), sizeof(receive), I2C_TIMEOUT) == HAL_OK){
 				return receive;
         	}
         }
 
-        template<IsI2CSerializable TSend, IsI2CSerializable TReceive>
         auto blocking_transact(std::uint16_t address, TSend const& send) -> std::optional<TReceive> {
             if (HAL_I2C_Master_Transmit(m_i2c, address << 1, address_of<std::uint8_t>(send), sizeof(send), I2C_TIMEOUT) != HAL_OK) {
-                // TODO(quintin): Do we want a different error handler here?
                 return std::nullopt;
             }
 
@@ -56,39 +53,26 @@ namespace mrover {
             }
         }
 
-        template<IsI2CSerializable TSend>
-		auto async_transmit(std::uint16_t address, TSend const& send) -> void {
-			check(HAL_I2C_Master_Transmit_IT(m_i2c, address << 1, address_of<std::uint8_t>(send), sizeof(send)) == HAL_OK, Error_Handler);
-		}
-
-        template<IsI2CSerializable TSend>
-        auto async_request(const std::uint16_t address, TSend const& send) -> void {
+        auto async_transmit(const std::uint16_t address, TSend const& send) -> void {
             // TODO: make sure actually sends to absolute encoder
             check(HAL_I2C_Master_Transmit_DMA(m_i2c, address << 1, address_of<std::uint8_t>(send), sizeof(send)) == HAL_OK, Error_Handler);
-
-            // TODO: HAL recommends waiting until peripheral is done (same for Receive_DMA). Is this necessary?
             while (HAL_I2C_GetState(m_i2c) != HAL_I2C_STATE_READY)
             {
             }
         }
 
-        template<IsI2CSerializable TReceive>
-        auto async_read(const std::uint16_t address) -> void {
+        auto async_receive(const std::uint16_t address) -> void {
             m_receive_buffer = TReceive{};
             check(HAL_I2C_Master_Receive_DMA(m_i2c, address << 1 | 1, address_of<std::uint8_t>(m_receive_buffer), sizeof(m_receive_buffer)) == HAL_OK, Error_Handler);
         }
 
-// breaks science code: error: 'const class std::any' has no member named 'type'
-//        template<IsI2CSerializable TReceive>
-//        auto get_buffer() const -> std::optional<TReceive> {
-//            if (m_receive_buffer.type() != typeid(TReceive)) {
-//                return std::nullopt;
-//            }
-//            return std::any_cast<TReceive>(m_receive_buffer);
-//        }
+        // breaks science code: error: 'const class std::any' has no member named 'type'
+        auto get_buffer() const -> std::optional<TReceive> {
+            return m_receive_buffer;
+        }
 
     private:
         I2C_HandleTypeDef* m_i2c{};
-        std::any m_receive_buffer{};
+        TReceive m_receive_buffer{};
     };
 } // namespace mrover

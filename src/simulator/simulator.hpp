@@ -388,7 +388,7 @@ namespace mrover {
                 {"joint_b", "arm_b_link"},
                 {"joint_c", "arm_c_link"},
                 {"joint_de_pitch", "arm_d_link"},
-                {"joint_de_yaw", "arm_e_link"},
+                {"joint_de_roll", "arm_e_link"},
         };
 
         template<typename F, typename N, typename V>

@@ -32,7 +32,11 @@ if (MROVER_CI)
     list(APPEND MROVER_CPP_COMPILE_OPTIONS -Werror)
 endif ()
 
-option(MROVER_BUILD_SIM "Build the simulator" ON)
+if (EXISTS ${CMAKE_CURRENT_LIST_DIR}/deps/dawn/out/Release)
+    set(MROVER_BUILD_SIM ON)
+else ()
+    set(MROVER_BUILD_SIM OFF)
+endif ()
 
 include(cmake/macros.cmake)
 
@@ -63,7 +67,6 @@ set(MROVER_MESSAGE_DEPENDENCIES
 
 set(MROVER_PARAMETERS
         config/DetectorParams.cfg
-        config/TagDetectorParams.cfg
         config/ObjectDetectorParams.cfg
 )
 
@@ -171,9 +174,10 @@ if (NOT APPLE)
     mrover_add_esw_bridge_node(cache_bridge src/esw/cache_bridge/*.cpp)
     mrover_add_esw_bridge_node(drive_bridge src/esw/drive_bridge/*.cpp)
     mrover_add_esw_bridge_node(led_hw_bridge src/esw/led_hw_bridge/*.cpp)
+    mrover_add_esw_bridge_node(led src/esw/led/*.cpp)
     mrover_add_esw_bridge_node(mast_gimbal_bridge src/esw/mast_gimbal_bridge/*.cpp)
     mrover_add_esw_bridge_node(pdb_bridge src/esw/pdb_bridge/*.cpp)
-    mrover_add_esw_bridge_node(sa_bridge src/esw/sa_bridge/*.cpp)
+#    mrover_add_esw_bridge_node(sa_bridge src/esw/sa_translator_bridge/*.cpp)
     mrover_add_esw_bridge_node(science_bridge src/esw/science_bridge/*.cpp)
     mrover_add_esw_bridge_node(brushless_test_bridge src/esw/brushless_test_bridge/*.cpp motor_library)
     mrover_add_esw_bridge_node(brushed_test_bridge src/esw/brushed_test_bridge/*.cpp)
@@ -183,13 +187,13 @@ endif ()
 
 ## Perception
 
-mrover_add_nodelet(zed_tag_detector src/perception/tag_detector/zed/*.cpp src/perception/tag_detector/zed src/perception/tag_detector/zed/pch.hpp)
-mrover_nodelet_link_libraries(zed_tag_detector opencv_core opencv_aruco opencv_imgproc tbb lie)
+mrover_add_nodelet(tag_detector src/perception/tag_detector/*.cpp src/perception/tag_detector src/perception/tag_detector/pch.hpp)
+mrover_nodelet_link_libraries(tag_detector opencv_core opencv_objdetect opencv_aruco opencv_imgproc opencv_highgui lie)
 
 if (CUDA_FOUND)
     mrover_add_library(streaming src/esw/streaming/*.c* src/esw/streaming)
     #    target_link_libraries(streaming PUBLIC opencv_core opencv_cudacodec)
-    target_link_libraries(streaming PUBLIC cuda /usr/local/lib/libnvidia-encode.so opencv_core)
+    target_link_libraries(streaming PUBLIC cuda nvidia-encode opencv_core)
     target_include_directories(streaming SYSTEM PUBLIC deps/nvenc)
     target_compile_definitions(streaming PUBLIC BOOST_ASIO_NO_DEPRECATED)
 endif ()
@@ -200,7 +204,6 @@ if (ZED_FOUND)
     mrover_nodelet_defines(object_detector
             __CUDA_INCLUDE_COMPILER_INTERNAL_HEADERS__ # Eigen includes some files it should not, ignore
     )
-#    set_target_properties(object_detector_nodelet PROPERTIES CXX_STANDARD 11)
     # Temporary
     mrover_nodelet_link_libraries(object_detector PRIVATE opencv_imgcodecs opencv_highgui)
 

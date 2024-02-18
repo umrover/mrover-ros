@@ -1,5 +1,5 @@
 <launch>
-    <rosparam command="load" file="$(find mrover)/config/esw.yaml" />
+    <include file="$(find mrover)/launch/esw_generic.launch" />
 
     <!-- NOTE(quintin): this was failing an assert so I commented it out -->
     <!-- <node name="cache_bridge" pkg="mrover" type="cache_bridge" /> -->

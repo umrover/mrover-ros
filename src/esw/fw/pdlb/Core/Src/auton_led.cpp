@@ -30,7 +30,7 @@ namespace mrover {
     void AutonLed::change_all_pins() {
 		m_red_pin.write(m_red && m_on ? GPIO_PIN_SET : GPIO_PIN_RESET);
 		m_green_pin.write(m_green && m_on ? GPIO_PIN_SET : GPIO_PIN_RESET);
-		m_blue_pin.write(m_blue && m_on ? GPIO_PIN_SET : GPIO_PIN_RESET);
+		m_blue_pin.write(m_blue && m_on ? GPIO_PIN_SET : m_blue ? GPIO_PIN_SET : GPIO_PIN_RESET);
     }
 
 
