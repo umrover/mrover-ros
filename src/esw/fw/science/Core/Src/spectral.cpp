@@ -24,7 +24,7 @@ namespace mrover {
 
 			// Check if we are allowed to proceed with reads + writes
 			auto status = m_i2c_bus->blocking_receive(SPECTRAL_7b_ADDRESS);
-			if(status & (I2C_AS72XX_SLAVE_TX_VALID | I2C_AS72XX_SLAVE_RX_VALID) == 0){
+			if((status & I2C_AS72XX_SLAVE_TX_VALID) == 0 && (status & I2C_AS72XX_SLAVE_RX_VALID) != 0){
 				break;
 			}
 

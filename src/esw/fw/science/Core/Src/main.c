@@ -131,7 +131,27 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
+  // Use to ignore boot pin on startup
+  if ((FLASH->OPTR & FLASH_OPTR_nSWBOOT0_Msk) != 0x0 || ((FLASH->OPTR & FLASH_OPTR_nBOOT0_Msk) == 0x0))
+  {
+  	while ((FLASH->SR & FLASH_SR_BSY_Msk) != 0x0) { ; }
+  	FLASH->KEYR = 0x45670123;
+  	while ((FLASH->SR & FLASH_SR_BSY_Msk) != 0x0) { ; }
+  	FLASH->KEYR = 0xCDEF89AB;
 
+  	while ((FLASH->SR & FLASH_SR_BSY_Msk) != 0x0) { ; }
+  	FLASH->OPTKEYR = 0x08192A3B;
+  	while ((FLASH->SR & FLASH_SR_BSY_Msk) != 0x0) { ; }
+  	FLASH->OPTKEYR = 0x4C5D6E7F;
+
+  	while ((FLASH->SR & FLASH_SR_BSY_Msk) != 0x0) { ; }
+  	FLASH->OPTR = (FLASH->OPTR & ~(FLASH_OPTR_nSWBOOT0_Msk)) | FLASH_OPTR_nBOOT0_Msk;
+
+  	while ((FLASH->SR & FLASH_SR_BSY_Msk) != 0x0) { ; }
+  	FLASH->CR = FLASH->CR | FLASH_CR_OPTSTRT;
+
+  	while ((FLASH->SR & FLASH_SR_BSY_Msk) != 0x0) { ; }
+  }
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -189,10 +209,10 @@ int main(void)
   /* USER CODE BEGIN RTOS_THREADS */
 
   // TODO - Using spectral causes a hardfault!!!
-  SpectralTaskHandle = osThreadNew(SpectralTask, NULL, &SpectralTask_attributes);
+//  SpectralTaskHandle = osThreadNew(SpectralTask, NULL, &SpectralTask_attributes);
 //  SpectralPollingTaskHandle = osThreadNew(SpectralPollingTask, NULL, &SpectralPollingTask_attributes);
 //  HeaterUpdatesTaskHandle = osThreadNew(HeaterUpdatesTask, NULL, &HeaterUpdatesTask_attributes);
-//  ThermistorAndAutoShutoffTaskHandle = osThreadNew(ThermistorAndAutoShutoffTask, NULL, &ThermistorAndAutoShutoffTask_attributes);
+  ThermistorAndAutoShutoffTaskHandle = osThreadNew(ThermistorAndAutoShutoffTask, NULL, &ThermistorAndAutoShutoffTask_attributes);
 
   /* add threads, ... */
   /* USER CODE END RTOS_THREADS */
@@ -315,7 +335,7 @@ static void MX_ADC1_Init(void)
 
   /** Configure Regular Channel
   */
-  sConfig.Channel = ADC_CHANNEL_11;
+  sConfig.Channel = ADC_CHANNEL_4;
   sConfig.Rank = ADC_REGULAR_RANK_1;
   sConfig.SamplingTime = ADC_SAMPLETIME_2CYCLES_5;
   sConfig.SingleDiff = ADC_SINGLE_ENDED;
@@ -328,7 +348,7 @@ static void MX_ADC1_Init(void)
 
   /** Configure Regular Channel
   */
-  sConfig.Channel = ADC_CHANNEL_4;
+  sConfig.Channel = ADC_CHANNEL_10;
   sConfig.Rank = ADC_REGULAR_RANK_2;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
@@ -337,7 +357,7 @@ static void MX_ADC1_Init(void)
 
   /** Configure Regular Channel
   */
-  sConfig.Channel = ADC_CHANNEL_10;
+  sConfig.Channel = ADC_CHANNEL_11;
   sConfig.Rank = ADC_REGULAR_RANK_3;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
