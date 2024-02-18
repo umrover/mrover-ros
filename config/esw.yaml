@@ -63,19 +63,19 @@ can:
       bus: 1
       id: 0x28
     - name: "sa_x"
-      bus: 0
+      bus: 1
       id: 0x29
     - name: "sa_y"
-      bus: 0
+      bus: 1
       id: 0x30
     - name: "sa_z"
       bus: 0
       id: 0x31
     - name: "sampler"
-      bus: 0
+      bus: 1
       id: 0x32
     - name: "sensor_actuator"
-      bus: 0
+      bus: 1
       id: 0x33
     - name: "cache"
       bus: 0
@@ -322,7 +322,7 @@ brushed_motors:
       max_velocity: 1.0
       calibration_throttle: 0.5  # throttle during calibration
     sa_y:
-      velocity_multiplier: 1.0
+      velocity_multiplier: -1.0
       gear_ratio: 75.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
       is_linear: true
       rad_to_meters_ratio: 1.0 #TODO 5.0 = 5 motor radians -> 1 meter
