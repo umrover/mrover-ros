@@ -63,8 +63,8 @@ class GPSLinearization:
         self.calculate_offset = False
 
         # subscribe to topics
-        right_gps_sub = message_filters.Subscriber("/gps/fix", NavSatFix)
-        left_gps_sub = message_filters.Subscriber("/gps/fix", NavSatFix)
+        right_gps_sub = message_filters.Subscriber("/right_gps_driver/fix", NavSatFix)
+        left_gps_sub = message_filters.Subscriber("/left_gps_driver/fix", NavSatFix)
         # left_rtk_fix_sub = message_filters.Subscriber("left_gps_driver/rtk_fix_status", rtkStatus)
         # right_rtk_fix_sub = message_filters.Subscrier("right_gps_driver/rtk_fix_status", rtkStatus)
 
@@ -87,7 +87,7 @@ class GPSLinearization:
         :param msg: The NavSatFix message containing GPS data that was just received
         TODO: Handle invalid PVTs
         """
-
+        
         if np.any(np.isnan([right_gps_msg.latitude, right_gps_msg.longitude, right_gps_msg.altitude])):
             return
         if np.any(np.isnan([left_gps_msg.latitude, left_gps_msg.longitude, left_gps_msg.altitude])):
@@ -135,7 +135,7 @@ class GPSLinearization:
 
         :param msg: The Imu message containing IMU data that was just received
         """
-        # print(self.last_gps_pose)
+
         if self.last_gps_pose is None:
             return
 
