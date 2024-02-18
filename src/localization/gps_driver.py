@@ -24,8 +24,8 @@ import datetime
 class GPS_Driver:
     def __init__(self):
         rospy.init_node("gps_driver")
-        self.port = rospy.get_param("port")
-        self.baud = rospy.get_param("baud")
+        self.port = "/dev/gps"
+        self.baud = 115200
         # self.base_station_sub = rospy.Subscriber("/rtcm", Message, self.process_rtcm)
         self.gps_pub = rospy.Publisher("fix", NavSatFix, queue_size=1)
         # self.rtk_fix_pub = rospy.Publisher("rtk_fix_status", rtkStatus, queue_size=1)
