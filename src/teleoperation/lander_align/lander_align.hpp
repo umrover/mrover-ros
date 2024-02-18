@@ -29,17 +29,11 @@ namespace mrover {
         //**
         float mBestOffset;
 
-        std::optional<Eigen::Vector3d> mBestCenterInZED;
-        std::optional<Eigen::Vector3d> mBestCenterInWorld;
+        std::optional<Eigen::Vector3d> mBestLocationInZED;
+        std::optional<Eigen::Vector3d> mBestLocationInWorld;
 
         std::optional<Eigen::Vector3d> mBestNormalInZED;
         std::optional<Eigen::Vector3d> mBestNormalInWorld;
-
-
-        // SE3 mPlaneLocInZED;
-        // SE3 mPlaneLocInWorld;
-        Eigen::Vector3d mPlaneLocInZED;
-        Eigen::Vector3d mPlaneLocInWorld;
         //**
 
         //TF Member Variables
@@ -75,15 +69,15 @@ namespace mrover {
         public:
             PID(float angle_P, float linear_P);
 
-            // auto calculate(Eigen::Vector3f input, Eigen::Vector3f target) -> float;
+            // auto calculate(Eigen::Vector3d input, Eigen::Vector3d target) -> float;
 
             [[nodiscard]] auto rotate_speed(float theta) const -> float;
 
 
-            auto find_angle(Eigen::Vector3f const& current, Eigen::Vector3f const& target) -> float;
+            auto find_angle(Eigen::Vector3d const& current, Eigen::Vector3d const& target) -> float;
 
 
-            auto find_distance(Eigen::Vector3f const& current, Eigen::Vector3f const& target) -> float;
+            auto find_distance(Eigen::Vector3d const& current, Eigen::Vector3d const& target) -> float;
 
             auto drive_speed(float) -> float;
         };

@@ -14,7 +14,7 @@
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
 
-#include "lie/se3.hpp"
+#include "lie.hpp"
 
 #include <Eigen/Dense>
 
