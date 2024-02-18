@@ -8,7 +8,7 @@ void InvariantEKF::predict(const R3& accel, const R3& gyro, double dt) {
     // TODO: make static member variable?
     const R3 accel_g(0, 0, g);
     Matrix3d R = mX.rotation();
-    R3 accel_body = accel + R.transpose() * accel_g;
+    R3 accel_body = accel - R.transpose() * accel_g;
     std::cout << "accel_body: " << accel_body << std::endl;
 
     // use kinematics to compute increments to each state component

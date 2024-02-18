@@ -10,7 +10,8 @@
     <rosparam unless="$(arg sim)" command="load" file="$(find mrover)/config/ekf.yaml" />
 
     <!-- Invariant EKF -->
-    <!-- <node if="$(arg use_ekf)" name="inv_ekf" pkg="mrover" type="invariant_ekf" output="screen" /> -->
+    <node if="$(arg use_ekf)" name="inv_ekf" pkg="mrover" type="invariant_ekf" output="screen" 
+        launch-prefix="bash -c 'sleep 5; $0 $@'" />
 
     <!-- Passthrough filter to replace EKF in data path -->
     <!-- <node unless="$(arg use_ekf)" pkg="mrover" type="passthrough_filter.py"
