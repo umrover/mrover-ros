@@ -35,8 +35,6 @@ namespace mrover {
 
             mInterface = mPnh.param<std::string>("interface", "can0");
             mIsExtendedFrame = mPnh.param<bool>("is_extended_frame", true);
-            mBitrate = static_cast<std::uint32_t>(mPnh.param<int>("bitrate", 500000));
-            mBitratePrescaler = static_cast<std::uint32_t>(mPnh.param<int>("bitrate_prescaler", 2));
 
             XmlRpc::XmlRpcValue canDevices;
             mNh.getParam("can/devices", canDevices);
@@ -46,9 +44,8 @@ namespace mrover {
 
                     auto bus = xmlRpcValueToTypeOrDefault<std::uint8_t>(canDevice, "bus");
 
-                    if (std::uint8_t interfaceNumber = mInterface.back() - '0'; bus != interfaceNumber) {
-                        continue;
-                    }
+                    mBus = mInterface.back() - '0';
+                    if (bus != mBus) continue;
 
                     assert(canDevice.getType() == XmlRpc::XmlRpcValue::TypeStruct);
 
@@ -75,7 +72,7 @@ namespace mrover {
                 NODELET_WARN("For example before testing the devboard run: \"rosparam load config/esw_devboard.yml\"");
             }
 
-            mCanNetLink = {mInterface, mBitrate, mBitratePrescaler};
+            mCanNetLink = CanNetLink{mInterface};
 
             int socketFileDescriptor = setupSocket();
             mStream.emplace(mIoService);
@@ -141,7 +138,7 @@ namespace mrover {
         auto messageId = std::bit_cast<CanFdMessageId>(static_cast<std::uint16_t>(rawId.identifier));
 
         optional_ref<std::string> sourceDeviceName = mDevices.backward(CanFdAddress{
-                .bus = 0, // TODO set correct bus
+                .bus = mBus, // TODO set correct bus
                 .id = messageId.source,
         });
         if (!sourceDeviceName) {
@@ -150,7 +147,7 @@ namespace mrover {
         }
 
         optional_ref<std::string> destinationDeviceName = mDevices.backward(CanFdAddress{
-                .bus = 0, // TODO set correct bus
+                .bus = mBus, // TODO set correct bus
                 .id = messageId.destination,
         });
         if (!destinationDeviceName) {

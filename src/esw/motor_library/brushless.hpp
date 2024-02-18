@@ -81,8 +81,8 @@ namespace mrover {
     private:
         moteus::Controller mController{moteus::Controller::Options{}};
         double mMeasuredEffort{};
-        bool limitSwitch0Present{};
-        bool limitSwitch1Present{};
+        bool limitSwitch0Present{false};
+        bool limitSwitch1Present{false};
         bool limitSwitch0Enabled{true};
         bool limitSwitch1Enabled{true};
         bool limitSwitch0LimitsFwd{false};
@@ -93,6 +93,9 @@ namespace mrover {
         bool limitSwitch1UsedForReadjustment{};
         Radians limitSwitch0ReadjustPosition{};
         Radians limitSwitch1ReadjustPosition{};
+
+        double mMaxTorque{0.3};
+        double mWatchdogTimeout{0.1};
 
         int8_t moteusAux1Info{0};
         int8_t moteusAux2Info{0};

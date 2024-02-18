@@ -73,7 +73,7 @@
 #include <params_utils.hpp>
 #include <point.hpp>
 #include <lie.hpp>
-#include <units.hpp>
+#include <units/units.hpp>
 
 #include <mrover/ControllerState.h>
 #include <mrover/IK.h>

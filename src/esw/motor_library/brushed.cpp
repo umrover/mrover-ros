@@ -10,6 +10,11 @@ namespace mrover {
         mNh.getParam(std::format("brushed_motors/controllers/{}", mControllerName), brushedMotorData);
         assert(brushedMotorData.getType() == XmlRpc::XmlRpcValue::TypeStruct);
 
+        mVelocityMultiplier = Dimensionless{xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "velocity_multiplier", 1.0)};
+        if (mVelocityMultiplier.get() == 0) {
+            throw std::runtime_error("Velocity multiplier can't be 0!");
+        }
+
         mConfigCommand.gear_ratio = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "gear_ratio");
 
         for (std::size_t i = 0; i < 4; ++i) {
@@ -65,7 +70,6 @@ namespace mrover {
     }
 
     void BrushedController::setDesiredThrottle(Percent throttle) {
-        updateLastConnection();
         if (!mIsConfigured) {
             sendConfiguration();
             return;
@@ -77,7 +81,6 @@ namespace mrover {
     }
 
     void BrushedController::setDesiredPosition(Radians position) {
-        updateLastConnection();
         if (!mIsConfigured) {
             sendConfiguration();
             return;
@@ -94,13 +97,14 @@ namespace mrover {
     }
 
     void BrushedController::setDesiredVelocity(RadiansPerSecond velocity) {
-        updateLastConnection();
         if (!mIsConfigured) {
             sendConfiguration();
             return;
         }
 
         assert(velocity >= mConfigCommand.min_velocity && velocity <= mConfigCommand.max_velocity);
+
+        velocity = velocity * mVelocityMultiplier;
 
         mDevice.publish_message(InBoundMessage{VelocityCommand{
                 .velocity = velocity,
@@ -118,7 +122,6 @@ namespace mrover {
     }
 
     void BrushedController::adjust(Radians position) {
-        updateLastConnection();
         if (!mIsConfigured) {
             sendConfiguration();
             return;
@@ -131,7 +134,7 @@ namespace mrover {
 
     void BrushedController::processMessage(ControllerDataState const& state) {
         mCurrentPosition = state.position;
-        mCurrentVelocity = state.velocity;
+        mCurrentVelocity = state.velocity / mVelocityMultiplier;
         ROS_INFO("Vel: %f | Pos: %f", mCurrentVelocity.get(), mCurrentPosition.get());
         ConfigCalibErrorInfo configCalibErrInfo = state.config_calib_error_data;
         mIsConfigured = configCalibErrInfo.configured;

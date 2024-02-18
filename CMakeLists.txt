@@ -67,6 +67,7 @@ set(MROVER_MESSAGE_DEPENDENCIES
 
 set(MROVER_PARAMETERS
         config/DetectorParams.cfg
+        config/ObjectDetectorParams.cfg
 )
 
 set(MROVER_CMAKE_INCLUDES
@@ -174,7 +175,8 @@ if (NOT APPLE)
     mrover_add_esw_bridge_node(led src/esw/led/*.cpp)
     mrover_add_esw_bridge_node(mast_gimbal_bridge src/esw/mast_gimbal_bridge/*.cpp)
     mrover_add_esw_bridge_node(pdb_bridge src/esw/pdb_bridge/*.cpp)
-#    mrover_add_esw_bridge_node(sa_bridge src/esw/sa_translator_bridge/*.cpp)
+    mrover_add_esw_bridge_node(sa_hw_bridge src/esw/sa_hw_bridge/*.cpp)
+    mrover_add_esw_bridge_node(sa_translator_bridge src/esw/sa_translator_bridge/*.cpp)
     mrover_add_esw_bridge_node(science_bridge src/esw/science_bridge/*.cpp)
     mrover_add_esw_bridge_node(brushless_test_bridge src/esw/brushless_test_bridge/*.cpp motor_library)
     mrover_add_esw_bridge_node(brushed_test_bridge src/esw/brushed_test_bridge/*.cpp)
@@ -184,12 +186,17 @@ endif ()
 
 ## Perception
 
-mrover_add_nodelet(tag_detector src/perception/tag_detector/*.cpp src/perception/tag_detector src/perception/tag_detector/pch.hpp)
-mrover_nodelet_link_libraries(tag_detector opencv_core opencv_objdetect opencv_aruco opencv_imgproc opencv_highgui lie manif)
-
 mrover_add_library(streaming src/esw/streaming/*.cpp src/esw/streaming)
 target_compile_definitions(streaming PUBLIC BOOST_ASIO_NO_DEPRECATED)
 
+mrover_add_nodelet(zed_tag_detector src/perception/tag_detector/zed/*.cpp src/perception/tag_detector/zed src/perception/tag_detector/zed/pch.hpp)
+mrover_nodelet_link_libraries(zed_tag_detector opencv_core opencv_objdetect opencv_aruco opencv_imgproc tbb lie)
+
+mrover_add_nodelet(long_range_tag_detector src/perception/tag_detector/long_range_cam/*.cpp src/perception/tag_detector/long_range_cam src/perception/tag_detector/long_range_cam/pch.hpp)
+mrover_nodelet_link_libraries(long_range_tag_detector opencv_core opencv_objdetect opencv_aruco opencv_imgproc tbb lie)
+
+mrover_add_nodelet(usb_camera src/perception/long_range_cam/*.cpp src/perception/long_range_cam src/perception/long_range_cam/pch.hpp)
+mrover_nodelet_link_libraries(usb_camera opencv_core opencv_objdetect opencv_aruco opencv_imgproc opencv_highgui tbb lie)
 if (CUDA_FOUND)
     mrover_add_node(hardware_h265_encoder src/esw/hardware_h265_encoder/*.c*)
     target_link_libraries(hardware_h265_encoder PUBLIC cuda nvidia-encode opencv_core opencv_imgproc opencv_imgcodecs opencv_videoio streaming)
@@ -204,6 +211,14 @@ target_link_libraries(software_h265_encoder PUBLIC opencv_core opencv_imgproc op
 target_include_directories(software_h265_encoder SYSTEM PUBLIC deps/nvenc)
 
 if (ZED_FOUND)
+    mrover_add_nodelet(object_detector src/perception/object_detector/*.c* src/perception/object_detector src/perception/object_detector/pch.hpp)
+    mrover_nodelet_link_libraries(object_detector PRIVATE opencv_core opencv_dnn opencv_imgproc lie nvinfer nvonnxparser tbb)
+    mrover_nodelet_defines(object_detector
+            __CUDA_INCLUDE_COMPILER_INTERNAL_HEADERS__ # Eigen includes some files it should not, ignore
+    )
+    # Temporary
+    mrover_nodelet_link_libraries(object_detector PRIVATE opencv_imgcodecs opencv_highgui)
+
     mrover_add_nodelet(zed src/perception/zed_wrapper/*.c* src/perception/zed_wrapper src/perception/zed_wrapper/pch.hpp)
     mrover_nodelet_include_directories(zed ${ZED_INCLUDE_DIRS} ${CUDA_INCLUDE_DIRS})
     mrover_nodelet_link_libraries(zed ${ZED_LIBRARIES} ${SPECIAL_OS_LIBS} lie manif)

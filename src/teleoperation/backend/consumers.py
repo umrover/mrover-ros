@@ -60,7 +60,6 @@ class GUIConsumer(JsonWebsocketConsumer):
         try:
             self.twist_pub = rospy.Publisher("/cmd_vel", Twist, queue_size=1)
             self.led_pub = rospy.Publisher("/auton_led_cmd", String, queue_size=1)
-            self.teleop_pub = rospy.Publisher("/teleop_enabled", Bool, queue_size=1)
             self.mast_gimbal_pub = rospy.Publisher("/mast_gimbal_throttle_cmd", Throttle, queue_size=1)
             self.arm_ik_pub = rospy.Publisher("arm_ik", IK, queue_size=1)
             self.arm_throttle_cmd_pub = rospy.Publisher("arm_throttle_cmd", Throttle, queue_size=1)
@@ -84,11 +83,6 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.sa_temp_data = rospy.Subscriber("/sa_temp_data", Temperature, self.sa_temp_data_callback)
             self.sa_humidity_data = rospy.Subscriber("/sa_humidity_data", RelativeHumidity, self.sa_humidity_data_callback)
         
-            # Services
-            self.laser_service = rospy.ServiceProxy("enable_mosfet_device", SetBool)
-            self.calibrate_service = rospy.ServiceProxy("arm_calibrate", Trigger)
-            self.enable_auton = rospy.ServiceProxy("enable_auton", EnableAuton)
-
             # Services
             self.laser_service = rospy.ServiceProxy("enable_arm_laser", SetBool)
             self.enable_auton = rospy.ServiceProxy("enable_auton", EnableAuton)
@@ -247,9 +241,9 @@ class GUIConsumer(JsonWebsocketConsumer):
             sa_throttle_cmd.names = SA_NAMES
 
             sa_throttle_cmd.throttles = [
-                self.sa_config[name]["multiplier"] * self.filter_xbox_axis(msg["axes"][info["xbox_index"]], 0.15, True)
-                for name, info in self.sa_config.items()
-                if name.startswith("sa")
+                self.sa_config[name]["multiplier"] * self.filter_xbox_axis(msg["axes"][self.sa_config["sa_x"]["xbox_index"]], 0.15, True),
+                self.sa_config[name]["multiplier"] * self.filter_xbox_axis(msg["axes"][self.sa_config["sa_y"]["xbox_index"]], 0.15, True),
+                self.sa_config[name]["multiplier"] * self.filter_xbox_axis(msg["axes"][self.sa_config["sa_z"]["xbox_index"]], 0.15, True),
             ]
             sa_throttle_cmd.throttles.extend(
                 [
@@ -537,7 +531,7 @@ class GUIConsumer(JsonWebsocketConsumer):
     def send_teleop_enabled(self, msg):
         rospy.wait_for_service("enable_teleop")
         try:
-            enable_teleop = rospy.ServiceProxy("enable_teleop", rospy.std_srvs.SetBool)
+            enable_teleop = rospy.ServiceProxy("enable_teleop", SetBool)
             enable_teleop(msg["data"])
         except rospy.ServiceException as e:
             rospy.logerr(f"Service call failed: {e}")
@@ -573,7 +567,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         pwr = rospy.get_param("teleop/mast_gimbal_power")
         rot_pwr = msg["throttles"][0] * pwr["rotation_pwr"]
         up_down_pwr = msg["throttles"][1] * pwr["up_down_pwr"]
-        self.mast_gimbal_pub.publish(Throttle(["mast_gimbal_x", "mast_gimbal_y"], [rot_pwr, up_down_pwr]))
+        self.mast_gimbal_pub.publish(Throttle(["mast_gimbal_y", "mast_gimbal_z"], [rot_pwr, up_down_pwr]))
 
     def send_center(self):
         lat = rospy.get_param("gps_linearization/reference_point_latitude")

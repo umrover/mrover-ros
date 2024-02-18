@@ -1,34 +1,26 @@
-#include "tag_detector.hpp"
+#include "long_range_tag_detector.hpp"
 
 namespace mrover {
 
-    void TagDetectorNodelet::onInit() {
+    auto LongRangeTagDetectorNodelet::onInit() -> void {
         mNh = getMTNodeHandle();
         mPnh = getMTPrivateNodeHandle();
-        mDetectorParams = cv::makePtr<cv::aruco::DetectorParameters>();
+        mDetectorParams = new cv::aruco::DetectorParameters();
         auto defaultDetectorParams = cv::makePtr<cv::aruco::DetectorParameters>();
-        int dictionaryNumber;
-
-        mNh.param<bool>("use_odom_frame", mUseOdom, false);
-        mNh.param<std::string>("odom_frame", mOdomFrameId, "odom");
-        mNh.param<std::string>("world_frame", mMapFrameId, "map");
-        mNh.param<std::string>("camera_frame", mCameraFrameId, "zed2i_left_camera_frame");
+        int dictionaryNumber = 0;
 
         mPnh.param<bool>("publish_images", mPublishImages, true);
-        mPnh.param<int>("dictionary", dictionaryNumber, static_cast<int>(cv::aruco::DICT_4X4_50));
-        mPnh.param<int>("min_hit_count_before_publish", mMinHitCountBeforePublish, 5);
-        mPnh.param<int>("max_hit_count", mMaxHitCount, 5);
-        mPnh.param<int>("tag_increment_weight", mTagIncrementWeight, 2);
-        mPnh.param<int>("tag_decrement_weight", mTagDecrementWeight, 1);
+        mPnh.param<float>("long_range_fov", mLongRangeFov, 80.0);
 
-        mImgPub = mNh.advertise<sensor_msgs::Image>("tag_detection", 1);
+        mImgPub = mNh.advertise<sensor_msgs::Image>("long_range_tag_detection", 1);
+        mLongRangeTagsPub = mNh.advertise<LongRangeTags>("tags", 1);
+
+        mImgSub = mNh.subscribe("long_range_image", 1, &LongRangeTagDetectorNodelet::imageCallback, this);
         mDictionary = cv::makePtr<cv::aruco::Dictionary>(cv::aruco::getPredefinedDictionary(dictionaryNumber));
-
-        mPcSub = mNh.subscribe("camera/left/points", 1, &TagDetectorNodelet::pointCloudCallback, this);
-        mServiceEnableDetections = mNh.advertiseService("enable_detections", &TagDetectorNodelet::enableDetectionsCallback, this);
+        mServiceEnableDetections = mNh.advertiseService("enable_detections", &LongRangeTagDetectorNodelet::enableDetectionsCallback, this);
 
         // Lambda handles passing class pointer (implicit first parameter) to configCallback
-        mCallbackType = [this](mrover::DetectorParamsConfig& config, uint32_t level) { configCallback(config, level); };
+        mCallbackType = [this](DetectorParamsConfig& config, uint32_t level) { configCallback(config, level); };
         mConfigServer.setCallback(mCallbackType);
 
         mPnh.param<double>("adaptiveThreshConstant",
@@ -89,11 +81,9 @@ namespace mrover {
         mPnh.param<double>("polygonalApproxAccuracyRate",
                            mDetectorParams->polygonalApproxAccuracyRate,
                            defaultDetectorParams->polygonalApproxAccuracyRate);
-
-        NODELET_INFO("Tag detection ready, use odom frame: %s, min hit count: %d, max hit count: %d, hit increment weight: %d, hit decrement weight: %d", mUseOdom ? "true" : "false", mMinHitCountBeforePublish, mMaxHitCount, mTagIncrementWeight, mTagDecrementWeight);
     }
 
-    void TagDetectorNodelet::configCallback(mrover::DetectorParamsConfig& config, uint32_t level) {
+    auto LongRangeTagDetectorNodelet::configCallback(DetectorParamsConfig& config, uint32_t level) -> void {
         // Don't load initial config, since it will overwrite the rosparam settings
         if (level == std::numeric_limits<uint32_t>::max()) return;
 
@@ -127,7 +117,7 @@ namespace mrover {
         mDetectorParams->polygonalApproxAccuracyRate = config.polygonalApproxAccuracyRate;
     }
 
-    bool TagDetectorNodelet::enableDetectionsCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) {
+    auto LongRangeTagDetectorNodelet::enableDetectionsCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) -> bool {
         mEnableDetections = req.data;
         if (mEnableDetections) {
             res.message = "Enabled tag detections.";
@@ -140,5 +130,5 @@ namespace mrover {
         res.success = true;
         return true;
     }
-    
+
 } // namespace mrover

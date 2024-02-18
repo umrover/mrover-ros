@@ -143,25 +143,22 @@ namespace mrover {
                     mPcThreadProfiler.measureEvent("Wait");
 
                     fillPointCloudMessageFromGpu(mPcMeasures.leftPoints, mPcMeasures.leftImage, mPointCloudGpu, pointCloudMsg);
-                    pointCloudMsg->header.seq = mPointCloudUpdateTick;
                     pointCloudMsg->header.stamp = mPcMeasures.time;
-                    pointCloudMsg->header.frame_id = "zed2i_left_camera_frame";
+                    pointCloudMsg->header.frame_id = "zed_left_camera_frame";
                     mPcThreadProfiler.measureEvent("Fill Message");
 
                     if (mLeftImgPub.getNumSubscribers()) {
                         auto leftImgMsg = boost::make_shared<sensor_msgs::Image>();
                         fillImageMessage(mPcMeasures.leftImage, leftImgMsg);
-                        leftImgMsg->header.frame_id = "zed2i_left_camera_optical_frame";
+                        leftImgMsg->header.frame_id = "zed_left_camera_optical_frame";
                         leftImgMsg->header.stamp = mPcMeasures.time;
-                        leftImgMsg->header.seq = mPointCloudUpdateTick;
                         mLeftImgPub.publish(leftImgMsg);
                     }
                     if (mRightImgPub.getNumSubscribers()) {
                         auto rightImgMsg = boost::make_shared<sensor_msgs::Image>();
                         fillImageMessage(mPcMeasures.rightImage, rightImgMsg);
-                        rightImgMsg->header.frame_id = "zed2i_right_camera_optical_frame";
+                        rightImgMsg->header.frame_id = "zed_right_camera_optical_frame";
                         rightImgMsg->header.stamp = mPcMeasures.time;
-                        rightImgMsg->header.seq = mPointCloudUpdateTick;
                         mRightImgPub.publish(rightImgMsg);
                     }
                     mPcThreadProfiler.measureEvent("Publish Message");
@@ -177,18 +174,14 @@ namespace mrover {
                     auto leftCamInfoMsg = boost::make_shared<sensor_msgs::CameraInfo>();
                     auto rightCamInfoMsg = boost::make_shared<sensor_msgs::CameraInfo>();
                     fillCameraInfoMessages(calibration, mImageResolution, leftCamInfoMsg, rightCamInfoMsg);
-                    leftCamInfoMsg->header.frame_id = "zed2i_left_camera_optical_frame";
+                    leftCamInfoMsg->header.frame_id = "zed_left_camera_optical_frame";
                     leftCamInfoMsg->header.stamp = mPcMeasures.time;
-                    leftCamInfoMsg->header.seq = mPointCloudUpdateTick;
-                    rightCamInfoMsg->header.frame_id = "zed2i_right_camera_optical_frame";
+                    rightCamInfoMsg->header.frame_id = "zed_right_camera_optical_frame";
                     rightCamInfoMsg->header.stamp = mPcMeasures.time;
-                    rightCamInfoMsg->header.seq = mPointCloudUpdateTick;
                     mLeftCamInfoPub.publish(leftCamInfoMsg);
                     mRightCamInfoPub.publish(rightCamInfoMsg);
                     mPcThreadProfiler.measureEvent("Image + camera info publish");
                 }
-
-                mPointCloudUpdateTick++;
             }
             NODELET_INFO("Tag thread finished");
 
@@ -257,7 +250,7 @@ namespace mrover {
                         try {
                             SE3d leftCameraInOdom{{translation.x, translation.y, translation.z},
                                                   Eigen::Quaterniond{orientation.w, orientation.x, orientation.y, orientation.z}.normalized()};
-                            SE3d baseLinkToLeftCamera = SE3Conversions::fromTfTree(mTfBuffer, "base_link", "zed2i_left_camera_frame");
+                            SE3d baseLinkToLeftCamera = SE3Conversions::fromTfTree(mTfBuffer, "base_link", "zed_left_camera_frame");
                             SE3d baseLinkInOdom = leftCameraInOdom * baseLinkToLeftCamera;
                             SE3Conversions::pushToTfTree(mTfBroadcaster, "base_link", "odom", baseLinkInOdom);
                         } catch (tf2::TransformException& e) {
@@ -276,21 +269,17 @@ namespace mrover {
 
                     sensor_msgs::Imu imuMsg;
                     fillImuMessage(sensorData.imu, imuMsg);
-                    imuMsg.header.frame_id = "zed2i_mag_frame";
+                    imuMsg.header.frame_id = "zed_mag_frame";
                     imuMsg.header.stamp = ros::Time::now();
-                    imuMsg.header.seq = mGrabUpdateTick;
                     mImuPub.publish(imuMsg);
 
                     sensor_msgs::MagneticField magMsg;
                     fillMagMessage(sensorData.magnetometer, magMsg);
-                    magMsg.header.frame_id = "zed2i_mag_frame";
+                    magMsg.header.frame_id = "zed_mag_frame";
                     magMsg.header.stamp = ros::Time::now();
-                    magMsg.header.seq = mGrabUpdateTick;
                     mMagPub.publish(magMsg);
                     mGrabThreadProfiler.measureEvent("Sensor data");
                 }
-
-                mGrabUpdateTick++;
             }
 
             mZed.close();

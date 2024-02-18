@@ -755,7 +755,7 @@ export default {
 }
 
 .route {
-  height: 65vh;
+  height: 60vh;
   overflow-y: scroll;
 }
 

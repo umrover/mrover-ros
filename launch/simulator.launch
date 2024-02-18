@@ -7,11 +7,11 @@
         <arg name="ekf_start_delay" value="1" />
     </include>
 
-    <node pkg="nodelet" type="nodelet" name="nodelet_manager" required="true"
-        args="manager" output="screen" />
+    <node pkg="nodelet" type="nodelet" name="perception_nodelet_manager" required="true"
+          args="manager" output="screen" />
 
-    <node pkg="nodelet" type="nodelet" name="simulator_nodelet"
-        args="load mrover/SimulatorNodelet nodelet_manager" output="screen" />
+    <node pkg="nodelet" type="nodelet" name="simulator"
+          args="load mrover/SimulatorNodelet perception_nodelet_manager" output="screen" />
 
     <node name="arm_controller" pkg="mrover" type="arm_controller" output="screen" />
 

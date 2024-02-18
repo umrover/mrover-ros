@@ -1,0 +1,5 @@
+<launch>
+  <node pkg="nodelet" type="nodelet" name="long_range_cam" respawn="true"
+        args="load mrover/LongRangeCamNodelet perception_nodelet_manager" output="screen" />
+</launch>
+  

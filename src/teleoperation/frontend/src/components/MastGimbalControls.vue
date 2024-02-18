@@ -9,14 +9,13 @@
 
 <script lang="ts">
 import { mapActions } from 'vuex'
-const UPDATE_RATE_S = 1
 let interval: number
 
 export default {
   data() {
     return {
-      rotation_pwr: 0,
-      up_down_pwr: 0,
+      rotation_pwr: 1,
+      up_down_pwr: 1,
 
       keyboard_pub: null,
 
@@ -35,31 +34,24 @@ export default {
     document.removeEventListener('keydown', this.keyMonitorDown)
   },
 
+  mounted: function() {
+    document.addEventListener('keydown', this.keyMonitorDown);
+    document.addEventListener('keyup', this.keyMonitorUp);
+  },
+
   methods: {
     ...mapActions('websocket', ['sendMessage']),
     // When a key is being pressed down, set the power level.
     // Ignore keys that are already pressed to avoid spamming when holding values.
     keyMonitorDown: function (event: { key: string }) {
       if (event.key.toLowerCase() == 'w') {
-        if (this.inputData.w_key > 0) {
-          return
-        }
-        this.inputData.w_key = this.up_down_pwr
+        this.inputData.w_key = 1
       } else if (event.key.toLowerCase() == 'a') {
-        if (this.inputData.a_key > 0) {
-          return
-        }
-        this.inputData.a_key = this.rotation_pwr
+        this.inputData.a_key = 1
       } else if (event.key.toLowerCase() == 's') {
-        if (this.inputData.s_key > 0) {
-          return
-        }
-        this.inputData.s_key = this.up_down_pwr
+        this.inputData.s_key = 1
       } else if (event.key.toLowerCase() == 'd') {
-        if (this.inputData.d_key > 0) {
-          return
-        }
-        this.inputData.d_key = this.rotation_pwr
+        this.inputData.d_key = 1
       }
 
       this.publish()
@@ -84,8 +76,8 @@ export default {
       this.sendMessage({
         type: 'mast_gimbal',
         throttles: [
-          this.inputData.d_key - this.inputData.a_key,
-          this.inputData.w_key - this.inputData.s_key
+          this.inputData.w_key - this.inputData.s_key,
+          this.inputData.d_key - this.inputData.a_key
         ]
       })
     }
