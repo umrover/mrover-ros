@@ -203,7 +203,7 @@ if (CUDA_FOUND)
     target_include_directories(hardware_h265_encoder SYSTEM PUBLIC deps/nvenc)
 endif ()
 
-add_subdirectory(deps/libde265)
+add_subdirectory(deps/libde265 SYSTEM)
 include_directories(deps/libde265/extra deps/libde265 SYSTEM)
 
 mrover_add_node(software_h265_encoder src/esw/software_h265_encoder/*.c*)
