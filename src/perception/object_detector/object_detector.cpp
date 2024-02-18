@@ -21,7 +21,7 @@ namespace mrover {
         mNh.param<int>("obj_hitcount_max", mObjMaxHitcount, 10);
 
         //Model Params
-        mNh.param<std::string>("model_name", mModelName, "yolov8n_mallet_bottle_better");
+        mNh.param<std::string>("model_name", mModelName, "baja");
 
         //Init Model Path
         std::filesystem::path packagePath = ros::package::getPath("mrover");
