@@ -34,10 +34,10 @@ int main(int argc, char** argv) {
     mrover::Velocity armMsg;
     mrover::Velocity saMsg;
     armMsg.names = {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll", "allen_key", "gripper"};
-    armMsg.velocities = {0, 0, 0, 0, 10, 0, 0};
+    armMsg.velocities = {0, 0, 0, 20, 20, 0, 0};
 
     saMsg.names = {"sa_x", "sa_y", "sa_z", "sampler", "sensor_actuator"};
-    saMsg.velocities = {0, 0, 0.07, 0, 0};
+    saMsg.velocities = {0, 0, 0.07,0, 0};
 
     // brushlessController_de0->setStop();
     // brushlessController_de1->setStop();
@@ -52,8 +52,9 @@ int main(int argc, char** argv) {
         SAPub->publish(saMsg);
         count++;
 
-        if(count > 50) {
-            armMsg.velocities[0] *= -1;
+        if(count > 100) {
+            armMsg.velocities[3] *= -1;
+            armMsg.velocities[4] *= -1;
             count = 0;
         }   
 
