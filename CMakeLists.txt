@@ -95,12 +95,6 @@ endforeach ()
 
 set(BUILD_SHARED_LIBS ON)
 
-### ======= ###
-### Options ###
-### ======= ###
-
-option(MROVER_BUILD_SIM "Build the simulator" ${dawn_FOUND})
-
 ### ======== ###
 ### Messages ###
 ### ======== ###
