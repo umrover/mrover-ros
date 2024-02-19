@@ -258,9 +258,9 @@ namespace mrover {
         auto centerWidth = static_cast<std::size_t>(center.first * static_cast<double>(msg->width) / imgSize.width);
         auto centerHeight = static_cast<std::size_t>(center.second * static_cast<double>(msg->height) / imgSize.height);
 
-        assert(detection.classId < seenObjects.size());
-        assert(detection.classId < classes.size());
-        assert(detection.classId < mObjectHitCounts.size());
+        assert(static_cast<std::size_t>(detection.classId) < seenObjects.size());
+        assert(static_cast<std::size_t>(detection.classId) < classes.size());
+        assert(static_cast<std::size_t>(detection.classId) < mObjectHitCounts.size());
 
         if (seenObjects[detection.classId]) return;
 
