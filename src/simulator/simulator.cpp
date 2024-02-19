@@ -61,7 +61,8 @@ namespace mrover {
         //  See: https://blat-blatnik.github.io/computerBear/making-accurate-sleep-function/
         // Idea: sleep until 1ms before the desired time, then spin until the desired time
         std::this_thread::sleep_until(until - 1ms);
-        while (Clock::now() < until);
+        while (Clock::now() < until)
+            ;
     }
 
     auto SimulatorNodelet::run() -> void try {

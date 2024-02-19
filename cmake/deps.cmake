@@ -35,8 +35,8 @@ if (MROVER_BUILD_SIM)
     find_package(glfw3 REQUIRED)
 
     add_subdirectory(deps/glfw3webgpu SYSTEM)
-
     add_subdirectory(deps/imgui SYSTEM)
+    add_subdirectory(deps/webgpuhpp SYSTEM)
 endif ()
 
 find_package(OpenCV REQUIRED)

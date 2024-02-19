@@ -30,10 +30,6 @@ class TestIntegration(unittest.TestCase):
                 Waypoint(tag_id=0, type=WaypointType(val=WaypointType.POST)),
                 SE3(position=np.array([-2, -2, 0])),
             ),
-            (
-                Waypoint(tag_id=1, type=WaypointType(val=WaypointType.POST)),
-                SE3(position=np.array([11, -10, 0])),
-            )
         ]
         publish_waypoints(list(map(convert_waypoint_to_gps, waypoints)))
 

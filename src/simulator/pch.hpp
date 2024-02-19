@@ -10,12 +10,12 @@
 #include <fstream>
 #include <iostream>
 #include <memory>
+#include <random>
 #include <source_location>
 #include <span>
 #include <stdexcept>
 #include <thread>
 #include <unordered_set>
-#include <random>
 
 #include <boost/circular_buffer.hpp>
 #include <boost/container/static_vector.hpp>
@@ -41,7 +41,7 @@
 
 #include <glfw3webgpu.h>
 
-#include "webgpu/webgpu.hpp"
+#include <webgpu.hpp>
 
 #include <opencv2/core.hpp>
 #include <opencv2/highgui.hpp>
@@ -68,11 +68,11 @@
 #include <assimp/scene.h>
 
 #include <bimap.hpp>
+#include <lie.hpp>
 #include <loop_profiler.hpp>
 #include <manif/manif.h>
 #include <params_utils.hpp>
 #include <point.hpp>
-#include <lie.hpp>
 #include <units.hpp>
 
 #include <mrover/ControllerState.h>
