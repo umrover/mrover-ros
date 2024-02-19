@@ -39,7 +39,7 @@ jobs:
         run: . /opt/ros/noetic/setup.sh && catkin init && catkin profile set ci
       - name: Build
         if: github.event.pull_request.draft == false
-        run: . /opt/ros/noetic/setup.sh && . /home/mrover/catkin_ws/src/mrover/venv/bin/activate && catkin build -DMROVER_CI=ON
+        run: . /opt/ros/noetic/setup.sh && . /home/mrover/catkin_ws/src/mrover/venv/bin/activate && catkin build
       - name: Test
         if: github.event.pull_request.draft == false
         run: . /opt/ros/noetic/setup.sh && . /home/mrover/catkin_ws/src/mrover/venv/bin/activate && . $GITHUB_WORKSPACE/devel/setup.sh && catkin test && rostest mrover integration.test --text
