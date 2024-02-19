@@ -93,9 +93,9 @@ namespace mrover {
 
         URDF(SimulatorNodelet& simulator, XmlRpc::XmlRpcValue const& init);
 
-        auto makeCollisionShapeForLink(SimulatorNodelet& simulator, urdf::LinkConstSharedPtr const& link) -> btCollisionShape*;
+        static auto makeCollisionShapeForLink(SimulatorNodelet& simulator, urdf::LinkConstSharedPtr const& link) -> btCollisionShape*;
 
-        auto makeCameraForLink(SimulatorNodelet& simulator, btMultibodyLink const* link) -> Camera;
+        static auto makeCameraForLink(SimulatorNodelet& simulator, btMultibodyLink const* link) -> Camera;
 
         [[nodiscard]] auto linkInWorld(std::string const& linkName) const -> SE3d;
     };

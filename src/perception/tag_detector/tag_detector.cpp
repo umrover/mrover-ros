@@ -127,7 +127,7 @@ namespace mrover {
         mDetectorParams->polygonalApproxAccuracyRate = config.polygonalApproxAccuracyRate;
     }
 
-    bool TagDetectorNodelet::enableDetectionsCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) {
+    auto TagDetectorNodelet::enableDetectionsCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) -> bool {
         mEnableDetections = req.data;
         if (mEnableDetections) {
             res.message = "Enabled tag detections.";

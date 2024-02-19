@@ -28,9 +28,9 @@ if (NOT APPLE AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     add_link_options(-fuse-ld=lld) # LLVM lld is faster than GNU ld
 endif ()
 set(MROVER_CPP_COMPILE_OPTIONS -Wall -Wextra -pedantic)
-#if (MROVER_CI)
-#    list(APPEND MROVER_CPP_COMPILE_OPTIONS -Werror)
-#endif ()
+if (MROVER_CI)
+    list(APPEND MROVER_CPP_COMPILE_OPTIONS -Werror)
+endif ()
 
 include(cmake/macros.cmake)
 

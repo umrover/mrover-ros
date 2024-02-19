@@ -1,9 +1,8 @@
 #include <ros/ros.h>
 
 #include "arm_translator.hpp"
-#include <memory.h>
 
-int main(int argc, char** argv) {
+auto main(int argc, char** argv) -> int {
     // Initialize the ROS node
     ros::init(argc, argv, "arm_translator_bridge");
     ros::NodeHandle nh;
