@@ -140,8 +140,8 @@ class PostBackupState(State):
             context.rover.send_drive_command(cmd_vel)
             return self
         except (
-                tf2_ros.LookupException,
-                tf2_ros.ConnectivityException,
-                tf2_ros.ExtrapolationException,
+            tf2_ros.LookupException,
+            tf2_ros.ConnectivityException,
+            tf2_ros.ExtrapolationException,
         ):
             return self

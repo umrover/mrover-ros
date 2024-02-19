@@ -97,7 +97,7 @@ class WatchDog:
             delta_rot = start_rot.rot_distance_to(end_rot)
             # check if the rover is stuck
             if self.check_angular_stuck(delta_time, delta_rot, dataframe_sliced) or self.check_linear_stuck(
-                    delta_time, delta_pos, dataframe_sliced
+                delta_time, delta_pos, dataframe_sliced
             ):
                 return True
         return False

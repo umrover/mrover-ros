@@ -140,5 +140,5 @@ namespace mrover {
         res.success = true;
         return true;
     }
-    
+
 } // namespace mrover
