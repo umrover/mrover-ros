@@ -3,6 +3,7 @@ on:
   pull_request:
     branches:
       - master
+      - integration
   push:
     branches:
       - master
@@ -23,8 +24,8 @@ jobs:
           path: "src/mrover"
       - name: Ensure Python Requirements
         run: . /home/mrover/catkin_ws/src/mrover/venv/bin/activate && pip install -e "$GITHUB_WORKSPACE/src/mrover[dev]"
-#      - name: Style Check
-#        run: . /home/mrover/catkin_ws/src/mrover/venv/bin/activate && cd $GITHUB_WORKSPACE/src/mrover/ && ./style.sh
+      - name: Style Check
+        run: . /home/mrover/catkin_ws/src/mrover/venv/bin/activate && cd $GITHUB_WORKSPACE/src/mrover/ && ./style.sh
       - name: Update ROS APT
         if: github.event.pull_request.draft == false
         run: runuser -u mrover -- rosdep update
