@@ -35,4 +35,4 @@ USER root
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 
 USER mrover
-ENTRYPOINT [ "/bin/zsh" ]
+ENTRYPOINT [ "/bin/bash" ]

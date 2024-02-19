@@ -190,7 +190,7 @@ mrover_add_node(arm_controller src/teleoperation/arm_controller/*.cpp)
 if (MROVER_BUILD_SIM)
     mrover_add_nodelet(simulator src/simulator/*.cpp src/simulator src/simulator/pch.hpp)
     mrover_nodelet_include_directories(simulator ${ASSIMP_INCLUDE_DIRS} ${BULLET_INCLUDE_DIRS} ${OPENCV_INCLUDE_DIRS} src/simulator/imgui)
-    mrover_nodelet_link_libraries(simulator ${ASSIMP_LIBRARIES} ${BULLET_LIBRARIES} glfw3webgpu webgpu glfw opencv_core opencv_imgcodecs opencv_imgproc lie)
+    mrover_nodelet_link_libraries(simulator ${ASSIMP_LIBRARIES} ${BULLET_LIBRARIES} glfw3webgpu webgpu glfw opencv_core opencv_imgcodecs opencv_imgproc imgui lie)
     mrover_nodelet_defines(simulator BOOST_THREAD_PROVIDES_FUTURE)
 endif ()
 

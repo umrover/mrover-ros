@@ -48,8 +48,8 @@
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
 
-#include "imgui/backends/imgui_impl_glfw.h"
-#include "imgui/backends/imgui_impl_wgpu.h"
+#include <backends/imgui_impl_glfw.h>
+#include <backends/imgui_impl_wgpu.h>
 
 #include <BulletDynamics/Featherstone/btMultiBodyConstraintSolver.h>
 #include <BulletDynamics/Featherstone/btMultiBodyDynamicsWorld.h>

@@ -70,7 +70,9 @@ class TestIntegration(unittest.TestCase):
                     rospy.logwarn_throttle(1, f"Transform exception: {e}")
                     return float("inf")
 
-            while not rospy.is_shutdown() and distance_to_current_waypoint() > COMPLETION_TOLERANCE:
+            while distance_to_current_waypoint() > COMPLETION_TOLERANCE:
+                if rospy.is_shutdown():
+                    return
                 rospy.loginfo_throttle(1, f"Distance to current waypoint: {distance_to_current_waypoint()}")
                 rate.sleep()
 

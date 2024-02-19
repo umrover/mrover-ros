@@ -110,11 +110,11 @@
 #- name: Install Bun Packages
 #  command: ~/.bun/bin/bun install --cwd {{ catkin_workspace }}/src/mrover/src/teleoperation/frontend
 
-- name: Install Catkin Profiles
-  synchronize:
-    src: files/profiles
-    dest: "{{ catkin_workspace }}/.catkin_tools"
-    recursive: true
+#- name: Install Catkin Profiles
+#  synchronize:
+#    src: files/profiles
+#    dest: "{{ catkin_workspace }}/.catkin_tools"
+#    recursive: true
 
 - name: Set G++ 13 as Default
   become: True
@@ -164,8 +164,10 @@
     link: /usr/bin/lld
     priority: 160
 
-- name: Setup Python Environment
+- name: Setup Python Virtual Environment
   pip:
     name:
+      # Installs from pyproject.toml
       - "{{ catkin_workspace }}/src/mrover[dev]"
-    executable: pip3.10
+    virtualenv: "{{ catkin_workspace }}/src/mrover/venv"
+    virtualenv_command: /usr/bin/python3.10 -m venv
