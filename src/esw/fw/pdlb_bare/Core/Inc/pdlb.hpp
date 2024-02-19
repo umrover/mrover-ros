@@ -14,7 +14,7 @@ namespace mrover {
     class PDLB {
     private:
 
-    	FDCAN<InBoundPDLBMessage> m_fdcan_bus;
+    	FDCAN<InBoundPDLBMessage> fdcan_bus;
         Pin m_arm_laser_pin;
         AutonLed m_auton_led;
 //        osMutexId_t m_can_tx_mutex;
@@ -37,7 +37,7 @@ namespace mrover {
         		Pin arm_laser_pin,
         		AutonLed auton_led
 				) :
-           m_fdcan_bus{fdcan_bus},
+           fdcan_bus{fdcan_bus},
 		   m_arm_laser_pin{std::move(arm_laser_pin)},
 		   m_auton_led{std::move(auton_led)}
 //		   m_can_tx_mutex{osMutexNew(NULL)}
@@ -51,7 +51,12 @@ namespace mrover {
 
 
         void blink_led_if_applicable() {
+        	PDBData pdb_data;
+        	pdb_data.currents = {0};
+        	pdb_data.temperatures = {0};
         	m_auton_led.blink();
+        	// broadcast message
+        	fdcan_bus.broadcast(OutBoundPDLBMessage{pdb_data});
         }
     };
 

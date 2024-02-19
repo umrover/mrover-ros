@@ -7,6 +7,8 @@ extern FDCAN_HandleTypeDef hfdcan1;
 extern TIM_HandleTypeDef htim6; // for auton LED
 #define AUTON_LED_TIMER &htim6
 
+#define AUTON_LED_BLINK 5
+uint8_t blink_count = 0;
 namespace mrover {
 
     // NOTE: Change this for the PDLB controller
@@ -35,6 +37,7 @@ namespace mrover {
         fdcan_bus = FDCAN<InBoundPDLBMessage>{DEVICE_ID, DESTINATION_DEVICE_ID, &hfdcan1};
         pdlb = PDLB{fdcan_bus, Pin{ARM_LASER_GPIO_Port, ARM_LASER_Pin},
         	auton_led};
+        check(HAL_TIM_Base_Start_IT(AUTON_LED_TIMER) == HAL_OK, Error_Handler);
     }
 
     void blink_led_if_applicable() {
@@ -60,7 +63,18 @@ void receive_message() {
 	mrover::receive_message();
 }
 
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim) {
+void blink_led_if_applicable() {
 	mrover::blink_led_if_applicable();
-    // TODO: check for slow update timer and call on controller to send out i2c frame
+}
+
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim) {
+	if (htim == AUTON_LED_TIMER) {
+		if (blink_count == AUTON_LED_BLINK) {
+			blink_led_if_applicable();
+			blink_count = 0;
+		} else {
+			++blink_count;
+		}
+
+	}
 }

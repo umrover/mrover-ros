@@ -1,6 +1,7 @@
 #pragma once
 
 #include "hardware.hpp"
+#include "messaging.hpp"
 
 namespace mrover {
 
