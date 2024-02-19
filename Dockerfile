@@ -1,11 +1,11 @@
 FROM ubuntu:focal
 
-# DEBIAN_FRONTEND=noninteractive and keyboard-configuration are needed to prevent stdin prompting later on
-# This was super annoying to figure out because otherwise the build would hang
+# DEBIAN_FRONTEND=noninteractive prevents apt from asking for user input
 # software-properties-common is needed for apt-add-repository
-RUN apt-get update -y && apt-get upgrade -y && DEBIAN_FRONTEND=noninteractive apt-get install software-properties-common keyboard-configuration -y
+# sudo is needed for ansible since it escalates from a normal user to root
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update -y && apt-get install software-properties-common sudo -y
 RUN apt-add-repository ppa:ansible/ansible -y
-# RUN apt-add-repository ppa:git-core/ppa -y
 RUN apt-get install -y ansible git git-lfs
 
 RUN useradd --create-home --groups sudo --shell /bin/zsh mrover
@@ -30,7 +30,7 @@ RUN ./ansible.sh build.yml
 
 USER root
 # Dawn
-ADD ./dawn.deb /tmp/
+ADD ./pkg/dawn.deb /tmp/
 RUN apt-get install -f /tmp/dawn.deb -y && rm /tmp/dawn.deb
 # Remove apt cache to free up space in the image
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
