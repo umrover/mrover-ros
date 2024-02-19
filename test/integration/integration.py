@@ -56,8 +56,7 @@ class TestIntegration(unittest.TestCase):
                     if waypoint_data.type == WaypointType(val=WaypointType.NO_SEARCH):
                         waypoint_in_world = pose
                     elif waypoint_data.type == WaypointType(val=WaypointType.POST):
-                        waypoint_in_world = SE3.from_tf_tree(tf_buffer, parent_frame="map",
-                                                             child_frame=f"tag_{waypoint_data.tag_id}_truth")
+                        waypoint_in_world = SE3.from_tf_tree(tf_buffer, parent_frame="map", child_frame=f"tag_{waypoint_data.tag_id}_truth")
                     elif waypoint_data.type == WaypointType(val=WaypointType.MALLET):
                         waypoint_in_world = SE3.from_tf_tree(tf_buffer, parent_frame="map", child_frame="mallet_truth")
                     elif waypoint_data.type == WaypointType(val=WaypointType.WATER_BOTTLE):
