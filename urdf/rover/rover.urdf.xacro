@@ -263,13 +263,13 @@
 
   <!-- TODO(quintin): Import the ZED URDF here -->
 
-  <joint name="chassis_link_to_zed2i_left_camera_frame" type="fixed">
+  <joint name="chassis_link_to_zed_left_camera_frame" type="fixed">
     <origin xyz="0.3 0 0" />
     <parent link="chassis_link" />
-    <child link="zed2i_left_camera_frame" />
+    <child link="zed_left_camera_frame" />
   </joint>
 
-  <link name="zed2i_left_camera_frame">
+  <link name="zed_left_camera_frame">
     <collision>
       <geometry>
         <box size="0.01 0.1 0.01" />
