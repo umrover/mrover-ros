@@ -32,13 +32,6 @@ if (MROVER_CI)
     list(APPEND MROVER_CPP_COMPILE_OPTIONS -Werror)
 endif ()
 
-if (EXISTS ${CMAKE_CURRENT_LIST_DIR}/deps/dawn/out/Release OR EXISTS /usr/include/dawn)
-    set(MROVER_BUILD_SIM ON)
-else ()
-    set(MROVER_BUILD_SIM OFF)
-endif ()
-option(MROVER_BUILD_SIM "Build the simulator" ${MROVER_BUILD_SIM})
-
 include(cmake/macros.cmake)
 
 # ROS packages list
@@ -78,33 +71,8 @@ set(MROVER_CMAKE_INCLUDES
 ### Dependencies ###
 ### ============ ###
 
-if (MROVER_BUILD_SIM)
-    # Apparently Assimp has different names on different systems
-    # find_package is case-sensitive so try both
-    find_package(Assimp QUIET)
-    find_package(assimp QUIET)
-    if (NOT Assimp_FOUND AND NOT assimp_FOUND)
-        message(FATAL_ERROR "Assimp not found")
-    endif ()
-    find_package(Bullet REQUIRED)
-    find_package(glfw3 REQUIRED)
-    include(cmake/webgpu.cmake)
-    add_subdirectory(deps/glfw3webgpu SYSTEM)
-endif ()
-find_package(OpenCV REQUIRED)
-find_package(ZED QUIET)
-find_package(Eigen3 REQUIRED)
-find_package(manif QUIET)
-if (NOT manif_FOUND)
-    if (EXISTS deps/manif)
-        add_subdirectory(deps/manif SYSTEM)
-    else ()
-        message(FATAL_ERROR "Manif not found. Please run git submodule update --init deps/manif")
-    endif ()
-endif ()
-find_package(PkgConfig REQUIRED)
-pkg_search_module(NetLink libnl-3.0 QUIET)
-pkg_search_module(NetLinkRoute libnl-route-3.0 QUIET)
+include(cmake/deps.cmake)
+
 if (ZED_FOUND)
     # Anything newer than C++17 combined with libstdc++13 is not supported just yet by NVCC (the CUDA compiler)
     set(CMAKE_CUDA_STANDARD 17)
@@ -126,6 +94,12 @@ foreach (MROVER_CMAKE_INCLUDE ${MROVER_CMAKE_INCLUDES})
 endforeach ()
 
 set(BUILD_SHARED_LIBS ON)
+
+### ======= ###
+### Options ###
+### ======= ###
+
+option(MROVER_BUILD_SIM "Build the simulator" ${dawn_FOUND})
 
 ### ======== ###
 ### Messages ###

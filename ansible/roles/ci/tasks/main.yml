@@ -60,6 +60,7 @@
     state: latest
     name:
       - cmake
+      - rsync
       - python3-rosdep
       - python3-catkin-tools
       - clang-16
