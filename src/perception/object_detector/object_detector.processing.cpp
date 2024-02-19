@@ -33,7 +33,7 @@ namespace mrover {
         cv::cvtColor(sizedImage, sizedImage, cv::COLOR_BGRA2BGR);
 
         // Create the blob from the resized image
-        cv::dnn::blobFromImage(sizedImage, mImageBlob, 1.0 / 255.0, imgSize, cv::Scalar(), true, false);
+        cv::dnn::blobFromImage(sizedImage, mImageBlob, 1.0 / 255.0, imgSize, cv::Scalar{}, true, false);
 
         if (mEnableLoopProfiler) {
             mLoopProfiler.measureEvent("Convert Image");
@@ -65,64 +65,56 @@ namespace mrover {
 
         output = output.reshape(1, dimensions);
         cv::transpose(output, output);
-        //Reinterpret data from the output to be in a usable form
-        auto data = reinterpret_cast<float*>(output.data);
 
-        //Model Information
+        // Model Information
         auto modelInputCols = static_cast<float>(imgSize.width);
         auto modelInputRows = static_cast<float>(imgSize.height);
         auto modelShapeWidth = static_cast<float>(imgSize.width);
         auto modelShapeHeight = static_cast<float>(imgSize.height);
 
-        //Set model thresholds
+        // Set model thresholds
         float modelScoreThreshold = 0.75;
         float modelNMSThreshold = 0.50;
 
-        //Get x and y scale factors
-        float x_factor = modelInputCols / modelShapeWidth;
-        float y_factor = modelInputRows / modelShapeHeight;
+        // Get x and y scale factors
+        float xFactor = modelInputCols / modelShapeWidth;
+        float yFactor = modelInputRows / modelShapeHeight;
 
-        //Init storage containers
-        std::vector<int> class_ids;
+        // Init storage containers
+        std::vector<int> classIds;
         std::vector<float> confidences;
         std::vector<cv::Rect> boxes;
 
-        //Each of the possibilities do interpret the data
-        for (int i = 0; i < rows; ++i) {
-            //This is because the first 4 points are box[x,y,w,h]
-            float* classes_scores = data + 4;
+        // Each row of the output is a detection with a bounding box and associated class scores
+        for (int r = 0; r < rows; ++r) {
+            // Skip first four values as they are the box data
+            cv::Mat scores = output.row(r).colRange(4, dimensions);
 
-            //Create a mat to store all of the class scores
-            cv::Mat scores(1, static_cast<int>(classes.size()), CV_32FC1, classes_scores);
-            cv::Point class_id;
+            cv::Point classId;
             double maxClassScore;
+            cv::minMaxLoc(scores, nullptr, &maxClassScore, nullptr, &classId);
 
-            //Find the max class score for the associated row
-            cv::minMaxLoc(scores, nullptr, &maxClassScore, nullptr, &class_id);
+            // Determine if the class is an acceptable confidence level, otherwise disregard
+            if (maxClassScore <= modelScoreThreshold) continue;
 
-            //Determine if the class is an acceptable confidence level else disregard
-            if (maxClassScore > modelScoreThreshold) {
-                //Push back data points into storage containers
-                confidences.push_back(static_cast<float>(maxClassScore));
-                class_ids.push_back(class_id.x);
+            confidences.push_back(static_cast<float>(maxClassScore));
+            classIds.push_back(classId.x);
 
-                //Get the bounding box data
-                float x = data[0];
-                float y = data[1];
-                float w = data[2];
-                float h = data[3];
+            // Get the bounding box data
+            cv::Mat box = output.row(r).colRange(0, 4);
+            auto x = box.at<float>(0);
+            auto y = box.at<float>(1);
+            auto w = box.at<float>(2);
+            auto h = box.at<float>(3);
 
-                //Cast the corners into integers to be used on pixels
-                int left = static_cast<int>((x - 0.5 * w) * x_factor);
-                int top = static_cast<int>((y - 0.5 * h) * y_factor);
-                int width = static_cast<int>(w * x_factor);
-                int height = static_cast<int>(h * y_factor);
+            // Cast the corners into integers to be used on pixels
+            auto left = static_cast<int>((x - 0.5 * w) * xFactor);
+            auto top = static_cast<int>((y - 0.5 * h) * yFactor);
+            auto width = static_cast<int>(w * xFactor);
+            auto height = static_cast<int>(h * yFactor);
 
-                //Push abck the box into storage
-                boxes.emplace_back(left, top, width, height);
-            }
-
-            data += dimensions;
+            // Push abck the box into storage
+            boxes.emplace_back(left, top, width, height);
         }
 
         //Coalesce the boxes into a smaller number of distinct boxes
@@ -131,17 +123,17 @@ namespace mrover {
 
         //Storage for the detection from the model
         std::vector<Detection> detections{};
-        for (int idx: nmsResult) {
+        for (int i: nmsResult) {
             //Init the detection
             Detection result;
 
             //Fill in the id and confidence for the class
-            result.classId = class_ids[idx];
-            result.confidence = confidences[idx];
+            result.classId = classIds[i];
+            result.confidence = confidences[i];
 
             //Fill in the class name and box information
             result.className = classes[result.classId];
-            result.box = boxes[idx];
+            result.box = boxes[i];
 
             //Push back the detection into the for storagevector
             detections.push_back(result);
@@ -152,32 +144,32 @@ namespace mrover {
         }
 
         std::vector seenObjects{false, false};
-        //If there are detections locate them in 3D
+        // If there are detections locate them in 3D
         for (Detection const& detection: detections) {
 
-            //Increment Object hit counts if theyre seen
+            // Increment Object hit counts if theyre seen
             updateHitsObject(msg, detection, seenObjects);
 
-            //Decrement Object hit counts if they're not seen
-            for (size_t i = 0; i < seenObjects.size(); i++) {
-                if (!seenObjects.at(i)) {
-                    mObjectHitCounts.at(i) = std::max(0, mObjectHitCounts.at(i) - mObjDecrementWeight);
-                }
+            // Decrement Object hit counts if they're not seen
+            for (std::size_t i = 0; i < seenObjects.size(); i++) {
+                if (seenObjects[i]) continue;
+
+                assert(i < mObjectHitCounts.size());
+                mObjectHitCounts[i] = std::max(0, mObjectHitCounts[i] - mObjDecrementWeight);
             }
 
-            //Draw the detected object's bounding boxes on the image for each of the objects detected
-            std::vector fontColors{cv::Scalar{232, 115, 5},
-                                   cv::Scalar{0, 4, 227}};
+            // Draw the detected object's bounding boxes on the image for each of the objects detected
+            std::array fontColors{cv::Scalar{232, 115, 5}, cv::Scalar{0, 4, 227}};
             for (std::size_t i = 0; i < detections.size(); i++) {
-                //Font color will change for each different detection
-                cv::Scalar fontColor = fontColors.at(detections.at(i).classId);
+                // Font color will change for each different detection
+                cv::Scalar fontColor = fontColors.at(detections[i].classId);
                 cv::rectangle(sizedImage, detections[i].box, fontColor, 1, cv::LINE_8, 0);
 
-                //Put the text on the image
+                // Put the text on the image
                 cv::Point textPosition(80, static_cast<int>(80 * (i + 1)));
                 constexpr int fontSize = 1;
                 constexpr int fontWeight = 2;
-                putText(sizedImage, detections[i].className, textPosition, cv::FONT_HERSHEY_COMPLEX, fontSize, fontColor, fontWeight); //Putting the text in the matrix//
+                putText(sizedImage, detections[i].className, textPosition, cv::FONT_HERSHEY_COMPLEX, fontSize, fontColor, fontWeight); // Putting the text in the matrix
             }
         }
 
@@ -185,16 +177,16 @@ namespace mrover {
             mLoopProfiler.measureEvent("Push to TF");
         }
 
-        //We only want to publish the debug image if there is something lsitening, to reduce the operations going on
-        if (mDebugImgPub.getNumSubscribers() > 0 || true) {
-            //Publishes the image to the debug publisher
+        // We only want to publish the debug image if there is something lsitening, to reduce the operations going on
+        if (mDebugImgPub.getNumSubscribers()) {
+            // Publishes the image to the debug publisher
             publishImg(sizedImage);
         }
 
         if (mEnableLoopProfiler) {
             mLoopProfiler.measureEvent("Publish Debug Img");
         }
-    } // namespace mrover
+    }
 
     auto ObjectDetectorNodelet::getObjectInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t u, size_t v, size_t width, size_t height) -> std::optional<SE3d> {
         assert(cloudPtr);
@@ -208,16 +200,16 @@ namespace mrover {
     }
 
     auto ObjectDetectorNodelet::spiralSearchInImg(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t xCenter, size_t yCenter, size_t width, size_t height) -> std::optional<SE3d> {
-        size_t currX = xCenter;
-        size_t currY = yCenter;
-        size_t radius = 0;
+        std::size_t currX = xCenter;
+        std::size_t currY = yCenter;
+        std::size_t radius = 0;
         int t = 0;
         constexpr int numPts = 16;
         bool isPointInvalid = true;
         Point point{};
 
         // Find the smaller of the two box dimensions so we know the max spiral radius
-        size_t smallDim = std::min(width / 2, height / 2);
+        std::size_t smallDim = std::min(width / 2, height / 2);
 
         while (isPointInvalid) {
             // This is the parametric equation to spiral around the center pnt
@@ -260,47 +252,49 @@ namespace mrover {
     }
 
     auto ObjectDetectorNodelet::updateHitsObject(sensor_msgs::PointCloud2ConstPtr const& msg, Detection const& detection, std::vector<bool>& seenObjects, cv::Size const& imgSize) -> void {
-
-        cv::Rect box = detection.box;
+        cv::Rect const& box = detection.box;
         auto center = std::pair(box.x + box.width / 2, box.y + box.height / 2);
         // Resize from {640, 640} image space to {720,1280} image space
-        auto centerWidth = static_cast<size_t>(center.first * static_cast<double>(msg->width) / imgSize.width);
-        auto centerHeight = static_cast<size_t>(center.second * static_cast<double>(msg->height) / imgSize.height);
+        auto centerWidth = static_cast<std::size_t>(center.first * static_cast<double>(msg->width) / imgSize.width);
+        auto centerHeight = static_cast<std::size_t>(center.second * static_cast<double>(msg->height) / imgSize.height);
 
-        if (!seenObjects.at(detection.classId)) {
-            seenObjects.at(detection.classId) = true;
+        assert(detection.classId < seenObjects.size());
+        assert(detection.classId < classes.size());
+        assert(detection.classId < mObjectHitCounts.size());
 
-            //Get the object's position in 3D from the point cloud and run this statement if the optional has a value
-            if (std::optional<SE3d> objectLocation = getObjectInCamFromPixel(msg, centerWidth, centerHeight, box.width, box.height)) {
-                try {
-                    std::string immediateFrameId = std::format("immediateDetectedObject{}", classes.at(detection.classId));
+        if (seenObjects[detection.classId]) return;
 
-                    //Push the immediate detections to the zed frame
-                    SE3Conversions::pushToTfTree(mTfBroadcaster, immediateFrameId, mCameraFrameId, objectLocation.value());
+        seenObjects[detection.classId] = true;
 
+        // Get the object's position in 3D from the point cloud and run this statement if the optional has a value
+        if (std::optional<SE3d> objectInCamera = getObjectInCamFromPixel(msg, centerWidth, centerHeight, box.width, box.height)) {
+            try {
+                std::string objectImmediateFrame = std::format("immediateDetectedObject{}", classes[detection.classId]);
 
-                    //Since the object is seen we need to increment the hit counter
-                    mObjectHitCounts.at(detection.classId) = std::min(mObjMaxHitcount, mObjectHitCounts.at(detection.classId) + mObjIncrementWeight);
+                // Push the immediate detections to the camera frame
+                SE3Conversions::pushToTfTree(mTfBroadcaster, objectImmediateFrame, mCameraFrameId, objectInCamera.value());
 
-                    //Only publish to permament if we are confident in the object
-                    if (mObjectHitCounts.at(detection.classId) > mObjHitThreshold) {
+                // Since the object is seen we need to increment the hit counter
+                mObjectHitCounts[detection.classId] = std::min(mObjMaxHitcount, mObjectHitCounts[detection.classId] + mObjIncrementWeight);
 
-                        std::string permanentFrameId = std::format("detectedObject{}", classes.at(detection.classId));
+                // Only publish to permament if we are confident in the object
+                if (mObjectHitCounts[detection.classId] > mObjHitThreshold) {
 
-                        //Grab the object inside of the camera frame and push it into the map frame
-                        SE3d objectInsideCamera = SE3Conversions::fromTfTree(mTfBuffer, mMapFrameId, immediateFrameId);
-                        SE3Conversions::pushToTfTree(mTfBroadcaster, permanentFrameId, mCameraFrameId, objectInsideCamera);
-                    }
+                    std::string objectPermanentFrame = std::format("detectedObject{}", classes[detection.classId]);
 
-                } catch (tf2::ExtrapolationException const&) {
-                    NODELET_WARN("Old data for immediate tag");
-                } catch (tf2::LookupException const&) {
-                    NODELET_WARN("Expected transform for immediate tag");
-                } catch (tf::ConnectivityException const&) {
-                    NODELET_WARN("Expected connection to odom frame. Is visual odometry running?");
-                } catch (tf::LookupException const&) {
-                    NODELET_WARN("LOOK UP NOT FOUND");
+                    // Grab the object inside of the camera frame and push it into the map frame
+                    SE3d objectInMap = SE3Conversions::fromTfTree(mTfBuffer, mMapFrame, objectImmediateFrame);
+                    SE3Conversions::pushToTfTree(mTfBroadcaster, objectPermanentFrame, mMapFrame, objectInMap);
                 }
+
+            } catch (tf2::ExtrapolationException const&) {
+                NODELET_WARN("Old data for immediate tag");
+            } catch (tf2::LookupException const&) {
+                NODELET_WARN("Expected transform for immediate tag");
+            } catch (tf::ConnectivityException const&) {
+                NODELET_WARN("Expected connection to odom frame. Is visual odometry running?");
+            } catch (tf::LookupException const&) {
+                NODELET_WARN("LOOK UP NOT FOUND");
             }
         }
     }

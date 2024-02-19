@@ -592,21 +592,18 @@ namespace mrover {
                 if (camera.stagingBuffer.getMapState() == wgpu::BufferMapState::Mapped) {
                     auto image = boost::shared_ptr<sensor_msgs::Image>{imagePool.borrowFrom(), [](sensor_msgs::Image* msg) { imagePool.returnTo(msg); }};
                     image->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
-                    image->encoding = sensor_msgs::image_encodings::BGR8;
+                    image->encoding = sensor_msgs::image_encodings::BGRA8;
                     image->width = camera.resolution.x();
                     image->height = camera.resolution.y();
-                    image->step = camera.resolution.x() * 3;
+                    image->step = camera.resolution.x() * 4;
                     image->header.stamp = ros::Time::now();
                     image->header.frame_id = camera.frameId;
-                    image->data.resize(area * 3);
+                    image->data.resize(area * 4);
 
                     // Convert from BGRA to BGR
-                    auto* fromRender = static_cast<cv::Vec4b const*>(camera.stagingBuffer.getConstMappedRange(0, camera.stagingBuffer.getSize()));
-                    auto* toMessage = reinterpret_cast<cv::Vec3b*>(image->data.data());
-                    std::for_each(std::execution::par_unseq, fromRender, fromRender + area, [&](cv::Vec4b const& from) {
-                        std::size_t index = &from - fromRender;
-                        toMessage[index] = {from[0], from[1], from[2]};
-                    });
+                    auto* fromRender = camera.stagingBuffer.getConstMappedRange(0, stereoCamera.base.stagingBuffer.getSize());
+                    auto* toMessage = image->data.data();
+                    std::memcpy(toMessage, fromRender, stereoCamera.base.stagingBuffer.getSize());
                     camera.stagingBuffer.unmap();
                     camera.callback = nullptr;
 
