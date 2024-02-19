@@ -601,9 +601,9 @@ namespace mrover {
                     image->data.resize(area * 4);
 
                     // Convert from BGRA to BGR
-                    auto* fromRender = camera.stagingBuffer.getConstMappedRange(0, stereoCamera.base.stagingBuffer.getSize());
+                    auto* fromRender = camera.stagingBuffer.getConstMappedRange(0, camera.stagingBuffer.getSize());
                     auto* toMessage = image->data.data();
-                    std::memcpy(toMessage, fromRender, stereoCamera.base.stagingBuffer.getSize());
+                    std::memcpy(toMessage, fromRender, camera.stagingBuffer.getSize());
                     camera.stagingBuffer.unmap();
                     camera.callback = nullptr;
 

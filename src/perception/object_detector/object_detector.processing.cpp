@@ -258,9 +258,9 @@ namespace mrover {
         auto centerWidth = static_cast<std::size_t>(center.first * static_cast<double>(msg->width) / imgSize.width);
         auto centerHeight = static_cast<std::size_t>(center.second * static_cast<double>(msg->height) / imgSize.height);
 
-        assert(detection.classId < seenObjects.size());
-        assert(detection.classId < classes.size());
-        assert(detection.classId < mObjectHitCounts.size());
+        assert(static_cast<std::size_t>(detection.classId) < seenObjects.size());
+        assert(static_cast<std::size_t>(detection.classId) < classes.size());
+        assert(static_cast<std::size_t>(detection.classId) < mObjectHitCounts.size());
 
         if (seenObjects[detection.classId]) return;
 
@@ -269,19 +269,15 @@ namespace mrover {
         // Get the object's position in 3D from the point cloud and run this statement if the optional has a value
         if (std::optional<SE3d> objectInCamera = getObjectInCamFromPixel(msg, centerWidth, centerHeight, box.width, box.height)) {
             try {
-                std::string objectImmediateFrame = std::format("immediateDetectedObject{}", classes[detection.classId]);
-
+                std::string objectImmediateFrame = std::format("immediate{}", classes[detection.classId]);
                 // Push the immediate detections to the camera frame
                 SE3Conversions::pushToTfTree(mTfBroadcaster, objectImmediateFrame, mCameraFrameId, objectInCamera.value());
-
                 // Since the object is seen we need to increment the hit counter
                 mObjectHitCounts[detection.classId] = std::min(mObjMaxHitcount, mObjectHitCounts[detection.classId] + mObjIncrementWeight);
 
                 // Only publish to permament if we are confident in the object
                 if (mObjectHitCounts[detection.classId] > mObjHitThreshold) {
-
-                    std::string objectPermanentFrame = std::format("detectedObject{}", classes[detection.classId]);
-
+                    std::string objectPermanentFrame = classes[detection.classId];
                     // Grab the object inside of the camera frame and push it into the map frame
                     SE3d objectInMap = SE3Conversions::fromTfTree(mTfBuffer, mMapFrame, objectImmediateFrame);
                     SE3Conversions::pushToTfTree(mTfBroadcaster, objectPermanentFrame, mMapFrame, objectInMap);
