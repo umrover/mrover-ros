@@ -161,7 +161,7 @@ class FailureIdentifier:
             cur_row[f"wheel_{wheel_num}_velocity"] = drive_status.joint_states.velocity[wheel_num]
 
         # update the data frame with the cur row
-        self._df = pd.concat([self._df, pd.DataFrame([cur_row])])
+        self._df = pd.concat([self._df, pd.DataFrame([cur_row])]) if self._df.size else pd.DataFrame([cur_row])
 
         if len(self._df) == DATAFRAME_MAX_SIZE:
             self.write_to_csv()
