@@ -203,12 +203,12 @@ if (CUDA_FOUND)
     target_include_directories(hardware_h265_encoder SYSTEM PUBLIC deps/nvenc)
 endif ()
 
-add_subdirectory(deps/libde265 SYSTEM)
-include_directories(deps/libde265/extra deps/libde265 SYSTEM)
-
-mrover_add_node(software_h265_encoder src/esw/software_h265_encoder/*.c*)
-target_link_libraries(software_h265_encoder PUBLIC opencv_core opencv_imgproc opencv_imgcodecs de265 streaming)
-target_include_directories(software_h265_encoder SYSTEM PUBLIC deps/nvenc)
+#add_subdirectory(deps/libde265 SYSTEM)
+#include_directories(deps/libde265/extra deps/libde265 SYSTEM)
+#
+#mrover_add_node(software_h265_encoder src/esw/software_h265_encoder/*.c*)
+#target_link_libraries(software_h265_encoder PUBLIC opencv_core opencv_imgproc opencv_imgcodecs de265 streaming)
+#target_include_directories(software_h265_encoder SYSTEM PUBLIC deps/nvenc)
 
 if (ZED_FOUND)
     mrover_add_nodelet(object_detector src/perception/object_detector/*.c* src/perception/object_detector src/perception/object_detector/pch.hpp)
