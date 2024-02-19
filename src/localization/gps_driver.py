@@ -12,6 +12,7 @@ import threading
 import numpy as np
 from os import getenv
 
+import rospy
 # from rover_msgs import GPS, RTCM
 from pyubx2 import UBXReader, UBX_PROTOCOL, RTCM3_PROTOCOL, protocol, UBXMessage
 from std_msgs.msg import Header
@@ -58,20 +59,20 @@ class GPS_Driver:
             return
 
         if rover_gps_data.identity == "RXM-RTCM":
-            print("RXM")
+            rospy.loginfo("RXM")
             msg_used = msg.msgUsed
 
             if msg_used == 0:
-                print("RTCM Usage unknown\n")
+                rospy.logwarn("RTCM Usage unknown\n")
             elif msg_used == 1:
-                print("RTCM message not used\n")
+                rospy.logwarn("RTCM message not used\n")
             elif msg_used == 2:
-                print("RTCM message successfully used by receiver\n")
+                rospy.loginfo("RTCM message successfully used by receiver\n")
 
             # rospy.loginfo(vars(rover_gps_data))
 
         if rover_gps_data.identity == "NAV-PVT":
-            print("PVT")
+            rospy.loginfo("PVT")
             parsed_latitude = msg.lat
             parsed_longitude = msg.lon
             parsed_altitude = msg.hMSL
@@ -83,7 +84,7 @@ class GPS_Driver:
 
             time = time + self.time_offset
 
-            print(time, rospy.Time.now(), time-rospy.Time.now(), self.time_offset) 
+            rospy.loginfo_throttle(3, f"{time} {rospy.Time.now()} {time-rospy.Time.now()} {self.time_offset}")
 
             message_header = Header(stamp=time, frame_id="base_link")
 
@@ -98,15 +99,15 @@ class GPS_Driver:
             # self.rtk_fix_pub.publish(rtkStatus(msg_used))
 
             if msg.difSoln == 1:
-                print("Differemtial Corrections Applied")
+                rospy.loginfo_throttle(3, "Differential correction applied")
 
             # publidh to navsatstatus in navsatfix
             if msg.carrSoln == 0:
-                print("No RTK\n")
+                rospy.logwarn_throttle(3, "No RTK")
             elif msg.carrSoln == 1:
-                print("Floating RTK Fix\n")
+                rospy.loginfo_throttle(3, "Floating RTK Fix")
             elif msg.carrSoln == 2:
-                print("RTK FIX\n")
+                rospy.loginfo_throttle(3, "RTK FIX")
 
         if rover_gps_data.identity == "NAV-STATUS":
             pass

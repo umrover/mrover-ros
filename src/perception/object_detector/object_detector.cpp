@@ -12,7 +12,7 @@ namespace mrover {
 
         //TF Params
         mNh.param<std::string>("camera_frame", mCameraFrameId, "zed_left_camera_frame");
-        mNh.param<std::string>("world_frame", mMapFrameId, "map");
+        mNh.param<std::string>("world_frame", mMapFrame, "map");
 
         //Hit count params
         mNh.param<int>("obj_increment_weight", mObjIncrementWeight, 2);

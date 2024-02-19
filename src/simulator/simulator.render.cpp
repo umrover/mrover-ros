@@ -409,10 +409,10 @@ namespace mrover {
                     if (auto urdfMesh = std::dynamic_pointer_cast<urdf::Mesh>(visual->geometry)) {
                         Model& model = mUriToModel.at(urdfMesh->filename);
                         URDF::LinkMeta& meta = urdf.linkNameToMeta.at(link->name);
-                        SE3 linkInWorld = urdf.linkInWorld(link->name);
-                        SE3 modelInLink = btTransformToSe3(urdfPoseToBtTransform(link->visual->origin));
-                        SE3 modelInWorld = linkInWorld * modelInLink;
-                        renderModel(pass, model, meta.visualUniforms.at(visualIndex), SIM3{modelInWorld.position(), modelInWorld.rotation(), R3::Ones()});
+                        SE3d linkInWorld = urdf.linkInWorld(link->name);
+                        SE3d modelInLink = btTransformToSe3(urdfPoseToBtTransform(link->visual->origin));
+                        SE3d modelToWorld = linkInWorld * modelInLink;
+                        renderModel(pass, model, meta.visualUniforms.at(visualIndex), SIM3{modelToWorld, R3::Ones()});
                         visualIndex++;
                     }
                 }
@@ -439,27 +439,27 @@ namespace mrover {
                     assert(collider);
                     btCollisionShape* shape = collider->getCollisionShape();
                     assert(shape);
-                    SE3 linkInWorld = urdf.linkInWorld(link->name);
+                    SE3d linkToWorld = urdf.linkInWorld(link->name);
 
                     if (auto* compound = dynamic_cast<btCompoundShape*>(shape)) {
                         for (int i = 0; i < compound->getNumChildShapes(); ++i) {
-                            SE3 modelInLink = btTransformToSe3(urdfPoseToBtTransform(link->collision_array.at(i)->origin));
-                            SE3 shapeToWorld = modelInLink * linkInWorld;
+                            SE3d modelInLink = btTransformToSe3(urdfPoseToBtTransform(link->collision_array.at(i)->origin));
+                            SE3d modelInWorld = linkToWorld * modelInLink;
                             auto* shape = compound->getChildShape(i);
                             if (auto* box = dynamic_cast<btBoxShape const*>(shape)) {
                                 btVector3 extents = box->getHalfExtentsWithoutMargin() * 2;
-                                SIM3 modelToWorld{shapeToWorld.position(), shapeToWorld.rotation(), R3{extents.x(), extents.y(), extents.z()}};
+                                SIM3 modelToWorld{modelInWorld, R3{extents.x(), extents.y(), extents.z()}};
                                 renderModel(pass, mUriToModel.at(CUBE_PRIMITIVE_URI), meta.collisionUniforms.at(i), modelToWorld);
                             } else if (auto* sphere = dynamic_cast<btSphereShape const*>(shape)) {
                                 btScalar diameter = sphere->getRadius() * 2;
-                                SIM3 modelToWorld{shapeToWorld.position(), shapeToWorld.rotation(), R3{diameter, diameter, diameter}};
+                                SIM3 modelToWorld{modelInWorld, R3{diameter, diameter, diameter}};
                                 renderModel(pass, mUriToModel.at(SPHERE_PRIMITIVE_URI), meta.collisionUniforms.at(i), modelToWorld);
                             } else if (auto* cylinder = dynamic_cast<btCylinderShapeZ const*>(shape)) {
                                 btVector3 extents = cylinder->getHalfExtentsWithoutMargin() * 2;
-                                SIM3 modelToWorld{shapeToWorld.position(), shapeToWorld.rotation(), R3{extents.x(), extents.y(), extents.z()}};
+                                SIM3 modelToWorld{modelInWorld, R3{extents.x(), extents.y(), extents.z()}};
                                 renderModel(pass, mUriToModel.at(CYLINDER_PRIMITIVE_URI), meta.collisionUniforms.at(i), modelToWorld);
                             } else if (auto* mesh = dynamic_cast<btBvhTriangleMeshShape const*>(shape)) {
-                                SIM3 modelToWorld{shapeToWorld.position(), shapeToWorld.rotation(), R3::Ones()};
+                                SIM3 modelToWorld{modelInWorld, R3::Ones()};
                                 renderModel(pass, mUriToModel.at(mMeshToUri.at(const_cast<btBvhTriangleMeshShape*>(mesh))), meta.collisionUniforms.at(i), modelToWorld);
                             } else {
                                 NODELET_WARN_STREAM_ONCE(std::format("Tried to render unsupported collision shape: {}", shape->getName()));
@@ -592,21 +592,18 @@ namespace mrover {
                 if (camera.stagingBuffer.getMapState() == wgpu::BufferMapState::Mapped) {
                     auto image = boost::shared_ptr<sensor_msgs::Image>{imagePool.borrowFrom(), [](sensor_msgs::Image* msg) { imagePool.returnTo(msg); }};
                     image->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
-                    image->encoding = sensor_msgs::image_encodings::BGR8;
+                    image->encoding = sensor_msgs::image_encodings::BGRA8;
                     image->width = camera.resolution.x();
                     image->height = camera.resolution.y();
-                    image->step = camera.resolution.x() * 3;
+                    image->step = camera.resolution.x() * 4;
                     image->header.stamp = ros::Time::now();
                     image->header.frame_id = camera.frameId;
-                    image->data.resize(area * 3);
+                    image->data.resize(area * 4);
 
                     // Convert from BGRA to BGR
-                    auto* fromRender = static_cast<cv::Vec4b const*>(camera.stagingBuffer.getConstMappedRange(0, camera.stagingBuffer.getSize()));
-                    auto* toMessage = reinterpret_cast<cv::Vec3b*>(image->data.data());
-                    std::for_each(std::execution::par_unseq, fromRender, fromRender + area, [&](cv::Vec4b const& from) {
-                        std::size_t index = &from - fromRender;
-                        toMessage[index] = {from[0], from[1], from[2]};
-                    });
+                    auto* fromRender = camera.stagingBuffer.getConstMappedRange(0, camera.stagingBuffer.getSize());
+                    auto* toMessage = image->data.data();
+                    std::memcpy(toMessage, fromRender, camera.stagingBuffer.getSize());
                     camera.stagingBuffer.unmap();
                     camera.callback = nullptr;
 
@@ -694,8 +691,8 @@ namespace mrover {
             glfwGetFramebufferSize(mWindow.get(), &width, &height);
             float aspect = static_cast<float>(width) / static_cast<float>(height);
             mSceneUniforms.value.cameraToClip = computeCameraToClip(mFovDegrees * DEG_TO_RAD, aspect, NEAR, FAR).cast<float>();
-            mSceneUniforms.value.worldToCamera = mCameraInWorld.matrix().inverse().cast<float>();
-            mSceneUniforms.value.cameraInWorld = mCameraInWorld.position().cast<float>().homogeneous();
+            mSceneUniforms.value.worldToCamera = mCameraInWorld.inverse().transform().cast<float>();
+            mSceneUniforms.value.cameraInWorld = mCameraInWorld.translation().cast<float>().homogeneous();
             mSceneUniforms.enqueueWrite();
 
             wgpu::BindGroupEntry entry;

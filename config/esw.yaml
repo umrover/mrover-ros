@@ -63,19 +63,19 @@ can:
       bus: 1
       id: 0x28
     - name: "sa_x"
-      bus: 0
+      bus: 1
       id: 0x29
     - name: "sa_y"
-      bus: 0
+      bus: 1
       id: 0x30
     - name: "sa_z"
       bus: 0
       id: 0x31
     - name: "sampler"
-      bus: 0
+      bus: 1
       id: 0x32
     - name: "sensor_actuator"
-      bus: 0
+      bus: 1
       id: 0x33
     - name: "cache"
       bus: 0

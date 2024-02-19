@@ -16,7 +16,7 @@ namespace websocket = beast::websocket;
 
 using tcp = net::ip::tcp;
 
-struct StreamServer {
+class StreamServer {
 
     net::io_context m_context;
     tcp::acceptor m_acceptor;
@@ -25,5 +25,5 @@ struct StreamServer {
 public:
     StreamServer(std::string_view host, std::uint16_t port);
 
-    void feed(std::span<std::byte> data);
+    auto feed(std::span<std::byte> data) -> bool;
 };

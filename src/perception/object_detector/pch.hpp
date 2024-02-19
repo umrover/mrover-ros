@@ -41,7 +41,7 @@
 #include <mrover/ObjectDetectorParamsConfig.h>
 
 #include <loop_profiler.hpp>
-#include <se3.hpp>
+#include <lie.hpp>
 #include <sensor_msgs/PointCloud2.h>
 #include <sensor_msgs/point_cloud2_iterator.h>
 
