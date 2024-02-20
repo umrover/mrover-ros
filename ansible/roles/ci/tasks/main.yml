@@ -59,34 +59,19 @@
     cache_valid_time: 604800
     state: latest
     name:
-      - zsh
-      - fzf
-      - neovim
-      - sudo
       - cmake
-      - ccache # Caches intermediate build files, speeds up compilation over time
-      - ninja-build # Faster than make
-      - tmux
-      - htop
-      - curl
-      - unzip
       - rsync
-      - python3-pip
       - python3-rosdep
       - python3-catkin-tools
-      - python3-virtualenvwrapper
       - clang-16
-      - clangd-16
       - clang-tidy-16
       - clang-format-16
       - lld-16
-      - lldb-16
       - gcc-13
       - g++-13
       - python3.10
       - python3.10-dev
       - python3.10-venv
-      - ros-{{ ros_distro }}-rosbash
       - libbullet-dev
       - libglfw3-dev
       - libx11-xcb-dev
@@ -108,28 +93,28 @@
 - name: Install ROS Packages
   command: rosdep install --from-paths {{ catkin_workspace }}/src --ignore-src -y --rosdistro={{ ros_distro }}
 
-- name: Download Bun Installer
-  get_url:
-    url: https://bun.sh/install
-    dest: /tmp/bun_installer.sh
-    mode: 0755
+#- name: Download Bun Installer
+#  get_url:
+#    url: https://bun.sh/install
+#    dest: /tmp/bun_installer.sh
+#    mode: 0755
+#
+#- name: Run Bun Installer
+#  command: /tmp/bun_installer.sh
+#  args:
+#    creates: ~/.bun/bin/bun
+#
+#- name: Upgrade Bun
+#  command: ~/.bun/bin/bun upgrade
+#
+#- name: Install Bun Packages
+#  command: ~/.bun/bin/bun install --cwd {{ catkin_workspace }}/src/mrover/src/teleoperation/frontend
 
-- name: Run Bun Installer
-  command: /tmp/bun_installer.sh
-  args:
-    creates: ~/.bun/bin/bun
-
-- name: Upgrade Bun
-  command: ~/.bun/bin/bun upgrade
-
-- name: Install Bun Packages
-  command: ~/.bun/bin/bun install --cwd {{ catkin_workspace }}/src/mrover/src/teleoperation/frontend
-
-- name: Install Catkin Profiles
-  synchronize:
-    src: files/profiles
-    dest: "{{ catkin_workspace }}/.catkin_tools"
-    recursive: true
+#- name: Install Catkin Profiles
+#  synchronize:
+#    src: files/profiles
+#    dest: "{{ catkin_workspace }}/.catkin_tools"
+#    recursive: true
 
 - name: Set G++ 13 as Default
   become: True
@@ -163,13 +148,13 @@
     link: /usr/bin/clang
     priority: 160
 
-- name: Set clangd 16 as Default
-  become: True
-  alternatives:
-    name: clangd
-    path: /usr/bin/clangd-16
-    link: /usr/bin/clangd
-    priority: 160
+#- name: Set clangd 16 as Default
+#  become: True
+#  alternatives:
+#    name: clangd
+#    path: /usr/bin/clangd-16
+#    link: /usr/bin/clangd
+#    priority: 160
 
 - name: Set LLD 16 as Default
   become: True

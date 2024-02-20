@@ -69,7 +69,6 @@ class FailureIdentifier:
             + wheel_velocity_variables
             + command_variables
         )
-        print(self.cols)
         self._df = pd.DataFrame(columns=self.cols)
         self.watchdog = WatchDog()
         self.path_name = None  # type: ignore
@@ -80,7 +79,7 @@ class FailureIdentifier:
         """
         if self.actively_collecting and self.data_collecting_mode:
             # append to csv if csv exists else write to csv
-            rospy.loginfo("writing to file")
+            rospy.loginfo("Writing to file")
             if self.path_name is None:
                 path = Path.cwd() / "failure_data"
                 path.mkdir(exist_ok=True)
@@ -91,7 +90,7 @@ class FailureIdentifier:
                 self.path_name = path
                 self._df.to_csv(path)
 
-                rospy.loginfo("===== failure data written to csv =====")
+                rospy.loginfo("===== Failure data written to CSV =====")
             else:
                 self._df.to_csv(self.path_name, mode="a", header=False)
 
@@ -163,7 +162,7 @@ class FailureIdentifier:
             cur_row[f"wheel_{wheel_num}_velocity"] = drive_status.joint_states.velocity[wheel_num]
 
         # update the data frame with the cur row
-        self._df = pd.concat([self._df, pd.DataFrame([cur_row])])
+        self._df = pd.concat([self._df, pd.DataFrame([cur_row])]) if self._df.size else pd.DataFrame([cur_row])
 
         if len(self._df) == DATAFRAME_MAX_SIZE:
             self.write_to_csv()

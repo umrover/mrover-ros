@@ -248,7 +248,7 @@ namespace mrover {
             mWgpuInstance = wgpu::createInstance(descriptor);
             if (!mWgpuInstance) throw std::runtime_error("Failed to create WGPU instance");
         }
-        {
+        if (!mIsHeadless) {
             mSurface = glfwGetWGPUSurface(mWgpuInstance, mWindow.get());
             if (!mSurface) throw std::runtime_error("Failed to create WGPU surface");
         }
@@ -277,10 +277,11 @@ namespace mrover {
         mQueue = mDevice.getQueue();
         if (!mQueue) throw std::runtime_error("Failed to get WGPU queue");
 
-        int width, height;
-        glfwGetFramebufferSize(mWindow.get(), &width, &height);
-
-        makeFramebuffers(width, height);
+        if (!mIsHeadless) {
+            int width, height;
+            glfwGetFramebufferSize(mWindow.get(), &width, &height);
+            makeFramebuffers(width, height);
+        }
 
         {
             wgpu::ShaderModuleWGSLDescriptor shaderSourceDescriptor;
@@ -340,19 +341,21 @@ namespace mrover {
         mUriToModel.try_emplace(SPHERE_PRIMITIVE_URI, SPHERE_PRIMITIVE_URI);
         mUriToModel.try_emplace(CYLINDER_PRIMITIVE_URI, CYLINDER_PRIMITIVE_URI);
 
-        IMGUI_CHECKVERSION();
-        ImGui::CreateContext();
-        ImGui_ImplGlfw_InitForOther(mWindow.get(), true);
-        ImGui_ImplWGPU_Init(mDevice, 1, COLOR_FORMAT, DEPTH_FORMAT);
+        if (!mIsHeadless) {
+            IMGUI_CHECKVERSION();
+            ImGui::CreateContext();
+            ImGui_ImplGlfw_InitForOther(mWindow.get(), true);
+            ImGui_ImplWGPU_Init(mDevice, 1, COLOR_FORMAT, DEPTH_FORMAT);
 
-        int x, y, w, h;
-        glfwGetMonitorWorkarea(glfwGetPrimaryMonitor(), &x, &y, &w, &h);
+            int x, y, w, h;
+            glfwGetMonitorWorkarea(glfwGetPrimaryMonitor(), &x, &y, &w, &h);
 
-        ImGuiIO& io = ImGui::GetIO();
-        ImGuiStyle& style = ImGui::GetStyle();
-        float scale = h > 1500 ? 2.0f : 1.0f;
-        io.FontGlobalScale = scale;
-        style.ScaleAllSizes(scale);
+            ImGuiIO& io = ImGui::GetIO();
+            ImGuiStyle& style = ImGui::GetStyle();
+            float scale = h > 1500 ? 2.0f : 1.0f;
+            io.FontGlobalScale = scale;
+            style.ScaleAllSizes(scale);
+        }
     }
 
     auto SimulatorNodelet::renderModel(wgpu::RenderPassEncoder& pass, Model& model, Uniform<ModelUniforms>& uniforms, SIM3 const& modelToWorld, [[maybe_unused]] bool isRoverCamera) -> void {
@@ -647,9 +650,6 @@ namespace mrover {
     }
 
     auto SimulatorNodelet::renderUpdate() -> void {
-        wgpu::TextureView nextTexture = mSwapChain.getCurrentTextureView();
-        if (!nextTexture) throw std::runtime_error("Failed to get WGPU next texture view");
-
         std::array<wgpu::RenderPassColorAttachment, 2> colorAttachments{};
         auto& [colorAttachment, normalAttachment] = colorAttachments;
         colorAttachment.loadOp = wgpu::LoadOp::Clear;
@@ -676,7 +676,10 @@ namespace mrover {
 
         camerasUpdate(encoder, colorAttachment, normalAttachment, depthStencilAttachment, renderPassDescriptor);
 
-        {
+        if (!mIsHeadless) {
+            wgpu::TextureView nextTexture = mSwapChain.getCurrentTextureView();
+            if (!nextTexture) throw std::runtime_error("Failed to get WGPU next texture view");
+
             colorAttachment.view = nextTexture;
             normalAttachment.view = mNormalTextureView;
             depthStencilAttachment.view = mDepthTextureView;
@@ -718,14 +721,14 @@ namespace mrover {
             pass.release();
 
             bindGroup.release();
-        }
 
-        nextTexture.release();
+            nextTexture.release();
+        }
 
         wgpu::CommandBuffer commands = encoder.finish();
         mQueue.submit(commands);
 
-        mSwapChain.present();
+        if (!mIsHeadless) mSwapChain.present();
 
         // TODO(quintin): Remote duplicate code
         for (StereoCamera& stereoCamera: mStereoCameras) {

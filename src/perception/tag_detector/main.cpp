@@ -7,7 +7,7 @@ PLUGINLIB_EXPORT_CLASS(mrover::TagDetectorNodelet, nodelet::Nodelet)
 
 #else
 
-int main(int argc, char** argv) {
+auto main(int argc, char** argv) -> int {
     ros::init(argc, argv, "tag_detector");
 
     // Start the ZED Nodelet
