@@ -2,7 +2,7 @@
 
 namespace mrover {
 
-    void CostMapNodelet::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg) {
+    auto CostMapNodelet::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg) -> void {
         assert(msg);
         assert(msg->height > 0);
         assert(msg->width > 0);
