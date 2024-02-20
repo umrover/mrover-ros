@@ -46,7 +46,7 @@ class TestIntegration(unittest.TestCase):
             waypoint_data, pose = waypoint
             rospy.loginfo(f"Moving to waypoint: {waypoint}")
 
-            def distance_to_current_waypoint():
+            def distance_to_target():
                 try:
                     rover_in_world = SE3.from_tf_tree(tf_buffer, parent_frame="map", child_frame="base_link")
                     if waypoint_data.type == WaypointType(val=WaypointType.NO_SEARCH):
@@ -66,10 +66,10 @@ class TestIntegration(unittest.TestCase):
                     rospy.logwarn_throttle(1, f"Transform exception: {e}")
                     return float("inf")
 
-            while distance_to_current_waypoint() > COMPLETION_TOLERANCE:
+            while distance_to_target() > COMPLETION_TOLERANCE:
                 if rospy.is_shutdown():
                     return
-                rospy.loginfo_throttle(1, f"Distance to current waypoint: {distance_to_current_waypoint()}")
+                rospy.loginfo_throttle(1, f"Distance to current waypoint: {distance_to_target()}")
                 rate.sleep()
 
             rospy.loginfo("Waypoint reached")

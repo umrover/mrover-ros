@@ -222,7 +222,7 @@ namespace mrover {
         Eigen::Vector3f mIkTarget{0.125, 0.1, 0};
         ros::Publisher mIkTargetPub;
 
-        R3 mGpsLinerizationReferencePoint{};
+        R3 mGpsLinearizationReferencePoint{};
         double mGpsLinerizationReferenceHeading{};
 
         // TODO: make variances configurable

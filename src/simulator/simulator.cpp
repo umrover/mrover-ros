@@ -32,7 +32,7 @@ namespace mrover {
             mNh.getParam("gps_linearization", gpsLinearization);
             if (gpsLinearization.getType() != XmlRpc::XmlRpcValue::TypeStruct) throw std::invalid_argument{"GPS lineraization must be a struct. Did you rosparam load a localization config file properly?"};
 
-            mGpsLinerizationReferencePoint = {
+            mGpsLinearizationReferencePoint = {
                     xmlRpcValueToTypeOrDefault<double>(gpsLinearization, "reference_point_latitude"),
                     xmlRpcValueToTypeOrDefault<double>(gpsLinearization, "reference_point_longitude"),
                     xmlRpcValueToTypeOrDefault<double>(gpsLinearization, "reference_point_altitude"),
