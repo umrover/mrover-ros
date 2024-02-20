@@ -61,6 +61,7 @@ set(MROVER_MESSAGE_DEPENDENCIES
 
 set(MROVER_PARAMETERS
         config/DetectorParams.cfg
+        config/ObjectDetectorParams.cfg
 )
 
 set(MROVER_CMAKE_INCLUDES
@@ -172,6 +173,16 @@ if (CUDA_FOUND)
 endif ()
 
 if (ZED_FOUND)
+    mrover_add_nodelet(object_detector src/perception/object_detector/*.c* src/perception/object_detector src/perception/object_detector/pch.hpp)
+    mrover_nodelet_link_libraries(object_detector PRIVATE opencv_core opencv_dnn opencv_imgproc lie nvinfer nvonnxparser tbb)
+    mrover_nodelet_defines(object_detector
+            __CUDA_INCLUDE_COMPILER_INTERNAL_HEADERS__ # Eigen includes some files it should not, ignore
+    )
+    # TODO(john): Update object detector to use new API
+    target_compile_options(object_detector_nodelet PRIVATE -Wno-deprecated-declarations)
+    # Temporary
+    mrover_nodelet_link_libraries(object_detector PRIVATE opencv_imgcodecs opencv_highgui)
+
     mrover_add_nodelet(zed src/perception/zed_wrapper/*.c* src/perception/zed_wrapper src/perception/zed_wrapper/pch.hpp)
     mrover_nodelet_include_directories(zed ${ZED_INCLUDE_DIRS} ${CUDA_INCLUDE_DIRS})
     mrover_nodelet_link_libraries(zed ${ZED_LIBRARIES} ${SPECIAL_OS_LIBS} lie)
