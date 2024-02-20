@@ -1,15 +1,14 @@
+#pragma once
+
 #include "pch.hpp"
-#include <Eigen/src/Core/Matrix.h>
 
 namespace mrover {
 
+    class CostMapNodelet final : public nodelet::Nodelet {
 
-    class CostMapNodelet : public nodelet::Nodelet {
-    private:
         ros::NodeHandle mNh, mPnh, mCmt;
         ros::Publisher mCostMapPub;
         ros::Subscriber mPcSub;
-        void onInit() override;
 
         bool mPublishCostMap{}; // If set, publish the global costmap
         float mResolution{};    // Meters per cell
@@ -20,12 +19,13 @@ namespace mrover {
         Eigen::MatrixXd point_matrix{4, mNumPoints};
         Eigen::MatrixXd normal_matrix{4, mNumPoints};
 
-        tf2_ros::Buffer tf_buffer;
-        tf2_ros::TransformListener tf_listener{tf_buffer};
+        tf2_ros::Buffer mTfBuffer;
+        tf2_ros::TransformListener mTfListener{mTfBuffer};
 
-        std::optional<SE3> mPreviousPose;
+        std::optional<SE3d> mPreviousPose;
         nav_msgs::OccupancyGrid mGlobalGridMsg;
 
+        void onInit() override;
 
     public:
         CostMapNodelet() = default;
@@ -35,4 +35,5 @@ namespace mrover {
         void configCallback();
         void pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg);
     };
+
 } // namespace mrover

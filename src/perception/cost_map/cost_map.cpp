@@ -14,8 +14,8 @@ namespace mrover {
         mPcSub = mNh.subscribe("camera/left/points", 1, &CostMapNodelet::pointCloudCallback, this);
 
         mGlobalGridMsg.info.resolution = mResolution;
-        mGlobalGridMsg.info.width = (int) (mDimension / mResolution);
-        mGlobalGridMsg.info.height = (int) (mDimension / mResolution);
+        mGlobalGridMsg.info.width = static_cast<int>(mDimension / mResolution);
+        mGlobalGridMsg.info.height = static_cast<int>(mDimension / mResolution);
         // make center of map at (0, 0)
         mGlobalGridMsg.info.origin.position.x = -1 * mDimension / 2;
         mGlobalGridMsg.info.origin.position.y = -1 * mDimension / 2;

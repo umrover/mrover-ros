@@ -1,12 +1,4 @@
 #include "cost_map.hpp"
-#include "../point.hpp"
-
-#include "loop_profiler.hpp"
-#include <Eigen/src/Core/Matrix.h>
-#include <Eigen/src/Core/util/ForwardDeclarations.h>
-#include <cstdint>
-#include <pstl/glue_execution_defs.h>
-#include <regex>
 
 namespace mrover {
 
@@ -16,8 +8,9 @@ namespace mrover {
         assert(msg->width > 0);
 
         if (!mPublishCostMap) return;
+
         try {
-            SE3 zed_to_map = SE3::fromTfTree(tf_buffer, "map", "zed2i_left_camera_frame");
+            SE3d zed_to_map = SE3Conversions::fromTfTree(mTfBuffer, "map", "zed_left_camera_frame");
             auto* points = reinterpret_cast<Point const*>(msg->data.data());
             // std::for_each(points, points + msg->width * msg->height, [&](auto* point) {
             for (auto point = points; point - points < msg->width * msg->height; point += mDownSamplingFactor) {
@@ -27,19 +20,19 @@ namespace mrover {
                 normal_matrix.col((point - points) / mDownSamplingFactor) = normal;
             }
 
-            point_matrix = zed_to_map.matrix() * point_matrix;
-            normal_matrix = zed_to_map.matrix() * normal_matrix;
+            // TODO(neven): Make sure this still works with manif
+            point_matrix = zed_to_map.transform() * point_matrix;
+            normal_matrix = zed_to_map.transform() * normal_matrix;
 
             for (uint32_t i = 0; i < mNumPoints; i++) {
                 double x = point_matrix(0, i);
                 double y = point_matrix(1, i);
-                double z = point_matrix(2, i);
                 Eigen::Vector4d n = normal_matrix.col(i);
 
                 if (x >= mGlobalGridMsg.info.origin.position.x && x <= mGlobalGridMsg.info.origin.position.x + mDimension &&
                     y >= mGlobalGridMsg.info.origin.position.y && y <= mGlobalGridMsg.info.origin.position.y + mDimension) {
-                    int x_index = floor((x - mGlobalGridMsg.info.origin.position.x) / mGlobalGridMsg.info.resolution);
-                    int y_index = floor((y - mGlobalGridMsg.info.origin.position.y) / mGlobalGridMsg.info.resolution);
+                    int x_index = std::floor((x - mGlobalGridMsg.info.origin.position.x) / mGlobalGridMsg.info.resolution);
+                    int y_index = std::floor((y - mGlobalGridMsg.info.origin.position.y) / mGlobalGridMsg.info.resolution);
                     auto ind = mGlobalGridMsg.info.width * y_index + x_index;
 
                     Eigen::Vector3d normal{n.x(), n.y(), n.z()};
@@ -54,6 +47,8 @@ namespace mrover {
             }
             mCostMapPub.publish(mGlobalGridMsg);
         } catch (...) {
+            // TODO(neven): Catch TF exceptions only, and log warn them
         }
     }
+
 } // namespace mrover
