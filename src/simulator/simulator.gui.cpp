@@ -94,15 +94,15 @@ namespace mrover {
                 URDF const& rover = it->second;
 
                 {
-                    SE3 baseLinkInMap = rover.linkInWorld("base_link");
-                    R3 p = baseLinkInMap.position();
-                    S3 q = baseLinkInMap.rotation().quaternion();
+                    SE3d baseLinkInMap = rover.linkInWorld("base_link");
+                    R3 p = baseLinkInMap.translation();
+                    S3 q = baseLinkInMap.quat();
                     ImGui::Text("Rover Position: (%.2f, %.2f, %.2f)", p.x(), p.y(), p.z());
                     ImGui::Text("Rover Orientation: (%.2f, %.2f, %.2f, %.2f)", q.w(), q.x(), q.y(), q.z());
                 }
                 {
-                    R3 p = mCameraInWorld.position();
-                    S3 q = mCameraInWorld.rotation().quaternion();
+                    R3 p = mCameraInWorld.translation();
+                    S3 q = mCameraInWorld.quat();
                     ImGui::Text("Camera Position: (%.2f, %.2f, %.2f)", p.x(), p.y(), p.z());
                     ImGui::Text("Camera Orientation: (%.2f, %.2f, %.2f, %.2f)", q.w(), q.x(), q.y(), q.z());
                 }

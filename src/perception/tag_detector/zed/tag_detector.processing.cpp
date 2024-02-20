@@ -25,7 +25,7 @@ namespace mrover {
             return std::nullopt;
         }
 
-        return std::make_optional<SE3>(R3{point.x, point.y, point.z}, SO3{});
+        return std::make_optional<SE3d>(R3{point.x, point.y, point.z}, SO3d::Identity());
     }
 
     /**

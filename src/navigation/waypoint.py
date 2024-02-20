@@ -34,10 +34,9 @@ class WaypointState(State):
             context.env.arrived_at_target = False
             return post_backup.PostBackupState()
 
-        # returns either ApproachPostState, LongRangeState, ApproachObjectState, or None
-        approach_state = context.course.get_approach_target_state()
-        if approach_state is not None:
-            return approach_state
+        if context.course.look_for_post():
+            if context.env.current_tag_pos() is not None:
+                return approach_post.ApproachPostState()
 
         # Attempt to find the waypoint in the TF tree and drive to it
         try:

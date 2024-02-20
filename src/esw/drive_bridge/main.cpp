@@ -18,7 +18,7 @@ Meters WHEEL_DISTANCE_OUTER;
 compound_unit<Radians, inverse<Meters>> WHEEL_LINEAR_TO_ANGULAR;
 RadiansPerSecond MAX_MOTOR_SPEED;
 
-int main(int argc, char** argv) {
+auto main(int argc, char** argv) -> int {
     // Initialize the ROS node
     ros::init(argc, argv, "drive_bridge");
     ros::NodeHandle nh;
