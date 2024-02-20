@@ -198,7 +198,6 @@ export default {
 
     message: {
       handler: function (msg) {
-        console.log('Message received: ' + msg.type)
         if (msg.type == 'get_basic_waypoint_list') {
           // Get waypoints from server on page load
           this.storedWaypoints = msg.data

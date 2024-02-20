@@ -16,5 +16,9 @@ CC=clang CXX=clang++ cmake \
     -D TINT_BUILD_DOCS=OFF \
     -D TINT_BUILD_TESTS=OFF \
     -D DAWN_ENABLE_INSTALL=ON \
-    -D BUILD_SHARED_LIBS=ON
+    -D BUILD_SHARED_LIBS=ON \
+    -D DAWN_USE_GLFW=OFF \
+    -D TINT_BUILD_CMD_TOOLS=OFF \
+    -D TINT_BUILD_DOCS=OFF \
+    -D TINT_BUILD_TESTS=OFF
 cmake --build out/Release

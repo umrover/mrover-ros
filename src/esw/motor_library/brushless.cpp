@@ -1,5 +1,6 @@
 #include "brushless.hpp"
 #include "moteus/moteus_protocol.h"
+#include <moteus/moteus_multiplex.h>
 #include <units/units.hpp>
 
 namespace mrover {
@@ -12,25 +13,41 @@ namespace mrover {
         mNh.getParam(std::format("brushless_motors/controllers/{}", mControllerName), brushlessMotorData);
         assert(brushlessMotorData.getType() == XmlRpc::XmlRpcValue::TypeStruct);
 
-        mMinVelocity = RadiansPerSecond{xmlRpcValueToTypeOrDefault<double>(
-                brushlessMotorData, "min_velocity")};
-        mMaxVelocity = RadiansPerSecond{xmlRpcValueToTypeOrDefault<double>(
-                brushlessMotorData, "max_velocity")};
+        mMinVelocity = RadiansPerSecond{xmlRpcValueToTypeOrDefault<double>(brushlessMotorData, "min_velocity", -1.0)};
+        mMaxVelocity = RadiansPerSecond{xmlRpcValueToTypeOrDefault<double>(brushlessMotorData, "max_velocity", 1.0)};
 
-        mMinPosition = Radians{xmlRpcValueToTypeOrDefault<double>(
-                brushlessMotorData, "min_position", std::numeric_limits<double>::quiet_NaN())};
-        mMaxPosition = Radians{xmlRpcValueToTypeOrDefault<double>(
-                brushlessMotorData, "max_position", std::numeric_limits<double>::quiet_NaN())};
+        mMinPosition = Radians{xmlRpcValueToTypeOrDefault<double>(brushlessMotorData, "min_position", -1.0)};
+        mMaxPosition = Radians{xmlRpcValueToTypeOrDefault<double>(brushlessMotorData, "max_position", 1.0)};
+
+        limitSwitch0Present = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "limit_0_present", false);
+        limitSwitch1Present = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "limit_1_present", false);
+        limitSwitch0Enabled = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "limit_0_enabled", true);
+        limitSwitch1Enabled = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "limit_1_enabled", true);
+        limitSwitch0LimitsFwd = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "limit_0_limits_fwd", false);
+        limitSwitch1LimitsFwd = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "limit_1_limits_fwd", false);
+        limitSwitch0ActiveHigh = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "limit_0_is_active_high", true);
+        limitSwitch1ActiveHigh = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "limit_1_is_active_high", true);
+        limitSwitch0UsedForReadjustment = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "limit_0_used_for_readjustment", false);
+        limitSwitch1UsedForReadjustment = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "limit_1_used_for_readjustment", false);
+        limitSwitch0ReadjustPosition = Radians{xmlRpcValueToTypeOrDefault<double>(brushlessMotorData, "limit_0_readjust_position", 0.0)};
+        limitSwitch1ReadjustPosition = Radians{xmlRpcValueToTypeOrDefault<double>(brushlessMotorData, "limit_1_readjust_position", 0.0)};
+
     }
 
-    void BrushlessController::setDesiredThrottle(Percent throttle) {
+    auto BrushlessController::setDesiredThrottle(Percent throttle) -> void {
         updateLastConnection();
-        throttle = std::clamp(throttle, -1_percent, 1_percent);
         setDesiredVelocity(mapThrottleToVelocity(throttle));
     }
 
-    void BrushlessController::setDesiredPosition(Radians position) {
+    auto BrushlessController::setDesiredPosition(Radians position) -> void {
         updateLastConnection();
+        sendQuery();
+        MoteusLimitSwitchInfo limitSwitchInfo = getPressedLimitSwitchInfo();
+        if ((mCurrentPosition < position && limitSwitchInfo.isFwdPressed) || (mCurrentPosition > position && limitSwitchInfo.isBwdPressed)) {
+            setBrake();
+            return;
+        }
+
         Revolutions position_revs = std::clamp(position, mMinPosition, mMaxPosition);
         moteus::PositionMode::Command command{
                 .position = position_revs.get(),
@@ -45,9 +62,16 @@ namespace mrover {
     // 1.0          0.0         = Stay put at 1 rev round
     // Nan          0.0         = Don't move
 
-    void BrushlessController::setDesiredVelocity(RadiansPerSecond velocity) {
+    auto BrushlessController::setDesiredVelocity(RadiansPerSecond velocity) -> void {
         updateLastConnection();
-        ROS_INFO("rad/s %f", std::clamp(velocity, mMinVelocity, mMaxVelocity).get());
+        sendQuery();
+
+        MoteusLimitSwitchInfo limitSwitchInfo = getPressedLimitSwitchInfo();
+        if ((velocity > Radians{0} && limitSwitchInfo.isFwdPressed) || (velocity < Radians{0} && limitSwitchInfo.isBwdPressed)) {
+            setBrake();
+            return;
+        }
+
         RevolutionsPerSecond velocity_rev_s = std::clamp(velocity, mMinVelocity, mMaxVelocity);
         // ROS_WARN("%7.3f   %7.3f",
         //  velocity.get(), velocity_rev_s.get());
@@ -58,42 +82,121 @@ namespace mrover {
                     .position = std::numeric_limits<double>::quiet_NaN(),
                     .velocity = velocity_rev_s.get(),
             };
-            ROS_INFO("rev/s %f", velocity_rev_s.get());
 
             moteus::CanFdFrame positionFrame = mController.MakePosition(command);
             mDevice.publish_moteus_frame(positionFrame);
         }
     }
 
-    void BrushlessController::setStop() {
+    auto BrushlessController::setStop() -> void {
         moteus::CanFdFrame setStopFrame = mController.MakeStop();
         mDevice.publish_moteus_frame(setStopFrame);
     }
-    void BrushlessController::setBrake() {
+
+    auto BrushlessController::setBrake() -> void {
         moteus::CanFdFrame setBrakeFrame = mController.MakeBrake();
         mDevice.publish_moteus_frame(setBrakeFrame);
+
+        ROS_INFO("In brake mode");
     }
 
-    void BrushlessController::processCANMessage(CAN::ConstPtr const& msg) {
+    auto BrushlessController::getPressedLimitSwitchInfo() -> MoteusLimitSwitchInfo {
+        /*
+        Testing 2/9:
+        - Connected limit switch (common is input(black), NC to ground)
+        - Configured moteus to have all pins set as digital_input and pull_up
+        - When limit switch not pressed, aux2 = 0xD
+        - When limit switch pressed, aux1 = 0xF
+        - Note: has to be active high, so in this scenario we have to flip this bit round.
+        - This was connected to just one moteus board, not the one with a motor on it.
+
+        Stuff for Limit Switches (from Guthrie)
+        - Read from config about limit switch settings
+        - Either 1 or 0 not forward/backward
+
+        - Add a member variable in Brushless.hpp to store limit switch value. Update this limit
+          switch variable every round in ProcessCANMessage.
+        */
+        // TODO - implement this
+        MoteusLimitSwitchInfo result{};
+    
+        ROS_INFO("moteusAux1Info: %i, moteusAux2Info: %i", moteusAux1Info, moteusAux2Info);
+        result.isFwdPressed = false;
+        result.isBwdPressed = false;
+
+        // TODO do both switch0 and switch1 use aux2?
+        if (limitSwitch0Present && limitSwitch0Enabled) {
+            int bitMask = 1; // 0b0001
+            bool gpioState = bitMask & moteusAux2Info;
+            mLimitHit.at(0) = gpioState == limitSwitch0ActiveHigh;
+        }
+        if (limitSwitch1Present && limitSwitch1Enabled) {
+            int bitMask = 2; // 0b0010
+            bool gpioState = bitMask & moteusAux2Info;
+            mLimitHit.at(1) = gpioState == limitSwitch1ActiveHigh;
+        }
+
+        result.isFwdPressed = (mLimitHit.at(0) && limitSwitch0LimitsFwd) || (mLimitHit.at(1) && limitSwitch1LimitsFwd);
+        result.isBwdPressed = (mLimitHit.at(0) && !limitSwitch0LimitsFwd) || (mLimitHit.at(1) && !limitSwitch1LimitsFwd);
+
+        if (result.isFwdPressed) {
+            adjust(limitSwitch0ReadjustPosition);
+        }
+        else if (result.isBwdPressed) {
+            adjust(limitSwitch1ReadjustPosition);
+        }
+
+        ROS_INFO("isFwdPressed: %i  isBwdPress: %i", result.isFwdPressed, result.isBwdPressed);
+
+        return result;
+    }
+
+    auto BrushlessController::adjust(Radians commandedPosition) -> void {
+        updateLastConnection();
+        Revolutions commandedPosition_rev = std::clamp(commandedPosition, mMinPosition, mMaxPosition);
+        moteus::OutputExact::Command command{
+                .position = commandedPosition_rev.get(),
+        };
+        moteus::OutputExact::Command outputExactCmd{command};
+        moteus::CanFdFrame setPositionFrame = mController.MakeOutputExact(outputExactCmd);
+        mDevice.publish_moteus_frame(setPositionFrame);
+    }
+
+    auto BrushlessController::sendQuery() -> void {
+        moteus::Query::Format qFormat{};
+        qFormat.aux1_gpio = moteus::kInt8;
+        qFormat.aux2_gpio = moteus::kInt8;
+        moteus::CanFdFrame queryFrame = mController.MakeQuery(&qFormat);
+        mDevice.publish_moteus_frame(queryFrame);
+    }
+
+    auto BrushlessController::processCANMessage(CAN::ConstPtr const& msg) -> void {
+        ROS_INFO("Message received");
         assert(msg->source == mControllerName);
         assert(msg->destination == mName);
         auto result = moteus::Query::Parse(msg->data.data(), msg->data.size());
-        // ROS_INFO("%3d p/v/t=(%7.3f,%7.3f,%7.3f)  v/t/f=(%5.1f,%5.1f,%3d)",
+        // ROS_INFO("controller: %s    %3d p/a/v/t=(%7.3f,%7.3f,%7.3f,%7.3f)  v/t/f=(%5.1f,%5.1f,%3d) GPIO: Aux1-%X , Aux2-%X",
+        //          mControllerName.c_str(),
         //          result.mode,
         //          result.position,
+        //          result.abs_position,
         //          result.velocity,
         //          result.torque,
         //          result.voltage,
         //          result.temperature,
-        //          result.fault);
+        //          result.fault,
+        //          result.aux1_gpio,
+        //          result.aux2_gpio
+        //          );
 
-        mCurrentPosition = mrover::Radians{
-                mrover::Revolutions{result.position}}; // moteus stores position in revolutions.
-        mCurrentVelocity = mrover::RadiansPerSecond{
-                mrover::RevolutionsPerSecond{result.velocity}}; // moteus stores position in revolutions.
+        mCurrentPosition = mrover::Revolutions{result.position}; // moteus stores position in revolutions.
+        mCurrentVelocity = mrover::RevolutionsPerSecond{result.velocity}; // moteus stores position in revolutions.
 
         mErrorState = moteusErrorCodeToErrorState(result.mode, static_cast<ErrorCode>(result.fault));
         mState = moteusModeToState(result.mode);
+
+        moteusAux1Info = (result.aux1_gpio) ? result.aux1_gpio : moteusAux1Info;
+        moteusAux2Info = (result.aux2_gpio) ? result.aux2_gpio : moteusAux2Info;
 
         if (result.mode == moteus::Mode::kPositionTimeout || result.mode == moteus::Mode::kFault) {
             setStop();
@@ -101,20 +204,20 @@ namespace mrover {
         }
     }
 
-    double BrushlessController::getEffort() {
+    auto BrushlessController::getEffort() -> double {
         // TODO - need to properly set mMeasuredEFfort elsewhere.
         // (Art Boyarov): return quiet_Nan, same as Brushed Controller
         return std::numeric_limits<double>::quiet_NaN();
     }
 
-    RadiansPerSecond BrushlessController::mapThrottleToVelocity(Percent throttle) {
+    auto BrushlessController::mapThrottleToVelocity(Percent throttle) const -> RadiansPerSecond {
         std::clamp(throttle, -1_percent, 1_percent);
 
         // Map the throttle to the velocity range
         return RadiansPerSecond{(throttle.get() + 1.0f) / 2.0f * (mMaxVelocity.get() - mMinVelocity.get()) + mMinVelocity.get()};
     }
 
-    std::string BrushlessController::moteusErrorCodeToErrorState(moteus::Mode motor_mode, ErrorCode motor_error_code) {
+    auto BrushlessController::moteusErrorCodeToErrorState(moteus::Mode motor_mode, ErrorCode motor_error_code) -> std::string {
         if (motor_mode != moteus::Mode::kFault) return "No Error";
         switch (motor_error_code) {
             case ErrorCode::DmaStreamTransferError:
@@ -160,7 +263,7 @@ namespace mrover {
         }
     }
 
-    std::string BrushlessController::moteusModeToState(moteus::Mode motor_mode) {
+    auto BrushlessController::moteusModeToState(moteus::Mode motor_mode) -> std::string {
         switch (motor_mode) {
             case moteus::Mode::kStopped:
                 return "Motor Stopped";

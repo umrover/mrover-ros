@@ -113,7 +113,7 @@ namespace mrover {
         }
 
         template<IsUnit U>
-        [[nodiscard]] constexpr auto operator=(U const& rhs) -> Unit&
+        constexpr auto operator=(U const& rhs) -> Unit&
             requires AreExponentsSame<Unit, U>
         {
             rep = rhs.get();
@@ -345,6 +345,7 @@ namespace mrover {
 
     using RevolutionsPerSecond = compound_unit<Revolutions, inverse<Seconds>>;
     using MetersPerSecond = compound_unit<Meters, inverse<Seconds>>;
+    using RadiansPerMeter = compound_unit<Radians, inverse<Meters>>;
 
     //
     // Literals

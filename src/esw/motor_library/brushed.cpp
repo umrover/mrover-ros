@@ -14,38 +14,21 @@ namespace mrover {
 
         for (std::size_t i = 0; i < 4; ++i) {
             SET_BIT_AT_INDEX(mConfigCommand.limit_switch_info.present, i, xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, std::format("limit_{}_present", i), false));
-            SET_BIT_AT_INDEX(mConfigCommand.limit_switch_info.enabled, i, xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, std::format("limit_{}_enable", i), false));
-
-            mConfigCommand.limit_switch_info.active_high = xmlRpcValueToTypeOrDefault<bool>(
-                    brushedMotorData, std::format("limit_{}_active_high", i), false);
-            mConfigCommand.limit_switch_info.limits_forward = xmlRpcValueToTypeOrDefault<bool>(
-                    brushedMotorData, std::format("limit_{}_limits_fwd", i), false);
-
-
-            mConfigCommand.limit_switch_info.use_for_readjustment = xmlRpcValueToTypeOrDefault<bool>(
-                    brushedMotorData, std::format("limit_{}_used_for_readjustment", i), false);
-
-            mConfigCommand.limit_switch_info.is_default_enabled = xmlRpcValueToTypeOrDefault<bool>(
-                    brushedMotorData, std::format("limit_{}_default_enabled", i), false);
-
+            SET_BIT_AT_INDEX(mConfigCommand.limit_switch_info.enabled, i, xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, std::format("limit_{}_enabled", i), false));
+            SET_BIT_AT_INDEX(mConfigCommand.limit_switch_info.active_high, i, xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, std::format("limit_{}_is_active_high", i), true)); // might switch default value to false depending on wiring
+            SET_BIT_AT_INDEX(mConfigCommand.limit_switch_info.limits_forward, i, xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, std::format("limit_{}_limits_fwd", i), true));
+            SET_BIT_AT_INDEX(mConfigCommand.limit_switch_info.use_for_readjustment, i, xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, std::format("limit_{}_used_for_readjustment", i), true));
             mConfigCommand.limit_switch_info.limit_readj_pos.at(i) = Radians{static_cast<double>(brushedMotorData[std::format("limit_{}_readjust_position", i)])};
         }
 
-        mConfigCommand.quad_abs_enc_info.quad_present = xmlRpcValueToTypeOrDefault<bool>(
-                brushedMotorData, "quad_present", false);
-        mConfigCommand.quad_abs_enc_info.quad_is_forward_polarity = xmlRpcValueToTypeOrDefault<bool>(
-                brushedMotorData, "quad_is_forward_polarity", false);
-        mConfigCommand.quad_abs_enc_info.abs_present = xmlRpcValueToTypeOrDefault<bool>(
-                brushedMotorData, "abs_present", false);
+        mConfigCommand.enc_info.quad_present = xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, "quad_present", false);
+        mConfigCommand.enc_info.quad_is_forward_polarity = xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, "quad_is_fwd_polarity", false);
+        mConfigCommand.enc_info.quad_ratio = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "quad_ratio", 1.0);
 
-        mConfigCommand.quad_abs_enc_info.abs_is_forward_polarity = xmlRpcValueToTypeOrDefault<bool>(
-                brushedMotorData, "abs_is_forward_polarity", false);
-
-        mConfigCommand.quad_enc_out_ratio = xmlRpcValueToTypeOrDefault<double>(
-                brushedMotorData, "quad_ratio", 1.0);
-
-        mConfigCommand.abs_enc_out_ratio = xmlRpcValueToTypeOrDefault<double>(
-                brushedMotorData, "abs_ratio", 1.0);
+        mConfigCommand.enc_info.abs_present = xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, "abs_present", false);
+        mConfigCommand.enc_info.abs_is_forward_polarity = xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, "abs_is_fwd_polarity", false);
+        mConfigCommand.enc_info.abs_ratio = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "abs_ratio", 1.0);
+        mConfigCommand.enc_info.abs_offset = Radians{xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "abs_offset", 0.0)};
 
         auto driver_voltage = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "driver_voltage");
         assert(driver_voltage > 0);
@@ -54,22 +37,34 @@ namespace mrover {
 
         mConfigCommand.max_pwm = motor_max_voltage / driver_voltage;
 
-        mConfigCommand.limit_switch_info.limit_max_forward_position = xmlRpcValueToTypeOrDefault<bool>(
-                brushedMotorData, "limit_max_forward_pos", false);
+        mConfigCommand.limit_switch_info.limit_max_forward_position = xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, "limit_max_forward_pos", false);
+        mConfigCommand.limit_switch_info.limit_max_backward_position = xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, "limit_max_backward_pos", false);
 
-        mConfigCommand.limit_switch_info.limit_max_backward_position = xmlRpcValueToTypeOrDefault<bool>(
-                brushedMotorData, "limit_max_backward_pos", false);
+        mConfigCommand.min_position = Radians{xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "min_position", -std::numeric_limits<double>::infinity())};
+        mConfigCommand.max_position = Radians{xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "max_position", std::numeric_limits<double>::infinity())};
 
-        mConfigCommand.max_forward_pos = Radians{
-                xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "max_forward_pos", 0.0)};
-        mConfigCommand.max_backward_pos = Radians{
-                xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "max_backward_pos", 0.0)};
+        mConfigCommand.min_velocity = RadiansPerSecond{xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "min_velocity", -std::numeric_limits<double>::infinity())};
+        mConfigCommand.max_velocity = RadiansPerSecond{xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "max_velocity", std::numeric_limits<double>::infinity())};
 
+        mPositionGains.p = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "position_p", 0.0);
+        mPositionGains.i = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "position_i", 0.0);
+        mPositionGains.d = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "position_d", 0.0);
+        mPositionGains.ff = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "position_ff", 0.0);
+
+        mVelocityGains.p = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "velocity_p", 0.0);
+        mVelocityGains.i = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "velocity_i", 0.0);
+        mVelocityGains.d = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "velocity_d", 0.0);
+        mVelocityGains.ff = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "velocity_ff", 0.0);
+
+        for (int i = 0; i < 4; ++i) {
+            mhasLimit |= xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, std::format("limit_{}_enabled", i), false);
+        }
+        mCalibrationThrottle = Percent{xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "calibration_throttle", 0.0)};
         mErrorState = "Unknown";
         mState = "Unknown";
     }
 
-    void BrushedController::setDesiredThrottle(Percent throttle) {
+    auto BrushedController::setDesiredThrottle(Percent throttle) -> void {
         updateLastConnection();
         if (!mIsConfigured) {
             sendConfiguration();
@@ -81,46 +76,70 @@ namespace mrover {
         mDevice.publish_message(InBoundMessage{ThrottleCommand{.throttle = throttle}});
     }
 
-    void BrushedController::setDesiredPosition(Radians position) {
+    auto BrushedController::setDesiredPosition(Radians position) -> void {
         updateLastConnection();
         if (!mIsConfigured) {
             sendConfiguration();
             return;
         }
 
-        assert(position >= mMinPosition && position <= mMaxPosition);
+        assert(position >= mConfigCommand.min_position && position <= mConfigCommand.max_position);
 
-        mDevice.publish_message(InBoundMessage{PositionCommand{.position = position}});
+        mDevice.publish_message(InBoundMessage{PositionCommand{
+                .position = position,
+                .p = static_cast<float>(mPositionGains.p),
+                .i = static_cast<float>(mPositionGains.i),
+                .d = static_cast<float>(mPositionGains.d),
+        }});
     }
 
-    void BrushedController::setDesiredVelocity(RadiansPerSecond velocity) {
+    auto BrushedController::setDesiredVelocity(RadiansPerSecond velocity) -> void {
         updateLastConnection();
         if (!mIsConfigured) {
             sendConfiguration();
             return;
         }
 
-        assert(velocity >= mMinVelocity && velocity <= mMaxVelocity);
+        assert(velocity >= mConfigCommand.min_velocity && velocity <= mConfigCommand.max_velocity);
 
-        mDevice.publish_message(InBoundMessage{VelocityCommand{.velocity = velocity}});
+        mDevice.publish_message(InBoundMessage{VelocityCommand{
+                .velocity = velocity,
+                .p = static_cast<float>(mVelocityGains.p),
+                .i = static_cast<float>(mVelocityGains.i),
+                .d = static_cast<float>(mVelocityGains.d),
+                .ff = static_cast<float>(mVelocityGains.ff),
+        }});
     }
 
-    void BrushedController::sendConfiguration() {
+    auto BrushedController::sendConfiguration() -> void {
         mDevice.publish_message(InBoundMessage{mConfigCommand});
 
         // Need to await configuration. Can NOT directly set mIsConfigured to true.
     }
 
-    void BrushedController::processMessage(ControllerDataState const& state) {
+    auto BrushedController::adjust(Radians position) -> void {
+        updateLastConnection();
+        if (!mIsConfigured) {
+            sendConfiguration();
+            return;
+        }
+
+        assert(position >= mConfigCommand.min_position && position <= mConfigCommand.max_position);
+
+        mDevice.publish_message(InBoundMessage{AdjustCommand{.position = position}});
+    }
+
+    auto BrushedController::processMessage(ControllerDataState const& state) -> void {
         mCurrentPosition = state.position;
         mCurrentVelocity = state.velocity;
+        ROS_INFO("Vel: %f | Pos: %f", mCurrentVelocity.get(), mCurrentPosition.get());
         ConfigCalibErrorInfo configCalibErrInfo = state.config_calib_error_data;
         mIsConfigured = configCalibErrInfo.configured;
         mIsCalibrated = configCalibErrInfo.calibrated;
-        mErrorState = errorToString(static_cast<BDCMCErrorInfo>(configCalibErrInfo.error));
-        LimitStateInfo limitSStateInfo = state.limit_switches;
+        mErrorState = errorToString(configCalibErrInfo.error);
+        auto const& [_, hit] = state.limit_switches;
         for (std::size_t i = 0; i < mLimitHit.size(); ++i) {
-            mLimitHit.at(i) = GET_BIT_AT_INDEX(limitSStateInfo.hit, i);
+            mLimitHit.at(i) = GET_BIT_AT_INDEX(hit, i);
         }
         if (mIsCalibrated) {
             mState = "Armed";
@@ -129,7 +148,7 @@ namespace mrover {
         }
     }
 
-    void BrushedController::processCANMessage(CAN::ConstPtr const& msg) {
+    auto BrushedController::processCANMessage(CAN::ConstPtr const& msg) -> void {
         assert(msg->source == mControllerName);
         assert(msg->destination == mName);
 
@@ -139,11 +158,11 @@ namespace mrover {
         std::visit([&](auto const& messageAlternative) { processMessage(messageAlternative); }, message);
     }
 
-    double BrushedController::getEffort() {
+    auto BrushedController::getEffort() -> double {
         return std::numeric_limits<double>::quiet_NaN();
     }
 
-    std::string BrushedController::errorToString(BDCMCErrorInfo errorCode) {
+    auto BrushedController::errorToString(BDCMCErrorInfo errorCode) -> std::string {
         switch (errorCode) {
             case BDCMCErrorInfo::NO_ERROR:
                 return "NO_ERROR";
@@ -159,6 +178,24 @@ namespace mrover {
                 return "RECEIVING_PID_COMMANDS_WHEN_NO_READER_EXISTS";
             default:
                 return "UNKNOWN_ERROR_CODE";
+        }
+    }
+
+    auto BrushedController::calibrateServiceCallback([[maybe_unused]] std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res) -> bool {
+        if (!mhasLimit) {
+            res.success = false;
+            res.message = mControllerName + " does not have limit switches, cannot calibrate";
+            return true;
+        } else if (mIsCalibrated) {
+            res.success = false;
+            res.message = mControllerName + " already calibrated";
+            return true;
+        } else {
+            // sends throttle command until a limit switch is hit
+            // mIsCalibrated is set with CAN message coming from BDCMC
+            setDesiredThrottle(mCalibrationThrottle);
+            res.success = true;
+            return true;
         }
     }
 

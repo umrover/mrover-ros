@@ -77,9 +77,10 @@ namespace mrover {
             // ImGui::SliderFloat("Float", &mFloat, 0.0f, 1000.0f);
 
             ImGui::Checkbox("Publish IK", &mPublishIk);
-            if (mPublishIk) {
-                ImGui::SliderFloat3("IK Target", mIkTarget.data(), -1.f, 1.f);
-            }
+            if (mPublishIk) ImGui::SliderFloat3("IK Target", mIkTarget.data(), -1.f, 1.f);
+
+            ImGui::InputDouble("Publish Hammer Distance Threshold", &mPublishHammerDistanceThreshold);
+            ImGui::InputDouble("Publish Bottle Distance Threshold", &mPublishBottleDistanceThreshold);
 
             ImGui::EndDisabled();
             ImGui::End();
@@ -93,15 +94,15 @@ namespace mrover {
                 URDF const& rover = it->second;
 
                 {
-                    SE3 baseLinkInMap = rover.linkInWorld("base_link");
-                    R3 p = baseLinkInMap.position();
-                    S3 q = baseLinkInMap.rotation().quaternion();
+                    SE3d baseLinkInMap = rover.linkInWorld("base_link");
+                    R3 p = baseLinkInMap.translation();
+                    S3 q = baseLinkInMap.quat();
                     ImGui::Text("Rover Position: (%.2f, %.2f, %.2f)", p.x(), p.y(), p.z());
                     ImGui::Text("Rover Orientation: (%.2f, %.2f, %.2f, %.2f)", q.w(), q.x(), q.y(), q.z());
                 }
                 {
-                    R3 p = mCameraInWorld.position();
-                    S3 q = mCameraInWorld.rotation().quaternion();
+                    R3 p = mCameraInWorld.translation();
+                    S3 q = mCameraInWorld.quat();
                     ImGui::Text("Camera Position: (%.2f, %.2f, %.2f)", p.x(), p.y(), p.z());
                     ImGui::Text("Camera Orientation: (%.2f, %.2f, %.2f, %.2f)", q.w(), q.x(), q.y(), q.z());
                 }
@@ -136,6 +137,10 @@ namespace mrover {
             for (Camera const& camera: mCameras) {
                 float aspect = static_cast<float>(camera.resolution.x()) / static_cast<float>(camera.resolution.y());
                 ImGui::Image(camera.colorTextureView, {320, 320 / aspect}, {0, 0}, {1, 1});
+            }
+            for (StereoCamera const& stereoCamera: mStereoCameras) {
+                float aspect = static_cast<float>(stereoCamera.base.resolution.x()) / static_cast<float>(stereoCamera.base.resolution.y());
+                ImGui::Image(stereoCamera.base.colorTextureView, {320, 320 / aspect}, {0, 0}, {1, 1});
             }
 
             ImGui::End();
