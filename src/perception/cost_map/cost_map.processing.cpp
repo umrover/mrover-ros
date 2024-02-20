@@ -10,7 +10,7 @@ namespace mrover {
         if (!mPublishCostMap) return;
 
         try {
-            SE3d zed_to_map = SE3Conversions::fromTfTree(mTfBuffer, "map", "zed_left_camera_frame");
+            SE3d zed_to_map = SE3Conversions::fromTfTree(mTfBuffer, "zed_left_camera_frame", "map");
             auto* points = reinterpret_cast<Point const*>(msg->data.data());
             // std::for_each(points, points + msg->width * msg->height, [&](auto* point) {
             for (auto point = points; point - points < msg->width * msg->height; point += mDownSamplingFactor) {
