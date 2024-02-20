@@ -65,7 +65,7 @@
           <input class="form-control" id="sec2" v-model.number="input.lon.s" />
           <span for="sec2" class="input-group-text">"</span>
         </div>
-        E
+        W
       </div>
 
       <div class="add-drop">
@@ -79,14 +79,16 @@
         <h4 class="waypoint-headers">Waypoints</h4>
         <button class="btn btn-primary" @click="clearWaypoint">Clear Waypoints</button>
       </div>
-      <WaypointItem
-        v-for="(waypoint, i) in storedWaypoints"
-        :key="i"
-        :waypoint="waypoint"
-        :index="i"
-        @delete="deleteItem($event)"
-        @find="findWaypoint($event)"
-      />
+      <div class="waypoints">
+        <WaypointItem
+          v-for="(waypoint, i) in storedWaypoints"
+          :key="i"
+          :waypoint="waypoint"
+          :index="i"
+          @delete="deleteItem($event)"
+          @find="findWaypoint($event)"
+        />
+      </div>
     </div>
   </div>
 </template>
@@ -94,7 +96,7 @@
 <script lang="ts">
 import { convertDMS } from '../utils.js'
 import WaypointItem from './BasicWaypointItem.vue'
-import { mapMutations, mapGetters } from 'vuex'
+import { mapMutations, mapGetters, mapActions, mapState } from 'vuex'
 import _ from 'lodash'
 import L from 'leaflet'
 
@@ -128,6 +130,8 @@ export default {
   },
 
   methods: {
+    ...mapActions('websocket', ['sendMessage']),
+
     ...mapMutations('erd', {
       setWaypointList: 'setWaypointList',
       setHighlightedWaypoint: 'setHighlightedWaypoint'
@@ -151,7 +155,8 @@ export default {
       this.storedWaypoints.push({
         name: this.name,
         lat: (coord.lat.d + coord.lat.m / 60 + coord.lat.s / 3600).toFixed(5),
-        lon: (coord.lon.d + coord.lon.m / 60 + coord.lon.s / 3600).toFixed(5)
+        lon: (coord.lon.d + coord.lon.m / 60 + coord.lon.s / 3600).toFixed(5),
+        drone: false
       })
     },
 
@@ -178,6 +183,23 @@ export default {
           }
         })
         this.setWaypointList(waypoints)
+        this.sendMessage({ type: 'save_basic_waypoint_list', data: newList })
+      },
+      deep: true
+    },
+
+    message: {
+      handler: function (msg) {
+        if (msg.type == 'get_basic_waypoint_list') {
+          // Get waypoints from server on page load
+          this.storedWaypoints = msg.data
+          const waypoints = msg.data.map((waypoint: { lat: any; lon: any; name: any }) => {
+            const lat = waypoint.lat
+            const lon = waypoint.lon
+            return { latLng: L.latLng(lat, lon), name: waypoint.name }
+          })
+          this.setWaypointList(waypoints)
+        }
       },
       deep: true
     },
@@ -207,9 +229,15 @@ export default {
 
     // Set odometer format
     this.odom_format_in = this.odom_format
+
+    window.setTimeout(() => {
+      // Timeout so websocket will be initialized
+      this.sendMessage({ type: 'get_basic_waypoint_list', data: null })
+    }, 250)
   },
 
   computed: {
+    ...mapState('websocket', ['message']),
     ...mapGetters('erd', {
       highlightedWaypoint: 'highlightedWaypoint',
       clickPoint: 'clickPoint'
@@ -266,6 +294,11 @@ export default {
 
 .all-waypoints button {
   margin: 5px;
+}
+
+.waypoints {
+  height: 30vh;
+  overflow-y: auto;
 }
 
 .waypoint-headers {

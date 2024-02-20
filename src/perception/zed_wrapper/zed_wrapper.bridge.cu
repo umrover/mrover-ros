@@ -1,5 +1,4 @@
 // Be careful what you include in this file, it is compiled with nvcc (NVIDIA CUDA compiler)
-// For example OpenCV and lie includes cause problems
 
 #include "zed_wrapper.hpp"
 

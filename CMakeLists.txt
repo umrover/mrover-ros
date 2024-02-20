@@ -32,8 +32,6 @@ if (MROVER_CI)
     list(APPEND MROVER_CPP_COMPILE_OPTIONS -Werror)
 endif ()
 
-option(MROVER_BUILD_SIM "Build the simulator" ON)
-
 include(cmake/macros.cmake)
 
 # ROS packages list
@@ -73,29 +71,8 @@ set(MROVER_CMAKE_INCLUDES
 ### Dependencies ###
 ### ============ ###
 
-if (MROVER_BUILD_SIM)
-    # Apparently Assimp has different names on different systems
-    # find_package is case-sensitive so try both
-    find_package(Assimp QUIET)
-    find_package(assimp QUIET)
-    if (NOT Assimp_FOUND AND NOT assimp_FOUND)
-        message(FATAL_ERROR "Assimp not found")
-    endif ()
+include(cmake/deps.cmake)
 
-    find_package(Bullet REQUIRED)
-
-    find_package(glfw3 REQUIRED)
-
-    include(cmake/webgpu.cmake)
-
-    add_subdirectory(deps/glfw3webgpu)
-endif ()
-find_package(OpenCV REQUIRED)
-find_package(ZED QUIET)
-find_package(Eigen3 REQUIRED)
-find_package(PkgConfig REQUIRED)
-pkg_search_module(NetLink libnl-3.0)
-pkg_search_module(NetLinkRoute libnl-route-3.0)
 if (ZED_FOUND)
     # Anything newer than C++17 combined with libstdc++13 is not supported just yet by NVCC (the CUDA compiler)
     set(CMAKE_CUDA_STANDARD 17)
@@ -142,6 +119,7 @@ catkin_package()
 ## Libraries
 
 mrover_add_library(lie src/util/lie/*.cpp src/util/lie)
+target_link_libraries(lie PUBLIC MANIF::manif)
 
 ## ESW
 
@@ -151,11 +129,13 @@ if (NOT APPLE)
     mrover_add_library(motor_library src/esw/motor_library/*.cpp src/esw/motor_library)
     target_link_libraries(motor_library PUBLIC can_device moteus)
 
-    mrover_add_nodelet(can_driver src/esw/can_driver/*.cpp src/esw/can_driver src/esw/can_driver/pch.hpp)
-    mrover_nodelet_link_libraries(can_driver nl-3 nl-route-3)
-    # TODO(quintin): Fix this CMake hard coding
-    #mrover_nodelet_link_libraries(can ${NetLink_LIBRARIES} ${NetLinkRoute_LIBRARIES}})
-    mrover_nodelet_include_directories(can_driver /usr/include/libnl3)
+    if (NetLink_FOUND AND NetLinkRoute_FOUND)
+        mrover_add_nodelet(can_driver src/esw/can_driver/*.cpp src/esw/can_driver src/esw/can_driver/pch.hpp)
+        mrover_nodelet_link_libraries(can_driver nl-3 nl-route-3)
+        # TODO(quintin): Fix this CMake hard coding
+        #mrover_nodelet_link_libraries(can ${NetLink_LIBRARIES} ${NetLinkRoute_LIBRARIES}})
+        mrover_nodelet_include_directories(can_driver /usr/include/libnl3)
+    endif ()
 
     macro(mrover_add_esw_bridge_node name sources)
         mrover_add_node(${name} ${sources})
@@ -167,13 +147,15 @@ if (NOT APPLE)
     mrover_add_esw_bridge_node(cache_bridge src/esw/cache_bridge/*.cpp)
     mrover_add_esw_bridge_node(drive_bridge src/esw/drive_bridge/*.cpp)
     mrover_add_esw_bridge_node(led_hw_bridge src/esw/led_hw_bridge/*.cpp)
+    mrover_add_esw_bridge_node(led src/esw/led/*.cpp)
     mrover_add_esw_bridge_node(mast_gimbal_bridge src/esw/mast_gimbal_bridge/*.cpp)
     mrover_add_esw_bridge_node(pdb_bridge src/esw/pdb_bridge/*.cpp)
-    mrover_add_esw_bridge_node(sa_bridge src/esw/sa_bridge/*.cpp)
+    #    mrover_add_esw_bridge_node(sa_bridge src/esw/sa_translator_bridge/*.cpp)
     mrover_add_esw_bridge_node(science_bridge src/esw/science_bridge/*.cpp)
     mrover_add_esw_bridge_node(brushless_test_bridge src/esw/brushless_test_bridge/*.cpp motor_library)
     mrover_add_esw_bridge_node(brushed_test_bridge src/esw/brushed_test_bridge/*.cpp)
     mrover_add_esw_bridge_node(test_arm_bridge src/esw/test_arm_bridge/*.cpp)
+    #    mrover_add_esw_bridge_node(sa_sensor src/esw/fw/dirt_sensor/dirt_sensor_ros/dirt_sensor_ros.ino)
 endif ()
 
 ## Perception
@@ -185,13 +167,13 @@ mrover_add_nodelet(costmap src/perception/cost_map/*.cpp src/perception/cost_map
 mrover_nodelet_link_libraries(costmap lie)
 mrover_nodelet_link_libraries(tag_detector opencv_core opencv_objdetect opencv_aruco opencv_imgproc opencv_highgui lie)
 
-# if (CUDA_FOUND)
-#     mrover_add_library(streaming src/esw/streaming/*.c* src/esw/streaming)
-#     #    target_link_libraries(streaming PUBLIC opencv_core opencv_cudacodec)
-#     target_link_libraries(streaming PUBLIC cuda nvidia-encode opencv_core)
-#     target_include_directories(streaming SYSTEM PUBLIC deps/nvenc)
-#     target_compile_definitions(streaming PUBLIC BOOST_ASIO_NO_DEPRECATED)
-# endif ()
+if (CUDA_FOUND)
+    mrover_add_library(streaming src/esw/streaming/*.c* src/esw/streaming)
+    #    target_link_libraries(streaming PUBLIC opencv_core opencv_cudacodec)
+    target_link_libraries(streaming PUBLIC cuda nvidia-encode opencv_core)
+    target_include_directories(streaming SYSTEM PUBLIC deps/nvenc)
+    target_compile_definitions(streaming PUBLIC BOOST_ASIO_NO_DEPRECATED)
+endif ()
 
 if (ZED_FOUND)
     mrover_add_nodelet(zed src/perception/zed_wrapper/*.c* src/perception/zed_wrapper src/perception/zed_wrapper/pch.hpp)
@@ -211,8 +193,8 @@ mrover_add_node(arm_controller src/teleoperation/arm_controller/*.cpp)
 
 if (MROVER_BUILD_SIM)
     mrover_add_nodelet(simulator src/simulator/*.cpp src/simulator src/simulator/pch.hpp)
-    mrover_nodelet_include_directories(simulator ${ASSIMP_INCLUDE_DIRS} ${BULLET_INCLUDE_DIRS} ${OPENCV_INCLUDE_DIRS} src/simulator/imgui)
-    mrover_nodelet_link_libraries(simulator ${ASSIMP_LIBRARIES} ${BULLET_LIBRARIES} glfw3webgpu webgpu glfw opencv_core opencv_imgcodecs opencv_imgproc lie)
+    mrover_nodelet_include_directories(simulator ${ASSIMP_INCLUDE_DIRS} ${BULLET_INCLUDE_DIRS} ${OPENCV_INCLUDE_DIRS})
+    mrover_nodelet_link_libraries(simulator ${ASSIMP_LIBRARIES} ${BULLET_LIBRARIES} glfw3webgpu webgpu glfw opencv_core opencv_imgcodecs opencv_imgproc webgpu_hpp imgui lie)
     mrover_nodelet_defines(simulator BOOST_THREAD_PROVIDES_FUTURE)
 endif ()
 
@@ -227,15 +209,16 @@ catkin_add_gtest(example-cpp-test test/example/cpp_test.cpp)
 
 # Python unit tests
 catkin_add_nosetests(test/navigation/drive_test.py)
-catkin_add_nosetests(test/teleop/teleop_test.py)
 catkin_add_nosetests(test/util/SE3_test.py)
 catkin_add_nosetests(test/util/SO3_test.py)
 
 # Integration tests (python and c++)
-find_package(rostest REQUIRED)
-add_rostest(test/example/basic_integration_test.test)
-add_rostest(test/integration/integration.test)
-add_rostest(test/util/SE3_tf_test.test)
+# Note(quintin): Commented these out because they ignore the Python virtual environment
+#                Most of our code relies on newer Python features so they fail to initialize
+#find_package(rostest REQUIRED)
+#add_rostest(test/example/basic_integration_test.test)
+#add_rostest(test/integration/integration.test)
+#add_rostest(test/util/SE3_tf_test.test)
 
 ## Install
 

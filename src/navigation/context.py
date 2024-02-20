@@ -58,50 +58,50 @@ class Rover:
 class Environment:
     """
     Context class to represent the rover's environment
-    Information such as locations of fiducials or obstacles
+    Information such as locations of tags or obstacles
     """
 
     ctx: Context
-    NO_FIDUCIAL: ClassVar[int] = -1
+    NO_TAG: ClassVar[int] = -1
     arrived_at_post: bool = False
     last_post_location: Optional[np.ndarray] = None
 
-    def get_fid_pos(self, fid_id: int, in_odom_frame: bool = True) -> Optional[np.ndarray]:
+    def get_tag_pos(self, tag_id: int, in_odom_frame: bool = True) -> Optional[np.ndarray]:
         """
-        Retrieves the pose of the given fiducial ID from the TF tree in the odom frame
+        Retrieves the pose of the given tag ID from the TF tree in the odom frame
         if in_odom_frame is True otherwise in the world frame
         if it exists and is more recent than TAG_EXPIRATION_TIME_SECONDS, otherwise returns None
         """
         try:
             parent_frame = self.ctx.odom_frame if in_odom_frame else self.ctx.world_frame
             fid_pose, time = SE3.from_tf_time(
-                self.ctx.tf_buffer, parent_frame=parent_frame, child_frame=f"fiducial{fid_id}"
+                self.ctx.tf_buffer, parent_frame=parent_frame, child_frame=f"fiducial{tag_id}"
             )
             now = rospy.Time.now()
             if now.to_sec() - time.to_sec() >= TAG_EXPIRATION_TIME_SECONDS:
-                print(f"TAG EXPIRED {fid_id}!")
+                rospy.logwarn(f"Tag expired: {tag_id}!")
                 return None
         except (
             tf2_ros.LookupException,
             tf2_ros.ConnectivityException,
             tf2_ros.ExtrapolationException,
-        ) as e:
+        ):
             return None
         return fid_pose.position
 
-    def current_fid_pos(self, odom_override: bool = True) -> Optional[np.ndarray]:
+    def current_tag_pos(self, odom_override: bool = True) -> Optional[np.ndarray]:
         """
-        Retrieves the position of the current fiducial (and we are looking for it)
+        Retrieves the position of the current tag (and we are looking for it)
         :param: odom_override if false will force it to be in the map frame
         """
         assert self.ctx.course
         in_odom = self.ctx.use_odom and odom_override
         current_waypoint = self.ctx.course.current_waypoint()
         if current_waypoint is None:
-            print("CURRENT WAYPOINT IS NONE")
+            rospy.logwarn("Current waypoint is empty!")
             return None
 
-        return self.get_fid_pos(current_waypoint.tag_id, in_odom)
+        return self.get_tag_pos(current_waypoint.tag_id, in_odom)
 
 
 @dataclass
@@ -131,8 +131,7 @@ class Course:
         """
         Returns the currently active waypoint
 
-        :param ud:  State machine user data
-        :return:    Next waypoint to reach if we have an active course
+        :return: Next waypoint to reach if we have an active course
         """
         if self.course_data is None or self.waypoint_index >= len(self.course_data.waypoints):
             return None

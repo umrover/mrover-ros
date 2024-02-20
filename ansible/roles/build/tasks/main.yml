@@ -89,8 +89,11 @@
       - ros-{{ ros_distro }}-rosbash
       - libbullet-dev
       - libglfw3-dev
-      - xorg-dev
       - libx11-xcb-dev
+      - libnl-3-dev
+      - libnl-route-3-dev
+      - libtbb-dev
+      - libopencv-dev
 
 - name: Initialize rosdep
   become: True

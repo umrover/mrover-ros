@@ -1,6 +1,7 @@
 <launch>
       <arg name="run_rviz" default="true" />
       <arg name="run_dynamic_reconfigure" default="true" />
+      <arg name="run_rqt_tf_tree" default="true" />
 
       <arg name="run_tag_detector" default="true" />
       <arg name="use_builtin_visual_odom" default="false" />
@@ -21,11 +22,12 @@
       <node pkg="nodelet" type="nodelet" name="nodelet_manager" required="true"
             args="manager" output="screen" />
 
-      <node name="rqt_tf_tree" pkg="rqt_tf_tree" type="rqt_tf_tree" output="screen" />
+      <node if="$(arg run_rqt_tf_tree)"
+            name="rqt_tf_tree" pkg="rqt_tf_tree" type="rqt_tf_tree" output="screen" />
 
       <node if="$(arg run_dynamic_reconfigure)"
             name="rqt_reconfigure" pkg="rqt_reconfigure" type="rqt_reconfigure" />
 
-      <node pkg="tf" type="static_transform_publisher" name="map_odom_publisher"
-            args="1 0 0 0 0 0 map odom 100" />
+      <node pkg="tf" type="static_transform_publisher" name="base_link_publisher"
+            args="1 0 0 0 0 0 map base_link 100" />
 </launch>

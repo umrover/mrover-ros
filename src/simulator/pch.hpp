@@ -10,6 +10,7 @@
 #include <fstream>
 #include <iostream>
 #include <memory>
+#include <random>
 #include <source_location>
 #include <span>
 #include <stdexcept>
@@ -40,15 +41,15 @@
 
 #include <glfw3webgpu.h>
 
-#include "webgpu/webgpu.hpp"
+#include <webgpu.hpp>
 
 #include <opencv2/core.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
 
-#include "imgui/backends/imgui_impl_glfw.h"
-#include "imgui/backends/imgui_impl_wgpu.h"
+#include <backends/imgui_impl_glfw.h>
+#include <backends/imgui_impl_wgpu.h>
 
 #include <BulletDynamics/Featherstone/btMultiBodyConstraintSolver.h>
 #include <BulletDynamics/Featherstone/btMultiBodyDynamicsWorld.h>
@@ -66,12 +67,15 @@
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
 
+#include <bimap.hpp>
+#include <lie.hpp>
 #include <loop_profiler.hpp>
+#include <manif/manif.h>
 #include <params_utils.hpp>
 #include <point.hpp>
-#include <se3.hpp>
 #include <units.hpp>
 
+#include <mrover/ControllerState.h>
 #include <mrover/IK.h>
 #include <mrover/ImuAndMag.h>
 #include <mrover/MotorsStatus.h>

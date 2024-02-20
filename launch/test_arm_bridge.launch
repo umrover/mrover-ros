@@ -1,0 +1,12 @@
+<!-- 
+	This launch file should be run on the Jetson in order to start our drive, control, and auton
+software
+	on the physical rover.
+ -->
+<launch>
+  <include file="$(find mrover)/launch/esw_arm.launch"/>
+
+  <node name="can_driver" pkg="mrover" type="can_driver">
+    <param name="interface" value="vcan0"/>
+  </node>
+</launch>
