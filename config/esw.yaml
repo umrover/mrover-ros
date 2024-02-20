@@ -69,7 +69,7 @@ can:
       bus: 1
       id: 0x30
     - name: "sa_z"
-      bus: 0
+      bus: 1
       id: 0x31
     - name: "sampler"
       bus: 1
@@ -78,13 +78,13 @@ can:
       bus: 1
       id: 0x33
     - name: "cache"
-      bus: 0
+      bus: 1
       id: 0x34
     - name: "pdlb"
       bus: 1
       id: 0x50
     - name: "science"
-      bus: 0
+      bus: 1
       id: 0x51
 
 brushless_motors:
@@ -137,8 +137,8 @@ brushless_motors:
       max_backward_pos: 0.0
     joint_c:
       velocity_multiplier: 1.0
-      min_velocity: -70.0
-      max_velocity: 70.0
+      min_velocity: -250.0 # gear ratio: 484:1
+      max_velocity: 250.0 # max output shaft speed: 5 rpm (for now)
     joint_de_0:
       velocity_multiplier: 1.0
       min_velocity: -67.0

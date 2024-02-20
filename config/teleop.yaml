@@ -22,12 +22,12 @@ teleop:
       multiplier: 1
       slow_mode_multiplier: 1
       invert: False
-      xbox_index: 3
+      xbox_index: 4
     joint_de_roll:
       multiplier: 1
       slow_mode_multiplier: 1
       invert: False
-      xbox_index: 5
+      xbox_index: 0
     allen_key:
       multiplier: 1
       slow_mode_multiplier: 1
