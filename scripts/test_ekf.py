@@ -12,6 +12,14 @@ from tf.transformations import euler_from_quaternion
 from util.SE3 import SE3
 
 
+STRAIGHT_PATH = [
+    (
+        Waypoint(tag_id=0, type=WaypointType(val=WaypointType.NO_SEARCH)),
+        SE3(position=np.array([3, 0, 0])),
+    ),
+
+]
+
 SQUARE_PATH = [
     (
         Waypoint(tag_id=0, type=WaypointType(val=WaypointType.NO_SEARCH)),
@@ -143,7 +151,7 @@ class EKF_Test:
         """
         Publish a sequence of waypoints for the rover to drive, wait until it has finished driving to them,
         then plot the collected data.
-        """
+        """        
         path = LINE_PATH
         publish_waypoints([convert_waypoint_to_gps(waypoint) for waypoint in path])
 
@@ -250,7 +258,6 @@ class EKF_Test:
         axs[1, 2].legend()
 
         plt.show()
-
 
 def main():
     rospy.init_node("ekf_tester")

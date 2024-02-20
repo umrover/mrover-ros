@@ -9,7 +9,6 @@ void InvariantEKF::predict(const R3& accel, const R3& gyro, double dt) {
     const R3 accel_g(0, 0, g);
     Matrix3d R = mX.rotation();
     R3 accel_body = accel - R.transpose() * accel_g;
-    // std::cout << "accel_body: " << accel_body << std::endl;
 
     // use kinematics to compute increments to each state component
     R3 delta_pos = R.transpose() * mX.linearVelocity() * dt + 0.5 * accel_body * dt * dt;
@@ -20,24 +19,32 @@ void InvariantEKF::predict(const R3& accel, const R3& gyro, double dt) {
     R3 gLin = R.transpose() * accel_g * dt;
     Matrix3d gCross = manif::skew(gLin);
 
-
     // TODO: pre allocate matrices? (everywhere, not just here)
-    SE_2_3d::Tangent u;
     SE_2_3d::Jacobian F, J_x_x, J_x_u, J_u_x;
+    SE_2_3d::Tangent u;
+    u << delta_pos, delta_rot, delta_v;
+
+    // increment state with right plus operation and compute jacobians
+    mX = mX.rplus(u, J_x_x, J_x_u);
+    mX.normalize();
 
     J_u_x.setZero();
     J_u_x.block<3, 3>(0, 3) = accLinCross;
     J_u_x.block<3, 3>(0, 6) = Matrix3d::Identity() * dt;
     J_u_x.block<3, 3>(6, 3) = gCross;
 
-    // increment state with right plus operation and compute jacobians
-    u << delta_pos, delta_rot, delta_v;
-    mX = mX.rplus(u, J_x_x, J_x_u);
-
     // TODO: where does this come from? chain rule + Ax + Bu?
     // need to set J_u_x
     F = J_x_x + J_x_u * J_u_x;
-    mP = F * mP * F.transpose() + J_x_u * mQ * J_x_u.transpose();
+    mP = J_x_x * mP * J_x_x.transpose() + mQ;
+
+    if(std::abs(mX.translation().x()) > 1 || std::abs(mX.translation().z()) > 1 || std::abs(mX.translation().y()) > 1){
+        std::cout << accel << std::endl << gyro << std::endl << dt << std::endl;
+        std::cout << std::endl;
+    }
+
+
+
 }
 
 void InvariantEKF::update(const R3& innovation, Matrix39d const& H, Matrix3d const& R) {
@@ -63,8 +70,13 @@ void InvariantEKF::update_gps(R3 const& observed_gps, Matrix3d const& R_gps) {
     //R(0) + t = t
     R3 predicted_gps = mX.act(origin, J_e_x);
     Matrix39d H = J_e_x;
-    std::cout << J_e_x << std::endl;
     update(observed_gps - predicted_gps, H, R_gps);
+
+    if(std::abs(mX.translation().x()) > 1 || std::abs(mX.translation().z()) > 1 || std::abs(mX.translation().y()) > 1){
+        std::cout << "hello";
+        std::cout << std::endl;
+    }
+
 }
 
 void InvariantEKF::update_gps(R3 const& observed_gps) {

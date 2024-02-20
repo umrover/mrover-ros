@@ -43,7 +43,7 @@ InvariantEKFNode::InvariantEKFNode() : mEKF(init_EKF()) {
 
 void InvariantEKFNode::imu_mag_callback(mrover::ImuAndMag const& msg) {
     imu_callback(msg.imu);
-    // mag_callback(msg.mag);
+    mag_callback(msg.mag);
 }
 
 void InvariantEKFNode::imu_callback(sensor_msgs::Imu const& msg) {
@@ -73,7 +73,6 @@ void InvariantEKFNode::gps_callback(geometry_msgs::PoseWithCovarianceStamped con
 
     auto p = msg.pose.pose.position;
     R3 z{p.x, p.y, p.z};
-    std::cout << "gps: " << z << std::endl;
     mEKF.update_gps(z);
 }
 
