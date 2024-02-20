@@ -58,10 +58,10 @@ can:
       id: 0x26
     - name: "mast_gimbal_y"
       bus: 1
-      id: 0x27
+      id: 0x28
     - name: "mast_gimbal_z"
       bus: 1
-      id: 0x28
+      id: 0x27
     - name: "sa_x"
       bus: 1
       id: 0x29
@@ -268,24 +268,8 @@ brushed_motors:
     mast_gimbal_y:
       velocity_multiplier: 1.0
       gear_ratio: 1000.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
-      limit_0_present: true
-      limit_1_present: true
-      limit_0_enabled: true
-      limit_1_enabled: true
-      limit_0_is_active_high: false
-      limit_1_is_active_high: false
-      limit_0_limits_fwd: true
-      limit_1_limits_fwd: false
-      limit_0_used_for_readjustment: true
-      limit_1_used_for_readjustment: true
-      quad_present: true
-      quad_is_fwd_polarity: true
-      limit_0_readjust_position: 0.0 # radians
-      limit_1_readjust_position: 6.28 # radians
-      quad_ratio: 1.0 # encoder ratio compared to motor
       driver_voltage: 12.0 # used to calculate max pwm
       motor_max_voltage: 12.0 # used to calculate max pwm
-      calibration_throttle: 0.5  # throttle during calibration
     mast_gimbal_z:
       velocity_multiplier: 1.0
       gear_ratio: 1000.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint

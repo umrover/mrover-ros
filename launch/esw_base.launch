@@ -12,4 +12,6 @@
 
     <node name="led" pkg="mrover" type="led" />
     <node name="led_hw_bridge" pkg="mrover" type="led_hw_bridge" />
+
+    <node name="mast_gimbal_bridge" pkg="mrover" type="mast_gimbal_bridge" />
 </launch>
