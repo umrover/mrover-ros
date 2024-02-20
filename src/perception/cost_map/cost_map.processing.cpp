@@ -1,6 +1,62 @@
+#include <utility>
+
 #include "cost_map.hpp"
 
 namespace mrover {
+
+    // struct LowResIterator {
+    //     using iterator_category = std::forward_iterator_tag;
+    //     using difference_type = std::ptrdiff_t;
+    //     using value_type = Point;
+    //     using pointer = Point const*;
+    //     using reference = Point const&;
+    //
+    //     pointer mPointer;
+    //     Eigen::Vector2i mSize;
+    //     int mFactor;
+    //
+    //     Eigen::Vector2i mIndex;
+    //
+    //     explicit LowResIterator(pointer ptr, Eigen::Vector2i size, int factor)
+    //         : mPointer{ptr}, mSize{std::move(size)}, mFactor{factor} {}
+    //
+    //     auto advance() -> void {
+    //         mIndex.x() += mFactor;
+    //         if (mIndex.x() >= mSize.x()) {
+    //             mIndex.x() = 0;
+    //             mIndex.y() += mFactor;
+    //         }
+    //     }
+    //
+    //     auto operator*() const -> reference { return mPointer[mIndex.y() * mSize.x() + mIndex.x()]; }
+    //
+    //     auto operator->() const -> pointer { return &operator*(); }
+    //
+    //     auto operator++() -> LowResIterator& {
+    //         advance();
+    //         return *this;
+    //     }
+    //
+    //     auto operator++(int) -> LowResIterator {
+    //         auto copy = *this;
+    //         advance();
+    //         return copy;
+    //     }
+    //
+    //     friend auto operator+(LowResIterator const& it, difference_type n) -> LowResIterator {
+    //         auto copy = it;
+    //         for (difference_type i = 0; i < n; ++i) {
+    //             copy.advance();
+    //         }
+    //         return copy;
+    //     }
+    //
+    //     friend auto operator==(LowResIterator const& lhs, LowResIterator const& rhs) -> bool {
+    //         return lhs.mIndex == rhs.mIndex;
+    //     }
+    //
+    //     friend auto operator!=(LowResIterator const& lhs, LowResIterator const& rhs) -> bool { return !(lhs == rhs); }
+    // };
 
     auto CostMapNodelet::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg) -> void {
         assert(msg);
@@ -10,39 +66,44 @@ namespace mrover {
         if (!mPublishCostMap) return;
 
         try {
-            SE3d zed_to_map = SE3Conversions::fromTfTree(mTfBuffer, "zed_left_camera_frame", "map");
+            SE3d cameraToMap = SE3Conversions::fromTfTree(mTfBuffer, "map", "zed2i_left_camera_frame");
             auto* points = reinterpret_cast<Point const*>(msg->data.data());
-            // std::for_each(points, points + msg->width * msg->height, [&](auto* point) {
-            for (auto point = points; point - points < msg->width * msg->height; point += mDownSamplingFactor) {
-                Eigen::Vector4d p{point->x, point->y, point->z, 1};
-                point_matrix.col((point - points) / mDownSamplingFactor) = p;
-                Eigen::Vector4d normal{point->normal_x, point->normal_y, point->normal_z, 0};
-                normal_matrix.col((point - points) / mDownSamplingFactor) = normal;
+            for (std::size_t r = 0; r < msg->width; r += mDownSamplingFactor) {
+                auto* rowPoints = points + r * msg->width;
+                std::size_t beginDownsampled = 0;
+                std::size_t endDownsampled = msg->height / mDownSamplingFactor;
+                std::for_each(std::execution::par_unseq, beginDownsampled, endDownsampled, [&](std::size_t c) {
+                    auto* point = rowPoints + c * mDownSamplingFactor;
+                    Eigen::Vector4d pointInCamera{point->x, point->y, point->z, 1};
+                    Eigen::Vector4d normalInCamera{point->normal_x, point->normal_y, point->normal_z, 0};
+
+                    mPointsInMap.row(static_cast<Eigen::Index>(r)) = pointInCamera;
+                    mNormalsInMap.row(static_cast<Eigen::Index>(r)) = normalInCamera;
+                });
             }
 
             // TODO(neven): Make sure this still works with manif
-            point_matrix = zed_to_map.transform() * point_matrix;
-            normal_matrix = zed_to_map.transform() * normal_matrix;
+            mPointsInMap = cameraToMap.transform() * mPointsInMap;
+            mNormalsInMap = cameraToMap.transform() * mNormalsInMap;
 
-            for (uint32_t i = 0; i < mNumPoints; i++) {
-                double x = point_matrix(0, i);
-                double y = point_matrix(1, i);
-                Eigen::Vector4d n = normal_matrix.col(i);
+            for (Eigen::Index r = 0; r < mNumPoints; r++) {
+                double x = mPointsInMap(r, 0);
+                double y = mPointsInMap(r, 1);
+                Eigen::Vector3d normalInMap = mNormalsInMap.row(r).head<3>();
 
                 if (x >= mGlobalGridMsg.info.origin.position.x && x <= mGlobalGridMsg.info.origin.position.x + mDimension &&
                     y >= mGlobalGridMsg.info.origin.position.y && y <= mGlobalGridMsg.info.origin.position.y + mDimension) {
-                    int x_index = std::floor((x - mGlobalGridMsg.info.origin.position.x) / mGlobalGridMsg.info.resolution);
-                    int y_index = std::floor((y - mGlobalGridMsg.info.origin.position.y) / mGlobalGridMsg.info.resolution);
-                    auto ind = mGlobalGridMsg.info.width * y_index + x_index;
+                    int xIndex = std::floor((x - mGlobalGridMsg.info.origin.position.x) / mGlobalGridMsg.info.resolution);
+                    int yIndex = std::floor((y - mGlobalGridMsg.info.origin.position.y) / mGlobalGridMsg.info.resolution);
+                    auto costMapIndex = mGlobalGridMsg.info.width * yIndex + xIndex;
 
-                    Eigen::Vector3d normal{n.x(), n.y(), n.z()};
                     // normal.normalize();
                     // get vertical component of (unit) normal vector
-                    double z_comp = normal.z();
+                    double z = normalInMap.z();
                     // small z component indicates largely horizontal normal (surface is vertical)
-                    signed char cost = z_comp < mNormalThreshold ? 1 : 0;
+                    signed char cost = z < mNormalThreshold ? OCCUPIED_COST : FREE_COST;
 
-                    mGlobalGridMsg.data[ind] = std::max(mGlobalGridMsg.data[ind], cost);
+                    mGlobalGridMsg.data[costMapIndex] = std::max(mGlobalGridMsg.data[costMapIndex], cost);
                 }
             }
             mCostMapPub.publish(mGlobalGridMsg);
