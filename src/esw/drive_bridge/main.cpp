@@ -18,7 +18,7 @@ Meters WHEEL_DISTANCE_OUTER;
 compound_unit<Radians, inverse<Meters>> WHEEL_LINEAR_TO_ANGULAR;
 RadiansPerSecond MAX_MOTOR_SPEED;
 
-int main(int argc, char** argv) {
+auto main(int argc, char** argv) -> int {
     // Initialize the ROS node
     ros::init(argc, argv, "drive_bridge");
     ros::NodeHandle nh;
@@ -67,9 +67,9 @@ void moveDrive(geometry_msgs::Twist::ConstPtr const& msg) {
     auto turn = RadiansPerSecond{msg->angular.z};
     // TODO(quintin)    Don't ask me to explain perfectly why we need to cancel out a meters unit in the numerator
     //                  I think it comes from the fact that there is a unit vector in the denominator of the equation
-    auto delta = (turn/Radians{1}) * WHEEL_DISTANCE_INNER; // should be in m/s
-    RadiansPerSecond left = (forward-delta) * WHEEL_LINEAR_TO_ANGULAR;
-    RadiansPerSecond right = (forward+delta) * WHEEL_LINEAR_TO_ANGULAR;
+    auto delta = (turn / Radians{1}) * WHEEL_DISTANCE_INNER; // should be in m/s
+    RadiansPerSecond left = (forward - delta) * WHEEL_LINEAR_TO_ANGULAR;
+    RadiansPerSecond right = (forward + delta) * WHEEL_LINEAR_TO_ANGULAR;
 
     std::unordered_map<std::string, RadiansPerSecond> driveCommandVelocities{
             {"front_left", left},

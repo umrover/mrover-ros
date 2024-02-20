@@ -5,14 +5,14 @@
 
 std::unique_ptr<mrover::CanDevice> armLaserCanDevice;
 
-bool armLaserCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) {
+auto armLaserCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) -> bool {
     armLaserCanDevice->publish_message(mrover::InBoundPDLBMessage{mrover::ArmLaserCommand{.enable = static_cast<bool>(req.data)}});
     res.success = true;
     res.message = "DONE";
     return true;
 }
 
-int main(int argc, char** argv) {
+auto main(int argc, char** argv) -> int {
     // Initialize the ROS node
     ros::init(argc, argv, "arm_hw_bridge");
     ros::NodeHandle nh;

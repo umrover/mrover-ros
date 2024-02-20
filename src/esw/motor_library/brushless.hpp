@@ -57,6 +57,11 @@ namespace mrover {
         PositionInvalid = 43,
     };
 
+    struct MoteusLimitSwitchInfo {
+        bool isFwdPressed;
+        bool isBwdPressed;
+    };
+
     class BrushlessController : public Controller {
     public:
         BrushlessController(ros::NodeHandle const& nh, std::string name, std::string controllerName);
@@ -69,12 +74,33 @@ namespace mrover {
         double getEffort() override;
         void setStop();
         void setBrake();
+        MoteusLimitSwitchInfo getPressedLimitSwitchInfo();
+        void adjust(Radians position) override;
+        void sendQuery();
 
     private:
         moteus::Controller mController{moteus::Controller::Options{}};
+        bool limitSwitch0Present{};
+        bool limitSwitch1Present{};
+        bool limitSwitch0Enabled{true};
+        bool limitSwitch1Enabled{true};
+        bool limitSwitch0LimitsFwd{false};
+        bool limitSwitch1LimitsFwd{false};
+        bool limitSwitch0ActiveHigh{true};
+        bool limitSwitch1ActiveHigh{true};
+        bool limitSwitch0UsedForReadjustment{};
+        bool limitSwitch1UsedForReadjustment{};
+        Radians limitSwitch0ReadjustPosition{};
+        Radians limitSwitch1ReadjustPosition{};
+
+        int8_t moteusAux1Info{0};
+        int8_t moteusAux2Info{0};
+
+        Radians mMinPosition, mMaxPosition;
+        RadiansPerSecond mMinVelocity, mMaxVelocity;
 
         // Function to map throttle to velocity
-        RadiansPerSecond mapThrottleToVelocity(Percent throttle);
+        RadiansPerSecond mapThrottleToVelocity(Percent throttle) const;
         // Converts moteus error codes and mode codes to std::string descriptions
         static std::string moteusErrorCodeToErrorState(moteus::Mode motor_mode, ErrorCode motor_error_code);
         static std::string moteusModeToState(moteus::Mode motor_mode);

@@ -9,9 +9,16 @@
         <img src="/help.png" alt="Help" title="Help" width="48" height="48" />
       </div>
       <div class="helpscreen"></div>
-      <div class="helpimages" style="display: flex; align-items: center; justify-content: space-evenly">
-        <img src="/joystick.png" alt="Joystick" title="Joystick Controls"
-          style="width: auto; height: 70%; display: inline-block" />
+      <div
+        class="helpimages"
+        style="display: flex; align-items: center; justify-content: space-evenly"
+      >
+        <img
+          src="/joystick.png"
+          alt="Joystick"
+          title="Joystick Controls"
+          style="width: auto; height: 70%; display: inline-block"
+        />
       </div>
     </div>
     <div class="shadow p-3 rounded map">
@@ -29,9 +36,9 @@
     <div>
       <DriveControls />
     </div>
-    <!-- <div class="shadow p-3 rounded arm">
-        <SAArmControls />
-      </div> -->
+    <div class="shadow p-3 rounded arm">
+      <SAArmControls />
+    </div>
     <div class="shadow p-3 rounded pdb">
       <PDBFuse />
     </div>
@@ -43,26 +50,41 @@
     </div>
     <div class="shadow p-3 rounded limit">
       <h3>Limit Switches</h3>
-      <LimitSwitch :switch_name="'sa_joint_1'" :name="'Joint 1 Switch'" />
-      <LimitSwitch :switch_name="'sa_joint_2'" :name="'Joint 2 Switch'" />
-      <LimitSwitch :switch_name="'sa_joint_3'" :name="'Joint 3 Switch'" />
-      <LimitSwitch :switch_name="'scoop'" :name="'Scoop Switch'" />
+      <LimitSwitch :service_name="'sa_enable_limit_switch_sa_x'" :display_name="'SA X Switch'" />
+      <LimitSwitch :service_name="'sa_enable_limit_switch_sa_y'" :display_name="'SA Y Switch'" />
+      <LimitSwitch :service_name="'sa_enable_limit_switch_sa_z'" :display_name="'SA Z Switch'" />
+      <LimitSwitch
+        :service_name="'sa_enable_limit_switch_sampler'"
+        :display_name="'Sampler Switch'"
+      />
+      <LimitSwitch
+        :service_name="'sa_enable_limit_switch_sensor_actuator'"
+        :display_name="'Sensor Actuator Switch'"
+      />
     </div>
     <div class="shadow p-3 rounded calibration">
       <h3>Calibrations</h3>
+      <br />
       <div class="calibration-checkboxes">
-        <CalibrationCheckbox :name="'Joint 1 Calibration'" :joint_name="'sa_joint_1'"
-          :calibrate_topic="'sa_is_calibrated'" />
-        <CalibrationCheckbox :name="'Joint 2 Calibration'" :joint_name="'sa_joint_2'"
-          :calibrate_topic="'sa_is_calibrated'" />
-        <CalibrationCheckbox :name="'Joint 3 Calibration'" :joint_name="'sa_joint_3'"
-          :calibrate_topic="'sa_is_calibrated'" />
+        <CalibrationCheckbox :name="'SA X Calibration'" :topic_name="'sa_calibrate_sa_x'" />
+        <CalibrationCheckbox :name="'SA Y Calibration'" :topic_name="'sa_calibrate_sa_y'" />
+        <CalibrationCheckbox :name="'SA Z Calibration'" :topic_name="'sa_calibrate_sa_z'" />
+        <CalibrationCheckbox
+          :name="'SA Sampler Calibration'"
+          :topic_name="'sa_calibrate_sampler'"
+        />
+        <CalibrationCheckbox
+          :name="'SA Sensor Actuator Calibration'"
+          :topic_name="'sa_calibrate_sensor_actuator'"
+        />
       </div>
-      <MotorAdjust :options="[
-        { name: 'sa_joint_1', option: 'Joint 1' },
-        { name: 'sa_joint_2', option: 'Joint 2' },
-        { name: 'sa_joint_3', option: 'Joint 3' }
-      ]" />
+      <!-- <MotorAdjust
+        :options="[
+          { name: 'sa_joint_1', option: 'Joint 1' },
+          { name: 'sa_joint_2', option: 'Joint 2' },
+          { name: 'sa_joint_3', option: 'Joint 3' }
+        ]"
+      /> -->
     </div>
     <div v-show="false">
       <MastGimbalControls></MastGimbalControls>
@@ -90,6 +112,7 @@ import CalibrationCheckbox from './CalibrationCheckbox.vue'
 //   import MCUReset from "./MCUReset.vue";
 import MotorAdjust from './MotorAdjust.vue'
 import OdometryReading from './OdometryReading.vue'
+import SAArmControls from './SAArmControls.vue'
 import { disableAutonLED, quaternionToMapAngle } from '../utils.js'
 
 export default {
@@ -99,17 +122,17 @@ export default {
     BasicWaypointEditor,
     Cameras,
     DriveControls,
-    MotorsStatusTable,
     MastGimbalControls,
     DriveMoteusStateTable,
     PDBFuse,
-    //   SAArmControls,
+    SAArmControls,
     LimitSwitch,
     CalibrationCheckbox,
     //   CommReadout,
     //   MCUReset,
     MotorAdjust,
-    OdometryReading
+    OdometryReading,
+    MotorsStatusTable
   },
   data() {
     return {
@@ -132,8 +155,9 @@ export default {
         name: [] as string[],
         error: [] as string[],
         state: [] as string[],
-        limit_hit: [] as boolean[] /* Each motor stores an array of 4 indicating which limit switches are hit */
-      },
+        limit_hit:
+          [] as boolean[] /* Each motor stores an array of 4 indicating which limit switches are hit */
+      }
     }
   },
 
@@ -239,8 +263,8 @@ export default {
   cursor: pointer;
 }
 
-.help:hover~.helpscreen,
-.help:hover~.helpimages {
+.help:hover ~ .helpscreen,
+.help:hover ~ .helpimages {
   visibility: visible;
 }
 

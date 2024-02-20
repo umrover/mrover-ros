@@ -11,12 +11,12 @@ extern uint8_t spectral_status_buffer[1];
 namespace mrover {
 
     // NOTE: Change this for the PDLB controller
-    constexpr static std::uint8_t DEVICE_ID = 0x32;
+    constexpr static std::uint8_t DEVICE_ID = 0x33;
 
     // Usually this is the Jetson
     constexpr static std::uint8_t DESTINATION_DEVICE_ID = 0x10;
 
-    FDCAN fdcan_bus;
+    FDCAN<InBoundScienceMessage> fdcan_bus;
     Science science;
 
     void init() {
@@ -26,9 +26,11 @@ namespace mrover {
                       0) == HAL_OK,
               Error_Handler);
 
-        std::shared_ptr<SMBus> i2c_bus = std::make_shared<SMBus>(&hi2c1);
+        std::shared_ptr<SMBus<uint8_t, uint16_t>> i2c_bus = std::make_shared<SMBus<uint8_t, uint16_t>>(&hi2c1);
 
-        std::shared_ptr<I2CMux> i2c_mux = std::make_shared<I2CMux>(i2c_bus);
+        std::shared_ptr<I2CMux> i2c_mux = std::make_shared<I2CMux>(
+        		i2c_bus,
+				Pin{I2C_MUX_RST_GPIO_Port, I2C_MUX_RST_Pin});
 
         std::array<Spectral, 3> spectral_sensors = {
         		Spectral(i2c_bus, i2c_mux, 0),
@@ -61,16 +63,16 @@ namespace mrover {
 		{
 				Pin{UV_LED_0_GPIO_Port, UV_LED_0_Pin},
 				Pin{UV_LED_1_GPIO_Port, UV_LED_1_Pin},
-				Pin{UV_LED_1_GPIO_Port, UV_LED_2_Pin}
+				Pin{UV_LED_2_GPIO_Port, UV_LED_2_Pin}
 		};
         std::array<Pin, 3> white_leds =
 		{
 				Pin{WHITE_LED_0_GPIO_Port, WHITE_LED_0_Pin},
 				Pin{WHITE_LED_1_GPIO_Port, WHITE_LED_1_Pin},
-				Pin{WHITE_LED_1_GPIO_Port, WHITE_LED_2_Pin}
+				Pin{WHITE_LED_2_GPIO_Port, WHITE_LED_2_Pin}
 		};
 
-        fdcan_bus = FDCAN{DEVICE_ID, DESTINATION_DEVICE_ID, &hfdcan1};
+        fdcan_bus = FDCAN<InBoundScienceMessage>{DEVICE_ID, DESTINATION_DEVICE_ID, &hfdcan1};
         science = Science{fdcan_bus, spectral_sensors, adc_sensor, diag_temp_sensors, heater_pins, uv_leds, white_leds};
     }
 
@@ -94,10 +96,15 @@ namespace mrover {
 		science.update_and_send_heater();
 	}
 
+	// USED FOR TESTING WHILE CAN IS DOWN
+	void receive_message_debug(InBoundScienceMessage message) {
+		science.receive(message);
+	}
+
     void receive_message() {
-		if (std::optional received = fdcan_bus.receive<InBoundScienceMessage>()) {
+		if (std::optional received = fdcan_bus.receive()) {
 			auto const& [header, message] = received.value();
-			auto messageId = std::bit_cast<FDCAN::MessageId>(header.Identifier);
+			auto messageId = std::bit_cast<FDCAN<InBoundScienceMessage>::MessageId>(header.Identifier);
 			if (messageId.destination == DEVICE_ID)
 				science.receive(message);
 		}
@@ -123,6 +130,14 @@ void update_and_send_thermistor_and_auto_shutoff_if_applicable() {
 
 void update_and_send_heater() {
 	mrover::update_and_send_heater();
+}
+
+// Used for debugging while CAN isn't working
+void receive_message_debug(int device, int enable) {
+	mrover::EnableScienceDeviceCommand message;
+	message.science_device = static_cast<mrover::ScienceDevice>(device);
+	message.enable = enable;
+	mrover::receive_message_debug(message);	
 }
 
 void receive_message() {

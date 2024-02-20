@@ -11,7 +11,7 @@ void changeLED(const mrover::LED::ConstPtr& msg);
 
 ros::Publisher CANPublisher;
 
-int main(int argc, char** argv) {
+auto main(int argc, char** argv) -> int {
     // Initialize the ROS node
     ros::init(argc, argv, "led_hw_bridge");
     ros::NodeHandle nh;
@@ -27,7 +27,7 @@ int main(int argc, char** argv) {
     return 0;
 }
 
-void changeLED(const mrover::LED::ConstPtr& msg) {
+auto changeLED(mrover::LED::ConstPtr const& msg) -> void {
     mrover::LEDInfo ledInfo{};
     ledInfo.red = msg->red;
     ledInfo.green = msg->green;
