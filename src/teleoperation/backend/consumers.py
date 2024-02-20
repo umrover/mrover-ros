@@ -7,7 +7,7 @@ import threading
 from channels.generic.websocket import JsonWebsocketConsumer
 import rospy
 import tf2_ros
-from cv2
+import cv2
 from cv_bridge import CvBridge
 from geometry_msgs.msg import Twist
 from mrover.msg import (
@@ -27,12 +27,7 @@ from mrover.msg import (
     IK,
 )
 from mrover.srv import EnableAuton, ChangeCameras, CapturePanorama
-from sensor_msgs.msg import (
-    NavSatFix,
-    Temperature,
-    RelativeHumidity,
-    Image
-)
+from sensor_msgs.msg import NavSatFix, Temperature, RelativeHumidity, Image
 from mrover.srv import EnableAuton
 from sensor_msgs.msg import NavSatFix, Temperature, RelativeHumidity
 from std_msgs.msg import String, Bool
@@ -616,11 +611,11 @@ class GUIConsumer(JsonWebsocketConsumer):
         streams = rospy.get_param("cameras/max_streams")
         self.send(text_data=json.dumps({"type": "max_resolution", "res": res}))
         self.send(text_data=json.dumps({"type": "max_streams", "streams": streams}))
-    
+
     def capture_panorama(self) -> None:
         try:
             response = self.capture_panorama_srv()
-            image = response.panorama 
+            image = response.panorama
             self.image_callback(image)
         except rospy.ServiceException as e:
             print(f"Service call failed: {e}")
@@ -629,7 +624,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         bridge = CvBridge()
         try:
             # Convert the image to OpenCV standard format
-            cv_image = bridge.imgmsg_to_cv2(msg, desired_encoding='passthrough')
+            cv_image = bridge.imgmsg_to_cv2(msg, desired_encoding="passthrough")
         except Exception as e:
             rospy.logerr("Could not convert image message to OpenCV image: " + str(e))
             return
