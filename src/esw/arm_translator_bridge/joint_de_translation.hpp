@@ -10,7 +10,7 @@ namespace mrover {
 
     constexpr std::array<std::array<float, 2>, 2> CONVERT_MOTORS_TO_PITCH_ROLL_MATRIX = inverseMatrix(CONVERT_PITCH_ROLL_TO_MOTORS_MATRIX);
 
-    static std::pair<float, float> transformMotorOutputsToPitchRoll(float motor_0, float motor_1) {
+    [[maybe_unused]] static auto transformMotorOutputsToPitchRoll(float motor_0, float motor_1) -> std::pair<float, float> {
 
         std::array<float, 2> motorsVector = {motor_0, motor_1};
 
@@ -21,7 +21,7 @@ namespace mrover {
     }
 
     // Function to transform coordinates
-    static std::pair<float, float> transformPitchRollToMotorOutputs(float pitch, float roll) {
+    [[maybe_unused]] static auto transformPitchRollToMotorOutputs(float pitch, float roll) -> std::pair<float, float> {
         // Create the input vector
         std::array<float, 2> pitchRollVector = {pitch, roll};
 

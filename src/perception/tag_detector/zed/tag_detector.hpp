@@ -8,7 +8,7 @@ namespace mrover {
         int id = -1;
         int hitCount = 0;
         cv::Point2f imageCenter{};
-        std::optional<SE3> tagInCam;
+        std::optional<SE3d> tagInCam;
     };
 
     class TagDetectorNodelet : public nodelet::Nodelet {
@@ -54,7 +54,7 @@ namespace mrover {
 
         auto publishThresholdedImage() -> void;
 
-        auto getTagInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t u, size_t v) const -> std::optional<SE3>;
+        std::optional<SE3d> getTagInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t u, size_t v);
 
     public:
         TagDetectorNodelet() = default;

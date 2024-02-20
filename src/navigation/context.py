@@ -72,7 +72,7 @@ class Rover:
 class Environment:
     """
     Context class to represent the rover's environment
-    Information such as locations of fiducials or obstacles
+    Information such as locations of tags or obstacles
     """
 
     ctx: Context
@@ -99,7 +99,7 @@ class Environment:
             tf2_ros.LookupException,
             tf2_ros.ConnectivityException,
             tf2_ros.ExtrapolationException,
-        ) as e:
+        ):
             return None
         return target_pose.position
 
@@ -112,7 +112,7 @@ class Environment:
         in_odom = self.ctx.use_odom and odom_override
         current_waypoint = self.ctx.course.current_waypoint()
         if current_waypoint is None:
-            print("CURRENT WAYPOINT IS NONE")
+            rospy.logwarn("Current waypoint is empty!")
             return None
 
         if current_waypoint.type.val == WaypointType.POST:

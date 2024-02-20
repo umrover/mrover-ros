@@ -113,7 +113,7 @@ namespace mrover {
         }
 
         template<IsUnit U>
-        [[nodiscard]] constexpr auto operator=(U const& rhs) -> Unit&
+        constexpr auto operator=(U const& rhs) -> Unit&
             requires AreExponentsSame<Unit, U>
         {
             rep = rhs.get();

@@ -21,7 +21,7 @@ from mrover.msg import (
     MotorsStatus,
     Velocity,
     Position,
-    IK
+    IK,
 )
 from mrover.srv import EnableAuton
 from sensor_msgs.msg import NavSatFix, Temperature, RelativeHumidity
@@ -72,7 +72,9 @@ class GUIConsumer(JsonWebsocketConsumer):
 
             # Subscribers
             self.pdb_sub = rospy.Subscriber("/pdb_data", PDLB, self.pdb_callback)
-            self.arm_moteus_sub = rospy.Subscriber("/arm_controller_data", ControllerState, self.arm_controller_callback)
+            self.arm_moteus_sub = rospy.Subscriber(
+                "/arm_controller_data", ControllerState, self.arm_controller_callback
+            )
             self.drive_moteus_sub = rospy.Subscriber(
                 "/drive_controller_data", ControllerState, self.drive_controller_callback
             )
@@ -82,8 +84,10 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.nav_state_sub = rospy.Subscriber("/nav_state", StateMachineStateUpdate, self.nav_state_callback)
             self.imu_calibration = rospy.Subscriber("imu/calibration", CalibrationStatus, self.imu_calibration_callback)
             self.sa_temp_data = rospy.Subscriber("/sa_temp_data", Temperature, self.sa_temp_data_callback)
-            self.sa_humidity_data = rospy.Subscriber("/sa_humidity_data", RelativeHumidity, self.sa_humidity_data_callback)
-        
+            self.sa_humidity_data = rospy.Subscriber(
+                "/sa_humidity_data", RelativeHumidity, self.sa_humidity_data_callback
+            )
+
             # Services
             self.laser_service = rospy.ServiceProxy("enable_mosfet_device", SetBool)
             self.calibrate_service = rospy.ServiceProxy("arm_calibrate", Trigger)
@@ -96,13 +100,13 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.calibrate_cache_srv = rospy.ServiceProxy("cache_calibrate", Trigger)
             self.cache_enable_limit = rospy.ServiceProxy("cache_enable_limit_switches", SetBool)
             self.calibrate_service = rospy.ServiceProxy("arm_calibrate", Trigger)
-            
+
             # ROS Parameters
             self.mappings = rospy.get_param("teleop/joystick_mappings")
             self.drive_config = rospy.get_param("teleop/drive_controls")
             self.max_wheel_speed = rospy.get_param("rover/max_speed")
             self.wheel_radius = rospy.get_param("wheel/radius")
-            self.max_angular_speed = self.max_wheel_speed / self.wheel_radius                    
+            self.max_angular_speed = self.max_wheel_speed / self.wheel_radius
             self.ra_config = rospy.get_param("teleop/ra_controls")
             self.ik_names = rospy.get_param("teleop/ik_multipliers")
             self.RA_NAMES = rospy.get_param("teleop/ra_names")
@@ -156,7 +160,7 @@ class GUIConsumer(JsonWebsocketConsumer):
                 self.auton_bearing()
             elif message["type"] == "mast_gimbal":
                 self.mast_gimbal(message)
-            elif message['type'] == 'enable_limit_switch':
+            elif message["type"] == "enable_limit_switch":
                 self.limit_switch(message)
             elif message["type"] == "center_map":
                 self.send_center()
@@ -272,19 +276,28 @@ class GUIConsumer(JsonWebsocketConsumer):
         ra_slow_mode = False
         if msg["arm_mode"] == "ik":
             base_link_in_map = SE3.from_tf_tree(self.tf_buffer, "map", "base_link")
-            
+
             left_trigger = self.filter_xbox_axis(msg["axes"][self.xbox_mappings["left_trigger"]])
             if left_trigger < 0:
                 left_trigger = 0
 
             right_trigger = self.filter_xbox_axis(msg["axes"][self.xbox_mappings["right_trigger"]])
             if right_trigger < 0:
-                right_trigger = 0  
-            base_link_in_map.position[0]+= self.ik_names["x"]*self.filter_xbox_axis(msg["axes"][self.xbox_mappings["left_js_x"]]),
-            base_link_in_map.position[1]+= self.ik_names["y"]*self.filter_xbox_axis(msg["axes"][self.xbox_mappings["left_js_y"]]),
-            base_link_in_map.position[2]-=self.ik_names["z"]*left_trigger+self.ik_names["z"]*right_trigger
-           
-            arm_ik_cmd = IK(pose=Pose(position=Point(*base_link_in_map.position), orientation=Quaternion(*base_link_in_map.rotation.quaternion)))
+                right_trigger = 0
+            base_link_in_map.position[0] += (
+                self.ik_names["x"] * self.filter_xbox_axis(msg["axes"][self.xbox_mappings["left_js_x"]]),
+            )
+            base_link_in_map.position[1] += (
+                self.ik_names["y"] * self.filter_xbox_axis(msg["axes"][self.xbox_mappings["left_js_y"]]),
+            )
+            base_link_in_map.position[2] -= self.ik_names["z"] * left_trigger + self.ik_names["z"] * right_trigger
+
+            arm_ik_cmd = IK(
+                pose=Pose(
+                    position=Point(*base_link_in_map.position),
+                    orientation=Quaternion(*base_link_in_map.rotation.quaternion),
+                )
+            )
             self.arm_ik_pub.publish(arm_ik_cmd)
 
         elif msg["arm_mode"] == "position":
