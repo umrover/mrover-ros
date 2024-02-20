@@ -12,13 +12,13 @@ auto SIM3::position() const -> R3 {
     return mTransform.translation();
 }
 
-auto SE3Conversions::fromTfTree(tf2_ros::Buffer const& buffer, std::string const& fromFrameId, std::string const& toFrameId) -> SE3d {
-    geometry_msgs::TransformStamped transform = buffer.lookupTransform(fromFrameId, toFrameId, ros::Time{});
+auto SE3Conversions::fromTfTree(tf2_ros::Buffer const& buffer, std::string const& fromFrame, std::string const& toFrame) -> SE3d {
+    geometry_msgs::TransformStamped transform = buffer.lookupTransform(toFrame, fromFrame, ros::Time{});
     return fromTf(transform.transform);
 }
 
-auto SE3Conversions::pushToTfTree(tf2_ros::TransformBroadcaster& broadcaster, std::string const& childFrameId, std::string const& parentFrameId, SE3d const& tf) -> void {
-    broadcaster.sendTransform(toTransformStamped(tf, parentFrameId, childFrameId));
+auto SE3Conversions::pushToTfTree(tf2_ros::TransformBroadcaster& broadcaster, std::string const& fromFrame, std::string const& toFrame, SE3d const& transform) -> void {
+    broadcaster.sendTransform(toTransformStamped(transform, fromFrame, toFrame));
 }
 
 auto SE3Conversions::fromTf(geometry_msgs::Transform const& transform) -> SE3d {
@@ -57,19 +57,19 @@ auto SE3Conversions::toTransform(SE3d const& tf) -> geometry_msgs::Transform {
     return transform;
 }
 
-auto SE3Conversions::toPoseStamped(SE3d const& tf, std::string const& frameId) -> geometry_msgs::PoseStamped {
+auto SE3Conversions::toPoseStamped(SE3d const& tf, std::string const& frame) -> geometry_msgs::PoseStamped {
     geometry_msgs::PoseStamped pose;
     pose.pose = toPose(tf);
-    pose.header.frame_id = frameId;
+    pose.header.frame_id = frame;
     pose.header.stamp = ros::Time::now();
     return pose;
 }
 
-auto SE3Conversions::toTransformStamped(SE3d const& tf, std::string const& parentFrameId, std::string const& childFrameId) -> geometry_msgs::TransformStamped {
+auto SE3Conversions::toTransformStamped(SE3d const& tf, std::string const& childFrame, std::string const& parentFrame) -> geometry_msgs::TransformStamped {
     geometry_msgs::TransformStamped transform;
     transform.transform = toTransform(tf);
-    transform.header.frame_id = parentFrameId;
+    transform.header.frame_id = parentFrame;
     transform.header.stamp = ros::Time::now();
-    transform.child_frame_id = childFrameId;
+    transform.child_frame_id = childFrame;
     return transform;
 }
