@@ -1,4 +1,4 @@
-#include "tag_detector_class.hpp"
+#include "../tag_detector_class.hpp"
 #include "pch.hpp"
 
 namespace mrover {

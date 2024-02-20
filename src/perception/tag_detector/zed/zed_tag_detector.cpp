@@ -1,4 +1,4 @@
-#include "tag_detector.hpp"
+#include "zed_tag_detector.hpp"
 
 namespace mrover {
 
