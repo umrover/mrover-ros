@@ -1,5 +1,6 @@
 <launch>
   <arg name="run_tag_detector" default="true" />
+  <arg name="run_object_detector" default="false" />
 
   <arg name="sim" default="false" />
   <arg name="use_ekf" default="false" />
@@ -7,6 +8,7 @@
 
   <include file="$(find mrover)/launch/perception.launch">
     <arg name="run_tag_detector" value="$(arg run_tag_detector)" />
+    <arg name="run_object_detector" value="$(arg run_object_detector)" />
   </include>
 
   <include file="$(find mrover)/launch/navigation.launch" />

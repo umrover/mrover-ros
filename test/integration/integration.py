@@ -2,13 +2,14 @@
 
 import sys
 import unittest
+from typing import Optional
 
 import numpy as np
 
 import rospy
 import rostest
 import tf2_ros
-from mrover.msg import Waypoint, WaypointType, LED
+from mrover.msg import Waypoint, WaypointType, StateMachineStateUpdate
 from util.SE3 import SE3
 from util.course_publish_helpers import publish_waypoints, convert_waypoint_to_gps
 
@@ -24,7 +25,7 @@ class TestIntegration(unittest.TestCase):
         waypoints = [
             (
                 Waypoint(tag_id=0, type=WaypointType(val=WaypointType.NO_SEARCH)),
-                SE3(position=np.array([4, 4, 0])),
+                SE3(position=np.array([5, 3, 0])),
             ),
             (
                 Waypoint(tag_id=0, type=WaypointType(val=WaypointType.POST)),
@@ -40,6 +41,14 @@ class TestIntegration(unittest.TestCase):
         #     rospy.loginfo(f"LED message received: {msg}")
         #
         # rospy.Subscriber("/led", LED, led_callback)
+
+        nav_state = StateMachineStateUpdate()
+
+        def nav_state_callback(msg: StateMachineStateUpdate) -> None:
+            nonlocal nav_state
+            nav_state = msg
+
+        rospy.Subscriber("/nav_state", StateMachineStateUpdate, nav_state_callback)
 
         rate = rospy.Rate(20)
         for waypoint in waypoints:
@@ -60,16 +69,15 @@ class TestIntegration(unittest.TestCase):
                     else:
                         raise ValueError(f"Unknown waypoint type: {waypoint_data.type}")
                     distance_to_target = waypoint_in_world.pos_distance_to(rover_in_world)
-                    rospy.logdebug(distance_to_target)
                     return distance_to_target
                 except tf2_ros.TransformException as e:
                     rospy.logwarn_throttle(1, f"Transform exception: {e}")
                     return float("inf")
 
-            while distance_to_target() > COMPLETION_TOLERANCE:
+            while (distance := distance_to_target()) > COMPLETION_TOLERANCE and nav_state.state != "DoneState":
                 if rospy.is_shutdown():
                     return
-                rospy.loginfo_throttle(1, f"Distance to current waypoint: {distance_to_target()}")
+                rospy.loginfo_throttle(1, f"Distance to current waypoint: {distance}, navigation state: {nav_state.state}")
                 rate.sleep()
 
             rospy.loginfo("Waypoint reached")
