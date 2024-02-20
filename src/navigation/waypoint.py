@@ -35,7 +35,7 @@ class WaypointState(State):
             return post_backup.PostBackupState()
 
         if context.course.look_for_post():
-            if context.env.current_fid_pos() is not None:
+            if context.env.current_tag_pos() is not None:
                 return approach_post.ApproachPostState()
 
         # Attempt to find the waypoint in the TF tree and drive to it

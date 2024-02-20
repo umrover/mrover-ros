@@ -7,7 +7,7 @@ PLUGINLIB_EXPORT_CLASS(mrover::ZedNodelet, nodelet::Nodelet)
 
 #else
 
-int main(int argc, char** argv) {
+auto main(int argc, char** argv) -> int {
     ros::init(argc, argv, "zed_wrapper");
 
     // Start the ZED Nodelet
@@ -20,4 +20,3 @@ int main(int argc, char** argv) {
 }
 
 #endif
-

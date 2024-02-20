@@ -8,7 +8,7 @@ namespace mrover {
      * @param u     X Pixel Position
      * @param v     Y Pixel Position
      */
-    std::optional<SE3> TagDetectorNodelet::getTagInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t u, size_t v) {
+    auto TagDetectorNodelet::getTagInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t u, size_t v) -> std::optional<SE3d> {
         assert(cloudPtr);
 
         if (u >= cloudPtr->width || v >= cloudPtr->height) {
@@ -23,7 +23,7 @@ namespace mrover {
             return std::nullopt;
         }
 
-        return std::make_optional<SE3>(R3{point.x, point.y, point.z}, SO3{});
+        return std::make_optional<SE3d>(R3{point.x, point.y, point.z}, SO3d::Identity());
     }
 
     /**
@@ -32,7 +32,7 @@ namespace mrover {
      *
      * @param msg   Point cloud message
      */
-    void TagDetectorNodelet::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg) {
+    auto TagDetectorNodelet::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg) -> void {
         assert(msg);
         assert(msg->height > 0);
         assert(msg->width > 0);
@@ -81,7 +81,7 @@ namespace mrover {
             if (tag.tagInCam) {
                 // Publish tag to immediate
                 std::string immediateFrameId = "immediateFiducial" + std::to_string(tag.id);
-                SE3::pushToTfTree(mTfBroadcaster, immediateFrameId, mCameraFrameId, tag.tagInCam.value());
+                SE3Conversions::pushToTfTree(mTfBroadcaster, immediateFrameId, mCameraFrameId, tag.tagInCam.value());
             }
         }
 
@@ -108,8 +108,8 @@ namespace mrover {
                     std::string immediateFrameId = "immediateFiducial" + std::to_string(tag.id);
                     // Publish tag to odom
                     std::string const& parentFrameId = mUseOdom ? mOdomFrameId : mMapFrameId;
-                    SE3 tagInParent = SE3::fromTfTree(mTfBuffer, parentFrameId, immediateFrameId);
-                    SE3::pushToTfTree(mTfBroadcaster, "fiducial" + std::to_string(id), parentFrameId, tagInParent);
+                    SE3d tagInParent = SE3Conversions::fromTfTree(mTfBuffer, parentFrameId, immediateFrameId);
+                    SE3Conversions::pushToTfTree(mTfBroadcaster, "fiducial" + std::to_string(id), parentFrameId, tagInParent);
                 } catch (tf2::ExtrapolationException const&) {
                     NODELET_WARN("Old data for immediate tag");
                 } catch (tf2::LookupException const&) {
