@@ -1,21 +1,22 @@
 from __future__ import annotations
-from dataclasses import dataclass
-from typing import Optional
+
 import heapq
-import numpy as np
 import random
+from threading import Lock
+from typing import Optional
+
+import numpy as np
+
 import rospy
-from mrover.msg import GPSPointList, Costmap2D
+from geometry_msgs.msg import Pose, PoseStamped
+from mrover.msg import GPSPointList
+from nav_msgs.msg import OccupancyGrid, Path
+from navigation import approach_post, recovery, waypoint
+from navigation.context import convert_cartesian_to_gps, Context
+from navigation.trajectory import Trajectory, SearchTrajectory
+from util.SE3 import SE3
 from util.ros_utils import get_rosparam
 from util.state_lib.state import State
-from nav_msgs.msg import OccupancyGrid, MapMetaData, Path
-from geometry_msgs.msg import Pose, PoseStamped
-from navigation import approach_post, recovery, waypoint
-from navigation.context import convert_cartesian_to_gps
-from navigation.trajectory import Trajectory, SearchTrajectory
-from navigation.context import Context
-from threading import Lock
-from util.SE3 import SE3
 
 
 class Node:
