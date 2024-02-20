@@ -7,22 +7,22 @@ namespace mrover {
 
     // Constants
 
-    // From: arm.urdf.xacro
-    constexpr double LINK_AB = 0.534;
-    constexpr double LINK_BC = 0.553;
-    constexpr double LINK_CD = 0.044886000454425812;
-    constexpr double TAU = std::numbers::pi * 2;
-    double const OFFSET = std::atan2(0.09, LINK_BC);
-    constexpr double JOINT_A_MIN = -1;
-    constexpr double JOINT_A_MAX = 1;
-    constexpr double JOINT_B_MIN = -0.5 * std::numbers::pi;
+    // From: rover.urdf.xacro
+    // A is the prismatic joint, B is the first revolute joint, C is the second revolute joint
+    constexpr double LINK_BC = 0.534;
+    constexpr double LINK_CD = 0.553;
+    constexpr double LINK_DE = 0.044886000454425812;
+    double const OFFSET = std::atan2(0.09, LINK_CD);
+    constexpr double JOINT_A_MIN = -0.45;
+    constexpr double JOINT_A_MAX = 0;
+    constexpr double JOINT_B_MIN = -0.25 * std::numbers::pi;
     constexpr double JOINT_B_MAX = 0;
-    constexpr double JOINT_C_MIN = 0;
-    constexpr double JOINT_C_MAX = std::numbers::pi;
-    constexpr double JOINT_DE_PITCH_MIN = -1 * std::numbers::pi;
-    constexpr double JOINT_DE_PITCH_MAX = std::numbers::pi;
-    constexpr double JOINT_DE_ROLL_MIN = -1 * std::numbers::pi;
-    constexpr double JOINT_DE_ROLL_MAX = std::numbers::pi;
+    constexpr double JOINT_C_MIN = -0.959931;
+    constexpr double JOINT_C_MAX = 2.87979;
+    constexpr double JOINT_DE_PITCH_MIN = -0.75 * std::numbers::pi;
+    constexpr double JOINT_DE_PITCH_MAX = 0.75 * std::numbers::pi;
+    // constexpr double JOINT_DE_ROLL_MIN = -0.75 * std::numbers::pi;
+    // constexpr double JOINT_DE_ROLL_MAX = 0.75 * std::numbers::pi;
 
     // Subscribers
 
@@ -73,12 +73,12 @@ namespace mrover {
         // ROS_INFO("x: %f, y: %f, z: %f, q1: %f, q2: %f, q3: %f", x, y, z, q1, q2, q3);
 
         double gamma = 0;
-        double x3 = x - LINK_CD * cos(gamma);
-        double z3 = z - LINK_CD * sin(gamma);
+        double x3 = x - LINK_DE * cos(gamma);
+        double z3 = z - LINK_DE * sin(gamma);
 
         double C = sqrt(x3 * x3 + z3 * z3);
-        double alpha = acos((LINK_AB * LINK_AB + LINK_BC * LINK_BC - C * C) / (2 * LINK_AB * LINK_BC));
-        double beta = acos((LINK_AB * LINK_AB + C * C - LINK_BC * LINK_BC) / (2 * LINK_AB * C));
+        double alpha = acos((LINK_BC * LINK_BC + LINK_CD * LINK_CD - C * C) / (2 * LINK_BC * LINK_CD));
+        double beta = acos((LINK_BC * LINK_BC + C * C - LINK_CD * LINK_CD) / (2 * LINK_BC * C));
         double thetaA = atan(z3 / x3) + beta;
         double thetaB = -1 * (std::numbers::pi - alpha);
         double thetaC = gamma - thetaA - thetaB;
