@@ -23,7 +23,6 @@ from sensor_msgs.msg import Image
 
 def on_press(key):
     if key == keyboard.Key.enter:
-
         msg = rospy.wait_for_message("/camera/left/image", Image, timeout=5)
         data = np.empty(msg.height * msg.width * 4, dtype=np.uint8)
         for x in range(msg.height * msg.width * 4):
@@ -46,7 +45,6 @@ def on_release(key):
 
 
 class image_capturepy:
-
     def __init__(self):
         while False:
             continue

@@ -11,8 +11,8 @@ namespace mrover {
         mNh.param<bool>("enable_loop_profiler", mEnableLoopProfiler, false);
 
         //TF Params
-        mNh.param<std::string>("camera_frame", mCameraFrameId, "zed2i_left_camera_frame");
-        mNh.param<std::string>("world_frame", mMapFrameId, "map");
+        mNh.param<std::string>("camera_frame", mCameraFrameId, "zed_left_camera_frame");
+        mNh.param<std::string>("world_frame", mMapFrame, "map");
 
         //Hit count params
         mNh.param<int>("obj_increment_weight", mObjIncrementWeight, 2);
@@ -21,7 +21,7 @@ namespace mrover {
         mNh.param<int>("obj_hitcount_max", mObjMaxHitcount, 10);
 
         //Model Params
-        mNh.param<std::string>("model_name", mModelName, "baja");
+        mNh.param<std::string>("model_name", mModelName, "yolov8n_mallet_bottle_better");
 
         //Init Model Path
         std::filesystem::path packagePath = ros::package::getPath("mrover");

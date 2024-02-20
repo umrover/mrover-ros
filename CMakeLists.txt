@@ -178,6 +178,8 @@ if (ZED_FOUND)
     mrover_nodelet_defines(object_detector
             __CUDA_INCLUDE_COMPILER_INTERNAL_HEADERS__ # Eigen includes some files it should not, ignore
     )
+    # TODO(john): Update object detector to use new API
+    target_compile_options(object_detector_nodelet PRIVATE -Wno-deprecated-declarations)
     # Temporary
     mrover_nodelet_link_libraries(object_detector PRIVATE opencv_imgcodecs opencv_highgui)
 

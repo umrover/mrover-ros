@@ -5,9 +5,9 @@
 namespace mrover {
     //Data type for detection
     struct Detection {
-        int classId{0};
+        int classId{};
         std::string className;
-        float confidence{0.0};
+        float confidence{};
         cv::Rect box;
     };
 
@@ -20,7 +20,7 @@ namespace mrover {
 
         cv::Mat mImg;
 
-        std::vector<std::string> classes{"Bottle", "Hammer"};
+        std::vector<std::string> classes{"bottle", "hammer"};
 
         ros::NodeHandle mNh, mPnh;
 
@@ -41,7 +41,7 @@ namespace mrover {
         tf2_ros::TransformListener mTfListener{mTfBuffer};
         tf2_ros::TransformBroadcaster mTfBroadcaster;
         std::string mCameraFrameId;
-        std::string mMapFrameId;
+        std::string mMapFrame;
 
         std::vector<int> mObjectHitCounts{0, 0};
 
@@ -53,10 +53,10 @@ namespace mrover {
         auto onInit() -> void override;
 
         auto getObjectInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr,
-                                     size_t u, size_t v, size_t width, size_t height) -> std::optional<SE3>;
+                                     size_t u, size_t v, size_t width, size_t height) -> std::optional<SE3d>;
 
         auto spiralSearchInImg(sensor_msgs::PointCloud2ConstPtr const& cloudPtr,
-                               size_t xCenter, size_t yCenter, size_t width, size_t height) -> std::optional<SE3>;
+                               size_t xCenter, size_t yCenter, size_t width, size_t height) -> std::optional<SE3d>;
 
         static auto convertPointCloudToRGBA(sensor_msgs::PointCloud2ConstPtr const& msg, cv::Mat& img) -> void;
 
