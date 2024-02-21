@@ -35,7 +35,7 @@ class LedBridge:
         :param port: port for the serial connection
         :param baud: baud rate for the serial connection
         """
-        self._color = "w"
+        self._color = b"w"
         self._color_lock = threading.Lock()
 
         self._blinking_counter_s = 0
@@ -55,25 +55,25 @@ class LedBridge:
             if color.red:
                 if color.green:
                     if color.blue:
-                        my_color = "w" # white - ALL COLORS
+                        my_color = b"w" # white - ALL COLORS
                     else:
-                        my_color = "n" # brown - n since not blue - red and green
+                        my_color = b"n" # brown - n since not blue - red and green
                 else:
                     if color.blue:
-                        my_color = "p" # purple - red and blue
+                        my_color = b"p" # purple - red and blue
                     else:
-                        my_color = "r"
+                        my_color = b"r"
             else:
                 if color.green:
                     if color.blue:
-                        my_color = "t" # teal - green and blue
+                        my_color = b"t" # teal - green and blue
                     else:
-                        my_color = "g" # green
+                        my_color = b"g" # green
                 else:
                     if color.blue:
-                        my_color = "b" # blue
+                        my_color = b"b" # blue
                     else:
-                        my_color = "o" # off
+                        my_color = b"o" # off
 
             self._color = my_color
 
@@ -120,7 +120,7 @@ class LedBridge:
 
             # If we just passed the threshold of BLINKING_ON_S, turn off.
             elif prev_counter < self.BLINKING_ON_S <= self._blinking_counter_s:
-                self._ser.write("o")
+                self._ser.write(b"o")
 
 
 def main():
