@@ -1,5 +1,9 @@
 import rosbag
 import csv
+from tf.transformations import *
+from util.np_utils import numpify
+from geometry_msgs.msg import Quaternion
+import numpy as np
 
 # bag_file_path = "../../short_range_rtk_2024-01-28-14-32-22.bag"
 
@@ -65,56 +69,89 @@ import csv
 
 # bag.close()
 
-bag_file_path = "../../short_range_rtk_2024-01-28-14-32-22.bag"
+bag_file_path = "../../offset_testing.bag"
 
 bag = rosbag.Bag(bag_file_path)
 
-topics = ["/left_gps_driver/rtk_fix_status", "/right_gps_driver/rtk_fix_status"]
+topics = ["/linearized_pose", "/imu/data"]
 
-csv_file_left = "left_fix_status.csv"
-csv_file_right = "right_fix_status.csv"
+csv_linearized_heading = "linearized_heading.csv"
+csv_imu_heading = "imu_heading.csv"
 
-csv_file_left_coords = "left_position.csv"
-csv_file_right_coords = "right_position.csv"
-
-with open(csv_file_left, "w", newline="") as csv_file:
+with open(csv_linearized_heading, "w", newline="") as csv_file:
     csv_writer = csv.writer(csv_file)
+    csv_writer.writerow(["time", "linearized_heading"])
 
-    csv_writer.writerow(["Topic Name", "RTK_fix"])
+    for _, msg, _ in bag.read_messages(topics="/linearized_pose"):
+        heading = euler_from_quaternion(np.array([msg.pose.pose.orientation.x, msg.pose.pose.orientation.y, msg.pose.pose.orientation.z, msg.pose.pose.orientation.w]))[2]
+        time = msg.header.stamp.secs + msg.header.stamp.nsecs * (0.000000001)
+        csv_writer.writerow([time, heading])
 
-    for _, msg, _ in bag.read_messages(topics="/left_gps_driver/rtk_fix_status"):
-        rtk_fix_type = int(msg.RTK_FIX_TYPE)
-        csv_writer.writerow(["/left_gps_driver/rtk_fix_status", rtk_fix_type])
-
-with open(csv_file_right, "w", newline="") as csv_file:
+with open(csv_imu_heading, "w", newline="") as csv_file:
     csv_writer = csv.writer(csv_file)
+    csv_writer.writerow(["time", "imu_heading"])
 
-    csv_writer.writerow(["Topic Name", "RTK_fix"])
-
-    for _, msg, _ in bag.read_messages(topics="/right_gps_driver/rtk_fix_status"):
-        rtk_fix_type = int(msg.RTK_FIX_TYPE)
-        csv_writer.writerow(["/right_gps_driver/rtk_fix_status", rtk_fix_type])
-
-with open(csv_file_left_coords, "w", newline="") as csv_file:
-    csv_writer = csv.writer(csv_file)
-
-    csv_writer.writerow(["Topic Name", "Latitude", "Longitude", "Altitude"]);
-
-    for _, msg, _ in bag.read_messages(topics="/left_gps_driver/fix"):
-        latitude = msg.latitude
-        longitude = msg.longitude
-        altitude = msg.altitude
-        csv_writer.writerow(["/left_gps_driver/fix", latitude, longitude, altitude])
-
-with open(csv_file_right_coords, "w", newline="") as csv_file:
-    csv_writer = csv.writer(csv_file)
-
-    csv_writer.writerow(["Topic Name", "Latitude", "Longitude", "Altitude"])
-
-    for _, msg, _ in bag.read_messages(topics="/right_gps_driver/fix"):
-        latitude = msg.latitude
-        longitude = msg.longitude
-        altitude = msg.altitude
-        csv_writer.writerow(["/right_gps_driver/fix", latitude, longitude, altitude])
+    for _, msg, _ in bag.read_messages("/imu/data"):
+        heading = euler_from_quaternion(np.array([msg.imu.orientation.x, msg.imu.orientation.y, msg.imu.orientation.z, msg.imu.orientation.w]))[2]
+        time = msg.header.stamp.secs + msg.header.stamp.nsecs * (0.000000001)
+        csv_writer.writerow([time, heading])
 
 bag.close()
+        
+    
+
+    
+
+# bag_file_path = "../../short_range_rtk_2024-01-28-14-32-22.bag"
+
+# bag = rosbag.Bag(bag_file_path)
+
+# topics = ["/left_gps_driver/rtk_fix_status", "/right_gps_driver/rtk_fix_status"]
+
+# csv_file_left = "left_fix_status.csv"
+# csv_file_right = "right_fix_status.csv"
+
+# csv_file_left_coords = "left_position.csv"
+# csv_file_right_coords = "right_position.csv"
+
+# with open(csv_file_left, "w", newline="") as csv_file:
+#     csv_writer = csv.writer(csv_file)
+
+#     csv_writer.writerow(["Topic Name", "RTK_fix"])
+
+#     for _, msg, _ in bag.read_messages(topics="/left_gps_driver/rtk_fix_status"):
+#         rtk_fix_type = int(msg.RTK_FIX_TYPE)
+#         csv_writer.writerow(["/left_gps_driver/rtk_fix_status", rtk_fix_type])
+
+# with open(csv_file_right, "w", newline="") as csv_file:
+#     csv_writer = csv.writer(csv_file)
+
+#     csv_writer.writerow(["Topic Name", "RTK_fix"])
+
+#     for _, msg, _ in bag.read_messages(topics="/right_gps_driver/rtk_fix_status"):
+#         rtk_fix_type = int(msg.RTK_FIX_TYPE)
+#         csv_writer.writerow(["/right_gps_driver/rtk_fix_status", rtk_fix_type])
+
+# with open(csv_file_left_coords, "w", newline="") as csv_file:
+#     csv_writer = csv.writer(csv_file)
+
+#     csv_writer.writerow(["Topic Name", "Latitude", "Longitude", "Altitude"]);
+
+#     for _, msg, _ in bag.read_messages(topics="/left_gps_driver/fix"):
+#         latitude = msg.latitude
+#         longitude = msg.longitude
+#         altitude = msg.altitude
+#         csv_writer.writerow(["/left_gps_driver/fix", latitude, longitude, altitude])
+
+# with open(csv_file_right_coords, "w", newline="") as csv_file:
+#     csv_writer = csv.writer(csv_file)
+
+#     csv_writer.writerow(["Topic Name", "Latitude", "Longitude", "Altitude"])
+
+#     for _, msg, _ in bag.read_messages(topics="/right_gps_driver/fix"):
+#         latitude = msg.latitude
+#         longitude = msg.longitude
+#         altitude = msg.altitude
+#         csv_writer.writerow(["/right_gps_driver/fix", latitude, longitude, altitude])
+
+# bag.close()

@@ -126,6 +126,8 @@ namespace mrover {
         ImuAndMag imuMessage;
         imuMessage.header.stamp = ros::Time::now();
         imuMessage.header.frame_id = "map";
+        imuMessage.imu.header.stamp = ros::Time::now();
+        imuMessage.mag.header.stamp = ros::Time::now();
         S3 q = imuInMap.rotation().quaternion();
         imuMessage.imu.orientation.w = q.w();
         imuMessage.imu.orientation.x = q.x();

@@ -87,7 +87,7 @@ class GPSLinearization:
         :param msg: The NavSatFix message containing GPS data that was just received
         TODO: Handle invalid PVTs
         """
-        
+
         if np.any(np.isnan([right_gps_msg.latitude, right_gps_msg.longitude, right_gps_msg.altitude])):
             return
         if np.any(np.isnan([left_gps_msg.latitude, left_gps_msg.longitude, left_gps_msg.altitude])):
@@ -138,6 +138,8 @@ class GPSLinearization:
 
         if self.last_gps_pose is None:
             return
+        
+        imu_orientation = numpify(msg.imu.orientation)
 
         # how can we make sure these 2 headings are comparable??
         if self.calculate_offset:
@@ -157,19 +159,19 @@ class GPSLinearization:
             offsetted_rotation_matrix = np.matmul(imu_rotation_matrix, self.rtk_offset)
             offsetted_euler = euler_from_matrix(offsetted_rotation_matrix)
 
-            msg.imu.orientation = quaternion_from_euler(
+            imu_orientation = quaternion_from_euler(
                 offsetted_euler[0], offsetted_euler[1], offsetted_euler[2], axes="sxyz"
             )
 
         # imu quaternion
-        imu_quat = msg.imu.orientation / np.linalg.norm(msg.imu.orientation)
+        imu_quat = imu_orientation / np.linalg.norm(imu_orientation)
 
         covariance_matrix = np.zeros((6, 6))
         covariance_matrix[:3, :3] = self.config_gps_covariance.reshape(3, 3)
         covariance_matrix[3:, 3:] = self.config_imu_covariance.reshape(3, 3)
 
         pose_msg = PoseWithCovarianceStamped(
-            header=Header(stamp=rospy.Time.now(), frame_id=self.world_frame),
+            header=Header(stamp=msg.header.stamp, frame_id=self.world_frame),
             pose=PoseWithCovariance(
                 pose=Pose(
                     position=Point(*self.last_gps_pose.position),
