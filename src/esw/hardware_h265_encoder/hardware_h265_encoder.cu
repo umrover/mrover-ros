@@ -26,7 +26,7 @@ void cudaCheck(cudaError_t status) {
 
 void NvCheck(NVENCSTATUS status) {
     if (status != NV_ENC_SUCCESS) {
-        throw std::runtime_error("NvEnc failed");
+        throw std::runtime_error("NvEnc failed: " + std::to_string(status));
     }
 }
 
@@ -71,6 +71,7 @@ Encoder::Encoder(cv::Size const& size) : m_size{size} {
         cuCheck(cuCtxGetCurrent(&CUDA_CONTEXT));
 
         NvCheck(NvEncodeAPICreateInstance(&NVENV_API));
+        ROS_INFO("Created NVENC API instance");
     }
 
     NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS params{
@@ -83,6 +84,7 @@ Encoder::Encoder(cv::Size const& size) : m_size{size} {
     if (!m_encoder) {
         throw std::runtime_error("No encoder");
     }
+    ROS_INFO("Created NVENC encode session");
 
     std::uint32_t guidCount;
     NvCheck(NVENV_API.nvEncGetEncodeGUIDCount(m_encoder, &guidCount));
