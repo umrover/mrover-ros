@@ -322,12 +322,13 @@ class GUIConsumer(JsonWebsocketConsumer):
             elif d_pad_x < -0.5:
                 ra_slow_mode = False
 
+            
             arm_throttle_cmd.throttles = [
                 self.filter_xbox_axis(msg["axes"][self.ra_config["joint_a"]["xbox_index"]]),
                 self.filter_xbox_axis(msg["axes"][self.ra_config["joint_b"]["xbox_index"]]),
                 self.filter_xbox_axis(msg["axes"][self.ra_config["joint_c"]["xbox_index"]]),
-                self.filter_xbox_axis(msg["axes"][self.ra_config["joint_de_pitch"]["xbox_index"]]),
-                self.filter_xbox_axis(msg["axes"][self.ra_config["joint_de_roll"]["xbox_index"]]),
+                (self.filter_xbox_axis(msg["axes"][2]) - self.filter_xbox_axis(msg["axes"][5])) * 0.3,
+                (self.filter_xbox_button(msg["buttons"], "right_bumper", "left_bumper")) * 0.3,
                 self.ra_config["allen_key"]["multiplier"] * self.filter_xbox_button(msg["buttons"], "y", "a"),
                 self.ra_config["gripper"]["multiplier"] * self.filter_xbox_button(msg["buttons"], "b", "x"),
             ]
