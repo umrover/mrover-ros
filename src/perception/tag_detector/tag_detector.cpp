@@ -1,3 +1,5 @@
+#include "tag_detector_class.hpp"
+
 namespace mrover {
     
     class TagDetector {
@@ -75,6 +77,8 @@ namespace mrover {
             mPnh.param<double>("polygonalApproxAccuracyRate",
                             mDetectorParams->polygonalApproxAccuracyRate,
                             defaultDetectorParams->polygonalApproxAccuracyRate);
+
+            specificOnInit();
         }
 
         auto configCallback(DetectorParamsConfig& config, uint32_t level) -> void {
@@ -124,5 +128,5 @@ namespace mrover {
             res.success = true;
             return true;
         }
-    }
+    };
 }

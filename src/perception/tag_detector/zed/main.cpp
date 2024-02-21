@@ -1,4 +1,4 @@
-#include "tag_detector.hpp"
+#include "../tag_detector.hpp"
 
 #ifdef MROVER_IS_NODELET
 

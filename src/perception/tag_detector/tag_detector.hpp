@@ -23,11 +23,13 @@ namespace mrover {
         dynamic_reconfigure::Server<DetectorParamsConfig>::CallbackType mCallbackType;
 
     public: 
-        auto onInit() -> void override;
+        auto onInit() -> void;
+
+        virtual void specificOnInit() = 0;
 
         auto configCallback(DetectorParamsConfig& config, uint32_t level) -> void;
 
         auto enableDetectionsCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) -> bool;
 
-    }
+    };
 }

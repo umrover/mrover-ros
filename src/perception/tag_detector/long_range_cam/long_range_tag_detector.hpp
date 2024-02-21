@@ -1,4 +1,4 @@
-#include "../tag_detector_class.hpp"
+#include "../tag_detector.hpp"
 #include "pch.hpp"
 
 namespace mrover {
@@ -37,11 +37,10 @@ namespace mrover {
         // dynamic_reconfigure::Server<DetectorParamsConfig>::CallbackType mCallbackType;
         // LoopProfiler mProfiler{"Long Range Tag Detector"};
         ros::ServiceServer mServiceEnableDetections;
-
+                                                                                                
         std::string mMapFrameId, mCameraFrameId;
 
-        auto onInit() override -> void override {
-            TagDetector::onInit();
+        auto specificOnInit() override; -> void {
             mPnh.param<float>("long_range_fov", mLongRangeFov, 80.0);
 
             mImgPub = mNh.advertise<sensor_msgs::Image>("long_range_tag_detection", 1);

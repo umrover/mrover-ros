@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../tag_detector_class.hpp"
+#include "../tag_detector.hpp"
 #include "pch.hpp"
 
 namespace mrover {
@@ -9,7 +9,7 @@ namespace mrover {
         int id = -1;
         int hitCount = 0;
         cv::Point2f imageCenter{};
-        std::optional<SE3> tagInCam;
+        std::optional<SE3d> tagInCam;
     };
 
     class TagDetectorNodelet : public nodelet::Nodelet {
@@ -50,33 +50,11 @@ namespace mrover {
 
         LoopProfiler mProfiler{"Tag Detector"};
 
-        auto onInit() override -> void override {
-            TagDetector::onInit();
-            mNh.param<bool>("use_odom_frame", mUseOdom, false);
-            mNh.param<std::string>("odom_frame", mOdomFrameId, "odom");
-            mNh.param<std::string>("world_frame", mMapFrameId, "map");
-            mNh.param<std::string>("camera_frame", mCameraFrameId, "zed_left_camera_frame");
-
-            mPnh.param<int>("dictionary", dictionaryNumber, static_cast<int>(cv::aruco::DICT_4X4_50));
-            mPnh.param<int>("min_hit_count_before_publish", mMinHitCountBeforePublish, 5);
-            mPnh.param<int>("max_hit_count", mMaxHitCount, 5);
-            mPnh.param<int>("tag_increment_weight", mTagIncrementWeight, 2);
-            mPnh.param<int>("tag_decrement_weight", mTagDecrementWeight, 1);
-
-            mImgPub = mNh.advertise<sensor_msgs::Image>("tag_detection", 1);
-
-            mPcSub = mNh.subscribe("camera/left/points", 1, &TagDetectorNodelet::pointCloudCallback, this);
-        }
-
-    void onInit() override {
-        // Specific implementation for DerivedClass1
-        BaseClass::onInit();
-        std::cout << "Custom initialization for DerivedClass1 with " << additionalData << std::endl;
-    }
+        auto specificOnInit() override;
 
         auto publishThresholdedImage() -> void;
 
-        auto getTagInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t u, size_t v) const -> std::optional<SE3>;
+        auto getTagInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t u, size_t v) const -> std::optional<SE3d>;
 
     public:
         TagDetectorNodelet() = default;
