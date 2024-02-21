@@ -21,7 +21,6 @@ class LedBridge:
 
     # The color of the LED.
     _color: str
-    _color_lock: threading.Lock
 
     # A counter for flashing, in seconds.
     _blinking_counter_s: int
@@ -30,66 +29,67 @@ class LedBridge:
     # A serial connection to the Arduino.
     _ser: serial.Serial
 
+    _prev_color: LED
+
     def __init__(self, port: str, baud: int):
         """
         :param port: port for the serial connection
         :param baud: baud rate for the serial connection
         """
         self._color = b"w"
-        self._color_lock = threading.Lock()
+        self._prev_color = LED()
 
         self._blinking_counter_s = 0
         self._is_blinking = True
 
         self._ser = serial.Serial(port=port, baudrate=baud)
 
-        with self._color_lock:
+    def handle_message(self, color: LED) -> None:
+        if str(self._prev_color) == str(color):
+            return
+        
+        self._prev_color = color
+
+        my_color = ""
+
+        if color.red:
+            if color.green:
+                if color.blue:
+                    my_color = b"w" # white - ALL COLORS
+                else:
+                    my_color = b"n" # brown - n since not blue - red and green
+            else:
+                if color.blue:
+                    my_color = b"p" # purple - red and blue
+                else:
+                    my_color = b"r"
+        else:
+            if color.green:
+                if color.blue:
+                    my_color = b"t" # teal - green and blue
+                else:
+                    my_color = b"g" # green
+            else:
+                if color.blue:
+                    my_color = b"b" # blue
+                else:
+                    my_color = b"o" # off
+
+        self._color = my_color
+
+        self._is_blinking = color.is_blinking
+
+        # If the desired color is red, blue, or off, then just update:
+        if not self._is_blinking:
             self._update()
 
-    def handle_message(self, color: LED) -> None:
-        with self._color_lock:
-            prev_color = self._color
-
-            my_color = ""
-
-            if color.red:
-                if color.green:
-                    if color.blue:
-                        my_color = b"w" # white - ALL COLORS
-                    else:
-                        my_color = b"n" # brown - n since not blue - red and green
-                else:
-                    if color.blue:
-                        my_color = b"p" # purple - red and blue
-                    else:
-                        my_color = b"r"
-            else:
-                if color.green:
-                    if color.blue:
-                        my_color = b"t" # teal - green and blue
-                    else:
-                        my_color = b"g" # green
-                else:
-                    if color.blue:
-                        my_color = b"b" # blue
-                    else:
-                        my_color = b"o" # off
-
-            self._color = my_color
-
-            self._is_blinking = color.is_blinking
-
-            # If the desired color is red, blue, or off, then just update:
-            if not self._is_blinking:
-                self._update()
-
-            # If the desired color is green, and we previously were not green, then update too.
-            elif self._is_blinking:
-                # Set to self.BLINKING_PERIOD_S instead of 0,
-                # so it just automatically resets at 0 once
-                # flash_if_blinking() is called.
-                self._blinking_counter_s = self.BLINKING_PERIOD_S
-                self._update()
+        # If the desired color is green, and we previously were not green, then update too.
+        elif self._is_blinking:
+            # Set to self.BLINKING_PERIOD_S instead of 0,
+            # so it just automatically resets at 0 once
+            # flash_if_blinking() is called.
+            self._blinking_counter_s = self.BLINKING_PERIOD_S
+            self._update()
 
     def _update(self):
         """
@@ -105,22 +105,20 @@ class LedBridge:
         if not self._is_blinking:
             return
 
-        with self._color_lock:
+        # Copy the counter.
+        prev_counter = self._blinking_counter_s
 
-            # Copy the counter.
-            prev_counter = self._blinking_counter_s
+        # Increment the counter however much was slept.
+        self._blinking_counter_s += self.SLEEP_AMOUNT
 
-            # Increment the counter however much was slept.
-            self._blinking_counter_s += self.SLEEP_AMOUNT
+        # Switch to green at the end of a period.
+        if self._blinking_counter_s >= self.BLINKING_PERIOD_S:
+            self._blinking_counter_s = 0
+            self._ser.write(self._color)
 
-            # Switch to green at the end of a period.
-            if self._blinking_counter_s >= self.BLINKING_PERIOD_S:
-                self._blinking_counter_s = 0
-                self._ser.write(self._color)
-
-            # If we just passed the threshold of BLINKING_ON_S, turn off.
-            elif prev_counter < self.BLINKING_ON_S <= self._blinking_counter_s:
-                self._ser.write(b"o")
+        # If we just passed the threshold of BLINKING_ON_S, turn off.
+        elif prev_counter < self.BLINKING_ON_S <= self._blinking_counter_s:
+            self._ser.write(b"o")
 
 
 def main():
