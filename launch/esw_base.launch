@@ -11,7 +11,8 @@
     <node name="drive_bridge" pkg="mrover" type="drive_bridge" />
 
     <node name="led" pkg="mrover" type="led" />
-    <node name="led_hw_bridge" pkg="mrover" type="led_hw_bridge" />
+    <!-- <node name="led_hw_bridge" pkg="mrover" type="led_hw_bridge" /> -->
+    <node name="arduino_led_hw_bridge" pkg="mrover" type="arduino_led_hw_bridge.py" output="screen"></node>
 
     <node name="mast_gimbal_bridge" pkg="mrover" type="mast_gimbal_bridge" />
 </launch>

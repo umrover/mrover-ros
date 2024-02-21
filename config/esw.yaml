@@ -592,3 +592,7 @@ motors:
       type: "brushed"
 
 default_network_iface: "enp0s31f6"
+
+auton_led_driver:
+  port: "/dev/ttyUSB0"
+  baud: 115200
