@@ -27,7 +27,7 @@ namespace mrover {
         RTRSTATE mLoopState;
 
         //**
-        float mBestOffset;
+        double mBestOffset;
 
         std::optional<Eigen::Vector3d> mBestLocationInZED;
         std::optional<Eigen::Vector3d> mBestLocationInWorld;
@@ -77,7 +77,7 @@ namespace mrover {
             auto find_angle(Eigen::Vector3d const& current, Eigen::Vector3d const& target) -> float;
 
 
-            auto find_distance(Eigen::Vector3d const& current, Eigen::Vector3d const& target) -> float;
+            auto find_distance(Eigen::Vector3d const& current, Eigen::Vector3d const& target) -> double;
 
             auto drive_speed(float) -> float;
         };

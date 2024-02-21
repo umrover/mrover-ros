@@ -26,7 +26,7 @@ namespace mrover {
     auto LanderAlignNodelet::onInit() -> void {
         mNh = getMTNodeHandle();
         mPnh = getMTPrivateNodeHandle();
-        mZThreshold = .9;
+        mZThreshold = .1;
         mVectorSub = mNh.subscribe("/camera/left/points", 1, &LanderAlignNodelet::LanderCallback, this);
         mDebugVectorPub = mNh.advertise<geometry_msgs::Vector3>("/lander_align/Pose", 1);
         mTwistPub = mNh.advertise<geometry_msgs::Twist>("/cmd_vel", 1);
@@ -43,14 +43,14 @@ namespace mrover {
     void LanderAlignNodelet::LanderCallback(sensor_msgs::PointCloud2Ptr const& cloud) {
         filterNormals(cloud);
         ransac(0.2, 10, 100);
-        if (mBestNormalInZED.has_value()) {
-            geometry_msgs::Vector3 vect;
-            vect.x = mBestNormalInZED.value().x();
-            vect.y = mBestNormalInZED.value().y();
-            vect.z = mBestNormalInZED.value().z();
-            mDebugVectorPub.publish(vect);
-            //sendTwist(10.0);
-        }
+        // if (mBestNormalInZED.has_value()) {
+        //     geometry_msgs::Vector3 vect;
+        //     vect.x = mBestNormalInZED.value().x();
+        //     vect.y = mBestNormalInZED.value().y();
+        //     vect.z = mBestNormalInZED.value().z();
+        //     mDebugVectorPub.publish(vect);
+        //     //sendTwist(10.0);
+        // }
     }
 
     // deprecated/not needed anymore
@@ -69,18 +69,27 @@ namespace mrover {
         auto* cloudData = reinterpret_cast<Point const*>(cloud->data.data());
         ROS_INFO("Point cloud size: %i", cloud->height * cloud->width);
 
+        std::vector<Point *> pts = {new Point{1, 2, 3, 0, 0, 0, 0, 0.3, 0.5, 0.01, 0}, new Point{1, 2, 3, 0, 0, 0, 0, 0.3, 0.5, 0.1, 0}, new Point{1, 2, 3, 0, 0, 0, 0, 0.3, 0.5, 0.07, 0}};
+
         // define randomizer
         std::default_random_engine generator;
         std::uniform_int_distribution<int> distribution(0, (int) 10);
 
         for (auto point = cloudData; point < cloudData + (cloud->height * cloud->width); point += distribution(generator)) {
+        // for (Point * point : pts) {
             bool isPointInvalid = (!std::isfinite(point->x) || !std::isfinite(point->y) || !std::isfinite(point->z));
+            // ROS_INFO("Filtered point: %f, %f, %f", point->normal_x, point->normal_y, point->normal_z);
+            
             if (abs(point->normal_z) < mZThreshold && !isPointInvalid) {
                 mFilteredPoints.push_back(point);
                 // ROS_INFO("Filtered point: %f, %f, %f", point->normal_x, point->normal_y, point->normal_z);
             }
         }
         ROS_INFO("Filtered vector size: %lu", mFilteredPoints.size());
+ 
+        for (Point * p : pts) {
+            delete p;
+        }
     }
 
     void LanderAlignNodelet::ransac(float const distanceThreshold, int minInliers, int const epochs) {
@@ -88,7 +97,7 @@ namespace mrover {
         // takes 3 samples for every epoch and terminates after specified number of epochs
         // Eigen::Vector3d mBestNormal(0, 0, 0); // normal vector representing plane (initialize as zero vector?? default ctor??)
         // Eigen::Vector3d currentCenter(0, 0, 0); // Keeps track of current center of plane in current epoch
-        float offset;
+        double offset;
 
         // define randomizer
         std::default_random_engine generator;
@@ -106,6 +115,7 @@ namespace mrover {
 
 
         while (mBestNormalInZED.value().isZero()) { // TODO add give up condition after X iter
+            ROS_INFO("in zero loop");
             for (int i = 0; i < epochs; ++i) {
                 // currentCenter *= 0; // Set all vals in current center to zero at the start of each epoch
                 // sample 3 random points (potential inliers)
@@ -128,7 +138,7 @@ namespace mrover {
 
                 for (auto p: mFilteredPoints) {
                     // calculate distance of each point from potential plane
-                    float distance = std::abs(normal.x() * p->x + normal.y() * p->y + normal.z() * p->z + offset);
+                    float distance = std::abs(normal.x() * p->x + normal.y() * p->y + normal.z() * p->z + offset); // 
 
                     if (distance < distanceThreshold) {
                         // Add points to current planes center
@@ -143,6 +153,7 @@ namespace mrover {
                 if (numInliers > minInliers && normal.x() != 0 && normal.y() != 0 && normal.z() != 0) {
                     minInliers = numInliers;
                     mBestNormalInZED.value() = normal;
+                    mBestOffset = offset;
 
                     // If this is the new best plane, set mBestCenterInZED
                     // mBestCenterInZED = currentCenter / static_cast<float>(minInliers);
@@ -157,7 +168,7 @@ namespace mrover {
         for (auto p: mFilteredPoints) {
             // calculate distance of each point from potential plane
             double distance = std::abs(mBestNormalInZED.value().x() * p->x + mBestNormalInZED.value().y() * p->y + mBestNormalInZED.value().z() * p->z + mBestOffset);
-
+            ROS_INFO("Distance %f", distance);
             if (distance < distanceThreshold) {
                 mBestLocationInZED.value().x() += p->x;
                 mBestLocationInZED.value().y() += p->y;
@@ -167,6 +178,8 @@ namespace mrover {
         }
 
         if (numInliers == 0) {
+            ROS_INFO("zero inliers");
+
             mBestNormalInZED = std::nullopt;
             mBestLocationInZED = std::nullopt;
             return;
@@ -181,6 +194,8 @@ namespace mrover {
         if(mBestNormalInZED.value().y() < 0){
             mBestNormalInZED.value().y() *= -1;
         }
+
+        ROS_INFO("here");
 
         manif::SE3d mPlaneLocInZED = {{mBestLocationInZED.value().x(), mBestLocationInZED.value().y(), mBestLocationInZED.value().z()}, manif::SO3d{1,1,1}};//TODO: THIS IS A RANDOM ROTATION MATRIX
 
@@ -219,9 +234,9 @@ namespace mrover {
         return distance * Linear_P;
     }
 
-    auto LanderAlignNodelet::PID::find_distance(Eigen::Vector3d const& current, Eigen::Vector3d const& target) -> float {
+    auto LanderAlignNodelet::PID::find_distance(Eigen::Vector3d const& current, Eigen::Vector3d const& target) -> double {
         Eigen::Vector3d difference = target - current;
-        float distance = difference.norm();
+        double distance = difference.norm();
         return distance;
     }
 
@@ -241,7 +256,7 @@ namespace mrover {
         //Locations
         manif::SE3d rover;
         Eigen::Vector3d rover_dir;
-        Eigen::Vector3d targetPosInWorld = mBestLocationInWorld.value() + mBestNormalInWorld.value() * offset; // I don't trust subtracting this
+        Eigen::Vector3d targetPosInWorld = mBestLocationInWorld.value() + mBestNormalInWorld.value() * offset;
 
         //Final msg
         geometry_msgs::Twist twist;
