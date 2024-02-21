@@ -7,7 +7,7 @@ extern FDCAN_HandleTypeDef hfdcan1;
 extern TIM_HandleTypeDef htim6; // for auton LED
 #define AUTON_LED_TIMER &htim6
 
-#define AUTON_LED_BLINK 5
+#define AUTON_LED_BLINK 10
 uint8_t blink_count = 0;
 namespace mrover {
 
