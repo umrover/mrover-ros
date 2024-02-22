@@ -5,7 +5,7 @@
 <launch>
   <!-- Launch the simulator with no window or interaction -->
   <include file="$(find mrover)/launch/simulator.launch">
-    <arg name="headless" value="false"/>
+    <arg name="headless" value="true"/>
     <arg name="run_rviz" value="false"/>
   </include>
 
