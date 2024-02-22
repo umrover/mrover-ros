@@ -19,6 +19,9 @@ namespace mrover {
 
         ros::Publisher mDebugVectorPub;
 
+        ros::Publisher mDebugPCPub;
+
+
         ros::Publisher mTwistPub;
 
 

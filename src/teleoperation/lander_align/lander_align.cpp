@@ -5,14 +5,21 @@
 #include <cassert>
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
+#include <cstdlib>
 #include <geometry_msgs/Twist.h>
 #include <geometry_msgs/Vector3.h>
 
 #include <manif/impl/se3/SE3.h>
+#include <memory>
+#include <opencv4/opencv2/core/hal/interface.h>
 #include <optional>
+#include <point.hpp>
 #include <random>
 #include <ros/duration.h>
 #include <ros/subscriber.h>
+#include <ros/time.h>
+#include <sensor_msgs/PointCloud2.h>
 #include <tuple>
 #include <unistd.h>
 #include <vector>
@@ -30,6 +37,7 @@ namespace mrover {
         mVectorSub = mNh.subscribe("/camera/left/points", 1, &LanderAlignNodelet::LanderCallback, this);
         mDebugVectorPub = mNh.advertise<geometry_msgs::Vector3>("/lander_align/Pose", 1);
         mTwistPub = mNh.advertise<geometry_msgs::Twist>("/cmd_vel", 1);
+        mDebugPCPub = mNh.advertise<sensor_msgs::PointCloud2>("/lander_align/debugPC", 1);
 
 
         //TF Create the Reference Frames
@@ -113,7 +121,7 @@ namespace mrover {
         mBestNormalInZED = std::make_optional<Eigen::Vector3d>(0, 0, 0);
         mBestLocationInZED = std::make_optional<Eigen::Vector3d>(0, 0, 0);
 
-
+        int numInliers = 0;
         while (mBestNormalInZED.value().isZero()) { // TODO add give up condition after X iter
             ROS_INFO("in zero loop");
             for (int i = 0; i < epochs; ++i) {
@@ -131,7 +139,7 @@ namespace mrover {
                 Eigen::Vector3d normal = (vec1 - vec2).cross(vec1 - vec3).normalized();
                 offset = -normal.dot(vec1); // calculate offset (D value) using one of the points
 
-                int numInliers = 0;
+                numInliers = 0;
 
                 // assert(normal.x() != 0 && normal.y() != 0 && normal.z() != 0);
                 // In some situations we get the 0 vector with surprising frequency
@@ -162,13 +170,13 @@ namespace mrover {
         }
         ROS_INFO("Out of zero loop");
 
+        
 
         // Run through one more loop to identify the center of the plane (one possibility for determining best center)
-        int numInliers = 0;
+        numInliers = 0;
         for (auto p: mFilteredPoints) {
             // calculate distance of each point from potential plane
             double distance = std::abs(mBestNormalInZED.value().x() * p->x + mBestNormalInZED.value().y() * p->y + mBestNormalInZED.value().z() * p->z + mBestOffset);
-            ROS_INFO("Distance %f", distance);
             if (distance < distanceThreshold) {
                 mBestLocationInZED.value().x() += p->x;
                 mBestLocationInZED.value().y() += p->y;
@@ -176,6 +184,37 @@ namespace mrover {
                 ++numInliers; // count num of inliers that pass the "good enough fit" threshold
             }
         }
+        //Average pnts
+        mBestLocationInZED.value() /= static_cast<float>(numInliers);
+
+
+        auto debugPointCloudPtr = boost::make_shared<sensor_msgs::PointCloud2>();
+        fillPointCloudMessageHeader(debugPointCloudPtr);
+        debugPointCloudPtr->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
+        debugPointCloudPtr->is_dense = true;
+        debugPointCloudPtr->height = 1;
+        debugPointCloudPtr->width = numInliers;
+        debugPointCloudPtr->header.seq = 0;
+        debugPointCloudPtr->header.stamp = ros::Time();
+        debugPointCloudPtr->header.frame_id = "zed2i_left_camera_frame";
+        debugPointCloudPtr->data.resize((numInliers * sizeof(Point))/sizeof(uchar));
+        auto pcPtr = reinterpret_cast<Point*>(debugPointCloudPtr->data.data());
+        size_t i = 0;
+        for (auto p: mFilteredPoints) {
+            // calculate distance of each point from potential plane
+            double distance = std::abs(mBestNormalInZED.value().x() * p->x + mBestNormalInZED.value().y() * p->y + mBestNormalInZED.value().z() * p->z + mBestOffset);
+            if (distance < distanceThreshold) {
+                pcPtr[i].x = p->x;
+                pcPtr[i].y = p->y;
+                pcPtr[i].z = p->z;
+                pcPtr[i].b = p->r;
+                pcPtr[i].g = p->g;
+                pcPtr[i].r = p->b;
+                pcPtr[i].a = p->a;
+                ++i;
+            }
+        }
+        mDebugPCPub.publish(debugPointCloudPtr);
 
         if (numInliers == 0) {
             ROS_INFO("zero inliers");
@@ -185,19 +224,34 @@ namespace mrover {
             return;
         }
 
-        mBestLocationInZED.value() /= static_cast<float>(numInliers);
 
-        if (mBestNormalInZED.value().x() < 0) { // ALSO NEED TO FLIP THE Y VALUE
-            mBestNormalInZED.value().x() *= -1;
+        // if (mBestNormalInZED.value().x() < 0) { // ALSO NEED TO FLIP THE Y VALUE
+        //     mBestNormalInZED.value().x() *= -1;
+        // }
+
+        // if(mBestNormalInZED.value().y() < 0){
+        //     mBestNormalInZED.value().y() *= -1;
+        // }
+
+        //Calculate the other three rotation vectors
+        Eigen::Matrix3d rot;
+        {
+            if(mBestNormalInZED.value().x() > 0) mBestNormalInZED.value() *=-1;
+
+            Eigen::Vector3d x;
+            Eigen::Vector3d y;
+            Eigen::Vector3d z;
+            Eigen::Vector3d dummy{mBestNormalInZED->x()+1,mBestLocationInZED->y(),mBestNormalInZED->z()};
+            x = dummy.cross(mBestNormalInZED.value()).normalized();
+            y = x.cross(mBestNormalInZED.value()).normalized();
+            z = mBestNormalInZED.value().normalized();
+            rot <<  x.x(),y.x(),z.x(),
+                    x.y(),y.y(),z.y(),
+                    x.z(),y.z(),z.z();
+                    std::cout << "rot matrix " << rot << std::endl;
         }
 
-        if(mBestNormalInZED.value().y() < 0){
-            mBestNormalInZED.value().y() *= -1;
-        }
-
-        ROS_INFO("here");
-
-        manif::SE3d mPlaneLocInZED = {{mBestLocationInZED.value().x(), mBestLocationInZED.value().y(), mBestLocationInZED.value().z()}, manif::SO3d{1,1,1}};//TODO: THIS IS A RANDOM ROTATION MATRIX
+        manif::SE3d mPlaneLocInZED = {{mBestLocationInZED.value().x(), mBestLocationInZED.value().y(), mBestLocationInZED.value().z()}, manif::SO3d{Eigen::Quaterniond{rot}.normalized()}};//TODO: THIS IS A RANDOM ROTATION MATRIX
 
         manif::SE3d zedToMap = SE3Conversions::fromTfTree(mTfBuffer, mMapFrameId, mCameraFrameId);
 
