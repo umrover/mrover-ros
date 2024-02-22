@@ -11,7 +11,7 @@ teleop:
     joint_b:
       multiplier: -1
       slow_mode_multiplier: 1
-      invert: False
+      invert: True
       xbox_index: 1
     joint_c:
       multiplier: -1
