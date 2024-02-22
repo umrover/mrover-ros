@@ -35,12 +35,17 @@ namespace mrover {
             // MT means multithreaded
             mNh = getMTNodeHandle();
             mPnh = getMTPrivateNodeHandle();
-            mCamInfoPub = mNh.advertise<sensor_msgs::CameraInfo>("long_range_cam/camera_info", 1);
-            mImgPub = mNh.advertise<sensor_msgs::Image>("long_range_image", 1);
+
             auto width = mPnh.param<int>("width", 1920);
             auto height = mPnh.param<int>("height", 1080);
             auto framerate = mPnh.param<int>("framerate", 5);
             auto device = mPnh.param<std::string>("device", "/dev/arducam");
+            auto imageTopicName = mPnh.param<std::string>("image_topic", "long_range_image");
+            auto cameraInfoTopicName = mPnh.param<std::string>("camera_info_topic", std::format("{}/camera_info", imageTopicName));
+
+            mImgPub = mNh.advertise<sensor_msgs::Image>(imageTopicName, 1);
+            mCamInfoPub = mNh.advertise<sensor_msgs::CameraInfo>(cameraInfoTopicName, 1);
+
             cv::VideoCapture capture{std::format("v4l2src device={} ! videoconvert ! video/x-raw,width={},height={},format=I420,framerate={}/1 ! appsink", device, width, height, framerate), cv::CAP_GSTREAMER};
             if (!capture.isOpened()) throw std::runtime_error{"Long range cam failed to open"};
 
