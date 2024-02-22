@@ -30,3 +30,4 @@
 
 #include <loop_profiler.hpp>
 #include <lie.hpp>
+#include <streaming.hpp>

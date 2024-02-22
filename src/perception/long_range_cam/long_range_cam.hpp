@@ -15,6 +15,8 @@ namespace mrover {
 
         LoopProfiler mGrabThreadProfiler{"Long Range Cam Grab"};
 
+        std::optional<StreamServer> streamServer;
+
         auto onInit() -> void override;
 
     public:

@@ -173,12 +173,13 @@ mrover_add_nodelet(long_range_tag_detector src/perception/tag_detector/long_rang
 mrover_nodelet_link_libraries(long_range_tag_detector opencv_core opencv_objdetect opencv_aruco opencv_imgproc tbb lie)
 
 mrover_add_nodelet(usb_camera src/perception/long_range_cam/*.cpp src/perception/long_range_cam src/perception/long_range_cam/pch.hpp)
-mrover_nodelet_link_libraries(usb_camera opencv_core opencv_objdetect opencv_aruco opencv_imgproc opencv_highgui tbb lie)
-if (CUDA_FOUND)
-    mrover_add_node(hardware_h265_encoder src/esw/hardware_h265_encoder/*.c*)
-    target_link_libraries(hardware_h265_encoder PUBLIC cuda nvidia-encode opencv_core opencv_imgproc opencv_imgcodecs opencv_videoio streaming)
-    target_include_directories(hardware_h265_encoder SYSTEM PUBLIC deps/nvenc)
-endif ()
+mrover_nodelet_link_libraries(usb_camera opencv_core opencv_objdetect opencv_aruco opencv_imgproc opencv_highgui tbb lie streaming)
+
+#if (CUDA_FOUND)
+#    mrover_add_node(hardware_h265_encoder src/esw/hardware_h265_encoder/*.c*)
+#    target_link_libraries(hardware_h265_encoder PUBLIC cuda nvidia-encode opencv_core opencv_imgproc opencv_imgcodecs opencv_videoio streaming)
+#    target_include_directories(hardware_h265_encoder SYSTEM PUBLIC deps/nvenc)
+#endif ()
 
 #add_subdirectory(deps/libde265 SYSTEM)
 #include_directories(deps/libde265/extra deps/libde265 SYSTEM)

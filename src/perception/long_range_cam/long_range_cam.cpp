@@ -42,12 +42,24 @@ namespace mrover {
             auto device = mPnh.param<std::string>("device", "/dev/arducam");
             auto imageTopicName = mPnh.param<std::string>("image_topic", "long_range_image");
             auto cameraInfoTopicName = mPnh.param<std::string>("camera_info_topic", std::format("{}/camera_info", imageTopicName));
+            auto doStream = mPnh.param<bool>("stream", false);
+            auto bitrate = mPnh.param<int>("bitrate", 20000000);
 
             mImgPub = mNh.advertise<sensor_msgs::Image>(imageTopicName, 1);
             mCamInfoPub = mNh.advertise<sensor_msgs::CameraInfo>(cameraInfoTopicName, 1);
 
-            auto gstString = std::format("v4l2src device={} ! videoconvert ! video/x-raw,width={},height={},format=I420,framerate={}/1 ! appsink", device, width, height, framerate);
-            NODELET_INFO_STREAM(std::format("USB camera GStreamer string: {}", gstString));
+            std::string videoString = std::format("video/x-raw,format=I420,width={},height={},framerate={}/1", width, height, framerate);
+            std::string gstString;
+            if (doStream) {
+                gstString = std::format(
+                        "v4l2src device={0} ! tee name=t "
+                        "t. ! videoconvert ! {1} ! appsink"
+                        "t. ! videoconvert ! {1} ! nvv4l2h265enc bitrate={2} ! appsink", device, videoString, bitrate
+                        );
+            } else {
+                gstString = std::format("v4l2src device={} ! videoconvert ! {} ! appsink", device, videoString);
+            }
+            NODELET_INFO_STREAM(std::format("GStreamer string: {}", gstString));
             cv::VideoCapture capture{gstString, cv::CAP_GSTREAMER};
             if (!capture.isOpened()) throw std::runtime_error{"USB camera failed to open"};
 
