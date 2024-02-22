@@ -173,7 +173,9 @@ mrover_add_nodelet(long_range_tag_detector src/perception/tag_detector/long_rang
 mrover_nodelet_link_libraries(long_range_tag_detector opencv_core opencv_objdetect opencv_aruco opencv_imgproc tbb lie)
 
 mrover_add_nodelet(usb_camera src/perception/long_range_cam/*.cpp src/perception/long_range_cam src/perception/long_range_cam/pch.hpp)
-mrover_nodelet_link_libraries(usb_camera opencv_core opencv_objdetect opencv_aruco opencv_imgproc opencv_highgui tbb lie streaming)
+mrover_nodelet_link_libraries(usb_camera opencv_core opencv_objdetect opencv_aruco opencv_imgproc opencv_highgui tbb lie streaming gstreamer-1.0)
+# TODO(quintin): Fix this CMake hard coding
+mrover_nodelet_include_directories(usb_camera /usr/include/gstreamer-1.0 /usr/include/glib-2.0 /usr/lib/x86_64-linux-gnu/glib-2.0/include)
 
 #if (CUDA_FOUND)
 #    mrover_add_node(hardware_h265_encoder src/esw/hardware_h265_encoder/*.c*)

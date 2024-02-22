@@ -18,6 +18,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/videoio.hpp>
+#include <gst/gst.h>
 
 #include <dynamic_reconfigure/server.h>
 #include <mrover/DetectorParamsConfig.h>
