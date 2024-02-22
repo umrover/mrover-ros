@@ -49,12 +49,12 @@ DMA_HandleTypeDef hdma_adc2;
 FDCAN_HandleTypeDef hfdcan1;
 
 /* Definitions for defaultTask */
-osThreadId_t defaultTaskHandle;
-const osThreadAttr_t defaultTask_attributes = {
-  .name = "defaultTask",
-  .priority = (osPriority_t) osPriorityNormal,
-  .stack_size = 128 * 4
-};
+//osThreadId_t defaultTaskHandle;
+//const osThreadAttr_t defaultTask_attributes = {
+//  .name = "defaultTask",
+//  .priority = (osPriority_t) osPriorityNormal,
+//  .stack_size = 128 * 4
+//};
 /* USER CODE BEGIN PV */
 
 // No more FreeRTOS receiving
