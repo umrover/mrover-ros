@@ -21,16 +21,19 @@ int main(int argc, char** argv) {
         // Wait for the service to become available
         ros::service::waitForService("science_enable_" + heater_name);
 
-        // Turn the heater on
-        srv.request.data = true;
-        if (client.call(srv)) {
-            ROS_INFO_STREAM(heater_name << " CAN message sent to turn on. \n\nNow waiting 3 seconds. \n" << heater_name << " should automatically turn off after 1 second in watchdog.\n");
-        } else {
-            ROS_ERROR_STREAM("Failed to call service to turn " << heater_name << " on");
-            return 1;
-        }
 
-        ros::Duration(1.0).sleep();
+        float incrementing_time = 0.25f;
+        float time = 0.0f;
+        ROS_INFO_STREAM(heater_name << " CAN message sent to turn on. \n\nNow waiting 3 seconds. \n" << heater_name << " should automatically turn off after 1 second in watchdog.\n");
+        while (time < 6.0f) {
+            // Turn the heater on
+            srv.request.data = true;
+            client.call(srv);
+
+            ros::Duration(incrementing_time).sleep();
+            time += incrementing_time;
+
+        }
 
         ROS_INFO_STREAM(heater_name << " should have turned off!! \n");
 

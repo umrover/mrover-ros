@@ -37,12 +37,12 @@ void processMessage(mrover::HeaterStateData const& message) {
     // ROS_ERROR("heater!");
     mrover::HeaterData heaterData;
     // TODO - this crashes program!
-    // heaterData.state.resize(6);
-    // for (int i = 0; i < 6; ++i) {
-    //     heaterData.state.at(i) = GET_BIT_AT_INDEX(message.heater_state_info.on, i);
-    // }
+    heaterData.state.resize(6);
+    for (int i = 0; i < 6; ++i) {
+        heaterData.state.at(i) = GET_BIT_AT_INDEX(message.heater_state_info.on, i);
+    }
 
-    // heaterDataPublisher->publish(heaterData);
+    heaterDataPublisher->publish(heaterData);
 }
 
 void processMessage(mrover::SpectralData const& message) {
