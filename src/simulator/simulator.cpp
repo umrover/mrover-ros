@@ -114,9 +114,11 @@ namespace mrover {
     SimulatorNodelet::~SimulatorNodelet() {
         mRunThread.join();
 
-        ImGui_ImplWGPU_Shutdown();
-        ImGui_ImplGlfw_Shutdown();
-        ImGui::DestroyContext();
+        if (!mIsHeadless) {
+            ImGui_ImplWGPU_Shutdown();
+            ImGui_ImplGlfw_Shutdown();
+            ImGui::DestroyContext();
+        }
 
         for (int i = mDynamicsWorld->getNumConstraints() - 1; i >= 0; --i) {
             mDynamicsWorld->removeConstraint(mDynamicsWorld->getConstraint(i));
