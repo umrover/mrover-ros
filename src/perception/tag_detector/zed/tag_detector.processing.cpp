@@ -109,7 +109,7 @@ namespace mrover {
                     std::string immediateFrameId = std::format("immediateFiducial{}", tag.id);
                     // Publish tag to odom
                     std::string const& parentFrameId = mUseOdom ? mOdomFrameId : mMapFrameId;
-                    SE3d tagInParent = SE3Conversions::fromTfTree(mTfBuffer, parentFrameId, immediateFrameId);
+                    SE3d tagInParent = SE3Conversions::fromTfTree(mTfBuffer, immediateFrameId, parentFrameId);
                     SE3Conversions::pushToTfTree(mTfBroadcaster, std::format("fiducial{}", tag.id), parentFrameId, tagInParent);
                 } catch (tf2::ExtrapolationException const&) {
                     NODELET_WARN("Old data for immediate tag");

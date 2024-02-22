@@ -51,21 +51,21 @@ namespace mrover {
             std::string videoString = std::format("video/x-raw,format=I420,width={},height={},framerate={}/1", width, height, framerate);
             std::string gstString;
             if (doStream) {
-                gst_init(nullptr, nullptr);
+                // gst_init(nullptr, nullptr);
 
-                GstElement* source = gst_element_factory_make("v4l2src", "source");
-                GstElement* tee = gst_element_factory_make("tee", "tee");
-                GstElement* videoConvert = gst_element_factory_make("videoconvert", "videoConvert");
-                GstElement* videoConvert2 = gst_element_factory_make("videoconvert", "videoConvert2");
-                GstElement* nvv4l2h265enc = gst_element_factory_make("nvv4l2h265enc", "nvv4l2h265enc");
-                GstElement* appsink = gst_element_factory_make("appsink", "appsink");
-                GstElement* appsink2 = gst_element_factory_make("appsink", "appsink2");
-                g_object_set(G_OBJECT(source), "device", device.c_str(), nullptr);
-                g_object_set(G_OBJECT(nvv4l2h265enc), "bitrate", bitrate, nullptr);
-                g_object_set(G_OBJECT(appsink), "emit-signals", true, nullptr);
+                // GstElement* source = gst_element_factory_make("v4l2src", "source");
+                // GstElement* tee = gst_element_factory_make("tee", "tee");
+                // GstElement* videoConvert = gst_element_factory_make("videoconvert", "videoConvert");
+                // GstElement* videoConvert2 = gst_element_factory_make("videoconvert", "videoConvert2");
+                // GstElement* nvv4l2h265enc = gst_element_factory_make("nvv4l2h265enc", "nvv4l2h265enc");
+                // GstElement* appsink = gst_element_factory_make("appsink", "appsink");
+                // GstElement* appsink2 = gst_element_factory_make("appsink", "appsink2");
+                // g_object_set(G_OBJECT(source), "device", device.c_str(), nullptr);
+                // g_object_set(G_OBJECT(nvv4l2h265enc), "bitrate", bitrate, nullptr);
+                // g_object_set(G_OBJECT(appsink), "emit-signals", true, nullptr);
 
-                GstElement* pipeline = gst_pipeline_new("pipeline");
-                gst_bin_add_many(GST_BIN(pipeline), source, tee, videoConvert, appsink, videoConvert2, nvv4l2h265enc, appsink2, nullptr);
+                // GstElement* pipeline = gst_pipeline_new("pipeline");
+                // gst_bin_add_many(GST_BIN(pipeline), source, tee, videoConvert, appsink, videoConvert2, nvv4l2h265enc, appsink2, nullptr);
 
                 // gstString = std::format(
                 //         "v4l2src device={0} ! tee name=t "

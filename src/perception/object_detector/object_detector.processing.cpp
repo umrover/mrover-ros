@@ -279,7 +279,7 @@ namespace mrover {
                 if (mObjectHitCounts[detection.classId] > mObjHitThreshold) {
                     std::string objectPermanentFrame = classes[detection.classId];
                     // Grab the object inside of the camera frame and push it into the map frame
-                    SE3d objectInMap = SE3Conversions::fromTfTree(mTfBuffer, mMapFrame, objectImmediateFrame);
+                    SE3d objectInMap = SE3Conversions::fromTfTree(mTfBuffer, objectImmediateFrame, mMapFrame);
                     SE3Conversions::pushToTfTree(mTfBroadcaster, objectPermanentFrame, mMapFrame, objectInMap);
                 }
 

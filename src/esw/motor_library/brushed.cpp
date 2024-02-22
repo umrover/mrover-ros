@@ -135,7 +135,6 @@ namespace mrover {
     auto BrushedController::processMessage(ControllerDataState const& state) -> void {
         mCurrentPosition = state.position;
         mCurrentVelocity = state.velocity / mVelocityMultiplier;
-        ROS_INFO("Vel: %f | Pos: %f", mCurrentVelocity.get(), mCurrentPosition.get());
         ConfigCalibErrorInfo configCalibErrInfo = state.config_calib_error_data;
         mIsConfigured = configCalibErrInfo.configured;
         mIsCalibrated = configCalibErrInfo.calibrated;

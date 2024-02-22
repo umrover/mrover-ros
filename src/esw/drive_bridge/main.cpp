@@ -68,8 +68,6 @@ void moveDrive(geometry_msgs::Twist::ConstPtr const& msg) {
             {"back_right", right},
     };
 
-    ROS_INFO("m/s %f", forward.get());
-
     for (auto [name, angularVelocity]: driveCommandVelocities) {
         driveManager->getController(name).setDesiredVelocity(angularVelocity);
     }

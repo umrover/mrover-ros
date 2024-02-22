@@ -89,12 +89,7 @@ namespace mrover {
 
         velocity = velocity * mVelocityMultiplier;
 
-        // ROS_INFO("my velocity rev s = %f", velocity.get()); 
-        ROS_INFO("velocity before clamp (should be in rad): %f", velocity.get());
         RevolutionsPerSecond velocity_rev_s = std::clamp(velocity, mMinVelocity, mMaxVelocity);
-        ROS_INFO("velocity in rev/s: %f", velocity_rev_s.get());
-        // ROS_WARN("%7.3f   %7.3f",
-        //  velocity.get(), velocity_rev_s.get());
         if (abs(velocity_rev_s).get() < 1e-5) {
             setBrake();
         } else {
@@ -118,8 +113,6 @@ namespace mrover {
     auto BrushlessController::setBrake() -> void {
         moteus::CanFdFrame setBrakeFrame = mController.MakeBrake();
         mDevice.publish_moteus_frame(setBrakeFrame);
-
-        ROS_INFO("In brake mode");
     }
 
     auto BrushlessController::getPressedLimitSwitchInfo() -> MoteusLimitSwitchInfo {
@@ -142,7 +135,6 @@ namespace mrover {
         // TODO - implement this
         MoteusLimitSwitchInfo result{};
     
-        ROS_INFO("moteusAux1Info: %i, moteusAux2Info: %i", moteusAux1Info, moteusAux2Info);
         result.isFwdPressed = false;
         result.isBwdPressed = false;
 
@@ -168,8 +160,6 @@ namespace mrover {
             adjust(limitSwitch1ReadjustPosition);
         }
 
-        ROS_INFO("isFwdPressed: %i  isBwdPress: %i", result.isFwdPressed, result.isBwdPressed);
-
         return result;
     }
 
@@ -192,7 +182,6 @@ namespace mrover {
     }
 
     auto BrushlessController::processCANMessage(CAN::ConstPtr const& msg) -> void {
-        ROS_INFO("Message received");
         assert(msg->source == mControllerName);
         assert(msg->destination == mName);
         auto result = moteus::Query::Parse(msg->data.data(), msg->data.size());
@@ -218,8 +207,6 @@ namespace mrover {
 
         moteusAux1Info = (result.aux1_gpio) ? result.aux1_gpio : moteusAux1Info;
         moteusAux2Info = (result.aux1_gpio) ? result.aux2_gpio : moteusAux2Info;
-
-        ROS_INFO("%i", moteusAux1Info);
 
         if (result.mode == moteus::Mode::kPositionTimeout || result.mode == moteus::Mode::kFault) {
             setStop();
