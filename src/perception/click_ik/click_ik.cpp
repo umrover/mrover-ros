@@ -24,8 +24,8 @@ namespace mrover {
         //     // How to pass server to callback? It will go out of scope and can't be assigned to a member variable because actionlib::SimpleActionServer is non-copyable
         // }, false);
         // server.start();[capture0 = &server](auto && PH1) { return execute(std::forward<decltype(PH1)>(PH1), capture0); }
-        // Server server(mNh, "do_click_ik", [capture0 = &server](auto && PH1) { return execute(std::forward<decltype(PH1)>(PH1), capture0); }, false);
-        Server server(mNh, "do_click_ik", [&server](auto && PH1) { return execute(std::forward<decltype(PH1)>(PH1), server); }, false);
+        Server server(mNh, "do_click_ik", [capture0 = &server](auto && PH1) { return execute(std::forward<decltype(PH1)>(PH1), capture0); }, false);
+        // Server server(mNh, "do_click_ik", [&server](auto && PH1) { return execute(std::forward<decltype(PH1)>(PH1), server); }, false);
         server.start();
 
     }
