@@ -142,7 +142,7 @@ class SearchState(State):
             return recovery.RecoveryState()
         else:
             self.is_recovering = False
-
+    
         context.search_point_publisher.publish(
             GPSPointList([convert_cartesian_to_gps(pt) for pt in self.traj.coordinates])
         )

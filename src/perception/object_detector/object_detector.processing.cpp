@@ -1,8 +1,6 @@
 #include "object_detector.hpp"
 #include "lie.hpp"
 
-#include <boost/algorithm/string.hpp>
-
 namespace mrover {
 
     auto ObjectDetectorNodelet::imageCallback(sensor_msgs::PointCloud2ConstPtr const& msg) -> void {

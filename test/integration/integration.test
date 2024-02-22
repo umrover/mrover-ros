@@ -3,20 +3,13 @@
     drive to waypoint functionality.
  -->
 <launch>
-    <!-- launch rover core nodes -->
-    <include file="$(find mrover)/launch/rover_core.launch"/>
+  <!-- Launch the simulator with no window or interaction -->
+  <include file="$(find mrover)/launch/simulator.launch">
+    <arg name="headless" value="false"/>
+    <arg name="run_rviz" value="false"/>
+  </include>
 
-    <!-- launch the simulator with no GUI -->
-    <include file="$(find mrover)/launch/simulator.launch">
-        <arg name="gui" value="false"/>
-        <arg name="world_name" value="world_flat"/>
-    </include>
+  <node name="led" pkg="mrover" type="led" />
 
-    <include file="$(find mrover)/launch/autonomy.launch">
-        <arg name="run_tag_detector" value="false" />
-        <arg name="sim" value="true" />
-    </include>
-
-    <!-- node to manage and run the integration test -->
-    <test test-name="integration" pkg="mrover" type="integration.py"/>
+  <test test-name="integration" pkg="mrover" type="integration.py"/>
 </launch>

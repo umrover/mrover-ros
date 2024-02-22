@@ -2,7 +2,7 @@
 
 namespace mrover {
 
-    static int checkSyscallResult(int result) {
+    static auto checkSyscallResult(int result) -> int {
         if (result < 0) throw std::system_error{errno, std::generic_category()};
 
         return result;
@@ -91,7 +91,7 @@ namespace mrover {
         }
     }
 
-    int CanNodelet::setupSocket() const {
+    auto CanNodelet::setupSocket() const -> int {
         int socketFd = checkSyscallResult(socket(PF_CAN, SOCK_RAW, CAN_RAW));
         NODELET_INFO_STREAM("Opened CAN socket with file descriptor: " << socketFd);
 

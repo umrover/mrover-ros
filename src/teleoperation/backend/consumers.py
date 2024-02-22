@@ -7,6 +7,8 @@ import threading
 from channels.generic.websocket import JsonWebsocketConsumer
 import rospy
 import tf2_ros
+import cv2
+from cv_bridge import CvBridge
 from geometry_msgs.msg import Twist
 from mrover.msg import (
     PDLB,
@@ -17,12 +19,15 @@ from mrover.msg import (
     StateMachineStateUpdate,
     Throttle,
     CalibrationStatus,
-    Calibrated,
     MotorsStatus,
+    CameraCmd,
+    Calibrated,
     Velocity,
     Position,
-    IK
+    IK,
 )
+from mrover.srv import EnableAuton, ChangeCameras, CapturePanorama
+from sensor_msgs.msg import NavSatFix, Temperature, RelativeHumidity, Image
 from mrover.srv import EnableAuton
 from sensor_msgs.msg import NavSatFix, Temperature, RelativeHumidity
 from std_msgs.msg import String, Bool
@@ -71,7 +76,9 @@ class GUIConsumer(JsonWebsocketConsumer):
 
             # Subscribers
             self.pdb_sub = rospy.Subscriber("/pdb_data", PDLB, self.pdb_callback)
-            self.arm_moteus_sub = rospy.Subscriber("/arm_controller_data", ControllerState, self.arm_controller_callback)
+            self.arm_moteus_sub = rospy.Subscriber(
+                "/arm_controller_data", ControllerState, self.arm_controller_callback
+            )
             self.drive_moteus_sub = rospy.Subscriber(
                 "/drive_controller_data", ControllerState, self.drive_controller_callback
             )
@@ -81,8 +88,10 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.nav_state_sub = rospy.Subscriber("/nav_state", StateMachineStateUpdate, self.nav_state_callback)
             self.imu_calibration = rospy.Subscriber("imu/calibration", CalibrationStatus, self.imu_calibration_callback)
             self.sa_temp_data = rospy.Subscriber("/sa_temp_data", Temperature, self.sa_temp_data_callback)
-            self.sa_humidity_data = rospy.Subscriber("/sa_humidity_data", RelativeHumidity, self.sa_humidity_data_callback)
-        
+            self.sa_humidity_data = rospy.Subscriber(
+                "/sa_humidity_data", RelativeHumidity, self.sa_humidity_data_callback
+            )
+
             # Services
             self.laser_service = rospy.ServiceProxy("enable_arm_laser", SetBool)
             self.enable_auton = rospy.ServiceProxy("enable_auton", EnableAuton)
@@ -90,13 +99,15 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.calibrate_cache_srv = rospy.ServiceProxy("cache_calibrate", Trigger)
             self.cache_enable_limit = rospy.ServiceProxy("cache_enable_limit_switches", SetBool)
             self.calibrate_service = rospy.ServiceProxy("arm_calibrate", Trigger)
-            
+            self.change_cameras_srv = rospy.ServiceProxy("change_cameras", ChangeCameras)
+            self.capture_panorama_srv: Any = rospy.ServiceProxy("capture_panorama", CapturePanorama)
+
             # ROS Parameters
             self.mappings = rospy.get_param("teleop/joystick_mappings")
             self.drive_config = rospy.get_param("teleop/drive_controls")
             self.max_wheel_speed = rospy.get_param("rover/max_speed")
             self.wheel_radius = rospy.get_param("wheel/radius")
-            self.max_angular_speed = self.max_wheel_speed / self.wheel_radius                    
+            self.max_angular_speed = self.max_wheel_speed / self.wheel_radius
             self.ra_config = rospy.get_param("teleop/ra_controls")
             self.ik_names = rospy.get_param("teleop/ik_multipliers")
             self.RA_NAMES = rospy.get_param("teleop/ra_names")
@@ -109,6 +120,7 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
             self.flight_thread = threading.Thread(target=self.flight_attitude_listener)
             self.flight_thread.start()
+
         except rospy.ROSException as e:
             rospy.logerr(e)
 
@@ -150,7 +162,13 @@ class GUIConsumer(JsonWebsocketConsumer):
                 self.auton_bearing()
             elif message["type"] == "mast_gimbal":
                 self.mast_gimbal(message)
-            elif message['type'] == 'enable_limit_switch':
+            elif message["type"] == "max_streams":
+                self.send_res_streams()
+            elif message["type"] == "sendCameras":
+                self.change_cameras(msg=message)
+            elif message["type"] == "center_map":
+                self.send_center()
+            elif message["type"] == "enable_limit_switch":
                 self.limit_switch(message)
             elif message["type"] == "center_map":
                 self.send_center()
@@ -266,19 +284,28 @@ class GUIConsumer(JsonWebsocketConsumer):
         ra_slow_mode = False
         if msg["arm_mode"] == "ik":
             base_link_in_map = SE3.from_tf_tree(self.tf_buffer, "map", "base_link")
-            
+
             left_trigger = self.filter_xbox_axis(msg["axes"][self.xbox_mappings["left_trigger"]])
             if left_trigger < 0:
                 left_trigger = 0
 
             right_trigger = self.filter_xbox_axis(msg["axes"][self.xbox_mappings["right_trigger"]])
             if right_trigger < 0:
-                right_trigger = 0  
-            base_link_in_map.position[0]+= self.ik_names["x"]*self.filter_xbox_axis(msg["axes"][self.xbox_mappings["left_js_x"]]),
-            base_link_in_map.position[1]+= self.ik_names["y"]*self.filter_xbox_axis(msg["axes"][self.xbox_mappings["left_js_y"]]),
-            base_link_in_map.position[2]-=self.ik_names["z"]*left_trigger+self.ik_names["z"]*right_trigger
-           
-            arm_ik_cmd = IK(pose=Pose(position=Point(*base_link_in_map.position), orientation=Quaternion(*base_link_in_map.rotation.quaternion)))
+                right_trigger = 0
+            base_link_in_map.position[0] += (
+                self.ik_names["x"] * self.filter_xbox_axis(msg["axes"][self.xbox_mappings["left_js_x"]]),
+            )
+            base_link_in_map.position[1] += (
+                self.ik_names["y"] * self.filter_xbox_axis(msg["axes"][self.xbox_mappings["left_js_y"]]),
+            )
+            base_link_in_map.position[2] -= self.ik_names["z"] * left_trigger + self.ik_names["z"] * right_trigger
+
+            arm_ik_cmd = IK(
+                pose=Pose(
+                    position=Point(*base_link_in_map.position),
+                    orientation=Quaternion(*base_link_in_map.rotation.quaternion),
+                )
+            )
             self.arm_ik_pub.publish(arm_ik_cmd)
 
         elif msg["arm_mode"] == "position":
@@ -570,10 +597,45 @@ class GUIConsumer(JsonWebsocketConsumer):
         up_down_pwr = msg["throttles"][1] * pwr["up_down_pwr"]
         self.mast_gimbal_pub.publish(Throttle(["mast_gimbal_y", "mast_gimbal_z"], [rot_pwr, up_down_pwr]))
 
-    def send_center(self):
-        lat = rospy.get_param("gps_linearization/reference_point_latitude")
-        long = rospy.get_param("gps_linearization/reference_point_longitude")
-        self.send(text_data=json.dumps({"type": "center_map", "latitude": lat, "longitude": long}))
+    def change_cameras(self, msg):
+        try:
+            camera_cmd = CameraCmd(msg["device"], msg["resolution"])
+            rospy.logerr(camera_cmd)
+            result = self.change_cameras_srv(primary=msg["primary"], camera_cmd=camera_cmd)
+            rospy.logerr(result)
+        except rospy.ServiceException as e:
+            print(f"Service call failed: {e}")
+
+    def send_res_streams(self):
+        res = rospy.get_param("cameras/max_num_resolutions")
+        streams = rospy.get_param("cameras/max_streams")
+        self.send(text_data=json.dumps({"type": "max_resolution", "res": res}))
+        self.send(text_data=json.dumps({"type": "max_streams", "streams": streams}))
+
+    def capture_panorama(self) -> None:
+        try:
+            response = self.capture_panorama_srv()
+            image = response.panorama
+            self.image_callback(image)
+        except rospy.ServiceException as e:
+            print(f"Service call failed: {e}")
+
+    def image_callback(self, msg):
+        bridge = CvBridge()
+        try:
+            # Convert the image to OpenCV standard format
+            cv_image = bridge.imgmsg_to_cv2(msg, desired_encoding="passthrough")
+        except Exception as e:
+            rospy.logerr("Could not convert image message to OpenCV image: " + str(e))
+            return
+
+        # Save the image to a file (you could change 'png' to 'jpg' or other formats)
+        image_filename = "panorama.png"
+        try:
+            cv2.imwrite(image_filename, cv_image)
+            rospy.loginfo("Saved image to {}".format(image_filename))
+        except Exception as e:
+            rospy.logerr("Could not save image: " + str(e))
 
     def send_center(self):
         lat = rospy.get_param("gps_linearization/reference_point_latitude")

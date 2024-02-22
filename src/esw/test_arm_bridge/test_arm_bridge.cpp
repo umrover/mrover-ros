@@ -7,7 +7,7 @@
 #include <ros/publisher.h>
 #include <ros/subscriber.h>
 
-int main(int argc, char** argv) {
+auto main(int argc, char** argv) -> int {
     ros::init(argc, argv, "test_arm_bridge");
     ros::NodeHandle nh;
 

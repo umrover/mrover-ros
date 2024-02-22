@@ -17,6 +17,7 @@ import rospy
 from pyubx2 import UBXReader, UBX_PROTOCOL, RTCM3_PROTOCOL, protocol, UBXMessage
 from std_msgs.msg import Header
 from sensor_msgs.msg import NavSatFix
+
 # from rtcm_msgs.msg import Message
 # from mrover.msg import rtkStatus
 import datetime
@@ -76,7 +77,7 @@ class GPS_Driver:
             parsed_latitude = msg.lat
             parsed_longitude = msg.lon
             parsed_altitude = msg.hMSL
-            time = datetime.datetime(year=msg.year, month=msg.month, day=msg.day, hour= msg.hour, second=msg.second)
+            time = datetime.datetime(year=msg.year, month=msg.month, day=msg.day, hour=msg.hour, second=msg.second)
             time = rospy.Time(secs=time.timestamp() + (msg.nano / 1e6))
             if not self.valid_offset:
                 self.time_offset = rospy.Time.now() - time

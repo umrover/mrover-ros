@@ -6,5 +6,7 @@
     <include file="$(find mrover)/launch/esw_autonomy.launch" />
     <include file="$(find mrover)/launch/zed.launch" />
     <include file="$(find mrover)/launch/long_range_cam.launch" />
-    <include file="$(find mrover)/launch/autonomy.launch" />
+    <include file="$(find mrover)/launch/autonomy.launch">
+        <arg name="run_object_detector" value="true" />
+    </include>
 </launch>

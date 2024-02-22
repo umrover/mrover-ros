@@ -72,7 +72,7 @@ class Rover:
 class Environment:
     """
     Context class to represent the rover's environment
-    Information such as locations of fiducials or obstacles
+    Information such as locations of tags or obstacles
     """
 
     ctx: Context
@@ -99,7 +99,7 @@ class Environment:
             tf2_ros.LookupException,
             tf2_ros.ConnectivityException,
             tf2_ros.ExtrapolationException,
-        ) as e:
+        ):
             return None
         return target_pose.position
 
@@ -112,15 +112,15 @@ class Environment:
         in_odom = self.ctx.use_odom and odom_override
         current_waypoint = self.ctx.course.current_waypoint()
         if current_waypoint is None:
-            print("CURRENT WAYPOINT IS NONE")
+            rospy.logwarn("Current waypoint is empty!")
             return None
 
         if current_waypoint.type.val == WaypointType.POST:
             return self.get_target_pos(f"fiducial{current_waypoint.tag_id}", in_odom)
         elif current_waypoint.type.val == WaypointType.MALLET:
-            return self.get_target_pos("Hammer", in_odom)
+            return self.get_target_pos("hammer", in_odom)
         elif current_waypoint.type == WaypointType.WATER_BOTTLE:
-            return self.get_target_pos("Bottle", in_odom)
+            return self.get_target_pos("bottle", in_odom)
         else:
             return None
 
@@ -203,7 +203,7 @@ class Course:
         """
         Returns the currently active waypoint
 
-        :return:    Next waypoint to reach if we have an active course
+        :return: Next waypoint to reach if we have an active course
         """
         if self.course_data is None or self.waypoint_index >= len(self.course_data.waypoints):
             return None

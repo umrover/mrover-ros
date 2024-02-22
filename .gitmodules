@@ -1,6 +1,6 @@
 [submodule "deps/libde265"]
 	path = deps/libde265
-	url = git@github.com:strukturag/libde265.git
+	url = https://github.com/strukturag/libde265.git
 	shallow = true
 	branch = 0.1-20240106
 [submodule "deps/dawn"]

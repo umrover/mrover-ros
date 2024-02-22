@@ -29,7 +29,7 @@
 
 #include <mrover/DetectorParamsConfig.h>
 
+#include <lie.hpp>
 #include <loop_profiler.hpp>
 #include <manif/manif.h>
 #include <point.hpp>
-#include <lie.hpp>

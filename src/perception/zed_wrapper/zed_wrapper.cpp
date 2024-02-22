@@ -1,7 +1,7 @@
 #include "zed_wrapper.hpp"
 
-#include <manif/manif.h>
 #include <lie.hpp>
+#include <manif/manif.h>
 
 namespace mrover {
 

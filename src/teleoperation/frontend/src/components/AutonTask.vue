@@ -212,7 +212,6 @@ export default defineComponent({
 }
 
 @keyframes blinkAnimation {
-
   0%,
   100% {
     background-color: var(--bs-success);
@@ -282,8 +281,8 @@ h2 {
   cursor: pointer;
 }
 
-.help:hover~.helpscreen,
-.help:hover~.helpimages {
+.help:hover ~ .helpscreen,
+.help:hover ~ .helpimages {
   visibility: visible;
 }
 

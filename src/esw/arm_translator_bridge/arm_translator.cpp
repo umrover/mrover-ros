@@ -3,8 +3,6 @@
 #include "joint_de_translation.hpp"
 #include "linear_joint_translation.hpp"
 
-#include <numbers>
-
 #include <units/units.hpp>
 #include <params_utils.hpp>
 
@@ -19,13 +17,16 @@ namespace mrover {
             if (i != mJointDEPitchIndex && i != mJointDERollIndex) {
                 assert(mArmHWNames.at(i) == mRawArmNames.at(i));
             }
-
-            // adjust and calibrate services
-            auto rawName = static_cast<std::string>(mRawArmNames[i]);
-            mAdjustServersByRawArmNames[rawName] = std::make_unique<ros::ServiceServer>(nh.advertiseService(std::format("{}_adjust", rawName), &ArmTranslator::adjustServiceCallback, this));
-
-            auto hwName = static_cast<std::string>(mArmHWNames[i]);
-            mAdjustClientsByArmHWNames[hwName] = nh.serviceClient<AdjustMotor>(std::format("{}_adjust", hwName));
+            {
+                auto rawName = static_cast<std::string>(mRawArmNames[i]);
+                auto [_, was_inserted] = mAdjustServersByRawArmNames.try_emplace(rawName, nh.advertiseService(std::format("{}_adjust", rawName), &ArmTranslator::adjustServiceCallback, this));
+                assert(was_inserted);
+            }
+            {
+                auto hwName = static_cast<std::string>(mArmHWNames[i]);
+                auto [_, was_inserted] = mAdjustClientsByArmHWNames.try_emplace(hwName, nh.serviceClient<AdjustMotor>(std::format("{}_adjust", hwName)));
+                assert(was_inserted);
+            }
         }
 
         mJointDEPitchOffset = requireParamAsUnit<Radians>(nh, "joint_de/pitch_offset");
@@ -52,35 +53,35 @@ namespace mrover {
         mJointDataPub = std::make_unique<ros::Publisher>(nh.advertise<sensor_msgs::JointState>("arm_joint_data", 1));
     }
 
-    auto ArmTranslator::clampValues(float& val1, float& val2, float minValue1, float maxValue1, float minValue2, float maxValue2) -> void {
-        // val1 = (val1 - (-80)) / (maxValue1 - minValue1) * ();
-        // val2 if (val1 < minValue1) {
-        //     float const ratio = minValue1 / val1;
-        //     val1 *= ratio;
-        //     val2 *= ratio;
-        // }
-        // if (maxValue1 < val1) {
-        //     float const ratio = maxValue1 / val1;
-        //     val1 *= ratio;
-        //     val2 *= ratio;
-        // }
-        // if (val2 < minValue2) {
-        //     float const ratio = minValue2 / val2;
-        //     val1 *= ratio;
-        //     val2 *= ratio;
-        // }
-        // if (maxValue2 < val2) {
-        //     float const ratio = maxValue2 / val2;
-        //     val1 *= ratio;
-        //     val2 *= ratio;
-        // }
-    }
+    // void ArmTranslator::clampValues(float& val1, float& val2, float minValue1, float maxValue1, float minValue2, float maxValue2) {
+    // val1 = (val1 - (-80)) / (maxValue1 - minValue1) * ();
+    // val2 if (val1 < minValue1) {
+    //     float const ratio = minValue1 / val1;
+    //     val1 *= ratio;
+    //     val2 *= ratio;
+    // }
+    // if (maxValue1 < val1) {
+    //     float const ratio = maxValue1 / val1;
+    //     val1 *= ratio;
+    //     val2 *= ratio;
+    // }
+    // if (val2 < minValue2) {
+    //     float const ratio = minValue2 / val2;
+    //     val1 *= ratio;
+    //     val2 *= ratio;
+    // }
+    // if (maxValue2 < val2) {
+    //     float const ratio = maxValue2 / val2;
+    //     val1 *= ratio;
+    //     val2 *= ratio;
+    // }
+    // }
 
     auto ArmTranslator::mapValue(float& val, float inputMinValue, float inputMaxValue, float outputMinValue, float outputMaxValue) -> void {
         val = (val - inputMinValue) / (inputMaxValue - inputMinValue) * (outputMaxValue - outputMinValue) + outputMinValue;
     }
 
-    auto ArmTranslator::processThrottleCmd(Throttle::ConstPtr const& msg) -> void {
+    auto ArmTranslator::processThrottleCmd(Throttle::ConstPtr const& msg) const -> void {
         if (mRawArmNames != msg->names || mRawArmNames.size() != msg->throttles.size()) {
             ROS_ERROR("Throttle requests for arm is ignored!");
             return;
@@ -146,7 +147,6 @@ namespace mrover {
         mCurrentRawJointDERoll = Radians{msg->data};
         updatePositionOffsets();
     }
-
 
     auto ArmTranslator::processVelocityCmd(Velocity::ConstPtr const& msg) -> void {
         if (mRawArmNames != msg->names || mRawArmNames.size() != msg->velocities.size()) {
@@ -236,7 +236,7 @@ namespace mrover {
                 static_cast<float>(msg->velocity.at(mJointDE0Index)),
                 static_cast<float>(msg->velocity.at(mJointDE1Index)));
 
-        auto [jointDEPitchPos, jointDERollPos] = transformMotorOutputsToPitchRoll(
+        [[maybe_unused]] auto [jointDEPitchPos, jointDERollPos] = transformMotorOutputsToPitchRoll(
                 static_cast<float>(msg->position.at(mJointDE0Index)),
                 static_cast<float>(msg->position.at(mJointDE1Index)));
 

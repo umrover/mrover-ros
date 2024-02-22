@@ -22,19 +22,15 @@ if __name__ == "__main__":
             for waypoint in [
                 (
                     Waypoint(tag_id=0, type=WaypointType(val=WaypointType.NO_SEARCH)),
-                    SE3(position=np.array([6, -2, 0])),
+                    SE3(position=np.array([4, 4, 0])),
                 ),
                 (
                     Waypoint(tag_id=0, type=WaypointType(val=WaypointType.POST)),
-                    SE3(position=np.array([0, -1, 0])),
+                    SE3(position=np.array([-2, -2, 0])),
                 ),
                 (
                     Waypoint(tag_id=1, type=WaypointType(val=WaypointType.POST)),
                     SE3(position=np.array([11, -10, 0])),
-                ),
-                (
-                    Waypoint(tag_id=0, type=WaypointType(val=WaypointType.MALLET)),
-                    SE3(position=np.array([8, 3, 0])),
                 ),
             ]
         ]
