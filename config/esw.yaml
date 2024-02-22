@@ -46,7 +46,7 @@ can:
       id: 0x22
     - name: "joint_de_0"
       bus: 1
-      id: 0x23
+      id: 0x31
     - name: "joint_de_1"
       bus: 1
       id: 0x24
@@ -136,7 +136,7 @@ brushless_motors:
       max_forward_pos: 1.0
       max_backward_pos: 0.0
     joint_c:
-      velocity_multiplier: 1.0
+      velocity_multiplier: -1.0
       min_velocity: -250.0 # gear ratio: 484:1
       max_velocity: 250.0 # max output shaft speed: 5 rpm (for now)
     joint_de_0:
@@ -144,7 +144,7 @@ brushless_motors:
       min_velocity: -67.0
       max_velocity: 67.0
     joint_de_1:
-      velocity_multiplier: -1.0
+      velocity_multiplier: 1.0
       min_velocity: -67.0
       max_velocity: 67.0
     sa_z:
