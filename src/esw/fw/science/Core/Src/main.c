@@ -209,10 +209,10 @@ int main(void)
   /* USER CODE BEGIN RTOS_THREADS */
 
   // TODO - Using spectral causes a hardfault!!!
-//  SpectralTaskHandle = osThreadNew(SpectralTask, NULL, &SpectralTask_attributes);
+  SpectralTaskHandle = osThreadNew(SpectralTask, NULL, &SpectralTask_attributes);
 //  SpectralPollingTaskHandle = osThreadNew(SpectralPollingTask, NULL, &SpectralPollingTask_attributes);
 //  HeaterUpdatesTaskHandle = osThreadNew(HeaterUpdatesTask, NULL, &HeaterUpdatesTask_attributes);
-  ThermistorAndAutoShutoffTaskHandle = osThreadNew(ThermistorAndAutoShutoffTask, NULL, &ThermistorAndAutoShutoffTask_attributes);
+//  ThermistorAndAutoShutoffTaskHandle = osThreadNew(ThermistorAndAutoShutoffTask, NULL, &ThermistorAndAutoShutoffTask_attributes);
 
   /* add threads, ... */
   /* USER CODE END RTOS_THREADS */

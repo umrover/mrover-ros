@@ -22,7 +22,7 @@ namespace mrover {
 
     	Spectral(std::shared_ptr<SMBus<uint8_t, uint16_t>> i2c_bus, std::shared_ptr<I2CMux> i2c_mux, uint8_t i2c_mux_channel);
 
-        void poll_status_reg();
+        void poll_status_reg(bool write);
 
     	void update_channel_data(); // updates all of the channels
 
@@ -34,10 +34,17 @@ namespace mrover {
 
         void init();
 
+        void virtual_write(uint8_t virtual_reg, uint8_t data);
+        uint8_t virtual_read(uint8_t virtual_reg);
+
         constexpr static std::uint16_t SPECTRAL_7b_ADDRESS = 0x49;
         constexpr static std::uint8_t I2C_AS72XX_SLAVE_STATUS_REG = 0x00;
+        constexpr static std::uint8_t I2C_AS72XX_WRITE_REG = 0x01;
+        constexpr static std::uint8_t I2C_AS72XX_READ_REG = 0x02;
         constexpr static std::uint8_t I2C_AS72XX_SLAVE_TX_VALID = 0x02;
         constexpr static std::uint8_t I2C_AS72XX_SLAVE_RX_VALID = 0x01;
+        constexpr static std::uint8_t CONTROL_SETUP_REG = 0x04;
+        constexpr static std::uint8_t INT_TIME_REG = 0x05;
     private:
         bool m_error{};
         bool m_initialized{};
@@ -50,8 +57,6 @@ namespace mrover {
         // Sensor Raw Data Registers Start, 6 channels, 2 bytes each.
         // See pg. 22 of datasheet for more info.
         constexpr static std::uint8_t CHANNEL_V_HIGH = 0x08;
-        constexpr static std::uint8_t CONTROL_SETUP_REG = 0x04;
-        constexpr static std::uint8_t INT_TIME_REG = 0x05;
     };
 
 } // namespace mrover

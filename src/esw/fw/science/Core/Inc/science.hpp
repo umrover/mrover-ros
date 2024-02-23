@@ -101,7 +101,7 @@ namespace mrover {
         }
 
         void poll_spectral_status() {
-        	m_spectral_sensors.at(0).poll_status_reg();
+        	m_spectral_sensors.at(0).poll_status_reg(true);
         }
 
         void reboot_spectral() {
@@ -110,7 +110,7 @@ namespace mrover {
 
         void update_and_send_spectral() {
         	SpectralData spectral_data;
-        	// TEST just 2 spectral (id 0), replace with 0 - 3 later
+        	// TEST just 1 spectral (id 0), replace with 0 - 3 later
         	for (int i = 2; i < 3; ++i) {
         		m_spectral_sensors.at(i).update_channel_data();
 
