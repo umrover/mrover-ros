@@ -1,6 +1,4 @@
 #include "simulator.hpp"
-#include "se3.hpp"
-#include <optional>
 
 namespace mrover {
 
@@ -131,8 +129,8 @@ namespace mrover {
 
         if (auto lookup = getUrdf("rover")) {
             URDF const& rover = *lookup;
-            SE3 baseLinkInWorld = rover.linkInWorld("base_link");
-            mCameraInWorld = mCameraInRoverTarget.value() * baseLinkInWorld;
+            SE3d baseLinkInWorld = rover.linkInWorld("base_link");
+            mCameraInWorld = baseLinkInWorld * mCameraInRoverTarget.value();
         }
         centerCursor();
     }
@@ -140,7 +138,7 @@ namespace mrover {
     auto SimulatorNodelet::setCameraInRoverTarget() -> void {
         if (auto lookup = getUrdf("rover")) {
             URDF const& rover = *lookup;
-            SE3 baseLinkInWorld = rover.linkInWorld("base_link");
+            SE3d baseLinkInWorld = rover.linkInWorld("base_link");
             //AtoC = BtoC * AtoB
             mCameraInRoverTarget = baseLinkInWorld.inverse() * mCameraInWorld;
         }

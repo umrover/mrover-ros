@@ -3,9 +3,7 @@
 #include "pch.hpp"
 
 #include "glfw_pointer.hpp"
-#include "se3.hpp"
 #include "wgpu_objects.hpp"
-#include <optional>
 
 using namespace std::literals;
 
@@ -323,7 +321,7 @@ namespace mrover {
 
         SE3d mCameraInWorld{R3{-3.0, 0.0, 1.5}, SO3d::Identity()};
 
-        std::optional<SE3> mCameraInRoverTarget = std::nullopt;
+        std::optional<SE3d> mCameraInRoverTarget;
 
         std::vector<StereoCamera> mStereoCameras;
         std::vector<Camera> mCameras;
