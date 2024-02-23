@@ -153,6 +153,9 @@ export default defineComponent({
           this.ledColor = 'blink' //blinking green
         else if (msg.blue) this.ledColor = 'bg-primary' //blue
       } else if (msg.type == 'nav_state') {
+        if (msg.state == 'DoneState') {
+          this.ledColor = 'blink'
+        }
         this.navState = msg.state
       } else if (msg.type == 'nav_sat_fix') {
         this.odom.latitude_deg = msg.latitude

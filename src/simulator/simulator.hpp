@@ -3,7 +3,9 @@
 #include "pch.hpp"
 
 #include "glfw_pointer.hpp"
+#include "se3.hpp"
 #include "wgpu_objects.hpp"
+#include <optional>
 
 using namespace std::literals;
 
@@ -186,6 +188,7 @@ namespace mrover {
         int mTogglePhysicsKey = GLFW_KEY_P;
         int mToggleRenderModelsKey = GLFW_KEY_M;
         int mToggleRenderWireframeCollidersKey = GLFW_KEY_C;
+        int mToggleCameraLockKey = GLFW_KEY_O;
 
         float mFlySpeed = 5.0f;
         float mRoverLinearSpeed = 1.0f;
@@ -254,6 +257,7 @@ namespace mrover {
 
         bool mHasFocus = false;
         bool mInGui = false;
+        bool mCameraLock = false;
 
         Uniform<SceneUniforms> mSceneUniforms;
 
@@ -307,6 +311,8 @@ namespace mrover {
 
         SE3 mCameraInWorld{R3{-3.0, 0.0, 1.5}, SO3{}};
 
+        std::optional<SE3> mCameraInRoverTarget = std::nullopt;
+
         std::vector<StereoCamera> mStereoCameras;
         std::vector<Camera> mCameras;
 
@@ -355,6 +361,10 @@ namespace mrover {
         auto centerCursor() -> void;
 
         auto freeLook(Clock::duration dt) -> void;
+
+        auto cameraLock() -> void;
+
+        auto setCameraInRoverTarget() -> void;
 
         auto userControls(Clock::duration dt) -> void;
 

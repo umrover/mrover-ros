@@ -1,4 +1,6 @@
 #include "simulator.hpp"
+#include "se3.hpp"
+#include <optional>
 
 namespace mrover {
 
@@ -78,6 +80,13 @@ namespace mrover {
                 mInGui = !mInGui;
                 if (!mInGui) centerCursor();
             }
+            if (key == mToggleCameraLockKey) {
+                mCameraLock = !mCameraLock;
+                if (mCameraLock)
+                    setCameraInRoverTarget();
+                else
+                    mCameraInRoverTarget = std::nullopt;
+            }
         }
     }
 
@@ -120,6 +129,26 @@ namespace mrover {
         centerCursor();
     }
 
+    auto SimulatorNodelet::cameraLock() -> void {
+        if (!mCameraInRoverTarget) setCameraInRoverTarget();
+
+        if (auto lookup = getUrdf("rover")) {
+            URDF const& rover = *lookup;
+            SE3 baseLinkInWorld = rover.linkInWorld("base_link");
+            mCameraInWorld = mCameraInRoverTarget.value() * baseLinkInWorld;
+        }
+        centerCursor();
+    }
+
+    auto SimulatorNodelet::setCameraInRoverTarget() -> void {
+        if (auto lookup = getUrdf("rover")) {
+            URDF const& rover = *lookup;
+            SE3 baseLinkInWorld = rover.linkInWorld("base_link");
+            //AtoC = BtoC * AtoB
+            mCameraInRoverTarget = baseLinkInWorld.inverse() * mCameraInWorld;
+        }
+    }
+
     auto SimulatorNodelet::userControls(Clock::duration dt) -> void {
         if (mPublishIk) {
             IK ik;
@@ -131,7 +160,10 @@ namespace mrover {
 
         if (!mHasFocus || mInGui) return;
 
-        freeLook(dt);
+        if (mCameraLock)
+            cameraLock();
+        else
+            freeLook(dt);
 
         std::optional<geometry_msgs::Twist> twist;
         if (glfwGetKey(mWindow.get(), mRoverRightKey) == GLFW_PRESS) {
