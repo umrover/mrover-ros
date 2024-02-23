@@ -1,9 +1,20 @@
 <template>
   <div class="wrap">
-    <l-map @ready="onMapReady" ref="map" class="map" :zoom="22" :center="center" @click="getClickedLatLon($event)">
+    <l-map
+      @ready="onMapReady"
+      ref="map"
+      class="map"
+      :zoom="22"
+      :center="center"
+      @click="getClickedLatLon($event)"
+    >
       <l-control-scale :imperial="false" />
-      <l-tile-layer ref="tileLayer" :url="online ? onlineUrl : offlineUrl" :attribution="attribution"
-        :options="online ? onlineTileOptions : offlineTileOptions" />
+      <l-tile-layer
+        ref="tileLayer"
+        :url="online ? onlineUrl : offlineUrl"
+        :attribution="attribution"
+        :options="online ? onlineTileOptions : offlineTileOptions"
+      />
 
       <l-marker ref="rover" :lat-lng="odomLatLng" :icon="locationIcon" />
 
@@ -83,7 +94,7 @@ export default {
 
   created: function () {
     this.locationIcon = L.icon({
-      iconUrl: 'map_marker_projected',
+      iconUrl: '/location_marker_icon.png',
       iconSize: [64, 64],
       iconAnchor: [32, 32]
     })
@@ -206,7 +217,6 @@ export default {
   height: 100%;
   width: 100%;
 }
-
 .wrap {
   display: flex;
   align-items: center;

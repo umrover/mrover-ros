@@ -93,8 +93,8 @@ export default defineComponent({
     return {
       // Default coordinates are at MDRS
       odom: {
-        latitude_deg: 38.4098,
-        longitude_deg: -110.78235,
+        latitude_deg: 42.293195,
+        longitude_deg: -83.7096706,
         bearing_deg: 0,
         altitude: 0
       },
@@ -153,9 +153,6 @@ export default defineComponent({
         else if (msg.green) this.ledColor = 'blink' //blinking green
         else if (msg.blue) this.ledColor = 'bg-primary' //blue
       } else if (msg.type == 'nav_state') {
-        if (msg.state == 'DoneState') {
-          this.ledColor = 'blink'
-        }
         this.navState = msg.state
       } else if (msg.type == 'nav_sat_fix') {
         this.odom.latitude_deg = msg.latitude

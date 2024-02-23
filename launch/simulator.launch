@@ -1,9 +1,8 @@
 <launch>
-  <arg name="config" default="playground.yaml"/>
   <arg name="headless" default="false"/>
   <arg name="run_rviz" default="true"/>
 
-  <rosparam command="load" file="$(find mrover)/config/simulator/$(arg config)"/>
+  <rosparam command="load" file="$(find mrover)/config/simulator/simulator.yaml"/>
 
   <include file="$(find mrover)/launch/autonomy.launch">
     <arg name="sim" value="true"/>
