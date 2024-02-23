@@ -1,5 +1,6 @@
 #pragma once
 
+#include "mrover/ClickIkAction.h"
 #include "pch.hpp"
 #include <actionlib/server/simple_action_server.h>
 
@@ -13,6 +14,9 @@ namespace mrover {
         // IK publisher
         ros::Publisher mIkPub;
 
+        actionlib::SimpleActionServer<mrover::ClickIkAction> server = actionlib::SimpleActionServer<mrover::ClickIkAction>(mNh, "do_click_ik", [&](const mrover::ClickIkGoalConstPtr& goal) {
+            execute(goal);
+        }, false);
         const Point* mPoints{};
 
         std::size_t mNumPoints{};
@@ -26,7 +30,7 @@ namespace mrover {
 
         auto pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg) -> void;
 
-        void executeGoal();
+        void execute(const mrover::ClickIkGoalConstPtr& goal);
     };
 
 } // namespace mrover
