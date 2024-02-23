@@ -124,13 +124,14 @@ namespace mrover {
         centerCursor();
     }
 
-    auto SimulatorNodelet::cameraLock() -> void {
+    auto SimulatorNodelet::cameraLock([[maybe_unused]] Clock::duration dt) -> void {
         if (!mCameraInRoverTarget) setCameraInRoverTarget();
 
         if (auto lookup = getUrdf("rover")) {
             URDF const& rover = *lookup;
-            SE3d baseLinkInWorld = rover.linkInWorld("base_link");
-            mCameraInWorld = baseLinkInWorld * mCameraInRoverTarget.value();
+            SE3d roverInWorld = rover.linkInWorld("base_link");
+            SE3d cameraInWorldTarget = roverInWorld * mCameraInRoverTarget.value();
+            mCameraInWorld = mCameraInWorld + (cameraInWorldTarget - mCameraInWorld) * mCameraLockLerp;
         }
         centerCursor();
     }
@@ -138,8 +139,8 @@ namespace mrover {
     auto SimulatorNodelet::setCameraInRoverTarget() -> void {
         if (auto lookup = getUrdf("rover")) {
             URDF const& rover = *lookup;
-            SE3d baseLinkInWorld = rover.linkInWorld("base_link");
-            mCameraInRoverTarget = baseLinkInWorld.inverse() * mCameraInWorld;
+            SE3d roverInWorld = rover.linkInWorld("base_link");
+            mCameraInRoverTarget = roverInWorld.inverse() * mCameraInWorld;
         }
     }
 
@@ -155,7 +156,7 @@ namespace mrover {
         if (!mHasFocus || mInGui) return;
 
         if (mCameraLock)
-            cameraLock();
+            cameraLock(dt);
         else
             freeLook(dt);
 
