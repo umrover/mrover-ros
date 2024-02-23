@@ -24,7 +24,7 @@ class ApproachPostState(State):
         :param ud:  State machine user data
         :return:    Next state
         """
-        fid_pos = context.env.current_fid_pos()
+        fid_pos = context.env.current_tag_pos()
         if fid_pos is None:
             return search.SearchState()
 
@@ -38,7 +38,7 @@ class ApproachPostState(State):
             )
             if arrived:
                 context.env.arrived_at_post = True
-                context.env.last_post_location = context.env.current_fid_pos(odom_override=False)
+                context.env.last_post_location = context.env.current_tag_pos(odom_override=False)
                 context.course.increment_waypoint()
                 return waypoint.WaypointState()
             context.rover.send_drive_command(cmd_vel)

@@ -2,19 +2,19 @@
 
 namespace mrover {
 
-    static int checkSyscallResult(int result) {
+    static auto checkSyscallResult(int result) -> int {
         if (result < 0) throw std::system_error{errno, std::generic_category()};
 
         return result;
     }
 
-    static void checkErrorCode(boost::system::error_code const& ec) {
+    static auto checkErrorCode(boost::system::error_code const& ec) -> void {
         if (ec.value() == boost::system::errc::success) return;
 
         throw std::runtime_error(std::format("Boost failure: {} {}", ec.value(), ec.message()));
     }
 
-    static std::uint8_t nearestFittingFdcanFrameSize(std::size_t size) {
+    static auto nearestFittingFdcanFrameSize(std::size_t size) -> std::uint8_t {
         if (size <= 8) return size;
         if (size <= 12) return 12;
         if (size <= 16) return 16;
@@ -26,7 +26,7 @@ namespace mrover {
         throw std::runtime_error("Too large!");
     }
 
-    void CanNodelet::onInit() {
+    auto CanNodelet::onInit() -> void {
         try {
             NODELET_INFO("CAN Node starting...");
 
@@ -94,7 +94,7 @@ namespace mrover {
         }
     }
 
-    int CanNodelet::setupSocket() const {
+    auto CanNodelet::setupSocket() const -> int {
         int socketFd = checkSyscallResult(socket(PF_CAN, SOCK_RAW, CAN_RAW));
         NODELET_INFO_STREAM("Opened CAN socket with file descriptor: " << socketFd);
 
@@ -211,11 +211,10 @@ namespace mrover {
         } catch (boost::system::system_error const& error) {
             // check if ran out of buffer space
             if (error.code() == boost::asio::error::no_buffer_space) {
-                NODELET_WARN_STREAM("No buffer space available to send CAN message");
+                NODELET_WARN_STREAM_THROTTLE(1, "No buffer space available to send CAN message");
                 return;
-            } else {
-                throw;
             }
+            throw;
         }
 
         ROS_DEBUG_STREAM("Sent CAN message");

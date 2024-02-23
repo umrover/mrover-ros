@@ -9,25 +9,9 @@
           </div>
           <div class="form-group col-md-6">
             <label for="waypointid">Tag ID:</label>
-            <input
-              v-if="type == 1"
-              class="form-control"
-              id="waypointid"
-              v-model="id"
-              type="number"
-              max="249"
-              min="0"
-              step="1"
-            />
-            <input
-              v-else
-              class="form-control"
-              id="waypointid"
-              type="number"
-              placeholder="-1"
-              step="1"
-              disabled
-            />
+            <input v-if="type == 1" class="form-control" id="waypointid" v-model="id" type="number" max="249" min="0"
+              step="1" />
+            <input v-else class="form-control" id="waypointid" type="number" placeholder="-1" step="1" disabled />
           </div>
         </div>
 
@@ -39,33 +23,15 @@
         </select>
 
         <div class="form-check form-check-inline">
-          <input
-            v-model="odom_format_in"
-            class="form-check-input"
-            type="radio"
-            id="radioD"
-            value="D"
-          />
+          <input v-model="odom_format_in" class="form-check-input" type="radio" id="radioD" value="D" />
           <label class="form-check-label" for="radioD">D</label>
         </div>
         <div class="form-check form-check-inline">
-          <input
-            v-model="odom_format_in"
-            class="form-check-input"
-            type="radio"
-            id="radioDM"
-            value="DM"
-          />
+          <input v-model="odom_format_in" class="form-check-input" type="radio" id="radioDM" value="DM" />
           <label class="form-check-label" for="radioDM">DM</label>
         </div>
         <div class="form-check form-check-inline">
-          <input
-            v-model="odom_format_in"
-            class="form-check-input"
-            type="radio"
-            id="radioDMS"
-            value="DMS"
-          />
+          <input v-model="odom_format_in" class="form-check-input" type="radio" id="radioDMS" value="DMS" />
           <label class="form-check-label" for="radioDMS">DMS</label>
         </div>
 
@@ -105,8 +71,7 @@
           <button class="btn btn-primary" @click="addWaypoint(formatted_odom)">
             Drop Waypoint
           </button>
-          <!-- Disabled until Competion entry modal is redone -->
-          <!-- <button class="btn btn-primary" @click="openModal">Competition Waypoint Entry</button> -->
+          <button class="btn btn-primary" @click="openModal">Competition Waypoint Entry</button>
         </div>
       </div>
       <div class="box">
@@ -120,55 +85,28 @@
             class="dragArea"
             draggable=".item'"
           > -->
-          <WaypointItem
-            v-for="(waypoint, i) in storedWaypoints"
-            :key="i"
-            :waypoint="waypoint"
-            :in_route="false"
-            :index="i"
-            @delete="deleteItem($event)"
-            @togglePost="togglePost($event)"
-            @add="addItem($event)"
-          />
+          <WaypointItem v-for="(waypoint, i) in storedWaypoints" :key="i" :waypoint="waypoint" :in_route="false"
+            :index="i" @delete="deleteItem($event)" @togglePost="togglePost($event)" @add="addItem($event)" />
           <!-- </draggable> -->
         </div>
       </div>
     </div>
     <div class="col-wrap" style="left: 50%">
       <!-- <div class="auton-check"> -->
-      <AutonModeCheckbox
-        ref="autonCheckbox"
-        class="auton-checkbox"
-        :name="autonButtonText"
-        :color="autonButtonColor"
-        @toggle="toggleAutonMode($event)"
-      />
+      <AutonModeCheckbox ref="autonCheckbox" class="auton-checkbox" :name="autonButtonText" :color="autonButtonColor"
+        @toggle="toggleAutonMode($event)" />
       <div class="stats">
         <VelocityCommand />
       </div>
-      <Checkbox
-        ref="teleopCheckbox"
-        class="teleop-checkbox"
-        :name="'Teleop Controls'"
-        @toggle="toggleTeleopMode($event)"
-      />
+      <Checkbox ref="teleopCheckbox" class="teleop-checkbox" :name="'Teleop Controls'"
+        @toggle="toggleTeleopMode($event)" />
       <!-- </div> -->
       <Checkbox class="stuck-checkbox" name="Stuck" @toggle="roverStuck = !roverStuck"></Checkbox>
       <h4 class="waypoint-headers">Current Course</h4>
       <div class="box route">
         <!-- <draggable v-model="route" class="dragArea" draggable=".item'"> -->
-        <WaypointItem
-          v-for="(waypoint, i) in route"
-          :id="id"
-          :key="i"
-          :waypoint="waypoint"
-          :in_route="true"
-          :index="i"
-          :name="name"
-          @delete="deleteItem($event)"
-          @togglePost="togglePost($event)"
-          @add="addItem($event)"
-        />
+        <WaypointItem v-for="(waypoint, i) in route" :id="id" :key="i" :waypoint="waypoint" :in_route="true" :index="i"
+          :name="name" @delete="deleteItem($event)" @togglePost="togglePost($event)" @add="addItem($event)" />
         <!-- </draggable> -->
       </div>
     </div>
@@ -187,94 +125,36 @@
                 <div class="modal-odom-format">
                   <h5>Waypoint format:</h5>
                   <div class="form-check form-check-inline">
-                    <input
-                      v-model="odom_format_in"
-                      class="form-check-input"
-                      type="radio"
-                      id="radioD"
-                      value="D"
-                    />
+                    <input v-model="odom_format_in" class="form-check-input" type="radio" id="radioD" value="D" />
                     <label class="form-check-label" for="radioD">D</label>
                   </div>
                   <div class="form-check form-check-inline">
-                    <input
-                      v-model="odom_format_in"
-                      class="form-check-input"
-                      type="radio"
-                      id="radioDM"
-                      value="DM"
-                    />
+                    <input v-model="odom_format_in" class="form-check-input" type="radio" id="radioDM" value="DM" />
                     <label class="form-check-label" for="radioDM">DM</label>
                   </div>
                   <div class="form-check form-check-inline">
-                    <input
-                      v-model="odom_format_in"
-                      class="form-check-input"
-                      type="radio"
-                      id="radioDMS"
-                      value="DMS"
-                    />
+                    <input v-model="odom_format_in" class="form-check-input" type="radio" id="radioDMS" value="DMS" />
                     <label class="form-check-label" for="radioDMS">DMS</label>
                   </div>
                 </div>
-                <div
-                  v-for="(header, index) in compModalHeaders"
-                  :key="header"
-                  class="comp-modal-inputs"
-                >
+                <div v-for="(header, index) in compModalHeaders" :key="header" class="comp-modal-inputs">
                   <h5>{{ header }}</h5>
-                  <input
-                    id="lat_deg"
-                    v-model.number="compModalLatDeg[index]"
-                    type="number"
-                    min="-90"
-                    max="90"
-                  />
+                  <input id="lat_deg" v-model.number="compModalLatDeg[index]" type="number" min="-90" max="90" />
                   <label>º</label>
-                  <input
-                    v-if="min_enabled"
-                    id="lat_min"
-                    v-model.number="compModalLatMin[index]"
-                    type="number"
-                    min="0"
-                    max="60"
-                  />
+                  <input v-if="min_enabled" id="lat_min" v-model.number="compModalLatMin[index]" type="number" min="0"
+                    max="60" />
                   <label v-if="min_enabled">'</label>
-                  <input
-                    v-if="sec_enabled"
-                    id="lat_sec"
-                    v-model.number="compModalLatSec[index]"
-                    type="number"
-                    min="0"
-                    max="3600"
-                  />
+                  <input v-if="sec_enabled" id="lat_sec" v-model.number="compModalLatSec[index]" type="number" min="0"
+                    max="3600" />
                   <label v-if="sec_enabled">"</label>
                   <label>N &nbsp; &nbsp;</label>
-                  <input
-                    id="lon_deg"
-                    v-model.number="compModalLonDeg[index]"
-                    type="number"
-                    min="-180"
-                    max="180"
-                  />
+                  <input id="lon_deg" v-model.number="compModalLonDeg[index]" type="number" min="-180" max="180" />
                   <label>º</label>
-                  <input
-                    v-if="min_enabled"
-                    id="lon_min"
-                    v-model.number="compModalLonMin[index]"
-                    type="number"
-                    min="0"
-                    max="60"
-                  />
+                  <input v-if="min_enabled" id="lon_min" v-model.number="compModalLonMin[index]" type="number" min="0"
+                    max="60" />
                   <label v-if="min_enabled">'</label>
-                  <input
-                    v-if="sec_enabled"
-                    id="lon_sec"
-                    v-model.number="compModalLonSec[index]"
-                    type="number"
-                    min="0"
-                    max="3600"
-                  />
+                  <input v-if="sec_enabled" id="lon_sec" v-model.number="compModalLonSec[index]" type="number" min="0"
+                    max="3600" />
                   <label v-if="sec_enabled">"</label>
                   <label>E</label>
                 </div>
@@ -346,11 +226,11 @@ export default {
         'Start',
         'Waypoint 1',
         'Waypoint 2',
-        'Waypoint 3',
         'Post 1',
         'Post 2',
         'Post 3',
-        'Gate'
+        'Mallet',
+        'Water Bottle'
       ],
       compModalLatDeg: Array(8).fill(0),
       compModalLatMin: Array(8).fill(0),
