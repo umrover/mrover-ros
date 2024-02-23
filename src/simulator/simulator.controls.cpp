@@ -139,7 +139,6 @@ namespace mrover {
         if (auto lookup = getUrdf("rover")) {
             URDF const& rover = *lookup;
             SE3d baseLinkInWorld = rover.linkInWorld("base_link");
-            //AtoC = BtoC * AtoB
             mCameraInRoverTarget = baseLinkInWorld.inverse() * mCameraInWorld;
         }
     }
