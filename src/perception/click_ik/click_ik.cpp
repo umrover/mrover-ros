@@ -1,9 +1,16 @@
+#include <actionlib/server/action_server.h>
 #include <actionlib/server/simple_action_server.h>
 #include "click_ik.hpp"
+#include "mrover/ClickIkAction.h"
+#include "mrover/ClickIkGoal.h"
 #include "mrover/IK.h"
 
 namespace mrover {
 
+    void ClickIkNodelet::execute(const mrover::ClickIkGoalConstPtr& goal) {
+        ROS_INFO("Executing goal");
+    }
+    
     void ClickIkNodelet::onInit() {
         mNh = getMTNodeHandle();
         mPnh = getMTPrivateNodeHandle();
@@ -12,10 +19,6 @@ namespace mrover {
         // IK Publisher
         mIkPub = mNh.advertise<IK>("/arm_ik", 1);
 
-        // Start ActionServer
-        actionlib::SimpleActionServer<mrover::ClickIkAction> server(mNh, "do_click_ik", [&](const mrover::ClickIkGoalConstPtr& goal) {
-            // How to pass server to callback? It will go out of scope and can't be assigned to a member variable because actionlib::SimpleActionServer is non-copyable
-        }, false);
         server.start();
 
     }
@@ -25,6 +28,7 @@ namespace mrover {
         mPoints = reinterpret_cast<Point const*>(msg->data.data());
         mNumPoints = msg->width * msg->height;
     }
+
 
     
 } // namespace mrover

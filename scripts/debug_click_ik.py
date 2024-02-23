@@ -8,18 +8,15 @@ import sys
 def click_ik_client():
     # Creates the SimpleActionClient, passing the type of the action
     # (FibonacciAction) to the constructor.
-    client = actionlib.SimpleActionClient('click-ik', ClickIkAction)
+    client = actionlib.SimpleActionClient('do_click_ik', ClickIkAction)
     # Waits until the action server has started up and started
     # listening for goals.
     client.wait_for_server()
     # Creates a goal to send to the action server.
-    goal = ClickIkActionGoal(pointInImageX=0, pointInImageY=0)
+    goal = ClickIkActionGoal()
     # Sends the goal to the action server.
     client.send_goal(goal)
-    # Waits for the server to finish performing the action.
-    client.wait_for_result()
-    # Prints out the result of executing the action
-    return client.get_result()  # A FibonacciResult
+    client.wait_for_result(rospy.Duration.from_sec(5.0))
 
 if __name__ == "__main__":
     try:
