@@ -27,6 +27,7 @@
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
 
+#include <Eigen/QR>
 
 namespace mrover {
 
@@ -238,22 +239,28 @@ namespace mrover {
         {
             if(mBestNormalInZED.value().x() > 0) mBestNormalInZED.value() *=-1;
 
-            Eigen::Vector3d x;
-            Eigen::Vector3d y;
-            Eigen::Vector3d z;
-            Eigen::Vector3d dummy{mBestNormalInZED->x()+1,mBestLocationInZED->y(),mBestNormalInZED->z()};
-            x = dummy.cross(mBestNormalInZED.value()).normalized();
-            y = x.cross(mBestNormalInZED.value()).normalized();
-            z = mBestNormalInZED.value().normalized();
-            rot <<  x.x(),y.x(),z.x(),
-                    x.y(),y.y(),z.y(),
-                    x.z(),y.z(),z.z();
+            // Eigen::Vector3d x;
+            // Eigen::Vector3d y;
+            // Eigen::Vector3d z;
+            // Eigen::Vector3d dummy{mBestNormalInZED->x()+1,mBestLocationInZED->y(),mBestNormalInZED->z()};
+            Eigen::Vector3d n = mBestNormalInZED.value().normalized();
+            // y = dummy.cross(mBestNormalInZED.value()).normalized();
+            // z = x.cross(mBestNormalInZED.value()).normalized();
+            rot <<  n.x(),0,0,
+                    n.y(),0,1,
+                    n.z(),1,0;
                     std::cout << "rot matrix " << rot << std::endl;
+            
+            Eigen::HouseholderQR<Eigen::Matrix3d> qr{rot};
+            Eigen::Matrix3d q = qr.householderQ();
+            rot.col(0) = q.col(0);
+            rot.col(1) = q.col(2);
+            rot.col(2) = q.col(1);
         }
 
         manif::SE3d mPlaneLocInZED = {{mBestLocationInZED.value().x(), mBestLocationInZED.value().y(), mBestLocationInZED.value().z()}, manif::SO3d{Eigen::Quaterniond{rot}.normalized()}};//TODO: THIS IS A RANDOM ROTATION MATRIX
 
-        manif::SE3d zedToMap = SE3Conversions::fromTfTree(mTfBuffer, mMapFrameId, mCameraFrameId);
+        manif::SE3d zedToMap = SE3Conversions::fromTfTree(mTfBuffer, mCameraFrameId, mMapFrameId);
 
         mBestNormalInWorld = std::make_optional<Eigen::Vector3d>(zedToMap.rotation().matrix() * mBestNormalInZED.value());
         manif::SE3d planeLocationSE3 = (zedToMap * mPlaneLocInZED);
@@ -324,7 +331,7 @@ namespace mrover {
         PID pid(0.1, 0.1); // literally just P -- ugly class and probably needs restructuring in the future
         ros::Rate rate(20); // ROS Rate at 20Hz
         while (ros::ok()) {
-            rover = SE3Conversions::fromTfTree(mTfBuffer, "map", "base_link");
+            rover = SE3Conversions::fromTfTree(mTfBuffer, "base_link", "map");
             Eigen::Vector3d roverPosInWorld{static_cast<float>(rover.translation().x()), static_cast<float>(rover.translation().y()), 0};
 
             switch (mLoopState) {
