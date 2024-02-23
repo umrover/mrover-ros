@@ -1,9 +1,4 @@
 #include "arm_controller.hpp"
-#include <Eigen/src/Geometry/AngleAxis.h>
-#include <lie/lie.hpp>
-#include <manif/impl/so3/SO3.h>
-#include <ros/init.h>
-#include <tf2_ros/transform_broadcaster.h>
 
 namespace mrover {
 
@@ -31,8 +26,6 @@ namespace mrover {
 
     // Publishers
 
-
-
     // Private state
 
     // auto ArmController::run(int argc, char** argv) -> int {
@@ -50,6 +43,14 @@ namespace mrover {
     //     return EXIT_SUCCESS;
     // }
 
+    ArmController::ArmController() {
+        ros::NodeHandle nh;
+        double frequency{};
+        nh.param<double>("/frequency", frequency, 100);
+        mIkSubscriber = nh.subscribe("arm_ik", 1, &ArmController::ik_callback, this);
+        mPositionPublisher = nh.advertise<Position>("arm_position_cmd", 1);
+    }
+
     auto ArmController::ik_callback(IK const& ik_target) -> void {
         Position positions;
         positions.names = {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll"};
@@ -59,7 +60,7 @@ namespace mrover {
         double y = ik_target.pose.position.y;
         double z = ik_target.pose.position.z;
         SE3d pos{{x + 0.034346, 0, z + 0.049024}, SO3d::Identity()};
-        SE3Conversions::pushToTfTree(tfBroadcaster, "arm_target", "arm_a_link", pos);
+        SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_target", "arm_a_link", pos);
 
         // SE3d link_ab = SE3Conversions::fromTfTree(buffer, "arm_a_link", "arm_b_link");
         // SE3d link_bc = SE3Conversions::fromTfTree(buffer, "arm_b_link", "arm_c_link");
@@ -79,14 +80,14 @@ namespace mrover {
         // ROS_INFO("x: %f, y: %f, z: %f, q1: %f, q2: %f, q3: %f", x, y, z, q1, q2, q3);
 
         double gamma = 0;
-        double x3 = x - LINK_DE * cos(gamma);
-        double z3 = z - LINK_DE * sin(gamma);
+        double x3 = x - LINK_DE * std::cos(gamma);
+        double z3 = z - LINK_DE * std::sin(gamma);
         // SE3d joint_e_pos{{x3, 0, z3}, SO3d::Identity()};
 
-        double C = sqrt(x3 * x3 + z3 * z3);
-        double alpha = acos((LINK_BC * LINK_BC + LINK_CD * LINK_CD - C * C) / (2 * LINK_BC * LINK_CD));
-        double beta = acos((LINK_BC * LINK_BC + C * C - LINK_CD * LINK_CD) / (2 * LINK_BC * C));
-        double thetaA = atan(z3 / x3) + beta;
+        double C = std::sqrt(x3 * x3 + z3 * z3);
+        double alpha = std::acos((LINK_BC * LINK_BC + LINK_CD * LINK_CD - C * C) / (2 * LINK_BC * LINK_CD));
+        double beta = std::acos((LINK_BC * LINK_BC + C * C - LINK_CD * LINK_CD) / (2 * LINK_BC * C));
+        double thetaA = std::atan(z3 / x3) + beta;
         double thetaB = -1 * (std::numbers::pi - alpha);
         double thetaC = gamma - thetaA - thetaB;
 
@@ -94,10 +95,10 @@ namespace mrover {
         SE3d joint_c_pos{{LINK_BC * cos(thetaA), 0, LINK_BC * sin(thetaA)}, SO3d{0, -thetaA, 0}};
         SE3d joint_d_pos{{LINK_CD * cos(thetaB), 0, LINK_CD * sin(thetaB)}, SO3d{0, -thetaB, 0}};
         SE3d joint_e_pos{{LINK_DE * cos(thetaC), 0, LINK_DE * sin(thetaC)}, SO3d{0, -thetaC, 0}};
-        SE3Conversions::pushToTfTree(tfBroadcaster, "arm_b_target", "arm_a_link", joint_b_pos);
-        SE3Conversions::pushToTfTree(tfBroadcaster, "arm_c_target", "arm_b_target", joint_c_pos);
-        SE3Conversions::pushToTfTree(tfBroadcaster, "arm_d_target", "arm_c_target", joint_d_pos);
-        SE3Conversions::pushToTfTree(tfBroadcaster, "arm_e_target", "arm_d_target", joint_e_pos);
+        SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_b_target", "arm_a_link", joint_b_pos);
+        SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_c_target", "arm_b_target", joint_c_pos);
+        SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_d_target", "arm_c_target", joint_d_pos);
+        SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_e_target", "arm_d_target", joint_e_pos);
 
         double q1 = -thetaA;
         double q2 = -thetaB + 0.1608485915;
@@ -113,7 +114,7 @@ namespace mrover {
             positions.positions[1] = static_cast<float>(q1);
             positions.positions[2] = static_cast<float>(q2);
             positions.positions[3] = static_cast<float>(q3);
-            position_publisher.publish(positions);
+            mPositionPublisher.publish(positions);
         } else {
         }
     }
@@ -122,8 +123,8 @@ namespace mrover {
 
 auto main(int argc, char** argv) -> int {
     ros::init(argc, argv, "arm_controller");
-    mrover::ArmController arm_controller{};
+
+    mrover::ArmController armController;
 
     ros::spin();
-    // return arm_controller.run(argc, argv);
 }
