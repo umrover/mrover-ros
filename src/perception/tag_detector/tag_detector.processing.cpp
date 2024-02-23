@@ -8,7 +8,7 @@ namespace mrover {
      * @param u     X Pixel Position
      * @param v     Y Pixel Position
      */
-    std::optional<SE3d> TagDetectorNodelet::getTagInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t u, size_t v) {
+    auto TagDetectorNodelet::getTagInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t u, size_t v) -> std::optional<SE3d> {
         assert(cloudPtr);
 
         if (u >= cloudPtr->width || v >= cloudPtr->height) {
@@ -32,7 +32,7 @@ namespace mrover {
      *
      * @param msg   Point cloud message
      */
-    void TagDetectorNodelet::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg) {
+    auto TagDetectorNodelet::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg) -> void {
         assert(msg);
         assert(msg->height > 0);
         assert(msg->width > 0);
@@ -108,7 +108,7 @@ namespace mrover {
                     std::string immediateFrameId = "immediateFiducial" + std::to_string(tag.id);
                     // Publish tag to odom
                     std::string const& parentFrameId = mUseOdom ? mOdomFrameId : mMapFrameId;
-                    SE3d tagInParent = SE3Conversions::fromTfTree(mTfBuffer, parentFrameId, immediateFrameId);
+                    SE3d tagInParent = SE3Conversions::fromTfTree(mTfBuffer, immediateFrameId, parentFrameId);
                     SE3Conversions::pushToTfTree(mTfBroadcaster, "fiducial" + std::to_string(id), parentFrameId, tagInParent);
                 } catch (tf2::ExtrapolationException const&) {
                     NODELET_WARN("Old data for immediate tag");

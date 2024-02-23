@@ -93,9 +93,9 @@ namespace mrover {
 
         URDF(SimulatorNodelet& simulator, XmlRpc::XmlRpcValue const& init);
 
-        auto makeCollisionShapeForLink(SimulatorNodelet& simulator, urdf::LinkConstSharedPtr const& link) -> btCollisionShape*;
+        static auto makeCollisionShapeForLink(SimulatorNodelet& simulator, urdf::LinkConstSharedPtr const& link) -> btCollisionShape*;
 
-        auto makeCameraForLink(SimulatorNodelet& simulator, btMultibodyLink const* link) -> Camera;
+        static auto makeCameraForLink(SimulatorNodelet& simulator, btMultibodyLink const* link) -> Camera;
 
         [[nodiscard]] auto linkInWorld(std::string const& linkName) const -> SE3d;
     };
@@ -193,7 +193,7 @@ namespace mrover {
         float mLookSense = 0.004f;
         float mFovDegrees = 60.0f;
         btVector3 mGravityAcceleration{0.0f, 0.0f, -9.81f};
-        bool mEnablePhysics = false;
+        bool mEnablePhysics{};
         bool mRenderModels = true;
         bool mRenderWireframeColliders = false;
         double mPublishHammerDistanceThreshold = 4;
@@ -222,21 +222,23 @@ namespace mrover {
         Eigen::Vector3f mIkTarget{0.125, 0.1, 0};
         ros::Publisher mIkTargetPub;
 
-        R3 mGpsLinerizationReferencePoint{};
+        R3 mGpsLinearizationReferencePoint{};
         double mGpsLinerizationReferenceHeading{};
 
         // TODO: make variances configurable
         std::default_random_engine mRNG;
-        std::normal_distribution<double> mGPSDist{0, 0.0},
-                mAccelDist{0, 0.05},
-                mGyroDist{0, 0.02},
+        std::normal_distribution<> mGPSDist{0, 0.02},
+                mAccelDist{0, 0.01},
+                mGyroDist{0, 0.01},
                 mMagDist{0, 0.1},
-                mRollDist{0, 0.05},
-                mPitchDist{0, 0.05},
-                mYawDist{0, 0.1};
+                mRollDist{0, 0.01},
+                mPitchDist{0, 0.01},
+                mYawDist{0, 0.01};
 
         PeriodicTask mGpsTask;
         PeriodicTask mImuTask;
+
+        bool mIsHeadless{};
 
         // Rendering
 
@@ -356,7 +358,7 @@ namespace mrover {
 
         auto initPhysics() -> void;
 
-        auto parseParams() -> void;
+        auto initUrdfsFromParams() -> void;
 
         auto onInit() -> void override;
 

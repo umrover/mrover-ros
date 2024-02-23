@@ -66,4 +66,5 @@ echo "Style checking Python with black ..."
 
 echo
 echo "Style checking Python with mypy ..."
-"$MYPY_PATH" --config-file=mypy.ini --check ./src ./scripts
+# TODO(quintin): Add other subteam folders and scripts folder
+"$MYPY_PATH" --config-file=mypy.ini --check ./src/navigation

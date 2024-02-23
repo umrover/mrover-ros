@@ -72,7 +72,7 @@ namespace mrover {
 
     auto SimulatorNodelet::linksToTfUpdate() -> void {
 
-        for (auto const& [_, urdf]: mUrdfs) {
+        for (auto const& [name, urdf]: mUrdfs) {
             auto publishLink = [&](auto&& self, urdf::LinkConstSharedPtr const& link) -> void {
                 if (link->parent_joint) {
                     int index = urdf.linkNameToMeta.at(link->name).index;
@@ -81,6 +81,11 @@ namespace mrover {
                     SE3d childInParent = btTransformToSe3(parentToChild.inverse());
 
                     SE3Conversions::pushToTfTree(mTfBroadcaster, link->name, link->getParent()->name, childInParent);
+                }
+                // TODO(quintin): This is kind of hacky
+                if (name.contains("tag"sv) || name.contains("hammer"sv) || name.contains("bottle"sv)) {
+                    SE3d modelInMap = btTransformToSe3(urdf.physics->getBaseWorldTransform());
+                    SE3Conversions::pushToTfTree(mTfBroadcaster, std::format("{}_truth", name), "map", modelInMap);
                 }
 
                 for (urdf::JointSharedPtr const& child_joint: link->child_joints) {
