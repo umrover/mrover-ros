@@ -12,8 +12,8 @@ namespace mrover {
         assert(mNh.hasParam(std::format("motors_group/{}", mGroupName)));
         mNh.getParam(std::format("motors_group/{}", mGroupName), motorControllerNames);
         assert(motorControllerNames.getType() == XmlRpc::XmlRpcValue::TypeArray);
-        for (int i = 0; i < motorControllerNames.size(); ++i) {
-            std::string name = static_cast<std::string>(motorControllerNames[i]);
+        for (int i = 0; i < motorControllerNames.size(); ++i) { // NOLINT(*-loop-convert)
+            auto name = static_cast<std::string>(motorControllerNames[i]);
             mIndexByName[name] = mControllerNames.size();
             mControllerNames.push_back(name);
             mThrottlePubsByName[name] = mNh.advertise<Throttle>(std::format("{}_throttle_cmd", name), 1);

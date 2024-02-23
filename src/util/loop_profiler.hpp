@@ -33,6 +33,9 @@ public:
         if (mTick % mPrintTick == 0) {
             Clock::duration averageLoopDuration{};
             for (auto& [_, durations]: mEventReadings) {
+                if (durations.empty()) {
+                    continue;
+                }
                 averageLoopDuration += std::accumulate(durations.begin(), durations.end(), Clock::duration{}) / durations.size();
             }
             // Print update time for the entire loop
@@ -44,6 +47,9 @@ public:
                                  << " (" << hz << " Hz)");
             // Print update times for each loop event
             for (auto& [name, durations]: mEventReadings) {
+                if (durations.empty()) {
+                    continue;
+                }
                 Clock::duration averageEventDuration = std::accumulate(durations.begin(), durations.end(), Clock::duration{}) / durations.size();
                 auto averageEventMs = std::chrono::duration_cast<DisplayUnits>(averageEventDuration);
                 ROS_DEBUG_STREAM("\t" << name << ": " << averageEventMs.count() << "ms");

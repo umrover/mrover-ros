@@ -2,7 +2,7 @@
 
 #include <motors_group.hpp>
 
-int main(int argc, char** argv) {
+auto main(int argc, char** argv) -> int {
     // Initialize the ROS node
     ros::init(argc, argv, "cache_bridge");
     ros::NodeHandle nh;
