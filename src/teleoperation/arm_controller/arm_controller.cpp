@@ -1,5 +1,7 @@
 #include "arm_controller.hpp"
+#include <Eigen/src/Geometry/AngleAxis.h>
 #include <lie/lie.hpp>
+#include <manif/impl/so3/SO3.h>
 #include <ros/init.h>
 #include <tf2_ros/transform_broadcaster.h>
 
@@ -9,10 +11,10 @@ namespace mrover {
 
     // From: rover.urdf.xacro
     // A is the prismatic joint, B is the first revolute joint, C is the second revolute joint
-    constexpr double LINK_BC = 0.534;
-    constexpr double LINK_CD = 0.553;
+    constexpr double LINK_BC = 0.5344417294;
+    constexpr double LINK_CD = 0.5531735368;
     constexpr double LINK_DE = 0.044886000454425812;
-    double const OFFSET = std::atan2(0.09, LINK_CD);
+    // double const OFFSET = std::atan2(0.09, LINK_CD);
     constexpr double JOINT_A_MIN = -0.45;
     constexpr double JOINT_A_MAX = 0;
     constexpr double JOINT_B_MIN = -0.25 * std::numbers::pi;
@@ -56,17 +58,21 @@ namespace mrover {
         double x = ik_target.pose.position.x;
         double y = ik_target.pose.position.y;
         double z = ik_target.pose.position.z;
-        SE3d pos{{x, y, z}, SO3d::Identity()};
-        SE3Conversions::pushToTfTree(tfBroadcaster, "arm_target", "chassis_link", pos);
+        SE3d pos{{x + 0.034346, 0, z + 0.049024}, SO3d::Identity()};
+        SE3Conversions::pushToTfTree(tfBroadcaster, "arm_target", "arm_a_link", pos);
 
         // SE3d link_ab = SE3Conversions::fromTfTree(buffer, "arm_a_link", "arm_b_link");
         // SE3d link_bc = SE3Conversions::fromTfTree(buffer, "arm_b_link", "arm_c_link");
         // SE3d link_cd = SE3Conversions::fromTfTree(buffer, "arm_c_link", "arm_d_link");
         // SE3d link_de = SE3Conversions::fromTfTree(buffer, "arm_d_link", "arm_e_link");
 
-        // double C = x * x + z * z - LINK_AB * LINK_AB - LINK_BC * LINK_BC;
-        // double q2 = std::acos(C / (2 * LINK_AB * LINK_BC));
-        // double q1 = std::atan2(z, x) - std::atan2(LINK_BC * std::sin(q2), LINK_AB + LINK_BC * std::cos(q2));
+        // SE3d offset = SE3Conversions::fromTfTree(buffer, "chassis_link", "arm_e_link").inverse() * pos;
+        // ROS_INFO("x: %f, y: %f, z: %f", offset.translation().x(), offset.translation().y(), offset.translation().z());
+        // SE3d thing = SE3Conversions::fromTfTree(buffer, "arm_c_link", "arm_d_link");
+        
+        // double C = x * x + z * z - LINK_BC * LINK_BC - LINK_CD * LINK_CD;
+        // double q2 = std::acos(C / (2 * LINK_BC * LINK_CD));
+        // double q1 = std::atan2(z, x) - std::atan2(LINK_BC * std::sin(q2), LINK_BC + LINK_CD * std::cos(q2));
         // // q1 = std::clamp(q1, -TAU / 8, 0.0);
         // double q3 = -(q1 + q2);
 
@@ -75,6 +81,7 @@ namespace mrover {
         double gamma = 0;
         double x3 = x - LINK_DE * cos(gamma);
         double z3 = z - LINK_DE * sin(gamma);
+        // SE3d joint_e_pos{{x3, 0, z3}, SO3d::Identity()};
 
         double C = sqrt(x3 * x3 + z3 * z3);
         double alpha = acos((LINK_BC * LINK_BC + LINK_CD * LINK_CD - C * C) / (2 * LINK_BC * LINK_CD));
@@ -83,10 +90,19 @@ namespace mrover {
         double thetaB = -1 * (std::numbers::pi - alpha);
         double thetaC = gamma - thetaA - thetaB;
 
-        double q1 = -thetaA;
-        double q2 = -thetaB;
-        double q3 = -thetaC;
+        SE3d joint_b_pos{{0.034346, 0, 0.049024}, SO3d::Identity()};
+        SE3d joint_c_pos{{LINK_BC * cos(thetaA), 0, LINK_BC * sin(thetaA)}, SO3d{0, -thetaA, 0}};
+        SE3d joint_d_pos{{LINK_CD * cos(thetaB), 0, LINK_CD * sin(thetaB)}, SO3d{0, -thetaB, 0}};
+        SE3d joint_e_pos{{LINK_DE * cos(thetaC), 0, LINK_DE * sin(thetaC)}, SO3d{0, -thetaC, 0}};
+        SE3Conversions::pushToTfTree(tfBroadcaster, "arm_b_target", "arm_a_link", joint_b_pos);
+        SE3Conversions::pushToTfTree(tfBroadcaster, "arm_c_target", "arm_b_target", joint_c_pos);
+        SE3Conversions::pushToTfTree(tfBroadcaster, "arm_d_target", "arm_c_target", joint_d_pos);
+        SE3Conversions::pushToTfTree(tfBroadcaster, "arm_e_target", "arm_d_target", joint_e_pos);
 
+        double q1 = -thetaA;
+        double q2 = -thetaB + 0.1608485915;
+        double q3 = -thetaC - 0.1608485915;
+        
         if (std::isfinite(q1) && std::isfinite(q2) && std::isfinite(q3) && 
             y >= JOINT_A_MIN && y <= JOINT_A_MAX &&
             q1 >= JOINT_B_MIN && q1 <= JOINT_B_MAX &&
