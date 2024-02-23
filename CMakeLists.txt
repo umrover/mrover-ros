@@ -61,7 +61,7 @@ extract_filenames(msg/*.msg MROVER_MESSAGE_FILES)
 
 extract_filenames(srv/*.srv MROVER_SERVICE_FILES)
 
-#extract_filenames(action/*.action MROVER_ACTION_FILES)
+extract_filenames(action/*.action MROVER_ACTION_FILES)
 
 set(MROVER_MESSAGE_DEPENDENCIES
         std_msgs
@@ -134,7 +134,7 @@ add_message_files(FILES ${MROVER_MESSAGE_FILES})
 
 add_service_files(FILES ${MROVER_SERVICE_FILES})
 
-#add_action_files(DIRECTORY action FILES ${MROVER_ACTION_FILES})
+add_action_files(DIRECTORY action FILES ${MROVER_ACTION_FILES})
 
 generate_messages(DEPENDENCIES ${MROVER_MESSAGE_DEPENDENCIES})
 
