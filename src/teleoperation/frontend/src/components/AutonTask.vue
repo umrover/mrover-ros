@@ -180,11 +180,12 @@ export default defineComponent({
     window.setTimeout(() => {
       this.sendMessage({ "type": "center_map" });
     }, 250)
-  },
 
-  // interval = setInterval(() => {
-  //   this.sendMessage({ type: 'auton_tfclient' })
-  // }, 1000)
+    interval = setInterval(() => {
+    this.sendMessage({ type: 'auton_tfclient' })
+  }, 1000)
+  },
+  
 })
 </script>
 
@@ -212,7 +213,6 @@ export default defineComponent({
 }
 
 @keyframes blinkAnimation {
-
   0%,
   100% {
     background-color: var(--bs-success);
@@ -282,8 +282,8 @@ h2 {
   cursor: pointer;
 }
 
-.help:hover~.helpscreen,
-.help:hover~.helpimages {
+.help:hover ~ .helpscreen,
+.help:hover ~ .helpimages {
   visibility: visible;
 }
 
@@ -311,4 +311,3 @@ h2 {
   grid-area: data;
 }
 </style>
->>>>>>> 9720704e91b679513a528bf4bb0e7521bcdaec68

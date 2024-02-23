@@ -1,7 +1,0 @@
-device: /dev/ttyACM0
-frame_id: base_link
-uart1:
-  baudrate: 115200
-config_on_startup: false
-publish/rxm/all: true
-publish/all: true

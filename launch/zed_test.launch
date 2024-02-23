@@ -4,7 +4,13 @@
       <arg name="run_rqt_tf_tree" default="true" />
 
       <arg name="run_tag_detector" default="true" />
+      <arg name="run_object_detector" default="true" />
       <arg name="use_builtin_visual_odom" default="false" />
+
+      <arg name="obj_increment_weight" default="3" />
+      <arg name="obj_decrement_weight" default="1" />
+      <arg name="obj_hitcount_threshold" default="50" />
+      <arg name="obj_hitcount_max" default="500" />
 
       <include file="$(find mrover)/launch/zed.launch">
             <arg name="use_builtin_visual_odom" value="$(arg use_builtin_visual_odom)" />
@@ -12,6 +18,7 @@
 
       <include file="$(find mrover)/launch/perception.launch">
             <arg name="run_tag_detector" value="$(arg run_tag_detector)" />
+            <arg name="run_object_detector" value="$(arg run_object_detector)" />
       </include>
 
       <group if="$(arg run_rviz)">
