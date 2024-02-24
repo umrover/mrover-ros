@@ -112,18 +112,23 @@ namespace mrover {
                 data.pipeline = check(gst_pipeline_new("pipeline"));
                 gst_bin_add_many(GST_BIN(data.pipeline), source, tee, queue1, convert1, sink1, queue2, convert2, encoder, sink2, nullptr);
 
-                check(gst_element_link_many(source, tee, nullptr));
-                check(gst_element_link_many(queue1, convert1, sink1, nullptr));
-                check(gst_element_link_many(queue2, convert2, encoder, sink2, nullptr));
+                GstCaps* caps = check(gst_caps_new_simple("video/x-raw", "format", G_TYPE_STRING, "I420", "width", G_TYPE_INT, width, "height", G_TYPE_INT, height, "framerate", GST_TYPE_FRACTION, framerate, 1, nullptr));
 
-                GstPad* teePad1 = check(gst_element_get_request_pad(tee, "src_%u"));
-                gst_pad_link(teePad1, gst_element_get_static_pad(queue1, "sink"));
-                GstPad* teePad2 = check(gst_element_get_request_pad(tee, "src_%u"));
-                gst_pad_link(teePad2, gst_element_get_static_pad(queue2, "sink"));
+                check(gst_element_link(source, tee));
 
-                GstCaps* caps = gst_caps_new_simple("video/x-raw", "format", G_TYPE_STRING, "I420", "width", G_TYPE_INT, width, "height", G_TYPE_INT, height, "framerate", GST_TYPE_FRACTION, framerate, 1, nullptr);
+                gst_pad_link(
+                        check(gst_element_get_request_pad(tee, "src_%u")),
+                        check(gst_element_get_static_pad(queue1, "sink")));
+                gst_pad_link(
+                        check(gst_element_get_request_pad(tee, "src_%u")),
+                        check(gst_element_get_static_pad(queue2, "sink")));
+
+                check(gst_element_link(queue1, convert1));
                 check(gst_element_link_filtered(convert1, sink1, caps));
+
+                check(gst_element_link(queue2, convert2));
                 check(gst_element_link_filtered(convert2, encoder, caps));
+                check(gst_element_link(encoder, sink2));
 
                 GstBus* bus = check(gst_pipeline_get_bus(GST_PIPELINE(data.pipeline)));
                 gst_bus_add_signal_watch(GST_BUS(bus));
