@@ -49,7 +49,6 @@ class TipDetection:
             try:
                 # extract the  matrix by [0,0,1] (z vector)
                 self.old = SE3.from_tf_tree(self.buffer, self.world_frame, self.rover_frame).rotation.rotation_matrix()
-                
                 # multiply this transform by the z vector [0, 0, 1]
                 self.transform = np.dot(np.array([0, 0, 1]), self.old)
 

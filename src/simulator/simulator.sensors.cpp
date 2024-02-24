@@ -178,7 +178,7 @@ namespace mrover {
                 R3 imuLinearAcceleration = (roverLinearVelocity - mRoverLinearVelocity) / std::chrono::duration_cast<std::chrono::duration<float>>(dt).count();
                 mRoverLinearVelocity = roverLinearVelocity;
                 SE3 imuInMap = rover.linkInWorld("imu");
-                mImuPub.publish(computeImu(imuInMap, imuAngularVelocity, imuLinearAcceleration, imuInMap.rotation().matrix().transpose().col(1)));
+                //mImuPub.publish(computeImu(imuInMap, imuAngularVelocity, imuLinearAcceleration, imuInMap.rotation().matrix().transpose().col(1)));
             }
         }
     }
