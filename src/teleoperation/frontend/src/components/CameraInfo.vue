@@ -1,17 +1,42 @@
 <template>
-  <div class="wrap box">
-    <p>{{ name }} ID: {{ id }}</p>
-    Stream:
-    <input v-model="selectedStream" class="box" type="Number" min="0" max="3" />
-    <button class="box" @click="swapStream()">Change stream</button>
-    <label for="quality">Quality:</label>
-    <select id="quality" v-model="selectedQuality" class="box" @change="changeQuality()">
-      <option v-for="i in numQuality" :key="i">{{ i - 1 }}</option>
-    </select>
+  <div class="shadow my-1 p-3 rounded">
+    <p>{{ name }} • ID: {{ id }}</p>
+    <div class="row justify-content-md-left">
+      <div class="form-group col-md-4">
+        Stream:
+        <input
+          v-model="selectedStream"
+          type="Number"
+          min="0"
+          max="3"
+          class="form-control"
+          @change="swapStream"
+        />
+        <!-- <input v-model="selectedStream" class="box" type="Number" min="0" max="3" /> -->
+        <!-- <button class="box" @click="swapStream()">Change stream</button> -->
+      </div>
+      <div class="form-group col-md-4">
+        <label for="quality">Quality:</label>
+        <select
+          v-model="selectedQuality"
+          type="Number"
+          min="0"
+          max="4"
+          class="form-control"
+          id="quality"
+          @change="changeQuality()"
+        >
+          <!-- <select id="quality" v-model="selectedQuality" class="box" @change="changeQuality()"> -->
+          <option v-for="i in numQuality" :key="i">{{ i - 1 }}</option>
+        </select>
+      </div>
+    </div>
   </div>
 </template>
 
 <script lang="ts">
+import { mapActions, mapState } from 'vuex'
+
 export default {
   props: {
     name: {
@@ -37,23 +62,24 @@ export default {
   },
 
   watch: {
+    message(msg) {
+      if (msg.type == 'max_resolution') {
+        this.numQuality = msg.res
+      }
+    },
     stream: function () {
       this.prevStream = this.stream
       this.selectedStream = this.stream
     }
   },
 
-  created: function () {
-    //   var arg = new ROSLIB.Param({
-    //     ros: this.$ros,
-    //     name: "cameras/max_num_resolutions"
-    //   });
-    //   arg.get((value) => {
-    //     this.numQuality = value;
-    //   });
+  computed: {
+    ...mapState('websocket', ['message'])
   },
 
   methods: {
+    ...mapActions('websocket', ['sendMessage']),
+
     changeQuality: function () {
       this.$emit('newQuality', {
         index: this.id,
@@ -72,18 +98,4 @@ export default {
 }
 </script>
 
-<style scoped>
-/* .box {
-    border-radius: 5px;
-    padding: 10px;
-    border: 1px solid black;
-  }
-  .wrap {
-    margin: 10px;
-    padding: 10px;
-  }
-  
-  .wrap > * {
-    margin: 5px 0 5px 0;
-  } */
-</style>
+<style scoped></style>

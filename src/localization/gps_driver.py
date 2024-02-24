@@ -83,7 +83,7 @@ class GPS_Driver:
 
             time = time + self.time_offset
 
-            print(time, rospy.Time.now(), time-rospy.Time.now(), self.time_offset) 
+            print(time, rospy.Time.now(), time - rospy.Time.now(), self.time_offset)
 
             message_header = Header(stamp=time, frame_id="base_link")
 

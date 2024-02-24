@@ -80,7 +80,6 @@ namespace mrover {
 
     private:
         moteus::Controller mController{moteus::Controller::Options{}};
-        double mMeasuredEffort{};
         bool limitSwitch0Present{};
         bool limitSwitch1Present{};
         bool limitSwitch0Enabled{true};
@@ -101,7 +100,7 @@ namespace mrover {
         RadiansPerSecond mMinVelocity, mMaxVelocity;
 
         // Function to map throttle to velocity
-        RadiansPerSecond mapThrottleToVelocity(Percent throttle);
+        RadiansPerSecond mapThrottleToVelocity(Percent throttle) const;
         // Converts moteus error codes and mode codes to std::string descriptions
         static std::string moteusErrorCodeToErrorState(moteus::Mode motor_mode, ErrorCode motor_error_code);
         static std::string moteusModeToState(moteus::Mode motor_mode);

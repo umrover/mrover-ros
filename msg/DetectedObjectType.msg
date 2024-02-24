@@ -1,3 +1,0 @@
-uint8 NO_OBJ=0
-uint8 MALLET=1
-uint8 WATER_BOTTLE=2

@@ -134,6 +134,6 @@ class SearchState(State):
         )
         context.rover.send_drive_command(cmd_vel)
 
-        if context.env.current_fid_pos() is not None and context.course.look_for_post():
+        if context.env.current_tag_pos() is not None and context.course.look_for_post():
             return approach_post.ApproachPostState()
         return self
