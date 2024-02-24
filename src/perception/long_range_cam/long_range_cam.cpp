@@ -33,6 +33,43 @@ namespace mrover {
         return t;
     }
 
+    auto check(gboolean b) -> void {
+        if (!b) throw std::runtime_error{"Failed to create"};
+    }
+
+    struct GstData {
+        GstElement* pipeline{};
+        GMainLoop* loop{};
+    };
+
+    static auto on_new_sample_from_sink(GstBus* bus, GstMessage* msg, GstData* data) -> void {
+        switch (GST_MESSAGE_TYPE(msg)) {
+            case GST_MESSAGE_ERROR: {
+                GError* err;
+                gchar* debug_info;
+                gst_message_parse_error(msg, &err, &debug_info);
+                ROS_ERROR_STREAM(std::format("Error received from element {}: {}\n", GST_OBJECT_NAME(msg->src), err->message));
+                ROS_ERROR_STREAM(std::format("Debugging information: {}\n", debug_info ? debug_info : "none"));
+                g_error_free(err);
+                g_free(debug_info);
+
+                gst_element_set_state(data->pipeline, GST_STATE_READY);
+                g_main_loop_quit(data->loop);
+                break;
+            }
+            case GST_MESSAGE_EOS:
+                gst_element_set_state(data->pipeline, GST_STATE_READY);
+                g_main_loop_quit(data->loop);
+                break;
+            case GST_MESSAGE_CLOCK_LOST:
+                gst_element_set_state(data->pipeline, GST_STATE_PAUSED);
+                gst_element_set_state(data->pipeline, GST_STATE_PLAYING);
+                break;
+            default:
+                break;
+        }
+    }
+
     auto LongRangeCamNodelet::grabUpdate() -> void {
         try {
             NODELET_INFO("Starting USB grab thread...");
@@ -49,31 +86,77 @@ namespace mrover {
             auto imageTopicName = mPnh.param<std::string>("image_topic", "/image");
             auto cameraInfoTopicName = mPnh.param<std::string>("camera_info_topic", "/camera_info");
             auto doStream = mPnh.param<bool>("stream", true);
-            auto bitrate = mPnh.param<int>("bitrate", 20000000);
+            auto bitrate = mPnh.param<int>("bitrate", 2000000);
 
             mImgPub = mNh.advertise<sensor_msgs::Image>(imageTopicName, 1);
             mCamInfoPub = mNh.advertise<sensor_msgs::CameraInfo>(cameraInfoTopicName, 1);
 
-            std::string videoString = std::format("video/x-raw,format=I420,width={},height={},framerate={}/1", width, height, framerate);
-            std::string gstString;
             if (doStream) {
-                 gst_init(nullptr, nullptr);
+                gst_init(nullptr, nullptr);
 
-                 GstElement* source = check(gst_element_factory_make("v4l2src", "source"));
-                 GstElement* tee = check(gst_element_factory_make("tee", "tee"));
-                 GstElement* videoConvert = check(gst_element_factory_make("videoconvert", "videoConvert"));
-                 GstElement* videoConvert2 = check(gst_element_factory_make("videoconvert", "videoConvert2"));
-                 GstElement* nvv4l2h265enc = check(gst_element_factory_make("nvv4l2h265enc", "nvv4l2h265enc"));
-                 GstElement* appsink = check(gst_element_factory_make("appsink", "appsink"));
-                 GstElement* appsink2 = check(gst_element_factory_make("appsink", "appsink2"));
-                 g_object_set(G_OBJECT(source), "device", device.c_str(), nullptr);
-                 g_object_set(G_OBJECT(nvv4l2h265enc), "bitrate", bitrate, nullptr);
-                 g_object_set(G_OBJECT(appsink), "emit-signals", true, nullptr);
+                GstData data;
 
-                 GstElement* pipeline = check(gst_pipeline_new("pipeline"));
-                 gst_bin_add_many(GST_BIN(pipeline), source, tee, videoConvert, appsink, videoConvert2, nvv4l2h265enc, appsink2, nullptr);
+                GstElement* source = check(gst_element_factory_make("v4l2src", "source"));
+                GstElement* tee = check(gst_element_factory_make("tee", "tee"));
+                GstElement* queue1 = check(gst_element_factory_make("queue", "queue1"));
+                GstElement* queue2 = check(gst_element_factory_make("queue", "queue2"));
+                GstElement* convert1 = check(gst_element_factory_make("videoconvert", "convert1"));
+                GstElement* convert2 = check(gst_element_factory_make("videoconvert", "convert2"));
+                // GstElement* nvv4l2h265enc = check(gst_element_factory_make("nvv4l2h265enc", "nvv4l2h265enc"));
+                GstElement* encoder = check(gst_element_factory_make("x265enc", "encoder"));
+                GstElement* sink1 = check(gst_element_factory_make("appsink", "sink1"));
+                GstElement* sink2 = check(gst_element_factory_make("appsink", "sink2"));
+                g_object_set(G_OBJECT(source), "device", device.c_str(), nullptr);
+                // g_object_set(G_OBJECT(encoder), "bitrate", static_cast<guint>(bitrate / 1000), nullptr);
+
+                data.pipeline = check(gst_pipeline_new("pipeline"));
+                gst_bin_add_many(GST_BIN(data.pipeline), source, tee, queue1, convert1, sink1, queue2, convert2, encoder, sink2, nullptr);
+
+                check(gst_element_link_many(source, tee, nullptr));
+                check(gst_element_link_many(queue1, convert1, sink1, nullptr));
+                check(gst_element_link_many(queue2, convert2, encoder, sink2, nullptr));
+
+                GstPad* teePad1 = check(gst_element_get_request_pad(tee, "src_%u"));
+                gst_pad_link(teePad1, gst_element_get_static_pad(queue1, "sink"));
+                GstPad* teePad2 = check(gst_element_get_request_pad(tee, "src_%u"));
+                gst_pad_link(teePad2, gst_element_get_static_pad(queue2, "sink"));
+
+                GstCaps* caps = gst_caps_new_simple("video/x-raw", "format", G_TYPE_STRING, "I420", "width", G_TYPE_INT, width, "height", G_TYPE_INT, height, "framerate", GST_TYPE_FRACTION, framerate, 1, nullptr);
+                check(gst_element_link_filtered(convert1, sink1, caps));
+                check(gst_element_link_filtered(convert2, encoder, caps));
+
+                GstBus* bus = check(gst_pipeline_get_bus(GST_PIPELINE(data.pipeline)));
+                gst_bus_add_signal_watch(GST_BUS(bus));
+                check(g_signal_connect(bus, "message", G_CALLBACK(on_new_sample_from_sink), &data));
+                check(g_signal_connect(bus, "message", G_CALLBACK(on_new_sample_from_sink), &data));
+
+                // gstString = std::format(
+                //         "v4l2src device={0} ! tee name=t "
+                //         "t. ! videoconvert ! {1} ! appsink"
+                //         "t. ! videoconvert ! {1} ! nvv4l2h265enc bitrate={2} ! appsink",
+                //         device, videoString, bitrate);
+                // GstElement* pipeline = gst_parse_launch(gstString.c_str(), nullptr);
+                //
+                // GstBus* bus = gst_element_get_bus(pipeline);
+                // GstMessage* msg = gst_bus_timed_pop_filtered(bus, GST_CLOCK_TIME_NONE, static_cast<GstMessageType>(GST_MESSAGE_ERROR | GST_MESSAGE_EOS));
+                // if (GST_MESSAGE_TYPE(msg) == GST_MESSAGE_ERROR) {
+                //     GError* err;
+                //     gchar* debug_info;
+                //     gst_message_parse_error(msg, &err, &debug_info);
+                //     g_printerr("Error received from element %s: %s\n", GST_OBJECT_NAME(msg->src), err->message);
+                //     g_printerr("Debugging information: %s\n", debug_info ? debug_info : "none");
+                //     g_clear_error(&err);
+                //     g_free(debug_info);
+                // }
+
+                if (gst_element_set_state(data.pipeline, GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE)
+                    throw std::runtime_error{"Failed to start pipeline"};
+
+                data.loop = g_main_loop_new(nullptr, FALSE);
+                g_main_loop_run(data.loop);
             } else {
-                gstString = std::format("v4l2src device={} ! videoconvert ! {} ! appsink", device, videoString);
+                std::string videoString = std::format("video/x-raw,format=I420,width={},height={},framerate={}/1", width, height, framerate);
+                std::string gstString = std::format("v4l2src device={} ! videoconvert ! {} ! appsink", device, videoString);
                 NODELET_INFO_STREAM(std::format("GStreamer string: {}", gstString));
                 cv::VideoCapture capture{gstString, cv::CAP_GSTREAMER};
                 if (!capture.isOpened()) throw std::runtime_error{"USB camera failed to open"};
