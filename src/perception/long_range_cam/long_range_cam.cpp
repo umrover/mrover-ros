@@ -70,6 +70,18 @@ namespace mrover {
         }
     }
 
+    static auto on_new_sample(GstElement* sink, gpointer* data) -> GstFlowReturn {
+        GstSample* sample;
+        g_signal_emit_by_name(sink, "pull-sample", &sample);
+        if (sample) {
+            if (GstBuffer* buffer = gst_sample_get_buffer(sample)) {
+            }
+            gst_sample_unref(sample);
+            return GST_FLOW_OK;
+        }
+        return GST_FLOW_ERROR;
+    }
+
     auto LongRangeCamNodelet::grabUpdate() -> void {
         try {
             NODELET_INFO("Starting USB grab thread...");
@@ -97,22 +109,23 @@ namespace mrover {
                 GstData data;
 
                 GstElement* source = check(gst_element_factory_make("v4l2src", "source"));
+                g_object_set(G_OBJECT(source), "device", device.c_str(), nullptr);
                 GstElement* tee = check(gst_element_factory_make("tee", "tee"));
                 GstElement* queue1 = check(gst_element_factory_make("queue", "queue1"));
                 GstElement* queue2 = check(gst_element_factory_make("queue", "queue2"));
                 GstElement* convert1 = check(gst_element_factory_make("videoconvert", "convert1"));
                 GstElement* convert2 = check(gst_element_factory_make("videoconvert", "convert2"));
-                // GstElement* nvv4l2h265enc = check(gst_element_factory_make("nvv4l2h265enc", "nvv4l2h265enc"));
-                GstElement* encoder = check(gst_element_factory_make("x265enc", "encoder"));
-                GstElement* sink1 = check(gst_element_factory_make("appsink", "sink1"));
-                GstElement* sink2 = check(gst_element_factory_make("appsink", "sink2"));
-                g_object_set(G_OBJECT(source), "device", device.c_str(), nullptr);
+                // GstElement* encoder = check(gst_element_factory_make("nvv4l2h265enc", "encoder"));
+                GstElement* encoder = check(gst_element_factory_make("nvh265enc", "encoder"));
+                // GstElement* encoder = check(gst_element_factory_make("x265enc", "encoder"));
+                GstElement* frameSink = check(gst_element_factory_make("appsink", "sink1"));
+                GstElement* encoderSink = check(gst_element_factory_make("appsink", "sink2"));
+                g_object_set(G_OBJECT(frameSink), "emit-signals", TRUE, "sync", FALSE, nullptr);
+                g_object_set(G_OBJECT(encoderSink), "emit-signals", TRUE, "sync", FALSE, nullptr);
                 // g_object_set(G_OBJECT(encoder), "bitrate", static_cast<guint>(bitrate / 1000), nullptr);
 
                 data.pipeline = check(gst_pipeline_new("pipeline"));
-                gst_bin_add_many(GST_BIN(data.pipeline), source, tee, queue1, convert1, sink1, queue2, convert2, encoder, sink2, nullptr);
-
-                GstCaps* caps = check(gst_caps_new_simple("video/x-raw", "format", G_TYPE_STRING, "I420", "width", G_TYPE_INT, width, "height", G_TYPE_INT, height, "framerate", GST_TYPE_FRACTION, framerate, 1, nullptr));
+                gst_bin_add_many(GST_BIN(data.pipeline), source, tee, queue1, convert1, frameSink, queue2, convert2, encoder, encoderSink, nullptr);
 
                 check(gst_element_link(source, tee));
 
@@ -123,17 +136,21 @@ namespace mrover {
                         check(gst_element_get_request_pad(tee, "src_%u")),
                         check(gst_element_get_static_pad(queue2, "sink")));
 
+                GstCaps* caps = check(gst_caps_new_simple("video/x-raw", "format", G_TYPE_STRING, "I420", "width", G_TYPE_INT, width, "height", G_TYPE_INT, height, "framerate", GST_TYPE_FRACTION, framerate, 1, nullptr));
+
                 check(gst_element_link(queue1, convert1));
-                check(gst_element_link_filtered(convert1, sink1, caps));
+                check(gst_element_link_filtered(convert1, frameSink, caps));
 
                 check(gst_element_link(queue2, convert2));
                 check(gst_element_link_filtered(convert2, encoder, caps));
-                check(gst_element_link(encoder, sink2));
+                check(gst_element_link(encoder, encoderSink));
 
                 GstBus* bus = check(gst_pipeline_get_bus(GST_PIPELINE(data.pipeline)));
                 gst_bus_add_signal_watch(GST_BUS(bus));
                 check(g_signal_connect(bus, "message", G_CALLBACK(on_new_sample_from_sink), &data));
                 check(g_signal_connect(bus, "message", G_CALLBACK(on_new_sample_from_sink), &data));
+                // check(g_signal_connect(frameSink, "new-sample", G_CALLBACK(on_new_sample), &data));
+                check(g_signal_connect(encoderSink, "new-sample", G_CALLBACK(on_new_sample), &data));
 
                 // gstString = std::format(
                 //         "v4l2src device={0} ! tee name=t "
@@ -159,6 +176,9 @@ namespace mrover {
 
                 data.loop = g_main_loop_new(nullptr, FALSE);
                 g_main_loop_run(data.loop);
+
+                throw std::runtime_error{"Pipeline exited early"};
+
             } else {
                 std::string videoString = std::format("video/x-raw,format=I420,width={},height={},framerate={}/1", width, height, framerate);
                 std::string gstString = std::format("v4l2src device={} ! videoconvert ! {} ! appsink", device, videoString);
