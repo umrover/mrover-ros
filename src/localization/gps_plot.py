@@ -1,7 +1,6 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
-
 linearized_heading_df = pd.read_csv("./linearized_heading.csv")
 imu_heading_df = pd.read_csv("./imu_heading.csv")
 
