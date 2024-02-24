@@ -91,7 +91,7 @@ with open(csv_imu_heading, "w", newline="") as csv_file:
     csv_writer = csv.writer(csv_file)
     csv_writer.writerow(["time", "imu_heading"])
 
-    for _, msg, _ in bag.read_messages("/imu/data"):
+    for _, msg, _ in bag.read_messages("/imu/drift"):
         heading = euler_from_quaternion(np.array([msg.imu.orientation.x, msg.imu.orientation.y, msg.imu.orientation.z, msg.imu.orientation.w]))[2]
         time = msg.header.stamp.secs + msg.header.stamp.nsecs * (0.000000001)
         csv_writer.writerow([time, heading])
