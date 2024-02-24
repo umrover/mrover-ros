@@ -27,6 +27,12 @@ namespace mrover {
         std::memcpy(imageMessage->data.data(), bgraImage.data, size);
     }
 
+    template<typename T>
+    auto check(T* t) -> T* {
+        if (!t) throw std::runtime_error{"Failed to create"};
+        return t;
+    }
+
     auto LongRangeCamNodelet::grabUpdate() -> void {
         try {
             NODELET_INFO("Starting USB grab thread...");
@@ -36,13 +42,13 @@ namespace mrover {
             mNh = getMTNodeHandle();
             mPnh = getMTPrivateNodeHandle();
 
-            auto width = mPnh.param<int>("width", 1920);
-            auto height = mPnh.param<int>("height", 1080);
-            auto framerate = mPnh.param<int>("framerate", 5);
-            auto device = mPnh.param<std::string>("device", "/dev/arducam");
-            auto imageTopicName = mPnh.param<std::string>("image_topic", "long_range_image");
-            auto cameraInfoTopicName = mPnh.param<std::string>("camera_info_topic", std::format("{}/camera_info", imageTopicName));
-            auto doStream = mPnh.param<bool>("stream", false);
+            auto width = mPnh.param<int>("width", 640);
+            auto height = mPnh.param<int>("height", 480);
+            auto framerate = mPnh.param<int>("framerate", 30);
+            auto device = mPnh.param<std::string>("device", "/dev/video0");
+            auto imageTopicName = mPnh.param<std::string>("image_topic", "/image");
+            auto cameraInfoTopicName = mPnh.param<std::string>("camera_info_topic", "/camera_info");
+            auto doStream = mPnh.param<bool>("stream", true);
             auto bitrate = mPnh.param<int>("bitrate", 20000000);
 
             mImgPub = mNh.advertise<sensor_msgs::Image>(imageTopicName, 1);
@@ -51,49 +57,43 @@ namespace mrover {
             std::string videoString = std::format("video/x-raw,format=I420,width={},height={},framerate={}/1", width, height, framerate);
             std::string gstString;
             if (doStream) {
-                // gst_init(nullptr, nullptr);
+                 gst_init(nullptr, nullptr);
 
-                // GstElement* source = gst_element_factory_make("v4l2src", "source");
-                // GstElement* tee = gst_element_factory_make("tee", "tee");
-                // GstElement* videoConvert = gst_element_factory_make("videoconvert", "videoConvert");
-                // GstElement* videoConvert2 = gst_element_factory_make("videoconvert", "videoConvert2");
-                // GstElement* nvv4l2h265enc = gst_element_factory_make("nvv4l2h265enc", "nvv4l2h265enc");
-                // GstElement* appsink = gst_element_factory_make("appsink", "appsink");
-                // GstElement* appsink2 = gst_element_factory_make("appsink", "appsink2");
-                // g_object_set(G_OBJECT(source), "device", device.c_str(), nullptr);
-                // g_object_set(G_OBJECT(nvv4l2h265enc), "bitrate", bitrate, nullptr);
-                // g_object_set(G_OBJECT(appsink), "emit-signals", true, nullptr);
+                 GstElement* source = check(gst_element_factory_make("v4l2src", "source"));
+                 GstElement* tee = check(gst_element_factory_make("tee", "tee"));
+                 GstElement* videoConvert = check(gst_element_factory_make("videoconvert", "videoConvert"));
+                 GstElement* videoConvert2 = check(gst_element_factory_make("videoconvert", "videoConvert2"));
+                 GstElement* nvv4l2h265enc = check(gst_element_factory_make("nvv4l2h265enc", "nvv4l2h265enc"));
+                 GstElement* appsink = check(gst_element_factory_make("appsink", "appsink"));
+                 GstElement* appsink2 = check(gst_element_factory_make("appsink", "appsink2"));
+                 g_object_set(G_OBJECT(source), "device", device.c_str(), nullptr);
+                 g_object_set(G_OBJECT(nvv4l2h265enc), "bitrate", bitrate, nullptr);
+                 g_object_set(G_OBJECT(appsink), "emit-signals", true, nullptr);
 
-                // GstElement* pipeline = gst_pipeline_new("pipeline");
-                // gst_bin_add_many(GST_BIN(pipeline), source, tee, videoConvert, appsink, videoConvert2, nvv4l2h265enc, appsink2, nullptr);
-
-                // gstString = std::format(
-                //         "v4l2src device={0} ! tee name=t "
-                //         "t. ! videoconvert ! {1} ! appsink"
-                //         "t. ! videoconvert ! {1} ! nvv4l2h265enc bitrate={2} ! appsink", device, videoString, bitrate
-                //         );
+                 GstElement* pipeline = check(gst_pipeline_new("pipeline"));
+                 gst_bin_add_many(GST_BIN(pipeline), source, tee, videoConvert, appsink, videoConvert2, nvv4l2h265enc, appsink2, nullptr);
             } else {
                 gstString = std::format("v4l2src device={} ! videoconvert ! {} ! appsink", device, videoString);
-            }
-            NODELET_INFO_STREAM(std::format("GStreamer string: {}", gstString));
-            cv::VideoCapture capture{gstString, cv::CAP_GSTREAMER};
-            if (!capture.isOpened()) throw std::runtime_error{"USB camera failed to open"};
+                NODELET_INFO_STREAM(std::format("GStreamer string: {}", gstString));
+                cv::VideoCapture capture{gstString, cv::CAP_GSTREAMER};
+                if (!capture.isOpened()) throw std::runtime_error{"USB camera failed to open"};
 
-            NODELET_INFO_STREAM(std::format("USB camera opened: {}x{} @ {} fps", width, height, framerate));
+                NODELET_INFO_STREAM(std::format("USB camera opened: {}x{} @ {} fps", width, height, framerate));
 
-            cv::Mat frame;
-            while (ros::ok()) {
-                capture.read(frame);
-                if (frame.empty()) break;
+                cv::Mat frame;
+                while (ros::ok()) {
+                    capture.read(frame);
+                    if (frame.empty()) break;
 
-                if (mImgPub.getNumSubscribers()) {
-                    auto imageMessage = boost::make_shared<sensor_msgs::Image>();
-                    cv::Mat bgra;
-                    cv::cvtColor(frame, bgra, cv::COLOR_YUV2BGRA_I420);
-                    fillImageMessage(bgra, imageMessage);
-                    imageMessage->header.frame_id = "long_range_cam_frame";
-                    imageMessage->header.stamp = ros::Time::now();
-                    mImgPub.publish(imageMessage);
+                    if (mImgPub.getNumSubscribers()) {
+                        auto imageMessage = boost::make_shared<sensor_msgs::Image>();
+                        cv::Mat bgra;
+                        cv::cvtColor(frame, bgra, cv::COLOR_YUV2BGRA_I420);
+                        fillImageMessage(bgra, imageMessage);
+                        imageMessage->header.frame_id = "long_range_cam_frame";
+                        imageMessage->header.stamp = ros::Time::now();
+                        mImgPub.publish(imageMessage);
+                    }
                 }
             }
         } catch (std::exception const& e) {
