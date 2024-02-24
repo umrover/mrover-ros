@@ -14,28 +14,28 @@ namespace mrover {
 
 
     class ADCSensor {
-	public:
-		ADCSensor() = default;
+    public:
+        ADCSensor() = default;
 
-		ADCSensor(ADC_HandleTypeDef *hadc, uint8_t channels)
-			: m_hadc(hadc), m_channels(channels) {
-			m_values.resize(channels);
-		}
+        ADCSensor(ADC_HandleTypeDef* hadc, uint8_t channels)
+            : m_hadc(hadc), m_channels(channels) {
+            m_values.resize(channels);
+        }
 
-		uint16_t get_raw_channel_value(uint8_t channel) {
-			return m_values.at(channel);
-		}
+        uint16_t get_raw_channel_value(uint8_t channel) {
+            return m_values.at(channel);
+        }
 
-		void update() {
+        void update() {
 
-			HAL_ADC_Start_DMA(m_hadc, reinterpret_cast<uint32_t*>(m_values.data()), m_channels);
-//			HAL_ADC_Start_DMA(m_hadc, reinterpret_cast<uint32_t*>(m_values.data()), m_channels / (sizeof(uint32_t) / sizeof(uint16_t)));
-		}
+            HAL_ADC_Start_DMA(m_hadc, reinterpret_cast<uint32_t*>(m_values.data()), m_channels);
+            //			HAL_ADC_Start_DMA(m_hadc, reinterpret_cast<uint32_t*>(m_values.data()), m_channels / (sizeof(uint32_t) / sizeof(uint16_t)));
+        }
 
-	private:
-		ADC_HandleTypeDef* m_hadc;
-		uint8_t m_channels;
-		std::vector<uint16_t> m_values;
-	};
+    private:
+        ADC_HandleTypeDef* m_hadc;
+        uint8_t m_channels;
+        std::vector<uint16_t> m_values;
+    };
 
 } // namespace mrover

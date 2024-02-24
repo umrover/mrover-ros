@@ -5,6 +5,7 @@ from enum import Enum
 from threading import Lock, Event
 from typing import DefaultDict, Set, List, Callable, TypeVar, Optional, Generic
 
+import rospy
 from util.state_lib.state import State, ExitState
 
 
@@ -43,7 +44,7 @@ class StateMachine(Generic[ContextType]):
         name: str,
         context: ContextType,
         log_level: LogLevel = LogLevel.DEBUG,
-        logger: Callable[[str], None] = print,
+        logger: Callable[[str], None] = rospy.loginfo,
     ):
         self.current_state = initial_state
         self.state_lock = Lock()

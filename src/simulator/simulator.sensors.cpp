@@ -11,9 +11,9 @@ namespace mrover {
         camera.sceneUniforms.value.lightInWorld = {0, 0, 5, 1};
         float aspect = static_cast<float>(camera.resolution.x()) / static_cast<float>(camera.resolution.y());
         camera.sceneUniforms.value.cameraToClip = computeCameraToClip(camera.fov * DEG_TO_RAD, aspect, NEAR, FAR).cast<float>();
-        SE3 cameraInWorld = btTransformToSe3(camera.link->m_cachedWorldTransform);
-        camera.sceneUniforms.value.worldToCamera = cameraInWorld.matrix().inverse().cast<float>();
-        camera.sceneUniforms.value.cameraInWorld = cameraInWorld.position().cast<float>().homogeneous();
+        SE3d cameraInWorld = btTransformToSe3(camera.link->m_cachedWorldTransform);
+        camera.sceneUniforms.value.worldToCamera = cameraInWorld.inverse().transform().cast<float>();
+        camera.sceneUniforms.value.cameraInWorld = cameraInWorld.translation().cast<float>().homogeneous();
         camera.sceneUniforms.enqueueWrite();
 
         wgpu::BindGroupEntry entry;
@@ -90,7 +90,7 @@ namespace mrover {
         computePass.release();
     }
 
-    auto cartesianToGeodetic(R3 const& cartesian, Eigen::Vector3d const& referenceGeodetic, double referenceHeadingDegrees) -> Eigen::Vector3d {
+    auto cartesianToGeodetic(R3 const& cartesian, R3 const& referenceGeodetic, double referenceHeadingDegrees) -> R3 {
         constexpr double equatorialRadius = 6378137.0;
         constexpr double flattening = 1.0 / 298.257223563;
         constexpr double eccentricity2 = 2 * flattening - flattening * flattening;
@@ -111,24 +111,22 @@ namespace mrover {
         return {lat, lon, alt};
     }
 
-    auto computeNavSatFix(SE3 const& gpuInMap, Eigen::Vector3d const& referenceGeodetic, double referenceHeadingDegrees) -> sensor_msgs::NavSatFix {
+    auto computeNavSatFix(R3 const& gpsInMap, R3 const& referenceGeodetic, double referenceHeadingDegrees) -> sensor_msgs::NavSatFix {
         sensor_msgs::NavSatFix gpsMessage;
         gpsMessage.header.stamp = ros::Time::now();
         gpsMessage.header.frame_id = "map";
-        auto geodetic = cartesianToGeodetic(gpuInMap.position(), referenceGeodetic, referenceHeadingDegrees);
+        auto geodetic = cartesianToGeodetic(gpsInMap, referenceGeodetic, referenceHeadingDegrees);
         gpsMessage.latitude = geodetic(0);
         gpsMessage.longitude = geodetic(1);
         gpsMessage.altitude = geodetic(2);
         return gpsMessage;
     }
 
-    auto computeImu(SE3 const& imuInMap, R3 const& imuAngularVelocity, R3 const& linearAcceleration, R3 const& magneticField) -> ImuAndMag {
+    auto computeImu(SO3d const& imuInMap, R3 const& imuAngularVelocity, R3 const& linearAcceleration, R3 const& magneticField) -> ImuAndMag {
         ImuAndMag imuMessage;
         imuMessage.header.stamp = ros::Time::now();
         imuMessage.header.frame_id = "map";
-        imuMessage.imu.header.stamp = ros::Time::now();
-        imuMessage.mag.header.stamp = ros::Time::now();
-        S3 q = imuInMap.rotation().quaternion();
+        S3 q = imuInMap.quat();
         imuMessage.imu.orientation.w = q.w();
         imuMessage.imu.orientation.x = q.x();
         imuMessage.imu.orientation.y = q.y();
@@ -154,36 +152,63 @@ namespace mrover {
             URDF const& rover = *lookup;
 
             {
-                SE3 baseLinkInMap = rover.linkInWorld("base_link");
+                SE3d baseLinkInMap = rover.linkInWorld("base_link");
                 nav_msgs::Odometry odometry;
                 odometry.header.stamp = ros::Time::now();
                 odometry.header.frame_id = "map";
-                R3 p = baseLinkInMap.position();
+                R3 p = baseLinkInMap.translation();
                 odometry.pose.pose.position.x = p.x();
                 odometry.pose.pose.position.y = p.y();
                 odometry.pose.pose.position.z = p.z();
-                S3 q = baseLinkInMap.rotation().quaternion();
+                S3 q = baseLinkInMap.quat();
                 odometry.pose.pose.orientation.w = q.w();
                 odometry.pose.pose.orientation.x = q.x();
                 odometry.pose.pose.orientation.y = q.y();
                 odometry.pose.pose.orientation.z = q.z();
-                // TODO(quintin, riley): fill in twist?
+                R3 v = btVector3ToR3(rover.physics->getBaseVel());
+                odometry.twist.twist.linear.x = v.x();
+                odometry.twist.twist.linear.y = v.y();
+                odometry.twist.twist.linear.z = v.z();
+                R3 w = btVector3ToR3(rover.physics->getBaseOmega());
+                odometry.twist.twist.angular.x = w.x();
+                odometry.twist.twist.angular.y = w.y();
+                odometry.twist.twist.angular.z = w.z();
                 mGroundTruthPub.publish(odometry);
             }
             if (mGpsTask.shouldUpdate()) {
-                SE3 leftGpsInMap = rover.linkInWorld("left_gps");
-                mLeftGpsPub.publish(computeNavSatFix(leftGpsInMap, mGpsLinerizationReferencePoint, mGpsLinerizationReferenceHeading));
+                R3 leftGpsInMap = rover.linkInWorld("left_gps").translation();
+                R3 rightGpsInMap = rover.linkInWorld("right_gps").translation();
+                R3 leftGpsNoise{mGPSDist(mRNG), mGPSDist(mRNG), mGPSDist(mRNG)},
+                        rightGpsNoise{mGPSDist(mRNG), mGPSDist(mRNG), mGPSDist(mRNG)};
+                leftGpsInMap += leftGpsNoise;
+                rightGpsInMap += rightGpsNoise; 
 
-                SE3 rightGpsInMap = rover.linkInWorld("right_gps");
-                mRightGpsPub.publish(computeNavSatFix(rightGpsInMap, mGpsLinerizationReferencePoint, mGpsLinerizationReferenceHeading));
+                mLeftGpsPub.publish(computeNavSatFix(leftGpsInMap, mGpsLinearizationReferencePoint, mGpsLinerizationReferenceHeading));
+                mRightGpsPub.publish(computeNavSatFix(rightGpsInMap, mGpsLinearizationReferencePoint, mGpsLinerizationReferenceHeading));
             }
             if (mImuTask.shouldUpdate()) {
-                R3 imuAngularVelocity = btVector3ToR3(rover.physics->getBaseOmega());
+                auto dt_s = std::chrono::duration_cast<std::chrono::duration<double>>(dt).count();
+                R3 roverAngularVelocity = btVector3ToR3(rover.physics->getBaseOmega());
                 R3 roverLinearVelocity = btVector3ToR3(rover.physics->getBaseVel());
-                R3 imuLinearAcceleration = (roverLinearVelocity - mRoverLinearVelocity) / std::chrono::duration_cast<std::chrono::duration<float>>(dt).count();
+                R3 roverLinearAcceleration = (roverLinearVelocity - mRoverLinearVelocity) / dt_s;
                 mRoverLinearVelocity = roverLinearVelocity;
-                SE3 imuInMap = rover.linkInWorld("imu");
-                mImuPub.publish(computeImu(imuInMap, imuAngularVelocity, imuLinearAcceleration, imuInMap.rotation().matrix().transpose().col(1)));
+                SO3d imuInMap = rover.linkInWorld("imu").asSO3();
+                R3 roverMagVector = imuInMap.inverse().rotation().col(1);
+
+                R3 accelNoise{mAccelDist(mRNG), mAccelDist(mRNG), mAccelDist(mRNG)},
+                        gyroNoise{mGyroDist(mRNG), mGyroDist(mRNG), mGyroDist(mRNG)},
+                        magNoise{mMagDist(mRNG), mMagDist(mRNG), mMagDist(mRNG)};
+                roverLinearAcceleration += accelNoise;
+                roverAngularVelocity += gyroNoise;
+                roverMagVector += magNoise;
+
+                constexpr double SEC_TO_MIN = 1.0 / 60.0;
+                mOrientationDrift += mOrientationDriftRate * SEC_TO_MIN * dt_s;
+                SO3d::Tangent orientationNoise;
+                orientationNoise << mRollDist(mRNG), mPitchDist(mRNG), mYawDist(mRNG);
+                imuInMap += orientationNoise + mOrientationDrift;
+
+                mImuPub.publish(computeImu(imuInMap, roverAngularVelocity, roverLinearAcceleration, roverMagVector));
             }
         }
     }
