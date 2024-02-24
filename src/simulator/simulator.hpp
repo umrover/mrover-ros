@@ -235,6 +235,10 @@ namespace mrover {
                 mRollDist{0, 0.01},
                 mPitchDist{0, 0.01},
                 mYawDist{0, 0.01};
+        
+        // drift rate in rad/minute about each axis
+        R3 mOrientationDriftRate{0.0, 0.0, 1.0};
+        R3 mOrientationDrift = R3::Zero();
 
         PeriodicTask mGpsTask;
         PeriodicTask mImuTask;
