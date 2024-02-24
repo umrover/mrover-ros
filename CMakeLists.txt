@@ -48,6 +48,8 @@ set(MROVER_ROS_DEPENDENCIES
         tf2
         tf2_ros
         tf2_geometry_msgs
+        pcl_ros
+        pcl_conversions
 )
 
 extract_filenames(msg/*.msg MROVER_MESSAGE_FILES)
@@ -176,6 +178,10 @@ mrover_add_nodelet(usb_camera src/perception/long_range_cam/*.cpp src/perception
 mrover_nodelet_link_libraries(usb_camera opencv_core opencv_objdetect opencv_aruco opencv_imgproc opencv_highgui tbb lie streaming gstreamer-1.0)
 # TODO(quintin): Fix this CMake hard coding
 mrover_nodelet_include_directories(usb_camera /usr/include/gstreamer-1.0 /usr/include/glib-2.0 /usr/lib/x86_64-linux-gnu/glib-2.0/include)
+
+find_package(PCL REQUIRED)
+mrover_add_node(point_cloud_stitcher src/perception/point_cloud_stitch/*.cpp)
+target_link_libraries(point_cloud_stitcher PUBLIC ${PCL_LIBRARIES} lie)
 
 #if (CUDA_FOUND)
 #    mrover_add_node(hardware_h265_encoder src/esw/hardware_h265_encoder/*.c*)

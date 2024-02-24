@@ -7,10 +7,10 @@
 
     <rosparam command="load" file="$(find mrover)/config/perception.yaml" />
 
-    <node pkg="nodelet" type="nodelet" name="zed_nodelet" respawn="true"
-        args="load mrover/ZedNodelet perception_nodelet_manager" output="screen">
-        <param name="use_builtin_visual_odom" value="$(arg use_builtin_visual_odom)" />
-    </node>
+<!--    <node pkg="nodelet" type="nodelet" name="zed_nodelet" respawn="true"-->
+<!--        args="load mrover/ZedNodelet perception_nodelet_manager" output="screen">-->
+<!--        <param name="use_builtin_visual_odom" value="$(arg use_builtin_visual_odom)" />-->
+<!--    </node>-->
 
     <!-- Static TF publisher for ZED mount-->
     <node pkg="tf" type="static_transform_publisher" name="zed_mount_link_publisher"

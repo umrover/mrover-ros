@@ -58,9 +58,9 @@ namespace mrover {
             mPnh.param("use_builtin_visual_odom", mUseBuiltinPosTracking, false);
             mPnh.param("use_area_memory", mUseAreaMemory, true);
             mPnh.param("use_pose_smoothing", mUsePoseSmoothing, true);
-            mPnh.param("use_loop_profiler", mUseLoopProfiler, true);
-            mPnh.param("use_depth_stabilization", mUseDepthStabilization, false);
-            mPnh.param("depth_maximum_distance", mDepthMaximumDistance, 12.0f);
+            mPnh.param("use_loop_profiler", mUseLoopProfiler, false);
+            mPnh.param("use_depth_stabilization", mUseDepthStabilization, true);
+            mPnh.param("depth_maximum_distance", mDepthMaximumDistance, 10.0f);
 
             if (imageWidth < 0 || imageHeight < 0) {
                 throw std::invalid_argument("Invalid image dimensions");
@@ -248,11 +248,11 @@ namespace mrover {
                         sl::Translation const& translation = pose.getTranslation();
                         sl::Orientation const& orientation = pose.getOrientation();
                         try {
-                            SE3d leftCameraInOdom{{translation.x, translation.y, translation.z},
-                                                  Eigen::Quaterniond{orientation.w, orientation.x, orientation.y, orientation.z}.normalized()};
+                            SE3d leftCameraInMap{{translation.x, translation.y, translation.z},
+                                                 Eigen::Quaterniond{orientation.w, orientation.x, orientation.y, orientation.z}.normalized()};
                             SE3d baseLinkToLeftCamera = SE3Conversions::fromTfTree(mTfBuffer, "base_link", "zed_left_camera_frame");
-                            SE3d baseLinkInOdom = leftCameraInOdom * baseLinkToLeftCamera;
-                            SE3Conversions::pushToTfTree(mTfBroadcaster, "base_link", "odom", baseLinkInOdom);
+                            SE3d baseLinkInMap = leftCameraInMap * baseLinkToLeftCamera;
+                            SE3Conversions::pushToTfTree(mTfBroadcaster, "base_link", "map", baseLinkInMap);
                         } catch (tf2::TransformException& e) {
                             NODELET_WARN_STREAM("Failed to get transform: " << e.what());
                         }

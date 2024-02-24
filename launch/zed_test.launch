@@ -3,9 +3,9 @@
       <arg name="run_dynamic_reconfigure" default="true" />
       <arg name="run_rqt_tf_tree" default="true" />
 
-      <arg name="run_tag_detector" default="true" />
-      <arg name="run_object_detector" default="true" />
-      <arg name="use_builtin_visual_odom" default="false" />
+      <arg name="run_tag_detector" default="false" />
+      <arg name="run_object_detector" default="false" />
+      <arg name="use_builtin_visual_odom" default="true" />
 
       <arg name="obj_increment_weight" default="3" />
       <arg name="obj_decrement_weight" default="1" />
@@ -35,6 +35,6 @@
       <node if="$(arg run_dynamic_reconfigure)"
             name="rqt_reconfigure" pkg="rqt_reconfigure" type="rqt_reconfigure" />
 
-      <node pkg="tf" type="static_transform_publisher" name="base_link_publisher"
-            args="0 0 0 0 0 0 map base_link 100" />
+<!--      <node pkg="tf" type="static_transform_publisher" name="base_link_publisher"-->
+<!--            args="0 0 0 0 0 0 map base_link 100" />-->
 </launch>

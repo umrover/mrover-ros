@@ -4,13 +4,13 @@ zed_nodelet:
   # HD720   1280*720  (x2) fps: 15, 30, 60
   # VGA      672*376  (x2) fps: 15, 30, 60, 100
   grab_resolution: HD720
-  grab_target_fps: 50
+  grab_target_fps: 15
   # NONE        This mode does not compute any depth map. Only rectified stereo images will be available.
   # PERFORMANCE Computation mode optimized for speed.
   # QUALITY     Computation mode designed for challenging areas with untextured surfaces.
   # ULTRA       Computation mode favoring edges and sharpness. Requires more GPU memory and computation power.
   # NEURAL      End to End Neural disparity estimation, requires AI module.
-  depth_mode: QUALITY
+  depth_mode: NEURAL
   image_width: 1280
   image_height: 720
   # Threshold to reject depth values based on their confidence.
