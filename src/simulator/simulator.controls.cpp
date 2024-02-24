@@ -121,6 +121,12 @@ namespace mrover {
         // TODO: Is there a way to combine this with the above?
         mCameraInWorld.asSO3() = worldRelativeAngularVelocity + mCameraInWorld.asSO3();
 
+        auto tangent = mCameraInWorld.asSO3().log();
+        tangent = mCameraInWorld.asSO3().adj() * tangent;
+        tangent.coeffs().x() = 0;
+        tangent = mCameraInWorld.asSO3().inverse().adj() * tangent;
+        mCameraInWorld.asSO3() = tangent.exp();
+
         centerCursor();
     }
 
