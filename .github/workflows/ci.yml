@@ -23,7 +23,7 @@ jobs:
           # This makes sure that $GITHUB_WORKSPACE is the catkin workspace path
           path: "src/mrover"
       - name: Ensure Python Requirements
-        run: . /home/mrover/catkin_ws/src/mrover/venv/bin/activate && pip install -e "$GITHUB_WORKSPACE/src/mrover[dev]"
+        run: . /home/mrover/catkin_ws/src/mrover/venv/bin/activate && pip install --no-cache-dir -e "$GITHUB_WORKSPACE/src/mrover[dev]"
       - name: Style Check
         run: . /home/mrover/catkin_ws/src/mrover/venv/bin/activate && cd $GITHUB_WORKSPACE/src/mrover/ && ./style.sh
       - name: Update ROS APT
