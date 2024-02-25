@@ -53,7 +53,18 @@ namespace mrover {
         ROS_INFO("Initializing and starting GStreamer pipeline...");
 
         mMainLoop = gstCheck(g_main_loop_new(nullptr, FALSE));
+#if defined(MROVER_IS_JETSON)
+        std::string launch = std::format(
+            "nvarguscamerasrc name=imageSource "
+            "! video/x-raw(memory:NVMM),width={},height={},framerate=30/1 "
+            "! videorate max-rate=30 drop-only=true ! queue max-size-buffers=3 leaky=downstream "
+            "! nvv4l2h265enc bitrate=2000000 iframeinterval=300 vbv-size=33333 insert-sps-pps=true control-rate=constant_bitrate profile=Main num-B-Frames=0 ratecontrol-enable=true preset-level=UltraFastPreset EnableTwopassCBR=false maxperf-enable=true "
+            "! queue ! appsink sync=false name=streamSink",
+            width, height);
+#else
         std::string launch = std::format("appsrc name=imageSource ! video/x-raw,format=BGRA,width={},height={},framerate=30/1 ! videoconvert ! nvh265enc ! appsink name=streamSink", width, height);
+#endif
+        ROS_INFO_STREAM(std::format("GStreamer launch: {}", launch));
         mPipeline = gstCheck(gst_parse_launch(launch.c_str(), nullptr));
 
         mImageSource = gstCheck(gst_bin_get_by_name(GST_BIN(mPipeline), "imageSource"));

@@ -176,12 +176,15 @@ mrover_add_nodelet(usb_camera src/perception/usb_camera/*.cpp src/perception/usb
 mrover_nodelet_link_libraries(usb_camera opencv_core opencv_objdetect opencv_aruco opencv_imgproc opencv_highgui)
 
 if (CUDA_FOUND)
-    mrover_add_node(nv_vid_codec_h265_enc src/esw/nv_vid_codec_h265_enc/*.c*)
-    target_link_libraries(nv_vid_codec_h265_enc PUBLIC cuda nvidia-encode opencv_core opencv_imgproc streaming)
-    target_include_directories(nv_vid_codec_h265_enc SYSTEM PUBLIC deps/nvenc)
+#    mrover_add_node(nv_vid_codec_h265_enc src/esw/nv_vid_codec_h265_enc/*.c*)
+#    target_link_libraries(nv_vid_codec_h265_enc PUBLIC cuda nvidia-encode opencv_core opencv_imgproc streaming)
+#    target_include_directories(nv_vid_codec_h265_enc SYSTEM PUBLIC deps/nvenc)
 
     mrover_add_nodelet(nv_gst_h265_enc src/esw/nv_gst_h265_enc/*.c* src/esw/nv_gst_h265_enc src/esw/nv_gst_h265_enc/pch.hpp)
     mrover_nodelet_link_libraries(nv_gst_h265_enc PRIVATE streaming cuda gstreamer-1.0 gstapp-1.0 glib-2.0 gobject-2.0)
+    if (MROVER_IS_JETSON)
+       mrover_nodelet_defines(nv_gst_h265_enc MROVER_IS_JETSON)
+    endif ()
     # TODO(quintin): Fix this CMake hard coding
     mrover_nodelet_include_directories(nv_gst_h265_enc /usr/include/gstreamer-1.0 /usr/include/glib-2.0 /usr/lib/x86_64-linux-gnu/glib-2.0/include)
 endif ()
