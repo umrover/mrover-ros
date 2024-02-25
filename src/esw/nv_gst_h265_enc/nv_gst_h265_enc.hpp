@@ -8,6 +8,8 @@ namespace mrover {
 
         ros::NodeHandle mNh, mPnh;
 
+        std::uint64_t mBitrate{};
+
         ros::Subscriber mImageSubscriber;
 
         std::optional<StreamServer> mStreamServer;

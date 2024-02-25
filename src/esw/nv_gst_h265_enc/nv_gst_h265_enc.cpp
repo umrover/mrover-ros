@@ -55,12 +55,15 @@ namespace mrover {
         mMainLoop = gstCheck(g_main_loop_new(nullptr, FALSE));
 #if defined(MROVER_IS_JETSON)
         std::string launch = std::format(
-            "nvarguscamerasrc name=imageSource "
-            "! video/x-raw(memory:NVMM),width={},height={},framerate=30/1 "
-            "! videorate max-rate=30 drop-only=true ! queue max-size-buffers=3 leaky=downstream "
-            "! nvv4l2h265enc bitrate=2000000 iframeinterval=300 vbv-size=33333 insert-sps-pps=true control-rate=constant_bitrate profile=Main num-B-Frames=0 ratecontrol-enable=true preset-level=UltraFastPreset EnableTwopassCBR=false maxperf-enable=true "
-            "! queue ! appsink sync=false name=streamSink",
-            width, height);
+                "appsrc name=imageSource "
+                "! video/x-raw,format=BGRA,width={},height={},framerate=30/1 "
+                "! videoconvert "
+                "! video/x-raw,format=I420 "
+                "! nvvidconv "
+                "! video/x-raw(memory:NVMM) "
+                "! nvv4l2h265enc bitrate=2000000 iframeinterval=300 vbv-size=33333 insert-sps-pps=true control-rate=constant_bitrate profile=Main num-B-Frames=0 ratecontrol-enable=true preset-level=UltraFastPreset EnableTwopassCBR=false maxperf-enable=true "
+                "! appsink sync=false name=streamSink",
+                width, height);
 #else
         std::string launch = std::format("appsrc name=imageSource ! video/x-raw,format=BGRA,width={},height={},framerate=30/1 ! videoconvert ! nvh265enc ! appsink name=streamSink", width, height);
 #endif
@@ -126,6 +129,7 @@ namespace mrover {
             auto imageTopic = mNh.param<std::string>("image_topic", "image");
             auto address = mPnh.param<std::string>("address", "0.0.0.0");
             auto port = mPnh.param<int>("port", 8080);
+            mBitrate = mPnh.param<int>("bitrate", 2000000);
 
             gst_init(nullptr, nullptr);
 
