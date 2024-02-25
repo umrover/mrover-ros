@@ -1,5 +1,11 @@
 #include "nv_gst_h265_enc.hpp"
 
+#if defined(MROVER_IS_JETSON)
+constexpr bool IS_JETSON = true;
+#else
+constexpr bool IS_JETSON = false;
+#endif
+
 namespace mrover {
 
     template<typename T>
@@ -49,38 +55,61 @@ namespace mrover {
         return TRUE;
     }
 
-    auto NvGstH265EncNodelet::initPipeline(std::uint32_t width, std::uint32_t height) -> void {
+    auto NvGstH265EncNodelet::startPipeline() -> void {
         ROS_INFO("Initializing and starting GStreamer pipeline...");
 
         mMainLoop = gstCheck(g_main_loop_new(nullptr, FALSE));
-#if defined(MROVER_IS_JETSON)
-        std::string launch = std::format(
-                "appsrc name=imageSource "
-                "! video/x-raw,format=BGRA,width={},height={},framerate=30/1 "
-                "! videoconvert "
-                "! video/x-raw,format=I420 "
-                "! nvvidconv "
-                "! video/x-raw(memory:NVMM) "
-                "! nvv4l2h265enc bitrate=2000000 iframeinterval=300 vbv-size=33333 insert-sps-pps=true control-rate=constant_bitrate profile=Main num-B-Frames=0 ratecontrol-enable=true preset-level=UltraFastPreset EnableTwopassCBR=false maxperf-enable=true "
-                "! appsink sync=false name=streamSink",
-                width, height);
-#else
-        std::string launch = std::format("appsrc name=imageSource ! video/x-raw,format=BGRA,width={},height={},framerate=30/1 ! videoconvert ! nvh265enc ! appsink name=streamSink", width, height);
-#endif
+
+        std::string launch;
+        if (mCaptureDevice.empty()) {
+            if constexpr (IS_JETSON) {
+                // TODO(quintin): Convert from CPU BGRA => GPU I420 in one step?
+                // ReSharper disable once CppDFAUnreachableCode
+                launch = std::format(
+                        "appsrc name=imageSource "
+                        "! video/x-raw,format=BGRA,width={},height={},framerate=30/1 "
+                        "! videoconvert "
+                        "! video/x-raw,format=I420 "
+                        "! nvvidconv "
+                        "! video/x-raw(memory:NVMM),format=I420 "
+                        "! nvv4l2h265enc bitrate={} iframeinterval=300 vbv-size=33333 insert-sps-pps=true control-rate=constant_bitrate profile=Main num-B-Frames=0 ratecontrol-enable=true preset-level=UltraFastPreset EnableTwopassCBR=false maxperf-enable=true "
+                        "! appsink sync=false name=streamSink",
+                        mImageWidth, mImageHeight, mBitrate);
+            } else {
+                // ReSharper disable once CppDFAUnreachableCode
+                launch = std::format(
+                        "appsrc name=imageSource "
+                        "! video/x-raw,format=BGRA,width={},height={},framerate=30/1 "
+                        "! videoconvert "
+                        "! nvh265enc "
+                        "! appsink name=streamSink",
+                        mImageWidth, mImageHeight);
+            }
+        } else {
+            assert(IS_JETSON);
+            // TODO(quintin): This does not work: https://forums.developer.nvidia.com/t/macrosilicon-usb/157777/4
+            // ReSharper disable once CppDFAUnreachableCode
+            launch = std::format(
+                    "nvv4l2camerasrc device={} "
+                    "! video/x-raw(memory:NVMM),format=UYVY,width={},height={},framerate={}/1 "
+                    "! nvvidconv "
+                    "! video/x-raw(memory:NVMM),format=I420 "
+                    "! nvv4l2h265enc bitrate={} iframeinterval=300 vbv-size=33333 insert-sps-pps=true control-rate=constant_bitrate profile=Main num-B-Frames=0 ratecontrol-enable=true preset-level=UltraFastPreset EnableTwopassCBR=false maxperf-enable=true "
+                    "! appsink sync=false name=streamSink",
+                    mCaptureDevice, mImageWidth, mImageHeight, mImageFramerate, mBitrate);
+        }
+
         ROS_INFO_STREAM(std::format("GStreamer launch: {}", launch));
         mPipeline = gstCheck(gst_parse_launch(launch.c_str(), nullptr));
 
-        mImageSource = gstCheck(gst_bin_get_by_name(GST_BIN(mPipeline), "imageSource"));
+        if (mCaptureDevice.empty()) mImageSource = gstCheck(gst_bin_get_by_name(GST_BIN(mPipeline), "imageSource"));
         mStreamSink = gstCheck(gst_bin_get_by_name(GST_BIN(mPipeline), "streamSink"));
 
         GstBus* bus = gst_element_get_bus(mPipeline);
         gst_bus_add_watch(bus, busMessageCallback, this);
         gst_object_unref(bus);
 
-        if (gst_element_set_state(mPipeline, GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE)
-            throw std::runtime_error{"Failed to start"};
-
-        ROS_INFO("Initialized and started GStreamer pipeline");
+        if (gst_element_set_state(mPipeline, GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE) throw std::runtime_error{"Failed to start playing GStreamer pipeline"};
 
         mMainLoopThread = std::thread{[this] {
             ROS_INFO("Started GStreamer main loop");
@@ -93,16 +122,18 @@ namespace mrover {
             pullStreamSamplesLoop();
             ROS_INFO("Stopped stream sink thread");
         }};
+
+        ROS_INFO("Initialized and started GStreamer pipeline");
     }
 
     auto NvGstH265EncNodelet::imageCallback(sensor_msgs::ImageConstPtr const& msg) -> void {
         try {
             if (msg->encoding != sensor_msgs::image_encodings::BGRA8) throw std::runtime_error{"Unsupported encoding"};
 
-            // TODO(quintin): Do this better
-            mStreamServer->feed({});
+            mImageWidth = msg->width;
+            mImageHeight = msg->height;
 
-            if (!mPipeline) initPipeline(msg->width, msg->height);
+            if (!mPipeline) startPipeline();
 
             // "step" is the number of bytes (NOT pixels) in an image row
             std::size_t size = msg->step * msg->height;
@@ -112,8 +143,7 @@ namespace mrover {
             std::memcpy(info.data, msg->data.data(), size);
             gst_buffer_unmap(buffer, &info);
 
-            if (gst_app_src_push_buffer(GST_APP_SRC(mImageSource), buffer) != GST_FLOW_OK)
-                throw std::runtime_error{"Failed to push buffer"};
+            if (gst_app_src_push_buffer(GST_APP_SRC(mImageSource), buffer) != GST_FLOW_OK) throw std::runtime_error{"Failed to push buffer"};
 
         } catch (std::exception const& e) {
             ROS_ERROR_STREAM(std::format("Exception encoding frame: {}", e.what()));
@@ -126,7 +156,13 @@ namespace mrover {
             mNh = getMTNodeHandle();
             mPnh = getMTPrivateNodeHandle();
 
-            auto imageTopic = mNh.param<std::string>("image_topic", "image");
+            mCaptureDevice = mPnh.param<std::string>("device", "");
+            mImageTopic = mNh.param<std::string>("image_topic", "image");
+            if (!mCaptureDevice.empty()) {
+                mImageWidth = mPnh.param<int>("width", 640);
+                mImageHeight = mPnh.param<int>("height", 480);
+                mImageFramerate = mPnh.param<int>("framerate", 30);
+            }
             auto address = mPnh.param<std::string>("address", "0.0.0.0");
             auto port = mPnh.param<int>("port", 8080);
             mBitrate = mPnh.param<int>("bitrate", 2000000);
@@ -135,7 +171,14 @@ namespace mrover {
 
             mStreamServer.emplace(address, port);
 
-            mImageSubscriber = mNh.subscribe(imageTopic, 1, &NvGstH265EncNodelet::imageCallback, this);
+            // TODO(quintin): Do this better, currently waits for connection
+            mStreamServer->feed({});
+
+            if (mCaptureDevice.empty()) {
+                mImageSubscriber = mNh.subscribe(mImageTopic, 1, &NvGstH265EncNodelet::imageCallback, this);
+            } else {
+                startPipeline();
+            }
 
         } catch (std::exception const& e) {
             ROS_ERROR_STREAM(std::format("Exception initializing NVIDIA GST H265 Encoder: {}", e.what()));
@@ -144,15 +187,15 @@ namespace mrover {
     }
 
     NvGstH265EncNodelet::~NvGstH265EncNodelet() {
-        gst_app_src_end_of_stream(GST_APP_SRC(mImageSource));
+        if (mImageSource) gst_app_src_end_of_stream(GST_APP_SRC(mImageSource));
 
         mMainLoopThread.join();
         mStreamSinkThread.join();
 
-        gst_element_set_state(mPipeline, GST_STATE_NULL);
-        gst_object_unref(mPipeline);
-        gst_object_unref(mImageSource);
-        gst_object_unref(mStreamSink);
+        if (mPipeline) {
+            gst_element_set_state(mPipeline, GST_STATE_NULL);
+            gst_object_unref(mPipeline);
+        }
     }
 
 } // namespace mrover

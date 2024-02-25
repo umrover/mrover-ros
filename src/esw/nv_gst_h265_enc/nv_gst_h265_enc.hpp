@@ -8,7 +8,10 @@ namespace mrover {
 
         ros::NodeHandle mNh, mPnh;
 
+        std::string mCaptureDevice;
+        std::string mImageTopic;
         std::uint64_t mBitrate{};
+        std::uint32_t mImageWidth{}, mImageHeight{}, mImageFramerate{};
 
         ros::Subscriber mImageSubscriber;
 
@@ -16,7 +19,6 @@ namespace mrover {
 
         GstElement *mImageSource{}, *mStreamSink{}, *mPipeline{};
         GMainLoop* mMainLoop{};
-
         std::thread mMainLoopThread;
         std::thread mStreamSinkThread;
 
@@ -24,7 +26,7 @@ namespace mrover {
 
         auto pullStreamSamplesLoop() -> void;
 
-        auto initPipeline(std::uint32_t width, std::uint32_t height) -> void;
+        auto startPipeline() -> void;
 
         auto imageCallback(sensor_msgs::ImageConstPtr const& msg) -> void;
 
