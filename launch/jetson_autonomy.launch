@@ -1,12 +1,14 @@
 <launch>
-    <node pkg="nodelet" type="nodelet" name="perception_nodelet_manager" required="true"
-          args="manager" output="screen"/>
+    <arg name="run_object_detector" default="true"/>
 
     <include file="$(find mrover)/launch/jetson_base.launch"/>
+
     <include file="$(find mrover)/launch/esw_autonomy.launch"/>
+
     <include file="$(find mrover)/launch/zed.launch"/>
     <include file="$(find mrover)/launch/long_range_cam.launch"/>
+
     <include file="$(find mrover)/launch/autonomy.launch">
-        <arg name="run_object_detector" value="false"/>
+        <arg name="run_object_detector" value="$(arg run_object_detector)"/>
     </include>
 </launch>

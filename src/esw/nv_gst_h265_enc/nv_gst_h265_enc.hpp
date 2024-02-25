@@ -4,7 +4,7 @@
 
 namespace mrover {
 
-    class NvGstH265Enc final : public nodelet::Nodelet {
+    class NvGstH265EncNodelet final : public nodelet::Nodelet {
 
         ros::NodeHandle mNh, mPnh;
 
@@ -29,9 +29,9 @@ namespace mrover {
         friend auto busMessageCallback(GstBus*, GstMessage* message, void* userData) -> gboolean;
 
     public:
-        NvGstH265Enc() = default;
+        NvGstH265EncNodelet() = default;
 
-        ~NvGstH265Enc() override;
+        ~NvGstH265EncNodelet() override;
     };
 
 } // namespace mrover

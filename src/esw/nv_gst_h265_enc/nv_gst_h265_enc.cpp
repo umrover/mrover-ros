@@ -12,7 +12,7 @@ namespace mrover {
         if (!b) throw std::runtime_error{"Failed to create"};
     }
 
-    auto NvGstH265Enc::pullStreamSamplesLoop() -> void {
+    auto NvGstH265EncNodelet::pullStreamSamplesLoop() -> void {
         // Block until we receive a new H265 chunk from the encoder
         // This is okay since we are on a separate thread
         while (GstSample* sample = gst_app_sink_pull_sample(GST_APP_SINK(mStreamSink))) {
@@ -28,7 +28,7 @@ namespace mrover {
     }
 
     auto busMessageCallback(GstBus*, GstMessage* message, void* userData) -> gboolean {
-        auto encoder = static_cast<NvGstH265Enc*>(userData);
+        auto encoder = static_cast<NvGstH265EncNodelet*>(userData);
         switch (GST_MESSAGE_TYPE(message)) {
             case GST_MESSAGE_ERROR: {
                 GError* error;
@@ -49,7 +49,7 @@ namespace mrover {
         return TRUE;
     }
 
-    auto NvGstH265Enc::initPipeline(std::uint32_t width, std::uint32_t height) -> void {
+    auto NvGstH265EncNodelet::initPipeline(std::uint32_t width, std::uint32_t height) -> void {
         ROS_INFO("Initializing and starting GStreamer pipeline...");
 
         mMainLoop = gstCheck(g_main_loop_new(nullptr, FALSE));
@@ -81,7 +81,7 @@ namespace mrover {
         }};
     }
 
-    auto NvGstH265Enc::imageCallback(sensor_msgs::ImageConstPtr const& msg) -> void {
+    auto NvGstH265EncNodelet::imageCallback(sensor_msgs::ImageConstPtr const& msg) -> void {
         try {
             if (msg->encoding != sensor_msgs::image_encodings::BGRA8) throw std::runtime_error{"Unsupported encoding"};
 
@@ -107,7 +107,7 @@ namespace mrover {
         }
     }
 
-    auto NvGstH265Enc::onInit() -> void {
+    auto NvGstH265EncNodelet::onInit() -> void {
         try {
             mNh = getMTNodeHandle();
             mPnh = getMTPrivateNodeHandle();
@@ -120,7 +120,7 @@ namespace mrover {
 
             mStreamServer.emplace(address, port);
 
-            mImageSubscriber = mNh.subscribe(imageTopic, 1, &NvGstH265Enc::imageCallback, this);
+            mImageSubscriber = mNh.subscribe(imageTopic, 1, &NvGstH265EncNodelet::imageCallback, this);
 
         } catch (std::exception const& e) {
             ROS_ERROR_STREAM(std::format("Exception initializing NVIDIA GST H265 Encoder: {}", e.what()));
@@ -128,7 +128,7 @@ namespace mrover {
         }
     }
 
-    NvGstH265Enc::~NvGstH265Enc() {
+    NvGstH265EncNodelet::~NvGstH265EncNodelet() {
         gst_app_src_end_of_stream(GST_APP_SRC(mImageSource));
 
         mMainLoopThread.join();

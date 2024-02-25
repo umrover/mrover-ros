@@ -13,6 +13,13 @@
         <param name="interface" value="can1"/>
     </node>
 
+    <node pkg="nodelet" type="nodelet" name="usb_camera_nodelet" respawn="true"
+          args="load mrover/UsbCameraNodelet perception_nodelet_manager" output="screen">
+    </node>
+    <node pkg="nodelet" type="nodelet" name="usb_camera_streamer" respawn="true"
+          args="load mrover/NvGstH265EncNodelet perception_nodelet_manager" output="screen">
+    </node>
+
     <node name="drive_bridge" pkg="mrover" type="drive_bridge" output="screen"/>
 
     <!-- Interprets status from navigation and teleoperation to deliver the correct LED mode to the bridge -->
