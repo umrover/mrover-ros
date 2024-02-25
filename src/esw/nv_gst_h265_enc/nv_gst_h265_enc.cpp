@@ -63,17 +63,16 @@ namespace mrover {
         std::string launch;
         if (mCaptureDevice.empty()) {
             if constexpr (IS_JETSON) {
-                // TODO(quintin): Convert from CPU BGRA => GPU I420 in one step?
                 // ReSharper disable once CppDFAUnreachableCode
                 launch = std::format(
-                        "appsrc name=imageSource "
+                        "appsrc name=imageSource " // App source is pushed to when we get a ROS BGRA image message
                         "! video/x-raw,format=BGRA,width={},height={},framerate=30/1 "
-                        "! videoconvert "
+                        "! videoconvert " // Convert BGRA => I420 (YUV) for the encoder, note we are still on the CPU
                         "! video/x-raw,format=I420 "
-                        "! nvvidconv "
+                        "! nvvidconv " // Upload to GPU memory for the encoder
                         "! video/x-raw(memory:NVMM),format=I420 "
                         "! nvv4l2h265enc bitrate={} iframeinterval=300 vbv-size=33333 insert-sps-pps=true control-rate=constant_bitrate profile=Main num-B-Frames=0 ratecontrol-enable=true preset-level=UltraFastPreset EnableTwopassCBR=false maxperf-enable=true "
-                        "! appsink sync=false name=streamSink",
+                        "! appsink sync=false name=streamSink", // App sink is pulled from (getting H265 chunks) on another thread and sent to the stream server
                         mImageWidth, mImageHeight, mBitrate);
             } else {
                 // ReSharper disable once CppDFAUnreachableCode
@@ -88,6 +87,8 @@ namespace mrover {
         } else {
             assert(IS_JETSON);
             // TODO(quintin): This does not work: https://forums.developer.nvidia.com/t/macrosilicon-usb/157777/4
+            //                nvv4l2camerasrc only supports UYUV, but our cameras use I420... NVIDIA is lazy!
+
             // ReSharper disable once CppDFAUnreachableCode
             launch = std::format(
                     "nvv4l2camerasrc device={} "
