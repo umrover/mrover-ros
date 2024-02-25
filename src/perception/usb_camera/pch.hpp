@@ -30,5 +30,3 @@
 #include <std_srvs/SetBool.h>
 
 #include <loop_profiler.hpp>
-
-#include <mrover/DetectorParamsConfig.h>

@@ -180,10 +180,10 @@ if (CUDA_FOUND)
     target_link_libraries(nv_vid_codec_h265_enc PUBLIC cuda nvidia-encode opencv_core opencv_imgproc streaming)
     target_include_directories(nv_vid_codec_h265_enc SYSTEM PUBLIC deps/nvenc)
 
-    mrover_add_node(nv_gst_h265_enc src/esw/nv_gst_h265_enc/*.c*)
-    target_link_libraries(nv_gst_h265_enc PUBLIC streaming cuda gstreamer-1.0 gstapp-1.0 glib-2.0 gobject-2.0)
+    mrover_add_nodelet(nv_gst_h265_enc src/esw/nv_gst_h265_enc/*.c* src/esw/nv_gst_h265_enc src/esw/nv_gst_h265_enc/pch.hpp)
+    mrover_nodelet_link_libraries(nv_gst_h265_enc PRIVATE streaming cuda gstreamer-1.0 gstapp-1.0 glib-2.0 gobject-2.0)
     # TODO(quintin): Fix this CMake hard coding
-    target_include_directories(nv_gst_h265_enc PRIVATE /usr/include/gstreamer-1.0 /usr/include/glib-2.0 /usr/lib/x86_64-linux-gnu/glib-2.0/include)
+    mrover_nodelet_include_directories(nv_gst_h265_enc /usr/include/gstreamer-1.0 /usr/include/glib-2.0 /usr/lib/x86_64-linux-gnu/glib-2.0/include)
 endif ()
 
 #add_subdirectory(deps/libde265 SYSTEM)
