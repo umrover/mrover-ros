@@ -93,7 +93,9 @@ auto initPipeline(std::uint32_t width, std::uint32_t height) -> void {
     }};
 
     gstStreamSinkThread = std::thread{[] {
+        ROS_INFO("Started stream sink thread");
         pullStreamSamplesLoop();
+        ROS_INFO("Stopped stream sink thread");
     }};
 }
 
@@ -101,19 +103,18 @@ auto imageCallback(sensor_msgs::ImageConstPtr const& msg) -> void {
     try {
         if (msg->encoding != sensor_msgs::image_encodings::BGRA8) throw std::runtime_error{"Unsupported encoding"};
 
+        // TODO(quintin): Do this better
+        streamServer->feed({});
+
         if (!pipeline) initPipeline(msg->width, msg->height);
 
-        std::size_t size = msg->step * msg->height * 4;
-        GstBuffer* buffer = gst_buffer_new_wrapped_full(
-                GST_MEMORY_FLAG_READONLY,
-                const_cast<std::uint8_t*>(msg->data.data()),
-                size,
-                0,
-                size,
-                nullptr,
-                nullptr);
-        GST_BUFFER_TIMESTAMP(buffer) = msg->header.stamp.sec * GST_SECOND + msg->header.stamp.nsec;
-        GST_BUFFER_DURATION(buffer) = 1 * GST_SECOND / 30;
+        // "step" is the number of bytes (NOT pixels) in an image row
+        std::size_t size = msg->step * msg->height;
+        GstBuffer* buffer = gstCheck(gst_buffer_new_allocate(nullptr, size, nullptr));
+        GstMapInfo info;
+        gst_buffer_map(buffer, &info, GST_MAP_WRITE);
+        std::memcpy(info.data, msg->data.data(), size);
+        gst_buffer_unmap(buffer, &info);
 
         if (gst_app_src_push_buffer(GST_APP_SRC(imageSource), buffer) != GST_FLOW_OK)
             throw std::runtime_error{"Failed to push buffer"};
@@ -133,13 +134,15 @@ auto main(int argc, char** argv) -> int {
         auto address = pnh.param<std::string>("address", "0.0.0.0");
         auto port = pnh.param<int>("port", 8080);
 
-        gst_init(nullptr, nullptr);
+        gst_init(&argc, &argv);
 
         streamServer.emplace(address, port);
 
         ros::Subscriber imageSubscriber = nh.subscribe(imageTopic, 1, imageCallback);
 
         ros::spin();
+
+        gst_app_src_end_of_stream(GST_APP_SRC(imageSource));
 
         g_main_loop_quit(loop);
 
