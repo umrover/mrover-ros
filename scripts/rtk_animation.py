@@ -4,8 +4,6 @@ from pymap3d.enu import geodetic2enu
 import pandas as pd
 import numpy as np
 
-# plt.rcParams["text.usetex"] = True
-# plt.rcParams["font.family"] = "serif"
 
 def brownian(x0, N, sigma):
     result = np.zeros(N)
