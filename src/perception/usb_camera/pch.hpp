@@ -18,17 +18,17 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/videoio.hpp>
-#include <gst/gst.h>
 
 #include <dynamic_reconfigure/server.h>
-#include <mrover/DetectorParamsConfig.h>
 #include <nodelet/loader.h>
 #include <nodelet/nodelet.h>
+#include <ros/names.h>
+#include <ros/this_node.h>
 #include <sensor_msgs/CameraInfo.h>
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/image_encodings.h>
 #include <std_srvs/SetBool.h>
 
 #include <loop_profiler.hpp>
-#include <lie.hpp>
-#include <streaming.hpp>
+
+#include <mrover/DetectorParamsConfig.h>

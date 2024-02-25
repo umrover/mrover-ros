@@ -167,28 +167,27 @@ mrover_add_library(streaming src/esw/streaming/*.cpp src/esw/streaming)
 target_compile_definitions(streaming PUBLIC BOOST_ASIO_NO_DEPRECATED)
 
 mrover_add_nodelet(zed_tag_detector src/perception/tag_detector/zed/*.cpp src/perception/tag_detector/zed src/perception/tag_detector/zed/pch.hpp)
-mrover_nodelet_link_libraries(zed_tag_detector opencv_core opencv_objdetect opencv_aruco opencv_imgproc tbb lie)
+mrover_nodelet_link_libraries(zed_tag_detector opencv_core opencv_objdetect opencv_aruco opencv_imgproc lie)
 
 mrover_add_nodelet(long_range_tag_detector src/perception/tag_detector/long_range_cam/*.cpp src/perception/tag_detector/long_range_cam src/perception/tag_detector/long_range_cam/pch.hpp)
-mrover_nodelet_link_libraries(long_range_tag_detector opencv_core opencv_objdetect opencv_aruco opencv_imgproc tbb lie)
+mrover_nodelet_link_libraries(long_range_tag_detector opencv_core opencv_objdetect opencv_aruco opencv_imgproc lie)
 
-mrover_add_nodelet(usb_camera src/perception/long_range_cam/*.cpp src/perception/long_range_cam src/perception/long_range_cam/pch.hpp)
-mrover_nodelet_link_libraries(usb_camera opencv_core opencv_objdetect opencv_aruco opencv_imgproc opencv_highgui tbb lie streaming gstreamer-1.0)
-# TODO(quintin): Fix this CMake hard coding
-mrover_nodelet_include_directories(usb_camera /usr/include/gstreamer-1.0 /usr/include/glib-2.0 /usr/lib/x86_64-linux-gnu/glib-2.0/include)
+mrover_add_nodelet(usb_camera src/perception/usb_camera/*.cpp src/perception/usb_camera src/perception/usb_camera/pch.hpp)
+mrover_nodelet_link_libraries(usb_camera opencv_core opencv_objdetect opencv_aruco opencv_imgproc opencv_highgui)
 
-#if (CUDA_FOUND)
-#    mrover_add_node(hardware_h265_encoder src/esw/hardware_h265_encoder/*.c*)
-#    target_link_libraries(hardware_h265_encoder PUBLIC cuda nvidia-encode opencv_core opencv_imgproc opencv_imgcodecs opencv_videoio streaming)
-#    target_include_directories(hardware_h265_encoder SYSTEM PUBLIC deps/nvenc)
-#endif ()
+if (CUDA_FOUND)
+    mrover_add_node(nv_vid_codec_h265_enc src/esw/nv_vid_codec_h265_enc/*.c*)
+    target_link_libraries(nv_vid_codec_h265_enc PUBLIC cuda nvidia-encode opencv_core opencv_imgproc streaming)
+    target_include_directories(nv_vid_codec_h265_enc SYSTEM PUBLIC deps/nvenc)
+
+    mrover_add_node(gst_nv_h265_enc src/esw/gst_nv_h265_enc/*.c*)
+    target_link_libraries(gst_nv_h265_enc PUBLIC streaming cuda gstreamer-1.0 glib-2.0 gobject-2.0)
+    # TODO(quintin): Fix this CMake hard coding
+    target_include_directories(gst_nv_h265_enc PRIVATE /usr/include/gstreamer-1.0 /usr/include/glib-2.0 /usr/lib/x86_64-linux-gnu/glib-2.0/include)
+endif ()
 
 #add_subdirectory(deps/libde265 SYSTEM)
 #include_directories(deps/libde265/extra deps/libde265 SYSTEM)
-#
-#mrover_add_node(software_h265_encoder src/esw/software_h265_encoder/*.c*)
-#target_link_libraries(software_h265_encoder PUBLIC opencv_core opencv_imgproc opencv_imgcodecs de265 streaming)
-#target_include_directories(software_h265_encoder SYSTEM PUBLIC deps/nvenc)
 
 if (ZED_FOUND)
     mrover_add_nodelet(object_detector src/perception/object_detector/*.c* src/perception/object_detector src/perception/object_detector/pch.hpp)

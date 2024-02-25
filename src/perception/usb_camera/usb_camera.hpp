@@ -4,7 +4,7 @@
 
 namespace mrover {
 
-    class LongRangeCamNodelet : public nodelet::Nodelet {
+    class UsbCameraNodelet : public nodelet::Nodelet {
 
         ros::NodeHandle mNh, mPnh;
 
@@ -15,14 +15,12 @@ namespace mrover {
 
         LoopProfiler mGrabThreadProfiler{"Long Range Cam Grab"};
 
-        std::optional<StreamServer> streamServer;
-
         auto onInit() -> void override;
 
     public:
-        LongRangeCamNodelet() = default;
+        UsbCameraNodelet() = default;
 
-        ~LongRangeCamNodelet() override;
+        ~UsbCameraNodelet() override;
 
         auto grabUpdate() -> void;
     };

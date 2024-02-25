@@ -1,4 +1,4 @@
-#include "hardware_h265_encoder.hpp"
+#include "nv_vid_codec_h265_enc.hpp"
 
 #include <algorithm>
 #include <cstdint>
@@ -65,7 +65,7 @@ std::unordered_map<GUID, std::string> GUID_TO_NAME{
 NV_ENCODE_API_FUNCTION_LIST NVENV_API{.version = NV_ENCODE_API_FUNCTION_LIST_VER};
 CUcontext CUDA_CONTEXT = nullptr;
 
-Encoder::Encoder(cv::Size const& size) : m_size{size} {
+NvVideoCodecEncoder::NvVideoCodecEncoder(cv::Size const& size) : m_size{size} {
     if (!CUDA_CONTEXT) {
         cudaCheck(cudaSetDevice(0));
         cuCheck(cuCtxGetCurrent(&CUDA_CONTEXT));
@@ -157,7 +157,7 @@ Encoder::Encoder(cv::Size const& size) : m_size{size} {
     m_output = createBitstreamBufferParams.bitstreamBuffer;
 }
 
-auto Encoder::feed(cv::InputArray frameBgra) -> BitstreamView {
+auto NvVideoCodecEncoder::feed(cv::InputArray frameBgra) -> BitstreamView {
     if (!frameBgra.isContinuous()) throw std::runtime_error("Frame is not continuous");
     // if (frameI420.type() != CV_8UC1) throw std::runtime_error("Not single channel, note that YUV420 is expected");
     // if (frameI420.size() != cv::Size{m_size.width, m_size.height + m_size.height / 2}) throw std::runtime_error("Wrong size, note that YUV420 is expected");
@@ -191,22 +191,22 @@ auto Encoder::feed(cv::InputArray frameBgra) -> BitstreamView {
     return {&NVENV_API, m_encoder, m_output};
 }
 
-Encoder::BitstreamView::BitstreamView(NV_ENCODE_API_FUNCTION_LIST* nvenc, void* encoder, NV_ENC_OUTPUT_PTR output)
+NvVideoCodecEncoder::BitstreamView::BitstreamView(NV_ENCODE_API_FUNCTION_LIST* nvenc, void* encoder, NV_ENC_OUTPUT_PTR output)
     : nvenc{nvenc}, encoder{encoder}, output{output}, lockParams{.version = NV_ENC_LOCK_BITSTREAM_VER, .outputBitstream = output} {
     NvCheck(nvenc->nvEncLockBitstream(encoder, &lockParams));
 }
 
-Encoder::BitstreamView::~BitstreamView() {
+NvVideoCodecEncoder::BitstreamView::~BitstreamView() {
     if (nvenc && encoder && output) {
         NvCheck(nvenc->nvEncUnlockBitstream(encoder, output));
     }
 }
 
-Encoder::BitstreamView::BitstreamView(BitstreamView&& other) noexcept {
+NvVideoCodecEncoder::BitstreamView::BitstreamView(BitstreamView&& other) noexcept {
     *this = std::move(other);
 }
 
-auto Encoder::BitstreamView::operator=(BitstreamView&& other) noexcept -> BitstreamView& {
+auto NvVideoCodecEncoder::BitstreamView::operator=(BitstreamView&& other) noexcept -> BitstreamView& {
     std::swap(nvenc, other.nvenc);
     std::swap(encoder, other.encoder);
     std::swap(output, other.output);
@@ -214,7 +214,7 @@ auto Encoder::BitstreamView::operator=(BitstreamView&& other) noexcept -> Bitstr
     return *this;
 }
 
-Encoder::~Encoder() {
+NvVideoCodecEncoder::~NvVideoCodecEncoder() {
     NvCheck(NVENV_API.nvEncDestroyInputBuffer(m_encoder, m_input));
     NvCheck(NVENV_API.nvEncDestroyBitstreamBuffer(m_encoder, m_output));
     NvCheck(NVENV_API.nvEncDestroyEncoder(m_encoder));
