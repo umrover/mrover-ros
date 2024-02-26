@@ -48,6 +48,8 @@
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
 
+#include <Eigen/Geometry>
+
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_wgpu.h>
 
@@ -70,6 +72,7 @@
 #include <bimap.hpp>
 #include <lie.hpp>
 #include <loop_profiler.hpp>
+#include <manif/algorithms/interpolation.h>
 #include <manif/manif.h>
 #include <params_utils.hpp>
 #include <point.hpp>
