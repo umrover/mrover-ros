@@ -5,7 +5,7 @@ FROM ubuntu:focal
 # sudo is needed for ansible since it escalates from a normal user to root
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update -y && apt-get install software-properties-common sudo -y
-RUN apt-add-repository ppa:ansible/ansible -y && apt-get install -y ansible
+RUN apt-add-repository ppa:ansible/ansible -y && apt-get install -y git git-lfs ansible
 
 RUN useradd --create-home --groups sudo --shell /bin/zsh mrover
 # Give mrover user sudo access with no password
