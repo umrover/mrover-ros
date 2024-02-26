@@ -4,60 +4,6 @@
 
 namespace mrover {
 
-    // struct LowResIterator {
-    //     using iterator_category = std::forward_iterator_tag;
-    //     using difference_type = std::ptrdiff_t;
-    //     using value_type = Point;
-    //     using pointer = Point const*;
-    //     using reference = Point const&;
-    //
-    //     pointer mPointer;
-    //     Eigen::Vector2i mSize;
-    //     int mFactor;
-    //
-    //     Eigen::Vector2i mIndex;
-    //
-    //     explicit LowResIterator(pointer ptr, Eigen::Vector2i size, int factor)
-    //         : mPointer{ptr}, mSize{std::move(size)}, mFactor{factor} {}
-    //
-    //     auto advance() -> void {
-    //         mIndex.x() += mFactor;
-    //         if (mIndex.x() >= mSize.x()) {
-    //             mIndex.x() = 0;
-    //             mIndex.y() += mFactor;
-    //         }
-    //     }
-    //
-    //     auto operator*() const -> reference { return mPointer[mIndex.y() * mSize.x() + mIndex.x()]; }
-    //
-    //     auto operator->() const -> pointer { return &operator*(); }
-    //
-    //     auto operator++() -> LowResIterator& {
-    //         advance();
-    //         return *this;
-    //     }
-    //
-    //     auto operator++(int) -> LowResIterator {
-    //         auto copy = *this;
-    //         advance();
-    //         return copy;
-    //     }
-    //
-    //     friend auto operator+(LowResIterator const& it, difference_type n) -> LowResIterator {
-    //         auto copy = it;
-    //         for (difference_type i = 0; i < n; ++i) {
-    //             copy.advance();
-    //         }
-    //         return copy;
-    //     }
-    //
-    //     friend auto operator==(LowResIterator const& lhs, LowResIterator const& rhs) -> bool {
-    //         return lhs.mIndex == rhs.mIndex;
-    //     }
-    //
-    //     friend auto operator!=(LowResIterator const& lhs, LowResIterator const& rhs) -> bool { return !(lhs == rhs); }
-    // };
-
     auto CostMapNodelet::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg) -> void {
         assert(msg);
         assert(msg->height > 0);
