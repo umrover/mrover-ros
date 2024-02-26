@@ -26,6 +26,9 @@ dependencies = [
     "aenum==3.1.15",
     "daphne==4.0.0",
     "channels==4.0.0",
+    "PyQt5==5.15.10",
+    "Pyarrow==15.0.0",
+    "pyubx2==1.2.35"
 ]
 
 [project.optional-dependencies]
