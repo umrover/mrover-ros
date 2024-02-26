@@ -1,7 +1,5 @@
 #include "simulator.hpp"
 
-#include <Eigen/QR>
-
 namespace mrover {
 
     auto SimulatorNodelet::twistCallback(geometry_msgs::Twist::ConstPtr const& twist) -> void {
@@ -86,14 +84,12 @@ namespace mrover {
                     Eigen::Matrix3d rotationMatrix = mCameraInWorld.transform().block<3, 3>(0, 0);
 
                     Eigen::Vector3d left = rotationMatrix.col(1);
-                    left.z() = 0;
-                    left.normalize();
+                    Eigen::Vector3d leftWithoutRoll = left;
+                    leftWithoutRoll.z() = 0;
+                    leftWithoutRoll.normalize();
 
-                    Eigen::Matrix3d newRot;
-                    newRot.col(1) = left;
-                    newRot.col(0) = left - left.dot(rotationMatrix.col(2)) * rotationMatrix.col(2);
-                    newRot.col(2) = newRot.col(0).cross(newRot.col(1));
-                    mCameraInWorld.asSO3() = SO3d{Eigen::Quaterniond{newRot}.normalized()};
+                    auto q = Eigen::Quaterniond{}.setFromTwoVectors(left, leftWithoutRoll);
+                    mCameraInWorld.asSO3() = SO3d{q} * mCameraInWorld.asSO3();
                 } else {
                     setCameraInRoverTarget();
                 }
@@ -132,12 +128,6 @@ namespace mrover {
         worldRelativeAngularVelocity << 0.0, 0.0, -mouseDelta.x();
         // TODO: Is there a tidy way to combine this with the above?
         mCameraInWorld.asSO3() = worldRelativeAngularVelocity + mCameraInWorld.asSO3();
-
-        auto tangent = mCameraInWorld.asSO3().log();
-        tangent = mCameraInWorld.asSO3().adj() * tangent;
-        tangent.coeffs().x() = 0;
-        tangent = mCameraInWorld.asSO3().inverse().adj() * tangent;
-        mCameraInWorld.asSO3() = tangent.exp();
 
         centerCursor();
     }
