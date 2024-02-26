@@ -2,7 +2,7 @@
 
 namespace mrover {
 
-    void CostMapNodelet::onInit() {
+    auto CostMapNodelet::onInit() -> void {
         mNh = getMTNodeHandle();
         mPnh = getMTPrivateNodeHandle(); // Unused for now
         mNh.param<bool>("publish_cost_map", mPublishCostMap, true);
@@ -20,18 +20,7 @@ namespace mrover {
         mGlobalGridMsg.info.origin.position.x = -1 * mDimension / 2;
         mGlobalGridMsg.info.origin.position.y = -1 * mDimension / 2;
 
-        mGlobalGridMsg.data.resize(mGlobalGridMsg.info.width * mGlobalGridMsg.info.height);
-        std::fill(mGlobalGridMsg.data.begin(), mGlobalGridMsg.data.end(), -1);
+        mGlobalGridMsg.data.resize(mGlobalGridMsg.info.width * mGlobalGridMsg.info.height, UNKNOWN_COST);
     }
+
 } // namespace mrover
-
-/*
-TODO:
-- Nodelet takes in pointcloud
-PARALLELIZE
-- Get cost of point
-- Transform point to nav basis
-- Stitch to nav grid
-END
-
-*/

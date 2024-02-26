@@ -1,3 +1,5 @@
+#include <utility>
+
 #include "cost_map.hpp"
 
 namespace mrover {
@@ -10,39 +12,36 @@ namespace mrover {
         if (!mPublishCostMap) return;
 
         try {
-            SE3d zed_to_map = SE3Conversions::fromTfTree(mTfBuffer, "zed_left_camera_frame", "map");
+            SE3f cameraToMap = SE3Conversions::fromTfTree(mTfBuffer, "zed2i_left_camera_frame", "map").cast<float>();
             auto* points = reinterpret_cast<Point const*>(msg->data.data());
-            // std::for_each(points, points + msg->width * msg->height, [&](auto* point) {
-            for (auto point = points; point - points < msg->width * msg->height; point += mDownSamplingFactor) {
-                Eigen::Vector4d p{point->x, point->y, point->z, 1};
-                point_matrix.col((point - points) / mDownSamplingFactor) = p;
-                Eigen::Vector4d normal{point->normal_x, point->normal_y, point->normal_z, 0};
-                normal_matrix.col((point - points) / mDownSamplingFactor) = normal;
+            for (std::size_t i = 0, r = 0; r < msg->height; r += mDownSamplingFactor) {
+                for (std::size_t c = 0; c < msg->width; c += mDownSamplingFactor) {
+                    auto* point = points + r * msg->width + c;
+                    Eigen::Vector4f pointInCamera{point->x, point->y, point->z, 1};
+                    Eigen::Vector4f normalInCamera{point->normal_x, point->normal_y, point->normal_z, 0};
+
+                    mPointsInMap.col(static_cast<Eigen::Index>(i)) = cameraToMap.transform() * pointInCamera;
+                    mNormalsInMap.col(static_cast<Eigen::Index>(i)) = cameraToMap.transform() * normalInCamera;
+                    i++;
+                }
             }
 
-            // TODO(neven): Make sure this still works with manif
-            point_matrix = zed_to_map.transform() * point_matrix;
-            normal_matrix = zed_to_map.transform() * normal_matrix;
+            for (Eigen::Index i = 0; i < mNumPoints; i++) {
+                double xInMap = mPointsInMap.col(i).x();
+                double yInMap = mPointsInMap.col(i).y();
+                Eigen::Vector3f normalInMap = mNormalsInMap.col(i).head<3>();
 
-            for (uint32_t i = 0; i < mNumPoints; i++) {
-                double x = point_matrix(0, i);
-                double y = point_matrix(1, i);
-                Eigen::Vector4d n = normal_matrix.col(i);
+                if (xInMap >= mGlobalGridMsg.info.origin.position.x && xInMap <= mGlobalGridMsg.info.origin.position.x + mDimension &&
+                    yInMap >= mGlobalGridMsg.info.origin.position.y && yInMap <= mGlobalGridMsg.info.origin.position.y + mDimension) {
+                    int xIndex = std::floor((xInMap - mGlobalGridMsg.info.origin.position.x) / mGlobalGridMsg.info.resolution);
+                    int yIndex = std::floor((yInMap - mGlobalGridMsg.info.origin.position.y) / mGlobalGridMsg.info.resolution);
+                    auto costMapIndex = mGlobalGridMsg.info.width * yIndex + xIndex;
 
-                if (x >= mGlobalGridMsg.info.origin.position.x && x <= mGlobalGridMsg.info.origin.position.x + mDimension &&
-                    y >= mGlobalGridMsg.info.origin.position.y && y <= mGlobalGridMsg.info.origin.position.y + mDimension) {
-                    int x_index = std::floor((x - mGlobalGridMsg.info.origin.position.x) / mGlobalGridMsg.info.resolution);
-                    int y_index = std::floor((y - mGlobalGridMsg.info.origin.position.y) / mGlobalGridMsg.info.resolution);
-                    auto ind = mGlobalGridMsg.info.width * y_index + x_index;
+                    // Z is the vertical component of of hte normal
+                    // A small Z component indicates largely horizontal normal (surface is vertical)
+                    std::int8_t cost = normalInMap.z() < mNormalThreshold ? OCCUPIED_COST : FREE_COST;
 
-                    Eigen::Vector3d normal{n.x(), n.y(), n.z()};
-                    // normal.normalize();
-                    // get vertical component of (unit) normal vector
-                    double z_comp = normal.z();
-                    // small z component indicates largely horizontal normal (surface is vertical)
-                    signed char cost = z_comp < mNormalThreshold ? 1 : 0;
-
-                    mGlobalGridMsg.data[ind] = std::max(mGlobalGridMsg.data[ind], cost);
+                    mGlobalGridMsg.data[costMapIndex] = std::max(mGlobalGridMsg.data[costMapIndex], cost);
                 }
             }
             mCostMapPub.publish(mGlobalGridMsg);

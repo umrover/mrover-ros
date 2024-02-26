@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <execution>
 
 #include <Eigen/Core>
 
@@ -17,5 +18,3 @@
 
 #include <lie.hpp>
 #include <point.hpp>
-
-#include <mrover/DetectorParamsConfig.h>
