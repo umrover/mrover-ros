@@ -1,5 +1,7 @@
 #include "simulator.hpp"
 
+#include <Eigen/QR>
+
 namespace mrover {
 
     auto SimulatorNodelet::twistCallback(geometry_msgs::Twist::ConstPtr const& twist) -> void {
@@ -79,11 +81,22 @@ namespace mrover {
                 if (!mInGui) centerCursor();
             }
             if (key == mToggleCameraLockKey) {
-                mCameraLock = !mCameraLock;
-                if (mCameraLock)
-                    setCameraInRoverTarget();
-                else
+                if (mCameraInRoverTarget) {
                     mCameraInRoverTarget = std::nullopt;
+                    Eigen::Matrix3d rotationMatrix = mCameraInWorld.transform().block<3, 3>(0, 0);
+
+                    Eigen::Vector3d left = rotationMatrix.col(1);
+                    left.z() = 0;
+                    left.normalize();
+
+                    Eigen::Matrix3d newRot;
+                    newRot.col(1) = left;
+                    newRot.col(0) = left - left.dot(rotationMatrix.col(2)) * rotationMatrix.col(2);
+                    newRot.col(2) = newRot.col(0).cross(newRot.col(1));
+                    mCameraInWorld.asSO3() = SO3d{Eigen::Quaterniond{newRot}.normalized()};
+                } else {
+                    setCameraInRoverTarget();
+                }
             }
         }
     }
@@ -117,8 +130,7 @@ namespace mrover {
 
         SO3d::Tangent worldRelativeAngularVelocity;
         worldRelativeAngularVelocity << 0.0, 0.0, -mouseDelta.x();
-
-        // TODO: Is there a way to combine this with the above?
+        // TODO: Is there a tidy way to combine this with the above?
         mCameraInWorld.asSO3() = worldRelativeAngularVelocity + mCameraInWorld.asSO3();
 
         auto tangent = mCameraInWorld.asSO3().log();
@@ -137,7 +149,7 @@ namespace mrover {
             URDF const& rover = *lookup;
             SE3d roverInWorld = rover.linkInWorld("base_link");
             SE3d cameraInWorldTarget = roverInWorld * mCameraInRoverTarget.value();
-            mCameraInWorld = mCameraInWorld + (cameraInWorldTarget - mCameraInWorld) * mCameraLockLerp;
+            mCameraInWorld = manif::interpolate_slerp(mCameraInWorld, cameraInWorldTarget, mCameraLockSlerp);
         }
         centerCursor();
     }
@@ -161,7 +173,7 @@ namespace mrover {
 
         if (!mHasFocus || mInGui) return;
 
-        if (mCameraLock)
+        if (mCameraInRoverTarget)
             cameraLock(dt);
         else
             freeLook(dt);

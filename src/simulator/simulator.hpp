@@ -199,7 +199,7 @@ namespace mrover {
         bool mRenderWireframeColliders = false;
         double mPublishHammerDistanceThreshold = 4;
         double mPublishBottleDistanceThreshold = 4;
-        float mCameraLockLerp = 0.1;
+        float mCameraLockSlerp = 0.02;
 
         float mFloat = 0.0f;
 
@@ -268,7 +268,6 @@ namespace mrover {
 
         bool mHasFocus = false;
         bool mInGui = false;
-        bool mCameraLock = false;
 
         Uniform<SceneUniforms> mSceneUniforms;
 
