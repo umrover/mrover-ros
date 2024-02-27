@@ -139,7 +139,7 @@ namespace mrover {
             }
             mImgMsg.header.seq = mSeqNum;
             mImgMsg.header.stamp = ros::Time::now();
-            mImgMsg.header.frame_id = "zed2i_left_camera_frame";
+            mImgMsg.header.frame_id = "zed_left_camera_frame";
             mImgMsg.height = mImg.rows;
             mImgMsg.width = mImg.cols;
             mImgMsg.encoding = sensor_msgs::image_encodings::BGR8;

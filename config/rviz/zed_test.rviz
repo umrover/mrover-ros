@@ -72,7 +72,7 @@ Visualization Manager:
           Value: false
         zed2i_camera_center:
           Value: false
-        zed2i_left_camera_frame:
+        zed_left_camera_frame:
           Value: false
         zed2i_left_camera_optical_frame:
           Value: false
@@ -102,7 +102,7 @@ Visualization Manager:
                 zed2i_camera_center:
                   zed2i_baro_link:
                     {}
-                  zed2i_left_camera_frame:
+                  zed_left_camera_frame:
                     zed2i_left_camera_optical_frame:
                       {}
                     zed2i_temp_left_link:
@@ -145,7 +145,7 @@ Visualization Manager:
           Show Axes: false
           Show Trail: false
           Value: true
-        zed2i_left_camera_frame:
+        zed_left_camera_frame:
           Alpha: 1
           Show Axes: false
           Show Trail: false

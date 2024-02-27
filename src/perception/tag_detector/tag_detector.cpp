@@ -12,7 +12,7 @@ namespace mrover {
         mNh.param<bool>("use_odom_frame", mUseOdom, false);
         mNh.param<std::string>("odom_frame", mOdomFrameId, "odom");
         mNh.param<std::string>("world_frame", mMapFrameId, "map");
-        mNh.param<std::string>("camera_frame", mCameraFrameId, "zed2i_left_camera_frame");
+        mNh.param<std::string>("camera_frame", mCameraFrameId, "zed_left_camera_frame");
 
         mPnh.param<bool>("publish_images", mPublishImages, true);
         mPnh.param<int>("dictionary", dictionaryNumber, static_cast<int>(cv::aruco::DICT_4X4_50));

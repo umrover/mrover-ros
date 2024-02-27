@@ -37,7 +37,7 @@ namespace mrover {
 
             mThreshMsg.header.seq = mSeqNum;
             mThreshMsg.header.stamp = ros::Time::now();
-            mThreshMsg.header.frame_id = "zed2i_left_camera_frame";
+            mThreshMsg.header.frame_id = "zed_left_camera_frame";
             mThreshMsg.height = mGrayImg.rows;
             mThreshMsg.width = mGrayImg.cols;
             mThreshMsg.encoding = sensor_msgs::image_encodings::MONO8;

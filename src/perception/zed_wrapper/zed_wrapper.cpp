@@ -146,7 +146,7 @@ namespace mrover {
                     fillPointCloudMessageFromGpu(mPcMeasures.leftPoints, mPcMeasures.leftImage, mPcMeasures.leftNormals, mPointCloudGpu, pointCloudMsg);
                     pointCloudMsg->header.seq = mPointCloudUpdateTick;
                     pointCloudMsg->header.stamp = mPcMeasures.time;
-                    pointCloudMsg->header.frame_id = "zed2i_left_camera_frame";
+                    pointCloudMsg->header.frame_id = "zed_left_camera_frame";
                     mPcThreadProfiler.measureEvent("Fill Message");
 
                     if (mLeftImgPub.getNumSubscribers()) {
@@ -260,7 +260,7 @@ namespace mrover {
                         try {
                             SE3d leftCameraInOdom{{translation.x, translation.y, translation.z},
                                                   Eigen::Quaterniond{orientation.w, orientation.x, orientation.y, orientation.z}.normalized()};
-                            SE3d baseLinkToLeftCamera = SE3Conversions::fromTfTree(mTfBuffer, "base_link", "zed2i_left_camera_frame");
+                            SE3d baseLinkToLeftCamera = SE3Conversions::fromTfTree(mTfBuffer, "base_link", "zed_left_camera_frame");
                             SE3d baseLinkInOdom = leftCameraInOdom * baseLinkToLeftCamera;
                             SE3Conversions::pushToTfTree(mTfBroadcaster, "base_link", "odom", baseLinkInOdom);
                         } catch (tf2::TransformException& e) {
