@@ -18,7 +18,6 @@ auto main(int argc, char** argv) -> int {
 
     ledCanDevice = std::make_unique<mrover::CanDevice>(nh, "jetson", "pdlb");
 
-    CANPublisher = nh.advertise<mrover::CAN>("can/pdlb/out", 1);
     ros::Subscriber changeLEDSubscriber = nh.subscribe<mrover::LED>("led", 1, changeLED);
 
     // Enter the ROS event loop

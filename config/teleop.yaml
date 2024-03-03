@@ -11,20 +11,20 @@ teleop:
     joint_b:
       multiplier: -1
       slow_mode_multiplier: 1
-      invert: False
+      invert: True
       xbox_index: 1
     joint_c:
-      multiplier: 1
+      multiplier: -1
       slow_mode_multiplier: 0.6
       invert: True
       xbox_index: 4
     joint_de_pitch:
-      multiplier: 1
+      multiplier: 0.5
       slow_mode_multiplier: 1
       invert: False
-      xbox_index: 3
+      xbox_index: 2
     joint_de_roll:
-      multiplier: 1
+      multiplier: 0.5
       slow_mode_multiplier: 1
       invert: False
       xbox_index: 5
@@ -41,11 +41,11 @@ teleop:
     sa_x:
       multiplier: 1
       slow_mode_multiplier: 0.5
-      xbox_index: 0
+      xbox_index: 1
     sa_y:
       multiplier: -1
       slow_mode_multiplier: 0.5
-      xbox_index: 1
+      xbox_index: 0
     sa_z:
       multiplier: -1
       slow_mode_multiplier: 0.5
@@ -53,9 +53,11 @@ teleop:
     sampler:
       multiplier: 1
       slow_mode_multiplier: 1.0
+      xbox_index: 5
     sensor_actuator:
       multiplier: 1
       slow_mode_multiplier: 0.5
+      xbox_index: 5
 
   drive_controls:
     forward_back:
@@ -84,8 +86,8 @@ teleop:
     y: 3
 
   joystick_mappings:
-    left_right: 1
-    forward_back: 0
+    left_right: 0
+    forward_back: 1
     twist: 2
     dampen: 3
     pan: 4

@@ -1,1 +1,1 @@
-. /opt/ros/noetic/setup.sh && . ~/catkin_ws/devel/setup.sh
+source /opt/ros/noetic/setup.sh && source ~/catkin_ws/devel/setup.sh
