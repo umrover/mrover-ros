@@ -22,11 +22,16 @@ search:
   segments_per_rotation: 8
   distance_between_spirals: 3
 
+<<<<<<< HEAD
 water_bottle_search:
   stop_thresh: 0.5
   drive_fwd_thresh: 0.34
   coverage_radius: 10
   segments_per_rotation: 8
+=======
+object_search:
+  coverage_radius: 10
+>>>>>>> origin/integration
   distance_between_spirals: 3
 
 single_fiducial:
@@ -55,3 +60,11 @@ watchdog:
   window_size: 100 #size of window we are looking at for being stuck
   angular_threshold: 0.1
   linear_threshold: 0.2
+
+long_range:
+  distance_ahead: 20
+  time_threshold: 5
+  increment_weight: 5
+  decrement_weight: 1
+  min_hits: 3
+  max_hits: 10

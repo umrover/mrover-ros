@@ -21,10 +21,10 @@ namespace mrover {
         Pin m_green_pin;
         Pin m_blue_pin;
 
-        bool m_red{};
-        bool m_green{};
-        bool m_blue{};
-        bool m_blinking{};
+        bool m_red{true};
+        bool m_green{true};
+        bool m_blue{true};
+        bool m_blinking{true};
         bool m_on{};
 
         void change_all_pins();

@@ -55,8 +55,6 @@ namespace mrover {
 
         LoopProfiler mPcThreadProfiler{"Zed Wrapper Point Cloud"}, mGrabThreadProfiler{"Zed Wrapper Grab"};
 
-        size_t mGrabUpdateTick = 0, mPointCloudUpdateTick = 0;
-
         auto onInit() -> void override;
 
     public:

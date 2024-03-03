@@ -65,7 +65,6 @@ class GUIConsumer(JsonWebsocketConsumer):
         try:
             self.twist_pub = rospy.Publisher("/cmd_vel", Twist, queue_size=1)
             self.led_pub = rospy.Publisher("/auton_led_cmd", String, queue_size=1)
-            self.teleop_pub = rospy.Publisher("/teleop_enabled", Bool, queue_size=1)
             self.mast_gimbal_pub = rospy.Publisher("/mast_gimbal_throttle_cmd", Throttle, queue_size=1)
             self.arm_ik_pub = rospy.Publisher("arm_ik", IK, queue_size=1)
             self.arm_throttle_cmd_pub = rospy.Publisher("arm_throttle_cmd", Throttle, queue_size=1)
@@ -260,9 +259,9 @@ class GUIConsumer(JsonWebsocketConsumer):
             sa_throttle_cmd.names = SA_NAMES
 
             sa_throttle_cmd.throttles = [
-                self.sa_config[name]["multiplier"] * self.filter_xbox_axis(msg["axes"][info["xbox_index"]], 0.15, True)
-                for name, info in self.sa_config.items()
-                if name.startswith("sa")
+                self.sa_config[name]["multiplier"] * self.filter_xbox_axis(msg["axes"][self.sa_config["sa_x"]["xbox_index"]], 0.15, True),
+                self.sa_config[name]["multiplier"] * self.filter_xbox_axis(msg["axes"][self.sa_config["sa_y"]["xbox_index"]], 0.15, True),
+                self.sa_config[name]["multiplier"] * self.filter_xbox_axis(msg["axes"][self.sa_config["sa_z"]["xbox_index"]], 0.15, True),
             ]
             sa_throttle_cmd.throttles.extend(
                 [
@@ -350,12 +349,13 @@ class GUIConsumer(JsonWebsocketConsumer):
             elif d_pad_x < -0.5:
                 ra_slow_mode = False
 
+            
             arm_throttle_cmd.throttles = [
                 self.filter_xbox_axis(msg["axes"][self.ra_config["joint_a"]["xbox_index"]]),
                 self.filter_xbox_axis(msg["axes"][self.ra_config["joint_b"]["xbox_index"]]),
                 self.filter_xbox_axis(msg["axes"][self.ra_config["joint_c"]["xbox_index"]]),
-                self.filter_xbox_axis(msg["axes"][self.ra_config["joint_de_pitch"]["xbox_index"]]),
-                self.filter_xbox_axis(msg["axes"][self.ra_config["joint_de_roll"]["xbox_index"]]),
+                (self.filter_xbox_axis(msg["axes"][2]) - self.filter_xbox_axis(msg["axes"][5])) * 0.3,
+                (self.filter_xbox_button(msg["buttons"], "right_bumper", "left_bumper")) * 0.3,
                 self.ra_config["allen_key"]["multiplier"] * self.filter_xbox_button(msg["buttons"], "y", "a"),
                 self.ra_config["gripper"]["multiplier"] * self.filter_xbox_button(msg["buttons"], "b", "x"),
             ]
@@ -559,7 +559,7 @@ class GUIConsumer(JsonWebsocketConsumer):
     def send_teleop_enabled(self, msg):
         rospy.wait_for_service("enable_teleop")
         try:
-            enable_teleop = rospy.ServiceProxy("enable_teleop", rospy.std_srvs.SetBool)
+            enable_teleop = rospy.ServiceProxy("enable_teleop", SetBool)
             enable_teleop(msg["data"])
         except rospy.ServiceException as e:
             rospy.logerr(f"Service call failed: {e}")
@@ -595,7 +595,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         pwr = rospy.get_param("teleop/mast_gimbal_power")
         rot_pwr = msg["throttles"][0] * pwr["rotation_pwr"]
         up_down_pwr = msg["throttles"][1] * pwr["up_down_pwr"]
-        self.mast_gimbal_pub.publish(Throttle(["mast_gimbal_x", "mast_gimbal_y"], [rot_pwr, up_down_pwr]))
+        self.mast_gimbal_pub.publish(Throttle(["mast_gimbal_y", "mast_gimbal_z"], [rot_pwr, up_down_pwr]))
 
     def change_cameras(self, msg):
         try:

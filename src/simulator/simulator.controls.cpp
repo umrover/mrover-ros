@@ -78,6 +78,22 @@ namespace mrover {
                 mInGui = !mInGui;
                 if (!mInGui) centerCursor();
             }
+            if (key == mToggleCameraLockKey) {
+                if (mCameraInRoverTarget) {
+                    mCameraInRoverTarget = std::nullopt;
+                    
+                    Eigen::Matrix3d rotationMatrix = mCameraInWorld.transform().block<3, 3>(0, 0);
+
+                    Eigen::Vector3d left = rotationMatrix.col(1);
+                    Eigen::Vector3d leftWithoutRoll = left;
+                    leftWithoutRoll.z() = 0;
+
+                    auto q = Eigen::Quaterniond{}.setFromTwoVectors(left, leftWithoutRoll);
+                    mCameraInWorld.asSO3() = SO3d{q} * mCameraInWorld.asSO3();
+                } else {
+                    setCameraInRoverTarget();
+                }
+            }
         }
     }
 
@@ -110,11 +126,30 @@ namespace mrover {
 
         SO3d::Tangent worldRelativeAngularVelocity;
         worldRelativeAngularVelocity << 0.0, 0.0, -mouseDelta.x();
-
-        // TODO: Is there a way to combine this with the above?
+        // TODO: Is there a tidy way to combine this with the above?
         mCameraInWorld.asSO3() = worldRelativeAngularVelocity + mCameraInWorld.asSO3();
 
         centerCursor();
+    }
+
+    auto SimulatorNodelet::cameraLock([[maybe_unused]] Clock::duration dt) -> void {
+        if (!mCameraInRoverTarget) setCameraInRoverTarget();
+
+        if (auto lookup = getUrdf("rover")) {
+            URDF const& rover = *lookup;
+            SE3d roverInWorld = rover.linkInWorld("base_link");
+            SE3d cameraInWorldTarget = roverInWorld * mCameraInRoverTarget.value();
+            mCameraInWorld = manif::interpolate_slerp(mCameraInWorld, cameraInWorldTarget, mCameraLockSlerp);
+        }
+        centerCursor();
+    }
+
+    auto SimulatorNodelet::setCameraInRoverTarget() -> void {
+        if (auto lookup = getUrdf("rover")) {
+            URDF const& rover = *lookup;
+            SE3d roverInWorld = rover.linkInWorld("base_link");
+            mCameraInRoverTarget = roverInWorld.inverse() * mCameraInWorld;
+        }
     }
 
     auto SimulatorNodelet::userControls(Clock::duration dt) -> void {
@@ -128,7 +163,10 @@ namespace mrover {
 
         if (!mHasFocus || mInGui) return;
 
-        freeLook(dt);
+        if (mCameraInRoverTarget)
+            cameraLock(dt);
+        else
+            freeLook(dt);
 
         std::optional<geometry_msgs::Twist> twist;
         if (glfwGetKey(mWindow.get(), mRoverRightKey) == GLFW_PRESS) {

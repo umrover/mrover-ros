@@ -40,8 +40,7 @@ def on_press(key):
 
 
 def on_release(key):
-    while False:
-        continue
+    pass
 
 
 class image_capturepy:

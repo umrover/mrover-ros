@@ -9,11 +9,13 @@ import numpy as np
 import rospy
 import rostest
 import tf2_ros
+from nav_msgs.msg import Odometry
 from mrover.msg import Waypoint, WaypointType, StateMachineStateUpdate
 from util.SE3 import SE3
 from util.course_publish_helpers import publish_waypoints, convert_waypoint_to_gps
 
 COMPLETION_TOLERANCE = 3.0
+LOCALIZATION_ERROR_TOLERANCE = 1.0
 
 
 class TestIntegration(unittest.TestCase):
@@ -47,15 +49,25 @@ class TestIntegration(unittest.TestCase):
         def nav_state_callback(msg: StateMachineStateUpdate) -> None:
             nonlocal nav_state
             nav_state = msg
+        
+        rover_in_world_gt = SE3()
+        
+        def ground_truth_callback(msg: Odometry) -> None:
+            nonlocal rover_in_world_gt
+            pose = msg.pose.pose
+            position = np.array([pose.position.x, pose.position.y, pose.position.z])
+            orientation = np.array([pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w])
+            rover_in_world_gt = SE3(position, orientation)
 
         rospy.Subscriber("/nav_state", StateMachineStateUpdate, nav_state_callback)
+        rospy.Subscriber("/ground_truth", Odometry, ground_truth_callback)
 
         rate = rospy.Rate(20)
         for waypoint in waypoints:
             waypoint_data, pose = waypoint
             rospy.loginfo(f"Moving to waypoint: {waypoint}")
 
-            def distance_to_target():
+            def distance_to_target() -> float:
                 try:
                     rover_in_world = SE3.from_tf_tree(tf_buffer, parent_frame="map", child_frame="base_link")
                     if waypoint_data.type == WaypointType(val=WaypointType.NO_SEARCH):
@@ -73,11 +85,23 @@ class TestIntegration(unittest.TestCase):
                 except tf2_ros.TransformException as e:
                     rospy.logwarn_throttle(1, f"Transform exception: {e}")
                     return float("inf")
+            
+            def localization_error() -> float:
+                try:
+                    rover_in_world = SE3.from_tf_tree(tf_buffer, parent_frame="map", child_frame="base_link")
+                    localization_error = rover_in_world.pos_distance_to(rover_in_world_gt)
+                    return localization_error
+                except tf2_ros.TransformException as e:
+                    rospy.logwarn_throttle(1, f"Transform exception: {e}")
+                    return 0
 
             while (distance := distance_to_target()) > COMPLETION_TOLERANCE and nav_state.state != "DoneState":
                 if rospy.is_shutdown():
                     return
-                rospy.loginfo_throttle(1, f"Distance to current waypoint: {distance}, navigation state: {nav_state.state}")
+                error = localization_error()
+                self.assertLessEqual(error, LOCALIZATION_ERROR_TOLERANCE)
+                # rospy.loginfo
+                rospy.loginfo_throttle(1, f"Distance to current waypoint: {distance}, navigation state: {nav_state.state}, localization error: {error}")
                 rate.sleep()
 
             rospy.loginfo("Waypoint reached")

@@ -14,7 +14,12 @@ from navigation.recovery import RecoveryState
 from navigation.search import SearchState
 from navigation.state import DoneState, OffState, off_check
 from navigation.waypoint import WaypointState
+<<<<<<< HEAD
 from navigation.water_bottle_search import WaterBottleSearchState
+=======
+from navigation.approach_object import ApproachObjectState
+from navigation.long_range import LongRangeState
+>>>>>>> origin/integration
 
 
 class Navigation(threading.Thread):
@@ -31,21 +36,42 @@ class Navigation(threading.Thread):
         )
         self.state_machine.add_transitions(PostBackupState(), [WaypointState(), RecoveryState()])
         self.state_machine.add_transitions(
-            RecoveryState(), [WaypointState(), SearchState(), PostBackupState(), ApproachPostState()]
+            RecoveryState(),
+            [
+                WaypointState(),
+                SearchState(),
+                PostBackupState(),
+                ApproachPostState(),
+                ApproachObjectState(),
+                LongRangeState(),
+            ],
         )
-        self.state_machine.add_transitions(SearchState(), [ApproachPostState(), WaypointState(), RecoveryState()])
+        self.state_machine.add_transitions(
+            SearchState(),
+            [ApproachPostState(), ApproachObjectState(), LongRangeState(), WaypointState(), RecoveryState()],
+        )
         self.state_machine.add_transitions(DoneState(), [WaypointState()])
         self.state_machine.add_transitions(
             WaypointState(),
             [
                 PostBackupState(),
                 ApproachPostState(),
+<<<<<<< HEAD
                 SearchState(),
                 RecoveryState(),
                 DoneState(),
                 WaterBottleSearchState(),
+=======
+                ApproachObjectState(),
+                LongRangeState(),
+                SearchState(),
+                RecoveryState(),
+                DoneState(),
+>>>>>>> origin/integration
             ],
         )
+        self.state_machine.add_transitions(ApproachObjectState(), [DoneState(), SearchState(), RecoveryState()])
+        self.state_machine.add_transitions(LongRangeState(), [ApproachPostState(), SearchState(), RecoveryState()])
         self.state_machine.add_transitions(OffState(), [WaypointState(), DoneState()])
         self.state_machine.add_transitions(
             WaterBottleSearchState(), [WaypointState(), RecoveryState(), ApproachPostState()]

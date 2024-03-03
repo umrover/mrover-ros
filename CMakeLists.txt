@@ -151,30 +151,49 @@ if (NOT APPLE)
     mrover_add_esw_bridge_node(led src/esw/led/*.cpp)
     mrover_add_esw_bridge_node(mast_gimbal_bridge src/esw/mast_gimbal_bridge/*.cpp)
     mrover_add_esw_bridge_node(pdb_bridge src/esw/pdb_bridge/*.cpp)
-    #    mrover_add_esw_bridge_node(sa_bridge src/esw/sa_translator_bridge/*.cpp)
+    mrover_add_esw_bridge_node(sa_hw_bridge src/esw/sa_hw_bridge/*.cpp)
+    mrover_add_esw_bridge_node(sa_translator_bridge src/esw/sa_translator_bridge/*.cpp)
     mrover_add_esw_bridge_node(science_bridge src/esw/science_bridge/*.cpp)
     mrover_add_esw_bridge_node(brushless_test_bridge src/esw/brushless_test_bridge/*.cpp motor_library)
     mrover_add_esw_bridge_node(brushed_test_bridge src/esw/brushed_test_bridge/*.cpp)
     mrover_add_esw_bridge_node(test_arm_bridge src/esw/test_arm_bridge/*.cpp)
+    mrover_add_esw_bridge_node(pdb_test_bridge src/esw/pdb_test_bridge/*.cpp)
     #    mrover_add_esw_bridge_node(sa_sensor src/esw/fw/dirt_sensor/dirt_sensor_ros/dirt_sensor_ros.ino)
 endif ()
 
 ## Perception
 
-mrover_add_nodelet(tag_detector src/perception/tag_detector/*.cpp src/perception/tag_detector src/perception/tag_detector/pch.hpp)
-mrover_nodelet_link_libraries(tag_detector opencv_core opencv_objdetect opencv_aruco opencv_imgproc tbb lie)
-
 mrover_add_nodelet(costmap src/perception/cost_map/*.cpp src/perception/cost_map src/perception/cost_map/pch.hpp)
 mrover_nodelet_link_libraries(costmap lie)
-mrover_nodelet_link_libraries(tag_detector opencv_core opencv_objdetect opencv_aruco opencv_imgproc opencv_highgui lie)
+
+mrover_add_library(streaming src/esw/streaming/*.cpp src/esw/streaming)
+target_compile_definitions(streaming PUBLIC BOOST_ASIO_NO_DEPRECATED)
+
+mrover_add_nodelet(zed_tag_detector src/perception/tag_detector/zed/*.cpp src/perception/tag_detector/zed src/perception/tag_detector/zed/pch.hpp)
+mrover_nodelet_link_libraries(zed_tag_detector opencv_core opencv_objdetect opencv_aruco opencv_imgproc lie)
+
+mrover_add_nodelet(long_range_tag_detector src/perception/tag_detector/long_range_cam/*.cpp src/perception/tag_detector/long_range_cam src/perception/tag_detector/long_range_cam/pch.hpp)
+mrover_nodelet_link_libraries(long_range_tag_detector opencv_core opencv_objdetect opencv_aruco opencv_imgproc lie)
+
+mrover_add_nodelet(usb_camera src/perception/usb_camera/*.cpp src/perception/usb_camera src/perception/usb_camera/pch.hpp)
+mrover_nodelet_link_libraries(usb_camera opencv_core opencv_objdetect opencv_aruco opencv_imgproc opencv_highgui)
 
 if (CUDA_FOUND)
-    mrover_add_library(streaming src/esw/streaming/*.c* src/esw/streaming)
-    #    target_link_libraries(streaming PUBLIC opencv_core opencv_cudacodec)
-    target_link_libraries(streaming PUBLIC cuda nvidia-encode opencv_core)
-    target_include_directories(streaming SYSTEM PUBLIC deps/nvenc)
-    target_compile_definitions(streaming PUBLIC BOOST_ASIO_NO_DEPRECATED)
+#    mrover_add_node(nv_vid_codec_h265_enc src/esw/nv_vid_codec_h265_enc/*.c*)
+#    target_link_libraries(nv_vid_codec_h265_enc PUBLIC cuda nvidia-encode opencv_core opencv_imgproc streaming)
+#    target_include_directories(nv_vid_codec_h265_enc SYSTEM PUBLIC deps/nvenc)
+
+    mrover_add_nodelet(nv_gst_h265_enc src/esw/nv_gst_h265_enc/*.c* src/esw/nv_gst_h265_enc src/esw/nv_gst_h265_enc/pch.hpp)
+    mrover_nodelet_link_libraries(nv_gst_h265_enc PRIVATE streaming cuda gstreamer-1.0 gstapp-1.0 glib-2.0 gobject-2.0)
+    if (MROVER_IS_JETSON)
+       mrover_nodelet_defines(nv_gst_h265_enc MROVER_IS_JETSON)
+    endif ()
+    # TODO(quintin): Fix this CMake hard coding
+    mrover_nodelet_include_directories(nv_gst_h265_enc /usr/include/gstreamer-1.0 /usr/include/glib-2.0 /usr/lib/x86_64-linux-gnu/glib-2.0/include)
 endif ()
+
+#add_subdirectory(deps/libde265 SYSTEM)
+#include_directories(deps/libde265/extra deps/libde265 SYSTEM)
 
 if (ZED_FOUND)
     mrover_add_nodelet(object_detector src/perception/object_detector/*.c* src/perception/object_detector src/perception/object_detector/pch.hpp)
