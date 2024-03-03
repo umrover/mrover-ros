@@ -101,7 +101,6 @@ import SoilData from './SoilData.vue'
 import BasicWaypointEditor from './BasicWaypointEditor.vue'
 import DriveControls from './DriveControls.vue'
 import MastGimbalControls from './MastGimbalControls.vue'
-//   import SAArmControls from "./SAArmControls.vue";
 import PDBFuse from './PDBFuse.vue'
 import Cameras from './Cameras.vue'
 import DriveMoteusStateTable from './DriveMoteusStateTable.vue'
@@ -114,6 +113,7 @@ import MotorAdjust from './MotorAdjust.vue'
 import OdometryReading from './OdometryReading.vue'
 import SAArmControls from './SAArmControls.vue'
 import { disableAutonLED, quaternionToMapAngle } from '../utils.js'
+import { mapState } from 'vuex'
 
 export default {
   components: {
@@ -148,7 +148,9 @@ export default {
         name: [] as string[],
         position: [] as number[],
         velocity: [] as number[],
-        effort: [] as number[]
+        effort: [] as number[],
+        state: [] as string[],
+        error: [] as string[]
       },
       // Moteus state table is set up to look for specific keys in moteusState so it can't be empty
       moteusState: {
@@ -161,39 +163,30 @@ export default {
     }
   },
 
+  computed: {
+    ...mapState('websocket', ['message']),
+  },
+
+  watch: {
+    message(msg) {
+      if (msg.type == 'drive_status') {
+        this.motorData.name = msg.name
+        this.motorData.position = msg.position
+        this.motorData.velocity = msg.velocity
+        this.motorData.effort = msg.effort
+        this.motorData.state = msg.state
+        this.motorData.error = msg.error
+      } else if (msg.type == 'drive_moteus') {
+        this.moteusState.name = msg.name
+        this.moteusState.state = msg.state
+        this.moteusState.error = msg.error
+        this.moteusState.limit_hit = msg.limit_hit
+      } 
+    }
+  },
+
   created: function () {
-    //   disableAutonLED(this.$ros);
-    //   this.odom_sub = new ROSLIB.Topic({
-    //     ros: this.$ros,
-    //     name: "/gps/fix",
-    //     messageType: "sensor_msgs/NavSatFix"
-    //   });
-    //   this.odom_sub.subscribe((msg) => {
-    //     // Callback for latLng to be set
-    //     this.odom.latitude_deg = msg.latitude;
-    //     this.odom.longitude_deg = msg.longitude;
-    //   });
-    //   this.tfClient = new ROSLIB.TFClient({
-    //     ros: this.$ros,
-    //     fixedFrame: "odom",
-    //     // Thresholds to trigger subscription callback
-    //     angularThres: 0.0001,
-    //     transThres: 0.01
-    //   });
-    //   // Subscriber for odom to base_link transform
-    //   this.tfClient.subscribe("base_link", (tf) => {
-    //     // Callback for IMU quaternion that describes bearing
-    //     this.odom.bearing_deg = quaternionToMapAngle(tf.rotation);
-    //   });
-    //   this.brushless_motors_sub = new ROSLIB.Topic({
-    //     ros: this.$ros,
-    //     name: "drive_status",
-    //     messageType: "mrover/MotorsStatus"
-    //   });
-    //   this.brushless_motors_sub.subscribe((msg) => {
-    //     this.motorData = msg.joint_states;
-    //     this.moteusState = msg.moteus_states;
-    //   });
+
   }
 }
 </script>

@@ -11,4 +11,5 @@ namespace mrover {
     auto inline convertLinPos(float position, float multiplier) {
         return position * multiplier;
     }
+
 } // namespace mrover

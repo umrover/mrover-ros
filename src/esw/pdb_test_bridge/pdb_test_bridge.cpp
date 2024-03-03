@@ -35,35 +35,35 @@ int main(int argc, char** argv) {
     // }
 
     ROS_INFO("****END ARM LASER TEST****");
-    ros::Rate rate(50);
+    ros::Rate rate(10);
     while (ros::ok()) {
         /* Auton LED Test */
         ROS_INFO("****BEGIN AUTON LED TEST****");
         ros::Publisher ledPublisher = nh.advertise<mrover::LED>("led", 1);
 
-        ROS_INFO("RED SOLID");
         set_auton_led(ledPublisher, true, false, false, false);
-        sleep(1000);
+        ROS_INFO("RED SOLID");
+        sleep(10000);
 
         ROS_INFO("RED BLINKING");
         set_auton_led(ledPublisher, true, false, false, true);
-        sleep(1000);
+        sleep(10000);
 
         ROS_INFO("GREEN SOLID");
         set_auton_led(ledPublisher, false, true, false, false);
-        sleep(1000);
+        sleep(10000);
 
         ROS_INFO("GREEN BLINKING");
         set_auton_led(ledPublisher, false, true, false, true);
-        sleep(1000);
+        sleep(10000);
 
         ROS_INFO("BLUE SOLID");
         set_auton_led(ledPublisher, false, false, true, false);
-        sleep(1000);
+        sleep(10000);
 
         ROS_INFO("BLUE BLINKING");
         set_auton_led(ledPublisher, false, false, true, true);
-        sleep(1000);
+        sleep(10000);
 
         set_auton_led(ledPublisher, false, false, false, false);
         ROS_INFO("****END AUTON LED TEST****");
