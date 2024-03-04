@@ -259,9 +259,12 @@ class GUIConsumer(JsonWebsocketConsumer):
             sa_throttle_cmd.names = SA_NAMES
 
             sa_throttle_cmd.throttles = [
-                self.sa_config[name]["multiplier"] * self.filter_xbox_axis(msg["axes"][self.sa_config["sa_x"]["xbox_index"]], 0.15, True),
-                self.sa_config[name]["multiplier"] * self.filter_xbox_axis(msg["axes"][self.sa_config["sa_y"]["xbox_index"]], 0.15, True),
-                self.sa_config[name]["multiplier"] * self.filter_xbox_axis(msg["axes"][self.sa_config["sa_z"]["xbox_index"]], 0.15, True),
+                self.sa_config[name]["multiplier"]
+                * self.filter_xbox_axis(msg["axes"][self.sa_config["sa_x"]["xbox_index"]], 0.15, True),
+                self.sa_config[name]["multiplier"]
+                * self.filter_xbox_axis(msg["axes"][self.sa_config["sa_y"]["xbox_index"]], 0.15, True),
+                self.sa_config[name]["multiplier"]
+                * self.filter_xbox_axis(msg["axes"][self.sa_config["sa_z"]["xbox_index"]], 0.15, True),
             ]
             sa_throttle_cmd.throttles.extend(
                 [
@@ -349,7 +352,6 @@ class GUIConsumer(JsonWebsocketConsumer):
             elif d_pad_x < -0.5:
                 ra_slow_mode = False
 
-            
             arm_throttle_cmd.throttles = [
                 self.filter_xbox_axis(msg["axes"][self.ra_config["joint_a"]["xbox_index"]]),
                 self.filter_xbox_axis(msg["axes"][self.ra_config["joint_b"]["xbox_index"]]),

@@ -5,6 +5,7 @@ import threading
 
 from mrover.msg import LED
 
+
 class LedBridge:
     """
     A class that keeps track of the Auton LED color and updates as necessary over serial.
@@ -47,7 +48,7 @@ class LedBridge:
     def handle_message(self, color: LED) -> None:
         if str(self._prev_color) == str(color):
             return
-        
+
         self._prev_color = color
 
         my_color = ""
@@ -55,25 +56,25 @@ class LedBridge:
         if color.red:
             if color.green:
                 if color.blue:
-                    my_color = b"w" # white - ALL COLORS
+                    my_color = b"w"  # white - ALL COLORS
                 else:
-                    my_color = b"n" # brown - n since not blue - red and green
+                    my_color = b"n"  # brown - n since not blue - red and green
             else:
                 if color.blue:
-                    my_color = b"p" # purple - red and blue
+                    my_color = b"p"  # purple - red and blue
                 else:
                     my_color = b"r"
         else:
             if color.green:
                 if color.blue:
-                    my_color = b"t" # teal - green and blue
+                    my_color = b"t"  # teal - green and blue
                 else:
-                    my_color = b"g" # green
+                    my_color = b"g"  # green
             else:
                 if color.blue:
-                    my_color = b"b" # blue
+                    my_color = b"b"  # blue
                 else:
-                    my_color = b"o" # off
+                    my_color = b"o"  # off
 
         self._color = my_color
 

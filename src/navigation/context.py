@@ -239,8 +239,9 @@ class Course:
         Returns one of the approach states (ApproachPostState, LongRangeState, or ApproachObjectState)
         if we are looking for a post or object and we see it in one of the cameras (ZED or long range)
         """
-        current_waypoint = self.current_waypoint()
         if self.look_for_post():
+            current_waypoint = self.current_waypoint()
+            assert current_waypoint is not None
             # if we see the tag in the ZED, go to ApproachPostState
             if self.ctx.env.current_target_pos() is not None:
                 return approach_post.ApproachPostState()
