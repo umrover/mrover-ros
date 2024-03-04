@@ -79,6 +79,7 @@ class Environment:
     long_range_tags: LongRangeTagStore
     NO_FIDUCIAL: ClassVar[int] = -1
     arrived_at_target: bool = False
+    arrived_at_waypoint: bool = False
     last_target_location: Optional[np.ndarray] = None
 
     def get_target_pos(self, id: str, in_odom_frame: bool = True) -> Optional[np.ndarray]:

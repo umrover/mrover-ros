@@ -12,7 +12,7 @@ class WaypointState(State):
     NO_FIDUCIAL = get_rosparam("waypoint/no_fiducial", -1)
 
     def on_enter(self, context) -> None:
-        pass
+        context.env.arrived_at_waypoint = False
 
     def on_exit(self, context) -> None:
         pass
@@ -49,6 +49,7 @@ class WaypointState(State):
                 self.DRIVE_FWD_THRESH,
             )
             if arrived:
+                context.env.arrived_at_waypoint = True
                 if not context.course.look_for_post() and not context.course.look_for_object():
                     # We finished a regular waypoint, go onto the next one
                     context.course.increment_waypoint()
