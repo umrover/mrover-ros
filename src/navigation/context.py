@@ -9,12 +9,7 @@ import pymap3d
 import rospy
 import tf2_ros
 from geometry_msgs.msg import Twist
-<<<<<<< HEAD
-
 from util.SE3 import SE3
-
-from mrover.msg import Waypoint, GPSWaypoint, WaypointType, GPSPointList, Course as CourseMsg
-=======
 from mrover.msg import (
     Waypoint,
     GPSWaypoint,
@@ -24,7 +19,6 @@ from mrover.msg import (
     LongRangeTag,
     LongRangeTags,
 )
->>>>>>> origin/integration
 from mrover.srv import EnableAuton, EnableAutonRequest, EnableAutonResponse
 from navigation.drive import DriveController
 from navigation import approach_post, long_range, approach_object

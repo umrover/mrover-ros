@@ -14,12 +14,9 @@ from navigation.recovery import RecoveryState
 from navigation.search import SearchState
 from navigation.state import DoneState, OffState, off_check
 from navigation.waypoint import WaypointState
-<<<<<<< HEAD
 from navigation.water_bottle_search import WaterBottleSearchState
-=======
 from navigation.approach_object import ApproachObjectState
 from navigation.long_range import LongRangeState
->>>>>>> origin/integration
 
 
 class Navigation(threading.Thread):
@@ -56,18 +53,12 @@ class Navigation(threading.Thread):
             [
                 PostBackupState(),
                 ApproachPostState(),
-<<<<<<< HEAD
-                SearchState(),
-                RecoveryState(),
-                DoneState(),
-                WaterBottleSearchState(),
-=======
                 ApproachObjectState(),
+                WaterBottleSearchState(),
                 LongRangeState(),
                 SearchState(),
                 RecoveryState(),
                 DoneState(),
->>>>>>> origin/integration
             ],
         )
         self.state_machine.add_transitions(ApproachObjectState(), [DoneState(), SearchState(), RecoveryState()])
