@@ -42,7 +42,7 @@ namespace mrover {
 
 
         //TF Create the Reference Frames
-        mNh.param<std::string>("camera_frame", mCameraFrameId, "zed2i_left_camera_frame");
+        mNh.param<std::string>("camera_frame", mCameraFrameId, "zed_left_camera_frame");
         mNh.param<std::string>("world_frame", mMapFrameId, "map");
 
         mBestLocationInWorld = std::make_optional<Eigen::Vector3d>(0, 0, 0);
@@ -90,7 +90,7 @@ namespace mrover {
         debugPointCloudPtr->width = numInliers;
         debugPointCloudPtr->header.seq = 0;
         debugPointCloudPtr->header.stamp = ros::Time();
-        debugPointCloudPtr->header.frame_id = "zed2i_left_camera_frame";
+        debugPointCloudPtr->header.frame_id = "zed_left_camera_frame";
         debugPointCloudPtr->data.resize((numInliers * sizeof(Point))/sizeof(uchar));
         auto pcPtr = reinterpret_cast<Point*>(debugPointCloudPtr->data.data());
         size_t i = 0;
@@ -209,7 +209,8 @@ namespace mrover {
         //Calculate the other three rotation vectors
         Eigen::Matrix3d rot;
         {
-            if(mBestNormalInZED.value().x() > 0) mBestNormalInZED.value() *=-1;
+            if(mBestNormalInZED.value().x() < 0) mBestNormalInZED.value() *=-1;
+			ROS_INFO("normal x: %.7f", static_cast<double>(mBestNormalInZED.value().x()));
 
             // Eigen::Vector3d x;
             // Eigen::Vector3d y;
