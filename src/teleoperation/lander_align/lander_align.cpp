@@ -62,46 +62,56 @@ namespace mrover {
         // }
     }
 
-    // deprecated/not needed anymore
-    // auto LanderAlignNodelet::downsample(sensor_msgs::PointCloud2Ptr const& cloud) -> sensor_msgs::PointCloud2Ptr {
-    // TODO: make a new point cloud with half the resolution, check the zed wrapper for how to make one
-    // sensor_msgs::PointCloud2 cloudSample;
-    // cloudSample.header = cloud->header
-    //     cloudSample.height = cloud->height / 2;
-    //     cloudSample.width = cloud->width / 2;
-    //     cloudSample.fields
-    // }
-
     void LanderAlignNodelet::filterNormals(sensor_msgs::PointCloud2Ptr const& cloud) {
         // TODO: OPTIMIZE; doing this maobject_detector/debug_imgny push_back calls could slow things down
         mFilteredPoints.clear();
         auto* cloudData = reinterpret_cast<Point const*>(cloud->data.data());
         ROS_INFO("Point cloud size: %i", cloud->height * cloud->width);
 
-        std::vector<Point *> pts = {new Point{1, 2, 3, 0, 0, 0, 0, 0.3, 0.5, 0.01, 0}, new Point{1, 2, 3, 0, 0, 0, 0, 0.3, 0.5, 0.1, 0}, new Point{1, 2, 3, 0, 0, 0, 0, 0.3, 0.5, 0.07, 0}};
-
         // define randomizer
         std::default_random_engine generator;
-        std::uniform_int_distribution<int> distribution(0, (int) 10);
+        std::uniform_int_distribution<int> pointDistribution(0, (int) mLeastSamplingDistribution);
 
-        for (auto point = cloudData; point < cloudData + (cloud->height * cloud->width); point += distribution(generator)) {
-        // for (Point * point : pts) {
+        for (auto point = cloudData; point < cloudData + (cloud->height * cloud->width); point += pointDistribution(generator)) {
             bool isPointInvalid = (!std::isfinite(point->x) || !std::isfinite(point->y) || !std::isfinite(point->z));
-            // ROS_INFO("Filtered point: %f, %f, %f", point->normal_x, point->normal_y, point->normal_z);
-            
             if (abs(point->normal_z) < mZThreshold && !isPointInvalid) {
                 mFilteredPoints.push_back(point);
                 // ROS_INFO("Filtered point: %f, %f, %f", point->normal_x, point->normal_y, point->normal_z);
             }
         }
-        ROS_INFO("Filtered vector size: %lu", mFilteredPoints.size());
- 
-        for (Point * p : pts) {
-            delete p;
-        }
     }
 
-    void LanderAlignNodelet::ransac(float const distanceThreshold, int minInliers, int const epochs) {
+	void LanderAlignNodelet::uploadPC(int numInliers, double distanceThreshold){
+        auto debugPointCloudPtr = boost::make_shared<sensor_msgs::PointCloud2>();
+        fillPointCloudMessageHeader(debugPointCloudPtr);
+        debugPointCloudPtr->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
+        debugPointCloudPtr->is_dense = true;
+        debugPointCloudPtr->height = 1;
+        debugPointCloudPtr->width = numInliers;
+        debugPointCloudPtr->header.seq = 0;
+        debugPointCloudPtr->header.stamp = ros::Time();
+        debugPointCloudPtr->header.frame_id = "zed2i_left_camera_frame";
+        debugPointCloudPtr->data.resize((numInliers * sizeof(Point))/sizeof(uchar));
+        auto pcPtr = reinterpret_cast<Point*>(debugPointCloudPtr->data.data());
+        size_t i = 0;
+        for (auto p: mFilteredPoints) {
+            // calculate distance of each point from potential plane
+            double distance = std::abs(mBestNormalInZED.value().x() * p->x + mBestNormalInZED.value().y() * p->y + mBestNormalInZED.value().z() * p->z + mBestOffset);
+            if (distance < distanceThreshold) {
+                pcPtr[i].x = p->x;
+                pcPtr[i].y = p->y;
+                pcPtr[i].z = p->z;
+                pcPtr[i].b = p->r;
+                pcPtr[i].g = p->g;
+                pcPtr[i].r = p->b;
+                pcPtr[i].a = p->a;
+                ++i;
+            }
+        }
+        mDebugPCPub.publish(debugPointCloudPtr);
+	}
+
+    void LanderAlignNodelet::ransac(double const distanceThreshold, int minInliers, int const epochs) {
         // TODO: use RANSAC to find the lander face, should be the closest, we may need to modify this to output more information, currently the output is the normal
         // takes 3 samples for every epoch and terminates after specified number of epochs
         // Eigen::Vector3d mBestNormal(0, 0, 0); // normal vector representing plane (initialize as zero vector?? default ctor??)
@@ -147,7 +157,7 @@ namespace mrover {
 
                 for (auto p: mFilteredPoints) {
                     // calculate distance of each point from potential plane
-                    float distance = std::abs(normal.x() * p->x + normal.y() * p->y + normal.z() * p->z + offset); // 
+                    double distance = std::abs(normal.x() * p->x + normal.y() * p->y + normal.z() * p->z + offset); // 
 
                     if (distance < distanceThreshold) {
                         // Add points to current planes center
@@ -169,9 +179,6 @@ namespace mrover {
                 }
             }
         }
-        ROS_INFO("Out of zero loop");
-
-        
 
         // Run through one more loop to identify the center of the plane (one possibility for determining best center)
         numInliers = 0;
@@ -189,33 +196,7 @@ namespace mrover {
         mBestLocationInZED.value() /= static_cast<float>(numInliers);
 
 
-        auto debugPointCloudPtr = boost::make_shared<sensor_msgs::PointCloud2>();
-        fillPointCloudMessageHeader(debugPointCloudPtr);
-        debugPointCloudPtr->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
-        debugPointCloudPtr->is_dense = true;
-        debugPointCloudPtr->height = 1;
-        debugPointCloudPtr->width = numInliers;
-        debugPointCloudPtr->header.seq = 0;
-        debugPointCloudPtr->header.stamp = ros::Time();
-        debugPointCloudPtr->header.frame_id = "zed2i_left_camera_frame";
-        debugPointCloudPtr->data.resize((numInliers * sizeof(Point))/sizeof(uchar));
-        auto pcPtr = reinterpret_cast<Point*>(debugPointCloudPtr->data.data());
-        size_t i = 0;
-        for (auto p: mFilteredPoints) {
-            // calculate distance of each point from potential plane
-            double distance = std::abs(mBestNormalInZED.value().x() * p->x + mBestNormalInZED.value().y() * p->y + mBestNormalInZED.value().z() * p->z + mBestOffset);
-            if (distance < distanceThreshold) {
-                pcPtr[i].x = p->x;
-                pcPtr[i].y = p->y;
-                pcPtr[i].z = p->z;
-                pcPtr[i].b = p->r;
-                pcPtr[i].g = p->g;
-                pcPtr[i].r = p->b;
-                pcPtr[i].a = p->a;
-                ++i;
-            }
-        }
-        mDebugPCPub.publish(debugPointCloudPtr);
+		uploadPC(numInliers, distanceThreshold);
 
         if (numInliers == 0) {
             ROS_INFO("zero inliers");
@@ -224,15 +205,6 @@ namespace mrover {
             mBestLocationInZED = std::nullopt;
             return;
         }
-
-
-        // if (mBestNormalInZED.value().x() < 0) { // ALSO NEED TO FLIP THE Y VALUE
-        //     mBestNormalInZED.value().x() *= -1;
-        // }
-
-        // if(mBestNormalInZED.value().y() < 0){
-        //     mBestNormalInZED.value().y() *= -1;
-        // }
 
         //Calculate the other three rotation vectors
         Eigen::Matrix3d rot;

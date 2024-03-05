@@ -46,8 +46,9 @@ namespace mrover {
         std::string mCameraFrameId;
         std::string mMapFrameId;
 
+		//Ransac Params
         float mZThreshold;
-
+        int mLeastSamplingDistribution = 10;
         std::vector<Point const*> mFilteredPoints;
 
         auto onInit() -> void override;
@@ -59,9 +60,11 @@ namespace mrover {
 
         void filterNormals(sensor_msgs::PointCloud2Ptr const& cloud);
 
-        void ransac(float distanceThreshold, int minInliers, int epochs);
+        void ransac(double distanceThreshold, int minInliers, int epochs);
 
         void sendTwist(float const& offset);
+
+		void uploadPC(int numInliers, double distanceThreshold);
 
         class PID {
         private:
