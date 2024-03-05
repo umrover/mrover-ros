@@ -35,6 +35,9 @@ namespace mrover {
         std::optional<Eigen::Vector3d> mBestLocationInZED;
         std::optional<Eigen::Vector3d> mBestLocationInWorld;
 
+        std::optional<Eigen::Vector3d> mBestOffsetInZED;
+        std::optional<Eigen::Vector3d> mBestOffsetInWorld;
+
         std::optional<Eigen::Vector3d> mBestNormalInZED;
         std::optional<Eigen::Vector3d> mBestNormalInWorld;
         //**
