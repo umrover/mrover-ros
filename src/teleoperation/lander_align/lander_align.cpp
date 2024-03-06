@@ -192,15 +192,6 @@ namespace mrover {
                 ++numInliers; // count num of inliers that pass the "good enough fit" threshold
             }
         }
-        //Average pnts
-        mBestLocationInZED.value() /= static_cast<float>(numInliers);
-        if(mBestNormalInZED.value().x() > 0) mBestNormalInZED.value() *=-1;
-
-        mBestOffsetInZED.value() =  mBestLocationInZED.value() + mBestNormalInZED.value();
-        if(mBestNormalInZED.value().x() < 0) mBestNormalInZED.value() *=-1;
-
-
-		uploadPC(numInliers, distanceThreshold);
 
         if (numInliers == 0) {
             ROS_INFO("zero inliers");
@@ -209,6 +200,17 @@ namespace mrover {
             mBestLocationInZED = std::nullopt;
             return;
         }
+
+        //Average pnts
+        mBestLocationInZED.value() /= static_cast<float>(numInliers);
+
+        if(mBestNormalInZED.value().x() > 0) mBestNormalInZED.value() *=-1;
+
+        mBestOffsetInZED =  std::make_optional<Eigen::Vector3d>(mBestLocationInZED.value() + mBestNormalInZED.value());
+        if(mBestNormalInZED.value().x() < 0) mBestNormalInZED.value() *=-1;
+
+
+		uploadPC(numInliers, distanceThreshold);
 
         //Calculate the other three rotation vectors
         Eigen::Matrix3d rot;
@@ -249,10 +251,9 @@ namespace mrover {
         //For the offset
         manif::SE3d mOffsetLocInZED = {{mBestOffsetInZED.value().x(), mBestOffsetInZED.value().y(), mBestOffsetInZED.value().z()}, manif::SO3d{Eigen::Quaterniond{rot}.normalized()}};//TODO: THIS IS A RANDOM ROTATION MATRIX
 
-        mBestNormalInWorld = std::make_optional<Eigen::Vector3d>(zedToMap.rotation().matrix() * mBestNormalInZED.value());
-        manif::SE3d offsetLocationSE3 = (zedToMap * mPlaneLocInZED);
+        manif::SE3d offsetLocationSE3 = (zedToMap * mOffsetLocInZED);
 
-        SE3Conversions::pushToTfTree(mTfBroadcaster, "plane", mMapFrameId, offsetLocationSE3);
+        SE3Conversions::pushToTfTree(mTfBroadcaster, "offset", mMapFrameId, offsetLocationSE3);
 
 
         ROS_INFO("Max inliers: %i", minInliers);
