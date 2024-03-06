@@ -255,6 +255,11 @@ namespace mrover {
 
         SE3Conversions::pushToTfTree(mTfBroadcaster, "offset", mMapFrameId, offsetLocationSE3);
 
+        //For the normal
+        manif::SE3d mNormalLocInZED = {{mBestNormalInWorld.value().x(), mBestNormalInWorld.value().y(), mBestNormalInWorld.value().z()}, manif::SO3d{Eigen::Quaterniond{rot}.normalized()}};//TODO: THIS IS A RANDOM ROTATION MATRIX
+
+        SE3Conversions::pushToTfTree(mTfBroadcaster, "normal", mMapFrameId, mNormalLocInZED);
+
 
         ROS_INFO("Max inliers: %i", minInliers);
         ROS_INFO("THE LOCATION OF THE PLANE IS AT: %f, %f, %f with normal vector %f, %f, %f", mBestLocationInZED.value().x(), mBestLocationInZED.value().y(), mBestLocationInZED.value().z(), mBestNormalInZED.value().x(), mBestNormalInZED.value().y(), mBestNormalInZED.value().z());
