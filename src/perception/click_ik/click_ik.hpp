@@ -4,6 +4,7 @@
 #include "pch.hpp"
 #include <actionlib/server/simple_action_server.h>
 
+
 namespace mrover {
 
     class ClickIkNodelet final : public nodelet::Nodelet {
@@ -20,6 +21,15 @@ namespace mrover {
         const Point* mPoints{};
 
         std::size_t mNumPoints{};
+
+        std::size_t mPointCloudWidth{};
+        std::size_t mPointCloudHeight{};
+
+        tf2_ros::Buffer mTfBuffer{};
+        tf2_ros::TransformListener mTfListener{mTfBuffer};
+
+        //TODO - convert to ROS PARAM
+        const uin32_t MAX_RADIUS = 10;
         
     public:
         ClickIkNodelet() = default;
@@ -28,9 +38,12 @@ namespace mrover {
 
         void onInit() override;
 
-        auto pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg) -> void;
+        auto pointCloudCallback(std::sensor_msgs::PointCloud2ConstPtr const& msg) -> void;
 
         void execute(const mrover::ClickIkGoalConstPtr& goal);
+        
+        //Taken line for line from percep object detection code
+        auto spiralSearchInImg(size_t xCenter, size_t yCenter) -> std::optional<SE3d>;
     };
 
 } // namespace mrover
