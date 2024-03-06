@@ -1,48 +1,6 @@
 #include "arm_controller.hpp"
 
 namespace mrover {
-
-    // Constants
-
-    // From: rover.urdf.xacro
-    // A is the prismatic joint, B is the first revolute joint, C is the second revolute joint
-    constexpr double LINK_BC = 0.5344417294;
-    constexpr double LINK_CD = 0.5531735368;
-    constexpr double LINK_DE = 0.044886000454425812;
-    // double const OFFSET = std::atan2(0.09, LINK_CD);
-    constexpr double JOINT_A_MIN = -0.45;
-    constexpr double JOINT_A_MAX = 0;
-    constexpr double JOINT_B_MIN = -0.25 * std::numbers::pi;
-    constexpr double JOINT_B_MAX = 0;
-    constexpr double JOINT_C_MIN = -0.959931;
-    constexpr double JOINT_C_MAX = 2.87979;
-    constexpr double JOINT_DE_PITCH_MIN = -0.75 * std::numbers::pi;
-    constexpr double JOINT_DE_PITCH_MAX = 0.75 * std::numbers::pi;
-    // constexpr double JOINT_DE_ROLL_MIN = -0.75 * std::numbers::pi;
-    // constexpr double JOINT_DE_ROLL_MAX = 0.75 * std::numbers::pi;
-
-    // Subscribers
-
-
-    // Publishers
-
-    // Private state
-
-    // auto ArmController::run(int argc, char** argv) -> int {
-    //     ros::init(argc, argv, "arm_controller");
-    //     ros::NodeHandle nh;
-
-    //     double frequency{};
-    //     nh.param<double>("/frequency", frequency, 100);
-
-    //     ik_subscriber = nh.subscribe("arm_ik", 1, &ArmController::ik_callback, this);
-    //     position_publisher = nh.advertise<Position>("arm_position_cmd", 1);
-
-    //     ros::spin();
-
-    //     return EXIT_SUCCESS;
-    // }
-
     ArmController::ArmController() {
         ros::NodeHandle nh;
         double frequency{};
@@ -91,14 +49,14 @@ namespace mrover {
         double thetaB = -1 * (std::numbers::pi - alpha);
         double thetaC = gamma - thetaA - thetaB;
 
-        SE3d joint_b_pos{{0.034346, 0, 0.049024}, SO3d::Identity()};
-        SE3d joint_c_pos{{LINK_BC * cos(thetaA), 0, LINK_BC * sin(thetaA)}, SO3d{0, -thetaA, 0}};
-        SE3d joint_d_pos{{LINK_CD * cos(thetaB), 0, LINK_CD * sin(thetaB)}, SO3d{0, -thetaB, 0}};
-        SE3d joint_e_pos{{LINK_DE * cos(thetaC), 0, LINK_DE * sin(thetaC)}, SO3d{0, -thetaC, 0}};
-        SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_b_target", "arm_a_link", joint_b_pos);
-        SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_c_target", "arm_b_target", joint_c_pos);
-        SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_d_target", "arm_c_target", joint_d_pos);
-        SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_e_target", "arm_d_target", joint_e_pos);
+        // SE3d joint_b_pos{{0.034346, 0, 0.049024}, SO3d::Identity()};
+        // SE3d joint_c_pos{{LINK_BC * cos(thetaA), 0, LINK_BC * sin(thetaA)}, SO3d{0, -thetaA, 0}};
+        // SE3d joint_d_pos{{LINK_CD * cos(thetaB), 0, LINK_CD * sin(thetaB)}, SO3d{0, -thetaB, 0}};
+        // SE3d joint_e_pos{{LINK_DE * cos(thetaC), 0, LINK_DE * sin(thetaC)}, SO3d{0, -thetaC, 0}};
+        // SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_b_target", "arm_a_link", joint_b_pos);
+        // SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_c_target", "arm_b_target", joint_c_pos);
+        // SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_d_target", "arm_c_target", joint_d_pos);
+        // SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_e_target", "arm_d_target", joint_e_pos);
 
         double q1 = -thetaA;
         double q2 = -thetaB + 0.1608485915;
