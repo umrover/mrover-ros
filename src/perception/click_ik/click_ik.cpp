@@ -13,21 +13,26 @@ namespace mrover {
     void ClickIkNodelet::execute(const mrover::ClickIkGoalConstPtr& goal) {
         ROS_INFO("Executing goal");
 
-        auto target_point = spiralSearchInImg(static_cast<size_t>(goal.pointInImageX), static_cast<size_t>(goal.pointInImageY));
+        auto target_point = spiralSearchInImg(static_cast<size_t>(goal->pointInImageX), static_cast<size_t>(goal->pointInImageY));
 
         //Check if optional has value
-        if (!std::optional<SE3d>::has_value(target_point)) {
+        if (!target_point.has_value()) {
             //Handle gracefully
             return;
         }
 
         //Convert target_point (SE3) to correct frame
-        auto inverse_transform = SE3Conversions::fromTfTree(buffer, "chassis_link", "zed2i_left_camera_frame");
+        SE3d inverse_transform = SE3Conversions::fromTfTree(mTfBuffer, "chassis_link", "zed2i_left_camera_frame");
 
-        auto desired_transform = SE3Conversions::inverse_transform();
+        auto desired_transform = inverse_transform.inverse();
 
+		auto point_in_chassis = desired_transform * target_point.value();
 
+		double y = point_in_chassis.y();
 
+		SE3d point_in_arm_b = SE3Conversions::fromTfTree(mTfBuffer, "chassis_link", "arm_b_link") * point_in_chassis;
+		
+		mIkPub.publish();
     }
     
     void ClickIkNodelet::onInit() {
