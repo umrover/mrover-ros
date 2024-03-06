@@ -27,6 +27,5 @@
 #include <point.hpp>
 #include <lie.hpp>
 
-#include <manif/SE3.h>
 
 #include <mrover/ClickIkAction.h>

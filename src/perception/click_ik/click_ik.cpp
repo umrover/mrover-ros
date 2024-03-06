@@ -6,11 +6,28 @@
 #include "mrover/IK.h"
 
 #include <limits>
+#include <optional>
 
 namespace mrover {
 
     void ClickIkNodelet::execute(const mrover::ClickIkGoalConstPtr& goal) {
         ROS_INFO("Executing goal");
+
+        auto target_point = spiralSearchInImg(static_cast<size_t>(goal.pointInImageX), static_cast<size_t>(goal.pointInImageY));
+
+        //Check if optional has value
+        if (!std::optional<SE3d>::has_value(target_point)) {
+            //Handle gracefully
+            return;
+        }
+
+        //Convert target_point (SE3) to correct frame
+        auto inverse_transform = SE3Conversions::fromTfTree(buffer, "chassis_link", "zed2i_left_camera_frame");
+
+        auto desired_transform = SE3Conversions::inverse_transform();
+
+
+
     }
     
     void ClickIkNodelet::onInit() {
