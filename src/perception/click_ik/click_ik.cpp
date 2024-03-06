@@ -24,7 +24,7 @@ namespace mrover {
     }
 
     void ClickIkNodelet::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg) {
-        // Save points from point cloud
+        // Update current pointer to pointcloud data
         mPoints = reinterpret_cast<Point const*>(msg->data.data());
         mNumPoints = msg->width * msg->height;
     }
