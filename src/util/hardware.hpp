@@ -138,7 +138,7 @@ namespace mrover {
         explicit FDCAN(std::uint8_t source, std::uint8_t destination, FDCAN_HandleTypeDef* fdcan)
             : m_fdcan{fdcan}, m_source{source}, m_destination{destination} {
 
-            // configure_filter();
+            configure_filter();
 
             check(HAL_FDCAN_ActivateNotification(m_fdcan, FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0) == HAL_OK, Error_Handler);
             check(HAL_FDCAN_Start(m_fdcan) == HAL_OK, Error_Handler);
@@ -165,6 +165,7 @@ namespace mrover {
                     .FilterID2 = mask.to_ulong(),   // Ensure that bits that survive the filter match the mask
             };
             check(HAL_FDCAN_ConfigFilter(m_fdcan, &filter_config) == HAL_OK, Error_Handler);
+            check(HAL_FDCAN_ConfigGlobalFilter(m_fdcan, FDCAN_REJECT, FDCAN_REJECT, FDCAN_REJECT_REMOTE, FDCAN_REJECT_REMOTE) == HAL_OK, Error_Handler);
         }
 
         /**
