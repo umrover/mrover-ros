@@ -1,4 +1,4 @@
- #include "lander_align.hpp"
+#include "lander_align.hpp"
 #include "lie.hpp"
 #include "pch.hpp"
 #include <Eigen/src/Core/Matrix.h>
@@ -207,22 +207,19 @@ namespace mrover {
         if(mBestNormalInZED.value().x() > 0) mBestNormalInZED.value() *=-1;
 
         mBestOffsetInZED =  std::make_optional<Eigen::Vector3d>(mBestLocationInZED.value() + mBestNormalInZED.value());
-        if(mBestNormalInZED.value().x() < 0) mBestNormalInZED.value() *=-1;
-
 
 		uploadPC(numInliers, distanceThreshold);
 
-        //Calculate the other three rotation vectors
+        manif::SE3d zedToMap = SE3Conversions::fromTfTree(mTfBuffer, mCameraFrameId, mMapFrameId);
+		
+		//Calculate the normal in the world frame
+        mBestNormalInWorld = std::make_optional<Eigen::Vector3d>(zedToMap.rotation().matrix() * mBestNormalInZED.value());
+
+        //Calculate the SO3 in the world frame
         Eigen::Matrix3d rot;
         {
-            if(mBestNormalInZED.value().x() > 0) mBestNormalInZED.value() *=-1;
-
-            // Eigen::Vector3d x;
-            // Eigen::Vector3d y;
-            // Eigen::Vector3d z;
-            // Eigen::Vector3d dummy{mBestNormalInZED->x()+1,mBestLocationInZED->y(),mBestNormalInZED->z()};
-            Eigen::Vector3d n = mBestNormalInZED.value().normalized();
-			ROS_INFO("normal x: %.7f", static_cast<double>(n.x()));
+            Eigen::Vector3d n = mBestNormalInWorld.value().normalized();
+			ROS_INFO("normal x: %.7f", static_cast<double>(mBestNormalInZED.value().x()));
 
             // y = dummy.cross(mBestNormalInZED.value()).normalized();
             // z = x.cross(mBestNormalInZED.value()).normalized();
@@ -237,32 +234,32 @@ namespace mrover {
             rot.col(1) = q.col(2);
             rot.col(2) = q.col(1);
         }
+		//Calculate the plane location in the world frame
+		mBestLocationInWorld = std::make_optional<Eigen::Vector3d>(zedToMap.rotation().matrix() * mBestLocationInZED.value());
+		manif::SE3d plane_loc_in_world = {{mBestLocationInWorld.value().x(), mBestLocationInWorld.value().y(), mBestLocationInWorld.value().z()}, manif::SO3d{Eigen::Quaterniond{rot}.normalized()}};
 
-        manif::SE3d mPlaneLocInZED = {{mBestLocationInZED.value().x(), mBestLocationInZED.value().y(), mBestLocationInZED.value().z()}, manif::SO3d{Eigen::Quaterniond{rot}.normalized()}};//TODO: THIS IS A RANDOM ROTATION MATRIX
+        //Calculate the offset location in the world frame
+		mBestOffsetInWorld = std::make_optional<Eigen::Vector3d>(zedToMap.rotation().matrix() * mBestOffsetInZED.value());
+		manif::SE3d offset_loc_in_world = {{mBestOffsetInWorld.value().x(), mBestOffsetInWorld.value().y(), mBestOffsetInWorld.value().z()}, manif::SO3d{Eigen::Quaterniond{rot}.normalized()}};
 
-        manif::SE3d zedToMap = SE3Conversions::fromTfTree(mTfBuffer, mCameraFrameId, mMapFrameId);
 
-        mBestNormalInWorld = std::make_optional<Eigen::Vector3d>(zedToMap.rotation().matrix() * mBestNormalInZED.value());
-        manif::SE3d planeLocationSE3 = (zedToMap * mPlaneLocInZED);
-        mBestLocationInWorld = std::make_optional<Eigen::Vector3d>(planeLocationSE3.translation());
-
-        SE3Conversions::pushToTfTree(mTfBroadcaster, "plane", mMapFrameId, planeLocationSE3);
-
-        //For the offset
-        manif::SE3d mOffsetLocInZED = {{mBestOffsetInZED.value().x(), mBestOffsetInZED.value().y(), mBestOffsetInZED.value().z()}, manif::SO3d{Eigen::Quaterniond{rot}.normalized()}};//TODO: THIS IS A RANDOM ROTATION MATRIX
-
-        manif::SE3d offsetLocationSE3 = (zedToMap * mOffsetLocInZED);
-
-        SE3Conversions::pushToTfTree(mTfBroadcaster, "offset", mMapFrameId, offsetLocationSE3);
+		//Push to the tf tree
+        SE3Conversions::pushToTfTree(mTfBroadcaster, "plane", mMapFrameId, plane_loc_in_world);
+        SE3Conversions::pushToTfTree(mTfBroadcaster, "offset", mMapFrameId, offset_loc_in_world);
 
         //For the normal
-        manif::SE3d mNormalLocInZED = {{mBestNormalInWorld.value().x(), mBestNormalInWorld.value().y(), mBestNormalInWorld.value().z()}, manif::SO3d{Eigen::Quaterniond{rot}.normalized()}};//TODO: THIS IS A RANDOM ROTATION MATRIX
+        manif::SE3d mNormalLocInWorld = {{mBestNormalInWorld.value().x(), mBestNormalInWorld.value().y(), mBestNormalInWorld.value().z()}, manif::SO3d{Eigen::Quaterniond{rot}.normalized()}};//TODO: THIS IS A RANDOM ROTATION MATRIX
 
-        SE3Conversions::pushToTfTree(mTfBroadcaster, "normal", mMapFrameId, mNormalLocInZED);
+        SE3Conversions::pushToTfTree(mTfBroadcaster, "normalInWorld", mMapFrameId, mNormalLocInWorld);
+
+        //For the normal
+        manif::SE3d mNormalLocInZED = {{mBestNormalInZED.value().x(), mBestNormalInZED.value().y(), mBestNormalInZED.value().z()}, manif::SO3d{Eigen::Quaterniond{rot}.normalized()}};//TODO: THIS IS A RANDOM ROTATION MATRIX
+
+        SE3Conversions::pushToTfTree(mTfBroadcaster, "normalInZED", mMapFrameId, mNormalLocInZED);
 
 
         ROS_INFO("Max inliers: %i", minInliers);
-        ROS_INFO("THE LOCATION OF THE PLANE IS AT: %f, %f, %f with normal vector %f, %f, %f", mBestLocationInZED.value().x(), mBestLocationInZED.value().y(), mBestLocationInZED.value().z(), mBestNormalInZED.value().x(), mBestNormalInZED.value().y(), mBestNormalInZED.value().z());
+        ROS_INFO("THE LOCATION OF THE PLANE IS AT: %f, %f, %f with normal vector %f, %f, %f", mBestLocationInZED.value().x(), mBestLocationInZED.value().y(), mBestLocationInZED.value().z(), mBestNormalInWorld.value().x(), mBestNormalInWorld.value().y(), mBestNormalInWorld.value().z());
     }
 
     auto LanderAlignNodelet::PID::rotate_speed(float theta) const -> float {
