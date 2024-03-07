@@ -3,16 +3,25 @@
 #include "pch.hpp"
 #include <Eigen/src/Core/Matrix.h>
 #include <optional>
+#include <ostream>
 #include <tuple>
 
 namespace mrover {
 
     enum RTRSTATE {
-        turn1,
-        drive,
-        turn2,
-        done
+        turn1 = 0,
+        drive = 1,
+        turn2 = 2,
+        done = 3
     };
+
+    constexpr char RTRSTRINGS[4][6] = {
+                                "turn1",
+                                "drive",
+                                "turn2",
+                                "done "
+    };
+    
 
     class LanderAlignNodelet : public nodelet::Nodelet {
         ros::NodeHandle mNh, mPnh;
