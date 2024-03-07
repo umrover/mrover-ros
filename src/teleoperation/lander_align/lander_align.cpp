@@ -236,12 +236,12 @@ namespace mrover {
         }
 		//Calculate the plane location in the world frame`
 		manif::SE3d plane_loc_in_world = {{mBestLocationInWorld.value().x(), mBestLocationInWorld.value().y(), mBestLocationInWorld.value().z()}, manif::SO3d{Eigen::Quaterniond{rot}.normalized()}};
-		mBestLocationInWorld = std::make_optional<Eigen::Vector3d>(zedToMap * plane_loc_in_world);
+		plane_loc_in_world = zedToMap * plane_loc_in_world;
 		plane_loc_in_world.rotation().matrix() = rot;
 
         //Calculate the offset location in the world frame
 		manif::SE3d offset_loc_in_world = {{mBestOffsetInWorld.value().x(), mBestOffsetInWorld.value().y(), mBestOffsetInWorld.value().z()}, manif::SO3d{Eigen::Quaterniond{rot}.normalized()}};
-		mBestOffsetInWorld = std::make_optional<Eigen::Vector3d>(zedToMap * offset_loc_in_world);
+		offset_loc_in_world = zedToMap * offset_loc_in_world;
 		offset_loc_in_world.rotation().matrix() = rot;
 
 
