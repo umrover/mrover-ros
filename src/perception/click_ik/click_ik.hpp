@@ -15,9 +15,8 @@ namespace mrover {
         // IK publisher
         ros::Publisher mIkPub;
 
-        actionlib::SimpleActionServer<mrover::ClickIkAction> server = actionlib::SimpleActionServer<mrover::ClickIkAction>(mNh, "do_click_ik", [&](const mrover::ClickIkGoalConstPtr& goal) {
-            execute(goal);
-        }, false);
+        std::unique_ptr<actionlib::SimpleActionServer<mrover::ClickIkAction>> server{};
+
         const Point* mPoints{};
 
         std::size_t mNumPoints{};
@@ -29,7 +28,7 @@ namespace mrover {
         tf2_ros::TransformListener mTfListener{mTfBuffer};
 
         //TODO - convert to ROS PARAM
-        const uin32_t MAX_RADIUS = 10;
+        const uint32_t MAX_RADIUS = 10;
         
     public:
         ClickIkNodelet() = default;

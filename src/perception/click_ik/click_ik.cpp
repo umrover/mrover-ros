@@ -38,7 +38,11 @@ namespace mrover {
         // IK Publisher
         mIkPub = mNh.advertise<IK>("/arm_ik", 1);
 
-        server.start();
+        ROS_INFO("Starting action server");
+        auto * new_server = new actionlib::SimpleActionServer<mrover::ClickIkAction>(mNh, "do_click_ik", [&](const mrover::ClickIkGoalConstPtr& goal) {execute(goal);}, false);
+        server = std::unique_ptr<actionlib::SimpleActionServer<mrover::ClickIkAction>>(new_server);
+        server->start();
+        ROS_INFO("Action server started");
 
     }
 
