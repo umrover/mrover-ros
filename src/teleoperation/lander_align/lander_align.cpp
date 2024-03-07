@@ -235,19 +235,19 @@ namespace mrover {
             rot.col(2) = q.col(1);
         }
 		//Calculate the plane location in the world frame`
-		manif::SE3d plane_loc_in_world = {{mBestLocationInWorld.value().x(), mBestLocationInWorld.value().y(), mBestLocationInWorld.value().z()}, manif::SO3d{Eigen::Quaterniond{rot}.normalized()}};
+		manif::SE3d plane_loc_in_world = {{mBestLocationInZED.value().x(), mBestLocationInZED.value().y(), mBestLocationInZED.value().z()}, manif::SO3d{Eigen::Quaterniond{rot}.normalized()}};
 		plane_loc_in_world = zedToMap * plane_loc_in_world;
-		plane_loc_in_world.rotation().matrix() = rot;
+        manif::SE3d plane_loc_in_world_final = {{plane_loc_in_world.translation().x(),plane_loc_in_world.translation().y(),plane_loc_in_world.translation().z()}, manif::SO3d{Eigen::Quaterniond{rot}.normalized()}};
 
         //Calculate the offset location in the world frame
-		manif::SE3d offset_loc_in_world = {{mBestOffsetInWorld.value().x(), mBestOffsetInWorld.value().y(), mBestOffsetInWorld.value().z()}, manif::SO3d{Eigen::Quaterniond{rot}.normalized()}};
+		manif::SE3d offset_loc_in_world = {{mBestOffsetInZED.value().x(), mBestOffsetInZED.value().y(), mBestOffsetInZED.value().z()}, manif::SO3d{Eigen::Quaterniond{rot}.normalized()}};
 		offset_loc_in_world = zedToMap * offset_loc_in_world;
-		offset_loc_in_world.rotation().matrix() = rot;
+        manif::SE3d offset_loc_in_world_final = {{offset_loc_in_world.translation().x(),offset_loc_in_world.translation().y(),offset_loc_in_world.translation().z()}, manif::SO3d{Eigen::Quaterniond{rot}.normalized()}};
 
 
 		//Push to the tf tree
-        SE3Conversions::pushToTfTree(mTfBroadcaster, "plane", mMapFrameId, plane_loc_in_world);
-        SE3Conversions::pushToTfTree(mTfBroadcaster, "offset", mMapFrameId, offset_loc_in_world);
+        SE3Conversions::pushToTfTree(mTfBroadcaster, "plane", mMapFrameId, plane_loc_in_world_final);
+        SE3Conversions::pushToTfTree(mTfBroadcaster, "offset", mMapFrameId, offset_loc_in_world_final);
 
         //For the normal
         manif::SE3d mNormalLocInWorld = {{mBestNormalInWorld.value().x(), mBestNormalInWorld.value().y(), mBestNormalInWorld.value().z()}, manif::SO3d{Eigen::Quaterniond{rot}.normalized()}};//TODO: THIS IS A RANDOM ROTATION MATRIX
