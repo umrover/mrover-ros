@@ -52,14 +52,14 @@ namespace mrover {
     void LanderAlignNodelet::LanderCallback(sensor_msgs::PointCloud2Ptr const& cloud) {
         filterNormals(cloud);
         ransac(0.2, 10, 100);
-        // if (mBestNormalInZED.has_value()) {
-        //     geometry_msgs::Vector3 vect;
-        //     vect.x = mBestNormalInZED.value().x();
-        //     vect.y = mBestNormalInZED.value().y();
-        //     vect.z = mBestNormalInZED.value().z();
-        //     mDebugVectorPub.publish(vect);
-        //     //sendTwist(10.0);
-        // }
+        if (mBestNormalInZED.has_value()) {
+            geometry_msgs::Vector3 vect;
+            vect.x = mBestNormalInZED.value().x();
+            vect.y = mBestNormalInZED.value().y();
+            vect.z = mBestNormalInZED.value().z();
+            mDebugVectorPub.publish(vect);
+            //sendTwist(10.0);
+        }
     }
 
     void LanderAlignNodelet::filterNormals(sensor_msgs::PointCloud2Ptr const& cloud) {
@@ -235,10 +235,6 @@ namespace mrover {
             rot.col(1) = q.col(2);
             rot.col(2) = q.col(1);
             std::cout << "rot matrix " << std::endl << rot << std::endl;
-            rot <<  1,0,0,
-                    0,-1,0,
-                    0,0,1;
-
         }
 		//Calculate the plane location in the world frame
 		manif::SE3d plane_loc_in_world = {{mBestLocationInZED.value().x(), mBestLocationInZED.value().y(), mBestLocationInZED.value().z()}, manif::SO3d{Eigen::Quaterniond{rot}.normalized()}};
