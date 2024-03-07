@@ -226,15 +226,21 @@ namespace mrover {
             rot <<  n.x(),0,0,
                     n.y(),0,1,
                     n.z(),1,0;
-                    std::cout << "rot matrix " << rot << std::endl;
+                                std::cout << "rot matrix 2 s" << std::endl << rot << std::endl;
+
             
             Eigen::HouseholderQR<Eigen::Matrix3d> qr{rot};
             Eigen::Matrix3d q = qr.householderQ();
             rot.col(0) = q.col(0);
             rot.col(1) = q.col(2);
             rot.col(2) = q.col(1);
+            std::cout << "rot matrix " << std::endl << rot << std::endl;
+            rot <<  1,0,0,
+                    0,-1,0,
+                    0,0,1;
+
         }
-		//Calculate the plane location in the world frame`
+		//Calculate the plane location in the world frame
 		manif::SE3d plane_loc_in_world = {{mBestLocationInZED.value().x(), mBestLocationInZED.value().y(), mBestLocationInZED.value().z()}, manif::SO3d{Eigen::Quaterniond{rot}.normalized()}};
 		plane_loc_in_world = zedToMap * plane_loc_in_world;
         manif::SE3d plane_loc_in_world_final = {{plane_loc_in_world.translation().x(),plane_loc_in_world.translation().y(),plane_loc_in_world.translation().z()}, manif::SO3d{Eigen::Quaterniond{rot}.normalized()}};
