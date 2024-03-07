@@ -74,7 +74,7 @@ namespace mrover {
 
         void ransac(double distanceThreshold, int minInliers, int epochs);
 
-        void sendTwist(float const& offset);
+        void sendTwist();
 
 		void uploadPC(int numInliers, double distanceThreshold);
 

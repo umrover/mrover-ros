@@ -2,6 +2,7 @@
 #include "lie.hpp"
 #include "pch.hpp"
 #include <Eigen/src/Core/Matrix.h>
+#include <Eigen/src/Core/VectorBlock.h>
 #include <cassert>
 #include <cmath>
 #include <cstddef>
@@ -63,7 +64,7 @@ namespace mrover {
             vect.y = mBestNormalInZED.value().y();
             vect.z = mBestNormalInZED.value().z();
             mDebugVectorPub.publish(vect);
-            sendTwist(10.0);
+            sendTwist();
         }
     }
 
@@ -240,11 +241,13 @@ namespace mrover {
 		manif::SE3d plane_loc_in_world = {{mBestLocationInZED.value().x(), mBestLocationInZED.value().y(), mBestLocationInZED.value().z()}, manif::SO3d{Eigen::Quaterniond{rot}.normalized()}};
 		plane_loc_in_world = zedToMap * plane_loc_in_world;
         manif::SE3d plane_loc_in_world_final = {{plane_loc_in_world.translation().x(),plane_loc_in_world.translation().y(),plane_loc_in_world.translation().z()}, manif::SO3d{Eigen::Quaterniond{rot}.normalized()}};
+        mBestLocationInWorld = std::make_optional<Eigen::Vector3d>(plane_loc_in_world_final.translation());
 
         //Calculate the offset location in the world frame
 		manif::SE3d offset_loc_in_world = {{mBestOffsetInZED.value().x(), mBestOffsetInZED.value().y(), mBestOffsetInZED.value().z()}, manif::SO3d{Eigen::Quaterniond{rot}.normalized()}};
 		offset_loc_in_world = zedToMap * offset_loc_in_world;
         manif::SE3d offset_loc_in_world_final = {{offset_loc_in_world.translation().x(),offset_loc_in_world.translation().y(),offset_loc_in_world.translation().z()}, manif::SO3d{Eigen::Quaterniond{rot}.normalized()}};
+        mBestOffsetInWorld = std::make_optional<Eigen::Vector3d>(offset_loc_in_world_final.translation());
 
 
 		//Push to the tf tree
@@ -305,28 +308,26 @@ namespace mrover {
     // }
 
 
-    void LanderAlignNodelet::sendTwist(float const& offset) {
-
+    void LanderAlignNodelet::sendTwist() {
         //Locations
-        manif::SE3d rover;
         Eigen::Vector3d rover_dir;
-        Eigen::Vector3d targetPosInWorld = mBestLocationInWorld.value() + mBestNormalInWorld.value() * offset;
 
         //Final msg
         geometry_msgs::Twist twist;
 
-        //Thr
+        //Threhsolds
         float const linear_thresh = 0.1; // could be member variables
         float const angular_thresh = 0.1;
 
 
-        targetPosInWorld.z() = 0;
         PID pid(0.1, 0.1); // literally just P -- ugly class and probably needs restructuring in the future
         ros::Rate rate(20); // ROS Rate at 20Hz
         while (ros::ok()) {
-            rover = SE3Conversions::fromTfTree(mTfBuffer, "base_link", "map");
+            manif::SE3d rover = SE3Conversions::fromTfTree(mTfBuffer, "base_link", "map");
             Eigen::Vector3d roverPosInWorld{static_cast<float>(rover.translation().x()), static_cast<float>(rover.translation().y()), 0};
 
+            Eigen::Vector3d targetPosInWorld = mBestOffsetInWorld.value();
+            targetPosInWorld.z() = 0;
             switch (mLoopState) {
                 case RTRSTATE::turn1: {
                     rover_dir = {static_cast<float>(rover.rotation().matrix().col(0).x()), static_cast<float>(rover.rotation().matrix().col(0).y()), 0};
@@ -340,6 +341,7 @@ namespace mrover {
                         //mLoopState = RTRSTATE::drive;
                     }
                     // ROS_INFO("In state: turning to point...");
+                    break;
                 }
 
                 case RTRSTATE::drive: {
@@ -352,6 +354,7 @@ namespace mrover {
                         mLoopState = RTRSTATE::turn2;
                     }
                     // ROS_INFO("In state: driving to point...");
+                    break;
                 }
 
                 case RTRSTATE::turn2: {
@@ -366,6 +369,7 @@ namespace mrover {
                         mLoopState = RTRSTATE::done;
                     }
                     // ROS_INFO("In state: turning to lander...");
+                    break;
                 }
 
                 case RTRSTATE::done:
