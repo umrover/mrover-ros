@@ -58,14 +58,14 @@ namespace mrover {
     void LanderAlignNodelet::LanderCallback(sensor_msgs::PointCloud2Ptr const& cloud) {
         filterNormals(cloud);
         ransac(0.2, 10, 100);
-        if (mBestNormalInZED.has_value()) {
-            geometry_msgs::Vector3 vect;
-            vect.x = mBestNormalInZED.value().x();
-            vect.y = mBestNormalInZED.value().y();
-            vect.z = mBestNormalInZED.value().z();
-            mDebugVectorPub.publish(vect);
-            sendTwist();
-        }
+        // if (mBestNormalInZED.has_value()) {
+        //     geometry_msgs::Vector3 vect;
+        //     vect.x = mBestNormalInZED.value().x();
+        //     vect.y = mBestNormalInZED.value().y();
+        //     vect.z = mBestNormalInZED.value().z();
+        //     mDebugVectorPub.publish(vect);
+        //     sendTwist();
+        // }
     }
 
     void LanderAlignNodelet::filterNormals(sensor_msgs::PointCloud2Ptr const& cloud) {
@@ -209,7 +209,7 @@ namespace mrover {
 
         if(mBestNormalInZED.value().x() > 0) mBestNormalInZED.value() *=-1;
 
-        mBestOffsetInZED =  std::make_optional<Eigen::Vector3d>(mBestLocationInZED.value() + mBestNormalInZED.value());
+        mBestOffsetInZED = std::make_optional<Eigen::Vector3d>(mBestLocationInZED.value() + mBestNormalInZED.value());
 
 		uploadPC(numInliers, distanceThreshold);
 
@@ -221,21 +221,17 @@ namespace mrover {
         //Calculate the SO3 in the world frame
         Eigen::Matrix3d rot;
         {
-            Eigen::Vector3d n = mBestNormalInWorld.value().normalized();
+            Eigen::Vector3d forward = mBestNormalInWorld.value().normalized();
+            Eigen::Vector3d worldUp = Eigen::Vector3d::UnitZ();
+            Eigen::Vector3d left = forward.cross(worldUp);
+            Eigen::Vector3d up = left.cross(forward);
+            ROS_INFO("THE LOCATION OF THE PLANE IS AT: %f, %f, %f with normal vector %f, %f, %f", mBestLocationInZED.value().x(), mBestLocationInZED.value().y(), mBestLocationInZED.value().z(), forward.x(), forward.y(), forward.z());
 
-            // y = dummy.cross(mBestNormalInZED.value()).normalized();
-            // z = x.cross(mBestNormalInZED.value()).normalized();
-            rot <<  n.x(),0,0,
-                    n.y(),0,1,
-                    n.z(),1,0;
-            //std::cout << "rot matrix 2 s" << std::endl << rot << std::endl;
 
-            
-            Eigen::HouseholderQR<Eigen::Matrix3d> qr{rot};
-            Eigen::Matrix3d q = qr.householderQ();
-            rot.col(0) = q.col(0);
-            rot.col(1) = q.col(2);
-            rot.col(2) = q.col(1);
+            Eigen::Matrix3d rot;
+            rot.col(0) = forward;
+            rot.col(1) = left;
+            rot.col(2) = up;
         }
 		//Calculate the plane location in the world frame
 		manif::SE3d plane_loc_in_world = {{mBestLocationInZED.value().x(), mBestLocationInZED.value().y(), mBestLocationInZED.value().z()}, manif::SO3d{Eigen::Quaterniond{rot}.normalized()}};
