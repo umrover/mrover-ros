@@ -51,6 +51,8 @@ public:
      * \param transform          The transform or pose represented by an SE3 lie group element
      */
     static auto pushToTfTree(tf2_ros::TransformBroadcaster& broadcaster, std::string const& fromFrame, std::string const& toFrame, SE3d const& transform) -> void;
+
+    static auto fromColumns(R3 const& c1, R3 const& c2, R3 const& c3) -> SO3d;
 };
 
 class SIM3 {

@@ -24,6 +24,10 @@ namespace mrover {
     
 
     class LanderAlignNodelet : public nodelet::Nodelet {
+
+        //PID CONSTANTS
+        double const mAngleP = 1;
+        double const mLinearP = 0.1;
         ros::NodeHandle mNh, mPnh;
 
         ros::Publisher mDebugVectorPub;
@@ -89,7 +93,7 @@ namespace mrover {
 
             // auto calculate(Eigen::Vector3d input, Eigen::Vector3d target) -> float;
 
-            [[nodiscard]] auto rotate_speed(float theta) const -> float;
+            [[nodiscard]] auto rotate_speed(double theta) const -> double;
 
 
             auto find_angle(Eigen::Vector3d const& current, Eigen::Vector3d const& target) -> float;
