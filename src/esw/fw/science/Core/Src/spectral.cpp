@@ -23,7 +23,10 @@ namespace mrover {
     	m_i2c_mux->set_channel(m_i2c_mux_channel);
     	while(1){
 			m_i2c_bus->blocking_transmit(SPECTRAL_7b_ADDRESS, I2C_AS72XX_SLAVE_STATUS_REG);
+			uint8_t tx_buf[1];
+			tx_buf[0] = I2C_AS72XX_SLAVE_STATUS_REG;
 			uint8_t buf[1];
+			HAL_I2C_Master_Transmit(&hi2c1, SPECTRAL_7b_ADDRESS, tx_buf, 1, 100);
 			HAL_I2C_Master_Receive(&hi2c1, SPECTRAL_7b_ADDRESS << 1 | 1, buf, 1, 100);
 			uint8_t status = buf[0];
 			// Check if we are allowed to proceed with reads + writes

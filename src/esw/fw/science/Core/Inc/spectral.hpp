@@ -56,7 +56,9 @@ namespace mrover {
         std::array<uint16_t, CHANNEL_DATA_LENGTH> channel_data {};
         // Sensor Raw Data Registers Start, 6 channels, 2 bytes each.
         // See pg. 22 of datasheet for more info.
-        constexpr static std::uint8_t CHANNEL_V_HIGH = 0x08;
+//        constexpr static std::uint8_t CHANNEL_V_HIGH = 0x08;
+        // Sensor Calibrated Data Registers Start (p. 23 on datasheet)
+        constexpr static std::uint8_t CHANNEL_V_HIGH = 0x14;
     };
 
 } // namespace mrover
