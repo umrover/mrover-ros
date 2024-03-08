@@ -7,7 +7,10 @@
 #include <stdexcept>
 #include <string>
 
+#include <ros/node_handle.h>
 #include <XmlRpcValue.h>
+
+#include "units/units.hpp"
 
 namespace mrover {
 
@@ -72,6 +75,15 @@ namespace mrover {
             }
         }
         return result;
+    }
+
+    template<IsUnit Unit>
+    auto requireParamAsUnit(ros::NodeHandle const& nh, std::string const& name) -> Unit {
+        assert(nh.hasParam(name));
+
+        typename Unit::rep_t value;
+        nh.getParam(name, value);
+        return Unit{value};
     }
 
 } // namespace mrover

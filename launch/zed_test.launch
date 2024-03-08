@@ -26,7 +26,7 @@
             <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" />
       </group>
 
-      <node pkg="nodelet" type="nodelet" name="nodelet_manager" required="true"
+      <node pkg="nodelet" type="nodelet" name="perception_nodelet_manager" required="true"
             args="manager" output="screen" />
 
       <node if="$(arg run_rqt_tf_tree)"
@@ -36,5 +36,5 @@
             name="rqt_reconfigure" pkg="rqt_reconfigure" type="rqt_reconfigure" />
 
       <node pkg="tf" type="static_transform_publisher" name="base_link_publisher"
-            args="1 0 0 0 0 0 map base_link 100" />
+            args="0 0 0 0 0 0 map base_link 100" />
 </launch>

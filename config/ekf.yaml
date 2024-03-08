@@ -35,16 +35,16 @@ global_ekf:
   publish_tf: true
 
   # odom frame off
-  # map_frame: none
-  # odom_frame: map
-  # base_link_frame: base_link
-  # world_frame: map
-
-  # odom frame on
-  map_frame: map
-  odom_frame: odom
+  map_frame: none
+  odom_frame: map
   base_link_frame: base_link
   world_frame: map
+
+  # odom frame on
+  # map_frame: map
+  # odom_frame: odom
+  # base_link_frame: base_link
+  # world_frame: map
 
   # IMU accel and gyro
   # imu0: imu/imu_only

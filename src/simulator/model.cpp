@@ -19,7 +19,7 @@ namespace mrover {
             importer.SetPropertyInteger(AI_CONFIG_PP_SBP_REMOVE, aiPrimitiveType_POINT | aiPrimitiveType_LINE); // Drop points and lines
 
             // aiScene const* scene = importer.ReadFile(uri.data(),aiProcessPreset_TargetRealtime_MaxQuality);
-            aiScene const* scene = importer.ReadFile(uriToPath(uri), aiProcessPreset_TargetRealtime_Quality | aiProcess_FlipUVs);
+            aiScene const* scene = importer.ReadFile(uriToPath(uri), aiProcessPreset_TargetRealtime_Fast | aiProcess_FlipUVs);
             if (!scene) {
                 throw std::runtime_error{std::format("Scene import error: {} on path: {}", importer.GetErrorString(), uri)};
             }

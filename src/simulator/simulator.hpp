@@ -186,6 +186,7 @@ namespace mrover {
         int mTogglePhysicsKey = GLFW_KEY_P;
         int mToggleRenderModelsKey = GLFW_KEY_M;
         int mToggleRenderWireframeCollidersKey = GLFW_KEY_C;
+        int mToggleCameraLockKey = GLFW_KEY_O;
 
         float mFlySpeed = 5.0f;
         float mRoverLinearSpeed = 1.0f;
@@ -198,6 +199,7 @@ namespace mrover {
         bool mRenderWireframeColliders = false;
         double mPublishHammerDistanceThreshold = 4;
         double mPublishBottleDistanceThreshold = 4;
+        float mCameraLockSlerp = 0.02;
 
         float mFloat = 0.0f;
 
@@ -319,6 +321,8 @@ namespace mrover {
 
         SE3d mCameraInWorld{R3{-3.0, 0.0, 1.5}, SO3d::Identity()};
 
+        std::optional<SE3d> mCameraInRoverTarget;
+
         std::vector<StereoCamera> mStereoCameras;
         std::vector<Camera> mCameras;
 
@@ -367,6 +371,10 @@ namespace mrover {
         auto centerCursor() -> void;
 
         auto freeLook(Clock::duration dt) -> void;
+
+        auto cameraLock(Clock::duration dt) -> void;
+
+        auto setCameraInRoverTarget() -> void;
 
         auto userControls(Clock::duration dt) -> void;
 

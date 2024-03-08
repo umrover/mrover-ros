@@ -8,7 +8,7 @@ namespace mrover {
 
         CanNetLink() = default;
 
-        CanNetLink(std::string, std::uint32_t bitrate, std::uint32_t bitrate_prescaler);
+        explicit CanNetLink(std::string);
 
         CanNetLink(CanNetLink const&) = delete;
         CanNetLink& operator=(CanNetLink const&) = delete;

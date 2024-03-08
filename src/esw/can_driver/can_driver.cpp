@@ -35,8 +35,6 @@ namespace mrover {
 
             mInterface = mPnh.param<std::string>("interface", "can0");
             mIsExtendedFrame = mPnh.param<bool>("is_extended_frame", true);
-            mBitrate = static_cast<std::uint32_t>(mPnh.param<int>("bitrate", 500000));
-            mBitratePrescaler = static_cast<std::uint32_t>(mPnh.param<int>("bitrate_prescaler", 2));
 
             XmlRpc::XmlRpcValue canDevices;
             mNh.getParam("can/devices", canDevices);
@@ -46,9 +44,8 @@ namespace mrover {
 
                     auto bus = xmlRpcValueToTypeOrDefault<std::uint8_t>(canDevice, "bus");
 
-                    if (std::uint8_t interfaceNumber = mInterface.back() - '0'; bus != interfaceNumber) {
-                        continue;
-                    }
+                    mBus = mInterface.back() - '0';
+                    if (bus != mBus) continue;
 
                     assert(canDevice.getType() == XmlRpc::XmlRpcValue::TypeStruct);
 
@@ -75,7 +72,7 @@ namespace mrover {
                 NODELET_WARN("For example before testing the devboard run: \"rosparam load config/esw_devboard.yml\"");
             }
 
-            mCanNetLink = {mInterface, mBitrate, mBitratePrescaler};
+            mCanNetLink = CanNetLink{mInterface};
 
             int socketFileDescriptor = setupSocket();
             mStream.emplace(mIoService);
@@ -115,7 +112,7 @@ namespace mrover {
         return socketFd;
     }
 
-    void CanNodelet::readFrameAsync() { // NOLINT(*-no-recursion)
+    auto CanNodelet::readFrameAsync() -> void { // NOLINT(*-no-recursion)
         // You would think we would have to read the header first to find the data length (which is not always 64 bytes) and THEN read the data
         // However socketcan is nice and just requires we read the max length
         // It then puts the actual length in the header
@@ -136,25 +133,25 @@ namespace mrover {
                 });
     }
 
-    void CanNodelet::frameReadCallback() { // NOLINT(*-no-recursion)
-        auto rawId = std::bit_cast<RawCanFdId>(mReadFrame.can_id);
-        auto messageId = std::bit_cast<CanFdMessageId>(static_cast<std::uint16_t>(rawId.identifier));
+    auto CanNodelet::frameReadCallback() -> void { // NOLINT(*-no-recursion)
+        auto [identifier, isErrorFrame, isRemoteTransmissionRequest, isExtendedFrame] = std::bit_cast<RawCanFdId>(mReadFrame.can_id);
+        auto [destination, source, isReplyRequired] = std::bit_cast<CanFdMessageId>(static_cast<std::uint16_t>(identifier));
 
         optional_ref<std::string> sourceDeviceName = mDevices.backward(CanFdAddress{
-                .bus = 0, // TODO set correct bus
-                .id = messageId.source,
+                .bus = mBus,
+                .id = source,
         });
         if (!sourceDeviceName) {
-            NODELET_WARN_STREAM(std::format("Received CAN message on interface {} that had an unknown source ID: {}", mInterface, std::uint8_t{messageId.source}));
+            NODELET_WARN_STREAM(std::format("Received CAN message on interface {} that had an unknown source ID: {}", mInterface, std::uint8_t{source}));
             return;
         }
 
         optional_ref<std::string> destinationDeviceName = mDevices.backward(CanFdAddress{
-                .bus = 0, // TODO set correct bus
-                .id = messageId.destination,
+                .bus = mBus,
+                .id = destination,
         });
         if (!destinationDeviceName) {
-            NODELET_WARN_STREAM(std::format("Received CAN message on interface {} that had an unknown destination ID: {}", mInterface, std::uint8_t{messageId.destination}));
+            NODELET_WARN_STREAM(std::format("Received CAN message on interface {} that had an unknown destination ID: {}", mInterface, std::uint8_t{destination}));
             return;
         }
 
@@ -163,16 +160,10 @@ namespace mrover {
         msg.destination = destinationDeviceName.value();
         msg.data.assign(mReadFrame.data, mReadFrame.data + mReadFrame.len);
 
-        ROS_DEBUG_STREAM("Received CAN message:\n"
-                         << msg);
-
         mDevicesPubSub.at(sourceDeviceName.value()).publisher.publish(msg);
     }
 
-    void CanNodelet::frameSendRequestCallback(CAN::ConstPtr const& msg) {
-        ROS_DEBUG_STREAM("Received request to send CAN message:\n"
-                         << *msg);
-
+    auto CanNodelet::frameSendRequestCallback(CAN::ConstPtr const& msg) -> void {
         optional_ref<CanFdAddress> source = mDevices.forward(msg->source);
         if (!source) {
             NODELET_WARN_STREAM(std::format("Sending CAN message on interface {} that had an unknown source: {}", mInterface, msg->source));
@@ -206,7 +197,6 @@ namespace mrover {
                 written != sizeof(frame)) {
                 NODELET_FATAL_STREAM(std::format("Failed to write CAN frame to socket! Expected to write {} bytes, but only wrote {} bytes", sizeof(frame), written));
                 ros::shutdown();
-                return;
             }
         } catch (boost::system::system_error const& error) {
             // check if ran out of buffer space
@@ -214,10 +204,8 @@ namespace mrover {
                 NODELET_WARN_STREAM_THROTTLE(1, "No buffer space available to send CAN message");
                 return;
             }
-            throw;
+            ros::shutdown();
         }
-
-        ROS_DEBUG_STREAM("Sent CAN message");
     }
 
     CanNodelet::~CanNodelet() {
