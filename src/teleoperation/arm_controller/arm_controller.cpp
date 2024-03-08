@@ -92,9 +92,9 @@ namespace mrover {
         double thetaC = gamma - thetaA - thetaB;
 
         SE3d joint_b_pos{{0.034346, 0, 0.049024}, SO3d::Identity()};
-        SE3d joint_c_pos{{LINK_BC * cos(thetaA), 0, LINK_BC * sin(thetaA)}, SO3d{0, -thetaA, 0}};
-        SE3d joint_d_pos{{LINK_CD * cos(thetaB), 0, LINK_CD * sin(thetaB)}, SO3d{0, -thetaB, 0}};
-        SE3d joint_e_pos{{LINK_DE * cos(thetaC), 0, LINK_DE * sin(thetaC)}, SO3d{0, -thetaC, 0}};
+        SE3d joint_c_pos{{LINK_BC * cos(thetaA), 0, LINK_BC * sin(thetaA)}, SO3d{Eigen::AngleAxisd{-thetaA, R3::UnitY()}}};
+        SE3d joint_d_pos{{LINK_CD * cos(thetaB), 0, LINK_CD * sin(thetaB)}, SO3d{Eigen::AngleAxisd{-thetaB, R3::UnitY()}}};
+        SE3d joint_e_pos{{LINK_DE * cos(thetaC), 0, LINK_DE * sin(thetaC)}, SO3d{Eigen::AngleAxisd{-thetaC, R3::UnitY()}}};
         SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_b_target", "arm_a_link", joint_b_pos);
         SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_c_target", "arm_b_target", joint_c_pos);
         SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_d_target", "arm_c_target", joint_d_pos);
