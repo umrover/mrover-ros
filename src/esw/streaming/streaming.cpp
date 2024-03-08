@@ -7,10 +7,8 @@
 
 #include <ros/console.h>
 
-using namespace std::chrono_literals;
-
-StreamServer::StreamServer(std::string_view host, std::uint16_t port)
-    : m_acceptor{m_context} {
+StreamServer::StreamServer(std::string_view host, std::uint16_t port, handler_t&& on_open, handler_t&& on_close)
+    : m_acceptor{m_context}, m_on_open{std::move(on_open)}, m_on_close{std::move(on_close)} {
 
     beast::error_code ec;
     tcp::endpoint endpoint{net::ip::make_address(host), port};
@@ -28,11 +26,33 @@ StreamServer::StreamServer(std::string_view host, std::uint16_t port)
 
     m_acceptor.listen(net::socket_base::max_listen_connections, ec);
     if (ec) throw std::runtime_error{std::format("Failed to listen: {}", ec.message())};
+
+    acceptAsync();
+
+    m_io_thread = std::jthread{[this] {
+        ROS_INFO("IO service started");
+        m_context.run();
+        ROS_INFO("IO service stopped");
+    }};
 }
 
-auto StreamServer::feed(std::span<std::byte> data) -> bool {
-    if (!m_client) {
-        m_client.emplace(m_acceptor.accept());
+auto StreamServer::acceptAsync() -> void {
+    m_acceptor.async_accept(m_context, [this](beast::error_code ec, tcp::socket socket) {
+        if (m_client) {
+            m_client->close(websocket::close_code::normal);
+            m_on_close();
+            m_client.reset();
+        }
+
+        if (ec) {
+            ROS_WARN_STREAM(std::format("Failed to accept: {}", ec.message()));
+            return;
+        }
+
+        m_client.emplace(std::move(socket));
+
+        using namespace std::chrono_literals;
+
         m_client->binary(true);
         m_client->set_option(websocket::stream_base::timeout{
                 .handshake_timeout = 3s,
@@ -42,18 +62,30 @@ auto StreamServer::feed(std::span<std::byte> data) -> bool {
         m_client->set_option(websocket::stream_base::decorator([](websocket::response_type& res) {
             res.set(http::field::server, std::format("{} {}", BOOST_BEAST_VERSION_STRING, "mrover-stream-server"));
         }));
-        ROS_INFO("Waiting for client..");
-        m_client->accept();
-        ROS_INFO("Client connected");
-    }
 
+        m_client->accept();
+
+        if (m_on_open) m_on_open();
+
+        acceptAsync();
+    });
+}
+
+
+auto StreamServer::feed(std::span<std::byte> data) -> void {
     net::mutable_buffer buffer{data.data(), data.size()};
     try {
+        // TODO(quintin): async write?
         m_client->write(buffer);
-        return true;
     } catch (std::exception const& e) {
         ROS_WARN_STREAM(std::format("Exception writing to client: {}", e.what()));
+        m_on_close();
         m_client.reset();
-        return false;
     }
+}
+
+StreamServer::~StreamServer() {
+    if (m_client) m_client->close(websocket::close_code::normal);
+    m_acceptor.close();
+    m_context.stop();
 }

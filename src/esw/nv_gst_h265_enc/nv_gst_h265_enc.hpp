@@ -18,6 +18,7 @@ namespace mrover {
         std::optional<StreamServer> mStreamServer;
 
         GstElement *mImageSource{}, *mStreamSink{}, *mPipeline{};
+        bool mIsPipelinePlaying = false;
         GMainLoop* mMainLoop{};
         std::thread mMainLoopThread;
         std::thread mStreamSinkThread;
@@ -26,7 +27,7 @@ namespace mrover {
 
         auto pullStreamSamplesLoop() -> void;
 
-        auto startPipeline() -> void;
+        auto initPipeline() -> void;
 
         auto imageCallback(sensor_msgs::ImageConstPtr const& msg) -> void;
 

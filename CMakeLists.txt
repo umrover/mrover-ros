@@ -27,7 +27,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # Generate compile_commands.json for clang
 if (NOT APPLE AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     add_link_options(-fuse-ld=lld) # LLVM lld is faster than GNU ld
 endif ()
-set(MROVER_CPP_COMPILE_OPTIONS -Wall -Wextra -pedantic)
+set(MROVER_CPP_COMPILE_OPTIONS -Wall -Wextra -pedantic -Wno-missing-field-initializers)
 if (MROVER_CI)
     list(APPEND MROVER_CPP_COMPILE_OPTIONS -Werror)
 endif ()
@@ -188,9 +188,6 @@ if (CUDA_FOUND)
     # TODO(quintin): Fix this CMake hard coding
     mrover_nodelet_include_directories(nv_gst_h265_enc /usr/include/gstreamer-1.0 /usr/include/glib-2.0 /usr/lib/x86_64-linux-gnu/glib-2.0/include)
 endif ()
-
-#add_subdirectory(deps/libde265 SYSTEM)
-#include_directories(deps/libde265/extra deps/libde265 SYSTEM)
 
 if (ZED_FOUND)
     mrover_add_nodelet(object_detector src/perception/object_detector/*.c* src/perception/object_detector src/perception/object_detector/pch.hpp)

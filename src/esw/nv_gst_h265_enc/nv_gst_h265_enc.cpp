@@ -55,7 +55,7 @@ namespace mrover {
         return TRUE;
     }
 
-    auto NvGstH265EncNodelet::startPipeline() -> void {
+    auto NvGstH265EncNodelet::initPipeline() -> void {
         ROS_INFO("Initializing and starting GStreamer pipeline...");
 
         mMainLoop = gstCheck(g_main_loop_new(nullptr, FALSE));
@@ -110,7 +110,8 @@ namespace mrover {
         gst_bus_add_watch(bus, busMessageCallback, this);
         gst_object_unref(bus);
 
-        if (gst_element_set_state(mPipeline, GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE) throw std::runtime_error{"Failed to start playing GStreamer pipeline"};
+        if (gst_element_set_state(mPipeline, GST_STATE_PAUSED) == GST_STATE_CHANGE_FAILURE)
+            throw std::runtime_error{"Failed initial pause on GStreamer pipeline"};
 
         mMainLoopThread = std::thread{[this] {
             ROS_INFO("Started GStreamer main loop");
@@ -134,7 +135,9 @@ namespace mrover {
             mImageWidth = msg->width;
             mImageHeight = msg->height;
 
-            if (!mPipeline) startPipeline();
+            if (!mPipeline) initPipeline();
+
+            if (!mIsPipelinePlaying) return;
 
             // "step" is the number of bytes (NOT pixels) in an image row
             std::size_t size = msg->step * msg->height;
@@ -170,15 +173,28 @@ namespace mrover {
 
             gst_init(nullptr, nullptr);
 
-            mStreamServer.emplace(address, port);
-
-            // TODO(quintin): Do this better, currently waits for connection
-            mStreamServer->feed({});
+            mStreamServer.emplace(
+                    address,
+                    port,
+                    [this] {
+                        ROS_INFO("Client connected");
+                        if (gst_element_set_state(mPipeline, GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE)
+                            throw std::runtime_error{"Failed to play GStreamer pipeline"};
+                        mIsPipelinePlaying = true;
+                        ROS_INFO("Playing GStreamer pipeline");
+                    },
+                    [this] {
+                        ROS_INFO("Client disconnected");
+                        if (gst_element_set_state(mPipeline, GST_STATE_READY) == GST_STATE_CHANGE_FAILURE)
+                            throw std::runtime_error{"Failed to pause GStreamer pipeline"};
+                        mIsPipelinePlaying = false;
+                        ROS_INFO("Paused GStreamer pipeline");
+                    });
 
             if (mCaptureDevice.empty()) {
                 mImageSubscriber = mNh.subscribe(mImageTopic, 1, &NvGstH265EncNodelet::imageCallback, this);
             } else {
-                startPipeline();
+                initPipeline();
             }
 
         } catch (std::exception const& e) {
