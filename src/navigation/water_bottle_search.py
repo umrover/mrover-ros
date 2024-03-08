@@ -106,12 +106,28 @@ class WaterBottleSearchState(State):
         resolution_conversion = ij_coords * [self.resolution, self.resolution]  # [j * r, i * r]
         half_res = np.array([self.resolution / 2, -1 * self.resolution / 2])  # [r/2, -r/2]
         return ((self.origin - width_height) + resolution_conversion + half_res) * np.array([1, -1])
+    
+    def avg_cell(self, costmap2D, cell) -> float:
+        """
+        Finds the average cost of the surrounding neighbors of the cell in the costmap
+        Pads costmap2D with zeros for edge cases
+        :param costmap2D: current costmap
+        :param cell: cell we are wanting to find average of neighbors including self
+        :return: average value 
+        """
+        padded_costmap = np.pad(costmap2D, pad_width=1, mode='constant', constant_values=0)
+        i, j = cell
+        neighbors = padded_costmap[i:i+3, j:j+3]  # Extract surrounding neighbors
+        return np.mean(neighbors)
 
-    def return_path(self, current_node, maze):
+    def return_path(self, current_node, costmap2D):
         """
         Return the path given from A-Star in reverse through current node's parents
         :param current_node: end point of path which contains parents to retrieve path
+        :param costmap2D: current costmap
+        :return: reversed path except the starting point (we are already there)
         """
+        costmap2D = np.copy(costmap2D)
         path = []
         current = current_node
         while current is not None:
@@ -121,16 +137,16 @@ class WaterBottleSearchState(State):
         print("ij:", reversed_path[1:])
 
         for step in reversed_path:
-            maze[step[0]][step[1]] = 2 # path (.)
-        maze[reversed_path[0][0]][reversed_path[0][1]] = 3  # start
-        maze[reversed_path[-1][0]][reversed_path[-1][1]] = 4  # end
+            costmap2D[step[0]][step[1]] = 2 # path (.)
+        costmap2D[reversed_path[0][0]][reversed_path[0][1]] = 3  # start
+        costmap2D[reversed_path[-1][0]][reversed_path[-1][1]] = 4  # end
 
-        for row in maze:
+        for row in costmap2D:
             line = []
             for col in row:
-                if col == 1:
+                if col == 1.0:
                     line.append("\u2588")
-                elif col == 0:
+                elif col == 0.0 or col == 0.5:
                     line.append(" ")
                 elif col == 2:
                     line.append(".")
@@ -140,7 +156,7 @@ class WaterBottleSearchState(State):
                     line.append("E")
             print("".join(line))
 
-        return reversed_path[1:]  # Return reversed path except the starting point (we are already there)
+        return reversed_path[1:]
 
     def a_star(self, costmap2d: np.ndarray, start: np.ndarray, end: np.ndarray) -> list | None:
         """
@@ -164,14 +180,14 @@ class WaterBottleSearchState(State):
         print(f"start: {start}, end: {end}")
         print(f"startij: {startij}, endij: {endij}")
 
-        # check if end node is within range, if it is, check if it has a high cost
+        # check if end node is within range, if it is, check if it has a high cost or high surrounding cost
         if (
             end_node.position[0] <= (costmap2d.shape[0] - 1)
             and end_node.position[0] >= 0
             and end_node.position[1] <= (costmap2d.shape[1] - 1)
             and end_node.position[1] >= 0
         ):
-            if costmap2d[end_node.position[0], end_node.position[1]] >= 1:
+            if costmap2d[end_node.position[0], end_node.position[1]] >= 1 or self.avg_cell(costmap2d, [end_node.position[0], end_node.position[1]]) >= 1/3:
                 # True if the trajectory is finished so return None
                 if self.traj.increment_point():
                     return None
@@ -240,7 +256,7 @@ class WaterBottleSearchState(State):
                 if len([closed_child for closed_child in closed_list if closed_child == child]) > 0:
                     continue
                 # create the f, g, and h values
-                child.g = current_node.g + costmap2d[child.position[0], child.position[1]]
+                child.g = current_node.g + costmap2d[child.position[0], child.position[1]] + (self.avg_cell(costmap2d, [child.position[0], child.position[1]])*30) # TODO change thresholds of how much importance we want to give each element
                 child.h = ((child.position[0] - end_node.position[0]) ** 2) + (
                     (child.position[1] - end_node.position[1]) ** 2
                 )
@@ -274,24 +290,13 @@ class WaterBottleSearchState(State):
             self.height = msg.info.height  # cells
             self.width = msg.info.width  # cells
             with self.costmap_lock:
-                costmap2D = np.reshape(np.array(msg.data),(int(self.height), int(self.width))).astype(np.float32)
-                # costmap2D = np.fliplr(costmap2D)
+                costmap2D = np.array(msg.data).reshape((int(self.height), int(self.width))).astype(np.float32)
                 # change all unidentified points to have a cost of 0.5
                 costmap2D[costmap2D == -1.0] = 0.5
+                costmap2D = np.rot90(costmap2D, k=3, axes=(0,1)) # rotate 90 degress clockwise
 
                 cur_rover_pose = self.context.rover.get_pose().position[0:2]
                 end_point = self.traj.get_cur_pt()
-
-                # print("XXXXXXXXXXXXXXXXXXXXX START COSTMAP XXXXXXXXXXXXXXXXXXXXX")
-                # for row in costmap2D:msg.data
-                #     line = []
-                #     for col in row:
-                #         if col == 1:
-                #             line.append("\u2588").2517715
-                #         elif col == 0:
-                #             line.append(" ")
-                #     print("".join(line))
-                # print("XXXXXXXXXXXXXXXXXXXXX END COSTMAP XXXXXXXXXXXXXXXXXXXXX")
 
                 # call A-STAR
                 occupancy_list = self.a_star(costmap2D, cur_rover_pose, end_point[0:2])
