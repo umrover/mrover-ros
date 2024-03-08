@@ -15,7 +15,7 @@ namespace mrover {
         // IK publisher
         ros::Publisher mIkPub;
 
-        std::unique_ptr<actionlib::SimpleActionServer<mrover::ClickIkAction>> server{};
+        actionlib::SimpleActionServer<mrover::ClickIkAction> server = actionlib::SimpleActionServer<mrover::ClickIkAction>(mNh, "do_click_ik", [&](const mrover::ClickIkGoalConstPtr& goal) {execute(goal);}, false);
 
         const Point* mPoints{};
 
@@ -37,7 +37,7 @@ namespace mrover {
 
         void onInit() override;
 
-        auto pointCloudCallback(std::sensor_msgs::PointCloud2ConstPtr const& msg) -> void;
+        auto pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg) -> void;
 
         void execute(const mrover::ClickIkGoalConstPtr& goal);
         

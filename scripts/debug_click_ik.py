@@ -16,8 +16,8 @@ def click_ik_client():
     # Creates a goal to send to the action server.
     goal = ClickIkGoal()
     # Sends the goal to the action server.
-    goal.pointInImageX = 0
-    goal.pointInImageY = 0
+    goal.pointInImageX = 320
+    goal.pointInImageY = 240
     client.send_goal(goal, feedback_cb=feedback)
     client.wait_for_result()
     result = client.get_result()

@@ -1,6 +1,7 @@
 #include <actionlib/server/action_server.h>
 #include <actionlib/server/simple_action_server.h>
 #include "click_ik.hpp"
+#include "lie.hpp"
 #include "mrover/ClickIkAction.h"
 #include "mrover/ClickIkGoal.h"
 #include "mrover/IK.h"
@@ -13,21 +14,30 @@ namespace mrover {
     void ClickIkNodelet::execute(const mrover::ClickIkGoalConstPtr& goal) {
         ROS_INFO("Executing goal");
 
-        auto target_point = spiralSearchInImg(static_cast<size_t>(goal.pointInImageX), static_cast<size_t>(goal.pointInImageY));
+        auto target_point = spiralSearchInImg(static_cast<size_t>(goal->pointInImageX), static_cast<size_t>(goal->pointInImageY));
 
         //Check if optional has value
-        if (!std::optional<SE3d>::has_value(target_point)) {
+        if (!target_point.has_value()) {
             //Handle gracefully
+            ROS_WARN("Target point does not exist.");
             return;
         }
 
         //Convert target_point (SE3) to correct frame
-        auto inverse_transform = SE3Conversions::fromTfTree(buffer, "chassis_link", "zed2i_left_camera_frame");
-
-        auto desired_transform = SE3Conversions::inverse_transform();
-
-
-
+        auto inverse_transform = SE3Conversions::fromTfTree(mTfBuffer, "chassis_link", "zed2i_left_camera_frame");
+        auto desired_transform = inverse_transform.inverse();
+        SE3d arm_target = desired_transform * target_point.value();
+        geometry_msgs::Pose pose;
+        pose.position.x = arm_target.x();
+        pose.position.y = arm_target.y();
+        pose.position.z = arm_target.z();
+        pose.orientation.w = arm_target.quat().w();
+        pose.orientation.x = arm_target.quat().x();
+        pose.orientation.y = arm_target.quat().y();
+        pose.orientation.z = arm_target.quat().z();
+        IK message;
+        message.pose = pose;
+        mIkPub.publish(message);
     }
     
     void ClickIkNodelet::onInit() {
@@ -39,9 +49,7 @@ namespace mrover {
         mIkPub = mNh.advertise<IK>("/arm_ik", 1);
 
         ROS_INFO("Starting action server");
-        auto * new_server = new actionlib::SimpleActionServer<mrover::ClickIkAction>(mNh, "do_click_ik", [&](const mrover::ClickIkGoalConstPtr& goal) {execute(goal);}, false);
-        server = std::unique_ptr<actionlib::SimpleActionServer<mrover::ClickIkAction>>(new_server);
-        server->start();
+        server.start();
         ROS_INFO("Action server started");
 
     }
@@ -50,6 +58,8 @@ namespace mrover {
         // Update current pointer to pointcloud data
         mPoints = reinterpret_cast<Point const*>(msg->data.data());
         mNumPoints = msg->width * msg->height;
+        mPointCloudWidth = msg->width;
+        mPointCloudHeight = msg->height;
     }
 
     auto ClickIkNodelet::spiralSearchInImg(size_t xCenter, size_t yCenter) -> std::optional<SE3d> {
