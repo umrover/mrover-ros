@@ -2,9 +2,19 @@
 
 double TrapezoidalMotionProfile::velocity(double t) {
     double totalDistance = (mDesiredPosition - mInitialPosition);
+    double timeToAccelerate = mMaxVelocity / mMaxAcceleration;
 
-    double accelerationTime = mMaxVelocity / mMaxAcceleration;
-    double totalTime = accelerationTime + totalDistance / mMaxVelocity;
+    double tAccelerationDone = timeToAccelerate;
+    double tEnd = tAccelerationDone + totalDistance / mMaxVelocity;
+    double tCruiseDone = tEnd - tAccelerationDone;
 
-    return 0.0;
+    if (t >= 0 && t < tAccelerationDone) {
+        return mMaxAcceleration * t;
+    } else if (t >= tAccelerationDone && t < tCruiseDone) {
+        return mMaxVelocity;
+    } else if (t >= tCruiseDone && t <= tEnd) {
+        return -mMaxAcceleration * t + mMaxAcceleration * tEnd;
+    } else {
+        return 0.0;
+    }
 }
