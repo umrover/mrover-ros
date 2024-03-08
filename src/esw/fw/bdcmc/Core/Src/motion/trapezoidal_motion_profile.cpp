@@ -1,6 +1,6 @@
 #include "motion_profile.hpp"
 
-double TrapezoidalMotionProfile::velocity(double t) {
+double TrapezoidalMotionProfile::velocity(double t) const {
     double totalDistance = (mDesiredPosition - mInitialPosition);
     double timeToAccelerate = mMaxVelocity / mMaxAcceleration;
 
