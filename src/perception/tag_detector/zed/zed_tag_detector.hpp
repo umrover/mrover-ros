@@ -12,7 +12,7 @@ namespace mrover {
         std::optional<SE3d> tagInCam;
     };
 
-    class TagDetectorNodelet : public nodelet::Nodelet {
+    class TagDetectorNodelet : public TagDetector {
         // ros::NodeHandle mNh, mPnh;
 
         // ros::Publisher mImgPub;
@@ -50,7 +50,7 @@ namespace mrover {
 
         LoopProfiler mProfiler{"Tag Detector"};
 
-        auto specificOnInit() override;
+        auto specificOnInit() -> void override;
 
         auto publishThresholdedImage() -> void;
 

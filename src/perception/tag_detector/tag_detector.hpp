@@ -3,6 +3,7 @@
 namespace mrover {
 
     class TagDetector : public nodelet::Nodelet {
+    protected:
         ros::NodeHandle mNh, mPnh;
 
         // image subscriber

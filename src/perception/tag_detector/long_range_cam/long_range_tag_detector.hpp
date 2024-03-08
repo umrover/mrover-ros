@@ -3,19 +3,9 @@
 
 namespace mrover {
 
-    class LongRangeTagDetectorNodelet : public nodelet::Nodelet {
-        // ros::NodeHandle mNh, mPnh;
-
-        //Image Subscriber
-        // ros::Subscriber mImgSub;
-        // ros::Publisher mImgPub;
-
+    class LongRangeTagDetectorNodelet : public TagDetector {
         //Publishes LongRangeTags messages
         ros::Publisher mLongRangeTagsPub;
-
-        //Publishing Flags
-        // bool mEnableDetections = true;
-        // bool mPublishImages{}; // If set, we publish the images with the tags drawn on top
 
         // Camera lens intrinsic FOV
         float mLongRangeFov{};
@@ -27,27 +17,19 @@ namespace mrover {
         cv::Mat mImg;
         sensor_msgs::Image mImgMsg;
 
-        // //Raw Tag Data from CV::ARUCO
-        // std::vector<std::vector<cv::Point2f>> mImmediateCorners;
-        // std::vector<int> mImmediateIds;
-
-        // // Message header information
-        // std::optional<size_t> mPrevDetectedCount; // Log spam prevention
-        // dynamic_reconfigure::Server<DetectorParamsConfig> mConfigServer;
-        // dynamic_reconfigure::Server<DetectorParamsConfig>::CallbackType mCallbackType;
-        // LoopProfiler mProfiler{"Long Range Tag Detector"};
         ros::ServiceServer mServiceEnableDetections;
                                                                                                 
         std::string mMapFrameId, mCameraFrameId;
 
-        auto specificOnInit() override; -> void {
-            mPnh.param<float>("long_range_fov", mLongRangeFov, 80.0);
+        auto specificOnInit() -> void override;
+        // {
+        //     mPnh.param<float>("long_range_fov", mLongRangeFov, 80.0);
 
-            mImgPub = mNh.advertise<sensor_msgs::Image>("long_range_tag_detection", 1);
-            mLongRangeTagsPub = mNh.advertise<LongRangeTags>("tags", 1);
+        //     mImgPub = mNh.advertise<sensor_msgs::Image>("long_range_tag_detection", 1);
+        //     mLongRangeTagsPub = mNh.advertise<LongRangeTags>("tags", 1);
 
-            mImgSub = mNh.subscribe("long_range_image", 1, &LongRangeTagDetectorNodelet::imageCallback, this);
-        }
+        //     mImgSub = mNh.subscribe("long_range_image", 1, &LongRangeTagDetectorNodelet::imageCallback, this);
+        // }
 
         /**
         * Detects tags in an image, draws the detected markers onto the image, and publishes them to /long_range_tag_detection
@@ -69,10 +51,6 @@ namespace mrover {
         * only if mPublishImages and the topic has a subscriber
         */
         auto publishTagsOnImage() -> void;
-
-        // auto configCallback(DetectorParamsConfig& config, uint32_t level) -> void;
-
-        // auto enableDetectionsCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) -> bool;
     };
 
 } // namespace mrover
