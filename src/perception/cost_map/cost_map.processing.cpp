@@ -12,7 +12,7 @@ namespace mrover {
         if (!mPublishCostMap) return;
 
         try {
-            SE3f cameraToMap = SE3Conversions::fromTfTree(mTfBuffer, "zed2i_left_camera_frame", "map").cast<float>();
+            SE3f cameraToMap = SE3Conversions::fromTfTree(mTfBuffer, "zed_left_camera_frame", "map").cast<float>();
             auto* points = reinterpret_cast<Point const*>(msg->data.data());
             for (std::size_t i = 0, r = 0; r < msg->height; r += mDownSamplingFactor) {
                 for (std::size_t c = 0; c < msg->width; c += mDownSamplingFactor) {

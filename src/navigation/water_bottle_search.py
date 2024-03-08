@@ -8,8 +8,9 @@ from typing import Optional
 import numpy as np
 
 import rospy
-from geometry_msgs.msg import Pose, PoseStamped
-from mrover.msg import GPSPointList
+from geometry_msgs.msg import Pose, PoseStamped, Point, Quaternion
+from std_msgs.msg import Header
+from mrover.msg import GPSPointList, Costmap2D
 from nav_msgs.msg import OccupancyGrid, Path
 from navigation import approach_post, recovery, waypoint
 from navigation.context import convert_cartesian_to_gps, Context
@@ -119,9 +120,9 @@ class WaterBottleSearchState(State):
         reversed_path = path[::-1]
         print("ij:", reversed_path[1:])
 
-        for step in reversed_path[1:]:
-            maze[step[0]][step[1]] = 2
-        maze[reversed_path[1][0]][reversed_path[1][1]] = 3  # start
+        for step in reversed_path:
+            maze[step[0]][step[1]] = 2 # path (.)
+        maze[reversed_path[0][0]][reversed_path[0][1]] = 3  # start
         maze[reversed_path[-1][0]][reversed_path[-1][1]] = 4  # end
 
         for row in maze:
@@ -267,30 +268,30 @@ class WaterBottleSearchState(State):
         Callback function for the occupancy grid perception sends
         :param msg: Occupancy Grid representative of a 30 x 30m square area with origin at GNSS waypoint. Values are 0, 1, -1
         """
-        if rospy.get_time() - self.time_last_updated > 5:
+        if rospy.get_time() - self.time_last_updated > 1:
             print("RUN ASTAR")
             self.resolution = msg.info.resolution  # meters/cell
             self.height = msg.info.height  # cells
             self.width = msg.info.width  # cells
             with self.costmap_lock:
-                costmap2D = np.array(msg.data).reshape(int(self.height), int(self.width)).astype(np.float32)
+                costmap2D = np.reshape(np.array(msg.data),(int(self.height), int(self.width))).astype(np.float32)
+                # costmap2D = np.fliplr(costmap2D)
                 # change all unidentified points to have a cost of 0.5
-                print("SHAPE", costmap2D.shape)
                 costmap2D[costmap2D == -1.0] = 0.5
 
                 cur_rover_pose = self.context.rover.get_pose().position[0:2]
                 end_point = self.traj.get_cur_pt()
 
-                print("XXXXXXXXXXXXXXXXXXXXX START COSTMAP XXXXXXXXXXXXXXXXXXXXX")
-                for row in costmap2D:
-                    line = []
-                    for col in row:
-                        if col == 1:
-                            line.append("\u2588")
-                        elif col == 0:
-                            line.append(" ")
-                    print("".join(line))
-                print("XXXXXXXXXXXXXXXXXXXXX END COSTMAP XXXXXXXXXXXXXXXXXXXXX")
+                # print("XXXXXXXXXXXXXXXXXXXXX START COSTMAP XXXXXXXXXXXXXXXXXXXXX")
+                # for row in costmap2D:msg.data
+                #     line = []
+                #     for col in row:
+                #         if col == 1:
+                #             line.append("\u2588").2517715
+                #         elif col == 0:
+                #             line.append(" ")
+                #     print("".join(line))
+                # print("XXXXXXXXXXXXXXXXXXXXX END COSTMAP XXXXXXXXXXXXXXXXXXXXX")
 
                 # call A-STAR
                 occupancy_list = self.a_star(costmap2D, cur_rover_pose, end_point[0:2])
@@ -306,10 +307,15 @@ class WaterBottleSearchState(State):
 
                     path = Path()
                     poses = []
+                    path.header = Header()
+                    path.header.frame_id = "map"
                     for coord in cartesian_coords:
-                        pose = SE3.from_pos_quat(coord, [0, 0, 0, 1])
                         pose_stamped = PoseStamped()
-                        pose_stamped.pose = Pose(pose.position, pose.rotation.quaternion)
+                        pose_stamped.header = Header()
+                        pose_stamped.header.frame_id = "map"
+                        point = Point(coord[0], coord[1], 0)
+                        quat = Quaternion(0,0,0,1)
+                        pose_stamped.pose = Pose(point, quat)
                         poses.append(pose_stamped)
                     path.poses = poses
                     self.path_pub.publish(path)
@@ -333,9 +339,9 @@ class WaterBottleSearchState(State):
             self.prev_target = None
         self.star_traj = Trajectory(np.array([]))
         self.time_last_updated = rospy.get_time()
-        self.listener = rospy.Subscriber("costmap", OccupancyGrid, self.costmap_callback)
         self.costmap_pub = rospy.Publisher("costmap2D", Costmap2D, queue_size=1)
-        self.path_pub = rospy.Publisher("path", Path, queue_size=1)
+        self.listener = rospy.Subscriber("costmap", OccupancyGrid, self.costmap_callback)
+        self.path_pub = rospy.Publisher("path", Path, queue_size=10)
 
     def on_exit(self, context) -> None:
         pass
@@ -381,6 +387,6 @@ class WaterBottleSearchState(State):
         )
         context.rover.send_drive_command(cmd_vel)
         # TODO: change so that if we are looking for the water bottle we will transition into ApproachObjectState
-        if context.env.current_fid_pos() is not None and context.course.look_for_post():
+        if context.env.current_target_pos() is not None and context.course.look_for_post():
             return approach_post.ApproachPostState()
         return self
