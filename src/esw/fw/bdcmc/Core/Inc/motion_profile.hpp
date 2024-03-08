@@ -1,39 +1,50 @@
-class MotionProfile {
-public:
-    MotionProfile(double initialPosition,
-                  double desiredPosition,
-                  double maxVelocity,
-                  double maxAcceleration) : mInitialPosition{initialPosition},
-                                            mDesiredPosition{desiredPosition},
-                                            mMaxVelocity{maxVelocity},
-                                            mMaxAcceleration{maxAcceleration} {}
+#include "units/units.hpp"
 
-    // velocity of the profile at time t
-    [[nodiscard]] virtual double velocity(double t) const = 0;
+namespace mrover {
+    template<IsUnit PositionUnit = Radians, IsUnit TimeUnit = Seconds>
+    class TrapezoidalMotionProfile {
+        using VelocityUnit = compound_unit<PositionUnit, inverse<TimeUnit>>;
+        using AccelerationUnit = compound_unit<VelocityUnit, inverse<TimeUnit>>;
+    public:
+        TrapezoidalMotionProfile(PositionUnit initialPosition,
+                      PositionUnit desiredPosition,
+                      VelocityUnit maxVelocity,
+                      AccelerationUnit maxAcceleration) : mInitialPosition{initialPosition},
+                                                          mDesiredPosition{desiredPosition},
+                                                          mMaxVelocity{maxVelocity},
+                                                          mMaxAcceleration{maxAcceleration} {}
 
-    void update(double initialPosition,
-                double desiredPosition) {
-        mInitialPosition = initialPosition;
-        mDesiredPosition = desiredPosition;
-    }
+        void update(PositionUnit initialPosition,
+                    PositionUnit desiredPosition) {
+            mInitialPosition = initialPosition;
+            mDesiredPosition = desiredPosition;
+        }
 
+        // TODO: build in way to keep track of start time to class
+        [[nodiscard]] double velocity(TimeUnit t) const override {
+            double totalDistance = (mDesiredPosition - mInitialPosition);
+            double timeToAccelerate = mMaxVelocity / mMaxAcceleration;
 
-protected:
-    double mInitialPosition;
-    double mDesiredPosition;
+            double tAccelerationDone = timeToAccelerate;
+            double tEnd = tAccelerationDone + totalDistance / mMaxVelocity;
+            double tCruiseDone = tEnd - tAccelerationDone;
 
-    double mMaxVelocity;
-    double mMaxAcceleration;
-};
+            if (t >= 0 && t < tAccelerationDone) {
+                return mMaxAcceleration * t;
+            } else if (t >= tAccelerationDone && t < tCruiseDone) {
+                return mMaxVelocity;
+            } else if (t >= tCruiseDone && t <= tEnd) {
+                return -mMaxAcceleration * t + mMaxAcceleration * tEnd;
+            } else {
+                return 0.0;
+            }
+        }
 
-class TrapezoidalMotionProfile : public MotionProfile {
-public:
-    TrapezoidalMotionProfile(double initialPosition,
-                                          double desiredPosition,
-                                          double maxVelocity,
-                                          double maxAcceleration) : MotionProfile(initialPosition,
-                                                                     desiredPosition,
-                                                                     maxVelocity,
-                                                                     maxAcceleration) {}
-    [[nodiscard]] double velocity(double t) const override;
-};
+    protected:
+        PositionUnit mInitialPosition;
+        PositionUnit mDesiredPosition;
+
+        VelocityUnit mMaxVelocity;
+        AccelerationUnit mMaxAcceleration;
+    };
+}
