@@ -11,8 +11,6 @@ export function threeSetup(containerId) {
     height: container.clientHeight
   }
 
-  // THREE.Object3D.DefaultUp = new THREE.Vector3(0, 0, 1);
-
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(75, canvas.width / canvas.height, 0.1, 1000);
   camera.up.set(0, 0, 1);
@@ -27,6 +25,7 @@ export function threeSetup(containerId) {
 
   scene.background = new THREE.Color(0xcccccc);
 
+  //controls to orbit around model
   var controls = new TrackballControls(camera, renderer.domElement);
   controls.rotateSpeed = 1.0;
   controls.zoomSpeed = 1.2;
@@ -58,13 +57,13 @@ export function threeSetup(containerId) {
     {
       name: "c",
       file: "arm_c.fbx",
-      translation: [19.5129, 0.264652, 0.03498],
+      translation: [0.546033, 0, 0.088594],
       rotation: [0, 0, 0],
     },
     {
       name: "d",
       file: "arm_d.fbx",
-      translation: [0.546033, 0, 0.088594],
+      translation: [0.044886, 0, 0],
       rotation: [0, 0, 0],
     },
     {
@@ -81,7 +80,10 @@ export function threeSetup(containerId) {
       // Traverse the loaded scene to find meshes or objects
       fbx.traverse((child)=>  {
         if (child.isMesh) {
-          child.material = new THREE.MeshStandardMaterial({color: 0xffffff});
+          if(joints[i].name == "d" || joints[i].name == "e") {
+            child.material = new THREE.MeshStandardMaterial({color: 0x00ff00});
+          }
+          else child.material = new THREE.MeshStandardMaterial({color: 0xffffff});
           scene.add(child);
           child.scale.set(1, 1, 1);
           child.position.set(0, 0, 0);
@@ -101,6 +103,12 @@ export function threeSetup(containerId) {
   camera.position.z = 2;
   camera.lookAt(new THREE.Vector3(0, 0, 0));
 
+  const targetCube = new THREE.Mesh( 
+    new THREE.BoxGeometry( 0.01, 0.01, 0.01 ), 
+    new THREE.MeshBasicMaterial({color: 0x00ff00})
+    ); 
+  scene.add( targetCube );
+
   function animate() {
     requestAnimationFrame(animate);
     controls.update();
@@ -110,6 +118,8 @@ export function threeSetup(containerId) {
   animate();
 
   function fk(positions) {
+
+    console.log(positions)
 
     let cumulativeMatrix = new THREE.Matrix4();
 
@@ -122,12 +132,14 @@ export function threeSetup(containerId) {
       if(joints[i].name == "chassis") {
         localMatrix.makeTranslation(0,rotationAngle,0);
       }
-      else if (joints[i].name == "d") {
+      else if (joints[i].name == "c") {
         localMatrix.makeRotationX(rotationAngle);
       }
       else {
         localMatrix.makeRotationY(rotationAngle);
       }
+
+      console.log(localMatrix)
 
       let offset = new THREE.Vector3().fromArray(joints[i].translation);
 
@@ -142,12 +154,15 @@ export function threeSetup(containerId) {
     });
   }
 
-  function updateJointAngles(newJointAngles) {
-    fk(newJointAngles);
+  function ik(target) {
+    let position = new THREE.Vector3(...target.position);
+    let quaternion = new THREE.Quaternion(...target.quaternion);
+    targetCube.setPosition(position);
+    targetCube.setRotationFromQuaternion(quaternion);
   }
 
   // Return an object with the updateJointAngles() function
   return {
-    updateJointAngles
+    fk, ik
   }
 };

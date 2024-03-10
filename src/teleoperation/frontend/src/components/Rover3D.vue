@@ -3,16 +3,16 @@
       <h3 class="header">Rover 3D</h3>
       <div id="threejs"></div>
 
-      <div class="col" v-for="(joint, key) in temp_positions" :key="key">
-        <label>{{ key }}</label>
+      <div class="col" v-for="(joint, i) in temp_positions" :key="i">
+        <label>{{ joint }}</label>
         <input
           class="form-control"
           type="number"
-          v-model="positions[key]"
+          v-model="positions[i]"
         />
       </div>
       <div class="col text-center">
-        <button class="btn btn-primary" @click="threeScene.updateJointAngles(positions)">Submit</button>
+        <button class="btn btn-primary" @click="threeScene.fk(positions)">Submit</button>
       </div>
     </div>
   </template>
@@ -26,7 +26,7 @@
     data() {
       return {
         threeScene: null,
-        temp_positions: ["base", "a", "b", "c", "d"],
+        temp_positions: ["base", "a", "b", "c", "d", "e"],
         positions: []
       }
     },
@@ -41,7 +41,12 @@
 
     watch: {
         message(msg) {
-           this.threeScene.updateJointAngles(msg.positions);
+          if(msg.type == "fk") {
+            this.threeScene.fk(msg.positions);
+          }
+          else if(msg.type == "ik") {
+            this.threeScene.ik(msg.target);
+          }
         }
     }
   })

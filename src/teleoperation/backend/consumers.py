@@ -73,6 +73,7 @@ class GUIConsumer(JsonWebsocketConsumer):
             # Subscribers
             self.pdb_sub = rospy.Subscriber("/pdb_data", PDLB, self.pdb_callback)
             self.arm_moteus_sub = rospy.Subscriber("/arm_controller_data", ControllerState, self.arm_controller_callback)
+            self.arm_joint_sub = rospy.Subscriber("/arm_joint_data", JointState, self.arm_joint_callback)
             self.drive_moteus_sub = rospy.Subscriber(
                 "/drive_controller_data", ControllerState, self.drive_controller_callback
             )
@@ -286,6 +287,14 @@ class GUIConsumer(JsonWebsocketConsumer):
            
             arm_ik_cmd = IK(pose=Pose(position=Point(*base_link_in_map.position), orientation=Quaternion(*base_link_in_map.rotation.quaternion)))
             self.arm_ik_pub.publish(arm_ik_cmd)
+
+            self.send(text_data=json.dumps({
+                "type": "ik",
+                "target": {
+                    "position": arm_ik_cmd.pose.position,
+                    "quaternion": arm_ik_cmd.pose.orientation
+                }
+            }))
 
         elif msg["arm_mode"] == "position":
             arm_position_cmd = Position(
@@ -654,3 +663,9 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.send(text_data=json.dumps({"type": "flight_attitude", "pitch": pitch, "roll": roll}))
 
             rate.sleep()
+    
+    def arm_joint_callback(self, msg):
+        self.send(text_data=json.dumps({
+            "type": "fk",
+            "positions": msg.position
+        }))
