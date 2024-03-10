@@ -78,9 +78,10 @@ namespace mrover {
     void Spectral::update_channel_data() {
     	if (!m_initialized) {
     		init();
-    	}
-    	if (!m_initialized) {
-    		return;
+    		// If it is still not initialized, just return.
+			if (!m_initialized) {
+				return;
+			}
     	}
     	m_i2c_mux->set_channel(m_i2c_mux_channel);
 
