@@ -2,6 +2,7 @@
 #include <ros/node_handle.h>
 
 #include <motors_group.hpp>
+#include <brushed.hpp>
 
 using namespace mrover;
 

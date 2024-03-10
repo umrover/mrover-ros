@@ -10,6 +10,11 @@ namespace mrover {
         mNh.getParam(std::format("brushed_motors/controllers/{}", mControllerName), brushedMotorData);
         assert(brushedMotorData.getType() == XmlRpc::XmlRpcValue::TypeStruct);
 
+        mVelocityMultiplier = Dimensionless{xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "velocity_multiplier", 1.0)};
+        if (mVelocityMultiplier.get() == 0) {
+            throw std::runtime_error("Velocity multiplier can't be 0!");
+        }
+
         mConfigCommand.gear_ratio = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "gear_ratio");
 
         for (std::size_t i = 0; i < 4; ++i) {
@@ -65,7 +70,6 @@ namespace mrover {
     }
 
     auto BrushedController::setDesiredThrottle(Percent throttle) -> void {
-        updateLastConnection();
         if (!mIsConfigured) {
             sendConfiguration();
             return;
@@ -77,7 +81,6 @@ namespace mrover {
     }
 
     auto BrushedController::setDesiredPosition(Radians position) -> void {
-        updateLastConnection();
         if (!mIsConfigured) {
             sendConfiguration();
             return;
@@ -94,13 +97,14 @@ namespace mrover {
     }
 
     auto BrushedController::setDesiredVelocity(RadiansPerSecond velocity) -> void {
-        updateLastConnection();
         if (!mIsConfigured) {
             sendConfiguration();
             return;
         }
 
         assert(velocity >= mConfigCommand.min_velocity && velocity <= mConfigCommand.max_velocity);
+
+        velocity = velocity * mVelocityMultiplier;
 
         mDevice.publish_message(InBoundMessage{VelocityCommand{
                 .velocity = velocity,
@@ -118,7 +122,6 @@ namespace mrover {
     }
 
     auto BrushedController::adjust(Radians position) -> void {
-        updateLastConnection();
         if (!mIsConfigured) {
             sendConfiguration();
             return;
@@ -131,8 +134,7 @@ namespace mrover {
 
     auto BrushedController::processMessage(ControllerDataState const& state) -> void {
         mCurrentPosition = state.position;
-        mCurrentVelocity = state.velocity;
-        ROS_INFO("Vel: %f | Pos: %f", mCurrentVelocity.get(), mCurrentPosition.get());
+        mCurrentVelocity = state.velocity / mVelocityMultiplier;
         ConfigCalibErrorInfo configCalibErrInfo = state.config_calib_error_data;
         mIsConfigured = configCalibErrInfo.configured;
         mIsCalibrated = configCalibErrInfo.calibrated;
@@ -186,17 +188,17 @@ namespace mrover {
             res.success = false;
             res.message = mControllerName + " does not have limit switches, cannot calibrate";
             return true;
-        } else if (mIsCalibrated) {
+        }
+        if (mIsCalibrated) {
             res.success = false;
             res.message = mControllerName + " already calibrated";
             return true;
-        } else {
-            // sends throttle command until a limit switch is hit
-            // mIsCalibrated is set with CAN message coming from BDCMC
-            setDesiredThrottle(mCalibrationThrottle);
-            res.success = true;
-            return true;
         }
+        // sends throttle command until a limit switch is hit
+        // mIsCalibrated is set with CAN message coming from BDCMC
+        setDesiredThrottle(mCalibrationThrottle);
+        res.success = true;
+        return true;
     }
 
 } // namespace mrover

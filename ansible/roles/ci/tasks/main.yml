@@ -80,6 +80,15 @@
       - libtbb-dev
       - libopencv-dev
 
+- name: Install Local APT Packages
+  become: True
+  apt:
+    state: present
+    deb: "{{ catkin_workspace }}/src/mrover/pkg/{{ item }}"
+  with_items:
+    - libmanif-dev.deb
+    - libdawn-dev.deb
+
 - name: Initialize rosdep
   become: True
   command: rosdep init
