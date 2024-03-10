@@ -1,4 +1,6 @@
 #include "arm_controller.hpp"
+#include "lie.hpp"
+#include <Eigen/src/Core/Matrix.h>
 
 namespace mrover {
     ArmController::ArmController() {
@@ -19,13 +21,22 @@ namespace mrover {
         positions.names = {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll"};
         positions.positions.resize(positions.names.size(), 0.f);
 
-        double x = ik_target.pose.position.x;
-        double y = ik_target.pose.position.y;
-        double z = ik_target.pose.position.z;
-        
-        //Offset between static_pose_a and b_link
-        SE3d pos{{x + 0.034346, 0, z + 0.049024}, SO3d::Identity()};
-        SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_target", "arm_a_link", pos);
+        SE3d target_frame_to_arm_a_static = SE3Conversions::fromTfTree(mTfBuffer, ik_target.target.header.frame_id, "joint_a_static");
+        SE3d target_frame_to_arm_b_static = SE3Conversions::fromTfTree(mTfBuffer, ik_target.target.header.frame_id, "joint_b_static");
+
+        Eigen::Vector4d target{ik_target.target.pose.position.x, ik_target.target.pose.position.y, ik_target.target.pose.position.z, 1};
+        // double x = ik_target.target.pose.position.x;
+        // double y = ik_target.target.pose.position.y;
+        // double z = ik_target.target.pose.position.z;
+        // maybe just add offset instead of doing multiplication (we don't do any rotation?)
+        Eigen::Vector4d target_in_arm_b_static = target_frame_to_arm_b_static.transform() * target;
+        Eigen::Vector4d target_in_arm_a_static = target_frame_to_arm_a_static.transform() * target;
+
+        double x = target_in_arm_b_static.x();
+        double z = target_in_arm_b_static.z();
+        double y = target_in_arm_a_static.y();
+        SE3d pos{{target_in_arm_a_static.x(), target_in_arm_a_static.y(), target_in_arm_a_static.z()}, SO3d::Identity()};
+        SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_target", "joint_a_static", pos);
 
         // SE3d link_ab = SE3Conversions::fromTfTree(buffer, "arm_a_link", "arm_b_link");
         // SE3d link_bc = SE3Conversions::fromTfTree(buffer, "arm_b_link", "arm_c_link");

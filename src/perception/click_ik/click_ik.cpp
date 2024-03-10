@@ -24,21 +24,22 @@ namespace mrover {
         }
 
         //Convert target_point (SE3) to correct frame
-        auto inverse_transform = SE3Conversions::fromTfTree(mTfBuffer, "chassis_link", "zed2i_left_camera_frame");
-        auto desired_transform = inverse_transform.inverse();
-        SE3d arm_target = desired_transform * target_point.value();
+        // auto inverse_transform = SE3Conversions::fromTfTree(mTfBuffer, "chassis_link", "zed2i_left_camera_frame");
+        // auto desired_transform = inverse_transform.inverse();
+        // SE3d arm_target = desired_transform * target_point.value();
         geometry_msgs::Pose pose;
         
-        pose.position.x = arm_target.x();
-        pose.position.y = arm_target.y();
-        pose.position.z = arm_target.z();
+        pose.position.x = target_point.value().x();
+        pose.position.y = target_point.value().y();
+        pose.position.z = target_point.value().z();
 
-        pose.orientation.w = arm_target.quat().w();
-        pose.orientation.x = arm_target.quat().x();
-        pose.orientation.y = arm_target.quat().y();
-        pose.orientation.z = arm_target.quat().z();
+        pose.orientation.w = target_point.value().quat().w();
+        pose.orientation.x = target_point.value().quat().x();
+        pose.orientation.y = target_point.value().quat().y();
+        pose.orientation.z = target_point.value().quat().z();
         IK message;
-        message.pose = pose;
+        message.target.pose = pose;
+        message.target.header.frame_id = "zed2i_left_camera_frame";
         mIkPub.publish(message);
     }
     
