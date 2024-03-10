@@ -27,7 +27,7 @@ namespace mrover {
 
         //PID CONSTANTS
         double const mAngleP = 1;
-        double const mLinearP = 0.1;
+        double const mLinearP = 0.3;
         ros::NodeHandle mNh, mPnh;
 
         ros::Publisher mDebugVectorPub;

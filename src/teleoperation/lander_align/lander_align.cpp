@@ -61,7 +61,7 @@ namespace mrover {
 
     void LanderAlignNodelet::LanderCallback(sensor_msgs::PointCloud2Ptr const& cloud) {
         filterNormals(cloud);
-        ransac(0.2, 10, 100);
+        ransac(0.1, 10, 100);
         if (mBestNormalInZED.has_value()) {
             geometry_msgs::Vector3 vect;
             vect.x = mBestNormalInZED.value().x();
@@ -213,7 +213,7 @@ namespace mrover {
 
         if(mBestNormalInZED.value().x() > 0) mBestNormalInZED.value() *=-1;
 
-        mBestOffsetInZED = std::make_optional<Eigen::Vector3d>(mBestLocationInZED.value() + mBestNormalInZED.value());
+        mBestOffsetInZED = std::make_optional<Eigen::Vector3d>(mBestLocationInZED.value() + 2 * mBestNormalInZED.value());
 
 		uploadPC(numInliers, distanceThreshold);
 
@@ -314,7 +314,7 @@ namespace mrover {
 
         //Threhsolds
         float const linear_thresh = 0.1; // could be member variables
-        float const angular_thresh = 0.005;
+        float const angular_thresh = 0.001;
 
 
         PID pid(0.1, 0.1); // literally just P -- ugly class and probably needs restructuring in the future
@@ -364,6 +364,8 @@ namespace mrover {
                     
                     double angle_rate = mAngleP * SO3tan.z();
 
+                    
+
                     ROS_INFO("w_z velocity %f", SO3tan.z());
 
 
@@ -387,7 +389,9 @@ namespace mrover {
                         twist.linear.x = 0;
 
                     }
-                    double driveRate = mLinearP * distanceToTarget;
+                    double driveRate = std::min(mLinearP * distanceToTarget, 1.0);
+
+                    ROS_INFO("distance: %f", distanceToTarget);
 
                     twist.linear.x = driveRate;
 
@@ -419,7 +423,7 @@ namespace mrover {
                     if (std::abs(SO3tan.z()) < angular_thresh) {
                         mLoopState = RTRSTATE::done;
                         twist.angular.z = 0;
-                        twist.linear.x = angle_rate;
+                        twist.linear.x = 0;
                     //  ROS_INFO("Done turning to lander");
 
                     }
