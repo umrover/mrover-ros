@@ -26,9 +26,6 @@ namespace mrover {
 
         tf2_ros::Buffer mTfBuffer{};
         tf2_ros::TransformListener mTfListener{mTfBuffer};
-
-        //TODO - convert to ROS PARAM
-        const uint32_t MAX_RADIUS = 10;
         
     public:
         ClickIkNodelet() = default;

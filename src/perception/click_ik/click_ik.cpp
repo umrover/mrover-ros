@@ -28,9 +28,11 @@ namespace mrover {
         auto desired_transform = inverse_transform.inverse();
         SE3d arm_target = desired_transform * target_point.value();
         geometry_msgs::Pose pose;
+        
         pose.position.x = arm_target.x();
         pose.position.y = arm_target.y();
         pose.position.z = arm_target.z();
+
         pose.orientation.w = arm_target.quat().w();
         pose.orientation.x = arm_target.quat().x();
         pose.orientation.y = arm_target.quat().y();
