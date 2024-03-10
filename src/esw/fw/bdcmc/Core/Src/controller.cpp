@@ -21,40 +21,47 @@ extern I2C_HandleTypeDef hi2c1;
  * You must also set auto reload to true so the interurpt gets called on a cycle.
  */
 
-extern TIM_HandleTypeDef htim1;
 extern TIM_HandleTypeDef htim2;
 extern TIM_HandleTypeDef htim3;
-extern TIM_HandleTypeDef htim4;
-extern TIM_HandleTypeDef htim6;
 extern TIM_HandleTypeDef htim7;
 extern TIM_HandleTypeDef htim15;
 extern TIM_HandleTypeDef htim16;
 extern TIM_HandleTypeDef htim17;
+#ifdef MOTOR2
+    extern TIM_HandleTypeDef htim1;
+    extern TIM_HandleTypeDef htim4;
+    extern TIM_HandleTypeDef htim6;
+#endif
 
+#define PWM_TIMER_0 &htim15              // H-Bridge PWM
 #define QUADRATURE_TICK_TIMER_0 &htim3   // Special encoder timer which externally reads quadrature encoder ticks
-#define QUADRATURE_TICK_TIMER_1 &htim4   // TODO test that this timer works for encoder pos
 #define ENCODER_ELAPSED_TIMER_0 &htim17  // Measures time since the last tick reading
-#define ENCODER_ELAPSED_TIMER_1 &htim6   // TODO test that this timer works for encoder vel
 #define ABSOLUTE_ENCODER_TIMER &htim2    // Defines rate in which we send I2C request to absolute encoder
 #define SEND_TIMER &htim7                // 100 Hz FDCAN repeating timer
-#define PWM_TIMER_0 &htim15              // H-Bridge PWM
-#define PWM_TIMER_1 &htim1               // TODO test that this timer works for pwm output
 #define FDCAN_WATCHDOG_TIMER &htim16     // FDCAN watchdog timer that needs to be reset every time a message is received
+#ifdef MOTOR2
+    #define PWM_TIMER_1 &htim1               // TODO test that this timer works for pwm output
+    #define QUADRATURE_TICK_TIMER_1 &htim4   // TODO test that this timer works for encoder pos
+    #define ENCODER_ELAPSED_TIMER_1 &htim6   // TODO test that this timer works for encoder vel
+#endif
 
 namespace mrover {
 
     // NOTE: Change this for each motor controller
     constexpr static std::uint8_t DEVICE_ID_0 = 0x21; // currently set for joint_b
 
-    // NOTE: Change this to 0x00 if there is no 2nd motor on the mcu
-    constexpr static std::uint8_t DEVICE_ID_1 = 0x01; // currently set for nothing
+    #ifdef MOTOR2
+        constexpr static std::uint8_t DEVICE_ID_1 = 0x01; // currently set for nothing
+    #endif
 
     // Usually this is the Jetson
     constexpr static std::uint8_t DESTINATION_DEVICE_ID = 0x10;
 
     FDCAN<InBoundMessage> fdcan_bus;
     Controller controller0;
-    std::optional<Controller> controller1;
+    #ifdef MOTOR2
+        Controller controller1;
+    #endif
 
     auto init() -> void {
         fdcan_bus = FDCAN<InBoundMessage>{0x00, DESTINATION_DEVICE_ID, &hfdcan1};
@@ -76,25 +83,24 @@ namespace mrover {
                 },
         };
 
-        if (DEVICE_ID_1 != 0x00) {
-            std::array<LimitSwitch, 4> controller_1_limits = {
-                LimitSwitch{Pin{LIMIT_1_0_GPIO_Port, LIMIT_1_0_Pin}},
-                LimitSwitch{Pin{LIMIT_1_1_GPIO_Port, LIMIT_1_1_Pin}},
-                // LimitSwitch{Pin{LIMIT_1_2_GPIO_Port, LIMIT_1_2_Pin}},
-                // LimitSwitch{Pin{LIMIT_1_3_GPIO_Port, LIMIT_1_3_Pin}},
+        #ifdef MOTOR2
+            controller1 = Controller{
+                    DEVICE_ID_1,
+                    PWM_TIMER_1,
+                    Pin{GPIOC, GPIO_PIN_6},
+                    fdcan_bus,
+                    FDCAN_WATCHDOG_TIMER,
+                    QUADRATURE_TICK_TIMER_1,
+                    ENCODER_ELAPSED_TIMER_1,
+                    ABSOLUTE_I2C,
+                    {
+                        LimitSwitch{Pin{LIMIT_1_0_GPIO_Port, LIMIT_1_0_Pin}},
+                        LimitSwitch{Pin{LIMIT_1_1_GPIO_Port, LIMIT_1_1_Pin}},
+                        // LimitSwitch{Pin{LIMIT_1_2_GPIO_Port, LIMIT_1_2_Pin}},
+                        // LimitSwitch{Pin{LIMIT_1_3_GPIO_Port, LIMIT_1_3_Pin}},
+                    },
             };
-
-            controller1.emplace(
-                DEVICE_ID_1,
-                PWM_TIMER_1,
-                Pin{GPIOC, GPIO_PIN_6},
-                fdcan_bus,
-                FDCAN_WATCHDOG_TIMER,
-                QUADRATURE_TICK_TIMER_1,
-                ENCODER_ELAPSED_TIMER_1,
-                ABSOLUTE_I2C,
-                controller_1_limits);
-        }
+        #endif
 
         // TODO: these should probably be in the controller / encoders themselves
         // Necessary for the timer interrupt to work
@@ -112,56 +118,72 @@ namespace mrover {
 
         if (messageId.destination == DEVICE_ID_0) {
             controller0.receive(message);
-        } else if (messageId.destination == DEVICE_ID_1 && controller1) {
-            controller1->receive(message);
-        }
+        } 
+        #ifdef MOTOR2
+            else if (messageId.destination == DEVICE_ID_1) {
+                controller1->receive(message);
+            }
+        #endif
     }
 
     auto update_callback() -> void {
         controller0.update();
-        if (controller1) controller1->update();
+        #ifdef MOTOR2
+            controller1->update();
+        #endif
     }
 
     auto request_absolute_encoder_data_callback() -> void {
         controller0.request_absolute_encoder_data();
-        if (controller1) controller1->request_absolute_encoder_data();
+        #ifdef MOTOR2
+            controller1->request_absolute_encoder_data();
+        #endif
     }
 
     auto read_absolute_encoder_data_callback() -> void {
         controller0.read_absolute_encoder_data();
-        if (controller1) controller1->read_absolute_encoder_data();
+        #ifdef MOTOR2
+            controller1->read_absolute_encoder_data();
+        #endif
     }
 
     auto update_absolute_encoder_callback() -> void {
         controller0.update_absolute_encoder();
-        if (controller1) controller1->update_absolute_encoder();
+        #ifdef MOTOR2
+            controller1->update_absolute_encoder();
+        #endif
+    }
+    
+    auto send_callback() -> void {
+        controller0.send();
+        #ifdef MOTOR2
+            controller1->send();
+        #endif
+    }
+
+    auto fdcan_watchdog_expired() -> void {
+        controller0.receive_watchdog_expired();
+        #ifdef MOTOR2
+            controller1->receive_watchdog_expired();
+        #endif
     }
 
     auto update_quadrature_encoder_0_callback() -> void {
         controller0.update_quadrature_encoder();
     }
-
-    auto update_quadrature_encoder_1_callback() -> void {
-        if (controller1) controller1->update_quadrature_encoder();
-    }
-
+    
     auto elapsed_timer_0_expired() -> void {
         controller0.elapsed_timer_expired();
     }
 
-    auto elapsed_timer_1_expired() -> void {
-        if (controller1) controller1->elapsed_timer_expired();
-    }
-
-    auto send_callback() -> void {
-        controller0.send();
-        if (controller1) controller1->send();
-    }
-
-    auto fdcan_watchdog_expired() -> void {
-        controller0.receive_watchdog_expired();
-        if (controller1) controller1->receive_watchdog_expired();
-    }
+    #ifdef MOTOR2
+        auto update_quadrature_encoder_1_callback() -> void {
+            controller1->update_quadrature_encoder();
+        }
+        auto elapsed_timer_1_expired() -> void {
+            controller1->elapsed_timer_expired();
+        }
+    #endif
 
 } // namespace mrover
 
@@ -190,20 +212,26 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim) {
         mrover::fdcan_watchdog_expired();
     } else if (htim == ENCODER_ELAPSED_TIMER_0) {
         mrover::elapsed_timer_0_expired();
-    } else if (htim == ENCODER_ELAPSED_TIMER_1) {
-        mrover::elapsed_timer_1_expired();
     } else if (htim == ABSOLUTE_ENCODER_TIMER) {
         mrover::request_absolute_encoder_data_callback();
     }
+    #ifdef MOTOR2
+        else if (htim == ENCODER_ELAPSED_TIMER_1) {
+            mrover::elapsed_timer_1_expired();
+        } 
+    #endif
     // TODO: check for slow update timer and call on controller to send out i2c frame
 }
 
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef* htim) {
     if (htim == QUADRATURE_TICK_TIMER_0) {
         mrover::update_quadrature_encoder_0_callback();
-    } else if (htim == QUADRATURE_TICK_TIMER_1) {
-        mrover::update_quadrature_encoder_1_callback();
     }
+    #ifdef MOTOR2
+        else if (htim == QUADRATURE_TICK_TIMER_1) {
+            mrover::update_quadrature_encoder_1_callback();
+        }
+    #endif
 }
 
 /**
