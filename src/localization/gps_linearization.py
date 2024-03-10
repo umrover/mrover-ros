@@ -12,8 +12,22 @@ from util.SO3 import SO3
 from util.np_utils import numpify
 import message_filters
 
+# import threading
+import threading
+import time
+
 # from mrover.msg import rtkStatus
 from tf.transformations import *
+
+# delete later
+from tf.transformations import euler_from_quaternion
+from tf.transformations import euler_matrix
+from tf.transformations import quaternion_from_euler
+from tf.transformations import euler_from_matrix
+from tf.transformations import inverse_matrix
+
+# delete later
+global time_start
 
 
 class GPSLinearization:
@@ -39,11 +53,32 @@ class GPSLinearization:
 
     world_frame: str
 
+    # timeout detection
+    gps_time_delay: int
+    imu_time_delay: int
+    gps_has_timeout: bool
+    imu_has_timeout: bool
+    global gps_timer
+    global imu_timer
+    
     # covariance config
     use_dop_covariance: bool
     config_gps_covariance: np.ndarray
+    
+    time_start = time.time()
+
+    def gps_timeout(self):
+        print("GPS has timed out, using Imu")
+        self.gps_has_timeout = True
+        return
+    
+    def imu_timeout(self):
+        print("Imu has timed out, now using GPS")
+        self.imu_has_timeout = True
+        return
 
     def __init__(self):
+
         # read required parameters, if they don't exist an error will be thrown
         self.ref_lat = rospy.get_param("gps_linearization/reference_point_latitude")
         self.ref_lon = rospy.get_param("gps_linearization/reference_point_longitude")
@@ -68,7 +103,7 @@ class GPSLinearization:
         right_gps_sub = message_filters.Subscriber("/right_gps_driver/fix", NavSatFix)
         left_gps_sub = message_filters.Subscriber("/left_gps_driver/fix", NavSatFix)
         # left_rtk_fix_sub = message_filters.Subscriber("left_gps_driver/rtk_fix_status", rtkStatus)
-        # right_rtk_fix_sub = message_filters.Subscrier("right_gps_driver/rtk_fix_status", rtkStatus)
+        # right_rtk_fix_sub = message_filters.Subscriber("right_gps_driver/rtk_fix_status", rtkStatus)
 
         # sync subscribers
         sync_gps_sub = message_filters.ApproximateTimeSynchronizer([right_gps_sub, left_gps_sub], 10, 0.5)
@@ -77,6 +112,12 @@ class GPSLinearization:
         rospy.Subscriber("imu/data", ImuAndMag, self.imu_callback)
         self.pose_publisher = rospy.Publisher("linearized_pose", PoseWithCovarianceStamped, queue_size=1)
 
+        # initialize timers
+        # self.gps_timer = threading.Timer(self.gps_time_delay, self.gps_timeout)
+        # self.imu_timer = threading.Timer(self.imu_time_delay, self.imu_timeout)
+        #print("made it here to timer")
+        
+        
     def gps_callback(
         self,
         right_gps_msg: NavSatFix,
@@ -90,6 +131,14 @@ class GPSLinearization:
         TODO: Handle invalid PVTs
         """
 
+        print("in gps callback")
+        self.gps_has_timeout = False
+
+        # global gps_timer
+        self.gps_timer.cancel()
+        self.gps_timer = threading.Timer(5, self.gps_timeout)
+        self.gps_timer.start()
+        
         if np.any(np.isnan([right_gps_msg.latitude, right_gps_msg.longitude, right_gps_msg.altitude])):
             return
         if np.any(np.isnan([left_gps_msg.latitude, left_gps_msg.longitude, left_gps_msg.altitude])):
@@ -106,11 +155,13 @@ class GPSLinearization:
 
         pose = GPSLinearization.compute_gps_pose(right_cartesian=right_cartesian, left_cartesian=left_cartesian)
 
-        # add roll and pitch from imu to gps rotation
-        if self.last_imu_orientation is not None:
-            imu_euler_angles = euler_from_quaternion(self.last_imu_orientation)
-            gps_euler_angles = euler_from_quaternion(pose.rotation.quaternion)
-            pose = SE3(pose.position, SO3((quaternion_from_euler(imu_euler_angles[0], imu_euler_angles[1], gps_euler_angles[2], axes="sxyz")).copy()))
+        # if imu has timed out do not use imu orientation
+        if (self.imu_has_timeout == False):
+            # add roll and pitch from imu to gps rotation
+            if self.last_imu_orientation is not None:
+                imu_euler_angles = euler_from_quaternion(self.last_imu_orientation)
+                gps_euler_angles = euler_from_quaternion(pose.rotation.quaternion)
+                pose = SE3(pose.position, SO3((quaternion_from_euler(imu_euler_angles[0], imu_euler_angles[1], gps_euler_angles[2], axes="sxyz")).copy()))
     
         self.last_gps_pose = pose
 
@@ -135,8 +186,13 @@ class GPSLinearization:
             ),
         )
 
+        
         # publish pose (rtk)
         self.pose_publisher.publish(pose_msg)
+        # print("still publishing")
+        # if (time.time() - self.time_start > 5):
+        #     print("exceeded")
+        #     self.left_gps_sub.shutdown()
 
     def imu_callback(self, msg: ImuAndMag):
         """
@@ -145,35 +201,44 @@ class GPSLinearization:
         :param msg: The Imu message containing IMU data that was just received
         """
 
+        print("in imu callback")
+        self.imu_has_timeout = False #reset in the case that we want it to go back after it has set itself to true
+        global imu_timer
+        #self.imu_timer.cancel()
+        self.imu_timer = threading.Timer(5, self.imu_timeout)
+        self.imu_timer.start()
+
         if self.last_gps_pose is None:
             return
         
         imu_orientation = numpify(msg.imu.orientation)
         self.last_imu_orientation = imu_orientation
         
-        # if calculate_offset flag is true
-        if self.calculate_offset:
-            # euler angles
-            imu_euler_angles = euler_from_quaternion(imu_orientation)
-            gps_euler_angles = euler_from_quaternion(self.last_gps_pose_fixed.rotation.quaternion)
+        # if gps has timed out do not use offset
+        if (self.gps_has_timeout == False):
+            # if calculate_offset flag is true
+            if self.calculate_offset:
+                # euler angles
+                imu_euler_angles = euler_from_quaternion(imu_orientation)
+                gps_euler_angles = euler_from_quaternion(self.last_gps_pose_fixed.rotation.quaternion)
 
-            # rotation matrices, use imu roll and pitch for gps rotation to make sure these angles are preserved
-            imu_rotation_matrix = euler_matrix(imu_euler_angles[0], imu_euler_angles[1], imu_euler_angles[2], axes="sxyz")
-            gps_rotation_matrix = euler_matrix(imu_euler_angles[0], imu_euler_angles[1], gps_euler_angles[2], axes="sxyz")
+                # rotation matrices, use imu roll and pitch for gps rotation to make sure these angles are preserved
+                imu_rotation_matrix = euler_matrix(imu_euler_angles[0], imu_euler_angles[1], imu_euler_angles[2], axes="sxyz")
+                gps_rotation_matrix = euler_matrix(imu_euler_angles[0], imu_euler_angles[1], gps_euler_angles[2], axes="sxyz")
 
-            self.rtk_offset = np.matmul(inverse_matrix(imu_rotation_matrix), gps_rotation_matrix)
-            self.calculate_offset = False
+                self.rtk_offset = np.matmul(inverse_matrix(imu_rotation_matrix), gps_rotation_matrix)
+                self.calculate_offset = False
 
-        # if rtk_offset is set, apply offset to imu orientation
-        if self.rtk_offset is not None:
-            imu_euler_angles = euler_from_quaternion(imu_orientation)
-            imu_rotation_matrix = euler_matrix(ai=imu_euler_angles[0], aj=imu_euler_angles[1], ak=imu_euler_angles[2], axes="sxyz")
+            # if rtk_offset is set, apply offset to imu orientation
+            if self.rtk_offset is not None:
+                imu_euler_angles = euler_from_quaternion(imu_orientation)
+                imu_rotation_matrix = euler_matrix(ai=imu_euler_angles[0], aj=imu_euler_angles[1], ak=imu_euler_angles[2], axes="sxyz")
 
-            offsetted_rotation_matrix = np.matmul(imu_rotation_matrix, self.rtk_offset)
-            offsetted_euler = euler_from_matrix(offsetted_rotation_matrix)
-            imu_orientation = quaternion_from_euler(
-                offsetted_euler[0], offsetted_euler[1], offsetted_euler[2], axes="sxyz"
-            )
+                offsetted_rotation_matrix = np.matmul(imu_rotation_matrix, self.rtk_offset)
+                offsetted_euler = euler_from_matrix(offsetted_rotation_matrix)
+                imu_orientation = quaternion_from_euler(
+                    offsetted_euler[0], offsetted_euler[1], offsetted_euler[2], axes="sxyz"
+                )
 
         # imu quaternion
         imu_quat = imu_orientation / np.linalg.norm(imu_orientation)
