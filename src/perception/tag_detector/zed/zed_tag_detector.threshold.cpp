@@ -15,7 +15,7 @@ namespace mrover {
      *
      * @param msg
      */
-    void TagDetectorNodelet::publishThresholdedImage() {
+    void StereoTagDetectorNodelet::publishThresholdedImage() {
         cvtColor(mImg, mGrayImg, cv::COLOR_BGR2GRAY);
 
         // number of window sizes (scales) to apply adaptive thresholding

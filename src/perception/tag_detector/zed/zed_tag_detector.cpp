@@ -2,7 +2,7 @@
 
 namespace mrover {
 
-    auto ZedTagDetector::specificOnInit() -> void {
+    auto StereoTagDetectorNodelet::specificOnInit() -> void {
         mNh.param<bool>("use_odom_frame", mUseOdom, false);
         mNh.param<std::string>("odom_frame", mOdomFrameId, "odom");
         mNh.param<std::string>("world_frame", mMapFrameId, "map");
@@ -16,7 +16,7 @@ namespace mrover {
 
         mImgPub = mNh.advertise<sensor_msgs::Image>("tag_detection", 1);
 
-        mPcSub = mNh.subscribe("camera/left/points", 1, &ZedTagDetector::pointCloudCallback, this);
+        mPcSub = mNh.subscribe("camera/left/points", 1, &StereoTagDetectorNodelet::pointCloudCallback, this);
 
     }    // namespace mrover
 

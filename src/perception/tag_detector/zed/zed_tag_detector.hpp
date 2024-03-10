@@ -12,7 +12,7 @@ namespace mrover {
         std::optional<SE3d> tagInCam;
     };
 
-    class ZedTagDetector : public TagDetector {
+    class StereoTagDetectorNodelet : public TagDetector {
         std::unordered_map<int, ros::Publisher> mThreshPubs; // Map from threshold scale to publisher
         ros::ServiceServer mServiceEnableDetections;
 
@@ -44,9 +44,9 @@ namespace mrover {
         auto getTagInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t u, size_t v) const -> std::optional<SE3d>;
 
     public:
-        ZedTagDetector() = default;
+        StereoTagDetectorNodelet() = default;
 
-        ~ZedTagDetector() override = default;
+        ~StereoTagDetectorNodelet() override = default;
 
         auto pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg) -> void;
     };

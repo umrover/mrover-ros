@@ -3,7 +3,7 @@
 #ifdef MROVER_IS_NODELET
 
 #include <pluginlib/class_list_macros.h>
-PLUGINLIB_EXPORT_CLASS(mrover::ZedTagDetector, mrover::TagDetector)
+PLUGINLIB_EXPORT_CLASS(mrover::StereoTagDetectorNodelet, mrover::TagDetector)
 
 #else
 
