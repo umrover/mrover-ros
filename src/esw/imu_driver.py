@@ -82,9 +82,15 @@ def main():
     rospy.init_node("imu_driver")
 
     # read serial connection info and IMU frame from parameter server
+<<<<<<< Updated upstream
     port = rospy.get_param("imu_driver/port")
     baud = rospy.get_param("imu_driver/baud", 115200)
     imu_frame = rospy.get_param("imu_driver/frame_id", "imu_link")
+=======
+    port = "/dev/ttyACM0"
+    baud = 115200
+    imu_frame = "imu_link"
+>>>>>>> Stashed changes
 
     # create serial connection with Arduino
     ser = serial.Serial(port, baud)
@@ -162,7 +168,11 @@ def main():
 
         temp_msg = Temperature(header=header, temperature=temp_data)
 
+<<<<<<< Updated upstream
         # calibration_msg = CalibrationStatus(header, cal_data)
+=======
+        calibration_msg = CalibrationStatus(header, cal_data)
+>>>>>>> Stashed changes
 
         # publish each message
         imu_pub.publish(imu_msg)
