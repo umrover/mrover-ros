@@ -22,6 +22,8 @@ namespace mrover {
         double x = ik_target.pose.position.x;
         double y = ik_target.pose.position.y;
         double z = ik_target.pose.position.z;
+        
+        //Offset between static_pose_a and b_link
         SE3d pos{{x + 0.034346, 0, z + 0.049024}, SO3d::Identity()};
         SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_target", "arm_a_link", pos);
 
