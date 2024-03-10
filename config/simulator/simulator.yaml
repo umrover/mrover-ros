@@ -38,3 +38,7 @@ objects:
     name: rock4
     uri: package://mrover/urdf/world/rock.urdf.xacro
     translation: [9, -2, 0.2]
+  - type: urdf
+    name: lander
+    uri: package://mrover/urdf/world/lander.urdf.xacro
+    translation: [10, 10, 10]
