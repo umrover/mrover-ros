@@ -81,6 +81,9 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.enable_auton = rospy.ServiceProxy("enable_auton", EnableAuton)
             self.change_cameras_srv = rospy.ServiceProxy("change_cameras", ChangeCameras)
             self.capture_panorama_srv: Any = rospy.ServiceProxy("capture_panorama", CapturePanorama)
+            self.science_enable_0 = rospy.ServiceProxy("enable_heater", SetBool)
+            self.science_enable_1 = rospy.ServiceProxy("enable_heater", SetBool)
+            self.science_enable_2 = rospy.ServiceProxy("enable_heater", SetBool)
 
             # ROS Parameters
             self.mappings = rospy.get_param("teleop/joystick_mappings")
