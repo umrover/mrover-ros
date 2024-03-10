@@ -169,9 +169,6 @@ mrover_nodelet_link_libraries(long_range_tag_detector opencv_core opencv_objdete
 mrover_add_nodelet(usb_camera src/perception/long_range_cam/*.cpp src/perception/long_range_cam src/perception/long_range_cam/pch.hpp)
 mrover_nodelet_link_libraries(usb_camera opencv_core opencv_objdetect opencv_aruco opencv_imgproc opencv_highgui tbb lie)
 
-# this is new pls make sure its right :D
-#mrover_add_nodelet(tag_detector_class src/perception/tag_detector/*.cpp src/perception/tag_detector src/perception/tag_detector/pch.hpp)
-
 if (CUDA_FOUND)
     mrover_add_library(streaming src/esw/streaming/*.c* src/esw/streaming)
     #    target_link_libraries(streaming PUBLIC opencv_core opencv_cudacodec)

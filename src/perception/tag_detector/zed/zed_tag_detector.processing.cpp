@@ -1,5 +1,6 @@
 #include "zed_tag_detector.hpp"
 
+#include "lie.hpp"
 #include "point.hpp"
 
 namespace mrover {
@@ -83,7 +84,7 @@ namespace mrover {
             if (tag.tagInCam) {
                 // Publish tag to immediate
                 std::string immediateFrameId = std::format("immediateFiducial{}", tag.id);
-                SE3d::pushToTfTree(mTfBroadcaster, immediateFrameId, mCameraFrameId, tag.tagInCam.value());
+                SE3Conversions::pushToTfTree(mTfBroadcaster, immediateFrameId, mCameraFrameId, tag.tagInCam.value());
             }
         }
 
@@ -109,8 +110,8 @@ namespace mrover {
                     std::string immediateFrameId = std::format("immediateFiducial{}", tag.id);
                     // Publish tag to odom
                     std::string const& parentFrameId = mUseOdom ? mOdomFrameId : mMapFrameId;
-                    SE3d tagInParent = SE3d::fromTfTree(mTfBuffer, parentFrameId, immediateFrameId);
-                    SE3d::pushToTfTree(mTfBroadcaster, std::format("fiducial{}", id), parentFrameId, tagInParent);
+                    SE3d tagInParent = SE3Conversions::fromTfTree(mTfBuffer, parentFrameId, immediateFrameId);
+                    SE3Conversions::pushToTfTree(mTfBroadcaster, std::format("fiducial{}", id), parentFrameId, tagInParent);
                 } catch (tf2::ExtrapolationException const&) {
                     NODELET_WARN("Old data for immediate tag");
                 } catch (tf2::LookupException const&) {

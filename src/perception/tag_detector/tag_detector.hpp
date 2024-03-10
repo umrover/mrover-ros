@@ -22,9 +22,14 @@ namespace mrover {
         std::optional<size_t> mPrevDetectedCount; // Log spam prevention
         dynamic_reconfigure::Server<DetectorParamsConfig> mConfigServer;
         dynamic_reconfigure::Server<DetectorParamsConfig>::CallbackType mCallbackType;
+        int dictionaryNumber;
+
+        cv::Ptr<cv::aruco::DetectorParameters> mDetectorParams;
+        cv::Ptr<cv::aruco::Dictionary> mDictionary;
+        ros::ServiceServer mServiceEnableDetections;
 
     public: 
-        auto onInit() -> void;
+        auto onInit() -> void override;
 
         virtual void specificOnInit() = 0;
 
