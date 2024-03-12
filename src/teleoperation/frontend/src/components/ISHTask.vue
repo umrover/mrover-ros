@@ -22,7 +22,7 @@
       </div> -->
     <!-- ADD BENEDICTS TEST HERE-->
     <div class="shadow p-3 rounded cameras">
-      <Cameras :primary="primary" />
+      <Cameras :primary="primary" :isSA="false"/>
     </div>
     <!-- <div class="shadow p-3 rounded cache">
         <Cache />
@@ -30,9 +30,9 @@
     <!-- <div class="shadow p-3 rounded chlorophyll">
         <Chlorophyll :spectral_data="spectral_data" />
       </div> -->
-    <!-- <div class="shadow p-3 rounded amino">
-        <Amino :site="site" :site-index="siteIndex" />
-      </div> -->
+    <div class="shadow p-3 rounded amino">
+        <Amino :site="site" :isAmino="true"/>
+      </div>
   </div>
 </template>
 
@@ -41,7 +41,7 @@
 //   import Raman from "./Raman.vue";
 //   import Cache from "./Cache.vue";
 //   import Chlorophyll from "./Chlorophyll.vue";
-//   import Amino from "./Amino.vue";
+import Amino from "./Amino.vue";
 import Cameras from '../components/Cameras.vue'
 //   import CommReadout from "./CommReadout.vue";
 //   import MCUReset from "./MCUReset.vue"
@@ -57,7 +57,7 @@ export default {
     //   Raman,
     //   Cache,
     //   Chlorophyll,
-    //   Amino,
+    Amino,
     Cameras
     //   CommReadout,
     //   MCUReset,
@@ -82,7 +82,7 @@ export default {
   },
 
   created: function () {
-    disableAutonLED()
+    // disableAutonLED()
     //   this.spectral_sub = new ROSLIB.Topic({
     //     ros: this.$ros,
     //     name: "science/spectral",
@@ -106,7 +106,7 @@ export default {
   },
 
   methods: {
-    onSiteChange(value: String) {
+    onSiteChange(value: string) {
       this.site = value
     }
   }

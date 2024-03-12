@@ -44,8 +44,8 @@
 
 <script>
 import ToggleButton from "./ToggleButton.vue";
-import ROSLIB from "roslib";
 import LEDIndicator from "./LEDIndicator.vue";
+import { mapActions } from 'vuex';
 
 let interval;
 
@@ -60,8 +60,8 @@ export default {
       type: String,
       required: true
     },
-    siteIndex: {
-      type: Number,
+    isAmino: { //true = amino, false = benedict's
+      type: Boolean,
       required: true
     }
   },
@@ -89,15 +89,11 @@ export default {
         }
       ],
 
+      siteIndex: 0,
+
       autoShutdownEnabled: true,
       autoShutdownIntended: true,
 
-      // Pubs and subs
-      temp_sub: null,
-      heater_status_sub: null,
-      shutdown_status_sub: null,
-
-      heater_service: null,
     };
   },
 
@@ -106,105 +102,37 @@ export default {
   },
 
   created: function () {
-    this.temp_sub = new ROSLIB.Topic({
-      ros: this.$ros,
-      name: "science/temperatures",
-      messageType: "mrover/ScienceTemperature"
-    });
-
-    this.temp_sub.subscribe((msg) => {
-      // Callback for temp_sub
-      for (let i = 0; i < 3; i++) {
-        this.heaters[i].temp = msg.temperatures[i];
-      }
-    });
-
-    this.heater_status_sub = new ROSLIB.Topic({
-      ros: this.$ros,
-      name: "science/heater_state_data",
-      messageType: "mrover/HeaterData"
-    });
-
-    this.heater_status_sub.subscribe((msg) => {
-      // Callback for heater_status_sub
-      for (let i = 0; i < 3; i++) {
-        this.heaters[i].enabled = msg.state[i];
-      }
-    });
-
-    this.shutdown_status_sub = new ROSLIB.Topic({
-      ros: this.$ros,
-      name: "science/heater_auto_shutoff_state_data",
-      messageType: "std_msgs/Bool"
-    });
-
-    this.shutdown_status_sub.subscribe((msg) => {
-      this.autoShutdownEnabled = msg.data;
-    });
-
-    this.heater_service = new ROSLIB.Service({
-      ros: this.$ros,
-      name: "change_heater_state",
-      serviceType: "mrover/ChangeHeaterState"
-    });
-
-    // Get interval param
-    let param = new ROSLIB.Param({
-      ros: this.$ros,
-      name: "science/heater_service_request_interval"
-    });
-
-    param.get((value) => {
-      let interval_ms = value;
-      // Send heater service request on interval for any activated heaters.
-      interval = setInterval(() => {
-        for (let i = 0; i < 3; i++) {
-          if (this.heaters[i].intended) {
-            this.sendHeaterRequest(i);
-          }
-        }
-      }, interval_ms);
-    });
+    this.siteIndex = this.site.charCodeAt(0) - 65;
   },
 
   methods: {
+    ...mapActions('websocket', ['sendMessage']),
+
     toggleHeater: function (id) {
       this.heaters[id].intended = !this.heaters[id].intended;
       this.sendHeaterRequest(id);
     },
 
     sendHeaterRequest: function (id) {
-      let request = new ROSLIB.ServiceRequest({
-        device: id,
-        enable: this.heaters[id].intended
-      });
-
-      this.heater_service.callService(request, (result) => {
-        if (!result) {
-          alert(`Toggling heater ${i} failed.`);
-        }
-      });
+      this.heaters[id].enabled = !this.heaters[id].enabled;
+      var heaterName = "n";
+      if (this.isAmino) {
+        heaterName = "b"
+      }
+      heaterName += id
+      // window.setTimeout(() => {
+        this.sendMessage({ type: "heaterEnable", enabled: this.heaters[id].enabled, heater: heaterName});
+      // }, 250)
     },
 
     sendAutoShutdownCmd: function (enabled) {
       this.autoShutdownIntended = enabled;
-      let autoShutdownServ = new ROSLIB.Service({
-        ros: this.$ros,
-        name: "change_heater_auto_shutoff_state",
-        serviceType: "std_srvs/SetBool",
-      });
-      let request = new ROSLIB.ServiceRequest({
-        data: this.autoShutdownIntended
-      });
-      autoShutdownServ.callService(request, (result) => {
-        if (!result) {
-          alert(`Toggling autoshutdown failed.`);
-        }
-      });
-    }
+    },
 
     capturePhoto() {
-      // TBD
+      // window.setTimeout(() => {
+        this.sendMessage({ type: "takePanorama" }); //TODO: change to something other than takePanorama
+      // }, 250)
     }
   }
 };

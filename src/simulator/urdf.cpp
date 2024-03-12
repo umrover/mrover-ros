@@ -30,6 +30,29 @@ namespace mrover {
         return btVector3{static_cast<btScalar>(inertia->ixx), static_cast<btScalar>(inertia->iyy), static_cast<btScalar>(inertia->izz)} * INERTIA_MULTIPLIER;
     }
 
+    auto SimulatorNodelet::initUrdfsFromParams() -> void {
+        {
+            XmlRpc::XmlRpcValue objects;
+            mNh.getParam("objects", objects);
+            if (objects.getType() != XmlRpc::XmlRpcValue::TypeArray) throw std::invalid_argument{"URDFs to load must be an array. Did you rosparam load a simulator config file properly?"};
+
+            for (int i = 0; i < objects.size(); ++i) { // NOLINT(*-loop-convert)
+                XmlRpc::XmlRpcValue const& object = objects[i];
+
+                auto type = xmlRpcValueToTypeOrDefault<std::string>(object, "type");
+                auto name = xmlRpcValueToTypeOrDefault<std::string>(object, "name", "<unnamed>");
+
+                NODELET_INFO_STREAM(std::format("Loading object: {} of type: {}", name, type));
+
+                if (type == "urdf") {
+                    if (auto [_, was_added] = mUrdfs.try_emplace(name, *this, object); !was_added) {
+                        throw std::invalid_argument{std::format("Duplicate object name: {}", name)};
+                    }
+                }
+            }
+        }
+    }
+
     auto URDF::makeCollisionShapeForLink(SimulatorNodelet& simulator, urdf::LinkConstSharedPtr const& link) -> btCollisionShape* {
         boost::container::static_vector<std::pair<btCollisionShape*, btTransform>, 4> shapes;
         for (urdf::CollisionSharedPtr const& collision: link->collision_array) {
@@ -160,7 +183,7 @@ namespace mrover {
             if (link->name.contains("camera"sv)) {
                 Camera camera = makeCameraForLink(simulator, &multiBody->getLink(linkIndex));
                 if (link->name.contains("zed"sv)) {
-                    camera.frameId = "zed2i_left_camera_frame";
+                    camera.frameId = "zed_left_camera_frame";
                     camera.pub = simulator.mNh.advertise<sensor_msgs::Image>("camera/left/image", 1);
                     camera.fov = 60;
                     StereoCamera stereoCamera;

@@ -10,6 +10,14 @@ can:
 brushless_motors:
   controllers:
     devboard:
+      limit_0_present: true
+      limit_1_present: true
+      limit_0_enabled: true
+      limit_1_enabled: true
+      limit_0_is_active_high: true
+      limit_1_is_active_high: true
+      limit_0_limits_fwd: true
+      limit_1_limits_fwd: false
       min_velocity: -5.0
       max_velocity: 5.0
       min_position: -100.0
@@ -18,33 +26,37 @@ brushless_motors:
 brushed_motors:
   controllers:
     devboard:
+      min_velocity: -5.0
+      max_velocity: 5.0
+      min_position: -100.0
+      max_position: 100.0
       gear_ratio: 1.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
-      limit_0_present: false
-      limit_1_present: false
+      limit_0_present: true
+      limit_1_present: true
       limit_2_present: false
       limit_3_present: false
-      limit_0_default_enabled: false
-      limit_1_default_enabled: false
-      limit_2_default_enabled: false
-      limit_3_default_enabled: false
+      limit_0_enabled: true
+      limit_1_enabled: true
+      limit_2_enabled: false
+      limit_3_enabled: false
       limit_0_is_active_high: true
       limit_1_is_active_high: true
       limit_2_is_active_high: true
       limit_3_is_active_high: true
-      limit_0_limits_fwd: true
+      limit_0_limits_fwd: false
       limit_1_limits_fwd: true
       limit_2_limits_fwd: true
       limit_3_limits_fwd: true
-      limit_0_used_for_readjustment: false
-      limit_1_used_for_readjustment: false
-      limit_2_used_for_readjustment: false
-      limit_3_used_for_readjustment: false
-      quad_present: false
+      limit_0_used_for_readjustment: true
+      limit_1_used_for_readjustment: true
+      limit_2_used_for_readjustment: true
+      limit_3_used_for_readjustment: true
+      quad_present: true
       quad_is_fwd_polarity: true
       abs_present: false
       abs_is_fwd_polarity: true
-      limit_0_readjust_position: 0.0 # radians
-      limit_1_readjust_position: 0.0 # radians
+      limit_0_readjust_position: -20.0 # radians
+      limit_1_readjust_position: 20.0 # radians
       limit_2_readjust_position: 0.0 # radians
       limit_3_readjust_position: 0.0 # radians
       quad_ratio: 1.0 # encoder ratio compared to motor
@@ -56,3 +68,6 @@ brushed_motors:
       limit_max_backward_pos: false
       max_forward_pos: 1.0
       max_backward_pos: 0.0
+      position_p: 1.2
+      velocity_p: 1.4
+      velocity_ff: 0.9
