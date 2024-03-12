@@ -17,7 +17,7 @@ else ()
 
         set(dawn_FOUND TRUE)
     else ()
-        message(WARNING "Dawn not found. If on Ubuntu install with 'sudo apt install -f ./pkg/dawn.deb'. Or build from source with ./scripts/build_dawn.sh")
+        message(WARNING "Dawn not found. If on Ubuntu install with 'sudo apt install -f ./pkg/libdawn-dev.deb'. Or build from source with ./scripts/build_dawn.sh")
     endif ()
 endif ()
 
@@ -57,7 +57,7 @@ if (NOT manif_FOUND)
 
         set(manif_FOUND TRUE)
     else ()
-        message(FATAL_ERROR "Manif not found. If on Ubuntu install with 'sudo apt install -f ./pkg/manif.deb'. Or build from source with 'submodule update --init deps/manif' and make sure it is non-empty")
+        message(FATAL_ERROR "Manif not found. If on Ubuntu install with 'sudo apt install -f ./pkg/libmanif-dev.deb'. Or build from source with 'submodule update --init deps/manif' and make sure it is non-empty")
     endif ()
 endif ()
 
