@@ -4,6 +4,8 @@ import heapq
 import random
 from threading import Lock
 from typing import Optional
+from scipy.signal import convolve2d
+
 
 import numpy as np
 
@@ -146,7 +148,13 @@ class WaterBottleSearchState(State):
             for col in row:
                 if col == 1.0:
                     line.append("\u2588")
-                elif col == 0.0 or col == 0.5:
+                elif col < 1.0 and col >= 0.8:
+                    line.append("\u2593")
+                elif col < 0.8 and col >= 0.5:
+                    line.append("\u2592")
+                elif col < 0.5 and col >= 0.2:
+                    line.append("\u2591")
+                elif col < 0.2:
                     line.append(" ")
                 elif col == 2:
                     line.append(".")
@@ -187,7 +195,7 @@ class WaterBottleSearchState(State):
             and end_node.position[1] <= (costmap2d.shape[1] - 1)
             and end_node.position[1] >= 0
         ):
-            if costmap2d[end_node.position[0], end_node.position[1]] >= 1 or self.avg_cell(costmap2d, [end_node.position[0], end_node.position[1]]) >= 1/3:
+            if costmap2d[end_node.position[0], end_node.position[1]] >= 0.3: # TODO figure out value
                 # True if the trajectory is finished so return None
                 if self.traj.increment_point():
                     return None
@@ -222,7 +230,7 @@ class WaterBottleSearchState(State):
             if outer_iterations > max_iterations:
                 # if we hit this point return the path such as it is. It will not contain the destination
                 print("giving up on pathfinding too many iterations")
-                return self.return_path(current_node)
+                return self.return_path(current_node, costmap2d)
 
             # get the current node
             current_node = heapq.heappop(open_list)
@@ -246,6 +254,9 @@ class WaterBottleSearchState(State):
                 ):
                     continue
 
+                if costmap2d[node_position[0]][node_position[1]] >= 0.3:
+                    continue
+
                 # create new node and append it
                 new_node = Node(current_node, node_position)
                 children.append(new_node)
@@ -256,7 +267,7 @@ class WaterBottleSearchState(State):
                 if len([closed_child for closed_child in closed_list if closed_child == child]) > 0:
                     continue
                 # create the f, g, and h values
-                child.g = current_node.g + costmap2d[child.position[0], child.position[1]] + (self.avg_cell(costmap2d, [child.position[0], child.position[1]])*30) # TODO change thresholds of how much importance we want to give each element
+                child.g = current_node.g + costmap2d[child.position[0], child.position[1]]
                 child.h = ((child.position[0] - end_node.position[0]) ** 2) + (
                     (child.position[1] - end_node.position[1]) ** 2
                 )
@@ -286,14 +297,23 @@ class WaterBottleSearchState(State):
         """
         if rospy.get_time() - self.time_last_updated > 1:
             print("RUN ASTAR")
-            self.resolution = msg.info.resolution  # meters/cell
+
+            self.resolution = msg.info.resolution # meters/cell
             self.height = msg.info.height  # cells
             self.width = msg.info.width  # cells
             with self.costmap_lock:
                 costmap2D = np.array(msg.data).reshape((int(self.height), int(self.width))).astype(np.float32)
+                
                 # change all unidentified points to have a cost of 0.5
                 costmap2D[costmap2D == -1.0] = 0.5
                 costmap2D = np.rot90(costmap2D, k=3, axes=(0,1)) # rotate 90 degress clockwise
+
+                #TODO: Figure out threshold and maybe leave 1s as 1s
+                #Apply Kernel to average the map with zero padding
+                mask = (costmap2D == 1.0)
+                kernel = np.ones((3,3), dtype = np.float32) / 9
+                costmap2D = convolve2d(costmap2D, kernel, mode = "same")
+                costmap2D = np.where(mask, 1.0, costmap2D)
 
                 cur_rover_pose = self.context.rover.get_pose().position[0:2]
                 end_point = self.traj.get_cur_pt()
@@ -309,7 +329,7 @@ class WaterBottleSearchState(State):
                         np.hstack((cartesian_coords, np.zeros((cartesian_coords.shape[0], 1))))
                     )  # current point gets set back to 0
                     self.costmap_pub.publish(costmap2D.flatten())
-
+                    
                     path = Path()
                     poses = []
                     path.header = Header()
