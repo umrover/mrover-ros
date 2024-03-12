@@ -28,8 +28,6 @@ namespace mrover {
               mIncomingCANSub{
                       mNh.subscribe<CAN>(
                               std::format("can/{}/in", mControllerName), 16, &Controller::processCANMessage, this)} {
-            updateLastConnection();
-            mHeartbeatTimer = mNh.createTimer(ros::Duration(0.1), &Controller::heartbeatCallback, this);
             // Subscribe to the ROS topic for commands
             mMoveThrottleSub = mNh.subscribe<Throttle>(std::format("{}_throttle_cmd", mControllerName), 1, &Controller::moveMotorsThrottle, this);
             mMoveVelocitySub = mNh.subscribe<Velocity>(std::format("{}_velocity_cmd", mControllerName), 1, &Controller::moveMotorsVelocity, this);
@@ -51,17 +49,6 @@ namespace mrover {
         virtual void processCANMessage(CAN::ConstPtr const& msg) = 0;
         virtual double getEffort() = 0;
         virtual void adjust(Radians position) = 0;
-        void updateLastConnection() {
-            mLastConnection = std::chrono::high_resolution_clock::now();
-        }
-
-        void heartbeatCallback(ros::TimerEvent const&) {
-            if (auto duration = std::chrono::high_resolution_clock::now() - mLastConnection;
-                duration > std::chrono::milliseconds(100)) {
-                setDesiredThrottle(0_percent);
-                ROS_INFO("timeout");
-            }
-        }
 
         void moveMotorsThrottle(Throttle::ConstPtr const& msg) {
             if (msg->names.size() != 1 || msg->names.at(0) != mControllerName || msg->throttles.size() != 1) {
@@ -141,8 +128,6 @@ namespace mrover {
         std::string mErrorState;
         std::string mState;
         std::array<bool, 4> mLimitHit{};
-        std::chrono::high_resolution_clock::time_point mLastConnection;
-        ros::Timer mHeartbeatTimer;
 
         ros::Subscriber mMoveThrottleSub;
         ros::Subscriber mMoveVelocitySub;

@@ -69,8 +69,7 @@ namespace mrover {
         mState = "Unknown";
     }
 
-    void BrushedController::setDesiredThrottle(Percent throttle) {
-        updateLastConnection();
+    auto BrushedController::setDesiredThrottle(Percent throttle) -> void {
         if (!mIsConfigured) {
             sendConfiguration();
             return;
@@ -81,8 +80,7 @@ namespace mrover {
         mDevice.publish_message(InBoundMessage{ThrottleCommand{.throttle = throttle}});
     }
 
-    void BrushedController::setDesiredPosition(Radians position) {
-        updateLastConnection();
+    auto BrushedController::setDesiredPosition(Radians position) -> void {
         if (!mIsConfigured) {
             sendConfiguration();
             return;
@@ -98,8 +96,7 @@ namespace mrover {
         }});
     }
 
-    void BrushedController::setDesiredVelocity(RadiansPerSecond velocity) {
-        updateLastConnection();
+    auto BrushedController::setDesiredVelocity(RadiansPerSecond velocity) -> void {
         if (!mIsConfigured) {
             sendConfiguration();
             return;
@@ -118,14 +115,13 @@ namespace mrover {
         }});
     }
 
-    void BrushedController::sendConfiguration() {
+    auto BrushedController::sendConfiguration() -> void {
         mDevice.publish_message(InBoundMessage{mConfigCommand});
 
         // Need to await configuration. Can NOT directly set mIsConfigured to true.
     }
 
-    void BrushedController::adjust(Radians position) {
-        updateLastConnection();
+    auto BrushedController::adjust(Radians position) -> void {
         if (!mIsConfigured) {
             sendConfiguration();
             return;
@@ -136,10 +132,9 @@ namespace mrover {
         mDevice.publish_message(InBoundMessage{AdjustCommand{.position = position}});
     }
 
-    void BrushedController::processMessage(ControllerDataState const& state) {
+    auto BrushedController::processMessage(ControllerDataState const& state) -> void {
         mCurrentPosition = state.position;
         mCurrentVelocity = state.velocity / mVelocityMultiplier;
-        ROS_INFO("Vel: %f | Pos: %f", mCurrentVelocity.get(), mCurrentPosition.get());
         ConfigCalibErrorInfo configCalibErrInfo = state.config_calib_error_data;
         mIsConfigured = configCalibErrInfo.configured;
         mIsCalibrated = configCalibErrInfo.calibrated;
@@ -155,7 +150,7 @@ namespace mrover {
         }
     }
 
-    void BrushedController::processCANMessage(CAN::ConstPtr const& msg) {
+    auto BrushedController::processCANMessage(CAN::ConstPtr const& msg) -> void {
         assert(msg->source == mControllerName);
         assert(msg->destination == mName);
 
@@ -188,22 +183,22 @@ namespace mrover {
         }
     }
 
-    auto BrushedController::calibrateServiceCallback(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res) -> bool {
+    auto BrushedController::calibrateServiceCallback([[maybe_unused]] std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res) -> bool {
         if (!mhasLimit) {
             res.success = false;
             res.message = mControllerName + " does not have limit switches, cannot calibrate";
             return true;
-        } else if (mIsCalibrated) {
+        }
+        if (mIsCalibrated) {
             res.success = false;
             res.message = mControllerName + " already calibrated";
             return true;
-        } else {
-            // sends throttle command until a limit switch is hit
-            // mIsCalibrated is set with CAN message coming from BDCMC
-            setDesiredThrottle(mCalibrationThrottle);
-            res.success = true;
-            return true;
         }
+        // sends throttle command until a limit switch is hit
+        // mIsCalibrated is set with CAN message coming from BDCMC
+        setDesiredThrottle(mCalibrationThrottle);
+        res.success = true;
+        return true;
     }
 
 } // namespace mrover

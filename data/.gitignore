@@ -1,0 +1,3 @@
+# Compiled ONXX networks
+# They are specific to the device they were built on, so they should not be checked in
+*.engine

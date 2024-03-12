@@ -93,11 +93,11 @@ namespace mrover {
 
         URDF(SimulatorNodelet& simulator, XmlRpc::XmlRpcValue const& init);
 
-        auto makeCollisionShapeForLink(SimulatorNodelet& simulator, urdf::LinkConstSharedPtr const& link) -> btCollisionShape*;
+        static auto makeCollisionShapeForLink(SimulatorNodelet& simulator, urdf::LinkConstSharedPtr const& link) -> btCollisionShape*;
 
-        auto makeCameraForLink(SimulatorNodelet& simulator, btMultibodyLink const* link) -> Camera;
+        static auto makeCameraForLink(SimulatorNodelet& simulator, btMultibodyLink const* link) -> Camera;
 
-        [[nodiscard]] auto linkInWorld(std::string const& linkName) const -> SE3;
+        [[nodiscard]] auto linkInWorld(std::string const& linkName) const -> SE3d;
     };
 
     struct PeriodicTask {
@@ -186,6 +186,7 @@ namespace mrover {
         int mTogglePhysicsKey = GLFW_KEY_P;
         int mToggleRenderModelsKey = GLFW_KEY_M;
         int mToggleRenderWireframeCollidersKey = GLFW_KEY_C;
+        int mToggleCameraLockKey = GLFW_KEY_O;
 
         float mFlySpeed = 5.0f;
         float mRoverLinearSpeed = 1.0f;
@@ -193,11 +194,12 @@ namespace mrover {
         float mLookSense = 0.004f;
         float mFovDegrees = 60.0f;
         btVector3 mGravityAcceleration{0.0f, 0.0f, -9.81f};
-        bool mEnablePhysics = false;
+        bool mEnablePhysics{};
         bool mRenderModels = true;
         bool mRenderWireframeColliders = false;
         double mPublishHammerDistanceThreshold = 4;
         double mPublishBottleDistanceThreshold = 4;
+        float mCameraLockSlerp = 0.02;
 
         float mFloat = 0.0f;
 
@@ -222,11 +224,23 @@ namespace mrover {
         Eigen::Vector3f mIkTarget{0.125, 0.1, 0};
         ros::Publisher mIkTargetPub;
 
-        R3 mGpsLinerizationReferencePoint{};
+        R3 mGpsLinearizationReferencePoint{};
         double mGpsLinerizationReferenceHeading{};
+
+        // TODO: make variances configurable
+        std::default_random_engine mRNG;
+        std::normal_distribution<> mGPSDist{0, 0.02},
+                mAccelDist{0, 0.01},
+                mGyroDist{0, 0.01},
+                mMagDist{0, 0.1},
+                mRollDist{0, 0.01},
+                mPitchDist{0, 0.01},
+                mYawDist{0, 0.01};
 
         PeriodicTask mGpsTask;
         PeriodicTask mImuTask;
+
+        bool mIsHeadless{};
 
         // Rendering
 
@@ -305,7 +319,9 @@ namespace mrover {
 
         auto getUrdf(std::string const& name) -> std::optional<std::reference_wrapper<URDF>>;
 
-        SE3 mCameraInWorld{R3{-3.0, 0.0, 1.5}, SO3{}};
+        SE3d mCameraInWorld{R3{-3.0, 0.0, 1.5}, SO3d::Identity()};
+
+        std::optional<SE3d> mCameraInRoverTarget;
 
         std::vector<StereoCamera> mStereoCameras;
         std::vector<Camera> mCameras;
@@ -346,7 +362,7 @@ namespace mrover {
 
         auto initPhysics() -> void;
 
-        auto parseParams() -> void;
+        auto initUrdfsFromParams() -> void;
 
         auto onInit() -> void override;
 
@@ -355,6 +371,10 @@ namespace mrover {
         auto centerCursor() -> void;
 
         auto freeLook(Clock::duration dt) -> void;
+
+        auto cameraLock(Clock::duration dt) -> void;
+
+        auto setCameraInRoverTarget() -> void;
 
         auto userControls(Clock::duration dt) -> void;
 
@@ -432,7 +452,7 @@ namespace mrover {
 
     auto urdfPoseToBtTransform(urdf::Pose const& pose) -> btTransform;
 
-    auto btTransformToSe3(btTransform const& transform) -> SE3;
+    auto btTransformToSe3(btTransform const& transform) -> SE3d;
 
     auto computeCameraToClip(float fovY, float aspect, float zNear, float zFar) -> Eigen::Matrix4f;
 

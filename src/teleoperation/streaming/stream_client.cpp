@@ -1,32 +1,41 @@
 #include <cstdio>
 #include <string>
+#include <chrono>
 
 #include <emscripten/val.h>
 #include <emscripten/websocket.h>
 
 #include <libde265/de265.h>
 
-de265_decoder_context* decoder = nullptr;
+de265_decoder_context* decoder{};
 
-EM_BOOL on_open(int _event_type, const EmscriptenWebSocketOpenEvent* websocket_event, void* user_data) {
+EMSCRIPTEN_WEBSOCKET_T socket{};
+
+auto create_socket() -> void;
+
+auto on_open(int _event_type, EmscriptenWebSocketOpenEvent const* websocket_event, void* user_data) -> EM_BOOL {
     std::puts("Stream opened");
 
     return EM_TRUE;
 }
 
-EM_BOOL on_error(int _event_type, const EmscriptenWebSocketErrorEvent* websocket_event, void* user_data) {
+auto on_error(int _event_type, EmscriptenWebSocketErrorEvent const* websocket_event, void* user_data) -> EM_BOOL {
     std::puts("Stream errored :(");
 
+    // create_socket();
+
     return EM_TRUE;
 }
 
-EM_BOOL on_close(int _event_type, const EmscriptenWebSocketCloseEvent* websocket_event, void* user_data) {
+auto on_close(int _event_type, EmscriptenWebSocketCloseEvent const* websocket_event, void* user_data) -> EM_BOOL {
     std::puts("Stream closed");
 
+    // create_socket();
+
     return EM_TRUE;
 }
 
-EM_BOOL on_message(int _event_type, const EmscriptenWebSocketMessageEvent* websocket_event, void* user_data) {
+auto on_message(int _event_type, EmscriptenWebSocketMessageEvent const* websocket_event, void* user_data) -> EM_BOOL {
     if (websocket_event->isText) {
         std::puts("Got text when expected binary");
         return EM_FALSE;
@@ -37,17 +46,23 @@ EM_BOOL on_message(int _event_type, const EmscriptenWebSocketMessageEvent* webso
         return EM_FALSE;
     }
 
+    // auto start = std::chrono::high_resolution_clock::now();
+
     int more = 0;
     de265_error decode_status;
     while ((decode_status = de265_decode(decoder, &more)) == DE265_OK && more) {
     }
+
+    // auto end = std::chrono::high_resolution_clock::now();
+    
+    // printf("%llu ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count());
 
     if (decode_status != DE265_OK && decode_status != DE265_ERROR_WAITING_FOR_INPUT_DATA) {
         std::printf("Errored decoding: %d\n", decode_status);
         return EM_FALSE;
     }
 
-    const struct de265_image* image;
+    de265_image const* image;
     while ((image = de265_peek_next_picture(decoder)) != NULL) {
         int width = de265_get_image_width(image, 0);
         int height = de265_get_image_height(image, 0);
@@ -59,9 +74,9 @@ EM_BOOL on_message(int _event_type, const EmscriptenWebSocketMessageEvent* webso
         }
 
         int y_stride, u_stride, v_stride;
-        const std::uint8_t* y = de265_get_image_plane(image, 0, &y_stride);
-        const std::uint8_t* u = de265_get_image_plane(image, 1, &u_stride);
-        const std::uint8_t* v = de265_get_image_plane(image, 2, &v_stride);
+        std::uint8_t const* y = de265_get_image_plane(image, 0, &y_stride);
+        std::uint8_t const* u = de265_get_image_plane(image, 1, &u_stride);
+        std::uint8_t const* v = de265_get_image_plane(image, 2, &v_stride);
 
         // clang-format off
         EM_ASM({
@@ -77,7 +92,7 @@ EM_BOOL on_message(int _event_type, const EmscriptenWebSocketMessageEvent* webso
             const vStride = $7;
 
             const canvas = document.getElementById('canvas');
-            const ctx = canvas.getContext   ('2d');
+            const ctx = canvas.getContext('2d');
             if (Module.imageBuffer === undefined) {
                 Module.imageBuffer = ctx.createImageData(width, height);
                 canvas.width = width;
@@ -115,34 +130,57 @@ EM_BOOL on_message(int _event_type, const EmscriptenWebSocketMessageEvent* webso
     return EM_TRUE;
 }
 
-int main() {
-    if (!emscripten_websocket_is_supported()) return EXIT_FAILURE;
+extern "C" {
 
-    decoder = de265_new_decoder();
-    if (!decoder) return EXIT_FAILURE;
+auto on_before_unload() -> void {
+    if (socket <= 0) return;
 
-    if (de265_error error = de265_start_worker_threads(decoder, 0); error != DE265_OK) return EXIT_FAILURE;
+    emscripten_websocket_close(socket, 1000, "Window is closing");
+}
+}
 
+auto create_socket() -> void {
     emscripten::val location = emscripten::val::global("location");
     std::string url = "ws://" + location["hostname"].as<std::string>() + ":8080";
+    // std::string url = "ws://10.1.0.10:8080";
     printf("Connecting to %s ...\n", url.c_str());
     EmscriptenWebSocketCreateAttributes create_socket_attributes = {
             .url = url.c_str(),
             .protocols = "binary",
             .createOnMainThread = EM_TRUE,
     };
-    EMSCRIPTEN_WEBSOCKET_T socket = emscripten_websocket_new(&create_socket_attributes);
-    if (socket <= 0) return EXIT_FAILURE;
 
-    EMSCRIPTEN_RESULT result;
-    result = emscripten_websocket_set_onopen_callback(socket, NULL, on_open);
-    if (result != EMSCRIPTEN_RESULT_SUCCESS) return EXIT_FAILURE;
+    socket = emscripten_websocket_new(&create_socket_attributes);
+    if (socket <= 0) return;
+
+    EMSCRIPTEN_RESULT result = emscripten_websocket_set_onopen_callback(socket, NULL, on_open);
+    if (result != EMSCRIPTEN_RESULT_SUCCESS) return;
     result = emscripten_websocket_set_onerror_callback(socket, NULL, on_error);
-    if (result != EMSCRIPTEN_RESULT_SUCCESS) return EXIT_FAILURE;
+    if (result != EMSCRIPTEN_RESULT_SUCCESS) return;
     result = emscripten_websocket_set_onclose_callback(socket, NULL, on_close);
-    if (result != EMSCRIPTEN_RESULT_SUCCESS) return EXIT_FAILURE;
+    if (result != EMSCRIPTEN_RESULT_SUCCESS) return;
     result = emscripten_websocket_set_onmessage_callback(socket, NULL, on_message);
-    if (result != EMSCRIPTEN_RESULT_SUCCESS) return EXIT_FAILURE;
+    if (result != EMSCRIPTEN_RESULT_SUCCESS) return;
+}
+
+auto main() -> int {
+    if (!emscripten_websocket_is_supported()) {
+        fprintf(stderr, "WebSockets are not supported\n");
+        return EXIT_FAILURE;
+    }
+
+    decoder = de265_new_decoder();
+    if (!decoder) {
+        fprintf(stderr, "Failed to create libde265 decoder\n");
+        return EXIT_FAILURE;
+    }
+
+    if (de265_error error = de265_start_worker_threads(decoder, 0); error != DE265_OK) {
+        fprintf(stderr, "Failed to start libde265 worker threads: %d\n", error);
+        return EXIT_FAILURE;
+    }
+
+    create_socket();
 
     return EXIT_SUCCESS;
 }

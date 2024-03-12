@@ -6,9 +6,9 @@ namespace mrover {
     SATranslator::SATranslator(ros::NodeHandle& nh) {
 
 
-        mXAxisMult = RadiansPerMeter{getFloatFromRosParam(nh, "brushed_motors/controllers/sa_x/rad_to_meters_ratio")};
-        mYAxisMult = RadiansPerMeter{getFloatFromRosParam(nh, "brushed_motors/controllers/sa_y/rad_to_meters_ratio")};
-        mZAxisMult = RadiansPerMeter{getFloatFromRosParam(nh, "brushless_motors/controllers/sa_z/rad_to_meters_ratio")};
+        mXAxisMult = requireParamAsUnit<RadiansPerMeter>(nh, "brushed_motors/controllers/sa_x/rad_to_meters_ratio");
+        mYAxisMult = requireParamAsUnit<RadiansPerMeter>(nh, "brushed_motors/controllers/sa_y/rad_to_meters_ratio");
+        mZAxisMult = requireParamAsUnit<RadiansPerMeter>(nh, "brushless_motors/controllers/sa_z/rad_to_meters_ratio");
         
         mThrottleSub = nh.subscribe<Throttle>("sa_throttle_cmd", 1, &SATranslator::processThrottleCmd, this);
         mVelocitySub = nh.subscribe<Velocity>("sa_velocity_cmd", 1, &SATranslator::processVelocityCmd, this);
@@ -16,8 +16,8 @@ namespace mrover {
         mSAHWJointDataSub = nh.subscribe<sensor_msgs::JointState>("sa_hw_joint_data", 1, &SATranslator::processSAHWJointData, this);
 
         mThrottlePub = std::make_unique<ros::Publisher>(nh.advertise<Throttle>("sa_hw_throttle_cmd", 1));
-        mVelocityPub = std::make_unique<ros::Publisher>(nh.advertise<Velocity>("sa_hw_throttle_cmd", 1));
-        mPositionPub = std::make_unique<ros::Publisher>(nh.advertise<Position>("sa_hw_throttle_cmd", 1));
+        mVelocityPub = std::make_unique<ros::Publisher>(nh.advertise<Velocity>("sa_hw_velocity_cmd", 1));
+        mPositionPub = std::make_unique<ros::Publisher>(nh.advertise<Position>("sa_hw_position_cmd", 1));
         mJointDataPub = std::make_unique<ros::Publisher>(nh.advertise<sensor_msgs::JointState>("sa_joint_data", 1));
     }
 
@@ -47,7 +47,7 @@ namespace mrover {
         velocity.velocities.at(mYAxisIndex) = y_axis_vel;
 
         auto z_axis_vel = convertLinVel(msg->velocities.at(mZAxisIndex), mZAxisMult.get());
-        velocity.velocities.at(mZAxisIndex) = z_axis_vel;                
+        velocity.velocities.at(mZAxisIndex) = z_axis_vel; 
 
         mVelocityPub->publish(velocity);
     }
