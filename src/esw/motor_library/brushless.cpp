@@ -89,8 +89,6 @@ namespace mrover {
 
         velocity = velocity * mVelocityMultiplier;
 
-        velocity = velocity * mVelocityMultiplier;
-
         // ROS_INFO("my velocity rev s = %f", velocity.get()); 
 
         RevolutionsPerSecond velocity_rev_s = std::clamp(velocity, mMinVelocity, mMaxVelocity);

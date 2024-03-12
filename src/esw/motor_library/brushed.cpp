@@ -77,6 +77,10 @@ namespace mrover {
 
         assert(throttle >= -1_percent && throttle <= 1_percent);
 
+        if (mVelocityMultiplier.get() < 0) {
+            throttle *= -1.0;
+        }
+
         mDevice.publish_message(InBoundMessage{ThrottleCommand{.throttle = throttle}});
     }
 
