@@ -34,16 +34,16 @@ void InvariantEKF::predict(const R3& accel, const R3& gyro, double dt) {
     J_u_x.block<3, 3>(6, 3) = gCross;
 
     // TODO: where does this come from? chain rule + Ax + Bu?
-    // need to set J_u_x
     F = J_x_x + J_x_u * J_u_x;
     mP = J_x_x * mP * J_x_x.transpose() + mQ;
 
+
     if(std::abs(mX.translation().x()) > 1 || std::abs(mX.translation().z()) > 1 || std::abs(mX.translation().y()) > 1){
-        std::cout << accel << std::endl << gyro << std::endl << dt << std::endl;
+        // std::cout << "Accel: " << accel << std::endl << "Gyro: "<< gyro << std::endl <<"dt: " << dt << std::endl;
+        // std::cout << std::endl;
+        std::cout << mX.translation() << std::endl;
         std::cout << std::endl;
     }
-
-
 
 }
 
@@ -60,7 +60,10 @@ void InvariantEKF::update(const R3& innovation, Matrix39d const& H, Matrix3d con
     // mX.normalize();
 
     // update state covariance
-    mP = mP - K * S * K.transpose();
+    // mP = mP - (K * S * K.transpose());
+    //joseph covariance update
+    Matrix9d IKH = Matrix9d::Identity() - K * H;
+    mP = IKH * mP * IKH.transpose() + K * R * K.transpose();
 }
 
 void InvariantEKF::update_gps(R3 const& observed_gps, Matrix3d const& R_gps) {
@@ -71,12 +74,6 @@ void InvariantEKF::update_gps(R3 const& observed_gps, Matrix3d const& R_gps) {
     R3 predicted_gps = mX.act(origin, J_e_x);
     Matrix39d H = J_e_x;
     update(observed_gps - predicted_gps, H, R_gps);
-
-    if(std::abs(mX.translation().x()) > 1 || std::abs(mX.translation().z()) > 1 || std::abs(mX.translation().y()) > 1){
-        std::cout << "hello";
-        std::cout << std::endl;
-    }
-
 }
 
 void InvariantEKF::update_gps(R3 const& observed_gps) {
