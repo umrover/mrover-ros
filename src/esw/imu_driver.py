@@ -82,7 +82,7 @@ def main():
     rospy.init_node("imu_driver")
 
     # read serial connection info and IMU frame from parameter server
-    port = rospy.get_param("imu_driver/port", "/dev/imu")
+    port = rospy.get_param("imu_driver/port")
     baud = rospy.get_param("imu_driver/baud", 115200)
     imu_frame = rospy.get_param("imu_driver/frame_id", "imu_link")
 
@@ -97,11 +97,10 @@ def main():
     while not rospy.is_shutdown():
         # try to read a line from the serial connection,
         # if this fails 100 times in a row then end the program
-        try: 
+        try:
             line = ser.readline()
             attempts = 0
-            
-            
+
         except SerialException:
             attempts += 1
             if attempts > 100:
@@ -118,7 +117,7 @@ def main():
 
         # partition data into different sensors, converting calibration data from float to int
         # if the indices of data don't exist, then skip this message
-        
+
         try:
             imu_orientation_data = data[:4]
             accel_data = data[4:7]
@@ -130,10 +129,10 @@ def main():
         except IndexError:
             rospy.logerr("incomplete msg")
             continue
-        
+
         # rotate the imu orientation by 90 degrees about the Z axis to convert it to ENU frame
-        enu_offset_quat = quaternion_about_axis(np.pi / 2, [0, 0, 1])
-        enu_imu_orientation = quaternion_multiply(enu_offset_quat, imu_orientation_data)
+        # enu_offset_quat = quaternion_about_axis(np.pi / 2, [0, 0, 1])
+        # enu_imu_orientation = quaternion_multiply(enu_offset_quat, imu_orientation_data)
 
         # similarly rotate the magnetometer vector into the ENU frame
         R = rotation_matrix(np.pi / 2, [0, 0, 1])
@@ -151,7 +150,7 @@ def main():
             header=header,
             imu=Imu(
                 header=header,
-                orientation=Quaternion(*enu_imu_orientation),
+                orientation=Quaternion(*imu_orientation_data),
                 linear_acceleration=Vector3(*accel_data),
                 angular_velocity=Vector3(*gyro_data),
                 orientation_covariance=orientation_covariance,

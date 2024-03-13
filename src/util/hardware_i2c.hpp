@@ -29,18 +29,18 @@ namespace mrover {
         }
 
         auto blocking_transmit(std::uint16_t address, TSend const& send) -> void {
-        	HAL_I2C_Master_Transmit(m_i2c, address << 1, address_of<std::uint8_t>(send), sizeof(send), I2C_TIMEOUT);
+            HAL_I2C_Master_Transmit(m_i2c, address << 1, address_of<std::uint8_t>(send), sizeof(send), I2C_TIMEOUT);
         }
 
         auto blocking_receive(std::uint16_t address) -> TReceive {
-        	if(TReceive receive{}; HAL_I2C_Master_Receive(m_i2c, address << 1 | 1, address_of<std::uint8_t>(receive), sizeof(receive), I2C_TIMEOUT) == HAL_OK){
-				return receive;
-        	}
+            // TODO(quintin): Error handling? Shouldn't this return an optional
+            if (TReceive receive{}; HAL_I2C_Master_Receive(m_i2c, address << 1 | 1, address_of<std::uint8_t>(receive), sizeof(receive), I2C_TIMEOUT) == HAL_OK) {
+                return receive;
+            }
         }
 
         auto blocking_transact(std::uint16_t address, TSend const& send) -> std::optional<TReceive> {
             if (HAL_I2C_Master_Transmit(m_i2c, address << 1, address_of<std::uint8_t>(send), sizeof(send), I2C_TIMEOUT) != HAL_OK) {
-                // TODO(quintin): Do we want a different error handler here?
                 return std::nullopt;
             }
 
@@ -56,8 +56,7 @@ namespace mrover {
         auto async_transmit(const std::uint16_t address, TSend const& send) -> void {
             // TODO: make sure actually sends to absolute encoder
             check(HAL_I2C_Master_Transmit_DMA(m_i2c, address << 1, address_of<std::uint8_t>(send), sizeof(send)) == HAL_OK, Error_Handler);
-            while (HAL_I2C_GetState(m_i2c) != HAL_I2C_STATE_READY)
-            {
+            while (HAL_I2C_GetState(m_i2c) != HAL_I2C_STATE_READY) {
             }
         }
 

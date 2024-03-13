@@ -4,6 +4,7 @@
     <arg name="ekf_start_delay" default="0" />
 
     <rosparam command="load" file="$(find mrover)/config/localization.yaml" />
+    <rosparam command="load" file="$(find mrover)/config/esw.yaml" />
     <rosparam if="$(arg sim)" command="load" file="$(find mrover)/config/sim_ekf.yaml" />
     <rosparam unless="$(arg sim)" command="load" file="$(find mrover)/config/ekf.yaml" />
 
@@ -14,9 +15,18 @@
         <remap from="odometry/filtered" to="global_ekf/odometry" />
     </node>
     <!-- Passthrough filter to replace EKF in data path -->
-    <node unless="$(arg use_ekf)" pkg="mrover" type="passthrough_filter.py"
-        name="passthrough_filter" />
+    <!-- <node pkg="mrover" type="passthrough_filter.py"
+          name="passthrough_filter" /> -->
 
     <!-- Linearize GPS from geodetic to ENU cartesian coords -->
     <node name="gps_linearization" pkg="mrover" type="gps_linearization.py" output="screen" />
+
+    <!-- Launch IMU driver -->
+    <node unless="$(arg sim)" name="imu_driver" pkg="mrover" type="imu_driver.py" output="screen" />
+
+    <!-- Launch GPS driver -->
+    <group ns="gps">
+        <node unless="$(arg sim)" name="gps_driver" pkg="mrover" type="gps_driver.py" output="screen" />
+    </group>
+
 </launch>

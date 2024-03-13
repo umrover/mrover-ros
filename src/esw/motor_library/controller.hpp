@@ -28,8 +28,6 @@ namespace mrover {
               mIncomingCANSub{
                       mNh.subscribe<CAN>(
                               std::format("can/{}/in", mControllerName), 16, &Controller::processCANMessage, this)} {
-            updateLastConnection();
-            mHeartbeatTimer = mNh.createTimer(ros::Duration(0.1), &Controller::heartbeatCallback, this);
             // Subscribe to the ROS topic for commands
             mMoveThrottleSub = mNh.subscribe<Throttle>(std::format("{}_throttle_cmd", mControllerName), 1, &Controller::moveMotorsThrottle, this);
             mMoveVelocitySub = mNh.subscribe<Velocity>(std::format("{}_velocity_cmd", mControllerName), 1, &Controller::moveMotorsVelocity, this);
@@ -38,7 +36,7 @@ namespace mrover {
             mJointDataPub = mNh.advertise<sensor_msgs::JointState>(std::format("{}_joint_data", mControllerName), 1);
             mControllerDataPub = mNh.advertise<ControllerState>(std::format("{}_controller_data", mControllerName), 1);
 
-            // mPublishDataTimer = mNh.createTimer(ros::Duration(0.1), &Controller::publishDataCallback, this);
+            mPublishDataTimer = mNh.createTimer(ros::Duration(0.1), &Controller::publishDataCallback, this);
 
             mAdjustServer = mNh.advertiseService(std::format("{}_adjust", mControllerName), &Controller::adjustServiceCallback, this);
         }
@@ -51,17 +49,6 @@ namespace mrover {
         virtual void processCANMessage(CAN::ConstPtr const& msg) = 0;
         virtual double getEffort() = 0;
         virtual void adjust(Radians position) = 0;
-        void updateLastConnection() {
-            mLastConnection = std::chrono::high_resolution_clock::now();
-        }
-
-        void heartbeatCallback(ros::TimerEvent const&) {
-            auto duration = std::chrono::high_resolution_clock::now() - mLastConnection;
-            if (duration < std::chrono::milliseconds(100)) {
-                setDesiredThrottle(0_percent);
-                ROS_WARN("TIMEOUT with controller %s\n", mControllerName.c_str());
-            }
-        }
 
         void moveMotorsThrottle(Throttle::ConstPtr const& msg) {
             if (msg->names.size() != 1 || msg->names.at(0) != mControllerName || msg->throttles.size() != 1) {
@@ -87,29 +74,33 @@ namespace mrover {
                 ROS_ERROR("Position request at topic for %s ignored!", msg->names.at(0).c_str());
                 return;
             }
+
             setDesiredPosition(Radians{msg->positions.at(0)});
         }
 
-        void publishDataCallback(ros::TimerEvent const&) {
-            sensor_msgs::JointState joint_state;
-            ControllerState controller_state;
-            joint_state.name.push_back(mName);
-            joint_state.position.push_back(mCurrentPosition.get());
-            joint_state.velocity.push_back(mCurrentVelocity.get());
-            joint_state.effort.push_back(getEffort());
-
-            controller_state.name.push_back(mName);
-            controller_state.state.push_back(mState);
-            controller_state.error.push_back(mErrorState);
-            std::uint8_t limit_hit{};
-            for (int i = 0; i < 4; ++i) {
-                limit_hit |= mLimitHit.at(i) << i;
+        auto publishDataCallback(ros::TimerEvent const&) -> void {
+            {
+                sensor_msgs::JointState jointState;
+                jointState.header.stamp = ros::Time::now();
+                jointState.name = {mControllerName};
+                jointState.position = {mCurrentPosition.get()};
+                jointState.velocity = {mCurrentVelocity.get()};
+                jointState.effort = {getEffort()};
+                mJointDataPub.publish(jointState);
             }
-            controller_state.limit_hit.push_back(limit_hit);
+            {
+                ControllerState controllerState;
+                controllerState.name = {mControllerName};
+                controllerState.state = {mState};
+                controllerState.error = {mErrorState};
+                std::uint8_t limit_hit{};
+                for (int i = 0; i < 4; ++i) {
+                    limit_hit |= mLimitHit.at(i) << i;
+                }
+                controllerState.limit_hit = {limit_hit};
 
-
-            mJointDataPub.publish(joint_state);
-            mControllerDataPub.publish(controller_state);
+                mControllerDataPub.publish(controllerState);
+            }
         }
 
         bool adjustServiceCallback(AdjustMotor::Request& req, AdjustMotor::Response& res) {
@@ -124,12 +115,11 @@ namespace mrover {
         }
 
     protected:
+        Dimensionless mVelocityMultiplier;
         ros::NodeHandle mNh;
         std::string mName, mControllerName;
         CanDevice mDevice;
         ros::Subscriber mIncomingCANSub;
-        RadiansPerSecond mMinVelocity{}, mMaxVelocity{};
-        Radians mMinPosition{}, mMaxPosition{};
         Radians mCurrentPosition{};
         RadiansPerSecond mCurrentVelocity{};
         Percent mCalibrationThrottle{};
@@ -138,8 +128,6 @@ namespace mrover {
         std::string mErrorState;
         std::string mState;
         std::array<bool, 4> mLimitHit{};
-        std::chrono::high_resolution_clock::time_point mLastConnection;
-        ros::Timer mHeartbeatTimer;
 
         ros::Subscriber mMoveThrottleSub;
         ros::Subscriber mMoveVelocitySub;

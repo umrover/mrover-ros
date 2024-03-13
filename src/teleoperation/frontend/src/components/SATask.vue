@@ -28,7 +28,10 @@
       <BasicWaypointEditor :odom="odom" />
     </div>
     <div class="shadow p-3 rounded cameras">
-      <Cameras :primary="true" />
+      <Cameras :primary="true" :isSA="true" />
+    </div>
+    <div class="shadow p-3 rounded soildata">
+      <SoilData />
     </div>
     <div>
       <DriveControls />
@@ -39,7 +42,7 @@
     <div class="shadow p-3 rounded pdb">
       <PDBFuse />
     </div>
-    <div class="shadow p-3 rounded jointState">
+    <div class="shadow p-3 rounded motorData">
       <MotorsStatusTable :motor-data="motorData" :vertical="true" />
     </div>
     <div class="shadow p-3 rounded moteus">
@@ -47,26 +50,32 @@
     </div>
     <div class="shadow p-3 rounded limit">
       <h3>Limit Switches</h3>
-      <LimitSwitch :switch_name="'sa_joint_1'" :name="'Joint 1 Switch'" />
-      <LimitSwitch :switch_name="'sa_joint_2'" :name="'Joint 2 Switch'" />
-      <LimitSwitch :switch_name="'sa_joint_3'" :name="'Joint 3 Switch'" />
-      <LimitSwitch :switch_name="'scoop'" :name="'Scoop Switch'" />
+      <LimitSwitch :service_name="'sa_enable_limit_switch_sa_x'" :display_name="'SA X Switch'" />
+      <LimitSwitch :service_name="'sa_enable_limit_switch_sa_y'" :display_name="'SA Y Switch'" />
+      <LimitSwitch :service_name="'sa_enable_limit_switch_sa_z'" :display_name="'SA Z Switch'" />
+      <LimitSwitch
+        :service_name="'sa_enable_limit_switch_sampler'"
+        :display_name="'Sampler Switch'"
+      />
+      <LimitSwitch
+        :service_name="'sa_enable_limit_switch_sensor_actuator'"
+        :display_name="'Sensor Actuator Switch'"
+      />
     </div>
     <div class="shadow p-3 rounded calibration">
       <h3>Calibrations</h3>
-      <br>
+      <br />
       <div class="calibration-checkboxes">
+        <CalibrationCheckbox :name="'SA X Calibration'" :topic_name="'sa_calibrate_sa_x'" />
+        <CalibrationCheckbox :name="'SA Y Calibration'" :topic_name="'sa_calibrate_sa_y'" />
+        <CalibrationCheckbox :name="'SA Z Calibration'" :topic_name="'sa_calibrate_sa_z'" />
         <CalibrationCheckbox
-          :name="'SA X Calibration'"
-          :topic_name="'sa_calibrate_sa_x'"
+          :name="'SA Sampler Calibration'"
+          :topic_name="'sa_calibrate_sampler'"
         />
         <CalibrationCheckbox
-          :name="'SA Y Calibration'"
-          :topic_name="'sa_calibrate_sa_y'"
-        />
-        <CalibrationCheckbox
-          :name="'SA Z Calibration'"
-          :topic_name="'sa_calibrate_sa_z'"
+          :name="'SA Sensor Actuator Calibration'"
+          :topic_name="'sa_calibrate_sensor_actuator'"
         />
       </div>
       <!-- <MotorAdjust
@@ -88,10 +97,10 @@
 
 <script lang="ts">
 import BasicMap from './BasicRoverMap.vue'
+import SoilData from './SoilData.vue'
 import BasicWaypointEditor from './BasicWaypointEditor.vue'
 import DriveControls from './DriveControls.vue'
 import MastGimbalControls from './MastGimbalControls.vue'
-//   import SAArmControls from "./SAArmControls.vue";
 import PDBFuse from './PDBFuse.vue'
 import Cameras from './Cameras.vue'
 import DriveMoteusStateTable from './DriveMoteusStateTable.vue'
@@ -104,10 +113,12 @@ import MotorAdjust from './MotorAdjust.vue'
 import OdometryReading from './OdometryReading.vue'
 import SAArmControls from './SAArmControls.vue'
 import { disableAutonLED, quaternionToMapAngle } from '../utils.js'
+import { mapState } from 'vuex'
 
 export default {
   components: {
     BasicMap,
+    SoilData,
     BasicWaypointEditor,
     Cameras,
     DriveControls,
@@ -137,9 +148,11 @@ export default {
         name: [] as string[],
         position: [] as number[],
         velocity: [] as number[],
-        effort: [] as number[]
+        effort: [] as number[],
+        state: [] as string[],
+        error: [] as string[]
       },
-
+      // Moteus state table is set up to look for specific keys in moteusState so it can't be empty
       moteusState: {
         name: [] as string[],
         error: [] as string[],
@@ -150,39 +163,30 @@ export default {
     }
   },
 
+  computed: {
+    ...mapState('websocket', ['message']),
+  },
+
+  watch: {
+    message(msg) {
+      if (msg.type == 'drive_status') {
+        this.motorData.name = msg.name
+        this.motorData.position = msg.position
+        this.motorData.velocity = msg.velocity
+        this.motorData.effort = msg.effort
+        this.motorData.state = msg.state
+        this.motorData.error = msg.error
+      } else if (msg.type == 'drive_moteus') {
+        this.moteusState.name = msg.name
+        this.moteusState.state = msg.state
+        this.moteusState.error = msg.error
+        this.moteusState.limit_hit = msg.limit_hit
+      } 
+    }
+  },
+
   created: function () {
-    //   disableAutonLED(this.$ros);
-    //   this.odom_sub = new ROSLIB.Topic({
-    //     ros: this.$ros,
-    //     name: "/gps/fix",
-    //     messageType: "sensor_msgs/NavSatFix"
-    //   });
-    //   this.odom_sub.subscribe((msg) => {
-    //     // Callback for latLng to be set
-    //     this.odom.latitude_deg = msg.latitude;
-    //     this.odom.longitude_deg = msg.longitude;
-    //   });
-    //   this.tfClient = new ROSLIB.TFClient({
-    //     ros: this.$ros,
-    //     fixedFrame: "odom",
-    //     // Thresholds to trigger subscription callback
-    //     angularThres: 0.0001,
-    //     transThres: 0.01
-    //   });
-    //   // Subscriber for odom to base_link transform
-    //   this.tfClient.subscribe("base_link", (tf) => {
-    //     // Callback for IMU quaternion that describes bearing
-    //     this.odom.bearing_deg = quaternionToMapAngle(tf.rotation);
-    //   });
-    //   this.brushless_motors_sub = new ROSLIB.Topic({
-    //     ros: this.$ros,
-    //     name: "drive_status",
-    //     messageType: "mrover/MotorsStatus"
-    //   });
-    //   this.brushless_motors_sub.subscribe((msg) => {
-    //     this.jointState = msg.joint_states;
-    //     this.moteusState = msg.moteus_states;
-    //   });
+
   }
 }
 </script>
@@ -192,13 +196,14 @@ export default {
   display: grid;
   grid-gap: 10px;
   grid-template-columns: repeat(3, auto);
-  grid-template-rows: auto 50vh repeat(3, auto);
+  grid-template-rows: auto 50vh repeat(4, auto);
   grid-template-areas:
     'header header header'
     'map map waypoints'
     'odom cameras cameras'
     'arm limit calibration'
-    'pdb moteus jointState';
+    'pdb moteus motorData'
+    'pdb moteus soilData';
   font-family: sans-serif;
   height: auto;
 }
@@ -276,8 +281,8 @@ export default {
   grid-area: pdb;
 }
 
-.jointState {
-  grid-area: jointState;
+.motorData {
+  grid-area: motorData;
 }
 
 .moteus {
@@ -290,6 +295,10 @@ export default {
 
 .odom {
   grid-area: odom;
+}
+
+.soilData {
+  grid-area: soilData;
 }
 
 .calibration {

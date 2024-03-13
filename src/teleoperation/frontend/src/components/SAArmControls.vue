@@ -51,7 +51,7 @@
           { esw_name: 'sa_x', display_name: 'X' },
           { esw_name: 'sa_y', display_name: 'Y' },
           { esw_name: 'sa_z', display_name: 'Z' },
-          { esw_name: 'scoop', display_name: 'Scoop' },
+          { esw_name: 'sampler', display_name: 'Sampler' },
           { esw_name: 'sensor_actuator', display_name: 'Sensor Actuator' }
         ]"
       />
@@ -95,7 +95,7 @@ export default defineComponent({
           min: -100,
           max: 100
         },
-        scoop: {
+        sampler: {
           value: 0,
           min: -100,
           max: 100

@@ -101,7 +101,7 @@ namespace mrover {
         }
 
         void poll_spectral_status() {
-        	m_spectral_sensors.at(0).poll_status_reg();
+        	m_spectral_sensors.at(0).poll_status_reg(true);
         }
 
         void reboot_spectral() {
@@ -110,7 +110,8 @@ namespace mrover {
 
         void update_and_send_spectral() {
         	SpectralData spectral_data;
-        	for (int i = 0; i < 3; ++i) {
+        	// TEST just 1 spectral (id 0), replace with 0 - 3 later
+        	for (int i = 2; i < 3; ++i) {
         		m_spectral_sensors.at(i).update_channel_data();
 
 				spectral_data.spectrals.at(i).error =
@@ -145,9 +146,9 @@ namespace mrover {
 
 
 			/* send current and temperature over CAN */
-			osMutexAcquire(m_can_tx_mutex, osWaitForever);
+//			osMutexAcquire(m_can_tx_mutex, osWaitForever);
 			m_fdcan_bus.broadcast(OutBoundScienceMessage{thermistor_data});
-			osMutexRelease(m_can_tx_mutex);
+//			osMutexRelease(m_can_tx_mutex);
         }
 
         void update_and_send_heater() {
@@ -162,9 +163,9 @@ namespace mrover {
         		SET_BIT_AT_INDEX(heater_state_data.heater_state_info.on, i, m_heaters.at(i).get_state());
         	}
 
-        	osMutexAcquire(m_can_tx_mutex, osWaitForever);
+//        	osMutexAcquire(m_can_tx_mutex, osWaitForever);
 			m_fdcan_bus.broadcast(OutBoundScienceMessage{heater_state_data});
-			osMutexRelease(m_can_tx_mutex);
+//			osMutexRelease(m_can_tx_mutex);
         }
 
     };

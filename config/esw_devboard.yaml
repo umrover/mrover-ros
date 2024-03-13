@@ -2,7 +2,7 @@ can:
   devices:
     - name: "jetson"
       bus: 0
-      id: 0x10
+      id: 0x0
     - name: "devboard"
       bus: 0
       id: 0x1
@@ -10,6 +10,14 @@ can:
 brushless_motors:
   controllers:
     devboard:
+      limit_0_present: true
+      limit_1_present: true
+      limit_0_enabled: true
+      limit_1_enabled: true
+      limit_0_is_active_high: true
+      limit_1_is_active_high: true
+      limit_0_limits_fwd: true
+      limit_1_limits_fwd: false
       min_velocity: -5.0
       max_velocity: 5.0
       min_position: -100.0

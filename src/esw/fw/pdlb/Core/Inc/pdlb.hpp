@@ -65,6 +65,8 @@ namespace mrover {
         }
 
         void update_and_send_current_temp() {
+        	// TODO
+        	// Commenting out code temporarily because not sure why PDLB is crashing otherwise.
         	m_adc_sensor_1->update();
         	m_adc_sensor_2->update();
 
@@ -81,9 +83,9 @@ namespace mrover {
 			}
 
 			/* send current and temperature over CAN */
-			osMutexAcquire(m_can_tx_mutex, osWaitForever);
+//			osMutexAcquire(m_can_tx_mutex, osWaitForever);
 			m_fdcan_bus.broadcast(OutBoundPDLBMessage{pdb_data});
-			osMutexRelease(m_can_tx_mutex);
+//			osMutexRelease(m_can_tx_mutex);
         }
 
         void blink_led_if_applicable() {

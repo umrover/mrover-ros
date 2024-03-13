@@ -135,6 +135,27 @@ int main(void)
   SCB->VTOR = FLASH_BASE;
 #endif
 
+  if ((FLASH->OPTR & FLASH_OPTR_nSWBOOT0_Msk) != 0x0 || ((FLASH->OPTR & FLASH_OPTR_nBOOT0_Msk) == 0x0))
+      {
+          while ((FLASH->SR & FLASH_SR_BSY_Msk) != 0x0) { ; }
+          FLASH->KEYR = 0x45670123;
+          while ((FLASH->SR & FLASH_SR_BSY_Msk) != 0x0) { ; }
+          FLASH->KEYR = 0xCDEF89AB;
+
+          while ((FLASH->SR & FLASH_SR_BSY_Msk) != 0x0) { ; }
+          FLASH->OPTKEYR = 0x08192A3B;
+          while ((FLASH->SR & FLASH_SR_BSY_Msk) != 0x0) { ; }
+          FLASH->OPTKEYR = 0x4C5D6E7F;
+
+          while ((FLASH->SR & FLASH_SR_BSY_Msk) != 0x0) { ; }
+          FLASH->OPTR = (FLASH->OPTR & ~(FLASH_OPTR_nSWBOOT0_Msk)) | FLASH_OPTR_nBOOT0_Msk;
+
+          while ((FLASH->SR & FLASH_SR_BSY_Msk) != 0x0) { ; }
+          FLASH->CR = FLASH->CR | FLASH_CR_OPTSTRT;
+
+          while ((FLASH->SR & FLASH_SR_BSY_Msk) != 0x0) { ; }
+      }
+
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
@@ -184,6 +205,7 @@ int main(void)
 
   /* Start scheduler */
   osKernelStart();
+
   /* We should never get here as control is now taken by the scheduler */
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
@@ -296,7 +318,7 @@ static void MX_ADC1_Init(void)
   */
   sConfig.Channel = ADC_CHANNEL_1;
   sConfig.Rank = ADC_REGULAR_RANK_1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_2CYCLES_5;
+  sConfig.SamplingTime = ADC_SAMPLETIME_92CYCLES_5;
   sConfig.SingleDiff = ADC_SINGLE_ENDED;
   sConfig.OffsetNumber = ADC_OFFSET_NONE;
   sConfig.Offset = 0;
@@ -436,7 +458,7 @@ static void MX_ADC2_Init(void)
   */
   sConfig.Channel = ADC_CHANNEL_10;
   sConfig.Rank = ADC_REGULAR_RANK_1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_2CYCLES_5;
+  sConfig.SamplingTime = ADC_SAMPLETIME_92CYCLES_5;
   sConfig.SingleDiff = ADC_SINGLE_ENDED;
   sConfig.OffsetNumber = ADC_OFFSET_NONE;
   sConfig.Offset = 0;
@@ -490,7 +512,7 @@ static void MX_FDCAN1_Init(void)
   hfdcan1.Init.DataTimeSeg1 = 14;
   hfdcan1.Init.DataTimeSeg2 = 13;
   hfdcan1.Init.StdFiltersNbr = 0;
-  hfdcan1.Init.ExtFiltersNbr = 0;
+  hfdcan1.Init.ExtFiltersNbr = 1;
   hfdcan1.Init.TxFifoQueueMode = FDCAN_TX_FIFO_OPERATION;
   if (HAL_FDCAN_Init(&hfdcan1) != HAL_OK)
   {
@@ -602,9 +624,8 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
 }
 
 void SendCurrentTemperature(void* argument) {
-	uint32_t tick = osKernelGetTickCount();
 	for(;;) {
-		tick += osKernelGetTickFreq(); // 1 Hz
+		uint32_t tick = osKernelGetTickCount() + osKernelGetTickFreq(); // 1 Hz
 
 		update_and_send_current_temp();
 		osDelayUntil(tick);
@@ -612,9 +633,8 @@ void SendCurrentTemperature(void* argument) {
 }
 
 void BlinkAutonLed(void* argument) {
-	uint32_t tick = osKernelGetTickCount();
 	for(;;) {
-		tick += osKernelGetTickFreq(); // 1 Hz
+		uint32_t tick = osKernelGetTickCount() + osKernelGetTickFreq(); // 1 Hz
 		blink_led_if_applicable();
 		osDelayUntil(tick);
 	}

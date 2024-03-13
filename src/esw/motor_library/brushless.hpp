@@ -71,31 +71,42 @@ namespace mrover {
         void setDesiredVelocity(RadiansPerSecond velocity) override;
         void setDesiredPosition(Radians position) override;
         void processCANMessage(CAN::ConstPtr const& msg) override;
-        double getEffort() override;
+        auto getEffort() -> double override;
         void setStop();
         void setBrake();
-        MoteusLimitSwitchInfo getPressedLimitSwitchInfo();
+        auto getPressedLimitSwitchInfo() -> MoteusLimitSwitchInfo;
         void adjust(Radians position) override;
+        void sendQuery();
 
     private:
         moteus::Controller mController{moteus::Controller::Options{}};
-        double mMeasuredEffort{};
-        bool fwdLimitSwitchPresent{};
-        bool bwdLimitSwitchPresent{};
-        bool fwdLimitSwitchEnabled{};
-        bool bwdLimitSwitchEnabled{};
-        bool fwdLimitSwitchActiveHigh{};
-        bool bwdLimitSwitchActiveHigh{};
-        bool fwdLimitSwitchUsedForReadjustment{};
-        bool bwdLimitSwitchUsedForReadjustment{};
-        Radians fwdLimitSwitchReadjustPosition{};
-        Radians bwdLimitSwitchReadjustPosition{};
-        
+        bool limitSwitch0Present{};
+        bool limitSwitch1Present{};
+        bool limitSwitch0Enabled{true};
+        bool limitSwitch1Enabled{true};
+        bool limitSwitch0LimitsFwd{false};
+        bool limitSwitch1LimitsFwd{false};
+        bool limitSwitch0ActiveHigh{true};
+        bool limitSwitch1ActiveHigh{true};
+        bool limitSwitch0UsedForReadjustment{};
+        bool limitSwitch1UsedForReadjustment{};
+        Radians limitSwitch0ReadjustPosition{};
+        Radians limitSwitch1ReadjustPosition{};
+
+        double mMaxTorque{0.5};
+        double mWatchdogTimeout{0.1};
+
+        int8_t moteusAux1Info{0};
+        int8_t moteusAux2Info{0};
+
+        Radians mMinPosition, mMaxPosition;
+        RadiansPerSecond mMinVelocity, mMaxVelocity;
+
         // Function to map throttle to velocity
-        RadiansPerSecond mapThrottleToVelocity(Percent throttle);
+        [[nodiscard]] auto mapThrottleToVelocity(Percent throttle) const -> RadiansPerSecond;
         // Converts moteus error codes and mode codes to std::string descriptions
-        static std::string moteusErrorCodeToErrorState(moteus::Mode motor_mode, ErrorCode motor_error_code);
-        static std::string moteusModeToState(moteus::Mode motor_mode);
+        static auto moteusErrorCodeToErrorState(moteus::Mode motor_mode, ErrorCode motor_error_code) -> std::string;
+        static auto moteusModeToState(moteus::Mode motor_mode) -> std::string;
     };
 
 } // namespace mrover
