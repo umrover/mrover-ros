@@ -91,6 +91,7 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.sa_humidity_data = rospy.Subscriber(
                 "/sa_humidity_data", RelativeHumidity, self.sa_humidity_data_callback
             )
+            self.drone_position_sub = rospy.Subscriber("/drone_position", NavSatFix, self.drone_position_callback)
 
             # Services
             self.laser_service = rospy.ServiceProxy("enable_arm_laser", SetBool)
@@ -713,3 +714,6 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.send(text_data=json.dumps({"type": "flight_attitude", "pitch": pitch, "roll": roll}))
 
             rate.sleep()
+    
+    def drone_position_callback(self, msg:NavSatFix):
+        self.send(text_data=json.dumps({"type": "drone_position", "latitude": msg.latitude, "longitude": msg.longitude, "altitude": msg.altitude}))
