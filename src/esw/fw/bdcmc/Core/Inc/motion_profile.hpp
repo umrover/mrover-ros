@@ -14,14 +14,19 @@ namespace mrover {
                                                           mMaxVelocity{maxVelocity},
                                                           mMaxAcceleration{maxAcceleration} {}
 
-        void update(PositionUnit initialPosition,
+        void reset () {
+            mT = 0;
+        }
+
+        void reset(PositionUnit initialPosition,
                     PositionUnit desiredPosition) {
             mInitialPosition = initialPosition;
             mDesiredPosition = desiredPosition;
+            reset();
         }
 
-        // TODO: build in way to keep track of start time to class
-        [[nodiscard]] double velocity(TimeUnit t) const override {
+        auto velocity(TimeUnit dt) -> VelocityUnit {
+            mT += dt;
             double totalDistance = (mDesiredPosition - mInitialPosition);
             double timeToAccelerate = mMaxVelocity / mMaxAcceleration;
 
@@ -29,22 +34,24 @@ namespace mrover {
             double tEnd = tAccelerationDone + totalDistance / mMaxVelocity;
             double tCruiseDone = tEnd - tAccelerationDone;
 
-            if (t >= 0 && t < tAccelerationDone) {
-                return mMaxAcceleration * t;
-            } else if (t >= tAccelerationDone && t < tCruiseDone) {
+            if (mT >= 0 && mT < tAccelerationDone) {
+                return mMaxAcceleration * mT;
+            } else if (mT >= tAccelerationDone && mT < tCruiseDone) {
                 return mMaxVelocity;
-            } else if (t >= tCruiseDone && t <= tEnd) {
-                return -mMaxAcceleration * t + mMaxAcceleration * tEnd;
+            } else if (mT >= tCruiseDone && mT <= tEnd) {
+                return -mMaxAcceleration * mT + mMaxAcceleration * tEnd;
             } else {
                 return 0.0;
             }
         }
 
-    protected:
+    private:
         PositionUnit mInitialPosition;
         PositionUnit mDesiredPosition;
 
         VelocityUnit mMaxVelocity;
         AccelerationUnit mMaxAcceleration;
+
+        TimeUnit mT = 0;
     };
 }
