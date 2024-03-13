@@ -7,6 +7,8 @@
 
 #include "main.h"
 
+#define MOTOR2
+
 extern FDCAN_HandleTypeDef hfdcan1;
 
 extern I2C_HandleTypeDef hi2c1;
@@ -48,10 +50,10 @@ extern TIM_HandleTypeDef htim17;
 namespace mrover {
 
     // NOTE: Change this for each motor controller
-    constexpr static std::uint8_t DEVICE_ID_0 = 0x21; // currently set for joint_b
+    constexpr static std::uint8_t DEVICE_ID_0 = 0x25; // currently set for allen_key
 
     #ifdef MOTOR2
-        constexpr static std::uint8_t DEVICE_ID_1 = 0x01; // currently set for nothing
+        constexpr static std::uint8_t DEVICE_ID_1 = 0x26; // currently set for gripper
     #endif
 
     // Usually this is the Jetson
@@ -64,7 +66,7 @@ namespace mrover {
     #endif
 
     auto init() -> void {
-        fdcan_bus = FDCAN<InBoundMessage>{0x00, DESTINATION_DEVICE_ID, &hfdcan1};
+        fdcan_bus = FDCAN<InBoundMessage>{DEVICE_ID_0, DESTINATION_DEVICE_ID, &hfdcan1};
         std::uint8_t device_ids[8];
         device_ids[0] = DEVICE_ID_0;
         #ifdef MOTOR2
@@ -77,6 +79,8 @@ namespace mrover {
         #ifdef MOTOR2
             fdcan_bus.configure_filter(device_ids, 2);
         #endif
+
+        fdcan_bus.start();
 
         controller0 = Controller{
                 DEVICE_ID_0,
@@ -135,50 +139,51 @@ namespace mrover {
         } 
         #ifdef MOTOR2
             else if (messageId.destination == DEVICE_ID_1) {
-                controller1->receive(message);
+                controller1.receive(message);
             }
         #endif
+        else Error_Handler(); // Filters should block out messages that aren't our device so this should never happen
     }
 
     auto update_callback() -> void {
         controller0.update();
         #ifdef MOTOR2
-            controller1->update();
+            controller1.update();
         #endif
     }
 
     auto request_absolute_encoder_data_callback() -> void {
         controller0.request_absolute_encoder_data();
         #ifdef MOTOR2
-            controller1->request_absolute_encoder_data();
+            controller1.request_absolute_encoder_data();
         #endif
     }
 
     auto read_absolute_encoder_data_callback() -> void {
         controller0.read_absolute_encoder_data();
         #ifdef MOTOR2
-            controller1->read_absolute_encoder_data();
+            controller1.read_absolute_encoder_data();
         #endif
     }
 
     auto update_absolute_encoder_callback() -> void {
         controller0.update_absolute_encoder();
         #ifdef MOTOR2
-            controller1->update_absolute_encoder();
+            controller1.update_absolute_encoder();
         #endif
     }
     
     auto send_callback() -> void {
         controller0.send();
         #ifdef MOTOR2
-            controller1->send();
+            controller1.send();
         #endif
     }
 
     auto fdcan_watchdog_expired() -> void {
         controller0.receive_watchdog_expired();
         #ifdef MOTOR2
-            controller1->receive_watchdog_expired();
+            controller1.receive_watchdog_expired();
         #endif
     }
 
@@ -192,10 +197,10 @@ namespace mrover {
 
     #ifdef MOTOR2
         auto update_quadrature_encoder_1_callback() -> void {
-            controller1->update_quadrature_encoder();
+            controller1.update_quadrature_encoder();
         }
         auto elapsed_timer_1_expired() -> void {
-            controller1->elapsed_timer_expired();
+            controller1.elapsed_timer_expired();
         }
     #endif
 

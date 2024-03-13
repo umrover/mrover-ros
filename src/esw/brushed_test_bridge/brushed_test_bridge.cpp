@@ -9,7 +9,8 @@ int main(int argc, char** argv) {
     ros::init(argc, argv, "brushed_test_bridge");
     ros::NodeHandle nh;
 
-    auto brushlessController = std::make_unique<BrushedController>(nh, "jetson", "joint_b");
+    auto brushlessController0 = std::make_unique<BrushedController>(nh, "jetson", "gripper");
+    auto brushlessController1 = std::make_unique<BrushedController>(nh, "jetson", "allen_key");
 
     auto targetPosition = 10_rad;
     auto targetVelocity = RadiansPerSecond{0.8};
@@ -26,7 +27,8 @@ int main(int argc, char** argv) {
     while (ros::ok()) {
         // brushlessController->setDesiredPosition(targetPosition);
         // brushlessController->setDesiredVelocity(targetVelocity);
-        brushlessController->setDesiredThrottle(targetThrottle);
+        brushlessController0->setDesiredThrottle(targetThrottle);
+        brushlessController1->setDesiredThrottle(-1 * targetThrottle);
         rate.sleep();
         ros::spinOnce();
     }
