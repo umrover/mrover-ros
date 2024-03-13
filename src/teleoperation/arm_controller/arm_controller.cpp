@@ -32,9 +32,10 @@ namespace mrover {
         Eigen::Vector4d target_in_arm_b_static = target_frame_to_arm_b_static.transform() * target;
         Eigen::Vector4d target_in_arm_a_static = target_frame_to_arm_a_static.transform() * target;
 
-        double x = target_in_arm_b_static.x();
+        double x = target_in_arm_b_static.x() - END_EFFECTOR_LENGTH; // shift back by the length of the end effector
         double z = target_in_arm_b_static.z();
         double y = target_in_arm_a_static.y();
+        // ROS_INFO("x: %f, y: %f, z: %f", x, y, z);
         SE3d pos{{target_in_arm_a_static.x(), target_in_arm_a_static.y(), target_in_arm_a_static.z()}, SO3d::Identity()};
         SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_target", "joint_a_static", pos);
 
@@ -91,6 +92,7 @@ namespace mrover {
             positions.positions[3] = static_cast<float>(q3);
             mPositionPublisher.publish(positions);
         } else {
+            ROS_INFO("Can't reach arm target!");
         }
     }
 

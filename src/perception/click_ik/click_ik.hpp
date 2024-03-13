@@ -26,6 +26,8 @@ namespace mrover {
 
         tf2_ros::Buffer mTfBuffer{};
         tf2_ros::TransformListener mTfListener{mTfBuffer};
+
+        tf2_ros::TransformBroadcaster mTfBroadcaster;
         
     public:
         ClickIkNodelet() = default;
@@ -39,7 +41,7 @@ namespace mrover {
         void execute(const mrover::ClickIkGoalConstPtr& goal);
         
         //Taken line for line from percep object detection code
-        auto spiralSearchInImg(size_t xCenter, size_t yCenter) -> std::optional<SE3d>;
+        auto spiralSearchInImg(size_t xCenter, size_t yCenter) -> std::optional<Point>;
     };
 
 } // namespace mrover

@@ -29,18 +29,25 @@ namespace mrover {
         // SE3d arm_target = desired_transform * target_point.value();
         geometry_msgs::Pose pose;
         
-        pose.position.x = target_point.value().x();
-        pose.position.y = target_point.value().y();
-        pose.position.z = target_point.value().z();
+        double offset = 0.1; // make sure we don't collide by moving back a little from the target
+        pose.position.x = target_point.value().x - offset;
+        pose.position.y = target_point.value().y;// - normal_scale * target_point.value().normal_y;
+        pose.position.z = target_point.value().z;// - normal_scale * target_point.value().normal_z;
 
-        pose.orientation.w = target_point.value().quat().w();
-        pose.orientation.x = target_point.value().quat().x();
-        pose.orientation.y = target_point.value().quat().y();
-        pose.orientation.z = target_point.value().quat().z();
+        // pose.orientation.w = target_point.value().quat().w();
+        // pose.orientation.x = target_point.value().quat().x();
+        // pose.orientation.y = target_point.value().quat().y();
+        // pose.orientation.z = target_point.value().quat().z();
         IK message;
         message.target.pose = pose;
-        message.target.header.frame_id = "zed2i_left_camera_frame";
+        message.target.header.frame_id = "zed_left_camera_frame";
         mIkPub.publish(message);
+
+        SE3d target_adjusted{{message.target.pose.position.x, message.target.pose.position.y, message.target.pose.position.z}, SO3d::Identity()};
+        SE3d target_raw{{target_point.value().x, target_point.value().y, target_point.value().z}, SO3d::Identity()};
+        SE3Conversions::pushToTfTree(mTfBroadcaster, "click_ik_target", "zed_left_camera_frame", target_adjusted);
+        SE3Conversions::pushToTfTree(mTfBroadcaster, "click_ik_target_raw", "zed_left_camera_frame", target_raw);
+        server.setSucceeded();
     }
     
     void ClickIkNodelet::onInit() {
@@ -65,7 +72,7 @@ namespace mrover {
         mPointCloudHeight = msg->height;
     }
 
-    auto ClickIkNodelet::spiralSearchInImg(size_t xCenter, size_t yCenter) -> std::optional<SE3d> {
+    auto ClickIkNodelet::spiralSearchInImg(size_t xCenter, size_t yCenter) -> std::optional<Point> {
         std::size_t currX = xCenter;
         std::size_t currY = yCenter;
         std::size_t radius = 0;
@@ -103,7 +110,7 @@ namespace mrover {
             }
         }
 
-        return std::make_optional<SE3d>(R3{point.x, point.y, point.z}, SO3d::Identity());
+        return std::make_optional<Point>(point);
     }
 
 
