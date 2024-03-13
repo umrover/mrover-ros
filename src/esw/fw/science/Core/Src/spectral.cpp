@@ -5,6 +5,7 @@
 #include "hardware.hpp"
 #include "units/units.hpp"
 #include "spectral.hpp"
+#include "i2c_error_helper.hpp"
 
 namespace mrover {
 
@@ -100,7 +101,8 @@ namespace mrover {
     		}
     		else {
     			m_error = true;
-    			return;
+    			//return;
+    			throw mrover::I2CRuntimeError("update_channel_data failed: msb_result or lsb_result was not acquired.");
     		}
     	}
     	m_error = false;

@@ -104,17 +104,28 @@ namespace mrover {
         	m_spectral_sensors.at(0).poll_status_reg();
         }
 
-        void reboot_spectral() {
+        void reboot_i2c() {
         	m_spectral_sensors.at(0).reboot();
         }
+
 
         void update_and_send_spectral() {
         	SpectralData spectral_data;
         	for (int i = 0; i < 3; ++i) {
-        		m_spectral_sensors.at(i).update_channel_data();
 
-				spectral_data.spectrals.at(i).error =
-						m_spectral_sensors.at(i).is_error();
+        		try{
+        			m_spectral_sensors.at(i).update_channel_data();
+        		}
+        		catch(mrover::I2CRuntimeError e){
+        			//TODO: handle error resolution here
+        		}
+
+
+
+				//spectral_data.spectrals.at(i).error =
+				//		m_spectral_sensors.at(i).is_error();
+
+
         		for (int j = 0; j < 6; ++j) {
 					spectral_data.spectrals.at(i).data.at(j) =
 						m_spectral_sensors.at(i).get_channel_data(j);

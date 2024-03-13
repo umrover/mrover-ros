@@ -76,8 +76,8 @@ namespace mrover {
         science = Science{fdcan_bus, spectral_sensors, adc_sensor, diag_temp_sensors, heater_pins, uv_leds, white_leds};
     }
 
-    void reboot_spectral() {
-    	science.reboot_spectral();
+    void reboot_i2c() {
+    	science.reboot_i2c();
     }
 
     void poll_spectral_status(){
@@ -165,5 +165,5 @@ void HAL_I2C_MasterRXCpltCallback(I2C_HandleTypeDef *hi2c) {
 void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c) {
 	// Something is most likely wrong with the I2C bus
 	// if we get to this point
-	mrover::reboot_spectral();
+	mrover::reboot_i2c();
 }
