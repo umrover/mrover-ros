@@ -25,6 +25,7 @@ namespace mrover {
         std::array<Pin, 3> m_white_leds;
         bool m_heater_auto_shutoff_enabled {};
         osMutexId_t m_can_tx_mutex;
+        std::shared_ptr<SMBus<uint8_t, uint16_t>> m_i2c_bus;
 
         void feed(EnableScienceDeviceCommand const& message) {
         	switch (message.science_device) {
@@ -105,7 +106,8 @@ namespace mrover {
         }
 
         void reboot_i2c() {
-        	m_spectral_sensors.at(0).reboot();
+        	//m_spectral_sensors.at(0).reboot();
+        	m_i2c_bus->reboot();
         }
 
 
