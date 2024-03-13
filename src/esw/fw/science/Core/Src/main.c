@@ -70,26 +70,12 @@ const osThreadAttr_t SpectralTask_attributes = {
   .stack_size = 128 * 4
 };
 
-//osThreadId_t SpectralPollingTaskHandle;
-//const osThreadAttr_t SpectralPollingTask_attributes = {
-//  .name = "SpectralPollingTask",
-//  .priority = (osPriority_t) osPriorityNormal,
-//  .stack_size = 128 * 4
-//};
-
 osThreadId_t ThermistorAndAutoShutoffTaskHandle;
 const osThreadAttr_t ThermistorAndAutoShutoffTask_attributes = {
   .name = "ThermistorAndAutoShutoffTask",
   .priority = (osPriority_t) osPriorityNormal,
   .stack_size = 128 * 4
 };
-
-//osThreadId_t HeaterUpdatesTaskHandle;
-//const osThreadAttr_t HeaterUpdatesTask_attributes = {
-//  .name = "HeaterUpdatesTask",
-//  .priority = (osPriority_t) osPriorityNormal,
-//  .stack_size = 128 * 4
-//};
 
 /* USER CODE END PV */
 
@@ -103,10 +89,8 @@ static void MX_ADC1_Init(void);
 void StartDefaultTask(void *argument);
 
 /* USER CODE BEGIN PFP */
-//void SpectralPollingTask(void *argument);
 void SpectralTask(void *argument);
 void ThermistorAndAutoShutoffTask(void *argument);
-void HeaterUpdatesTask(void *argument);
 
 /* USER CODE END PFP */
 
@@ -211,8 +195,7 @@ int main(void)
   // TODO - Using spectral causes a hardfault!!!
   SpectralTaskHandle = osThreadNew(SpectralTask, NULL, &SpectralTask_attributes);
 //  SpectralPollingTaskHandle = osThreadNew(SpectralPollingTask, NULL, &SpectralPollingTask_attributes);
-//  HeaterUpdatesTaskHandle = osThreadNew(HeaterUpdatesTask, NULL, &HeaterUpdatesTask_attributes);
-//  ThermistorAndAutoShutoffTaskHandle = osThreadNew(ThermistorAndAutoShutoffTask, NULL, &ThermistorAndAutoShutoffTask_attributes);
+  ThermistorAndAutoShutoffTaskHandle = osThreadNew(ThermistorAndAutoShutoffTask, NULL, &ThermistorAndAutoShutoffTask_attributes);
 
   /* add threads, ... */
   /* USER CODE END RTOS_THREADS */
@@ -570,23 +553,11 @@ void SpectralTask(void *argument) {
 		tick += osKernelGetTickFreq(); // 1 Hz
 
 		// finish
+//		poll_spectral_status();
 		update_and_send_spectral();
 		osDelayUntil(tick);
 	}
 }
-
-//void SpectralPollingTask(void *argument) {
-//	uint32_t tick = osKernelGetTickCount();
-//
-//	for(;;) {
-//		tick += 10 * osKernelGetTickFreq(); // 10 Hz
-//
-//		poll_spectral_status();
-//
-//		osDelayUntil(tick);
-//	}
-//}
-
 void ThermistorAndAutoShutoffTask(void *argument) {
 	uint32_t tick = osKernelGetTickCount();
 	for(;;) {
