@@ -43,7 +43,7 @@ int main(int argc, char** argv) {
     ros::Rate rate(10);
 
     ros::Publisher armPublisher = nh.advertise<mrover::Position>("arm_position_cmd", 1);
-    ros::Subscriber armSubscriber = nh.subscribe<sensor_msgs::JointState::ConstPtr>("arm_joint_data", 10, arm_position_callback);
+    ros::Subscriber armSubscriber = nh.subscribe<sensor_msgs::JointState>("arm_joint_data", 10, arm_position_callback);
 
     while (ros::ok()) {
         /* Arm Position Test */
@@ -126,7 +126,6 @@ int main(int argc, char** argv) {
         ROS_INFO("Joint_A: %f", position_data[0]);
         ROS_INFO("Joint_B: %f", position_data[1]);
         ROS_INFO("Joint_C: %f", position_data[2]);
-        nh.spinOnce();
         ROS_INFO("****END COMPLEX AUTON ARM POSITION TEST****");
     }
 
