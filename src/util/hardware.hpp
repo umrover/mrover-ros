@@ -138,7 +138,7 @@ namespace mrover {
         explicit FDCAN(std::uint8_t source, std::uint8_t destination, FDCAN_HandleTypeDef* fdcan)
             : m_fdcan{fdcan}, m_source{source}, m_destination{destination} {
 
-            configure_filter();
+            // configure_filter();
 
             check(HAL_FDCAN_ActivateNotification(m_fdcan, FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0) == HAL_OK, Error_Handler);
             check(HAL_FDCAN_Start(m_fdcan) == HAL_OK, Error_Handler);
@@ -149,22 +149,41 @@ namespace mrover {
          * We have limited queue space, so we want to filter out messages that are not intended for us.
          */
         auto configure_filter() const -> void {
-            //            std::bitset<16> source_bits{m_source};
-            //            std::bitset<16> destinationBits{m_destination};
-            //            std::bitset<16> filter = source_bits << 8 | destinationBits;
-            //
-            //            std::bitset<15> mask; // 15 lowest bits set for source and destination, 16th (reply bit) and above should be ignored
-            //            mask.set();
-            //
-            //            FDCAN_FilterTypeDef filter_config{
-            //                    .IdType = FDCAN_EXTENDED_ID,
-            //                    .FilterIndex = 0,
-            //                    .FilterType = FDCAN_FILTER_MASK, // Classic filter: FilterID1 = filter, FilterID2 = mask
-            //                    .FilterConfig = FDCAN_FILTER_TO_RXFIFO0,
-            //                    .FilterID1 = filter.to_ulong(), // Choose which bits to examine from the incoming ID
-            //                    .FilterID2 = mask.to_ulong(),   // Ensure that bits that survive the filter match the mask
-            //            };
-            //            check(HAL_FDCAN_ConfigFilter(m_fdcan, &filter_config) == HAL_OK, Error_Handler);
+            std::bitset<8> filter{m_source};
+            std::bitset<8> mask; // Check lowest 8 bits to see if destination of message is our source
+            mask.set();
+
+            FDCAN_FilterTypeDef filter_config{
+                    .IdType = FDCAN_EXTENDED_ID,
+                    .FilterIndex = 0,
+                    .FilterType = FDCAN_FILTER_MASK, // Classic filter: FilterID1 = filter, FilterID2 = mask
+                    .FilterConfig = FDCAN_FILTER_TO_RXFIFO0,
+                    .FilterID1 = filter.to_ulong(), // Ensure that bits that survive the mask match the filter
+                    .FilterID2 = mask.to_ulong(),   // Mask out bits from the message ID
+            };
+            check(HAL_FDCAN_ConfigFilter(m_fdcan, &filter_config) == HAL_OK, Error_Handler);
+            check(HAL_FDCAN_ConfigGlobalFilter(m_fdcan, FDCAN_REJECT, FDCAN_REJECT, FDCAN_REJECT_REMOTE, FDCAN_REJECT_REMOTE) == HAL_OK, Error_Handler);
+        }
+
+        auto configure_filter(std::uint8_t *sources, std::size_t size) const -> void {
+            std::bitset<8> mask; // Check lowest 8 bits to see if destination of message is our source
+            mask.set();
+
+            for (size_t i = 0; i < size; ++i) {
+                std::bitset<8> filter{*sources};
+                FDCAN_FilterTypeDef filter_config{
+                    .IdType = FDCAN_EXTENDED_ID,
+                    .FilterIndex = i,
+                    .FilterType = FDCAN_FILTER_MASK, // Classic filter: FilterID1 = filter, FilterID2 = mask
+                    .FilterConfig = FDCAN_FILTER_TO_RXFIFO0,
+                    .FilterID1 = filter.to_ulong(), // Ensure that bits that survive the mask match the filter
+                    .FilterID2 = mask.to_ulong(),   // Mask out bits from the message ID
+                };
+                sources++;
+                check(HAL_FDCAN_ConfigFilter(m_fdcan, &filter_config) == HAL_OK, Error_Handler);
+            }
+
+            check(HAL_FDCAN_ConfigGlobalFilter(m_fdcan, FDCAN_REJECT, FDCAN_REJECT, FDCAN_REJECT_REMOTE, FDCAN_REJECT_REMOTE) == HAL_OK, Error_Handler);
         }
 
         /**
@@ -177,8 +196,11 @@ namespace mrover {
                 return std::nullopt;
 
             FDCAN_RxHeaderTypeDef header{};
-            TReceive receive{};
-            check(HAL_FDCAN_GetRxMessage(m_fdcan, FDCAN_RX_FIFO0, &header, address_of<std::uint8_t>(receive)) == HAL_OK, Error_Handler);
+            union {
+                TReceive receive{};
+                std::array<std::uint8_t, FDCAN_MAX_FRAME_SIZE> bytes;
+            };
+            check(HAL_FDCAN_GetRxMessage(m_fdcan, FDCAN_RX_FIFO0, &header, bytes.data()) == HAL_OK, Error_Handler);
             return std::make_pair(header, receive);
         }
 
@@ -208,11 +230,33 @@ namespace mrover {
             return {};
         }
 
-        auto broadcast(IsFdcanSerializable auto const& send, uint8_t device_id) -> void {
-            uint8_t orig_source = m_source;
-            m_source = device_id;
-            broadcast(send);
-            m_source = orig_source;
+        auto broadcast(IsFdcanSerializable auto const& send, uint8_t source, uint8_t destination) -> void {
+            MessageId messageId{
+                    .destination = destination,
+                    .source = source,
+            };
+            FDCAN_TxHeaderTypeDef header{
+                    .Identifier = std::bit_cast<std::uint32_t>(messageId),
+                    .IdType = FDCAN_EXTENDED_ID,
+                    .TxFrameType = FDCAN_DATA_FRAME,
+                    .DataLength = nearest_fitting_can_fd_frame_size(sizeof(send)),
+                    .ErrorStateIndicator = FDCAN_ESI_ACTIVE,
+                    .BitRateSwitch = FDCAN_BRS_OFF,
+                    .FDFormat = FDCAN_FD_CAN,
+                    .TxEventFifoControl = FDCAN_NO_TX_EVENTS,
+            };
+            // Sending a message to the bus gets added to a queue
+            // Messages in the queue are removed when they are sent out
+            // They are sent out when the bus is free AND there is at least one other device on the bus
+            // This means you cannot test with just one device on the bus
+            if (HAL_FDCAN_GetTxFifoFreeLevel(m_fdcan)) {
+                // Free space in the mailbox
+                check(HAL_FDCAN_AddMessageToTxFifoQ(m_fdcan, &header, address_of<std::uint8_t>(send)) == HAL_OK, Error_Handler);
+            } else {
+                // Abort oldest message in the mailbox to make room for the new message
+                // TODO: somehow convey that this is an error
+                HAL_FDCAN_AbortTxRequest(m_fdcan, FDCAN_TX_BUFFER0);
+            }
         }
 
         auto broadcast(IsFdcanSerializable auto const& send) -> void {

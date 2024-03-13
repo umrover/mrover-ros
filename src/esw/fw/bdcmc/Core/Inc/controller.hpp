@@ -30,6 +30,7 @@ namespace mrover {
 
         /* ==================== Device ID ==================== */
         uint8_t m_id;
+        uint8_t m_destination_id;
 
         /* ==================== Hardware ==================== */
         FDCAN<InBoundMessage> m_fdcan;
@@ -221,7 +222,7 @@ namespace mrover {
             m_fdcan.broadcast(OutBoundMessage{DebugState{
                     .f1 = m_velocity.value().get(),
                     .f2 = message.velocity.get(),
-            }}, m_id);
+            }}, m_id, m_destination_id);
         }
 
         auto process_command(PositionCommand const& message, PositionMode& mode) -> void {
@@ -274,8 +275,9 @@ namespace mrover {
     public:
         Controller() = default;
 
-        Controller(uint8_t id, TIM_HandleTypeDef* hbridge_output, Pin hbridge_direction_pin, FDCAN<InBoundMessage> const& fdcan, TIM_HandleTypeDef* watchdog_timer, TIM_HandleTypeDef* encoder_tick_timer, TIM_HandleTypeDef* encoder_elapsed_timer, I2C_HandleTypeDef* absolute_encoder_i2c, std::array<LimitSwitch, 4> const& limit_switches)
+        Controller(uint8_t id, uint8_t destination_id, TIM_HandleTypeDef* hbridge_output, Pin hbridge_direction_pin, FDCAN<InBoundMessage> const& fdcan, TIM_HandleTypeDef* watchdog_timer, TIM_HandleTypeDef* encoder_tick_timer, TIM_HandleTypeDef* encoder_elapsed_timer, I2C_HandleTypeDef* absolute_encoder_i2c, std::array<LimitSwitch, 4> const& limit_switches)
             : m_id{id},
+              m_destination_id{destination_id},
               m_fdcan{fdcan},
               m_motor_driver{HBridge(hbridge_output, hbridge_direction_pin)},
               m_watchdog_timer{watchdog_timer},
@@ -411,7 +413,7 @@ namespace mrover {
          */
         auto send() -> void {
             update();
-            m_fdcan.broadcast(m_outbound, m_id);
+            m_fdcan.broadcast(m_outbound, m_id, m_destination_id);
         }
 
 
@@ -447,7 +449,7 @@ namespace mrover {
 
                 m_fdcan.broadcast(OutBoundMessage{DebugState{
                         .f1 = position.get(),
-                }}, m_id);
+                }}, m_id, m_destination_id);
 
                 m_uncalib_position.emplace(); // Reset to zero
                 m_velocity = velocity;

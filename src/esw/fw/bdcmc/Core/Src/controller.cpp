@@ -65,9 +65,22 @@ namespace mrover {
 
     auto init() -> void {
         fdcan_bus = FDCAN<InBoundMessage>{0x00, DESTINATION_DEVICE_ID, &hfdcan1};
+        std::uint8_t device_ids[8];
+        device_ids[0] = DEVICE_ID_0;
+        #ifdef MOTOR2
+            device_ids[1] = DEVICE_ID_1;
+        #endif
+
+        #ifndef MOTOR2
+            fdcan_bus.configure_filter(device_ids, 1);
+        #endif
+        #ifdef MOTOR2
+            fdcan_bus.configure_filter(device_ids, 2);
+        #endif
 
         controller0 = Controller{
                 DEVICE_ID_0,
+                DESTINATION_DEVICE_ID,
                 PWM_TIMER_0,
                 Pin{GPIOB, GPIO_PIN_15},
                 fdcan_bus,
@@ -86,6 +99,7 @@ namespace mrover {
         #ifdef MOTOR2
             controller1 = Controller{
                     DEVICE_ID_1,
+                    DESTINATION_DEVICE_ID,
                     PWM_TIMER_1,
                     Pin{GPIOC, GPIO_PIN_6},
                     fdcan_bus,
