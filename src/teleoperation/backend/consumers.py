@@ -1,4 +1,8 @@
+import csv
+from datetime import datetime, timezone
 import json
+import os
+import pytz
 from math import copysign
 from math import pi
 from tf.transformations import euler_from_quaternion
@@ -57,6 +61,7 @@ class GUIConsumer(JsonWebsocketConsumer):
 
         # Services
         self.laser_service = rospy.ServiceProxy("enable_mosfet_device", SetBool)
+        self.toggle_uv = rospy.ServiceProxy("sa_enable_uv_bulb",SetBool)
         self.calibrate_service = rospy.ServiceProxy("arm_calibrate", Trigger)
         self.enable_auton = rospy.ServiceProxy("enable_auton", EnableAuton)
 
@@ -99,6 +104,10 @@ class GUIConsumer(JsonWebsocketConsumer):
                 self.disable_auton_led()
             elif message["type"] == "laser_service":
                 self.enable_laser_callback(message)
+            elif message["type"] == "sa_enable_uv_bulb":
+                self.sa_uv_bulb_callback(message)
+            elif message["type"] == "enable_white_leds":
+                self.enable_white_leds_callback(message)
             elif message["type"] == "calibrate_service":
                 self.calibrate_motors_callback(message)
             elif message["type"] == "auton_command":
@@ -113,6 +122,8 @@ class GUIConsumer(JsonWebsocketConsumer):
                 self.save_waypoint_list(message)
             elif message["type"] == "get_waypoint_list":
                 self.get_waypoint_list(message)
+            elif message["type"] == "download_csv":
+                self.download_csv(message)
         except Exception as e:
             rospy.logerr(e)
 
@@ -191,6 +202,23 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.send(text_data=json.dumps({"type": "laser_service", "result": result.success}))
         except rospy.ServiceException as e:
             rospy.logerr(f"Service call failed: {e}")
+
+    def sa_uv_bulb_callback(self, msg):
+        try:
+            result = self.toggle_uv(data=msg["data"])
+            self.send(text_data=json.dumps({"type": "toggle_uv", "result": result.success}))
+        except rospy.ServiceException as e:
+            rospy.logerr(f"Service call failed: {e}")
+    
+    def enable_white_leds_callback(self, msg):
+        for i in range(0, 3):
+            white_led_name = f"science_enable_white_led_{i}"
+            led_srv = rospy.ServiceProxy(white_led_name, SetBool)
+            try:
+                result = led_srv(data=msg["data"])
+                self.send(text_data=json.dumps({"type": "toggle_uv", "result": result.success}))
+            except rospy.ServiceException as e:
+                rospy.logerr(f"Service call failed: {e}")
 
     def enable_device_callback(self, msg):
         try:
@@ -342,7 +370,6 @@ class GUIConsumer(JsonWebsocketConsumer):
         data = []
         error = []
         for spectral in msg.spectrals:
-            rospy.logerr(spectral.data)
             data.append(spectral.data)
             error.append(spectral.error)
 
@@ -351,3 +378,29 @@ class GUIConsumer(JsonWebsocketConsumer):
             'data': data,
             'error': error
         }))
+
+    def download_csv(self, msg):
+        username = os.getenv("USERNAME", "-1")
+
+        now = datetime.now(pytz.timezone('US/Eastern'))
+        # now = now.astimezone()
+        current_time = now.strftime("%m/%d/%Y-%H:%M")
+        spectral_data = msg['data']
+
+        site_names = ['A', 'B', 'C']
+        index = 0
+
+        # add site letter in front of data
+        for site_data in spectral_data:
+            site_data.insert(0, f'Site {site_names[index]}')
+            index = index + 1 #use key value pair, there's no need to create a var
+
+        time_row = ['Time', current_time]
+        spectral_data.insert(0, time_row)
+
+        if username == "-1":
+            rospy.logerr("username not found")
+
+        with open(os.path.join(f'/home/{username}/Downloads/spectral_data.csv'), 'w') as f:
+            csv_writer = csv.writer(f)
+            csv_writer.writerows(spectral_data)        
