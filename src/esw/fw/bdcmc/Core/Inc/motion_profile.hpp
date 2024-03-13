@@ -25,8 +25,11 @@ namespace mrover {
             reset();
         }
 
-        auto velocity(TimeUnit dt) -> VelocityUnit {
+        void update(TimeUnit dt) {
             mT += dt;
+        }
+
+        auto velocity() -> VelocityUnit {
             double totalDistance = (mDesiredPosition - mInitialPosition);
             double timeToAccelerate = mMaxVelocity / mMaxAcceleration;
 
