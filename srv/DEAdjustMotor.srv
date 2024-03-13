@@ -1,0 +1,4 @@
+string name # name of motor to adjust
+float32 value # new value for motor angle
+---
+bool success # true if the conversion was successful
