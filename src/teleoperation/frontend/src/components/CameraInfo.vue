@@ -6,27 +6,25 @@
         Stream:
         <input
           v-model="selectedStream"
-          type="Number"
+          type="number"
           min="0"
           max="3"
           class="form-control"
           @change="swapStream"
         />
-        <!-- <input v-model="selectedStream" class="box" type="Number" min="0" max="3" /> -->
         <!-- <button class="box" @click="swapStream()">Change stream</button> -->
       </div>
       <div class="form-group col-md-4">
         <label for="quality">Quality:</label>
         <select
           v-model="selectedQuality"
-          type="Number"
+          type="number"
           min="0"
           max="4"
           class="form-control"
           id="quality"
           @change="changeQuality()"
         >
-          <!-- <select id="quality" v-model="selectedQuality" class="box" @change="changeQuality()"> -->
           <option v-for="i in numQuality" :key="i">{{ i - 1 }}</option>
         </select>
       </div>

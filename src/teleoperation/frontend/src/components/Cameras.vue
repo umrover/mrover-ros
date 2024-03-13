@@ -1,50 +1,58 @@
 <template>
-  <div class="wrap">
-    <h3>Cameras ({{ num_available }} available)</h3>
-    <div class="row justify-content-md-left">
-      <div class="form-group col-md-4">
-        <label for="Camera Name">Camera name</label>
-        <input v-model="cameraName" type="message" class="form-control" id="CameraName" placeholder="Enter Camera Name" />
-        <small id="cameraDescrip" class="form-text text-muted"></small>
+  <div class="wrap row">
+    <div class="col">
+      <h3>Cameras ({{ num_available }} available)</h3>
+      <div class="row justify-content-md-left">
+        <div class="form-group col-md-4">
+          <label for="Camera Name">Camera name</label>
+          <input v-model="cameraName" type="message" class="form-control" id="CameraName" placeholder="Enter Camera Name" />
+          <small id="cameraDescrip" class="form-text text-muted"></small>
+        </div>
+        <div class="form-group col-md-4">
+          <label for="Camera ID">Camera ID</label>
+          <input v-model="cameraIdx" type="number" min="0" max="8" class="form-control" id="CameraIdx"
+            placeholder="Camera ID" />
+        </div>
+        <button class="btn btn-primary custom-btn" @click="addCameraName()">Change Name</button>
       </div>
-      <div class="form-group col-md-4">
-        <label for="Camera ID">Camera ID</label>
-        <input v-model="cameraIdx" type="Number" min="0" max="8" class="form-control" id="CameraIdx"
-          placeholder="Camera ID" />
-      </div>
-      <button class="btn btn-primary custom-btn" @click="addCameraName()">Change Name</button>
-    </div>
-    <div class="cameraselection">
-      <CameraSelection :cams-enabled="camsEnabled" :names="names" :capacity="capacity" @cam_index="setCamIndex($event)" />
-    </div>
-    <h3>All Cameras</h3>
-    Capacity:
-    <div class="row justify-content-md-left">
-      <div class="form-group col-md-4">
-        <input v-model="capacity" type="Number" min="2" max="streamOrder.length" class="form-control" />
+      <div class="cameraselection">
+        <CameraSelection :cams-enabled="camsEnabled" :names="names" :capacity="capacity" @cam_index="setCamIndex($event)" />
       </div>
     </div>
-    <!-- <input v-model="capacity" type="Number" min="2" :max="streamOrder.length" /> -->
-    <div v-for="i in camsEnabled.length" :key="i">
-      <CameraInfo v-if="camsEnabled[i - 1]" :id="i - 1" :name="names[i - 1]" :stream="getStreamNum(i - 1)"
-        @newQuality="changeQuality($event)" @swapStream="swapStream($event)"></CameraInfo>
+    <div class="col">
+      <h3>All Cameras</h3>
+      Capacity:
+      <div class="row justify-content-md-left">
+        <div class="form-group col-md-4">
+          <input v-model="capacity" type="number" :min="2" :max="streamOrder.length" class="form-control" />
+        </div>
+      </div>
+      <div class="info">
+      <template v-for="i in camsEnabled.length" :key="i">
+        <CameraInfo v-if="camsEnabled[i - 1]" :id="i - 1" :name="names[i - 1]" :stream="getStreamNum(i - 1)"
+          @newQuality="changeQuality($event)" @swapStream="swapStream($event)"></CameraInfo>
+      </template>
+      </div>
+      <div class="d-flex justify-content-end" v-if="isSA">
+        <button class="btn btn-primary btn-lg custom-btn" @click="takePanorama()">Take Panorama</button>
+      </div>
     </div>
-    <div class="d-flex justify-content-end" v-if="isSA">
-      <button class="btn btn-primary btn-lg cutstom-btn" @click="takePanorama()">Take Panorama</button>
-    </div>
+    <CameraDisplay :streamOrder="streamOrder"></CameraDisplay>
   </div>
 </template>
 
 <script lang="ts">
 import CameraSelection from '../components/CameraSelection.vue'
 import CameraInfo from '../components/CameraInfo.vue'
+import CameraDisplay from './CameraDisplay.vue'
 import { mapActions, mapState } from 'vuex'
 import { reactive } from 'vue'
 
 export default {
   components: {
     CameraSelection,
-    CameraInfo
+    CameraInfo,
+    CameraDisplay
   },
 
   props: {
@@ -67,7 +75,6 @@ export default {
       qualities: reactive(new Array(9).fill(-1)),
       streamOrder: reactive([]),
 
-      available_sub: null,
       num_available: -1
     }
   },
@@ -104,6 +111,8 @@ export default {
     ...mapActions('websocket', ['sendMessage']),
 
     setCamIndex: function (index: number) {
+      console.log(typeof index)
+      console.log(this.camsEnabled[index])
       // every time a button is pressed, it changes cam status and adds/removes from stream
       this.camsEnabled[index] = !this.camsEnabled[index]
       if (this.camsEnabled[index]) this.qualities[index] = 2 //if enabling camera, turn on medium quality
@@ -165,5 +174,10 @@ export default {
 .custom-btn {
   width: 150px;
   height: 50px;
+}
+
+.info {
+  height: 200px;
+  overflow-y: auto;
 }
 </style>

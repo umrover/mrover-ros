@@ -1,16 +1,25 @@
 <template>
   <div class="wrap">
-    <h3 class="header">H.265 Camera Stream</h3>
     <canvas id="canvas"></canvas>
   </div>
 </template>
 <!-- <script src="../../../streaming/embuild/stream_client.js"></script> -->
 
 <script lang="ts">
-import { defineComponent, nextTick } from 'vue'
+import { defineComponent } from 'vue'
 import '/streaming/stream_client.js?url'
 
 export default defineComponent({
+  props: {
+    id: {
+      type: Number,
+      required: true
+    },
+    port: {
+      type: Number,
+      required: true
+    }
+  },
   data() {
     return {}
   },
@@ -28,11 +37,5 @@ export default defineComponent({
 <style scoped>
 .wrap {
   width: fit-content;
-  margin: 5px;
-  border: 1px solid black;
-}
-
-.header {
-  text-align: center;
 }
 </style>

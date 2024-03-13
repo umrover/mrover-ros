@@ -22,7 +22,7 @@
     </div>
 
     <div class="shadow p-3 rounded cameras">
-      <Cameras :primary="true" />
+      <Cameras :primary="true" :isSA="false"/>
     </div>
     <div v-if="type === 'DM'" class="shadow p-3 rounded odom">
       <OdometryReading :odom="odom" />
@@ -169,9 +169,9 @@ export default defineComponent({
     'header header'
     'map waypoint-editor'
     'map odom'
-    'map cameras'
     'arm-controls drive-vel-data'
-    'moteus pdb';
+    'moteus pdb'
+    'cameras cameras';
   font-family: sans-serif;
   height: auto;
 }
@@ -183,9 +183,9 @@ export default defineComponent({
   grid-template-rows: repeat(4, auto);
   grid-template-areas:
     'header header'
-    'cameras arm-controls'
-    'drive-vel-data moteus'
-    'pdb pdb';
+    'drive-vel-data arm-controls'
+    'pdb moteus'
+    'cameras cameras';
   font-family: sans-serif;
   height: auto;
 }
