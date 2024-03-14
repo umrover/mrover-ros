@@ -11,24 +11,10 @@ from util.SE3 import SE3
 from util.SO3 import SO3
 from util.np_utils import numpify
 import message_filters
-
-# import threading
 import threading
-import time
 
 # from mrover.msg import rtkStatus
 from tf.transformations import *
-
-# delete later
-from tf.transformations import euler_from_quaternion
-from tf.transformations import euler_matrix
-from tf.transformations import quaternion_from_euler
-from tf.transformations import euler_from_matrix
-from tf.transformations import inverse_matrix
-
-# delete later
-global time_start
-
 
 class GPSLinearization:
     """
@@ -40,7 +26,6 @@ class GPSLinearization:
     last_gps_pose: Optional[np.ndarray]
     last_gps_pose_fixed: Optional[np.ndarray]
     last_imu_orientation: Optional[np.ndarray]
-    pose_publisher: rospy.Publisher
 
     # offset
     rtk_offset: Optional[np.ndarray]
@@ -54,28 +39,44 @@ class GPSLinearization:
     world_frame: str
 
     # timeout detection
-    gps_time_delay: int
-    imu_time_delay: int
+    gps_timeout_interval: int
+    imu_timeout_interval: int
     gps_has_timeout: bool
     imu_has_timeout: bool
-    global gps_timer
-    global imu_timer
+    gps_timer: threading.Timer
+    imu_timer: threading.Timer
+
+    # subscribers and publishers
+    left_gps_sub : rospy.Subscriber
+    right_gps_sub : rospy.Subscriber
+    sync_gps_sub: rospy.Subscriber
+    imu_sub: rospy.Subscriber
+    pose_publisher: rospy.Publisher
     
     # covariance config
     use_dop_covariance: bool
     config_gps_covariance: np.ndarray
-    
-    time_start = time.time()
 
+
+    # timeout callbacks, if both gps and imu fail kill node
     def gps_timeout(self):
-        print("GPS has timed out, using Imu")
+        rospy.loginfo("GPS has timed out")
         self.gps_has_timeout = True
+
+        if self.imu_has_timeout == True:
+            rospy.signal_shutdown("Both IMU and GPS have timed out")
+            
         return
     
     def imu_timeout(self):
-        print("Imu has timed out, now using GPS")
+        rospy.loginfo("IMU has timed out")
         self.imu_has_timeout = True
+
+        if self.gps_has_timeout == True:
+            rospy.signal_shutdown("Both IMU and GPS have timed out")
+
         return
+    
 
     def __init__(self):
 
@@ -100,22 +101,24 @@ class GPSLinearization:
         self.calculate_offset = False
 
         # subscribe to topics
-        right_gps_sub = message_filters.Subscriber("/right_gps_driver/fix", NavSatFix)
-        left_gps_sub = message_filters.Subscriber("/left_gps_driver/fix", NavSatFix)
+        self.right_gps_sub = message_filters.Subscriber("/right_gps_driver/fix", NavSatFix)
+        self.left_gps_sub = message_filters.Subscriber("/left_gps_driver/fix", NavSatFix)
+        self.imu_sub = rospy.Subscriber("imu/data", ImuAndMag, self.imu_callback)
         # left_rtk_fix_sub = message_filters.Subscriber("left_gps_driver/rtk_fix_status", rtkStatus)
         # right_rtk_fix_sub = message_filters.Subscriber("right_gps_driver/rtk_fix_status", rtkStatus)
 
         # sync subscribers
-        sync_gps_sub = message_filters.ApproximateTimeSynchronizer([right_gps_sub, left_gps_sub], 10, 0.5)
-        sync_gps_sub.registerCallback(self.gps_callback)
+        self.sync_gps_sub = message_filters.ApproximateTimeSynchronizer([self.right_gps_sub, self.left_gps_sub], 10, 0.5)
+        self.sync_gps_sub.registerCallback(self.gps_callback)
 
-        rospy.Subscriber("imu/data", ImuAndMag, self.imu_callback)
+        # publisher
         self.pose_publisher = rospy.Publisher("linearized_pose", PoseWithCovarianceStamped, queue_size=1)
 
-        # initialize timers
-        # self.gps_timer = threading.Timer(self.gps_time_delay, self.gps_timeout)
-        # self.imu_timer = threading.Timer(self.imu_time_delay, self.imu_timeout)
-        #print("made it here to timer")
+        # timers
+        self.gps_has_timeout = self.imu_time_delay = False
+        self.gps_timeout_interval = self.imu_timeout_interval = 5
+        self.gps_timer = threading.Timer(self.gps_timeout_interval, self.gps_timeout)
+        self.imu_timer = threading.Timer(self.imu_timeout_interval, self.imu_timeout)
         
         
     def gps_callback(
@@ -131,12 +134,11 @@ class GPSLinearization:
         TODO: Handle invalid PVTs
         """
 
-        print("in gps callback")
         self.gps_has_timeout = False
 
         # global gps_timer
         self.gps_timer.cancel()
-        self.gps_timer = threading.Timer(5, self.gps_timeout)
+        self.gps_timer = threading.Timer(self.gps_timeout_interval, self.gps_timeout)
         self.gps_timer.start()
         
         if np.any(np.isnan([right_gps_msg.latitude, right_gps_msg.longitude, right_gps_msg.altitude])):
@@ -185,14 +187,10 @@ class GPSLinearization:
                 covariance=covariance_matrix.flatten().tolist(),
             ),
         )
-
         
         # publish pose (rtk)
         self.pose_publisher.publish(pose_msg)
-        # print("still publishing")
-        # if (time.time() - self.time_start > 5):
-        #     print("exceeded")
-        #     self.left_gps_sub.shutdown()
+
 
     def imu_callback(self, msg: ImuAndMag):
         """
@@ -200,12 +198,11 @@ class GPSLinearization:
 
         :param msg: The Imu message containing IMU data that was just received
         """
-
-        print("in imu callback")
-        self.imu_has_timeout = False #reset in the case that we want it to go back after it has set itself to true
-        global imu_timer
-        #self.imu_timer.cancel()
-        self.imu_timer = threading.Timer(5, self.imu_timeout)
+        # reset in the case that we want it to go back after it has set itself to true
+        self.imu_has_timeout = False
+        
+        self.imu_timer.cancel()
+        self.imu_timer = threading.Timer(self.imu_timeout_interval, self.imu_timeout)
         self.imu_timer.start()
 
         if self.last_gps_pose is None:
@@ -263,9 +260,6 @@ class GPSLinearization:
 
     @staticmethod
     def compute_gps_pose(right_cartesian, left_cartesian) -> np.ndarray:
-        # TODO: give simulated GPS non zero altitude so we can stop erasing the z component
-        # left_cartesian[2] = 0
-        # right_cartesian[2] = 0
         vector_connecting = left_cartesian - right_cartesian
         vector_connecting[2] = 0
         magnitude = np.linalg.norm(vector_connecting)
@@ -290,7 +284,7 @@ class GPSLinearization:
 
 def main():
     # start the node and spin to wait for messages to be received
-    rospy.init_node("gps_linearization")
+    rospy.init_node("gps_linearization", disable_signals=True)
     GPSLinearization()
     rospy.spin()
 
