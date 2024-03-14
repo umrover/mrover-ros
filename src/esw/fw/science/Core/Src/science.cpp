@@ -158,5 +158,5 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef* hfdcan, uint32_t RxFifo0ITs)
 void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c) {
 	// Something is most likely wrong with the I2C bus
 	// if we get to this point
-	mrover::reboot_spectral();
+	mrover::reboot_i2c();
 }

@@ -5,6 +5,7 @@
 #include "hardware.hpp"
 #include "units/units.hpp"
 #include "spectral.hpp"
+#include "i2c_error.hpp"
 
 extern I2C_HandleTypeDef hi2c1;
 
@@ -26,8 +27,11 @@ namespace mrover {
 			uint8_t tx_buf[1];
 			tx_buf[0] = I2C_AS72XX_SLAVE_STATUS_REG;
 			uint8_t buf[1];
-			HAL_I2C_Master_Transmit(&hi2c1, SPECTRAL_7b_ADDRESS, tx_buf, 1, 100);
-			HAL_I2C_Master_Receive(&hi2c1, SPECTRAL_7b_ADDRESS << 1 | 1, buf, 1, 100);
+			//HAL_I2C_Master_Transmit(&hi2c1, SPECTRAL_7b_ADDRESS, tx_buf, 1, 100);
+			m_i2c_bus->blocking_transmit(SPECTRAL_7b_ADDRESS, I2C_AS72XX_SLAVE_STATUS_REG);
+			//HAL_I2C_Master_Receive(&hi2c1, SPECTRAL_7b_ADDRESS << 1 | 1, buf, 1, 100);
+			blocking_receive(SPECTRAL_7b_ADDRESS);
+
 			uint8_t status = buf[0];
 			// Check if we are allowed to proceed with reads + writes
 //			auto status = m_i2c_bus->blocking_receive(SPECTRAL_7b_ADDRESS);
@@ -92,6 +96,9 @@ namespace mrover {
     		auto msb_result = virtual_read(msb_reg_addr);
     		auto lsb_result = virtual_read(lsb_reg_addr);
 
+    		if (!msb_result || !lsb_result){
+    			throw mrover::I2CRuntimeError("MSB or LSB result not read in update_channel_data");
+    		}
 			channel_data[i] = (((uint16_t)msb_result << 8) | lsb_result);
     	}
     	m_error = false;
@@ -108,12 +115,14 @@ namespace mrover {
     	buf[0] = I2C_AS72XX_WRITE_REG;
     	buf[1] = (virtual_reg | 0x80);
 //    	m_i2c_bus->blocking_transmit(SPECTRAL_7b_ADDRESS, buf); How to send multiple bytes?
-    	HAL_I2C_Master_Transmit(&hi2c1, SPECTRAL_7b_ADDRESS << 1, buf, sizeof(buf), 100);
+    	//HAL_I2C_Master_Transmit(&hi2c1, SPECTRAL_7b_ADDRESS << 1, buf, sizeof(buf), 100);
+    	m_i2c_bus->blocking_transmit(SPECTRAL_7b_ADDRESS, I2C_AS72XX_SLAVE_STATUS_REG);
 
     	poll_status_reg(true);
     	buf[0] = I2C_AS72XX_WRITE_REG;
 		buf[1] = data;
-		HAL_I2C_Master_Transmit(&hi2c1, SPECTRAL_7b_ADDRESS << 1, buf, sizeof(buf), 100);
+		//HAL_I2C_Master_Transmit(&hi2c1, SPECTRAL_7b_ADDRESS << 1, buf, sizeof(buf), 100);
+		m_i2c_bus->blocking_transmit(SPECTRAL_7b_ADDRESS, I2C_AS72XX_SLAVE_STATUS_REG);
     }
 
     uint8_t Spectral::virtual_read(uint8_t virtual_reg){
@@ -122,7 +131,8 @@ namespace mrover {
 		uint8_t buf[2];
 		buf[0] = I2C_AS72XX_WRITE_REG;
 		buf[1] = virtual_reg;
-		HAL_I2C_Master_Transmit(&hi2c1, SPECTRAL_7b_ADDRESS << 1, buf, sizeof(buf), 100);
+		//HAL_I2C_Master_Transmit(&hi2c1, SPECTRAL_7b_ADDRESS << 1, buf, sizeof(buf), 100);
+		m_i2c_bus->blocking_transmit(SPECTRAL_7b_ADDRESS, I2C_AS72XX_SLAVE_STATUS_REG);
 
 		poll_status_reg(false);
 		m_i2c_bus->blocking_transmit(SPECTRAL_7b_ADDRESS, I2C_AS72XX_READ_REG);
