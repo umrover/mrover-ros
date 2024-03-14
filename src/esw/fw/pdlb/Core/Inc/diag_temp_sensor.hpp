@@ -9,6 +9,8 @@
 #include <string.h>
 #include <memory>
 
+// TMP6431DECR
+
 namespace mrover {
 
     class DiagTempSensor {

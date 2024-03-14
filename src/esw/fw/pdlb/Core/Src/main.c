@@ -625,7 +625,7 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
 
 void SendCurrentTemperature(void* argument) {
 	for(;;) {
-		uint32_t tick = osKernelGetTickCount() + osKernelGetTickFreq(); // 1 Hz
+		uint32_t tick = osKernelGetTickCount() + (osKernelGetTickFreq() / 10.0); // 10 Hz
 
 		update_and_send_current_temp();
 		osDelayUntil(tick);
