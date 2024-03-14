@@ -5,7 +5,6 @@
 #include "hardware.hpp"
 #include "units/units.hpp"
 #include "spectral.hpp"
-#include "i2c_error.hpp"
 
 extern I2C_HandleTypeDef hi2c1;
 

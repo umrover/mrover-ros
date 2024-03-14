@@ -11,7 +11,7 @@
 #include "cmsis_os2.h"
 #include "hardware_adc.hpp"
 #include "hardware_i2c.hpp"
-#include "i2c_error.hpp"
+
 
 namespace mrover {
 
