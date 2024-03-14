@@ -19,6 +19,7 @@
 
 #include <units/units.hpp>
 #include <linear_joint_translation.hpp>
+#include <unordered_map>
 
 namespace mrover {
 

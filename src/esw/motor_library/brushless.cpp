@@ -206,7 +206,14 @@ namespace mrover {
                  result.aux2_gpio
                  );
 
-        mCurrentPosition = mrover::Revolutions{result.position}; // moteus stores position in revolutions.
+        if (mControllerName == "joint_de_0" || mControllerName == "joint_de_1") {
+            mCurrentPosition = mrover::Revolutions{result.aux1_gpio};   //get value of absolute encoder if its joint_de0/1
+        }
+
+        else {
+            mCurrentPosition = mrover::Revolutions{result.position}; // moteus stores position in revolutions.
+        }
+        
         mCurrentVelocity = mrover::RevolutionsPerSecond{result.velocity} / mVelocityMultiplier; // moteus stores position in revolutions.
 
         mErrorState = moteusErrorCodeToErrorState(result.mode, static_cast<ErrorCode>(result.fault));
