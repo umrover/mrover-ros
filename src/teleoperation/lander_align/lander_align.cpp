@@ -63,16 +63,16 @@ namespace mrover {
     void LanderAlignNodelet::LanderCallback(sensor_msgs::PointCloud2Ptr const& cloud) {
         filterNormals(cloud);
         ransac(0.1, 10, 100, 2.5);
-        // if (mNormalInZEDVector.has_value()) {
-        //     sendTwist();
-        // }
-        // mLoopState = RTRSTATE::turn1;
-        // ROS_INFO("Point cloud size");
-        // filterNormals(cloud);
-        // ransac(0.1, 10, 100, 1);
-        // if (mNormalInZEDVector.has_value()) {
-        //     sendTwist();
-        // }
+        if (mNormalInZEDVector.has_value()) {
+            sendTwist();
+        }
+        mLoopState = RTRSTATE::turn1;
+        ROS_INFO("Point cloud size");
+        filterNormals(cloud);
+        ransac(0.1, 10, 100, 1);
+        if (mNormalInZEDVector.has_value()) {
+            sendTwist();
+        }
 
     }
 
