@@ -45,11 +45,13 @@ namespace mrover {
         //**
         double mBestOffset;
 
-        std::optional<Eigen::Vector3d> mLocationInZEDVector;
-        std::optional<Eigen::Vector3d> mLocationInWorldVector;
+        double mPlaneOffsetScalar;
 
-        std::optional<Eigen::Vector3d> mOffsetInZEDVector;
-        std::optional<Eigen::Vector3d> mOffsetInWorldVector;
+        std::optional<Eigen::Vector3d> mPlaneLocationInZEDVector;
+        std::optional<Eigen::Vector3d> mPlaneLocationInWorldVector;
+
+        std::optional<Eigen::Vector3d> mOffsetLocationInZEDVector;
+        std::optional<Eigen::Vector3d> mOffsetLocationInWorldVector;
 
         std::optional<Eigen::Vector3d> mNormalInZEDVector;
         std::optional<Eigen::Vector3d> mNormalInWorldVector;
@@ -66,7 +68,8 @@ namespace mrover {
         std::string mMapFrameId;
 
 		//Ransac Params
-        float mZThreshold;
+        double mZThreshold;
+        double mXThreshold;
         int mLeastSamplingDistribution = 10;
         std::vector<Point const*> mFilteredPoints;
 
