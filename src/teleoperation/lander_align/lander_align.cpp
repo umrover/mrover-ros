@@ -63,16 +63,16 @@ namespace mrover {
     void LanderAlignNodelet::LanderCallback(sensor_msgs::PointCloud2Ptr const& cloud) {
         filterNormals(cloud);
         ransac(0.1, 10, 100, 2.5);
-        if (mNormalInZEDVector.has_value()) {
-            sendTwist();
-        }
-        mLoopState = RTRSTATE::turn1;
-        ROS_INFO("Point cloud size");
-        filterNormals(cloud);
-        ransac(0.1, 10, 100, 1);
-        if (mNormalInZEDVector.has_value()) {
-            sendTwist();
-        }
+        // if (mNormalInZEDVector.has_value()) {
+        //     sendTwist();
+        // }
+        // mLoopState = RTRSTATE::turn1;
+        // ROS_INFO("Point cloud size");
+        // filterNormals(cloud);
+        // ransac(0.1, 10, 100, 1);
+        // if (mNormalInZEDVector.has_value()) {
+        //     sendTwist();
+        // }
 
     }
 
@@ -277,16 +277,11 @@ namespace mrover {
 
         mOffsetInZEDVector = std::make_optional<Eigen::Vector3d>(mLocationInZEDVector.value() + offsetFactor * mNormalInZEDVector.value());
 
-
-
         manif::SE3d zedToMap = SE3Conversions::fromTfTree(mTfBuffer, mCameraFrameId, mMapFrameId);
 		
-		//Calculate the normal in the world frame
-        mNormalInWorldVector = std::make_optional<Eigen::Vector3d>(zedToMap.rotation().matrix() * mNormalInZEDVector.value());
-
         //Calculate the SO3 in the world frame
         Eigen::Matrix3d rot;
-        Eigen::Vector3d forward = mNormalInWorldVector.value().normalized();
+        Eigen::Vector3d forward = mNormalInZEDVector.value().normalized();
         Eigen::Vector3d worldUp = Eigen::Vector3d::UnitZ();
         Eigen::Vector3d left = worldUp.cross(forward);
         Eigen::Vector3d up = forward.cross(left);
@@ -297,20 +292,18 @@ namespace mrover {
         rot.col(2) = up;
 
 		//Calculate the plane location in the world frame
-		manif::SE3d plane_loc_in_zed = {{mLocationInZEDVector.value().x(), mLocationInZEDVector.value().y(), mLocationInZEDVector.value().z()}, manif::SO3d{Eigen::Quaterniond{rot}.normalized()}};
-        manif::SE3d plane_loc_in_world = zedToMap * plane_loc_in_zed;
-        plane_loc_in_world_final = {{plane_loc_in_world.translation().x(),plane_loc_in_world.translation().y(),plane_loc_in_world.translation().z()}, manif::SO3d{Eigen::Quaterniond{rot}.normalized()}};
-        mLocationInWorldVector = std::make_optional<Eigen::Vector3d>(plane_loc_in_world_final.translation());
+		manif::SE3d mPlaneLocationInZEDSE3d = {{mLocationInZEDVector.value().x(), mLocationInZEDVector.value().y(), mLocationInZEDVector.value().z()}, manif::SO3d{Eigen::Quaterniond{rot}.normalized()}};
+        mPlaneLocationInWorldSE3d = zedToMap * mPlaneLocationInZEDSE3d;
+        mLocationInWorldVector = std::make_optional<Eigen::Vector3d>(mPlaneLocationInWorldSE3d.translation());
 
         //Calculate the offset location in the world frame
-		manif::SE3d offset_loc_in_world = {{mOffsetInZEDVector.value().x(), mOffsetInZEDVector.value().y(), mOffsetInZEDVector.value().z()}, manif::SO3d{Eigen::Quaterniond{rot}.normalized()}};
-		offset_loc_in_world = zedToMap * offset_loc_in_world;
-        offset_loc_in_world_final = {{offset_loc_in_world.translation().x(),offset_loc_in_world.translation().y(),offset_loc_in_world.translation().z()}, manif::SO3d{Eigen::Quaterniond{rot}.normalized()}};
-        mOffsetInWorldVector = std::make_optional<Eigen::Vector3d>(offset_loc_in_world_final.translation());
+		manif::SE3d mOffsetLocationInZEDSE3d = {{mOffsetInZEDVector.value().x(), mOffsetInZEDVector.value().y(), mOffsetInZEDVector.value().z()}, manif::SO3d{Eigen::Quaterniond{rot}.normalized()}};
+		mOffsetLocationInWorldSE3d = zedToMap * mOffsetLocationInZEDSE3d;
+        mOffsetInWorldVector = std::make_optional<Eigen::Vector3d>(mOffsetLocationInWorldSE3d.translation());
 
 		//Push to the tf tree
-        SE3Conversions::pushToTfTree(mTfBroadcaster, "plane", mMapFrameId, plane_loc_in_world_final);
-        SE3Conversions::pushToTfTree(mTfBroadcaster, "offset", mMapFrameId, offset_loc_in_world_final);
+        SE3Conversions::pushToTfTree(mTfBroadcaster, "plane", mMapFrameId, mPlaneLocationInWorldSE3d);
+        SE3Conversions::pushToTfTree(mTfBroadcaster, "offset", mMapFrameId, mOffsetLocationInWorldSE3d);
     }
 
     auto LanderAlignNodelet::PID::rotate_speed(double theta) const -> double {
@@ -375,8 +368,8 @@ namespace mrover {
                     // manif::SO3d roverToP
         while (ros::ok()) {
 
-            SE3Conversions::pushToTfTree(mTfBroadcaster, "plane", mMapFrameId, plane_loc_in_world_final);
-            SE3Conversions::pushToTfTree(mTfBroadcaster, "offset", mMapFrameId, offset_loc_in_world_final);
+            SE3Conversions::pushToTfTree(mTfBroadcaster, "plane", mMapFrameId, mPlaneLocationInWorldSE3d);
+            SE3Conversions::pushToTfTree(mTfBroadcaster, "offset", mMapFrameId, mOffsetLocationInWorldSE3d);
             manif::SE3d rover = SE3Conversions::fromTfTree(mTfBuffer, "base_link", "map");
             Eigen::Vector3d roverPosInWorld{static_cast<double>(rover.translation().x()), static_cast<double>(rover.translation().y()), 0.0};
             Eigen::Vector3d targetPosInWorld;
