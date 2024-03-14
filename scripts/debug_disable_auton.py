@@ -3,8 +3,7 @@
 import numpy as np
 
 import rospy
-from mrover.msg import EnableAuton
-from mrover.srv import PublishEnableAuton
+from mrover.srv import EnableAuton
 from util.course_publish_helpers import publish_waypoints
 
 
@@ -19,8 +18,7 @@ if __name__ == "__main__":
     rospy.init_node("debug_disable_auton")
     rospy.wait_for_service("enable_auton")
     try:
-        publish_enable = rospy.ServiceProxy("enable_auton", PublishEnableAuton)
-        msg = EnableAuton([], False)
-        publish_enable(msg)
+        publish_enable = rospy.ServiceProxy("enable_auton", EnableAuton)
+        publish_enable(False, [])
     except rospy.ServiceException as e:
         print(f"Service call failed: {e}")

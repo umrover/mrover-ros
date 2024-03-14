@@ -16,9 +16,9 @@
     </div>
     <div :class="['shadow p-3 rounded data', ledColor]">
       <h2>Nav State: {{ navState }}</h2>
-      <div style="display: inline-block">
+      <!-- <div style="display: inline-block">
         <CameraFeed></CameraFeed>
-      </div>
+      </div> -->
       <div style="display: inline-block; vertical-align: top">
         <p style="margin-top: 6px">Joystick Values</p>
         <JoystickValues />
@@ -51,7 +51,7 @@
     </div>
     <div class="shadow p-3 rounded moteus">
       <DriveMoteusStateTable :moteus-state-data="moteusState" />
-      <MotorsStatusTable :motorData="motorData" :vertical="true" />
+      <MotorsStatusTable :motor-data="motorData" :vertical="true" />
     </div>
   </div>
 </template>
@@ -118,7 +118,9 @@ export default defineComponent({
         name: [] as string[],
         position: [] as number[],
         velocity: [] as number[],
-        effort: [] as number[]
+        effort: [] as number[],
+        state: [] as string[],
+        error: [] as string[]
       }
     }
   },
@@ -147,10 +149,8 @@ export default defineComponent({
         this.moteusState.error = msg.error
         this.moteusState.limit_hit = msg.limit_hit
       } else if (msg.type == 'led') {
-        if (msg.red)
-          this.ledColor = 'bg-danger' //red
-        else if (msg.green)
-          this.ledColor = 'blink' //blinking green
+        if (msg.red) this.ledColor = 'bg-danger' //red
+        else if (msg.green) this.ledColor = 'blink' //blinking green
         else if (msg.blue) this.ledColor = 'bg-primary' //blue
       } else if (msg.type == 'nav_state') {
         this.navState = msg.state
@@ -180,11 +180,11 @@ export default defineComponent({
     window.setTimeout(() => {
       this.sendMessage({ "type": "center_map" });
     }, 250)
+      interval = setInterval(() => {
+      this.sendMessage({ type: 'auton_tfclient' })
+    }, 1000)
   },
 
-  // interval = setInterval(() => {
-  //   this.sendMessage({ type: 'auton_tfclient' })
-  // }, 1000)
 })
 </script>
 
@@ -212,7 +212,6 @@ export default defineComponent({
 }
 
 @keyframes blinkAnimation {
-
   0%,
   100% {
     background-color: var(--bs-success);
@@ -282,8 +281,8 @@ h2 {
   cursor: pointer;
 }
 
-.help:hover~.helpscreen,
-.help:hover~.helpimages {
+.help:hover ~ .helpscreen,
+.help:hover ~ .helpimages {
   visibility: visible;
 }
 
@@ -291,7 +290,6 @@ h2 {
 .map {
   grid-area: map;
 }
-
 .waypoints {
   grid-area: waypoints;
 }

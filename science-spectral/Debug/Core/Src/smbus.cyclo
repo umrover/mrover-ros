@@ -1,0 +1,7 @@
+../Core/Src/smbus.c:8:8:new_smbus	1
+../Core/Src/smbus.c:25:5:smbus_check_error	2
+../Core/Src/smbus.c:41:6:smbus_read_byte_data	2
+../Core/Src/smbus.c:86:6:smbus_read_word_data	2
+../Core/Src/smbus.c:130:6:smbus_reset	1
+../Core/Src/smbus.c:141:6:smbus_write_byte_data	2
+../Core/Src/smbus.c:176:6:smbus_write_word_data	2

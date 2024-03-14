@@ -59,7 +59,7 @@ namespace mrover {
             ImGui::BeginDisabled(!mInGui);
 
             ImGui::SliderFloat("Target FPS", &mTargetUpdateRate, 5.0f, 1000.0f);
-            ImGui::SliderFloat("Fly Speed", &mFlySpeed, 0.01f, 10.0f);
+            ImGui::SliderFloat("Fly Speed", &mFlySpeed, 0.01f, 50.0f);
             ImGui::SliderFloat("Look Sense", &mLookSense, 0.0001f, 0.01f);
             ImGui::SliderFloat("FOV", &mFovDegrees, 10.0f, 120.0f);
             ImGui::InputFloat3("Gravity", mGravityAcceleration.m_floats);
@@ -68,6 +68,8 @@ namespace mrover {
             ImGui::Checkbox("Enable Physics (P)", &mEnablePhysics);
             ImGui::Checkbox("Render Models (M)", &mRenderModels);
             ImGui::Checkbox("Render Wireframe Colliders (C)", &mRenderWireframeColliders);
+            ImGui::Text("Camera Locked: %s", mCameraInRoverTarget ? "True" : "False");
+            ImGui::SliderFloat("Camera Lock Lerp", &mCameraLockSlerp, 0.0f, 1.0f);
 
             if (ImGui::BeginCombo("Sky Color", std::format("R: {:.3f} G: {:.3f} B: {:.3f} A: {:.3f}", mSkyColor[0], mSkyColor[1], mSkyColor[2], mSkyColor[3]).c_str(), ImGuiComboFlags_HeightLargest)) {
                 ImGui::ColorPicker4("Sky Color", mSkyColor.data());
@@ -94,15 +96,15 @@ namespace mrover {
                 URDF const& rover = it->second;
 
                 {
-                    SE3 baseLinkInMap = rover.linkInWorld("base_link");
-                    R3 p = baseLinkInMap.position();
-                    S3 q = baseLinkInMap.rotation().quaternion();
+                    SE3d baseLinkInMap = rover.linkInWorld("base_link");
+                    R3 p = baseLinkInMap.translation();
+                    S3 q = baseLinkInMap.quat();
                     ImGui::Text("Rover Position: (%.2f, %.2f, %.2f)", p.x(), p.y(), p.z());
                     ImGui::Text("Rover Orientation: (%.2f, %.2f, %.2f, %.2f)", q.w(), q.x(), q.y(), q.z());
                 }
                 {
-                    R3 p = mCameraInWorld.position();
-                    S3 q = mCameraInWorld.rotation().quaternion();
+                    R3 p = mCameraInWorld.translation();
+                    S3 q = mCameraInWorld.quat();
                     ImGui::Text("Camera Position: (%.2f, %.2f, %.2f)", p.x(), p.y(), p.z());
                     ImGui::Text("Camera Orientation: (%.2f, %.2f, %.2f, %.2f)", q.w(), q.x(), q.y(), q.z());
                 }

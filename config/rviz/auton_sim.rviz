@@ -82,7 +82,7 @@ Visualization Manager:
           Value: true
         right_camera_link:
           Value: true
-        zed2i_left_camera_frame:
+        zed_left_camera_frame:
           Value: true
       Marker Alpha: 1
       Marker Scale: 1
@@ -112,7 +112,7 @@ Visualization Manager:
                 {}
               right_camera_link:
                 {}
-            zed2i_left_camera_frame:
+            zed_left_camera_frame:
               {}
       Update Interval: 0
       Value: true
