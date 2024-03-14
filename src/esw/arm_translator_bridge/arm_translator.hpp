@@ -43,6 +43,8 @@ namespace mrover {
 
         auto adjustServiceCallback(AdjustMotor::Request& req, AdjustMotor::Response& res) -> bool;
 
+        auto adjustJointDE(AdjustMotor::Request& req, AdjustMotor::Response& res, ros::TimerEvent const&) -> bool;
+
     private:
         // static void clampValues(float& val1, float& val2, float minValue1, float maxValue1, float minValue2, float maxValue2);
         
