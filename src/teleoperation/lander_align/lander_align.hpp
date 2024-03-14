@@ -45,14 +45,17 @@ namespace mrover {
         //**
         double mBestOffset;
 
-        std::optional<Eigen::Vector3d> mBestLocationInZED;
-        std::optional<Eigen::Vector3d> mBestLocationInWorld;
+        std::optional<Eigen::Vector3d> mLocationInZEDVector;
+        std::optional<Eigen::Vector3d> mLocationInWorldVector;
 
-        std::optional<Eigen::Vector3d> mBestOffsetInZED;
-        std::optional<Eigen::Vector3d> mBestOffsetInWorld;
+        std::optional<Eigen::Vector3d> mOffsetInZEDVector;
+        std::optional<Eigen::Vector3d> mOffsetInWorldVector;
 
-        std::optional<Eigen::Vector3d> mBestNormalInZED;
-        std::optional<Eigen::Vector3d> mBestNormalInWorld;
+        std::optional<Eigen::Vector3d> mNormalInZEDVector;
+        std::optional<Eigen::Vector3d> mNormalInWorldVector;
+
+        manif::SE3d mOffsetLocationInWorldSE3d;
+        manif::SE3d mPlaneLocationInWorldSE3d;
         //**
 
         //TF Member Variables
@@ -76,11 +79,15 @@ namespace mrover {
 
         void filterNormals(sensor_msgs::PointCloud2Ptr const& cloud);
 
-        void ransac(double distanceThreshold, int minInliers, int epochs);
+        void ransac(double distanceThreshold, int minInliers, int epochs, double offsetFactor);
 
         void sendTwist();
 
 		void uploadPC(int numInliers, double distanceThreshold);
+
+        void calcMotion(double desiredVelocity, double desiredOmega);
+
+        static auto calcAngleWithWorldX(Eigen::Vector3d xHeading) -> double;
 
         class PID {
         private:
