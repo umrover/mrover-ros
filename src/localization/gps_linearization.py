@@ -136,7 +136,7 @@ class GPSLinearization:
 
         self.gps_has_timeout = False
 
-        # global gps_timer
+        # set gps timer
         self.gps_timer.cancel()
         self.gps_timer = threading.Timer(self.gps_timeout_interval, self.gps_timeout)
         self.gps_timer.start()
@@ -158,12 +158,11 @@ class GPSLinearization:
         pose = GPSLinearization.compute_gps_pose(right_cartesian=right_cartesian, left_cartesian=left_cartesian)
 
         # if imu has timed out do not use imu orientation
-        if (self.imu_has_timeout == False):
+        if (self.imu_has_timeout == False and self.last_imu_orientation is not None):
             # add roll and pitch from imu to gps rotation
-            if self.last_imu_orientation is not None:
-                imu_euler_angles = euler_from_quaternion(self.last_imu_orientation)
-                gps_euler_angles = euler_from_quaternion(pose.rotation.quaternion)
-                pose = SE3(pose.position, SO3((quaternion_from_euler(imu_euler_angles[0], imu_euler_angles[1], gps_euler_angles[2], axes="sxyz")).copy()))
+            imu_euler_angles = euler_from_quaternion(self.last_imu_orientation)
+            gps_euler_angles = euler_from_quaternion(pose.rotation.quaternion)
+            pose = SE3(pose.position, SO3((quaternion_from_euler(imu_euler_angles[0], imu_euler_angles[1], gps_euler_angles[2], axes="sxyz")).copy()))
     
         self.last_gps_pose = pose
 
@@ -198,9 +197,10 @@ class GPSLinearization:
 
         :param msg: The Imu message containing IMU data that was just received
         """
-        # reset in the case that we want it to go back after it has set itself to true
+        
         self.imu_has_timeout = False
         
+        # set imu timer
         self.imu_timer.cancel()
         self.imu_timer = threading.Timer(self.imu_timeout_interval, self.imu_timeout)
         self.imu_timer.start()
@@ -244,6 +244,7 @@ class GPSLinearization:
         covariance_matrix[:3, :3] = self.config_gps_covariance.reshape(3, 3)
         covariance_matrix[3:, 3:] = self.config_imu_covariance.reshape(3, 3)
 
+        # publish to ekf
         pose_msg = PoseWithCovarianceStamped(
             header=Header(stamp=msg.header.stamp, frame_id=self.world_frame),
             pose=PoseWithCovariance(
