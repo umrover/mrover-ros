@@ -8,6 +8,8 @@
 
 namespace mrover {
 
+    typedef actionlib::SimpleActionServer<LanderAlignAction> Server;
+
     enum RTRSTATE {
         turn1 = 0,
         drive = 1,
@@ -25,18 +27,20 @@ namespace mrover {
 
     class LanderAlignNodelet : public nodelet::Nodelet {
 
+
         //PID CONSTANTS
         double const mAngleP = 1;
         double const mLinearP = 0.3;
         ros::NodeHandle mNh, mPnh;
 
+        Server mActionServer{mNh, "LanderAlignAction", [&] (& const LanderAlignNodelet::LanderCallback), false};
+
+
         ros::Publisher mDebugVectorPub;
 
         ros::Publisher mDebugPCPub;
 
-
         ros::Publisher mTwistPub;
-
 
         ros::Subscriber mVectorSub;
 
@@ -74,9 +78,6 @@ namespace mrover {
         std::vector<Point const*> mFilteredPoints;
 
         auto onInit() -> void override;
-
-        // deprecated/not needed anymore
-        // auto downsample(sensor_msgs::PointCloud2Ptr const& cloud) -> sensor_msgs::PointCloud2Ptr;
 
         void LanderCallback(sensor_msgs::PointCloud2Ptr const& cloud);
 
