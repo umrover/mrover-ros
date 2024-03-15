@@ -133,7 +133,7 @@ brushless_motors:
       limit_1_readjust_position: 494.739 # radians
       limit_max_forward_pos: true
       limit_max_backward_pos: true
-      max_forward_pos: 1.0
+      max_forward_pos: 0.4
       max_backward_pos: 0.0
     joint_c:
       velocity_multiplier: -1.0
