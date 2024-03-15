@@ -73,10 +73,6 @@ namespace mrover {
     	science.reboot_spectral();
     }
 
-    void poll_spectral_status(){
-    	science.poll_spectral_status();
-    }
-
     void update_and_send_spectral() {
     	science.update_and_send_spectral();
     }
@@ -106,10 +102,6 @@ namespace mrover {
 
 void init() {
     mrover::init();
-}
-
-void poll_spectral_status(){
-	mrover::poll_spectral_status();
 }
 
 void update_and_send_spectral() {

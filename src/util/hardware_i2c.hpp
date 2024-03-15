@@ -32,10 +32,13 @@ namespace mrover {
             HAL_I2C_Master_Transmit(m_i2c, address << 1, address_of<std::uint8_t>(send), sizeof(send), I2C_TIMEOUT);
         }
 
-        auto blocking_receive(std::uint16_t address) -> TReceive {
+        auto blocking_receive(std::uint16_t address) -> std::optional<TReceive> {
             // TODO(quintin): Error handling? Shouldn't this return an optional
-            if (TReceive receive{}; HAL_I2C_Master_Receive(m_i2c, address << 1 | 1, address_of<std::uint8_t>(receive), sizeof(receive), I2C_TIMEOUT) == HAL_OK) {
-                return receive;
+            if (TReceive receive{}; HAL_I2C_Master_Receive(m_i2c, address << 1 | 1, address_of<std::uint8_t>(receive), sizeof(receive), I2C_TIMEOUT) != HAL_OK) {
+                return std::nullopt;
+            }
+            else{
+            	return receive;
             }
         }
 

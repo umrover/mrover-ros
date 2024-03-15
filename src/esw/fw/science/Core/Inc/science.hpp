@@ -100,10 +100,6 @@ namespace mrover {
             std::visit([&](auto const& command) { feed(command); }, message);
         }
 
-        void poll_spectral_status() {
-        	m_spectral_sensors.at(0).poll_status_reg(true);
-        }
-
         void reboot_spectral() {
         	m_spectral_sensors.at(0).reboot();
         }
