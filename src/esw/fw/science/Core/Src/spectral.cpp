@@ -99,7 +99,7 @@ namespace mrover {
     		if (!msb_result || !lsb_result){
     			throw mrover::I2CRuntimeError("MSB or LSB result not read in update_channel_data");
     		}
-			channel_data[i] = (((uint16_t)msb_result << 8) | lsb_result);
+			channel_data[i] = (((uint16_t)(msb_result.value()) << 8) | lsb_result.value());
     	}
     	m_error = false;
     }
