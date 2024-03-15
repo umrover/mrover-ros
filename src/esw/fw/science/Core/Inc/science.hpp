@@ -12,10 +12,13 @@
 #include "hardware_adc.hpp"
 #include "hardware_i2c.hpp"
 
+
 namespace mrover {
 
     class Science {
     private:
+
+    	std::shared_ptr<SMBus<uint8_t, uint16_t>> m_i2c_bus;
 
     	FDCAN<InBoundScienceMessage> m_fdcan_bus;
         std::array<Spectral, 3> m_spectral_sensors;
@@ -104,18 +107,26 @@ namespace mrover {
         	m_spectral_sensors.at(0).poll_status_reg(true);
         }
 
-        void reboot_spectral() {
-        	m_spectral_sensors.at(0).reboot();
+        void reboot_i2c() {
+        	//m_spectral_sensors.at(0).reboot();
+        	m_i2c_bus->reboot();
         }
 
         void update_and_send_spectral() {
         	SpectralData spectral_data;
         	// TEST just 1 spectral (id 0), replace with 0 - 3 later
         	for (int i = 2; i < 3; ++i) {
-        		m_spectral_sensors.at(i).update_channel_data();
+        		try{
+        			m_spectral_sensors.at(i).update_channel_data();
+        		}
+        		catch(mrover::I2CRuntimeError e){
+        			//TODO: add the catch statement
+        		}
 
-				spectral_data.spectrals.at(i).error =
-						m_spectral_sensors.at(i).is_error();
+
+
+				//spectral_data.spectrals.at(i).error =
+				//		m_spectral_sensors.at(i).is_error();
         		for (int j = 0; j < 6; ++j) {
 					spectral_data.spectrals.at(i).data.at(j) =
 						m_spectral_sensors.at(i).get_channel_data(j);

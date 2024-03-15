@@ -5,6 +5,7 @@
 
 #include "hardware.hpp"
 
+
 namespace mrover {
 
     constexpr static std::size_t I2C_MAX_FRAME_SIZE = 32;
@@ -41,13 +42,13 @@ namespace mrover {
 
         auto blocking_transact(std::uint16_t address, TSend const& send) -> std::optional<TReceive> {
             if (HAL_I2C_Master_Transmit(m_i2c, address << 1, address_of<std::uint8_t>(send), sizeof(send), I2C_TIMEOUT) != HAL_OK) {
-                return std::nullopt;
+                throw mrover::I2CRuntimeError("blocking_transact failed at I2C transmit call.");
             }
 
             //reads from address sent above
             if (TReceive receive{}; HAL_I2C_Master_Receive(m_i2c, address << 1 | 1, address_of<std::uint8_t>(receive), sizeof(receive), I2C_TIMEOUT) != HAL_OK) {
                 reboot();
-                return std::nullopt;
+                throw mrover::I2CRuntimeError("blocking_transact failed at I2C receive.");
             } else {
                 return receive;
             }
