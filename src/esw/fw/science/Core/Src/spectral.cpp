@@ -96,6 +96,9 @@ namespace mrover {
     		auto msb_result = virtual_read(msb_reg_addr);
     		auto lsb_result = virtual_read(lsb_reg_addr);
 
+    		if (!msb_result || !lsb_result){
+    			throw mrover::I2CRuntimeError("MSB or LSB result not read in update_channel_data");
+    		}
 			channel_data[i] = (((uint16_t)msb_result << 8) | lsb_result);
     	}
     	m_error = false;
