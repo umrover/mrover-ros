@@ -12,9 +12,9 @@ import numpy as np
 import rospy
 from geometry_msgs.msg import Pose, PoseStamped, Point, Quaternion
 from std_msgs.msg import Header
-from mrover.msg import GPSPointList, Costmap2D
+from mrover.msg import GPSPointList
 from nav_msgs.msg import OccupancyGrid, Path
-from navigation import approach_post, recovery, waypoint
+from navigation import approach_object, recovery, waypoint
 from navigation.context import convert_cartesian_to_gps, Context
 from navigation.trajectory import Trajectory, SearchTrajectory
 from util.SE3 import SE3
@@ -44,9 +44,20 @@ class Node:
     # defining greater than for purposes of heap queue
     def __gt__(self, other):
         return self.f > other.f
+    
+class SpiralEnd(Exception):
+    """
+    Raise when there are no more points left in the search spiral
+    """
+    pass
+
+class NoPath(Exception):
+    """
+    Raise when an A* path could not be found
+    """
+    pass
 
 
-# TODO: Right now this is a copy of search state, we will need to change this
 # REFERENCE: https://docs.google.com/document/d/18GjDWxIu5f5-N5t5UgbrZGdEyaDj9ZMEUuXex8-NKrA/edit
 class WaterBottleSearchState(State):
     traj: SearchTrajectory  # spiral
@@ -56,11 +67,10 @@ class WaterBottleSearchState(State):
     is_recovering: bool = False
     height: int = 0  # height of occupancy grid
     width: int = 0  # width of occupancy grid
-    resolution: int = 0  # resolution of occupancy
-    origin: np.ndarray = np.array([])  # hold the inital rover pose
+    resolution: int = 0  # resolution of occupancy grid
+    origin: np.ndarray = np.array([])  # hold the inital rover pose (waypoint of water bottle)
     context: Context
     listener: rospy.Subscriber
-    costmap_pub: rospy.Publisher
     time_last_updated: rospy.Time
     costmap_lock: Lock
     path_pub: rospy.Publisher
@@ -95,7 +105,7 @@ class WaterBottleSearchState(State):
     def ij_to_cartesian(self, ij_coords: np.ndarray) -> np.ndarray:
         """
         Convert coordinates in the occupancy grid (i, j) to real world cartesian coordinates (x, y)
-        using formula (WP - [W/2, H/2]) + [j * r, i * r] + [r/2, -r/2]
+        using formula (WP - [W/2, H/2]) + [j * r, i * r] + [r/2, -r/2] * [1, -1]
         WP: origin
         W, H: grid width, height (meters)
         r: resolution (meters/cell)
@@ -108,19 +118,6 @@ class WaterBottleSearchState(State):
         resolution_conversion = ij_coords * [self.resolution, self.resolution]  # [j * r, i * r]
         half_res = np.array([self.resolution / 2, -1 * self.resolution / 2])  # [r/2, -r/2]
         return ((self.origin - width_height) + resolution_conversion + half_res) * np.array([1, -1])
-    
-    def avg_cell(self, costmap2D, cell) -> float:
-        """
-        Finds the average cost of the surrounding neighbors of the cell in the costmap
-        Pads costmap2D with zeros for edge cases
-        :param costmap2D: current costmap
-        :param cell: cell we are wanting to find average of neighbors including self
-        :return: average value 
-        """
-        padded_costmap = np.pad(costmap2D, pad_width=1, mode='constant', constant_values=0)
-        i, j = cell
-        neighbors = padded_costmap[i:i+3, j:j+3]  # Extract surrounding neighbors
-        return np.mean(neighbors)
 
     def return_path(self, current_node, costmap2D):
         """
@@ -138,6 +135,8 @@ class WaterBottleSearchState(State):
         reversed_path = path[::-1]
         print("ij:", reversed_path[1:])
 
+        # Print visual of costmap with path and start (S) and end (E) points
+        # The lighter the block, the more costly it is
         for step in reversed_path:
             costmap2D[step[0]][step[1]] = 2 # path (.)
         costmap2D[reversed_path[0][0]][reversed_path[0][1]] = 3  # start
@@ -188,17 +187,17 @@ class WaterBottleSearchState(State):
         print(f"start: {start}, end: {end}")
         print(f"startij: {startij}, endij: {endij}")
 
-        # check if end node is within range, if it is, check if it has a high cost or high surrounding cost
+        # check if end node is within range, if it is, check if it has a high cost
         if (
             end_node.position[0] <= (costmap2d.shape[0] - 1)
             and end_node.position[0] >= 0
             and end_node.position[1] <= (costmap2d.shape[1] - 1)
             and end_node.position[1] >= 0
         ):
-            if costmap2d[end_node.position[0], end_node.position[1]] >= 0.3: # TODO figure out value
-                # True if the trajectory is finished so return None
+            while(costmap2d[end_node.position[0], end_node.position[1]] >= 0.2): # TODO: find optimal value
+                # True if the trajectory is finished
                 if self.traj.increment_point():
-                    return None
+                    raise SpiralEnd()
                 # update end point to be the next point in the search spiral
                 endij = self.cartesian_to_ij(self.traj.get_cur_pt())
                 end_node = Node(None, (endij[0], endij[1]))
@@ -254,7 +253,8 @@ class WaterBottleSearchState(State):
                 ):
                     continue
 
-                if costmap2d[node_position[0]][node_position[1]] >= 0.3:
+                # make sure it is traversable terrian (not too high of a cost)
+                if costmap2d[node_position[0]][node_position[1]] >= 0.2: # TODO: find optimal value
                     continue
 
                 # create new node and append it
@@ -266,7 +266,7 @@ class WaterBottleSearchState(State):
                 # child is on the closed list
                 if len([closed_child for closed_child in closed_list if closed_child == child]) > 0:
                     continue
-                # create the f, g, and h values
+                # create the f (total), g (cost in map), and h (euclidean distance) values
                 child.g = current_node.g + costmap2d[child.position[0], child.position[1]]
                 child.h = ((child.position[0] - end_node.position[0]) ** 2) + (
                     (child.position[1] - end_node.position[1]) ** 2
@@ -288,14 +288,15 @@ class WaterBottleSearchState(State):
                 heapq.heappush(open_list, child)
 
         print("Couldn't find a path to destination")
-        return None
+        raise NoPath()
 
     def costmap_callback(self, msg: OccupancyGrid):
         """
         Callback function for the occupancy grid perception sends
         :param msg: Occupancy Grid representative of a 30 x 30m square area with origin at GNSS waypoint. Values are 0, 1, -1
         """
-        if rospy.get_time() - self.time_last_updated > 1:
+        # only update our costmap every 0.5 seconds
+        if rospy.get_time() - self.time_last_updated > 0.5:
             print("RUN ASTAR")
 
             self.resolution = msg.info.resolution # meters/cell
@@ -304,22 +305,31 @@ class WaterBottleSearchState(State):
             with self.costmap_lock:
                 costmap2D = np.array(msg.data).reshape((int(self.height), int(self.width))).astype(np.float32)
                 
-                # change all unidentified points to have a cost of 0.5
-                costmap2D[costmap2D == -1.0] = 0.5
+                # change all unidentified points to have a slight cost
+                costmap2D[costmap2D == -1.0] = 0.1 # TODO: find optimal value
                 costmap2D = np.rot90(costmap2D, k=3, axes=(0,1)) # rotate 90 degress clockwise
 
-                #TODO: Figure out threshold and maybe leave 1s as 1s
-                #Apply Kernel to average the map with zero padding
-                mask = (costmap2D == 1.0)
-                kernel = np.ones((3,3), dtype = np.float32) / 9
+                # apply kernel to average the map with zero padding
+                kernel_shape = (7,7) # TODO: find optimal kernel size
+                kernel = np.ones(kernel_shape, dtype = np.float32) / (kernel_shape[0]*kernel_shape[1])
                 costmap2D = convolve2d(costmap2D, kernel, mode = "same")
-                costmap2D = np.where(mask, 1.0, costmap2D)
 
                 cur_rover_pose = self.context.rover.get_pose().position[0:2]
                 end_point = self.traj.get_cur_pt()
 
                 # call A-STAR
-                occupancy_list = self.a_star(costmap2D, cur_rover_pose, end_point[0:2])
+                try:
+                    occupancy_list = self.a_star(costmap2D, cur_rover_pose, end_point[0:2])
+                except SpiralEnd as spiral_error:
+                    # TODO: what to do in this case
+                    self.traj.reset()
+                    occupancy_list = None
+                except NoPath as path_error:
+                    # increment end point
+                    if self.traj.increment_point():
+                        # TODO: what to do in this case
+                        self.traj.reset()
+                    occupancy_list = None
                 if occupancy_list is None:
                     self.star_traj = Trajectory(np.array([]))
                 else:
@@ -328,7 +338,6 @@ class WaterBottleSearchState(State):
                     self.star_traj = Trajectory(
                         np.hstack((cartesian_coords, np.zeros((cartesian_coords.shape[0], 1))))
                     )  # current point gets set back to 0
-                    self.costmap_pub.publish(costmap2D.flatten())
                     
                     path = Path()
                     poses = []
@@ -364,12 +373,11 @@ class WaterBottleSearchState(State):
             self.prev_target = None
         self.star_traj = Trajectory(np.array([]))
         self.time_last_updated = rospy.get_time()
-        self.costmap_pub = rospy.Publisher("costmap2D", Costmap2D, queue_size=1)
-        self.listener = rospy.Subscriber("costmap", OccupancyGrid, self.costmap_callback)
+        self.costmap_listener = rospy.Subscriber("costmap", OccupancyGrid, self.costmap_callback)
         self.path_pub = rospy.Publisher("path", Path, queue_size=10)
 
     def on_exit(self, context) -> None:
-        pass
+        self.costmap_listener.unregister()
 
     def on_loop(self, context) -> State:
         # continue executing the path from wherever it left off
@@ -411,7 +419,7 @@ class WaterBottleSearchState(State):
             GPSPointList([convert_cartesian_to_gps(pt) for pt in self.traj.coordinates])
         )
         context.rover.send_drive_command(cmd_vel)
-        # TODO: change so that if we are looking for the water bottle we will transition into ApproachObjectState
-        if context.env.current_target_pos() is not None and context.course.look_for_post():
-            return approach_post.ApproachPostState()
+ 
+        if context.env.current_target_pos() is not None and context.course.look_for_object():
+            return approach_object.ApproachObjectState()
         return self

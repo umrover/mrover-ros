@@ -20,6 +20,12 @@ class Trajectory:
         """
         self.cur_pt += 1
         return self.cur_pt >= len(self.coordinates)
+    
+    def reset(self)-> None:
+        """
+        Resets the trajectory back to its start
+        """
+        self.cur_pt = 0
 
 
 @dataclass
