@@ -31,13 +31,15 @@
     </div>
     <div class="comms shutdownStatus">
       <LEDIndicator
-        :connected="autoShutdownEnabled"
+        :connected="autoShutdownIntended"
         :name="'Auto Shutdown Status'"
         :show_name="true"
       />
     </div>
     <div class="capture sample picture">
-      <button class="btn btn-primary btn-lg cutstom-btn" @click="capturePhoto()">Capture Photo</button>
+      <div class="d-flex justify-content-end">
+        <button class="btn btn-primary btn-lg cutstom-btn" @click="capturePhoto()">Capture Photo</button>
+      </div>
     </div>
   </div>
 </template>
@@ -66,8 +68,38 @@ export default {
     }
   },
 
+  watch: {
+    message(msg) {
+      if (msg.type == 'heaterEnable') {
+        if (!msg.result) {
+          this.heaters[id].enabled = !this.heaters[id].enabled
+          alert('Toggling Heater Enable failed.')
+        }
+      }
+      else if (msg.type == 'autoShutoff') {
+        if (!msg.result) {
+          autoShutdownIntended = !autoShutdownIntended
+          alert('Toggling Auto Shutdown failed.')
+        }
+      }
+      else if (msg.type == 'thermistor') {
+        var heaterID = 'b'
+        if (isAmino) {
+          heaterID = 'n'
+        }
+        if (heaterID == 'n') {
+          this.heathers[id].temp = msg.thermistor_data[id*2]
+        }
+        else if (heaterID == 'b') {
+          this.heathers[id].temp = msg.thermistor_data[(id*2)+1]
+        }
+      }
+    }
+  },
+
   data() {
     return {
+
       heaters: [
         {
           enabled: false,
@@ -115,24 +147,21 @@ export default {
 
     sendHeaterRequest: function (id) {
       this.heaters[id].enabled = !this.heaters[id].enabled;
-      var heaterName = "n";
+      var heaterName = "b";
       if (this.isAmino) {
-        heaterName = "b"
+        heaterName = "n"
       }
       heaterName += id
-      // window.setTimeout(() => {
-        this.sendMessage({ type: "heaterEnable", enabled: this.heaters[id].enabled, heater: heaterName});
-      // }, 250)
+      this.sendMessage({ type: "heaterEnable", enabled: this.heaters[id].enabled, heater: heaterName});
     },
 
     sendAutoShutdownCmd: function (enabled) {
       this.autoShutdownIntended = enabled;
+      this.sendMessage({ type: "autoShutoff", shutoff: this.autoShutdownIntended });
     },
 
     capturePhoto() {
-      // window.setTimeout(() => {
-        this.sendMessage({ type: "takePanorama" }); //TODO: change to something other than takePanorama
-      // }, 250)
+      this.sendMessage({ type: "capturePhoto" }); 
     }
   }
 };

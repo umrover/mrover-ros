@@ -8,7 +8,7 @@ from channels.generic.websocket import JsonWebsocketConsumer
 import rospy
 import tf2_ros
 import cv2
-from cv_bridge import CvBridge
+# from cv_bridge import CvBridge
 from geometry_msgs.msg import Twist
 from mrover.msg import (
     PDLB,
@@ -26,7 +26,7 @@ from mrover.msg import (
     Position,
     IK,
 )
-from mrover.srv import EnableAuton, ChangeCameras, CapturePanorama
+from mrover.srv import EnableAuton, ChangeCameras, CapturePanorama #, CapturePhoto
 from sensor_msgs.msg import NavSatFix, Temperature, RelativeHumidity, Image
 from mrover.srv import EnableAuton
 from sensor_msgs.msg import NavSatFix, Temperature, RelativeHumidity
@@ -91,6 +91,7 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.sa_humidity_data = rospy.Subscriber(
                 "/sa_humidity_data", RelativeHumidity, self.sa_humidity_data_callback
             )
+            self.sa_thermistor_data = rospy.Subscriber("/science_thermistors", Temperature, self.sa_thermistor_data_callback)
 
             # Services
             self.laser_service = rospy.ServiceProxy("enable_arm_laser", SetBool)
@@ -101,6 +102,8 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.calibrate_service = rospy.ServiceProxy("arm_calibrate", Trigger)
             self.change_cameras_srv = rospy.ServiceProxy("change_cameras", ChangeCameras)
             self.capture_panorama_srv: Any = rospy.ServiceProxy("capture_panorama", CapturePanorama)
+            self.heater_auto_shutoff_srv = rospy.ServiceProxy("science_change_heater_auto_shutoff_state", SetBool)
+            # self.capture_photo_srv = rospy.ServiceProxy("capture_photo", CapturePhoto)
 
             # ROS Parameters
             self.mappings = rospy.get_param("teleop/joystick_mappings")
@@ -168,8 +171,12 @@ class GUIConsumer(JsonWebsocketConsumer):
                 self.change_cameras(msg=message)
             elif message["type"] == "takePanorama":
                 self.capture_panorama()
+            # elif message["type"] == "capturePhoto":
+            #     self.capture_photo()
             elif message["type"] == "heaterEnable":
                 self.heater_enable_service(msg=message)
+            elif message["type"] == "autoShutoff":
+                self.auto_shutoff_toggle(msg=message)
             elif message["type"] == "center_map":
                 self.send_center()
             elif message["type"] == "enable_limit_switch":
@@ -586,6 +593,9 @@ class GUIConsumer(JsonWebsocketConsumer):
     def sa_humidity_data_callback(self, msg):
         self.send(text_data=json.dumps(obj={"type": "relative_humidity", "humidity_data": msg.relative_humidity}))
 
+    def sa_thermistor_data_callback(self, msg):
+        self.send(text_data=json.dumps(obj={"type": "thermistor", "thermistor_data": msg.thermistor}))
+
     def auton_bearing(self):
         base_link_in_map = SE3.from_tf_tree(self.tf_buffer, "map", "base_link")
         self.send(
@@ -626,72 +636,48 @@ class GUIConsumer(JsonWebsocketConsumer):
         except rospy.ServiceException as e:
             print(f"Service call failed: {e}")
 
-    def image_callback(self, msg):
-        bridge = CvBridge()
-        try:
-            # Convert the image to OpenCV standard format
-            cv_image = bridge.imgmsg_to_cv2(msg, desired_encoding="passthrough")
-        except Exception as e:
-            rospy.logerr("Could not convert image message to OpenCV image: " + str(e))
-            return
+    # def capture_photo(self):
+    #     try:
+    #         response = self.capture_photo_srv()
+    #         image = response.photo
+    #         self.image_callback(image)
+    #     except rospy.ServiceException as e:
+    #         print(f"Service call failed: {e}")
 
-        # Save the image to a file (you could change 'png' to 'jpg' or other formats)
-        image_filename = "panorama.png"
-        try:
-            cv2.imwrite(image_filename, cv_image)
-            rospy.loginfo("Saved image to {}".format(image_filename))
-        except Exception as e:
-            rospy.logerr("Could not save image: " + str(e))
+    # def image_callback(self, msg):
+        # bridge = CvBridge()
+        # try:
+        #     # Convert the image to OpenCV standard format
+        #     cv_image = bridge.imgmsg_to_cv2(msg, desired_encoding="passthrough")
+        # except Exception as e:
+        #     rospy.logerr("Could not convert image message to OpenCV image: " + str(e))
+        #     return
 
-    def change_cameras(self, msg):
-        try:
-            camera_cmd = CameraCmd(msg["device"], msg["resolution"])
-            rospy.logerr(camera_cmd)
-            result = self.change_cameras_srv(primary=msg["primary"], camera_cmd=camera_cmd)
-            rospy.logerr(result)
-        except rospy.ServiceException as e:
-            print(f"Service call failed: {e}")
-
-    def send_res_streams(self):
-        res = rospy.get_param("cameras/max_num_resolutions")
-        streams = rospy.get_param("cameras/max_streams")
-        self.send(text_data=json.dumps({"type": "max_resolution", "res": res}))
-        self.send(text_data=json.dumps({"type": "max_streams", "streams": streams}))
-    
-    def capture_panorama(self) -> None:
-        try:
-            response = self.capture_panorama_srv()
-            image = response.panorama 
-            self.image_callback(image)
-        except rospy.ServiceException as e:
-            print(f"Service call failed: {e}")
+        # # Save the image to a file (you could change 'png' to 'jpg' or other formats)
+        # image_filename = "panorama.png"
+        # try:
+        #     cv2.imwrite(image_filename, cv_image)
+        #     rospy.loginfo("Saved image to {}".format(image_filename))
+        # except Exception as e:
+        #     rospy.logerr("Could not save image: " + str(e))
 
     def heater_enable_service(self, msg):
         try:
-            rospy.logerr(msg)
             heater = msg["heater"]
             science_enable = rospy.ServiceProxy("science_enable_heater_" + heater, SetBool)
-            result = science_enable(data=msg["data"])
+            rospy.logerr("science_enable_heater_" + heater)
+            result = science_enable(data=msg["enabled"])
             self.send(text_data=json.dumps({"type": "science_enable", "result": result.success}))
         except rospy.ServiceException as e:
             print(f"Service init failed: {e}")
-
-    def image_callback(self, msg):
-        bridge = CvBridge()
+    
+    def auto_shutoff_toggle(self, msg):
         try:
-            # Convert the image to OpenCV standard format
-            cv_image = bridge.imgmsg_to_cv2(msg, desired_encoding="passthrough")
-        except Exception as e:
-            rospy.logerr("Could not convert image message to OpenCV image: " + str(e))
-            return
-
-        # Save the image to a file (you could change 'png' to 'jpg' or other formats)
-        image_filename = "panorama.png"
-        try:
-            cv2.imwrite(image_filename, cv_image)
-            rospy.loginfo("Saved image to {}".format(image_filename))
-        except Exception as e:
-            rospy.logerr("Could not save image: " + str(e))
+            rospy.logerr(msg)
+            result = self.heater_auto_shutoff_srv(data=msg["shutoff"])
+            self.send(text_data=json.dumps({"type": "auto_shutoff", "result": result.success}))
+        except rospy.ServiceException as e:
+            print(f"Service call failed: {e}")
 
     def send_center(self):
         lat = rospy.get_param("gps_linearization/reference_point_latitude")
