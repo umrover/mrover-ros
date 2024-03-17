@@ -1,5 +1,7 @@
 #pragma once
 
+#include "mrover/LanderAlignAction.h"
+#include "mrover/LanderAlignActionGoal.h"
 #include "pch.hpp"
 #include <Eigen/src/Core/Matrix.h>
 #include <optional>
@@ -8,7 +10,7 @@
 
 namespace mrover {
 
-    typedef actionlib::SimpleActionServer<LanderAlignAction> Server;
+    typedef actionlib::SimpleActionServer<mrover::LanderAlignAction> Server;
 
     enum RTRSTATE {
         turn1 = 0,
@@ -33,7 +35,7 @@ namespace mrover {
         double const mLinearP = 0.3;
         ros::NodeHandle mNh, mPnh;
 
-        Server mActionServer{mNh, "LanderAlignAction", [&] (& const LanderAlignNodelet::LanderCallback), false};
+        Server mActionServer = Server(mNh, "LanderAlignAction", [&](const mrover::LanderAlignActionGoalConstPtr& goal){ActionServerCallBack(goal);}, false);
 
 
         ros::Publisher mDebugVectorPub;
@@ -80,6 +82,8 @@ namespace mrover {
         auto onInit() -> void override;
 
         void LanderCallback(sensor_msgs::PointCloud2Ptr const& cloud);
+        
+        void ActionServerCallBack(LanderAlignActionGoalConstPtr const& actionRequest);
 
         void filterNormals(sensor_msgs::PointCloud2Ptr const& cloud);
 

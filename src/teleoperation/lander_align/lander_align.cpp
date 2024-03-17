@@ -1,5 +1,8 @@
 #include "lander_align.hpp"
 #include "lie.hpp"
+#include "mrover/LanderAlignActionFeedback.h"
+#include "mrover/LanderAlignActionGoal.h"
+#include "mrover/LanderAlignActionResult.h"
 #include "pch.hpp"
 #include <Eigen/src/Core/Matrix.h>
 #include <Eigen/src/Core/VectorBlock.h>
@@ -58,7 +61,6 @@ namespace mrover {
 
         mPlaneLocationInWorldVector = std::make_optional<Eigen::Vector3d>(0, 0, 0);
         mNormalInWorldVector = std::make_optional<Eigen::Vector3d>(0, 0, 0);
-
         mLoopState = RTRSTATE::turn1;
     }
 
@@ -76,6 +78,15 @@ namespace mrover {
             mLoopState = RTRSTATE::done;
         }
     }
+
+    void LanderAlignNodelet::ActionServerCallBack(mrover::LanderAlignActionGoalConstPtr const& actionRequest){
+        LanderAlignActionFeedback feedback;
+        LanderAlignActionResult result;
+        for(int i = 0; i < static_cast<int>(actionRequest->goal.num); i++){
+            //feedback.feedback.percent_complete=i;
+        }
+    }
+
 
     //Returns angle (yaw) around the z axis
     auto LanderAlignNodelet::calcAngleWithWorldX(Eigen::Vector3d xHeading) -> double{ //I want to be editing this variable so it should not be const or &

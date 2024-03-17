@@ -5,4 +5,4 @@ uint32 num  # Specify which dishwasher we want to use
 uint32 num
 ---
 # Define a feedback message
-float32 percent_complete
+uint32 count_ten
