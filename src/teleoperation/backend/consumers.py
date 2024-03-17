@@ -141,6 +141,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         message = json.loads(text_data)
         try:
             if message["type"] == "joystick_values":
+                if not lander_align
                 self.handle_joystick_message(message)
             elif message["type"] == "disable_auton_led":
                 self.disable_auton_led()
@@ -711,3 +712,6 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.send(text_data=json.dumps({"type": "flight_attitude", "pitch": pitch, "roll": roll}))
 
             rate.sleep()
+
+    def start_lander_align(self) -> None:
+        pass
