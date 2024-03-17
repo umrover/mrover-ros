@@ -4,33 +4,30 @@
 
 namespace mrover {
 
-    using Server = actionlib::SimpleActionServer<mrover::LanderAlignAction>;
+    using Server = actionlib::SimpleActionServer<LanderAlignAction>;
 
-    enum RTRSTATE {
+    enum struct RTRSTATE {
         turn1 = 0,
         drive = 1,
         turn2 = 2,
-        done = 3
+        done = 3,
     };
 
     constexpr char RTRSTRINGS[4][6] = {
-                                "turn1",
-                                "drive",
-                                "turn2",
-                                "done "
+            "turn1",
+            "drive",
+            "turn2",
+            "done ",
     };
-    
 
-    class LanderAlignNodelet : public nodelet::Nodelet {
-
+    class LanderAlignNodelet final : public nodelet::Nodelet {
 
         //PID CONSTANTS
         double const mAngleP = 1;
         double const mLinearP = 0.3;
         ros::NodeHandle mNh, mPnh;
 
-        Server mActionServer = Server(mNh, "LanderAlignAction", [&](mrover::LanderAlignActionGoalConstPtr const& goal){ActionServerCallBack(goal);}, false);
-
+        std::optional<Server> mActionServer;
 
         ros::Publisher mDebugVectorPub;
 
@@ -40,12 +37,12 @@ namespace mrover {
 
         ros::Subscriber mVectorSub;
 
-        RTRSTATE mLoopState;
+        RTRSTATE mLoopState = RTRSTATE::done;
 
         //**
-        double mBestOffset;
+        double mBestOffset{};
 
-        double mPlaneOffsetScalar;
+        double mPlaneOffsetScalar{};
 
         std::optional<Eigen::Vector3d> mPlaneLocationInZEDVector;
         std::optional<Eigen::Vector3d> mPlaneLocationInWorldVector;
@@ -56,8 +53,8 @@ namespace mrover {
         std::optional<Eigen::Vector3d> mNormalInZEDVector;
         std::optional<Eigen::Vector3d> mNormalInWorldVector;
 
-        manif::SE3d mOffsetLocationInWorldSE3d;
-        manif::SE3d mPlaneLocationInWorldSE3d;
+        SE3d mOffsetLocationInWorldSE3d;
+        SE3d mPlaneLocationInWorldSE3d;
         //**
 
         //TF Member Variables
@@ -67,17 +64,17 @@ namespace mrover {
         std::string mCameraFrameId;
         std::string mMapFrameId;
 
-		//Ransac Params
-        double mZThreshold;
-        double mXThreshold;
+        //Ransac Params
+        double mZThreshold{};
+        double mXThreshold{};
         int mLeastSamplingDistribution = 10;
         std::vector<Point const*> mFilteredPoints;
 
         auto onInit() -> void override;
 
         void LanderCallback(sensor_msgs::PointCloud2Ptr const& cloud);
-        
-        void ActionServerCallBack(LanderAlignActionGoalConstPtr const& actionRequest);
+
+        void ActionServerCallBack(LanderAlignGoalConstPtr const& actionRequest);
 
         void filterNormals(sensor_msgs::PointCloud2Ptr const& cloud);
 
@@ -85,17 +82,15 @@ namespace mrover {
 
         void sendTwist();
 
-		void uploadPC(int numInliers, double distanceThreshold);
+        void uploadPC(int numInliers, double distanceThreshold);
 
         void calcMotion(double desiredVelocity, double desiredOmega);
 
         static auto calcAngleWithWorldX(Eigen::Vector3d xHeading) -> double;
 
         class PID {
-        private:
             float const Angle_P;
             float const Linear_P;
-
 
         public:
             PID(float angle_P, float linear_P);
@@ -104,9 +99,7 @@ namespace mrover {
 
             [[nodiscard]] auto rotate_speed(double theta) const -> double;
 
-
             auto find_angle(Eigen::Vector3d const& current, Eigen::Vector3d const& target) -> float;
-
 
             auto find_distance(Eigen::Vector3d const& current, Eigen::Vector3d const& target) -> double;
 

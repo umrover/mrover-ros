@@ -1,47 +1,8 @@
 #include "lander_align.hpp"
-#include "lie.hpp"
-#include "mrover/LanderAlignActionFeedback.h"
-#include "mrover/LanderAlignActionGoal.h"
-#include "mrover/LanderAlignActionResult.h"
-#include "pch.hpp"
-#include <Eigen/src/Core/Matrix.h>
-#include <Eigen/src/Core/VectorBlock.h>
-#include <Eigen/src/Geometry/Quaternion.h>
-#include <cassert>
-#include <cmath>
-#include <cstddef>
-#include <cstdint>
-#include <cstdlib>
-#include <geometry_msgs/Twist.h>
-#include <geometry_msgs/Vector3.h>
-
-#include <manif/impl/rn/Rn.h>
-#include <manif/impl/se3/SE3.h>
-#include <manif/impl/so3/SO3.h>
-#include <manif/impl/so3/SO3Tangent.h>
-#include <memory>
-#include <opencv4/opencv2/core/hal/interface.h>
-#include <optional>
-#include <point.hpp>
-#include <random>
-#include <ros/duration.h>
-#include <ros/subscriber.h>
-#include <ros/time.h>
-#include <sensor_msgs/PointCloud2.h>
-#include <tuple>
-#include <unistd.h>
-#include <vector>
-#include <numbers>
-
-#include <tf2_ros/transform_broadcaster.h>
-#include <tf2_ros/transform_listener.h>
-
-#include <Eigen/QR>
 
 namespace mrover {
-    auto operator<<(std::ostream &ostream, RTRSTATE state) -> std::ostream& {
-        ostream << RTRSTRINGS[state];
-        return ostream;
+    auto operator<<(std::ostream& ostream, RTRSTATE state) -> std::ostream& {
+        return ostream << RTRSTRINGS[static_cast<std::size_t>(state)];
     }
 
     auto LanderAlignNodelet::onInit() -> void {
@@ -55,6 +16,8 @@ namespace mrover {
         mTwistPub = mNh.advertise<geometry_msgs::Twist>("/cmd_vel", 1);
         mDebugPCPub = mNh.advertise<sensor_msgs::PointCloud2>("/lander_align/debugPC", 1);
 
+        mActionServer.emplace(mNh, "LanderAlignAction", [&](LanderAlignGoalConstPtr const& goal) { ActionServerCallBack(goal); }, false);
+
         //TF Create the Reference Frames
         mNh.param<std::string>("camera_frame", mCameraFrameId, "zed_left_camera_frame");
         mNh.param<std::string>("world_frame", mMapFrameId, "map");
@@ -64,22 +27,22 @@ namespace mrover {
         mLoopState = RTRSTATE::turn1;
     }
 
-    void LanderAlignNodelet::LanderCallback(sensor_msgs::PointCloud2Ptr const& cloud) {
-        
+    auto LanderAlignNodelet::LanderCallback(sensor_msgs::PointCloud2Ptr const& cloud) -> void {
+
         filterNormals(cloud);
         ransac(0.1, 10, 100, mPlaneOffsetScalar);
         if (mNormalInZEDVector.has_value()) {
             sendTwist();
         }
-        if(mPlaneOffsetScalar == 2.5){
+        if (mPlaneOffsetScalar == 2.5) {
             mPlaneOffsetScalar = 0.4;
             mLoopState = RTRSTATE::turn1;
-        }else{
+        } else {
             mLoopState = RTRSTATE::done;
         }
     }
 
-    void LanderAlignNodelet::ActionServerCallBack(LanderAlignActionGoalConstPtr const& actionRequest){
+    auto LanderAlignNodelet::ActionServerCallBack(LanderAlignGoalConstPtr const& actionRequest) -> void {
         LanderAlignActionFeedback feedback;
         LanderAlignActionResult result;
         // while(actionRequest.action_goal.goal.num);
@@ -90,20 +53,20 @@ namespace mrover {
 
 
     //Returns angle (yaw) around the z axis
-    auto LanderAlignNodelet::calcAngleWithWorldX(Eigen::Vector3d xHeading) -> double{ //I want to be editing this variable so it should not be const or &
+    auto LanderAlignNodelet::calcAngleWithWorldX(Eigen::Vector3d xHeading) -> double { //I want to be editing this variable so it should not be const or &
         xHeading.z() = 0;
         xHeading.normalize();
         Eigen::Vector3d xAxisWorld{1, 0, 0};
         double angle = std::acos(xHeading.dot(xAxisWorld));
-        if(xHeading.y() >= 0){
+        if (xHeading.y() >= 0) {
             return angle;
-        }else{
+        } else {
             return angle + std::numbers::pi;
         }
     }
 
-    void LanderAlignNodelet::calcMotion(double desiredVelocity, double desiredOmega){
-        manif::SE3d roverInWorld = SE3Conversions::fromTfTree(mTfBuffer, "base_link", "map");
+    void LanderAlignNodelet::calcMotion(double desiredVelocity, double desiredOmega) {
+        SE3d roverInWorld = SE3Conversions::fromTfTree(mTfBuffer, "base_link", "map");
         Eigen::Vector3d xAxisRotation = roverInWorld.rotation().col(0);
         double roverHeading = calcAngleWithWorldX(xAxisRotation);
         double targetHeading = calcAngleWithWorldX(-mNormalInWorldVector.value());
@@ -118,16 +81,16 @@ namespace mrover {
         double Kx = 1;
         double Ky = 1;
         double Ktheta = 1;
-        
+
         Eigen::Matrix3d rotation;
         rotation << std::cos(roverHeading), std::sin(roverHeading), 0,
-                    -std::sin(roverHeading), std::cos(roverHeading), 0,
-                    0, 0, 1;
+                -std::sin(roverHeading), std::cos(roverHeading), 0,
+                0, 0, 1;
 
         Eigen::Vector3d errState = rotation * (tarState - currState);
 
         //I think this is rad/s
-        double zRotation = desiredOmega + (desiredVelocity / 2) * (Ky * (errState.y() + Ktheta*errState.z()) + (1/Ky) * std::sin(errState.z()));
+        double zRotation = desiredOmega + (desiredVelocity / 2) * (Ky * (errState.y() + Ktheta * errState.z()) + (1 / Ky) * std::sin(errState.z()));
 
         //I think this is unit/s
         double xSpeed = Kx * errState.x() + desiredVelocity * std::cos(errState.z()) - Ktheta * errState.z() * zRotation;
@@ -137,7 +100,6 @@ namespace mrover {
         twist.linear.x = xSpeed;
 
         mTwistPub.publish(twist);
-
     }
 
     void LanderAlignNodelet::filterNormals(sensor_msgs::PointCloud2Ptr const& cloud) {
@@ -148,7 +110,7 @@ namespace mrover {
 
         // define randomizer
         std::default_random_engine generator;
-        std::uniform_int_distribution<int> pointDistribution(0, (int) mLeastSamplingDistribution);
+        std::uniform_int_distribution<int> pointDistribution(0, mLeastSamplingDistribution);
 
         for (auto point = cloudData; point < cloudData + (cloud->height * cloud->width); point += pointDistribution(generator)) {
             bool isPointInvalid = (!std::isfinite(point->x) || !std::isfinite(point->y) || !std::isfinite(point->z));
@@ -159,7 +121,7 @@ namespace mrover {
         }
     }
 
-	void LanderAlignNodelet::uploadPC(int numInliers, double distanceThreshold){
+    void LanderAlignNodelet::uploadPC(int numInliers, double distanceThreshold) {
         auto debugPointCloudPtr = boost::make_shared<sensor_msgs::PointCloud2>();
         fillPointCloudMessageHeader(debugPointCloudPtr);
         debugPointCloudPtr->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
@@ -169,13 +131,13 @@ namespace mrover {
         debugPointCloudPtr->header.seq = 0;
         debugPointCloudPtr->header.stamp = ros::Time();
         debugPointCloudPtr->header.frame_id = "zed_left_camera_frame";
-        debugPointCloudPtr->data.resize((numInliers * sizeof(Point))/sizeof(uchar));
+        debugPointCloudPtr->data.resize(numInliers * sizeof(Point));
         auto pcPtr = reinterpret_cast<Point*>(debugPointCloudPtr->data.data());
         size_t i = 0;
         for (auto p: mFilteredPoints) {
             // calculate distance of each point from potential plane
             double distance = std::abs(mNormalInZEDVector.value().x() * p->x + mNormalInZEDVector.value().y() * p->y + mNormalInZEDVector.value().z() * p->z + mBestOffset);
-            // double distance = std::abs(normal.x() * p->x + normal.y() * p->y + normal.z() * p->z + offset); // 
+            // double distance = std::abs(normal.x() * p->x + normal.y() * p->y + normal.z() * p->z + offset); //
 
             if (distance < distanceThreshold) {
                 pcPtr[i].x = p->x;
@@ -189,7 +151,7 @@ namespace mrover {
             }
         }
         mDebugPCPub.publish(debugPointCloudPtr);
-	}
+    }
 
     void LanderAlignNodelet::ransac(double const distanceThreshold, int minInliers, int const epochs, double offsetFactor) {
         // TODO: use RANSAC to find the lander face, should be the closest, we may need to modify this to output more information, currently the output is the normal
@@ -236,7 +198,7 @@ namespace mrover {
 
                 for (auto p: mFilteredPoints) {
                     // calculate distance of each point from potential plane
-                    double distance = std::abs(normal.x() * p->x + normal.y() * p->y + normal.z() * p->z + offset); // 
+                    double distance = std::abs(normal.x() * p->x + normal.y() * p->y + normal.z() * p->z + offset); //
 
                     if (distance < distanceThreshold) {
                         // Add points to current planes center
@@ -282,16 +244,16 @@ namespace mrover {
         //Average pnts
         mPlaneLocationInZEDVector.value() /= static_cast<float>(numInliers);
 
-        
+
         uploadPC(numInliers, distanceThreshold);
 
-        if(mNormalInZEDVector.value().x() > 0) mNormalInZEDVector.value() *=-1;
+        if (mNormalInZEDVector.value().x() > 0) mNormalInZEDVector.value() *= -1;
 
 
         mOffsetLocationInZEDVector = std::make_optional<Eigen::Vector3d>(mPlaneLocationInZEDVector.value() + offsetFactor * mNormalInZEDVector.value());
 
-        manif::SE3d zedToMap = SE3Conversions::fromTfTree(mTfBuffer, mCameraFrameId, mMapFrameId);
-		
+        SE3d zedToMap = SE3Conversions::fromTfTree(mTfBuffer, mCameraFrameId, mMapFrameId);
+
         //Calculate the SO3 in the world frame
         Eigen::Matrix3d rot;
         Eigen::Vector3d forward = mNormalInZEDVector.value().normalized();
@@ -304,17 +266,17 @@ namespace mrover {
         rot.col(1) = left;
         rot.col(2) = up;
 
-		//Calculate the plane location in the world frame
-		manif::SE3d mPlaneLocationInZEDSE3d = {{mPlaneLocationInZEDVector.value().x(), mPlaneLocationInZEDVector.value().y(), mPlaneLocationInZEDVector.value().z()}, manif::SO3d{Eigen::Quaterniond{rot}.normalized()}};
+        //Calculate the plane location in the world frame
+        SE3d mPlaneLocationInZEDSE3d = {{mPlaneLocationInZEDVector.value().x(), mPlaneLocationInZEDVector.value().y(), mPlaneLocationInZEDVector.value().z()}, SO3d{Eigen::Quaterniond{rot}.normalized()}};
         mPlaneLocationInWorldSE3d = zedToMap * mPlaneLocationInZEDSE3d;
         mPlaneLocationInWorldVector = std::make_optional<Eigen::Vector3d>(mPlaneLocationInWorldSE3d.translation());
 
         //Calculate the offset location in the world frame
-		manif::SE3d mOffsetLocationInZEDSE3d = {{mOffsetLocationInZEDVector.value().x(), mOffsetLocationInZEDVector.value().y(), mOffsetLocationInZEDVector.value().z()}, manif::SO3d{Eigen::Quaterniond{rot}.normalized()}};
-		mOffsetLocationInWorldSE3d = zedToMap * mOffsetLocationInZEDSE3d;
+        SE3d mOffsetLocationInZEDSE3d = {{mOffsetLocationInZEDVector.value().x(), mOffsetLocationInZEDVector.value().y(), mOffsetLocationInZEDVector.value().z()}, SO3d{Eigen::Quaterniond{rot}.normalized()}};
+        mOffsetLocationInWorldSE3d = zedToMap * mOffsetLocationInZEDSE3d;
         mOffsetLocationInWorldVector = std::make_optional<Eigen::Vector3d>(mOffsetLocationInWorldSE3d.translation());
 
-		//Push to the tf tree
+        //Push to the tf tree
         SE3Conversions::pushToTfTree(mTfBroadcaster, "plane", mMapFrameId, mPlaneLocationInWorldSE3d);
         SE3Conversions::pushToTfTree(mTfBroadcaster, "offset", mMapFrameId, mOffsetLocationInWorldSE3d);
     }
@@ -370,25 +332,25 @@ namespace mrover {
         float const angular_thresh = 0.001;
 
 
-        PID pid(0.1, 0.1); // literally just P -- ugly class and probably needs restructuring in the future
+        PID pid(0.1, 0.1);  // literally just P -- ugly class and probably needs restructuring in the future
         ros::Rate rate(20); // ROS Rate at 20Hzn::Matrix3d roverToPlaneNorm;
-                    // Eigen::Vector3d Nup = Eigen::Vector3d::UnitZ();
-                    // Eigen::Vector3d Nleft = Nup.cross(mBestNormalInWorld.value());
+                            // Eigen::Vector3d Nup = Eigen::Vector3d::UnitZ();
+                            // Eigen::Vector3d Nleft = Nup.cross(mBestNormalInWorld.value());
 
-                    // roverToPlaneNorm.col(0) = mBestNormalInWorld.value();
-                    // roverToPlaneNorm.col(1) = Nup;
-                    // roverToPlaneNorm.col(2) = Nleft;
-                    // manif::SO3d roverToP
+        // roverToPlaneNorm.col(0) = mBestNormalInWorld.value();
+        // roverToPlaneNorm.col(1) = Nup;
+        // roverToPlaneNorm.col(2) = Nleft;
+        // manif::SO3d roverToP
         while (ros::ok()) {
 
             SE3Conversions::pushToTfTree(mTfBroadcaster, "plane", mMapFrameId, mPlaneLocationInWorldSE3d);
             SE3Conversions::pushToTfTree(mTfBroadcaster, "offset", mMapFrameId, mOffsetLocationInWorldSE3d);
-            manif::SE3d rover = SE3Conversions::fromTfTree(mTfBuffer, "base_link", "map");
-            Eigen::Vector3d roverPosInWorld{static_cast<double>(rover.translation().x()), static_cast<double>(rover.translation().y()), 0.0};
+            SE3d rover = SE3Conversions::fromTfTree(mTfBuffer, "base_link", "map");
+            Eigen::Vector3d roverPosInWorld{(rover.translation().x()), (rover.translation().y()), 0.0};
             Eigen::Vector3d targetPosInWorld;
-            if(mLoopState == RTRSTATE::turn1){
+            if (mLoopState == RTRSTATE::turn1) {
                 targetPosInWorld = mOffsetLocationInWorldVector.value();
-            }else if(mLoopState == RTRSTATE::turn2){
+            } else if (mLoopState == RTRSTATE::turn2) {
                 targetPosInWorld = mPlaneLocationInWorldVector.value();
             }
             targetPosInWorld.z() = 0;
@@ -403,21 +365,21 @@ namespace mrover {
             roverToTargetMat.col(0) = roverToTargetForward;
             roverToTargetMat.col(1) = up;
             roverToTargetMat.col(2) = left;
-    
+
             //SO3 Matrices for lie algebra
-            manif::SO3d roverToTargetSO3 = SE3Conversions::fromColumns(roverToTargetForward, left, up);
-            manif::SO3d roverSO3 = rover.asSO3();
+            SO3d roverToTargetSO3 = SE3Conversions::fromColumns(roverToTargetForward, left, up);
+            SO3d roverSO3 = rover.asSO3();
 
             Eigen::Vector3d distanceToTargetVector = targetPosInWorld - Eigen::Vector3d{rover.translation().x(), rover.translation().y(), rover.translation().z()};
 
             double distanceToTarget = std::abs(distanceToTargetVector.norm());
-            
+
             manif::SO3Tangentd SO3tan = roverToTargetSO3 - roverSO3; // 3 x 1 matrix of angular velocities (x,y,z)
 
             switch (mLoopState) {
                 case RTRSTATE::turn1: {
                     if (distanceToTarget < 0.5) mLoopState = RTRSTATE::turn2;
-                    
+
                     double angle_rate = mAngleP * SO3tan.z();
 
                     ROS_INFO("w_z velocity %f", SO3tan.z());
@@ -429,7 +391,6 @@ namespace mrover {
                         twist.angular.z = 0;
                         twist.linear.x = 0;
                         ROS_INFO("Done spinning");
-
                     }
                     // ROS_INFO("In state: turning to point...");
                     break;
@@ -440,7 +401,6 @@ namespace mrover {
                         mLoopState = RTRSTATE::turn1;
                         ROS_INFO("Rotation got off");
                         twist.linear.x = 0;
-
                     }
                     double driveRate = std::min(mLinearP * distanceToTarget, 1.0);
 
@@ -458,19 +418,18 @@ namespace mrover {
                     // ROS_INFO("In state: driving to point...");
                     break;
                 }
-                
+
                 case RTRSTATE::turn2: {
                     double angle_rate = mAngleP * SO3tan.z();
                     twist.angular.z = angle_rate;
                     twist.linear.x = 0;
-            
+
 
                     if (std::abs(SO3tan.z()) < angular_thresh) {
                         mLoopState = RTRSTATE::done;
                         twist.angular.z = 0;
                         twist.linear.x = 0;
-                    //  ROS_INFO("Done turning to lander");
-
+                        //  ROS_INFO("Done turning to lander");
                     }
                     // ROS_INFO("In state: turning to lander...");
                     break;
@@ -485,7 +444,7 @@ namespace mrover {
             // ROS_INFO("THE TWIST IS: Angular: %f, with linear %f,", twist.angular.z, twist.linear.x);
             ROS_INFO_STREAM(mLoopState);
             mTwistPub.publish(twist);
-            if(mLoopState == RTRSTATE::done){
+            if (mLoopState == RTRSTATE::done) {
                 break;
             }
         }
