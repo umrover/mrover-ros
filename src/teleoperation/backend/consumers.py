@@ -383,7 +383,6 @@ class GUIConsumer(JsonWebsocketConsumer):
         username = os.getenv("USERNAME", "-1")
 
         now = datetime.now(pytz.timezone('US/Eastern'))
-        # now = now.astimezone()
         current_time = now.strftime("%m/%d/%Y-%H:%M")
         spectral_data = msg['data']
 
@@ -393,7 +392,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         # add site letter in front of data
         for site_data in spectral_data:
             site_data.insert(0, f'Site {site_names[index]}')
-            index = index + 1 #use key value pair, there's no need to create a var
+            index = index + 1
 
         time_row = ['Time', current_time]
         spectral_data.insert(0, time_row)

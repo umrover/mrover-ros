@@ -7,7 +7,7 @@
           label-disable-text="White LEDs Off" @change="toggle_whiteLEDS()" />
       </div>
     </div>
-    <div class="wrap-table">
+    <div class="wrap-table" id="capture">
       <div>
         <h3>Chlorophyll Spectral data</h3>
       </div>
@@ -39,13 +39,14 @@
       </table>
     </div>
     <div>
-      <button @click="download_csv_file(spectral_data)">Generate Report</button>
+      <button class="btn btn-primary" @click="download_data(spectral_data)">Generate Report</button>
     </div>
     <!-- <GenerateReport :spectral_data="spectral_data" /> -->
   </div>
 </template>
 
 <script lang="ts">
+import html2canvas from "html2canvas";
 import ToggleButton from "./ToggleButton.vue";
 // import ROSLIB from "roslib";
 // import GenerateReport from "./GenerateReport.vue";
@@ -88,9 +89,27 @@ export default {
       // });
     },
 
-    download_csv_file: function(spectral_data: any) {
+    download_data: function(spectral_data: any) {
+      // generates report
       this.sendMessage({type:'download_csv', data:spectral_data})
-    }
+
+      // downloads screenshot of table
+      const table = document.querySelector("#capture") as HTMLElement;
+      html2canvas(table)
+      .then(canvas => {
+        canvas.style.display = 'none'
+        document.body.appendChild(canvas)
+        return canvas
+      })
+      .then(canvas => {
+        const image = canvas.toDataURL('image/png')
+        const a = document.createElement('a')
+        a.setAttribute('download', 'table-ss.png')
+        a.setAttribute('href', image)
+        a.click()
+        canvas.remove()
+      })
+    },
   },
 
   computed: {
@@ -122,6 +141,10 @@ export default {
   align-content: center;
   height: max-content;
   padding-bottom: 5px;
+}
+
+#btn {
+  margin-left: 10px;
 }
 
 /*.report {
