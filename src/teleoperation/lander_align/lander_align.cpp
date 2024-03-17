@@ -19,8 +19,8 @@ namespace mrover {
         mTwistPub = mNh.advertise<geometry_msgs::Twist>("/cmd_vel", 1);
         mDebugPCPub = mNh.advertise<sensor_msgs::PointCloud2>("/lander_align/debugPC", 1);
 
-        mActionServer.emplace(mNh, "/LanderAlignAction", [&](LanderAlignGoalConstPtr const& goal) { ActionServerCallBack(goal); }, false);
-
+        mActionServer.emplace(mNh, "LanderAlignAction", [&](LanderAlignGoalConstPtr const& goal) { ActionServerCallBack(goal); }, true);
+        
         //TF Create the Reference Frames
         mNh.param<std::string>("camera_frame", mCameraFrameId, "zed_left_camera_frame");
         mNh.param<std::string>("world_frame", mMapFrameId, "map");
@@ -46,12 +46,12 @@ namespace mrover {
     }
 
     auto LanderAlignNodelet::ActionServerCallBack(LanderAlignGoalConstPtr const& actionRequest) -> void {
-        LanderAlignFeedbackPtr feedback;
+        LanderAlignFeedback feedback;
         LanderAlignResult result;
         result.num=10;
         ros::Rate r(1);
         for(int i = 0; i < static_cast<int>(actionRequest->num); i++){
-            feedback->count_ten = i;
+            feedback.count_ten = i;
             mActionServer->publishFeedback(feedback);
             r.sleep();
         }
