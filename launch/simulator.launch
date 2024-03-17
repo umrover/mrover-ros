@@ -3,6 +3,7 @@
   <arg name="run_rviz" default="true"/>
 
   <rosparam command="load" file="$(find mrover)/config/simulator/simulator.yaml"/>
+  <rosparam command="load" file="$(find mrover)/config/localization.yaml" />
 
   <include file="$(find mrover)/launch/autonomy.launch">
     <arg name="sim" value="true"/>

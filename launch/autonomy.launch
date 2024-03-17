@@ -11,7 +11,7 @@
     <arg name="run_object_detector" value="$(arg run_object_detector)" />
   </include>
 
-  <include file="$(find mrover)/launch/navigation.launch" />
+  <!-- <include file="$(find mrover)/launch/navigation.launch" /> -->
 
   <include file="$(find mrover)/launch/localization.launch">
     <arg name="sim" value="$(arg sim)" />

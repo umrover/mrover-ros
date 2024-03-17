@@ -1,4 +1,5 @@
 #include "lie.hpp"
+#include <Eigen/src/Geometry/Quaternion.h>
 
 SIM3::SIM3(SE3d const& se3, R3 const& scale) {
     mTransform.fromPositionOrientationScale(se3.translation(), se3.rotation(), scale);
@@ -72,4 +73,12 @@ auto SE3Conversions::toTransformStamped(SE3d const& tf, std::string const& child
     transform.header.stamp = ros::Time::now();
     transform.child_frame_id = childFrame;
     return transform;
+}
+
+auto SE3Conversions::fromColumns(R3 const &c1, R3 const &c2, R3 const &c3) -> SO3d {
+    Eigen::Matrix3d m;
+    m.col(0) = c1;
+    m.col(1) = c2;
+    m.col(2) = c3;
+    return {Eigen::Quaterniond{m}.normalized()};
 }

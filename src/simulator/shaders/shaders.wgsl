@@ -65,6 +65,7 @@ struct OutFragment {
     let specular = specularStrength * spec * su.lightColor;
     // Combination
     out.color = vec4(((ambient + diffuse + specular) * baseColor).rgb, 1);
+    // out.color = vec4(in.normalInWorld.x, in.normalInWorld.y, in.normalInWorld.z, 1);    
     return out;
 }
 
