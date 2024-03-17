@@ -36,10 +36,10 @@ can:
       bus: 0
       id: 0x15
     - name: "joint_a"
-      bus: 1
+      bus: 0
       id: 0x20
     - name: "joint_b"
-      bus: 1
+      bus: 0
       id: 0x21
     - name: "joint_c"
       bus: 1
