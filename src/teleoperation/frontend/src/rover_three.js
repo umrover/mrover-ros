@@ -121,17 +121,16 @@ export function threeSetup(containerId) {
 
     let cumulativeMatrix = new THREE.Matrix4();
 
-    positions.forEach((newAngle, i) => {
+    cumulativeMatrix.makeTranslation(new THREE.Vector3(0, 0, 0.439675)); //makes meshes relative to base_link
+    
+    for(let i  = 0; i < joints.length; ++i){
       let mesh = scene.getObjectByName(joints[i].name);
 
       let localMatrix = new THREE.Matrix4();
 
-      let rotationAngle = newAngle; // Angle for this joint
+      let rotationAngle = positions[i]; // Angle for this joint
       if(joints[i].name == "chassis") {
         localMatrix.makeTranslation(0,rotationAngle,0);
-      }
-      else if (joints[i].name == "c") {
-        localMatrix.makeRotationX(rotationAngle);
       }
       else {
         localMatrix.makeRotationY(rotationAngle);
@@ -147,11 +146,10 @@ export function threeSetup(containerId) {
       mesh.matrix = cumulativeMatrix.clone();
 
       cumulativeMatrix.multiply(localMatrix);
-    });
+    }
   }
 
   function ik(target) {
-    let position = new THREE.Vector3(...target.position);
     let quaternion = new THREE.Quaternion(...target.quaternion);
     targetCube.position.set(...target.position);
     targetCube.setRotationFromQuaternion(quaternion);

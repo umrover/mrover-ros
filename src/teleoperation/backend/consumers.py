@@ -284,7 +284,15 @@ class GUIConsumer(JsonWebsocketConsumer):
     def handle_arm_message(self, msg):
         ra_slow_mode = False
         if msg["arm_mode"] == "ik":
-            base_link_in_map = SE3.from_tf_tree(self.tf_buffer, "map", "base_link")
+            base_link_in_map = SE3.from_tf_tree(self.tf_buffer, "base_link", "arm_e_link")
+
+            self.send(text_data=json.dumps({
+                "type": "ik",
+                "target": {
+                    "position": base_link_in_map.position.tolist(),
+                    "quaternion": base_link_in_map.rotation.quaternion.tolist()
+                }
+            }))
 
             left_trigger = self.filter_xbox_axis(msg["axes"][self.xbox_mappings["left_trigger"]])
             if left_trigger < 0:
@@ -308,13 +316,13 @@ class GUIConsumer(JsonWebsocketConsumer):
                 )
             )
             self.arm_ik_pub.publish(arm_ik_cmd)
-            self.send(text_data=json.dumps({
-                "type": "ik",
-                "target": {
-                    "position": base_link_in_map.position.tolist(),
-                    "quaternion": base_link_in_map.rotation.quaternion.tolist()
-                }
-            }))
+            # self.send(text_data=json.dumps({
+            #     "type": "ik",
+            #     "target": {
+            #         "position": base_link_in_map.position.tolist(),
+            #         "quaternion": base_link_in_map.rotation.quaternion.tolist()
+            #     }
+            # }))
 
         elif msg["arm_mode"] == "position":
             arm_position_cmd = Position(
@@ -720,7 +728,6 @@ class GUIConsumer(JsonWebsocketConsumer):
             rate.sleep()
     
     def arm_joint_callback(self, msg):
-        rospy.logerr("HERE")
         self.send(text_data=json.dumps({
             "type": "fk",
             "positions": msg.position

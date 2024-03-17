@@ -2,18 +2,6 @@
     <div class="wrap">
       <h3 class="header">Rover 3D</h3>
       <div id="threejs"></div>
-
-      <div class="col" v-for="(joint, i) in temp_positions" :key="i">
-        <label>{{ joint }}</label>
-        <input
-          class="form-control"
-          type="number"
-          v-model="positions[i]"
-        />
-      </div>
-      <div class="col text-center">
-        <button class="btn btn-primary" @click="threeScene.fk(positions)">Submit</button>
-      </div>
     </div>
   </template>
   
@@ -33,6 +21,7 @@
  
     mounted() {
         this.threeScene = threeSetup("threejs");
+        // this.threeScene.fk([0,0,0,0,0]);
     },
 
     computed: {
@@ -42,7 +31,6 @@
     watch: {
         message(msg) {
           if(msg.type == "fk") {
-            console.log(msg)
             this.threeScene.fk(msg.positions);
           }
           else if(msg.type == "ik") {
