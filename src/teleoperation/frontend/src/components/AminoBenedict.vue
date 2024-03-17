@@ -1,6 +1,7 @@
 <template>
   <div class="wrap">
-    <h3>Amino Test Controls</h3>
+    <h3 v-if="isAmino">Amino Test Controls</h3>
+    <h3 v-else>Benedict's Test Controls</h3>
     <div class="box1 heaters">
       <ToggleButton
         id="heater"

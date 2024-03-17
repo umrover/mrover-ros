@@ -17,10 +17,9 @@
     <!-- <div class="shadow p-3 rounded siteSelect">
         <SelectSite @site="onSiteChange" />
       </div> -->
-    <!-- <div class="shadow p-3 rounded raman">
-        <Raman />
-      </div> -->
-    <!-- ADD BENEDICTS TEST HERE-->
+    <div class="shadow p-3 rounded benedicts">
+        <AminoBenedict :site="site" :isAmino="false"/>
+      </div>
     <div class="shadow p-3 rounded cameras">
       <Cameras :primary="primary" :isSA="false"/>
     </div>
@@ -31,7 +30,7 @@
         <Chlorophyll :spectral_data="spectral_data" />
       </div> -->
     <div class="shadow p-3 rounded amino">
-        <Amino :site="site" :isAmino="true"/>
+        <AminoBenedict :site="site" :isAmino="true"/>
       </div>
   </div>
 </template>
@@ -41,7 +40,7 @@
 //   import Raman from "./Raman.vue";
 //   import Cache from "./Cache.vue";
 //   import Chlorophyll from "./Chlorophyll.vue";
-import Amino from "./Amino.vue";
+import AminoBenedict from "./AminoBenedict.vue";
 import Cameras from '../components/Cameras.vue'
 //   import CommReadout from "./CommReadout.vue";
 //   import MCUReset from "./MCUReset.vue"
@@ -54,10 +53,9 @@ type StringIntDictionary = {
 export default {
   components: {
     //   SelectSite,
-    //   Raman,
     //   Cache,
     //   Chlorophyll,
-    Amino,
+    AminoBenedict,
     Cameras
     //   CommReadout,
     //   MCUReset,
@@ -122,7 +120,7 @@ export default {
   grid-template-areas:
     'header header'
     'cameras siteSelect'
-    'cameras raman'
+    'cameras benedicts'
     'cameras chlorophyll'
     'carousel chlorophyll'
     'carousel amino'
@@ -188,12 +186,12 @@ export default {
   grid-area: cameras;
 }
 
-.siteSelect {
-  grid-area: siteSelect;
+.benedicts {
+  grid-area: benedicts;
 }
 
-.raman {
-  grid-area: raman;
+.siteSelect {
+  grid-area: siteSelect;
 }
 
 .carousel {
@@ -212,3 +210,4 @@ export default {
   grid-area: amino;
 }
 </style>
+./AminoBenedict.vue
