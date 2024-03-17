@@ -104,7 +104,7 @@ export function threeSetup(containerId) {
   camera.lookAt(new THREE.Vector3(0, 0, 0));
 
   const targetCube = new THREE.Mesh( 
-    new THREE.BoxGeometry( 0.01, 0.01, 0.01 ), 
+    new THREE.BoxGeometry( 0.1, 0.1, 0.1 ), 
     new THREE.MeshBasicMaterial({color: 0x00ff00})
     ); 
   scene.add( targetCube );
@@ -118,8 +118,6 @@ export function threeSetup(containerId) {
   animate();
 
   function fk(positions) {
-
-    console.log(positions)
 
     let cumulativeMatrix = new THREE.Matrix4();
 
@@ -139,8 +137,6 @@ export function threeSetup(containerId) {
         localMatrix.makeRotationY(rotationAngle);
       }
 
-      console.log(localMatrix)
-
       let offset = new THREE.Vector3().fromArray(joints[i].translation);
 
       localMatrix.setPosition(
@@ -157,7 +153,7 @@ export function threeSetup(containerId) {
   function ik(target) {
     let position = new THREE.Vector3(...target.position);
     let quaternion = new THREE.Quaternion(...target.quaternion);
-    targetCube.setPosition(position);
+    targetCube.position.set(...target.position);
     targetCube.setRotationFromQuaternion(quaternion);
   }
 

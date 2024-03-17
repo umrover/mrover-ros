@@ -42,6 +42,7 @@
     watch: {
         message(msg) {
           if(msg.type == "fk") {
+            console.log(msg)
             this.threeScene.fk(msg.positions);
           }
           else if(msg.type == "ik") {

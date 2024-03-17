@@ -4,6 +4,7 @@
 
 #include "glfw_pointer.hpp"
 #include "wgpu_objects.hpp"
+#include <ros/publisher.h>
 
 using namespace std::literals;
 
@@ -213,6 +214,7 @@ namespace mrover {
         ros::Publisher mMotorStatusPub;
         ros::Publisher mDriveControllerStatePub;
         ros::Publisher mArmControllerStatePub;
+        ros::Publisher mArmJointStatePub;
 
         tf2_ros::Buffer mTfBuffer;
         tf2_ros::TransformListener mTfListener{mTfBuffer};

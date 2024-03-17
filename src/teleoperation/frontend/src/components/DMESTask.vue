@@ -52,6 +52,7 @@
     <div v-show="false">
       <MastGimbalControls></MastGimbalControls>
     </div>
+    <Rover3D></Rover3D>
   </div>
 </template>
 
@@ -69,6 +70,7 @@ import MotorsStatusTable from './MotorsStatusTable.vue'
 import OdometryReading from './OdometryReading.vue'
 import DriveControls from './DriveControls.vue'
 import MastGimbalControls from './MastGimbalControls.vue'
+import Rover3D from './Rover3D.vue'
 
 export default defineComponent({
   components: {
@@ -82,7 +84,8 @@ export default defineComponent({
     MotorsStatusTable,
     OdometryReading,
     DriveControls,
-    MastGimbalControls
+    MastGimbalControls,
+    Rover3D
   },
 
   props: {

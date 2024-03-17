@@ -287,12 +287,11 @@ class GUIConsumer(JsonWebsocketConsumer):
            
             arm_ik_cmd = IK(pose=Pose(position=Point(*base_link_in_map.position), orientation=Quaternion(*base_link_in_map.rotation.quaternion)))
             self.arm_ik_pub.publish(arm_ik_cmd)
-
             self.send(text_data=json.dumps({
                 "type": "ik",
                 "target": {
-                    "position": arm_ik_cmd.pose.position,
-                    "quaternion": arm_ik_cmd.pose.orientation
+                    "position": base_link_in_map.position.tolist(),
+                    "quaternion": base_link_in_map.rotation.quaternion.tolist()
                 }
             }))
 
@@ -665,6 +664,7 @@ class GUIConsumer(JsonWebsocketConsumer):
             rate.sleep()
     
     def arm_joint_callback(self, msg):
+        rospy.logerr("HERE")
         self.send(text_data=json.dumps({
             "type": "fk",
             "positions": msg.position

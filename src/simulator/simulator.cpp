@@ -1,4 +1,5 @@
 #include "simulator.hpp"
+#include <sensor_msgs/JointState.h>
 
 namespace mrover {
 
@@ -22,6 +23,7 @@ namespace mrover {
         mMotorStatusPub = mNh.advertise<MotorsStatus>("/drive_status", 1);
         mDriveControllerStatePub = mNh.advertise<ControllerState>("/drive_controller_data", 1);
         mArmControllerStatePub = mNh.advertise<ControllerState>("/arm_controller_data", 1);
+        mArmJointStatePub = mNh.advertise<sensor_msgs::JointState>("/arm_joint_data", 1);
 
         mIkTargetPub = mNh.advertise<IK>("/arm_ik", 1);
 
