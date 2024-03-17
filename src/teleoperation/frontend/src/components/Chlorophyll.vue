@@ -104,7 +104,7 @@ export default {
       .then(canvas => {
         const image = canvas.toDataURL('image/png')
         const a = document.createElement('a')
-        a.setAttribute('download', 'table-ss.png')
+        a.setAttribute('download', 'chlorophyll.png')
         a.setAttribute('href', image)
         a.click()
         canvas.remove()
