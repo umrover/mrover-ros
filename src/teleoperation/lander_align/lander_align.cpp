@@ -1,4 +1,7 @@
 #include "lander_align.hpp"
+#include "mrover/LanderAlignActionFeedback.h"
+#include "mrover/LanderAlignActionResult.h"
+#include <ros/rate.h>
 
 namespace mrover {
     auto operator<<(std::ostream& ostream, RTRSTATE state) -> std::ostream& {
@@ -16,7 +19,7 @@ namespace mrover {
         mTwistPub = mNh.advertise<geometry_msgs::Twist>("/cmd_vel", 1);
         mDebugPCPub = mNh.advertise<sensor_msgs::PointCloud2>("/lander_align/debugPC", 1);
 
-        mActionServer.emplace(mNh, "LanderAlignAction", [&](LanderAlignGoalConstPtr const& goal) { ActionServerCallBack(goal); }, false);
+        mActionServer.emplace(mNh, "/LanderAlignAction", [&](LanderAlignGoalConstPtr const& goal) { ActionServerCallBack(goal); }, false);
 
         //TF Create the Reference Frames
         mNh.param<std::string>("camera_frame", mCameraFrameId, "zed_left_camera_frame");
@@ -43,12 +46,16 @@ namespace mrover {
     }
 
     auto LanderAlignNodelet::ActionServerCallBack(LanderAlignGoalConstPtr const& actionRequest) -> void {
-        LanderAlignActionFeedback feedback;
-        LanderAlignActionResult result;
-        // while(actionRequest.action_goal.goal.num);
-        // for(int i = 0; i < static_cast<int>(actionRequest.goal.num); i++){
-        //     //feedback.feedback.percent_complete=i;
-        // }
+        LanderAlignFeedbackPtr feedback;
+        LanderAlignResult result;
+        result.num=10;
+        ros::Rate r(1);
+        for(int i = 0; i < static_cast<int>(actionRequest->num); i++){
+            feedback->count_ten = i;
+            mActionServer->publishFeedback(feedback);
+            r.sleep();
+        }
+        mActionServer->setSucceeded(result);
     }
 
 
