@@ -9,7 +9,7 @@
 #include <actionlib/server/simple_action_server.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <sensor_msgs/point_cloud2_iterator.h>
-#include "mrover/LanderAlignAction.h"
+#include <mrover/LanderAlignAction.h>
 
 //TF
 #include <tf/exceptions.h>

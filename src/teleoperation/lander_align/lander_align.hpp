@@ -1,16 +1,10 @@
 #pragma once
 
-#include "mrover/LanderAlignAction.h"
-#include "mrover/LanderAlignActionGoal.h"
 #include "pch.hpp"
-#include <Eigen/src/Core/Matrix.h>
-#include <optional>
-#include <ostream>
-#include <tuple>
 
 namespace mrover {
 
-    typedef actionlib::SimpleActionServer<mrover::LanderAlignAction> Server;
+    using Server = actionlib::SimpleActionServer<mrover::LanderAlignAction>;
 
     enum RTRSTATE {
         turn1 = 0,
@@ -35,7 +29,7 @@ namespace mrover {
         double const mLinearP = 0.3;
         ros::NodeHandle mNh, mPnh;
 
-        Server mActionServer = Server(mNh, "LanderAlignAction", [&](const mrover::LanderAlignActionGoalConstPtr& goal){ActionServerCallBack(goal);}, false);
+        Server mActionServer = Server(mNh, "LanderAlignAction", [&](mrover::LanderAlignActionGoalConstPtr const& goal){ActionServerCallBack(goal);}, false);
 
 
         ros::Publisher mDebugVectorPub;

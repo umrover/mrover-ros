@@ -79,12 +79,13 @@ namespace mrover {
         }
     }
 
-    void LanderAlignNodelet::ActionServerCallBack(mrover::LanderAlignActionGoalConstPtr const& actionRequest){
+    void LanderAlignNodelet::ActionServerCallBack(LanderAlignActionGoalConstPtr const& actionRequest){
         LanderAlignActionFeedback feedback;
         LanderAlignActionResult result;
-        for(int i = 0; i < static_cast<int>(actionRequest->goal.num); i++){
-            //feedback.feedback.percent_complete=i;
-        }
+        // while(actionRequest.action_goal.goal.num);
+        // for(int i = 0; i < static_cast<int>(actionRequest.goal.num); i++){
+        //     //feedback.feedback.percent_complete=i;
+        // }
     }
 
 
