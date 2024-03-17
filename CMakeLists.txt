@@ -164,6 +164,9 @@ endif ()
 
 ## Perception
 
+mrover_add_nodelet(costmap src/perception/cost_map/*.cpp src/perception/cost_map src/perception/cost_map/pch.hpp)
+mrover_nodelet_link_libraries(costmap lie)
+
 mrover_add_library(streaming src/esw/streaming/*.cpp src/esw/streaming)
 target_compile_definitions(streaming PUBLIC BOOST_ASIO_NO_DEPRECATED)
 

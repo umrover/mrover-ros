@@ -141,6 +141,7 @@ class DriveController:
         :return: the lookahead point
         """
         # compute the vector from the previous target position to the current target position
+
         path_vec = path_end - path_start
         # compute the vector from the previous target position to the rover position
         rover_vec = rover_pos - path_start
@@ -192,7 +193,7 @@ class DriveController:
             self.reset()
             return Twist(), True
 
-        if path_start is not None:
+        if path_start is not None and np.linalg.norm(path_start - target_pos) > LOOKAHEAD_DISTANCE:
             target_pos = self.get_lookahead_pt(path_start, target_pos, rover_pos, LOOKAHEAD_DISTANCE)
 
         target_dir = target_pos - rover_pos
