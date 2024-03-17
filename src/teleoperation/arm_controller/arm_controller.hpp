@@ -12,6 +12,7 @@ namespace mrover {
         tf2_ros::Buffer mTfBuffer{};
         tf2_ros::TransformListener mTfListener{mTfBuffer};
 
+    public:
         // From: rover.urdf.xacro
         // A is the prismatic joint, B is the first revolute joint, C is the second revolute joint
         static constexpr double LINK_BC = 0.5344417294;
@@ -30,7 +31,6 @@ namespace mrover {
         // constexpr double JOINT_DE_ROLL_MIN = -0.75 * std::numbers::pi;
         // constexpr double JOINT_DE_ROLL_MAX = 0.75 * std::numbers::pi;
 
-    public:
         ArmController();
 
         void ik_callback(IK const& new_ik_target);
