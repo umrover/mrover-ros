@@ -214,6 +214,8 @@ namespace mrover {
         ros::Publisher mMotorStatusPub;
         ros::Publisher mDriveControllerStatePub;
         ros::Publisher mArmControllerStatePub;
+        ros::Publisher mLeftRTKFixPub;
+        ros::Publisher mRightRTKFixPub;
 
         tf2_ros::Buffer mTfBuffer;
         tf2_ros::TransformListener mTfListener{mTfBuffer};
@@ -228,6 +230,7 @@ namespace mrover {
 
         // TODO: make variances configurable
         std::default_random_engine mRNG;
+        std::uniform_int_distribution<> mRTkFixFreq{1, 5};
         std::normal_distribution<> mGPSDist{0, 0.02},
                 mAccelDist{0, 0.01},
                 mGyroDist{0, 0.01},

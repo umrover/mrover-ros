@@ -185,6 +185,26 @@ namespace mrover {
 
                 mLeftGpsPub.publish(computeNavSatFix(leftGpsInMap, mGpsLinearizationReferencePoint, mGpsLinerizationReferenceHeading));
                 mRightGpsPub.publish(computeNavSatFix(rightGpsInMap, mGpsLinearizationReferencePoint, mGpsLinerizationReferenceHeading));
+                
+                RTKStatus status;
+                status.header.stamp = ros::Time::now();
+                status.header.frame_id = "map";
+
+                if (mRTkFixFreq(mRNG) == 1) {
+                    status.RTK_FIX_TYPE = RTKStatus::RTK_FIX;
+                    mLeftRTKFixPub.publish(status);
+                    mRightRTKFixPub.publish(status);
+                }
+                else if (mRTkFixFreq(mRNG) == 2 || mRTkFixFreq(mRNG) == 3){
+                    status.RTK_FIX_TYPE = RTKStatus::FLOATING_RTK;
+                    mLeftRTKFixPub.publish(status);
+                    mRightRTKFixPub.publish(status);
+                }
+                else {
+                    status.RTK_FIX_TYPE = RTKStatus::NO_RTK;
+                    mLeftRTKFixPub.publish(status);
+                    mRightRTKFixPub.publish(status);
+                }
             }
             if (mImuTask.shouldUpdate()) {
                 auto dt_s = std::chrono::duration_cast<std::chrono::duration<double>>(dt).count();
