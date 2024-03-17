@@ -27,7 +27,7 @@
     </div>
     <div class="controls-flex" v-if="arm_mode === 'position'">
       <div class="row">
-        <div class="col" v-for="(joint, key) in positions" :key="key">
+        <div class="col" v-for="(joint, key) in temp_positions" :key="key">
           <label>{{ key }}</label>
           <input
             class="form-control"
@@ -69,13 +69,14 @@ export default defineComponent({
   data() {
     return {
       arm_mode: 'arm_disabled',
-      positions: {
+      temp_positions: {
         cache: {
           value: 0,
           min: -100,
           max: 100
         }
       },
+      positions:[],
       interval: null as number | null
     }
   },
@@ -118,9 +119,14 @@ export default defineComponent({
     submit_positions: function () {
       // TODO: Redo position logic to be similar to SAArmControls.vue so that they will be sent repeatedly on the gamepad interval
       //converts to radians
-      const positions_rad: number[] = Object.values(this.positions).map(
+
+      this.positions = Object.values(this.temp_positions).map(
         (obj: any) => (Number(obj.value) * Math.PI) / 180
       )
+
+
+
+
       //   this.sendMessage({
       //       type: 'cache_values',
       //       axes: axes,

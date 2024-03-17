@@ -269,12 +269,12 @@ class GUIConsumer(JsonWebsocketConsumer):
         elif msg["arm_mode"] == "velocity":
             velocity_cmd = Velocity()
             velocity_cmd.names = controls_names
-            if msg["type"] == "cache":
+            if msg["type"] == "cache_values":
                 velocity_cmd.velocities = [
-                    self.to_velocity( self.sa_config["cache"]["multiplier"] *self.filter_xbox_button(msg["buttons"], "right_bumper", "left_bumper"))
-        
+                            self.sa_config["cache"]["multiplier"] *self.filter_xbox_button(msg["buttons"], 
+                            "right_bumper", "left_bumper")
                 ]
-            elif msg["type"] == "sa_values":
+            elif msg["type"] == "sa_arm_values":
                 velocity_cmd.velocities = [
                 self.to_velocity(
                     self.filter_xbox_axis(msg["axes"][self.sa_config["sa_x"]["xbox_index"]]), "sa_x", False
@@ -283,7 +283,7 @@ class GUIConsumer(JsonWebsocketConsumer):
                     self.filter_xbox_axis(msg["axes"][self.sa_config["sa_y"]["xbox_index"]]), "sa_y", False
                 ),
                 self.to_velocity(
-                    self.filter_xbox_axis(msg["axes"][self.sa_config["sa_z"]["xbox_index"]]), "sa_z", False
+                    self.filter_xbox_axis(msg["axes"][self.sa_config["sa_z"]["xbox_index"]]), "sa_z", True
                 ),
                 self.sa_config["sampler"]["multiplier"] * (right_trigger - left_trigger),
                 self.sa_config["sensor_actuator"]["multiplier"]
@@ -308,60 +308,60 @@ class GUIConsumer(JsonWebsocketConsumer):
                 ),
                 self.ra_config["allen_key"]["multiplier"] * self.filter_xbox_button(msg["buttons"], "y", "a"),
                 self.ra_config["gripper"]["multiplier"] * self.filter_xbox_button(msg["buttons"], "b", "x"),
-            ]
-                publishers[1].publish(velocity_cmd)
+                ]
+            publishers[1].publish(velocity_cmd)
             
-            elif msg["arm_mode"] == "throttle":
-                throttle_cmd = Throttle()
-                throttle_cmd.names = controls_names
-                if msg["type"] == "cache":
-                    throttle_cmd.throttles = [
-                        self.sa_config["cache"]["multiplier"] * self.filter_xbox_button(msg["buttons"], "right_bumper", "left_bumper")
+        elif msg["arm_mode"] == "throttle":
+            throttle_cmd = Throttle()
+            throttle_cmd.names = controls_names
+            if msg["type"] == "cache_values":
+                throttle_cmd.throttles = [
+                    self.sa_config["cache"]["multiplier"] * self.filter_xbox_button(msg["buttons"], "right_bumper", "left_bumper")
+                ]
+            elif msg["type"] == "sa_arm_values":
+                d_pad_x = msg["axes"][self.xbox_mappings["d_pad_x"]]
+                if d_pad_x > 0.5:
+                    ra_slow_mode = True
+                elif d_pad_x < -0.5:
+                    ra_slow_mode = False
+
+                throttle_cmd.throttles = [
+                    self.filter_xbox_axis(msg["axes"][self.ra_config["joint_a"]["xbox_index"]]),
+                    self.filter_xbox_axis(msg["axes"][self.ra_config["joint_b"]["xbox_index"]]),
+                    self.filter_xbox_axis(msg["axes"][self.ra_config["joint_c"]["xbox_index"]]),
+                    self.filter_xbox_axis(msg["axes"][self.ra_config["joint_de_pitch"]["xbox_index"]]),
+                    self.filter_xbox_axis(msg["axes"][self.ra_config["joint_de_roll"]["xbox_index"]]),
+                    self.ra_config["allen_key"]["multiplier"] * self.filter_xbox_button(msg["buttons"], "y", "a"),
+                    self.ra_config["gripper"]["multiplier"] * self.filter_xbox_button(msg["buttons"], "b", "x"),
+                ]
+
+                for i, name in enumerate(self.RA_NAMES):
+                    if ra_slow_mode:
+                        throttle_cmd.throttles[i] *= self.ra_config[name]["slow_mode_multiplier"]
+                    if self.ra_config[name]["invert"]:
+                        throttle_cmd.throttles[i] *= -1
+            elif msg["type"] == "sa_values":
+                throttle_cmd.throttles = [
+                    self.sa_config[name]["multiplier"] * self.filter_xbox_axis(msg["axes"][info["xbox_index"]], 0.15, True)
+                    for name, info in self.sa_config.items()
+                    if name.startswith("sa")
+                ]
+
+                throttle_cmd.throttles.extend(
+                [
+                    self.sa_config["sampler"]["multiplier"] * (right_trigger - left_trigger),
+                    self.sa_config["sensor_actuator"]["multiplier"]
+                    * self.filter_xbox_button(msg["buttons"], "right_bumper", "left_bumper"),
                     ]
-                elif msg["type"] == "arm_values":
-                    d_pad_x = msg["axes"][self.xbox_mappings["d_pad_x"]]
-                    if d_pad_x > 0.5:
-                        ra_slow_mode = True
-                    elif d_pad_x < -0.5:
-                        ra_slow_mode = False
+                )
 
-                    throttle_cmd.throttles = [
-                        self.filter_xbox_axis(msg["axes"][self.ra_config["joint_a"]["xbox_index"]]),
-                        self.filter_xbox_axis(msg["axes"][self.ra_config["joint_b"]["xbox_index"]]),
-                        self.filter_xbox_axis(msg["axes"][self.ra_config["joint_c"]["xbox_index"]]),
-                        self.filter_xbox_axis(msg["axes"][self.ra_config["joint_de_pitch"]["xbox_index"]]),
-                        self.filter_xbox_axis(msg["axes"][self.ra_config["joint_de_roll"]["xbox_index"]]),
-                        self.ra_config["allen_key"]["multiplier"] * self.filter_xbox_button(msg["buttons"], "y", "a"),
-                        self.ra_config["gripper"]["multiplier"] * self.filter_xbox_button(msg["buttons"], "b", "x"),
-                    ]
-
-                    for i, name in enumerate(self.RA_NAMES):
-                        if ra_slow_mode:
-                            throttle_cmd.throttles[i] *= self.ra_config[name]["slow_mode_multiplier"]
-                        if self.ra_config[name]["invert"]:
-                            throttle_cmd.throttles[i] *= -1
-                elif msg["type"] == "sa_values":
-                    throttle_cmd.throttles = [
-                        self.sa_config[name]["multiplier"] * self.filter_xbox_axis(msg["axes"][info["xbox_index"]], 0.15, True)
-                        for name, info in self.sa_config.items()
-                        if name.startswith("sa")
-                    ]
-
-                    throttle_cmd.throttles.extend(
-                    [
-                        self.sa_config["sampler"]["multiplier"] * (right_trigger - left_trigger),
-                        self.sa_config["sensor_actuator"]["multiplier"]
-                        * self.filter_xbox_button(msg["buttons"], "right_bumper", "left_bumper"),
-                        ]
-                    )
-
-                    fast_mode_activated = msg["buttons"][self.xbox_mappings["a"]] or msg["buttons"][self.xbox_mappings["b"]]
-                    if not fast_mode_activated:
-                        for i, name in enumerate(SA_NAMES):
-                            # When going up (vel > 0) with SA joint 2, we DON'T want slow mode.
-                            if not (name == "sa_y" and throttle_cmd.throttles[i] > 0):
-                                throttle_cmd.throttles[i] *= self.sa_config[name]["slow_mode_multiplier"]
-                publishers[2].publish(throttle_cmd)
+                fast_mode_activated = msg["buttons"][self.xbox_mappings["a"]] or msg["buttons"][self.xbox_mappings["b"]]
+                if not fast_mode_activated:
+                    for i, name in enumerate(SA_NAMES):
+                        # When going up (vel > 0) with SA joint 2, we DON'T want slow mode.
+                        if not (name == "sa_y" and throttle_cmd.throttles[i] > 0):
+                            throttle_cmd.throttles[i] *= self.sa_config[name]["slow_mode_multiplier"]
+            publishers[2].publish(throttle_cmd)
 
     def handle_joystick_message(self, msg):
         # Tiny deadzone so we can safely e-stop with dampen switch
