@@ -116,7 +116,9 @@ export default defineComponent({
         name: [] as string[],
         position: [] as number[],
         velocity: [] as number[],
-        effort: [] as number[]
+        effort: [] as number[],
+        state: [] as string[],
+        error: [] as string[]
       }
     }
   },
@@ -127,12 +129,19 @@ export default defineComponent({
 
   watch: {
     message(msg) {
-      if (msg.type == 'joint_state') {
+      if (msg.type == 'drive_status') {
         this.motorData.name = msg.name
         this.motorData.position = msg.position
         this.motorData.velocity = msg.velocity
         this.motorData.effort = msg.effort
-      }
+        this.motorData.state = msg.state
+        this.motorData.error = msg.error
+      } else if (msg.type == 'drive_moteus') {
+        this.moteusDrive.name = msg.name
+        this.moteusDrive.state = msg.state
+        this.moteusDrive.error = msg.error
+        this.moteusDrive.limit_hit = msg.limit_hit
+      } 
       else if (msg.type == "center_map") {
         this.odom.latitude_deg = msg.latitude
         this.odom.longitude_deg = msg.longitude

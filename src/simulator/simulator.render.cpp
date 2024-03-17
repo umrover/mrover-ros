@@ -248,7 +248,7 @@ namespace mrover {
             mWgpuInstance = wgpu::createInstance(descriptor);
             if (!mWgpuInstance) throw std::runtime_error("Failed to create WGPU instance");
         }
-        {
+        if (!mIsHeadless) {
             mSurface = glfwGetWGPUSurface(mWgpuInstance, mWindow.get());
             if (!mSurface) throw std::runtime_error("Failed to create WGPU surface");
         }
@@ -277,10 +277,11 @@ namespace mrover {
         mQueue = mDevice.getQueue();
         if (!mQueue) throw std::runtime_error("Failed to get WGPU queue");
 
-        int width, height;
-        glfwGetFramebufferSize(mWindow.get(), &width, &height);
-
-        makeFramebuffers(width, height);
+        if (!mIsHeadless) {
+            int width, height;
+            glfwGetFramebufferSize(mWindow.get(), &width, &height);
+            makeFramebuffers(width, height);
+        }
 
         {
             wgpu::ShaderModuleWGSLDescriptor shaderSourceDescriptor;
@@ -340,19 +341,21 @@ namespace mrover {
         mUriToModel.try_emplace(SPHERE_PRIMITIVE_URI, SPHERE_PRIMITIVE_URI);
         mUriToModel.try_emplace(CYLINDER_PRIMITIVE_URI, CYLINDER_PRIMITIVE_URI);
 
-        IMGUI_CHECKVERSION();
-        ImGui::CreateContext();
-        ImGui_ImplGlfw_InitForOther(mWindow.get(), true);
-        ImGui_ImplWGPU_Init(mDevice, 1, COLOR_FORMAT, DEPTH_FORMAT);
+        if (!mIsHeadless) {
+            IMGUI_CHECKVERSION();
+            ImGui::CreateContext();
+            ImGui_ImplGlfw_InitForOther(mWindow.get(), true);
+            ImGui_ImplWGPU_Init(mDevice, 1, COLOR_FORMAT, DEPTH_FORMAT);
 
-        int x, y, w, h;
-        glfwGetMonitorWorkarea(glfwGetPrimaryMonitor(), &x, &y, &w, &h);
+            int x, y, w, h;
+            glfwGetMonitorWorkarea(glfwGetPrimaryMonitor(), &x, &y, &w, &h);
 
-        ImGuiIO& io = ImGui::GetIO();
-        ImGuiStyle& style = ImGui::GetStyle();
-        float scale = h > 1500 ? 2.0f : 1.0f;
-        io.FontGlobalScale = scale;
-        style.ScaleAllSizes(scale);
+            ImGuiIO& io = ImGui::GetIO();
+            ImGuiStyle& style = ImGui::GetStyle();
+            float scale = h > 1500 ? 2.0f : 1.0f;
+            io.FontGlobalScale = scale;
+            style.ScaleAllSizes(scale);
+        }
     }
 
     auto SimulatorNodelet::renderModel(wgpu::RenderPassEncoder& pass, Model& model, Uniform<ModelUniforms>& uniforms, SIM3 const& modelToWorld, [[maybe_unused]] bool isRoverCamera) -> void {
@@ -592,21 +595,18 @@ namespace mrover {
                 if (camera.stagingBuffer.getMapState() == wgpu::BufferMapState::Mapped) {
                     auto image = boost::shared_ptr<sensor_msgs::Image>{imagePool.borrowFrom(), [](sensor_msgs::Image* msg) { imagePool.returnTo(msg); }};
                     image->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
-                    image->encoding = sensor_msgs::image_encodings::BGR8;
+                    image->encoding = sensor_msgs::image_encodings::BGRA8;
                     image->width = camera.resolution.x();
                     image->height = camera.resolution.y();
-                    image->step = camera.resolution.x() * 3;
+                    image->step = camera.resolution.x() * 4;
                     image->header.stamp = ros::Time::now();
                     image->header.frame_id = camera.frameId;
-                    image->data.resize(area * 3);
+                    image->data.resize(area * 4);
 
                     // Convert from BGRA to BGR
-                    auto* fromRender = static_cast<cv::Vec4b const*>(camera.stagingBuffer.getConstMappedRange(0, camera.stagingBuffer.getSize()));
-                    auto* toMessage = reinterpret_cast<cv::Vec3b*>(image->data.data());
-                    std::for_each(std::execution::par_unseq, fromRender, fromRender + area, [&](cv::Vec4b const& from) {
-                        std::size_t index = &from - fromRender;
-                        toMessage[index] = {from[0], from[1], from[2]};
-                    });
+                    auto* fromRender = camera.stagingBuffer.getConstMappedRange(0, camera.stagingBuffer.getSize());
+                    auto* toMessage = image->data.data();
+                    std::memcpy(toMessage, fromRender, camera.stagingBuffer.getSize());
                     camera.stagingBuffer.unmap();
                     camera.callback = nullptr;
 
@@ -647,9 +647,6 @@ namespace mrover {
     }
 
     auto SimulatorNodelet::renderUpdate() -> void {
-        wgpu::TextureView nextTexture = mSwapChain.getCurrentTextureView();
-        if (!nextTexture) throw std::runtime_error("Failed to get WGPU next texture view");
-
         std::array<wgpu::RenderPassColorAttachment, 2> colorAttachments{};
         auto& [colorAttachment, normalAttachment] = colorAttachments;
         colorAttachment.loadOp = wgpu::LoadOp::Clear;
@@ -676,7 +673,10 @@ namespace mrover {
 
         camerasUpdate(encoder, colorAttachment, normalAttachment, depthStencilAttachment, renderPassDescriptor);
 
-        {
+        if (!mIsHeadless) {
+            wgpu::TextureView nextTexture = mSwapChain.getCurrentTextureView();
+            if (!nextTexture) throw std::runtime_error("Failed to get WGPU next texture view");
+
             colorAttachment.view = nextTexture;
             normalAttachment.view = mNormalTextureView;
             depthStencilAttachment.view = mDepthTextureView;
@@ -687,7 +687,7 @@ namespace mrover {
             if (!mSceneUniforms.buffer) {
                 mSceneUniforms.init(mDevice);
                 mSceneUniforms.value.lightColor = {1, 1, 1, 1};
-                mSceneUniforms.value.lightInWorld = {0, 0, 5, 1};
+                mSceneUniforms.value.lightInWorld = {0, 0, 20, 1};
             }
 
             int width, height;
@@ -718,14 +718,14 @@ namespace mrover {
             pass.release();
 
             bindGroup.release();
-        }
 
-        nextTexture.release();
+            nextTexture.release();
+        }
 
         wgpu::CommandBuffer commands = encoder.finish();
         mQueue.submit(commands);
 
-        mSwapChain.present();
+        if (!mIsHeadless) mSwapChain.present();
 
         // TODO(quintin): Remote duplicate code
         for (StereoCamera& stereoCamera: mStereoCameras) {

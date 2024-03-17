@@ -10,7 +10,7 @@
 #include <Eigen/Geometry>
 #include <manif/SE3.h>
 
-using manif::SE3d, manif::SO3d;
+using manif::SE3d, manif::SO3d, manif::SE3f, manif::SO3f;
 
 using R3 = Eigen::Vector3d;
 using S3 = Eigen::Quaterniond;
@@ -25,13 +25,32 @@ public:
 
     [[nodiscard]] static auto toTransform(SE3d const& tf) -> geometry_msgs::Transform;
 
-    [[nodiscard]] static auto toPoseStamped(SE3d const& tf, std::string const& frameId) -> geometry_msgs::PoseStamped;
+    [[nodiscard]] static auto toPoseStamped(SE3d const& tf, std::string const& frame) -> geometry_msgs::PoseStamped;
 
-    [[nodiscard]] static auto toTransformStamped(SE3d const& tf, std::string const& parentFrameId, std::string const& childFrameId) -> geometry_msgs::TransformStamped;
+    [[nodiscard]] static auto toTransformStamped(SE3d const& tf, std::string const& childFrame, std::string const& parentFrame) -> geometry_msgs::TransformStamped;
 
-    [[nodiscard]] static auto fromTfTree(tf2_ros::Buffer const& buffer, std::string const& fromFrameId, std::string const& toFrameId) -> SE3d;
+    /**
+     * \brief           Pull the most recent transform or pose between two frames from the TF tree.
+     *                  The second and third parameters are named for the transform interpretation.
+     *                  Consider them named "a" and "b" respectively:
+     *                  For a transform this is a rotation and translation, i.e. aToB.
+     *                  For a pose this is a position and orientation, i.e. aInB.
+     * \param buffer    ROS TF Buffer, make sure a listener is attached
+     * \param fromFrame From (transform) or child (pose) frame
+     * \param toFrame   To (transform) or parent (pose) frame
+     * \return          The transform or pose represented by an SE3 lie group element
+     */
+    [[nodiscard]] static auto fromTfTree(tf2_ros::Buffer const& buffer, std::string const& fromFrame, std::string const& toFrame) -> SE3d;
 
-    static auto pushToTfTree(tf2_ros::TransformBroadcaster& broadcaster, std::string const& childFrameId, std::string const& parentFrameId, SE3d const& tf) -> void;
+    /**
+     * \brief             Push a transform to the TF tree between two frames
+     * \see               fromTfTree for more explanation of the frames
+     * \param broadcaster ROS TF Broadcaster
+     * \param fromFrame   From (transform) or child (pose) frame
+     * \param toFrame     To (transform) or parent (pose) frame
+     * \param transform          The transform or pose represented by an SE3 lie group element
+     */
+    static auto pushToTfTree(tf2_ros::TransformBroadcaster& broadcaster, std::string const& fromFrame, std::string const& toFrame, SE3d const& transform) -> void;
 };
 
 class SIM3 {

@@ -182,7 +182,7 @@ namespace mrover {
                 gpsNoise << mGPSDist(mRNG), mGPSDist(mRNG), mGPSDist(mRNG);
                 gpsInMap += gpsNoise;
 
-                mGpsPub.publish(computeNavSatFix(gpsInMap, mGpsLinerizationReferencePoint, mGpsLinerizationReferenceHeading));
+                mGpsPub.publish(computeNavSatFix(gpsInMap, mGpsLinearizationReferencePoint, mGpsLinerizationReferenceHeading));
             }
             if (mImuTask.shouldUpdate()) {
                 R3 roverAngularVelocity = btVector3ToR3(rover.physics->getBaseOmega());

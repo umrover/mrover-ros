@@ -89,10 +89,20 @@
       - ros-{{ ros_distro }}-rosbash
       - libbullet-dev
       - libglfw3-dev
-      - xorg-dev
       - libx11-xcb-dev
       - libnl-3-dev
       - libnl-route-3-dev
+      - libtbb-dev
+      - libopencv-dev
+
+- name: Install Local APT Packages
+  become: True
+  apt:
+    state: present
+    deb: "{{ catkin_workspace }}/src/mrover/pkg/{{ item }}"
+  with_items:
+    - libmanif-dev.deb
+    - libdawn-dev.deb
 
 - name: Initialize rosdep
   become: True

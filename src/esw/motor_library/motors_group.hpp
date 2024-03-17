@@ -2,29 +2,17 @@
 
 #include <unordered_map>
 
-#include <XmlRpcValue.h>
 #include <ros/ros.h>
+#include <sensor_msgs/JointState.h>
 
-#include <brushed.hpp>
-#include <brushless.hpp>
 #include <controller.hpp>
 
 #include <mrover/ControllerState.h>
 #include <mrover/Position.h>
 #include <mrover/Throttle.h>
 #include <mrover/Velocity.h>
-#include <sensor_msgs/JointState.h>
 
 namespace mrover {
-
-    template<IsUnit Unit>
-    auto requireParamAsUnit(ros::NodeHandle const& nh, std::string const& name) -> Unit {
-        assert(nh.hasParam(name));
-
-        typename Unit::rep_t value;
-        nh.getParam(name, value);
-        return Unit{value};
-    }
 
     class MotorsGroup {
     public:
@@ -32,17 +20,17 @@ namespace mrover {
 
         MotorsGroup(ros::NodeHandle const& nh, std::string groupName);
 
-        Controller& getController(std::string const& name) const;
+        auto getController(std::string const& name) const -> Controller&;
 
-        void moveMotorsThrottle(Throttle::ConstPtr const& msg);
+        auto moveMotorsThrottle(Throttle::ConstPtr const& msg) -> void;
 
-        void moveMotorsVelocity(Velocity::ConstPtr const& msg);
+        auto moveMotorsVelocity(Velocity::ConstPtr const& msg) -> void;
 
-        void moveMotorsPosition(Position::ConstPtr const& msg);
+        auto moveMotorsPosition(Position::ConstPtr const& msg) -> void;
 
-        void processJointData(sensor_msgs::JointState::ConstPtr const& msg, std::string const& name);
+        auto processJointData(sensor_msgs::JointState::ConstPtr const& msg, std::string const& name) -> void;
 
-        void processControllerData(ControllerState::ConstPtr const& msg, std::string const& name);
+        auto processControllerData(ControllerState::ConstPtr const& msg, std::string const& name) -> void;
 
     private:
         ros::NodeHandle mNh;

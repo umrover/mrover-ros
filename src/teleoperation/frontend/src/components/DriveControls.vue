@@ -23,7 +23,7 @@ export default {
   },
 
   created: function () {
-    const UPDATE_RATE = 10 //100 Hz
+    const UPDATE_RATE = 50 //100 Hz
 
     interval = window.setInterval(() => {
       const gamepads = navigator.getGamepads()
