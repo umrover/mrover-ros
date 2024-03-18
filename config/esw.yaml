@@ -91,31 +91,25 @@ brushless_motors:
   controllers:
     front_left:
       velocity_multiplier: -1.0
-      velocity_multiplier: -1.0
       min_velocity: -70.0
       max_velocity: 70.0
     front_right:
-      velocity_multiplier: 1.0
       velocity_multiplier: 1.0
       min_velocity: -70.0
       max_velocity: 70.0
     middle_left:
       velocity_multiplier: -1.0
-      velocity_multiplier: -1.0
       min_velocity: -70.0
       max_velocity: 70.0
     middle_right:
-      velocity_multiplier: 1.0
       velocity_multiplier: 1.0
       min_velocity: -70.0
       max_velocity: 70.0
     back_left:
       velocity_multiplier: -1.0
-      velocity_multiplier: -1.0
       min_velocity: -70.0
       max_velocity: 70.0
     back_right:
-      velocity_multiplier: 1.0
       velocity_multiplier: 1.0
       min_velocity: -70.0
       max_velocity: 70.0
