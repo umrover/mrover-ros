@@ -5,12 +5,14 @@
 
 #include <format>
 #include <memory>
+#include <cmath>
 
 #include <XmlRpcValue.h>
 #include <ros/duration.h>
 #include <ros/ros.h>
 
 #include <mrover/AdjustMotor.h>
+#include <mrover/MotorsAdjust.h>
 #include <mrover/ControllerState.h>
 #include <mrover/Position.h>
 #include <mrover/Throttle.h>
@@ -96,8 +98,7 @@ namespace mrover {
         ros::Subscriber mPositionSub;
         ros::Subscriber mArmHWJointDataSub;
 
-        ros::Timer mUpdateDETimer;
-
+        
         // TODO:(owen) unique_ptr servers? unique_ptr clients? Both? Neither? The world may never know. (try to learn)
         std::unordered_map<std::string, ros::ServiceServer> mAdjustServersByRawArmNames;
         // std::unordered_map<std::string, std::unique_ptr<ros::ServiceServer> > mCalibrateServer;
@@ -105,6 +106,10 @@ namespace mrover {
         std::unordered_map<std::string, ros::ServiceClient> mAdjustClientsByArmHWNames;
         // std::unique_ptr<ros::ServiceClient> mCalibrateClient;
 
+        ros::Timer mUpdateDETimer;
+
+        std::unordered_map<std::string, ros::Publisher> mAdjustMotorsPub;
+        
         std::optional<float> mJointDEPitchAdjust;
         std::optional<float> mJointDERollAdjust;
     };

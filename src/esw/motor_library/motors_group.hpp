@@ -11,6 +11,7 @@
 #include <mrover/Position.h>
 #include <mrover/Throttle.h>
 #include <mrover/Velocity.h>
+#include <mrover/MotorsAdjust.h>
 
 namespace mrover {
 
@@ -38,6 +39,7 @@ namespace mrover {
         ros::Subscriber mMoveThrottleSub;
         ros::Subscriber mMoveVelocitySub;
         ros::Subscriber mMovePositionSub;
+
         ros::Publisher mJointDataPub;
         ros::Publisher mControllerDataPub;
 
@@ -46,6 +48,7 @@ namespace mrover {
         std::unordered_map<std::string, ros::Publisher> mPositionPubsByName;
         std::unordered_map<std::string, ros::Subscriber> mJointDataSubsByName;
         std::unordered_map<std::string, ros::Subscriber> mControllerDataSubsByName;
+        
         std::unordered_map<std::string, size_t> mIndexByName;
 
         std::unordered_map<std::string, std::unique_ptr<Controller>> mControllers;

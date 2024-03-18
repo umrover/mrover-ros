@@ -26,6 +26,7 @@ namespace mrover {
             {
                 auto hwName = static_cast<std::string>(mArmHWNames[i]);
                 auto [_, was_inserted] = mAdjustClientsByArmHWNames.try_emplace(hwName, nh.serviceClient<AdjustMotor>(std::format("{}_adjust", hwName)));
+                mAdjustMotorsPub[hwName] = nh.advertise<MotorsAdjust>(std::format("{}_adjust_cmd", hwName), 1);
                 assert(was_inserted);
             }
         }
@@ -53,6 +54,7 @@ namespace mrover {
         mPositionPub = std::make_unique<ros::Publisher>(nh.advertise<Position>("arm_hw_position_cmd", 1));
         mJointDataPub = std::make_unique<ros::Publisher>(nh.advertise<sensor_msgs::JointState>("arm_joint_data", 1));
 
+        
         mUpdateDETimer = nh.createTimer(mUpdateDEDuration, &ArmTranslator::updateDEEncoderStates, this);
     }
 
@@ -325,22 +327,21 @@ namespace mrover {
 
         // Transform to real values
         auto [joint_de_0_value, joint_de_1_value] = transformPitchRollToMotorOutputs(mCurrentRawJointDEPitch->get(), mCurrentRawJointDERoll->get());
-        
-        // Sent transformed values to moteus
 
-        // Send to moteus
-        AdjustMotor::Response controllerResDE0;
-        AdjustMotor::Request controllerReqDE0;
-        controllerReqDE0.name = "joint_de_0";
-        controllerReqDE0.value = joint_de_0_value;
-        mAdjustClientsByArmHWNames[controllerReqDE0.name].call(controllerResDE0, controllerReqDE0);
 
-        AdjustMotor::Response controllerResDE1;
-        AdjustMotor::Request controllerReqDE1;
-        controllerReqDE1.name = "joint_de_1";
-        controllerReqDE1.value = joint_de_1_value;
-        mAdjustClientsByArmHWNames[controllerReqDE1.name].call(controllerReqDE1, controllerResDE1);
-        
+        // Publish to controller
+        MotorsAdjust de0AdjustMsg;
+        MotorsAdjust de1AdjustMsg;
+
+        de0AdjustMsg.names = {"joint_de_0"};
+        de0AdjustMsg.values = {joint_de_0_value};
+
+        de1AdjustMsg.names = {"joint_de_1"};
+        de1AdjustMsg.values = {joint_de_1_value};
+
+
+        mAdjustMotorsPub["joint_de_1"].publish(de0AdjustMsg);
+        mAdjustMotorsPub["joint_de_1"].publish(de1AdjustMsg);
     }
 
 

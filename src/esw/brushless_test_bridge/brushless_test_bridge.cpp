@@ -56,10 +56,10 @@ auto main(int argc, char** argv) -> int {
     mrover::Velocity armMsg;
     mrover::Velocity saMsg;
     armMsg.names = {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll", "allen_key", "gripper"};
-    armMsg.velocities = {0, 0, 0, 20, 20, 0, 0};
+    armMsg.velocities = {0, 0, 0, 0, 20, 0, 0};
 
-    saMsg.names = {"sa_x", "sa_y", "sa_z", "sampler", "sensor_actuator"};
-    saMsg.velocities = {0, 0, 0.07,0, 0};
+    // saMsg.names = {"sa_x", "sa_y", "sa_z", "sampler", "sensor_actuator"};
+    // saMsg.velocities = {0, 0, 0.07,0, 0};
 
     // brushlessController_de0->setStop();
     // brushlessController_de1->setStop();
@@ -68,11 +68,11 @@ auto main(int argc, char** argv) -> int {
 
     int count = 0;
 
-    /*
+    
     while(ros::ok()){
         // publish DE velocity:
         DEPub->publish(armMsg);
-        SAPub->publish(saMsg);
+        // SAPub->publish(saMsg);
         count++;
 
         if(count > 100) {
@@ -84,7 +84,7 @@ auto main(int argc, char** argv) -> int {
         ros::spinOnce();
         rate.sleep();
     }
-    */
+    
 
     return EXIT_SUCCESS;
 }

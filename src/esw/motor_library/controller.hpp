@@ -9,6 +9,7 @@
 #include <iostream>
 #include <units/units.hpp>
 
+#include <mrover/MotorsAdjust.h>
 #include <mrover/AdjustMotor.h>
 #include <mrover/ControllerState.h>
 #include <mrover/Position.h>
@@ -32,6 +33,7 @@ namespace mrover {
             mMoveThrottleSub = mNh.subscribe<Throttle>(std::format("{}_throttle_cmd", mControllerName), 1, &Controller::moveMotorsThrottle, this);
             mMoveVelocitySub = mNh.subscribe<Velocity>(std::format("{}_velocity_cmd", mControllerName), 1, &Controller::moveMotorsVelocity, this);
             mMovePositionSub = mNh.subscribe<Position>(std::format("{}_position_cmd", mControllerName), 1, &Controller::moveMotorsPosition, this);
+            mAdjustEncoderSub = mNh.subscribe<MotorsAdjust>(std::format("{}_adjust_cmd", mControllerName), 1, &Controller::adjustEncoder, this);
 
             mJointDataPub = mNh.advertise<sensor_msgs::JointState>(std::format("{}_joint_data", mControllerName), 1);
             mControllerDataPub = mNh.advertise<ControllerState>(std::format("{}_controller_data", mControllerName), 1);
@@ -76,6 +78,15 @@ namespace mrover {
             }
 
             setDesiredPosition(Radians{msg->positions.at(0)});
+        }
+
+        void adjustEncoder(MotorsAdjust::ConstPtr const& msg) {
+            if (msg->names.size() != 1 || msg->names.at(0) != mControllerName || msg->values.size() != 1) {
+                ROS_ERROR("Adjust request at topic for %s ignored!", msg->names.at(0).c_str());
+                return;
+            }
+
+            adjust(Radians{msg->values.at(0)});
         }
 
         auto publishDataCallback(ros::TimerEvent const&) -> void {
@@ -132,6 +143,7 @@ namespace mrover {
         ros::Subscriber mMoveThrottleSub;
         ros::Subscriber mMoveVelocitySub;
         ros::Subscriber mMovePositionSub;
+        ros::Subscriber mAdjustEncoderSub;
         ros::Publisher mJointDataPub;
         ros::Publisher mControllerDataPub;
         ros::Timer mPublishDataTimer;
