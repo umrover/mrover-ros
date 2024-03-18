@@ -26,9 +26,9 @@
     <!-- <div class="shadow p-3 rounded cache">
         <Cache />
       </div> -->
-    <!-- <div class="shadow p-3 rounded chlorophyll">
-        <Chlorophyll :spectral_data="spectral_data" />
-      </div> -->
+    <div class="shadow p-3 rounded chlorophyll">
+        <Chlorophyll/>
+      </div>
     <div class="shadow p-3 rounded amino">
         <AminoBenedict :site="site" :isAmino="true"/>
       </div>
@@ -39,11 +39,12 @@
 //   import SelectSite from "./SelectSite.vue";
 //   import Raman from "./Raman.vue";
 //   import Cache from "./Cache.vue";
-//   import Chlorophyll from "./Chlorophyll.vue";
+  import Chlorophyll from "./Chlorophyll.vue";
 import AminoBenedict from "./AminoBenedict.vue";
 import Cameras from '../components/Cameras.vue'
 //   import CommReadout from "./CommReadout.vue";
 //   import MCUReset from "./MCUReset.vue"
+import Chlorophyll from '../components/Chlorophyll.vue'
 import { disableAutonLED } from '../utils.js'
 
 type StringIntDictionary = {
@@ -54,7 +55,7 @@ export default {
   components: {
     //   SelectSite,
     //   Cache,
-    //   Chlorophyll,
+      Chlorophyll,
     AminoBenedict,
     Cameras
     //   CommReadout,
@@ -67,8 +68,6 @@ export default {
       // Initialize this so that computed property won't be mad
       siteIndexMapping: { A: 0, B: 1, C: 2 } as StringIntDictionary,
 
-      spectral_data: [0, 0, 0, 0, 0, 0],
-
       primary: false
     }
   },
@@ -77,30 +76,6 @@ export default {
       // Return the indice for the specified site
       return this.siteIndexMapping[this.site]
     }
-  },
-
-  created: function () {
-    // disableAutonLED()
-    //   this.spectral_sub = new ROSLIB.Topic({
-    //     ros: this.$ros,
-    //     name: "science/spectral",
-    //     messageType: "mrover/Spectral",
-    //   });
-
-    //   this.spectral_sub.subscribe((msg) => {
-    //     // Callback for spectral_sub
-    //     this.spectral_data = msg.data;
-    //   });
-
-    //   // Get carousel site index mappings
-    //   let mapping = new ROSLIB.Param({
-    //     ros: this.$ros,
-    //     name: "teleop/site_mappings",
-    //   });
-
-    //   mapping.get((param) => {
-    //     this.siteIndexMapping = param;
-    //   });
   },
 
   methods: {

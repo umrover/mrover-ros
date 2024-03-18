@@ -1,4 +1,8 @@
+import csv
+from datetime import datetime
 import json
+import os
+import pytz
 from math import copysign
 from math import pi
 from tf.transformations import euler_from_quaternion
@@ -21,19 +25,15 @@ from mrover.msg import (
     CalibrationStatus,
     MotorsStatus,
     CameraCmd,
-    Calibrated,
     Velocity,
     Position,
     IK,
+    SpectralGroup
 )
-from mrover.srv import EnableAuton, ChangeCameras, CapturePanorama #, CapturePhoto
+from mrover.srv import EnableAuton, AdjustMotor, ChangeCameras, CapturePanorama #, CapturePhoto
 from sensor_msgs.msg import NavSatFix, Temperature, RelativeHumidity, Image
-from mrover.srv import EnableAuton
-from sensor_msgs.msg import NavSatFix, Temperature, RelativeHumidity
 from std_msgs.msg import String, Bool
 from std_srvs.srv import SetBool, Trigger
-from mrover.srv import EnableDevice, AdjustMotor
-from sensor_msgs.msg import JointState, Joy, NavSatFix
 from geometry_msgs.msg import Twist, Pose, Point, Quaternion
 
 from util.SE3 import SE3
@@ -61,8 +61,8 @@ def quadratic(val: float) -> float:
 class GUIConsumer(JsonWebsocketConsumer):
     def connect(self):
         self.accept()
-        # Publishers
         try:
+            # Publishers
             self.twist_pub = rospy.Publisher("/cmd_vel", Twist, queue_size=1)
             self.led_pub = rospy.Publisher("/auton_led_cmd", String, queue_size=1)
             self.mast_gimbal_pub = rospy.Publisher("/mast_gimbal_throttle_cmd", Throttle, queue_size=1)
@@ -92,6 +92,7 @@ class GUIConsumer(JsonWebsocketConsumer):
                 "/sa_humidity_data", RelativeHumidity, self.sa_humidity_data_callback
             )
             self.sa_thermistor_data = rospy.Subscriber("/science_thermistors", Temperature, self.sa_thermistor_data_callback)
+            self.science_spectral = rospy.Subscriber('/science_spectral',SpectralGroup, self.science_spectral_callback)
 
             # Services
             self.laser_service = rospy.ServiceProxy("enable_arm_laser", SetBool)
@@ -101,7 +102,7 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.cache_enable_limit = rospy.ServiceProxy("cache_enable_limit_switches", SetBool)
             self.calibrate_service = rospy.ServiceProxy("arm_calibrate", Trigger)
             self.change_cameras_srv = rospy.ServiceProxy("change_cameras", ChangeCameras)
-            self.capture_panorama_srv: Any = rospy.ServiceProxy("capture_panorama", CapturePanorama)
+            self.capture_panorama_srv = rospy.ServiceProxy("capture_panorama", CapturePanorama)
             self.heater_auto_shutoff_srv = rospy.ServiceProxy("science_change_heater_auto_shutoff_state", SetBool)
             # self.capture_photo_srv = rospy.ServiceProxy("capture_photo", CapturePhoto)
 
@@ -157,6 +158,10 @@ class GUIConsumer(JsonWebsocketConsumer):
                 self.handle_arm_message(message)
             elif message["type"] == "sa_arm_values":
                 self.handle_sa_arm_message(message)
+            elif message["type"] == "sa_enable_uv_bulb":
+                self.sa_uv_bulb_callback(message)
+            elif message["type"] == "enable_white_leds":
+                self.enable_white_leds_callback(message)
             elif message["type"] == "auton_command":
                 self.send_auton_command(message)
             elif message["type"] == "teleop_enabled":
@@ -168,21 +173,19 @@ class GUIConsumer(JsonWebsocketConsumer):
             elif message["type"] == "max_streams":
                 self.send_res_streams()
             elif message["type"] == "sendCameras":
-                self.change_cameras(msg=message)
+                self.change_cameras(message)
             elif message["type"] == "takePanorama":
                 self.capture_panorama()
-            # elif message["type"] == "capturePhoto":
-            #     self.capture_photo()
+            elif message["type"] == "capturePhoto":
+                self.capture_photo()
             elif message["type"] == "heaterEnable":
-                self.heater_enable_service(msg=message)
+                self.heater_enable_service(message)
             elif message["type"] == "autoShutoff":
-                self.auto_shutoff_toggle(msg=message)
+                self.auto_shutoff_toggle(message)
             elif message["type"] == "center_map":
                 self.send_center()
             elif message["type"] == "enable_limit_switch":
                 self.limit_switch(message)
-            elif message["type"] == "center_map":
-                self.send_center()
             elif message["type"] == "save_auton_waypoint_list":
                 self.save_auton_waypoint_list(message)
             elif message["type"] == "get_auton_waypoint_list":
@@ -191,6 +194,8 @@ class GUIConsumer(JsonWebsocketConsumer):
                 self.save_basic_waypoint_list(message)
             elif message["type"] == "get_basic_waypoint_list":
                 self.get_basic_waypoint_list(message)
+            elif message["type"] == "download_csv":
+                self.download_csv(message)
         except Exception as e:
             rospy.logerr(e)
 
@@ -493,6 +498,29 @@ class GUIConsumer(JsonWebsocketConsumer):
                     fail.append(joint)
             except rospy.ServiceException as e:
                 print(f"Service call failed: {e}")
+    def sa_uv_bulb_callback(self, msg):
+        try:
+            result = self.toggle_uv(data=msg["data"])
+            self.send(text_data=json.dumps({"type": "toggle_uv", "result": result.success}))
+        except rospy.ServiceException as e:
+            rospy.logerr(f"Service call failed: {e}")
+    
+    def enable_white_leds_callback(self, msg):
+        for i in range(0, 3):
+            white_led_name = f"science_enable_white_led_{i}"
+            led_srv = rospy.ServiceProxy(white_led_name, SetBool)
+            try:
+                result = led_srv(data=msg["data"])
+                self.send(text_data=json.dumps({"type": "toggle_uv", "result": result.success}))
+            except rospy.ServiceException as e:
+                rospy.logerr(f"Service call failed: {e}")
+
+    def enable_device_callback(self, msg):
+        try:
+            result = self.calibrate_service()
+            self.send(text_data=json.dumps({"type": "calibrate_service", "result": result.success}))
+        except rospy.ServiceException as e:
+            rospy.logerr(e)
 
         self.send(text_data=json.dumps({"type": "enable_limit_switch", "result": fail}))
 
@@ -632,7 +660,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         try:
             response = self.capture_panorama_srv()
             image = response.panorama
-            self.image_callback(image)
+            # self.image_callback(image)
         except rospy.ServiceException as e:
             print(f"Service call failed: {e}")
 
@@ -645,21 +673,21 @@ class GUIConsumer(JsonWebsocketConsumer):
     #         print(f"Service call failed: {e}")
 
     # def image_callback(self, msg):
-        # bridge = CvBridge()
-        # try:
-        #     # Convert the image to OpenCV standard format
-        #     cv_image = bridge.imgmsg_to_cv2(msg, desired_encoding="passthrough")
-        # except Exception as e:
-        #     rospy.logerr("Could not convert image message to OpenCV image: " + str(e))
-        #     return
+    #     bridge = CvBridge()
+    #     try:
+    #         # Convert the image to OpenCV standard format
+    #         cv_image = bridge.imgmsg_to_cv2(msg, desired_encoding="passthrough")
+    #     except Exception as e:
+    #         rospy.logerr("Could not convert image message to OpenCV image: " + str(e))
+    #         return
 
-        # # Save the image to a file (you could change 'png' to 'jpg' or other formats)
-        # image_filename = "panorama.png"
-        # try:
-        #     cv2.imwrite(image_filename, cv_image)
-        #     rospy.loginfo("Saved image to {}".format(image_filename))
-        # except Exception as e:
-        #     rospy.logerr("Could not save image: " + str(e))
+    #     # Save the image to a file (you could change 'png' to 'jpg' or other formats)
+    #     image_filename = "panorama.png"
+    #     try:
+    #         cv2.imwrite(image_filename, cv_image)
+    #         rospy.loginfo("Saved image to {}".format(image_filename))
+    #     except Exception as e:
+    #         rospy.logerr("Could not save image: " + str(e))
 
     def heater_enable_service(self, msg):
         try:
@@ -753,3 +781,41 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.send(text_data=json.dumps({"type": "flight_attitude", "pitch": pitch, "roll": roll}))
 
             rate.sleep()
+
+    def science_spectral_callback(self, msg):
+        data = []
+        error = []
+        for spectral in msg.spectrals:
+            data.append(spectral.data)
+            error.append(spectral.error)
+
+        self.send(text_data=json.dumps({
+            'type': 'spectral_data',
+            'data': data,
+            'error': error
+        }))
+
+    def download_csv(self, msg):
+        username = os.getenv("USERNAME", "-1")
+
+        now = datetime.now(pytz.timezone('US/Eastern'))
+        current_time = now.strftime("%m/%d/%Y-%H:%M")
+        spectral_data = msg['data']
+
+        site_names = ['A', 'B', 'C']
+        index = 0
+
+        # add site letter in front of data
+        for site_data in spectral_data:
+            site_data.insert(0, f'Site {site_names[index]}')
+            index = index + 1
+
+        time_row = ['Time', current_time]
+        spectral_data.insert(0, time_row)
+
+        if username == "-1":
+            rospy.logerr("username not found")
+
+        with open(os.path.join(f'/home/{username}/Downloads/spectral_data.csv'), 'w') as f:
+            csv_writer = csv.writer(f)
+            csv_writer.writerows(spectral_data)        
