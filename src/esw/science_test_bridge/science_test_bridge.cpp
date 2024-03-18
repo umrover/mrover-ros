@@ -8,7 +8,9 @@ int main(int argc, char** argv) {
     ros::NodeHandle nh;
 
     // List of heater names
-    std::vector<std::string> heater_names = {"heater_b0", "heater_n0", "heater_b1", "heater_n1", "heater_b2", "heater_n2"};
+    std::vector<std::string> heater_names = {"heater_b0", "heater_n0", "heater_b1", "heater_n1", "heater_b2", "heater_n2",
+        "uv_led_0", "uv_led_1", "uv_led_2", "white_led_0", "white_led_1", "white_led_2",
+    };
 
     // Create a service message
     std_srvs::SetBool srv;
