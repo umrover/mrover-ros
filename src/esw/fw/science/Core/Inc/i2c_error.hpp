@@ -1,3 +1,5 @@
+#pragma once
+
 namespace mrover {
 class I2CRuntimeError : public std::runtime_error {
 public:

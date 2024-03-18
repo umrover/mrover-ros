@@ -5,6 +5,8 @@
 #include "hardware.hpp"
 #include "units/units.hpp"
 #include "spectral.hpp"
+#include "i2c_error.hpp"
+#include <cassert>
 
 extern I2C_HandleTypeDef hi2c1;
 
@@ -21,7 +23,7 @@ namespace mrover {
 
     void Spectral::poll_status_reg(I2C_OP rw){
     	m_i2c_mux->set_channel(m_i2c_mux_channel);
-    	while(1){
+    	for(int i = 0; i < 10; ++i){
 //			m_i2c_bus->blocking_transmit(SPECTRAL_7b_ADDRESS, I2C_AS72XX_SLAVE_STATUS_REG);
 //			uint8_t tx_buf[1];
 //			tx_buf[0] = I2C_AS72XX_SLAVE_STATUS_REG;
@@ -37,9 +39,9 @@ namespace mrover {
 			if(status){
 				switch(rw){
 				case READ:
-					if((status.value() & I2C_AS72XX_SLAVE_TX_VALID) == 0) break;
+					if((status.value() & I2C_AS72XX_SLAVE_TX_VALID) == 0) return;
 				case WRITE:
-					if((status.value() & I2C_AS72XX_SLAVE_RX_VALID) != 0) break;
+					if((status.value() & I2C_AS72XX_SLAVE_RX_VALID) != 0) return;
 				}
 //				if(write && (status.value() & I2C_AS72XX_SLAVE_TX_VALID) == 0){
 //					break;
@@ -51,6 +53,8 @@ namespace mrover {
 
 			osDelay(5); // Non blocking delay
     	}
+
+    	throw mrover::I2CRuntimeError("SPECTRAL");
     }
 
     void Spectral::init(){
@@ -64,19 +68,23 @@ namespace mrover {
 		// GAIN is 0b10, so it is 16x sensor channel gain
 		// BANK is 0b10, so data conversion is Mode 2
 		// DATA_RDY is 0 and RSVD is 0
+    	try {
+			virtual_write(CONTROL_SETUP_REG, control_data);
+			osDelay(50);
+			virtual_write(CONTROL_SETUP_REG, control_data);
+			osDelay(50);
 
-    	virtual_write(CONTROL_SETUP_REG, control_data);
-    	osDelay(50);
-    	virtual_write(CONTROL_SETUP_REG, control_data);
-    	osDelay(50);
-
-    	// Integration time = 2.8ms & 0xFF
-    	uint8_t int_time_multiplier = 0xFF;
-    	virtual_write(INT_TIME_REG, int_time_multiplier);
+			// Integration time = 2.8ms & 0xFF
+			uint8_t int_time_multiplier = 0xFF;
+			virtual_write(INT_TIME_REG, int_time_multiplier);
 
 
-		m_initialized = true;
-		m_error = false;
+			m_initialized = true;
+			m_error = false;
+    	}
+    	catch(mrover::I2CRuntimeError &e){
+    		m_initialized = false;
+		}
     }
 
     void Spectral::update_channel_data() {
@@ -110,18 +118,23 @@ namespace mrover {
     }
 
     void Spectral::virtual_write(uint8_t virtual_reg, uint8_t data){
-    	poll_status_reg(I2C_OP::WRITE);
-    	uint8_t buf[2];
-    	buf[0] = I2C_AS72XX_WRITE_REG;
-    	buf[1] = (virtual_reg | 0x80);
-    	m_i2c_bus->blocking_transmit(SPECTRAL_7b_ADDRESS, buf[0]); // How to send multiple bytes?
-//    	HAL_I2C_Master_Transmit(&hi2c1, SPECTRAL_7b_ADDRESS << 1, buf, sizeof(buf), 100);
+    	try {
+			poll_status_reg(I2C_OP::WRITE);
+			uint8_t buf[2];
+			buf[0] = I2C_AS72XX_WRITE_REG;
+			buf[1] = (virtual_reg | 0x80);
+			m_i2c_bus->blocking_transmit(SPECTRAL_7b_ADDRESS, buf[0]); // How to send multiple bytes?
+	//    	HAL_I2C_Master_Transmit(&hi2c1, SPECTRAL_7b_ADDRESS << 1, buf, sizeof(buf), 100);
 
-    	poll_status_reg(I2C_OP::WRITE);
-    	buf[0] = I2C_AS72XX_WRITE_REG;
-		buf[1] = data;
-		m_i2c_bus->blocking_transmit(SPECTRAL_7b_ADDRESS, buf[0]);
-//		HAL_I2C_Master_Transmit(&hi2c1, SPECTRAL_7b_ADDRESS << 1, buf, sizeof(buf), 100);
+			poll_status_reg(I2C_OP::WRITE);
+			buf[0] = I2C_AS72XX_WRITE_REG;
+			buf[1] = data;
+			m_i2c_bus->blocking_transmit(SPECTRAL_7b_ADDRESS, buf[0]);
+	//		HAL_I2C_Master_Transmit(&hi2c1, SPECTRAL_7b_ADDRESS << 1, buf, sizeof(buf), 100);
+    	} catch(I2CRuntimeError &e){
+    		throw mrover::I2CRuntimeError("spectral virtual write");
+		}
+
     }
 
     auto Spectral::virtual_read(uint8_t virtual_reg) -> std::optional<uint16_t>{

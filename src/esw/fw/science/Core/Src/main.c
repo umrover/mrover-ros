@@ -188,7 +188,7 @@ int main(void)
 
   /* Create the thread(s) */
   /* creation of defaultTask */
-  defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
+//  defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
 
@@ -550,7 +550,7 @@ void SpectralTask(void *argument) {
 	uint32_t tick = osKernelGetTickCount();
 
 	for(;;) {
-		tick += osKernelGetTickFreq(); // 1 Hz
+		tick = osKernelGetTickCount() + osKernelGetTickFreq(); // 1 Hz
 
 		// finish
 //		poll_spectral_status();
@@ -561,7 +561,7 @@ void SpectralTask(void *argument) {
 void ThermistorAndAutoShutoffTask(void *argument) {
 	uint32_t tick = osKernelGetTickCount();
 	for(;;) {
-		tick += osKernelGetTickFreq(); // 1 Hz
+		tick = osKernelGetTickCount() + osKernelGetTickFreq(); // 1 Hz
 
 		update_and_send_heater();
 		update_and_send_thermistor_and_auto_shutoff_if_applicable();
