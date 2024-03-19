@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <cmath>
 #include <format>
 #include <memory>
@@ -18,7 +19,6 @@
 #include <sensor_msgs/JointState.h>
 #include <std_msgs/Float32.h>
 
-#include <linear_joint_translation.hpp>
 #include <units/units.hpp>
 #include <unordered_map>
 
@@ -57,35 +57,24 @@ namespace mrover {
 
         std::vector<std::string> const mRawArmNames{"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll", "allen_key", "gripper"};
         std::vector<std::string> const mArmHWNames{"joint_a", "joint_b", "joint_c", "joint_de_0", "joint_de_1", "allen_key", "gripper"};
-        ros::Duration const mUpdateDEDuration{0.1};
 
         std::unique_ptr<ros::Publisher> mThrottlePub;
         std::unique_ptr<ros::Publisher> mVelocityPub;
         std::unique_ptr<ros::Publisher> mPositionPub;
         std::unique_ptr<ros::Publisher> mJointDataPub;
-        size_t const mJointDEPitchIndex = std::find(mRawArmNames.begin(), mRawArmNames.end(), "joint_de_pitch") - mRawArmNames.begin();
-        size_t const mJointDERollIndex = std::find(mRawArmNames.begin(), mRawArmNames.end(), "joint_de_roll") - mRawArmNames.begin();
-        size_t const mJointDE0Index = std::find(mArmHWNames.begin(), mArmHWNames.end(), "joint_de_0") - mArmHWNames.begin();
-        size_t const mJointDE1Index = std::find(mArmHWNames.begin(), mArmHWNames.end(), "joint_de_1") - mArmHWNames.begin();
 
-        size_t const mJointAIndex = std::find(mArmHWNames.begin(), mArmHWNames.end(), "joint_a") - mArmHWNames.begin();
-        std::optional<Radians> mJointDE0PosOffset = Radians{0};
-        std::optional<Radians> mJointDE1PosOffset = Radians{0};
+        size_t const mJointDEPitchIndex = std::ranges::find(mRawArmNames, "joint_de_pitch") - mRawArmNames.begin();
+        size_t const mJointDERollIndex = std::ranges::find(mRawArmNames, "joint_de_roll") - mRawArmNames.begin();
+        size_t const mJointDE0Index = std::ranges::find(mArmHWNames, "joint_de_0") - mArmHWNames.begin();
+        size_t const mJointDE1Index = std::ranges::find(mArmHWNames, "joint_de_1") - mArmHWNames.begin();
+        size_t const mJointAIndex = std::ranges::find(mArmHWNames, "joint_a") - mArmHWNames.begin();
 
-        Radians mJointDEPitchOffset;
-        Radians mJointDERollOffset;
+        // RadiansPerSecond mMinRadPerSecDE0;
+        // RadiansPerSecond mMinRadPerSecDE1;
+        // RadiansPerSecond mMaxRadPerSecDE0;
+        // RadiansPerSecond mMaxRadPerSecDE1;
 
-        std::optional<Radians> mCurrentRawJointDEPitch;
-        std::optional<Radians> mCurrentRawJointDERoll;
-        std::optional<Radians> mCurrentRawJointDE0Position;
-        std::optional<Radians> mCurrentRawJointDE1Position;
-
-        RadiansPerSecond mMinRadPerSecDE0{};
-        RadiansPerSecond mMinRadPerSecDE1{};
-        RadiansPerSecond mMaxRadPerSecDE0{};
-        RadiansPerSecond mMaxRadPerSecDE1{};
-
-        RadiansPerMeter mJointALinMult{}; // TODO: need to be rev/meter for velocity....
+        RadiansPerMeter mJointARadiansToMeters;
 
         // ros::Subscriber mJointDEPitchPosSub;
         // ros::Subscriber mJointDERollPosSub;
@@ -95,7 +84,6 @@ namespace mrover {
         ros::Subscriber mPositionSub;
         ros::Subscriber mArmHWJointDataSub;
 
-
         // TODO:(owen) unique_ptr servers? unique_ptr clients? Both? Neither? The world may never know. (try to learn)
         std::unordered_map<std::string, ros::ServiceServer> mAdjustServersByRawArmNames;
         // std::unordered_map<std::string, std::unique_ptr<ros::ServiceServer> > mCalibrateServer;
@@ -103,12 +91,7 @@ namespace mrover {
         std::unordered_map<std::string, ros::ServiceClient> mAdjustClientsByArmHWNames;
         // std::unique_ptr<ros::ServiceClient> mCalibrateClient;
 
-        ros::Timer mUpdateDETimer;
-
         std::unordered_map<std::string, ros::Publisher> mAdjustMotorsPub;
-
-        std::optional<float> mJointDEPitchAdjust;
-        std::optional<float> mJointDERollAdjust;
     };
 
 } // namespace mrover
