@@ -34,6 +34,10 @@ namespace mrover {
             SE3d arm_position = SE3Conversions::fromTfTree(mTfBuffer, "arm_e_link", "zed_left_camera_frame");
             double distance = pow(pow(arm_position.x() + ArmController::END_EFFECTOR_LENGTH - pose.position.x, 2) + pow(arm_position.y() - pose.position.y, 2) + pow(arm_position.z() - pose.position.z, 2), 0.5);
             ROS_INFO("Distance to target: %f", distance);
+            mrover::ClickIkFeedback feedback;
+            feedback.distance = static_cast<float>(distance);
+            server.publishFeedback(feedback);
+            
             if (distance < tolerance) {
                 timer.stop();
                 mrover::ClickIkResult result;
