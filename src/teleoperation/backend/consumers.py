@@ -12,6 +12,7 @@ from channels.generic.websocket import JsonWebsocketConsumer
 import rospy
 import tf2_ros
 import cv2
+
 # from cv_bridge import CvBridge
 from geometry_msgs.msg import Twist
 from mrover.msg import (
@@ -28,9 +29,9 @@ from mrover.msg import (
     Velocity,
     Position,
     IK,
-    SpectralGroup
+    SpectralGroup,
 )
-from mrover.srv import EnableAuton, AdjustMotor, ChangeCameras, CapturePanorama #, CapturePhoto
+from mrover.srv import EnableAuton, AdjustMotor, ChangeCameras, CapturePanorama  # , CapturePhoto
 from sensor_msgs.msg import NavSatFix, Temperature, RelativeHumidity, Image
 from std_msgs.msg import String, Bool
 from std_srvs.srv import SetBool, Trigger
@@ -94,8 +95,10 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.sa_humidity_data = rospy.Subscriber(
                 "/sa_humidity_data", RelativeHumidity, self.sa_humidity_data_callback
             )
-            self.sa_thermistor_data = rospy.Subscriber("/science_thermistors", Temperature, self.sa_thermistor_data_callback)
-            self.science_spectral = rospy.Subscriber('/science_spectral',SpectralGroup, self.science_spectral_callback)
+            self.sa_thermistor_data = rospy.Subscriber(
+                "/science_thermistors", Temperature, self.sa_thermistor_data_callback
+            )
+            self.science_spectral = rospy.Subscriber("/science_spectral", SpectralGroup, self.science_spectral_callback)
 
             # Services
             self.laser_service = rospy.ServiceProxy("enable_arm_laser", SetBool)
@@ -243,7 +246,7 @@ class GUIConsumer(JsonWebsocketConsumer):
                 * (self.brushed_motors[joint_name]["max_velocity"] - self.brushed_motors[joint_name]["min_velocity"])
                 / 2
             )
-        
+
     def handle_controls_message(self, msg):
         CACHE = ["cache"]
         SA_NAMES = ["sa_x", "sa_y", "sa_z", "sampler", "sensor_actuator"]
@@ -253,9 +256,9 @@ class GUIConsumer(JsonWebsocketConsumer):
         left_trigger = raw_left_trigger if raw_left_trigger > 0 else 0
         raw_right_trigger = msg["axes"][self.xbox_mappings["right_trigger"]]
         right_trigger = raw_right_trigger if raw_right_trigger > 0 else 0
-        arm_pubs = [self.arm_position_cmd_pub,self.arm_velocity_cmd_pub,self.arm_throttle_cmd_pub,self.arm_ik_pub]
-        sa_pubs = [self.sa_position_cmd_pub,self.sa_velocity_cmd_pub,self.sa_throttle_cmd_pub]
-        cache_pubs = [self.cache_position_cmd_pub,self.cache_velocity_cmd_pub,self.cache_throttle_cmd_pub]
+        arm_pubs = [self.arm_position_cmd_pub, self.arm_velocity_cmd_pub, self.arm_throttle_cmd_pub, self.arm_ik_pub]
+        sa_pubs = [self.sa_position_cmd_pub, self.sa_velocity_cmd_pub, self.sa_throttle_cmd_pub]
+        cache_pubs = [self.cache_position_cmd_pub, self.cache_velocity_cmd_pub, self.cache_throttle_cmd_pub]
         publishers = []
         controls_names = []
         if msg["type"] == "cache_values":
@@ -277,22 +280,30 @@ class GUIConsumer(JsonWebsocketConsumer):
 
             right_trigger = self.filter_xbox_axis(msg["axes"][self.xbox_mappings["right_trigger"]])
             if right_trigger < 0:
-                right_trigger = 0  
-            base_link_in_map.position[0]+= self.ik_names["x"]*self.filter_xbox_axis(msg["axes"][self.xbox_mappings["left_js_x"]]),
-            base_link_in_map.position[1]+= self.ik_names["y"]*self.filter_xbox_axis(msg["axes"][self.xbox_mappings["left_js_y"]]),
-            base_link_in_map.position[2]-=self.ik_names["z"]*left_trigger+self.ik_names["z"]*right_trigger
-           
-            arm_ik_cmd = IK(pose=Pose(position=Point(*base_link_in_map.position), orientation=Quaternion(*base_link_in_map.rotation.quaternion)))
-            publishers[3].publish(arm_ik_cmd)
+                right_trigger = 0
+            base_link_in_map.position[0] += (
+                self.ik_names["x"] * self.filter_xbox_axis(msg["axes"][self.xbox_mappings["left_js_x"]]),
+            )
+            base_link_in_map.position[1] += (
+                self.ik_names["y"] * self.filter_xbox_axis(msg["axes"][self.xbox_mappings["left_js_y"]]),
+            )
+            base_link_in_map.position[2] -= self.ik_names["z"] * left_trigger + self.ik_names["z"] * right_trigger
 
+            arm_ik_cmd = IK(
+                pose=Pose(
+                    position=Point(*base_link_in_map.position),
+                    orientation=Quaternion(*base_link_in_map.rotation.quaternion),
+                )
+            )
+            publishers[3].publish(arm_ik_cmd)
 
         if msg["arm_mode"] == "position":
             position_names = controls_names
             if msg["type"] == "arm_values":
                 position_names = ["joint_b", "joint_c", "joint_de_pitch", "joint_de_roll"]
             position_cmd = Position(
-            names=position_names,
-            positions=msg["positions"],
+                names=position_names,
+                positions=msg["positions"],
             )
             publishers[0].publish(position_cmd)
 
@@ -301,52 +312,53 @@ class GUIConsumer(JsonWebsocketConsumer):
             velocity_cmd.names = controls_names
             if msg["type"] == "cache_values":
                 velocity_cmd.velocities = [
-                            self.sa_config["cache"]["multiplier"] *self.filter_xbox_button(msg["buttons"], 
-                            "right_bumper", "left_bumper")
+                    self.sa_config["cache"]["multiplier"]
+                    * self.filter_xbox_button(msg["buttons"], "right_bumper", "left_bumper")
                 ]
             elif msg["type"] == "sa_arm_values":
                 velocity_cmd.velocities = [
-                self.to_velocity(
-                    self.filter_xbox_axis(msg["axes"][self.sa_config["sa_x"]["xbox_index"]]), "sa_x", False
-                ),
-                self.to_velocity(
-                    self.filter_xbox_axis(msg["axes"][self.sa_config["sa_y"]["xbox_index"]]), "sa_y", False
-                ),
-                self.to_velocity(
-                    self.filter_xbox_axis(msg["axes"][self.sa_config["sa_z"]["xbox_index"]]), "sa_z", True
-                ),
-                self.sa_config["sampler"]["multiplier"] * (right_trigger - left_trigger),
-                self.sa_config["sensor_actuator"]["multiplier"]
-                * self.filter_xbox_button(msg["buttons"], "right_bumper", "left_bumper"),
+                    self.to_velocity(
+                        self.filter_xbox_axis(msg["axes"][self.sa_config["sa_x"]["xbox_index"]]), "sa_x", False
+                    ),
+                    self.to_velocity(
+                        self.filter_xbox_axis(msg["axes"][self.sa_config["sa_y"]["xbox_index"]]), "sa_y", False
+                    ),
+                    self.to_velocity(
+                        self.filter_xbox_axis(msg["axes"][self.sa_config["sa_z"]["xbox_index"]]), "sa_z", True
+                    ),
+                    self.sa_config["sampler"]["multiplier"] * (right_trigger - left_trigger),
+                    self.sa_config["sensor_actuator"]["multiplier"]
+                    * self.filter_xbox_button(msg["buttons"], "right_bumper", "left_bumper"),
                 ]
             elif msg["type"] == "arm_values":
                 velocity_cmd.velocities = [
-                self.to_velocity(
-                    self.filter_xbox_axis(msg["axes"][self.ra_config["joint_a"]["xbox_index"]]), "joint_a"
-                ),
-                self.to_velocity(
-                    self.filter_xbox_axis(msg["axes"][self.ra_config["joint_b"]["xbox_index"]]), "joint_b", False
-                ),
-                self.to_velocity(
-                    self.filter_xbox_axis(msg["axes"][self.ra_config["joint_c"]["xbox_index"]]), "joint_c"
-                ),
-                self.to_velocity(
-                    self.filter_xbox_axis(msg["axes"][self.ra_config["joint_de_pitch"]["xbox_index"]]), "joint_de_0"
-                ),
-                self.to_velocity(
-                    self.filter_xbox_axis(msg["axes"][self.ra_config["joint_de_roll"]["xbox_index"]]), "joint_de_1"
-                ),
-                self.ra_config["allen_key"]["multiplier"] * self.filter_xbox_button(msg["buttons"], "y", "a"),
-                self.ra_config["gripper"]["multiplier"] * self.filter_xbox_button(msg["buttons"], "b", "x"),
+                    self.to_velocity(
+                        self.filter_xbox_axis(msg["axes"][self.ra_config["joint_a"]["xbox_index"]]), "joint_a"
+                    ),
+                    self.to_velocity(
+                        self.filter_xbox_axis(msg["axes"][self.ra_config["joint_b"]["xbox_index"]]), "joint_b", False
+                    ),
+                    self.to_velocity(
+                        self.filter_xbox_axis(msg["axes"][self.ra_config["joint_c"]["xbox_index"]]), "joint_c"
+                    ),
+                    self.to_velocity(
+                        self.filter_xbox_axis(msg["axes"][self.ra_config["joint_de_pitch"]["xbox_index"]]), "joint_de_0"
+                    ),
+                    self.to_velocity(
+                        self.filter_xbox_axis(msg["axes"][self.ra_config["joint_de_roll"]["xbox_index"]]), "joint_de_1"
+                    ),
+                    self.ra_config["allen_key"]["multiplier"] * self.filter_xbox_button(msg["buttons"], "y", "a"),
+                    self.ra_config["gripper"]["multiplier"] * self.filter_xbox_button(msg["buttons"], "b", "x"),
                 ]
             publishers[1].publish(velocity_cmd)
-            
+
         elif msg["arm_mode"] == "throttle":
             throttle_cmd = Throttle()
             throttle_cmd.names = controls_names
             if msg["type"] == "cache_values":
                 throttle_cmd.throttles = [
-                    self.sa_config["cache"]["multiplier"] * self.filter_xbox_button(msg["buttons"], "right_bumper", "left_bumper")
+                    self.sa_config["cache"]["multiplier"]
+                    * self.filter_xbox_button(msg["buttons"], "right_bumper", "left_bumper")
                 ]
             elif msg["type"] == "sa_arm_values":
                 d_pad_x = msg["axes"][self.xbox_mappings["d_pad_x"]]
@@ -372,16 +384,17 @@ class GUIConsumer(JsonWebsocketConsumer):
                         throttle_cmd.throttles[i] *= -1
             elif msg["type"] == "sa_values":
                 throttle_cmd.throttles = [
-                    self.sa_config[name]["multiplier"] * self.filter_xbox_axis(msg["axes"][info["xbox_index"]], 0.15, True)
+                    self.sa_config[name]["multiplier"]
+                    * self.filter_xbox_axis(msg["axes"][info["xbox_index"]], 0.15, True)
                     for name, info in self.sa_config.items()
                     if name.startswith("sa")
                 ]
 
                 throttle_cmd.throttles.extend(
-                [
-                    self.sa_config["sampler"]["multiplier"] * (right_trigger - left_trigger),
-                    self.sa_config["sensor_actuator"]["multiplier"]
-                    * self.filter_xbox_button(msg["buttons"], "right_bumper", "left_bumper"),
+                    [
+                        self.sa_config["sampler"]["multiplier"] * (right_trigger - left_trigger),
+                        self.sa_config["sensor_actuator"]["multiplier"]
+                        * self.filter_xbox_button(msg["buttons"], "right_bumper", "left_bumper"),
                     ]
                 )
 
@@ -500,14 +513,14 @@ class GUIConsumer(JsonWebsocketConsumer):
                     fail.append(joint)
             except rospy.ServiceException as e:
                 print(f"Service call failed: {e}")
-                
+
     def sa_uv_bulb_callback(self, msg):
         try:
             result = self.toggle_uv(data=msg["data"])
             self.send(text_data=json.dumps({"type": "toggle_uv", "result": result.success}))
         except rospy.ServiceException as e:
             rospy.logerr(f"Service call failed: {e}")
-    
+
     def enable_white_leds_callback(self, msg):
         for i in range(0, 3):
             white_led_name = f"science_enable_white_led_{i}"
@@ -699,7 +712,7 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.send(text_data=json.dumps({"type": "science_enable", "result": result.success}))
         except rospy.ServiceException as e:
             print(f"Service init failed: {e}")
-    
+
     def auto_shutoff_toggle(self, msg):
         try:
             rospy.logerr(msg)
@@ -790,33 +803,29 @@ class GUIConsumer(JsonWebsocketConsumer):
             data.append(spectral.data)
             error.append(spectral.error)
 
-        self.send(text_data=json.dumps({
-            'type': 'spectral_data',
-            'data': data,
-            'error': error
-        }))
+        self.send(text_data=json.dumps({"type": "spectral_data", "data": data, "error": error}))
 
     def download_csv(self, msg):
         username = os.getenv("USERNAME", "-1")
 
-        now = datetime.now(pytz.timezone('US/Eastern'))
+        now = datetime.now(pytz.timezone("US/Eastern"))
         current_time = now.strftime("%m/%d/%Y-%H:%M")
-        spectral_data = msg['data']
+        spectral_data = msg["data"]
 
-        site_names = ['A', 'B', 'C']
+        site_names = ["A", "B", "C"]
         index = 0
 
         # add site letter in front of data
         for site_data in spectral_data:
-            site_data.insert(0, f'Site {site_names[index]}')
+            site_data.insert(0, f"Site {site_names[index]}")
             index = index + 1
 
-        time_row = ['Time', current_time]
+        time_row = ["Time", current_time]
         spectral_data.insert(0, time_row)
 
         if username == "-1":
             rospy.logerr("username not found")
 
-        with open(os.path.join(f'/home/{username}/Downloads/spectral_data.csv'), 'w') as f:
+        with open(os.path.join(f"/home/{username}/Downloads/spectral_data.csv"), "w") as f:
             csv_writer = csv.writer(f)
-            csv_writer.writerows(spectral_data)        
+            csv_writer.writerows(spectral_data)
