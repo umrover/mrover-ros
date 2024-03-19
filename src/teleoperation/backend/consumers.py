@@ -110,7 +110,6 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.change_cameras_srv = rospy.ServiceProxy("change_cameras", ChangeCameras)
             self.capture_panorama_srv = rospy.ServiceProxy("capture_panorama", CapturePanorama)
             self.heater_auto_shutoff_srv = rospy.ServiceProxy("science_change_heater_auto_shutoff_state", SetBool)
-            # self.capture_photo_srv = rospy.ServiceProxy("capture_photo", CapturePhoto)
 
             # ROS Parameters
             self.mappings = rospy.get_param("teleop/joystick_mappings")
@@ -186,8 +185,6 @@ class GUIConsumer(JsonWebsocketConsumer):
                 self.change_cameras(message)
             elif message["type"] == "takePanorama":
                 self.capture_panorama()
-            elif message["type"] == "capturePhoto":
-                self.capture_photo()
             elif message["type"] == "heaterEnable":
                 self.heater_enable_service(message)
             elif message["type"] == "autoShutoff":
@@ -677,14 +674,6 @@ class GUIConsumer(JsonWebsocketConsumer):
             # self.image_callback(image)
         except rospy.ServiceException as e:
             print(f"Service call failed: {e}")
-
-    # def capture_photo(self):
-    #     try:
-    #         response = self.capture_photo_srv()
-    #         image = response.photo
-    #         self.image_callback(image)
-    #     except rospy.ServiceException as e:
-    #         print(f"Service call failed: {e}")
 
     # def image_callback(self, msg):
     #     bridge = CvBridge()

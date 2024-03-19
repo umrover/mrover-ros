@@ -39,7 +39,7 @@
     </div>
     <div class="capture sample picture">
       <div class="d-flex justify-content-end">
-        <button class="btn btn-primary btn-lg cutstom-btn" @click="capturePhoto()">Capture Photo</button>
+        <button class="btn btn-primary btn-lg cutstom-btn" @click="capture_photo()">Capture Photo</button>
       </div>
     </div>
   </div>
@@ -148,12 +148,17 @@ export default {
 
     sendHeaterRequest: function (id) {
       this.heaters[id].enabled = !this.heaters[id].enabled;
+      var heaterName = getHeaterName(id)
+      this.sendMessage({ type: "heaterEnable", enabled: this.heaters[id].enabled, heater: heaterName});
+    },
+
+    getHeaterName(id) {
       var heaterName = "b";
       if (this.isAmino) {
         heaterName = "n"
       }
       heaterName += id
-      this.sendMessage({ type: "heaterEnable", enabled: this.heaters[id].enabled, heater: heaterName});
+      return heaterName
     },
 
     sendAutoShutdownCmd: function (enabled) {
@@ -161,9 +166,28 @@ export default {
       this.sendMessage({ type: "autoShutoff", shutoff: this.autoShutdownIntended });
     },
 
-    capturePhoto() {
-      this.sendMessage({ type: "capturePhoto" }); 
-    }
+    //screenshot
+    capture_photo: function() {
+      // downloads screenshots of sites
+      for(var i=0; i<4; ++i) {
+        const camera = document.querySelector("#canvas"+i) as HTMLElement;
+        var name = getHeaterName(i)
+        html2canvas(camera)
+        .then(canvas => {
+          canvas.style.display = 'none'
+          document.body.appendChild(canvas)
+          return canvas
+        })
+        .then(canvas => {
+          const image = canvas.toDataURL('image/png')
+          const a = document.createElement('a')
+          a.setAttribute('download', name + '.png')
+          a.setAttribute('href', image)
+          a.click()
+          canvas.remove()
+        })
+      }
+    },
   }
 };
 </script>
