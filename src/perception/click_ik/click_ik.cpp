@@ -24,7 +24,7 @@ namespace mrover {
 
         message.target.pose = pose;
         message.target.header.frame_id = "zed_left_camera_frame";
-        timer = mNh.createTimer(ros::Duration(20 / 1000.0), [&](const ros::TimerEvent) {
+        timer = mNh.createTimer(ros::Duration(0.010), [&, pose](const ros::TimerEvent) {
             if (server.isPreemptRequested()) {
                 timer.stop();
                 return;
