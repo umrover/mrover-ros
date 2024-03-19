@@ -30,6 +30,7 @@ from mrover.msg import (
     Position,
     IK,
     SpectralGroup,
+    DroneWaypoint,
 )
 from mrover.srv import EnableAuton, AdjustMotor, ChangeCameras, CapturePanorama  # , CapturePhoto
 from sensor_msgs.msg import NavSatFix, Temperature, RelativeHumidity, Image
@@ -99,6 +100,7 @@ class GUIConsumer(JsonWebsocketConsumer):
                 "/science_thermistors", Temperature, self.sa_thermistor_data_callback
             )
             self.science_spectral = rospy.Subscriber("/science_spectral", SpectralGroup, self.science_spectral_callback)
+            self.drone_waypoint_sub = rospy.Subscriber("/drone_waypoint", DroneWaypoint, self.drone_waypoint_callback)
 
             # Services
             self.laser_service = rospy.ServiceProxy("enable_arm_laser", SetBool)
@@ -804,6 +806,11 @@ class GUIConsumer(JsonWebsocketConsumer):
             error.append(spectral.error)
 
         self.send(text_data=json.dumps({"type": "spectral_data", "data": data, "error": error}))
+
+    def drone_waypoint_callback(self, msg):
+        latitude = msg.latitude_degrees
+        longitude = msg.longitude_degrees
+        self.send(text_data=json.dumps({"type": "drone_waypoint", "latitude": latitude, "longitude": longitude}))
 
     def download_csv(self, msg):
         username = os.getenv("USERNAME", "-1")
