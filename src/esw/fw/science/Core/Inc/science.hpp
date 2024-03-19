@@ -112,12 +112,11 @@ namespace mrover {
         	SpectralData spectral_data;
         	// TEST just 1 spectral (id 0), replace with 0 - 3 later
         	for (int i = 0; i < 3; ++i) {
-        		try{
-        			m_spectral_sensors.at(i).update_channel_data();
+        		bool op_res = m_spectral_sensors.at(i).update_channel_data();
+        		if (!op_res){
+        			//TODO: add error handling (whatever should have been in catch) here
         		}
-        		catch(mrover::I2CRuntimeError e){
-        			//TODO: add the catch statement
-        		}
+
 
 
 

@@ -10,7 +10,6 @@
 #include <units/units.hpp>
 
 #include "main.h"
-#include "i2c_error.hpp"
 
 namespace mrover {
 

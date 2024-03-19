@@ -45,13 +45,15 @@ namespace mrover {
 
         auto blocking_transact(std::uint16_t address, TSend const& send) -> std::optional<TReceive> {
             if (HAL_I2C_Master_Transmit(m_i2c, address << 1, address_of<std::uint8_t>(send), sizeof(send), I2C_TIMEOUT) != HAL_OK) {
-                throw mrover::I2CRuntimeError("blocking_transact failed at I2C transmit call.");
+                //throw mrover::I2CRuntimeError("blocking_transact failed at I2C transmit call.");
+            	return std::nullopt;
             }
 
             //reads from address sent above
             if (TReceive receive{}; HAL_I2C_Master_Receive(m_i2c, address << 1 | 1, address_of<std::uint8_t>(receive), sizeof(receive), I2C_TIMEOUT) != HAL_OK) {
                 reboot();
-                throw mrover::I2CRuntimeError("blocking_transact failed at I2C receive.");
+                //throw mrover::I2CRuntimeError("blocking_transact failed at I2C receive.");
+                return std::nullopt;
             } else {
                 return receive;
             }
