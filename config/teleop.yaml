@@ -57,7 +57,9 @@ teleop:
     sensor_actuator:
       multiplier: 1
       slow_mode_multiplier: 0.5
-      xbox_index: 5
+    cache:
+      multiplier: 1
+      xbox_index: 4
 
   drive_controls:
     forward_back:

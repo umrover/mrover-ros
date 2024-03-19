@@ -41,21 +41,17 @@
     <div>
       <button class="btn btn-primary" @click="download_data(spectral_data)">Generate Report</button>
     </div>
-    <!-- <GenerateReport :spectral_data="spectral_data" /> -->
   </div>
 </template>
 
 <script lang="ts">
 import html2canvas from "html2canvas";
 import ToggleButton from "./ToggleButton.vue";
-// import ROSLIB from "roslib";
-// import GenerateReport from "./GenerateReport.vue";
 import { mapState, mapActions } from 'vuex'
 
 export default {
   components: {
     ToggleButton,
-    // GenerateReport,
   },
 
   data() {
@@ -66,27 +62,26 @@ export default {
     };
   },
 
+  computed: {
+    ...mapState('websocket', ['message'])
+  },
+
+  watch: {
+    message(msg) {
+      if (msg.type == 'spectral_data') {
+        this.spectral_data = msg.data
+        this.error = msg.error
+      }
+      // TODO: get white LED message back and fix toggle if need be
+    }
+  },
+
   methods: {
     ...mapActions('websocket', ['sendMessage']),
 
     toggle_whiteLEDS: function () {
       this.whiteLEDS_active = !this.whiteLEDS_active;
       this.sendMessage({ type: 'enable_white_leds', data: this.whiteLEDS_active })
-      // let whiteLedService = new ROSLIB.Service({
-      //   ros: this.$ros,
-      //   name: "enable_mosfet_device",
-      //   serviceType: "mrover/EnableDevice",
-      // });
-      // let request = new ROSLIB.ServiceRequest({
-      //   name: "white_led",
-      //   enable: this.whiteLEDS_active,
-      // });
-      // whiteLedService.callService(request, (result) => {
-      //   if (!result) {
-      //     this.whiteLEDS_active = !this.whiteLEDS_active;
-      //     alert("Toggling white LEDs failed.");
-      //   }
-      // });
     },
 
     download_data: function(spectral_data: any) {
@@ -112,29 +107,10 @@ export default {
     },
   },
 
-  computed: {
-    ...mapState('websocket', ['message'])
-  },
-
-  watch: {
-    message(msg) {
-      if (msg.type == 'spectral_data') {
-        this.spectral_data = msg.data
-        this.error = msg.error
-        console.log(this.spectral_data)
-        console.log(this.error)
-      }
-    }
-  }
 };
 </script>
 
 <style scoped>
-/*.box1 {
-  text-align: left;
-  vertical-align: top;
-  display: inline-block;
-}*/
 
 .wrap-table {
   display: inline-block;
@@ -147,41 +123,4 @@ export default {
   margin-left: 10px;
 }
 
-/*.report {
-  height: 5vh;
-  align-items: center;
-  padding-top: 3vh;
-}
-
-.tableFormat {
-  border-collapse: collapse;
-  border-spacing: 0;
-}
-
-.tableFormat td {
-  border-color: black;
-  border-style: solid;
-  border-width: 1px;
-  font-size: 14px;
-  overflow: hidden;
-  padding: 5px 5px;
-  word-break: normal;
-}
-
-.tableFormat th {
-  border-color: black;
-  border-style: solid;
-  border-width: 1px;
-  font-size: 14px;
-  font-weight: normal;
-  overflow: hidden;
-  padding: 10px 5px;
-  word-break: normal;
-}
-
-.tableFormat .tableElement {
-  border-color: inherit;
-  text-align: center;
-  vertical-align: top;
-}*/
 </style>
