@@ -7,27 +7,27 @@ teleop:
       multiplier: 1
       slow_mode_multiplier: 0.5
       invert: False
-      xbox_index: 0
+      xbox_index: 0 #left_js_x (see xbox mappings below for full chart)
     joint_b:
       multiplier: -1
       slow_mode_multiplier: 1
       invert: True
-      xbox_index: 1
+      xbox_index: 1 #left_js_y
     joint_c:
       multiplier: -1
       slow_mode_multiplier: 0.6
       invert: True
-      xbox_index: 4
+      xbox_index: 4 #right_js_y
     joint_de_pitch:
       multiplier: 0.5
       slow_mode_multiplier: 1
       invert: False
-      xbox_index: 2
+      xbox_index: 2 #left_trigger
     joint_de_roll:
       multiplier: 0.5
       slow_mode_multiplier: 1
       invert: False
-      xbox_index: 5
+      xbox_index: 5 #right_trigger
     allen_key:
       multiplier: 1
       slow_mode_multiplier: 1
@@ -41,25 +41,25 @@ teleop:
     sa_x:
       multiplier: 1
       slow_mode_multiplier: 0.5
-      xbox_index: 1
+      xbox_index: 1 #left_js_y
     sa_y:
       multiplier: -1
       slow_mode_multiplier: 0.5
-      xbox_index: 0
+      xbox_index: 0 #left_js_x
     sa_z:
       multiplier: -1
       slow_mode_multiplier: 0.5
-      xbox_index: 4
+      xbox_index: 4 #right_js_y
     sampler:
       multiplier: 1
       slow_mode_multiplier: 1.0
-      xbox_index: 5
+      xbox_index: 5 #right_trigger
     sensor_actuator:
       multiplier: 1
       slow_mode_multiplier: 0.5
     cache:
       multiplier: 1
-      xbox_index: 4
+      xbox_index: 4 #left_bumper
 
   drive_controls:
     forward_back:
