@@ -25,7 +25,10 @@ from mrover.msg import (
     Velocity,
     Position,
     IK,
+    ClickIkAction,
+    ClickIkGoal
 )
+import actionlib
 from mrover.srv import EnableAuton, ChangeCameras, CapturePanorama
 from sensor_msgs.msg import NavSatFix, Temperature, RelativeHumidity, Image
 from mrover.srv import EnableAuton
@@ -91,6 +94,9 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.sa_humidity_data = rospy.Subscriber(
                 "/sa_humidity_data", RelativeHumidity, self.sa_humidity_data_callback
             )
+            
+            # Action clients
+            self.click_ik_client = actionlib.SimpleActionClient('do_click_ik', ClickIkAction)
 
             # Services
             self.laser_service = rospy.ServiceProxy("enable_arm_laser", SetBool)
@@ -180,6 +186,10 @@ class GUIConsumer(JsonWebsocketConsumer):
                 self.save_basic_waypoint_list(message)
             elif message["type"] == "get_basic_waypoint_list":
                 self.get_basic_waypoint_list(message)
+            elif message["type"] == "start_click_ik":
+                self.start_click_ik(message)
+            elif message["type"] == "cancel_click_ik":
+                self.cancel_click_ik(message)
         except Exception as e:
             rospy.logerr(e)
 
@@ -713,3 +723,13 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.send(text_data=json.dumps({"type": "flight_attitude", "pitch": pitch, "roll": roll}))
 
             rate.sleep()
+    
+    def start_click_ik(self, msg) -> None:
+        self.click_ik_client.wait_for_server()
+        goal = ClickIkGoal()
+        goal.pointInImageX = msg["x"]
+        goal.pointInImageY = msg["y"]
+        self.click_ik_client.send_goal(goal)
+
+    def cancel_click_ik(self, msg) -> None:
+        self.click_ik_client.cancel_all_goals()

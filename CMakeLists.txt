@@ -48,15 +48,19 @@ set(MROVER_ROS_DEPENDENCIES
         tf2
         tf2_ros
         tf2_geometry_msgs
+        actionlib_msgs
 )
 
 extract_filenames(msg/*.msg MROVER_MESSAGE_FILES)
 
 extract_filenames(srv/*.srv MROVER_SERVICE_FILES)
 
+extract_filenames(action/*.action MROVER_ACTION_FILES)
+
 set(MROVER_MESSAGE_DEPENDENCIES
         std_msgs
         sensor_msgs
+        actionlib_msgs
 )
 
 set(MROVER_PARAMETERS
@@ -96,13 +100,15 @@ endforeach ()
 
 set(BUILD_SHARED_LIBS ON)
 
-### ======== ###
-### Messages ###
-### ======== ###
+### ================================ ###
+### Messages & Actions & Reconfigure ###
+### ================================ ###
 
 add_message_files(FILES ${MROVER_MESSAGE_FILES})
 
 add_service_files(FILES ${MROVER_SERVICE_FILES})
+
+add_action_files(DIRECTORY action FILES ${MROVER_ACTION_FILES})
 
 generate_messages(DEPENDENCIES ${MROVER_MESSAGE_DEPENDENCIES})
 
@@ -175,6 +181,9 @@ mrover_nodelet_link_libraries(long_range_tag_detector opencv_core opencv_objdete
 mrover_add_nodelet(usb_camera src/perception/usb_camera/*.cpp src/perception/usb_camera src/perception/usb_camera/pch.hpp)
 mrover_nodelet_link_libraries(usb_camera opencv_core opencv_objdetect opencv_aruco opencv_imgproc opencv_highgui)
 
+mrover_add_nodelet(click_ik src/perception/click_ik/*.cpp src/perception/click_ik src/perception/click_ik/pch.hpp)
+mrover_nodelet_link_libraries(click_ik lie)
+
 if (CUDA_FOUND)
 #    mrover_add_node(nv_vid_codec_h265_enc src/esw/nv_vid_codec_h265_enc/*.c*)
 #    target_link_libraries(nv_vid_codec_h265_enc PUBLIC cuda nvidia-encode opencv_core opencv_imgproc streaming)
@@ -212,6 +221,7 @@ endif ()
 ## Teleoperation
 
 mrover_add_node(arm_controller src/teleoperation/arm_controller/*.cpp)
+target_link_libraries(arm_controller PRIVATE lie)
 
 ## Simulator
 

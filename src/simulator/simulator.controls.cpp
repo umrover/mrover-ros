@@ -155,9 +155,10 @@ namespace mrover {
     auto SimulatorNodelet::userControls(Clock::duration dt) -> void {
         if (mPublishIk) {
             IK ik;
-            ik.pose.position.x = mIkTarget.x();
-            ik.pose.position.y = mIkTarget.y();
-            ik.pose.position.z = mIkTarget.z();
+            ik.target.pose.position.x = mIkTarget.x();
+            ik.target.pose.position.y = mIkTarget.y();
+            ik.target.pose.position.z = mIkTarget.z();
+            ik.target.header.frame_id = "joint_a_static";
             mIkTargetPub.publish(ik);
         }
 
