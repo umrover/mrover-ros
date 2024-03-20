@@ -4,6 +4,7 @@
 #include <cmath>
 #include <format>
 #include <memory>
+#include <unordered_map>
 
 #include <XmlRpcValue.h>
 #include <ros/duration.h>
@@ -11,7 +12,6 @@
 
 #include <mrover/AdjustMotor.h>
 #include <mrover/ControllerState.h>
-#include <mrover/MotorsAdjust.h>
 #include <mrover/Position.h>
 #include <mrover/Throttle.h>
 #include <mrover/Velocity.h>
@@ -19,8 +19,9 @@
 #include <sensor_msgs/JointState.h>
 #include <std_msgs/Float32.h>
 
+#include <Eigen/Core>
+
 #include <units/units.hpp>
-#include <unordered_map>
 
 namespace mrover {
 
@@ -30,31 +31,17 @@ namespace mrover {
 
         explicit ArmTranslator(ros::NodeHandle& nh);
 
-        // auto processPitchRawPositionData(std_msgs::Float32::ConstPtr const& msg) -> void;
-
-        // auto processRollRawPositionData(std_msgs::Float32::ConstPtr const& msg) -> void;
-
         auto processVelocityCmd(Velocity::ConstPtr const& msg) -> void;
 
         auto processPositionCmd(Position::ConstPtr const& msg) -> void;
 
         auto processThrottleCmd(Throttle::ConstPtr const& msg) const -> void;
 
-        auto processArmHWJointData(sensor_msgs::JointState::ConstPtr const& msg) -> void;
+        auto processJointState(sensor_msgs::JointState::ConstPtr const& msg) -> void;
 
-        auto adjustServiceCallback(AdjustMotor::Request& req, AdjustMotor::Response& res) -> bool;
-
-        auto updateDEEncoderStates(ros::TimerEvent const&) -> void;
+        auto updateDeOffsets(ros::TimerEvent const&) -> void;
 
     private:
-        // static void clampValues(float& val1, float& val2, float minValue1, float maxValue1, float minValue2, float maxValue2);
-
-        static void mapValue(float& val, float inputMinValue, float inputMaxValue, float outputMinValue, float outputMaxValue);
-
-        [[nodiscard]] auto jointDEIsCalibrated() const -> bool;
-
-        auto updatePositionOffsets() -> void;
-
         std::vector<std::string> const mRawArmNames{"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll", "allen_key", "gripper"};
         std::vector<std::string> const mArmHWNames{"joint_a", "joint_b", "joint_c", "joint_de_0", "joint_de_1", "allen_key", "gripper"};
 
@@ -63,16 +50,20 @@ namespace mrover {
         std::unique_ptr<ros::Publisher> mPositionPub;
         std::unique_ptr<ros::Publisher> mJointDataPub;
 
-        size_t const mJointDEPitchIndex = std::ranges::find(mRawArmNames, "joint_de_pitch") - mRawArmNames.begin();
-        size_t const mJointDERollIndex = std::ranges::find(mRawArmNames, "joint_de_roll") - mRawArmNames.begin();
-        size_t const mJointDE0Index = std::ranges::find(mArmHWNames, "joint_de_0") - mArmHWNames.begin();
-        size_t const mJointDE1Index = std::ranges::find(mArmHWNames, "joint_de_1") - mArmHWNames.begin();
-        size_t const mJointAIndex = std::ranges::find(mArmHWNames, "joint_a") - mArmHWNames.begin();
+        std::size_t const mJointDEPitchIndex = std::ranges::find(mRawArmNames, "joint_de_pitch") - mRawArmNames.begin();
+        std::size_t const mJointDERollIndex = std::ranges::find(mRawArmNames, "joint_de_roll") - mRawArmNames.begin();
+        std::size_t const mJointDE0Index = std::ranges::find(mArmHWNames, "joint_de_0") - mArmHWNames.begin();
+        std::size_t const mJointDE1Index = std::ranges::find(mArmHWNames, "joint_de_1") - mArmHWNames.begin();
+        std::size_t const mJointAIndex = std::ranges::find(mArmHWNames, "joint_a") - mArmHWNames.begin();
+
+        ros::Timer mDeOffsetTimer;
 
         // RadiansPerSecond mMinRadPerSecDE0;
         // RadiansPerSecond mMinRadPerSecDE1;
         // RadiansPerSecond mMaxRadPerSecDE0;
         // RadiansPerSecond mMaxRadPerSecDE1;
+
+        std::optional<Eigen::Vector2<Radians>> mJointDePitchRoll;
 
         RadiansPerMeter mJointARadiansToMeters;
 
@@ -82,16 +73,9 @@ namespace mrover {
         ros::Subscriber mThrottleSub;
         ros::Subscriber mVelocitySub;
         ros::Subscriber mPositionSub;
-        ros::Subscriber mArmHWJointDataSub;
+        ros::Subscriber mJointDataSub;
 
-        // TODO:(owen) unique_ptr servers? unique_ptr clients? Both? Neither? The world may never know. (try to learn)
-        std::unordered_map<std::string, ros::ServiceServer> mAdjustServersByRawArmNames;
-        // std::unordered_map<std::string, std::unique_ptr<ros::ServiceServer> > mCalibrateServer;
-
-        std::unordered_map<std::string, ros::ServiceClient> mAdjustClientsByArmHWNames;
-        // std::unique_ptr<ros::ServiceClient> mCalibrateClient;
-
-        std::unordered_map<std::string, ros::Publisher> mAdjustMotorsPub;
+        std::unordered_map<std::string, ros::ServiceClient> mAdjustClientsByArmHwNames;
     };
 
 } // namespace mrover
