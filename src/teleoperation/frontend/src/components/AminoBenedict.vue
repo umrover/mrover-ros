@@ -11,7 +11,7 @@
         @change="toggleHeater(siteIndex)"
       />
       <p :style="{ color: heaters[siteIndex].color }">
-        Thermistor {{ site }}: {{ heaters[siteIndex].temp.toFixed(2) }} C°
+        Thermistor {{ site }}: {{ (heaters[siteIndex].temp).toFixed(2) }} C°
       </p>
     </div>
     <div class="comms heaterStatus">
@@ -48,7 +48,7 @@
 <script>
 import ToggleButton from "./ToggleButton.vue";
 import LEDIndicator from "./LEDIndicator.vue";
-import { mapActions } from 'vuex';
+import { mapState, mapActions } from 'vuex';
 
 let interval;
 
@@ -73,7 +73,7 @@ export default {
     message(msg) {
       if (msg.type == 'heaterEnable') {
         if (!msg.result) {
-          this.heaters[id].enabled = !this.heaters[id].enabled
+          this.heaters[this.siteIndex].enabled = !this.heaters[this.siteIndex].enabled
           alert('Toggling Heater Enable failed.')
         }
       }
@@ -89,10 +89,10 @@ export default {
           heaterID = 'n'
         }
         if (heaterID == 'n') {
-          this.heathers[id].temp = msg.thermistor_data[id*2]
+          this.heaters[this.siteIndex].temp = msg.temps[this.siteIndex*2]
         }
         else if (heaterID == 'b') {
-          this.heathers[id].temp = msg.thermistor_data[(id*2)+1]
+          this.heaters[this.siteIndex].temp = msg.temps[(this.siteIndex*2)+1]
         }
       }
     }
@@ -136,6 +136,10 @@ export default {
 
   created: function () {
     this.siteIndex = this.site.charCodeAt(0) - 65;
+  },
+
+  computed: {
+    ...mapState('websocket', ['message'])
   },
 
   methods: {

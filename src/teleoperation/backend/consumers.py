@@ -636,13 +636,14 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.send(text_data=json.dumps({"type": "nav_state", "state": msg.state}))
 
     def sa_temp_data_callback(self, msg):
-        self.send(text_data=json.dumps(obj={"type": "temp_data", "temp_data": msg.temperature}))
+        self.send(text_data=json.dumps({"type": "temp_data", "temp_data": msg.temperature}))
 
     def sa_humidity_data_callback(self, msg):
-        self.send(text_data=json.dumps(obj={"type": "relative_humidity", "humidity_data": msg.relative_humidity}))
+        self.send(text_data=json.dumps({"type": "relative_humidity", "humidity_data": msg.relative_humidity}))
 
     def sa_thermistor_data_callback(self, msg):
-        self.send(text_data=json.dumps(obj={"type": "thermistor", "temps": msg.temps}))
+        temps = [x.temperature for x in msg.temps]
+        self.send(text_data=json.dumps({"type": "thermistor", "temps": temps}))
 
     def auton_bearing(self):
         base_link_in_map = SE3.from_tf_tree(self.tf_buffer, "map", "base_link")
