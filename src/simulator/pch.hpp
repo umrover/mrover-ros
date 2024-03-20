@@ -48,6 +48,8 @@
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
 
+#include <Eigen/Geometry>
+
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_wgpu.h>
 
@@ -61,7 +63,6 @@
 #include <BulletDynamics/MLCPSolvers/btDantzigSolver.h>
 #include <BulletDynamics/MLCPSolvers/btMLCPSolver.h>
 #include <btBulletDynamicsCommon.h>
-// #include <BulletDynamics/Featherstone/btMultiBodyJointFeedback.h>
 
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
@@ -70,10 +71,11 @@
 #include <bimap.hpp>
 #include <lie.hpp>
 #include <loop_profiler.hpp>
+#include <manif/algorithms/interpolation.h>
 #include <manif/manif.h>
 #include <params_utils.hpp>
 #include <point.hpp>
-#include <units.hpp>
+#include <units/units.hpp>
 
 #include <mrover/ControllerState.h>
 #include <mrover/IK.h>

@@ -9,8 +9,7 @@ enable_message="Basestation network setup enabled, disable with scripts/toggle_b
 
 if grep -q "source ${network_script_path}" ~/.zshrc; then
     echo "Removing basestation networking script from .zshrc"
-    sed -i "\:source ${network_script_path}:d" ~/.zshrc
-    sed -i "\:echo '${enable_message}':d" ~/.zshrc
+    sed -i '/source ~\/catkin_ws\/src\/mrover\/ansible\/roles\/basestation_networks\/files\/networking_setup_basestation.sh/d' ~/.zshrc
 else
     echo "Adding basestation networking script to .zshrc"
     if [[ $(tail -c1 ~/.zshrc | wc -l) -eq 0 ]]; then

@@ -2,4 +2,4 @@
 
 Check out our [Wiki](../../wiki/) for more information
 
-![image](https://user-images.githubusercontent.com/20666629/183543916-a7fee846-31db-44d0-8845-c6a95af1110c.png)
+![Picture of Rover in the Custom Simulator atop an Orange Mallet](https://github.com/umrover/mrover-ros/assets/20666629/55fbaf74-bc1b-407a-b8ed-407f276f2803)
