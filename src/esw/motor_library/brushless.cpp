@@ -39,7 +39,6 @@ namespace mrover {
         limitSwitch1UsedForReadjustment = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "limit_1_used_for_readjustment", false);
         limitSwitch0ReadjustPosition = Radians{xmlRpcValueToTypeOrDefault<double>(brushlessMotorData, "limit_0_readjust_position", 0.0)};
         limitSwitch1ReadjustPosition = Radians{xmlRpcValueToTypeOrDefault<double>(brushlessMotorData, "limit_1_readjust_position", 0.0)};
-
     }
 
     auto BrushlessController::setDesiredThrottle(Percent throttle) -> void {
@@ -85,11 +84,11 @@ namespace mrover {
                 return;
             }
         }
-        
+
 
         velocity = velocity * mVelocityMultiplier;
 
-        // ROS_INFO("my velocity rev s = %f", velocity.get()); 
+        // ROS_INFO("my velocity rev s = %f", velocity.get());
 
         RevolutionsPerSecond velocity_rev_s = std::clamp(velocity, mMinVelocity, mMaxVelocity);
         if (abs(velocity_rev_s).get() < 1e-5) {
@@ -141,7 +140,7 @@ namespace mrover {
         */
         // TODO - implement this
         MoteusLimitSwitchInfo result{};
-    
+
         result.isFwdPressed = false;
         result.isBwdPressed = false;
 
@@ -162,8 +161,7 @@ namespace mrover {
 
         if (result.isFwdPressed) {
             adjust(limitSwitch0ReadjustPosition);
-        }
-        else if (result.isBwdPressed) {
+        } else if (result.isBwdPressed) {
             adjust(limitSwitch1ReadjustPosition);
         }
 
@@ -201,26 +199,25 @@ namespace mrover {
                  result.torque,
                  result.voltage,
                  result.temperature,
-                 result.fault,  
+                 result.fault,
                  result.aux1_gpio,
-                 result.aux2_gpio
-                 );
+                 result.aux2_gpio);
 
         if (mControllerName == "joint_de_0" || mControllerName == "joint_de_1") {
-            mCurrentPosition = mrover::Revolutions{result.aux1_gpio};   //get value of absolute encoder if its joint_de0/1
+            mCurrentPosition = Revolutions{result.aux1_gpio}; //get value of absolute encoder if its joint_de0/1
         }
 
         else {
-            mCurrentPosition = mrover::Revolutions{result.position}; // moteus stores position in revolutions.
+            mCurrentPosition = Revolutions{result.position}; // moteus stores position in revolutions.
         }
-        
-        mCurrentVelocity = mrover::RevolutionsPerSecond{result.velocity} / mVelocityMultiplier; // moteus stores position in revolutions.
+
+        mCurrentVelocity = RevolutionsPerSecond{result.velocity} / mVelocityMultiplier; // moteus stores position in revolutions.
 
         mErrorState = moteusErrorCodeToErrorState(result.mode, static_cast<ErrorCode>(result.fault));
         mState = moteusModeToState(result.mode);
 
-        moteusAux1Info = (result.aux1_gpio) ? result.aux1_gpio : moteusAux1Info;
-        moteusAux2Info = (result.aux1_gpio) ? result.aux2_gpio : moteusAux2Info;
+        moteusAux1Info = result.aux1_gpio ? result.aux1_gpio : moteusAux1Info;
+        moteusAux2Info = result.aux1_gpio ? result.aux2_gpio : moteusAux2Info;
 
         if (result.mode == moteus::Mode::kPositionTimeout || result.mode == moteus::Mode::kFault) {
             setStop();
