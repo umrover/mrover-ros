@@ -30,6 +30,7 @@ from mrover.msg import (
     Position,
     IK,
     SpectralGroup,
+    ScienceThermistors
 )
 from mrover.srv import EnableAuton, AdjustMotor, ChangeCameras, CapturePanorama  # , CapturePhoto
 from sensor_msgs.msg import NavSatFix, Temperature, RelativeHumidity, Image
@@ -96,7 +97,7 @@ class GUIConsumer(JsonWebsocketConsumer):
                 "/sa_humidity_data", RelativeHumidity, self.sa_humidity_data_callback
             )
             self.sa_thermistor_data = rospy.Subscriber(
-                "/science_thermistors", Temperature, self.sa_thermistor_data_callback
+                "/science_thermistors", ScienceThermistors, self.sa_thermistor_data_callback
             )
             self.science_spectral = rospy.Subscriber("/science_spectral", SpectralGroup, self.science_spectral_callback)
 
@@ -641,7 +642,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.send(text_data=json.dumps(obj={"type": "relative_humidity", "humidity_data": msg.relative_humidity}))
 
     def sa_thermistor_data_callback(self, msg):
-        self.send(text_data=json.dumps(obj={"type": "thermistor", "thermistor_data": msg.thermistor}))
+        self.send(text_data=json.dumps(obj={"type": "thermistor", "temps": msg.temps}))
 
     def auton_bearing(self):
         base_link_in_map = SE3.from_tf_tree(self.tf_buffer, "map", "base_link")

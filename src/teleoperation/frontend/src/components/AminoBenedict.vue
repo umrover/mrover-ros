@@ -85,7 +85,7 @@ export default {
       }
       else if (msg.type == 'thermistor') {
         var heaterID = 'b'
-        if (isAmino) {
+        if (this.isAmino) {
           heaterID = 'n'
         }
         if (heaterID == 'n') {
