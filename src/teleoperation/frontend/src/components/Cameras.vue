@@ -21,12 +21,6 @@
     </div>
     <div class="col">
       <h3>All Cameras</h3>
-      Capacity:
-      <div class="row justify-content-md-left">
-        <div class="form-group col-md-4">
-          <input v-model="capacity" type="number" :min="2" :max="streamOrder.length" class="form-control" />
-        </div>
-      </div>
       <div class="info">
       <template v-for="i in camsEnabled.length" :key="i">
         <CameraInfo v-if="camsEnabled[i - 1]" :id="i - 1" :name="names[i - 1]" :stream="getStreamNum(i - 1)"
@@ -71,7 +65,7 @@ export default {
       names: reactive(Array.from({ length: 9 }, (_, i) => 'Camera: ' + i)),
       cameraIdx: 0,
       cameraName: '',
-      capacity: 2,
+      capacity: 4,
       qualities: reactive(new Array(9).fill(-1)),
       streamOrder: reactive([]),
 

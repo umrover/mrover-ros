@@ -148,13 +148,21 @@ export default defineComponent({
   },
 
   methods: {
-    ...mapActions('websocket', ['sendMessage'])
+    ...mapActions('websocket', ['sendMessage']),
+    cancelIK: function() {
+      this.sendMessage({ "type": "cancel_click_ik" });
+    }
   },
 
   created: function () {
     window.setTimeout(() => {
       this.sendMessage({ "type": "center_map" });
     }, 250)
+    window.addEventListener('keydown', (event: KeyboardEvent) => {
+        if (event.key === ' ') {
+          this.cancelIK(event)
+        }
+      })
   }
 })
 </script>
