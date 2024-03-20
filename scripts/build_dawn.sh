@@ -2,6 +2,8 @@
 
 git submodule update --init deps/dawn
 
+DAWN_USE_WAYLAND=$( [ ! -z "${WAYLAND_DISPLAY}" ] && echo "ON" || echo "OFF" )
+
 pushd deps/dawn || exit
 CC=clang CXX=clang++ cmake \
     -B out/Release \
@@ -20,5 +22,6 @@ CC=clang CXX=clang++ cmake \
     -D DAWN_USE_GLFW=OFF \
     -D TINT_BUILD_CMD_TOOLS=OFF \
     -D TINT_BUILD_DOCS=OFF \
-    -D TINT_BUILD_TESTS=OFF
+    -D TINT_BUILD_TESTS=OFF \
+	-D DAWN_USE_WAYLAND="$DAWN_USE_WAYLAND"
 cmake --build out/Release
