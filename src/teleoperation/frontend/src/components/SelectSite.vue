@@ -33,9 +33,9 @@ export default {
         };
     },
 
-    methods: {
-        onChange(event) {
-            this.$emit("site", event.target.value);
+    watch: {
+        site(event) {
+            this.$emit("site", event);
         }
     }
 };
