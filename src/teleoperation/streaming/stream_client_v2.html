@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>MRover Test Stream</title>
+</head>
+<body>
+<main>
+    <h1>H.265 Stream</h1>
+    <canvas id="stream-canvas"></canvas>
+    <!--    <video id="stream-video" autoplay muted></video>-->
+</main>
+<script>
+    // const mediaSource = new MediaSource();
+    //
+    // const video = document.getElementById('stream-video');
+    // video.src = window.URL.createObjectURL(mediaSource);
+    //
+    // const queue = [];
+    //
+    // mediaSource.addEventListener('sourceopen', () => {
+    //     console.log('Media source opened');
+    //
+    //     // h265
+    //     const mimeCodec = 'video/mp4; codecs="avc1.42E01E"';
+    //     const buffer = mediaSource.addSourceBuffer(mimeCodec);
+    //
+    //     buffer.addEventListener('update', () => {
+    //         if (queue.length > 0 && !buffer.updating) {
+    //             buffer.appendBuffer(queue.shift());
+    //         }
+    //     });
+    //
+    //     const ws = new WebSocket('ws://localhost:8080');
+    //     ws.binaryType = 'arraybuffer';
+    //     ws.onopen = () => {
+    //         console.log('Connected to server');
+    //     };
+    //     ws.onclose = () => {
+    //         console.log('Disconnected from server');
+    //     };
+    //     ws.onmessage = (event) => {
+    //         if (typeof event.data !== 'string') {
+    //             if (buffer.updating || queue.length > 0) {
+    //                 queue.push(event.data);
+    //             } else {
+    //                 buffer.appendBuffer(event.data);
+    //             }
+    //         }
+    //     };
+    // });
+
+    let pendingFrame = null;
+
+    function renderFrame(frame) {
+        if (pendingFrame) {
+            pendingFrame.close();
+        } else {
+            requestAnimationFrame(renderAnimationFrame);
+        }
+        pendingFrame = frame;
+    }
+
+    const canvas = document.getElementById('stream-canvas');
+    const ctx = canvas.getContext('2d');
+
+    function renderAnimationFrame() {
+        console.log('Rendering frame');
+        canvas.width = pendingFrame.displayWidth;
+        canvas.height = pendingFrame.displayHeight;
+        ctx.drawImage(pendingFrame, 0, 0, pendingFrame.displayWidth, pendingFrame.displayHeight);
+        pendingFrame = null;
+    }
+
+    const decoder = new VideoDecoder({
+        output(frame) {
+            renderFrame(frame)
+            // canvas.width = frame.displayWidth;
+            // canvas.height = frame.displayHeight;
+            // ctx.drawImage(frame, 0, 0, frame.displayWidth, frame.displayHeight);
+        },
+        error(e) {
+            console.error(e);
+        }
+    });
+    decoder.configure({
+        codec: 'hvc1.1.6.L93.90',
+        // codec: 'avc1.64001f',
+        codedWidth: 640,
+        codedHeight: 480
+    })
+
+    let firstFrame = true;
+
+    const ws = new WebSocket('ws://localhost:8080');
+    ws.binaryType = 'arraybuffer';
+    ws.onopen = () => {
+        console.log('Connected to server');
+    };
+    ws.onclose = () => {
+        console.log('Disconnected from server');
+    };
+    ws.onmessage = (event) => {
+        console.log('Received frame');
+        decoder.decode(new EncodedVideoChunk({
+            type: firstFrame ? 'key' : 'delta',
+            timestamp: performance.now(),
+            duration: 1000 / 30,
+            data: event.data
+        }));
+        firstFrame = false;
+    };
+    // window.addEventListener('beforeunload', () => {
+    //     ws.close();
+    // });
+</script>
+</body>
+</html>

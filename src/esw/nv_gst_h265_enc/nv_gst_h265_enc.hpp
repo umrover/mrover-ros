@@ -10,6 +10,7 @@ namespace mrover {
 
         std::string mCaptureDevice;
         std::string mImageTopic;
+        std::string mCodec;
         std::uint64_t mBitrate{};
         std::uint32_t mImageWidth{}, mImageHeight{}, mImageFramerate{};
 

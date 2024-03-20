@@ -19,7 +19,7 @@ namespace mrover {
     }
 
     auto NvGstH265EncNodelet::pullStreamSamplesLoop() -> void {
-        // Block until we receive a new H265 chunk from the encoder
+        // Block until we receive a new encoded chunk from the encoder
         // This is okay since we are on a separate thread
         while (GstSample* sample = gst_app_sink_pull_sample(GST_APP_SINK(mStreamSink))) {
             // Map the buffer so we can read it, passing it into the stream server which sends it over the network to any clients
@@ -63,6 +63,7 @@ namespace mrover {
         std::string launch;
         if (mCaptureDevice.empty()) {
             if constexpr (IS_JETSON) {
+                // TODO(quintin): Use mCodec
                 // ReSharper disable once CppDFAUnreachableCode
                 launch = std::format(
                         "appsrc name=imageSource " // App source is pushed to when we get a ROS BGRA image message
@@ -80,9 +81,9 @@ namespace mrover {
                         "appsrc name=imageSource "
                         "! video/x-raw,format=BGRA,width={},height={},framerate=30/1 "
                         "! videoconvert "
-                        "! nvh265enc "
+                        "! nv{}enc "
                         "! appsink name=streamSink",
-                        mImageWidth, mImageHeight);
+                        mImageWidth, mImageHeight, mCodec);
             }
         } else {
             assert(IS_JETSON);
@@ -95,9 +96,9 @@ namespace mrover {
                     "! video/x-raw(memory:NVMM),format=UYVY,width={},height={},framerate={}/1 "
                     "! nvvidconv "
                     "! video/x-raw(memory:NVMM),format=I420 "
-                    "! nvv4l2h265enc bitrate={} iframeinterval=300 vbv-size=33333 insert-sps-pps=true control-rate=constant_bitrate profile=Main num-B-Frames=0 ratecontrol-enable=true preset-level=UltraFastPreset EnableTwopassCBR=false maxperf-enable=true "
+                    "! nvv4l2{}enc bitrate={} iframeinterval=300 vbv-size=33333 insert-sps-pps=true control-rate=constant_bitrate profile=Main num-B-Frames=0 ratecontrol-enable=true preset-level=UltraFastPreset EnableTwopassCBR=false maxperf-enable=true "
                     "! appsink sync=false name=streamSink",
-                    mCaptureDevice, mImageWidth, mImageHeight, mImageFramerate, mBitrate);
+                    mCaptureDevice, mImageWidth, mImageHeight, mImageFramerate, mCodec, mBitrate);
         }
 
         ROS_INFO_STREAM(std::format("GStreamer launch: {}", launch));
@@ -128,8 +129,12 @@ namespace mrover {
         ROS_INFO("Initialized and started GStreamer pipeline");
     }
 
+    std::mutex m;
+
     auto NvGstH265EncNodelet::imageCallback(sensor_msgs::ImageConstPtr const& msg) -> void {
         try {
+            std::scoped_lock lock{m};
+
             if (msg->encoding != sensor_msgs::image_encodings::BGRA8) throw std::runtime_error{"Unsupported encoding"};
 
             mImageWidth = msg->width;
@@ -147,7 +152,8 @@ namespace mrover {
             std::memcpy(info.data, msg->data.data(), size);
             gst_buffer_unmap(buffer, &info);
 
-            if (gst_app_src_push_buffer(GST_APP_SRC(mImageSource), buffer) != GST_FLOW_OK) throw std::runtime_error{"Failed to push buffer"};
+            if (gst_app_src_push_buffer(GST_APP_SRC(mImageSource), buffer) != GST_FLOW_OK)
+                throw std::runtime_error{"Failed to push buffer"};
 
         } catch (std::exception const& e) {
             ROS_ERROR_STREAM(std::format("Exception encoding frame: {}", e.what()));
@@ -170,6 +176,7 @@ namespace mrover {
             auto address = mPnh.param<std::string>("address", "0.0.0.0");
             auto port = mPnh.param<int>("port", 8080);
             mBitrate = mPnh.param<int>("bitrate", 2000000);
+            mCodec = mPnh.param<std::string>("codec", "h265");
 
             gst_init(nullptr, nullptr);
 
@@ -177,6 +184,7 @@ namespace mrover {
                     address,
                     port,
                     [this] {
+                        std::scoped_lock lock{m};
                         ROS_INFO("Client connected");
                         if (gst_element_set_state(mPipeline, GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE)
                             throw std::runtime_error{"Failed to play GStreamer pipeline"};
@@ -184,9 +192,12 @@ namespace mrover {
                         ROS_INFO("Playing GStreamer pipeline");
                     },
                     [this] {
+                        std::scoped_lock lock{m};
                         ROS_INFO("Client disconnected");
+                        gst_app_src_end_of_stream(GST_APP_SRC(mImageSource));
                         if (gst_element_set_state(mPipeline, GST_STATE_READY) == GST_STATE_CHANGE_FAILURE)
                             throw std::runtime_error{"Failed to pause GStreamer pipeline"};
+                        std::this_thread::sleep_for(std::chrono::milliseconds{100});
                         mIsPipelinePlaying = false;
                         ROS_INFO("Paused GStreamer pipeline");
                     });
