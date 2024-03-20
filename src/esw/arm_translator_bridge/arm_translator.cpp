@@ -111,7 +111,6 @@ namespace mrover {
 
         Eigen::Vector2<RadiansPerSecond> pitchRollVelocities{msg->velocities.at(mJointDEPitchIndex), msg->velocities.at(mJointDERollIndex)};
         Eigen::Vector2<RadiansPerSecond> motorVelocities = PITCH_ROLL_TO_01_SCALED * pitchRollVelocities;
-        // Eigen::Vector2<RadiansPerSecond> motorVelocities = PITCH_ROLL_TO_0_1 * pitchRollVelocities;
 
         Velocity velocity = *msg;
         velocity.names[mJointDEPitchIndex] = "joint_de_0";
