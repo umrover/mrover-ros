@@ -166,12 +166,12 @@ class GUIConsumer(JsonWebsocketConsumer):
                 self.arm_adjust(message)
             elif message["type"] == "arm_values" or message["type"] == "cache_values":
                 self.handle_controls_message(message)
-            elif message["type"] == "sa_arm_values":
-                self.handle_sa_arm_message(message)
             elif message["type"] == "sa_enable_uv_bulb":
                 self.sa_uv_bulb_callback(message)
             elif message["type"] == "enable_white_leds":
                 self.enable_white_leds_callback(message)
+            elif message["type"] == "enable_uv_leds":
+                self.enable_uv_leds_callback(message)
             elif message["type"] == "auton_command":
                 self.send_auton_command(message)
             elif message["type"] == "teleop_enabled":
@@ -514,17 +514,20 @@ class GUIConsumer(JsonWebsocketConsumer):
             except rospy.ServiceException as e:
                 print(f"Service call failed: {e}")
 
-    def sa_uv_bulb_callback(self, msg):
-        try:
-            result = self.toggle_uv(data=msg["data"])
-            self.send(text_data=json.dumps({"type": "toggle_uv", "result": result.success}))
-        except rospy.ServiceException as e:
-            rospy.logerr(f"Service call failed: {e}")
-
     def enable_white_leds_callback(self, msg):
         for i in range(0, 3):
             white_led_name = f"science_enable_white_led_{i}"
             led_srv = rospy.ServiceProxy(white_led_name, SetBool)
+            try:
+                result = led_srv(data=msg["data"])
+                self.send(text_data=json.dumps({"type": "toggle_uv", "result": result.success}))
+            except rospy.ServiceException as e:
+                rospy.logerr(f"Service call failed: {e}")
+
+    def enable_uv_leds_callback(self, msg):
+        for i in range(0, 3):
+            uv_led_name = f"science_enable_uv_led_{i}"
+            led_srv = rospy.ServiceProxy(uv_led_name, SetBool)
             try:
                 result = led_srv(data=msg["data"])
                 self.send(text_data=json.dumps({"type": "toggle_uv", "result": result.success}))

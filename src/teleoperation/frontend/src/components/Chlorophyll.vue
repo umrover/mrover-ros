@@ -6,6 +6,10 @@
         <ToggleButton id="white_led_toggle" :current-state="whiteLEDS_active" label-enable-text="White LEDs On"
           label-disable-text="White LEDs Off" @change="toggle_whiteLEDS()" />
       </div>
+      <div>
+        <ToggleButton id="uv_led_toggle" :current-state="uvLEDS_active" label-enable-text="UV LEDs On"
+          label-disable-text="UV LEDs Off" @change="toggle_uvLEDS()" />
+      </div>
     </div>
     <div class="wrap-table" id="capture">
       <div>
@@ -57,6 +61,7 @@ export default {
   data() {
     return {
       whiteLEDS_active: false,
+      uvLEDs_active: false,
       spectral_data: [],
       error: [],
     };
@@ -82,6 +87,11 @@ export default {
     toggle_whiteLEDS: function () {
       this.whiteLEDS_active = !this.whiteLEDS_active;
       this.sendMessage({ type: 'enable_white_leds', data: this.whiteLEDS_active })
+    },
+
+    toggle_uvLEDS: function () {
+      this.uvLEDS_active = !this.uvLEDS_active;
+      this.sendMessage({ type: 'enable_uv_leds', data: this.uvLEDS_active })
     },
 
     download_data: function(spectral_data: any) {
