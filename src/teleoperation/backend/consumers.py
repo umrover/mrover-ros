@@ -712,7 +712,6 @@ class GUIConsumer(JsonWebsocketConsumer):
         try:
             heater = msg["heater"]
             science_enable = rospy.ServiceProxy("science_enable_heater_" + heater, SetBool)
-            rospy.logerr("science_enable_heater_" + heater)
             result = science_enable(data=msg["enabled"])
             self.send(text_data=json.dumps({"type": "science_enable", "result": result.success}))
         except rospy.ServiceException as e:

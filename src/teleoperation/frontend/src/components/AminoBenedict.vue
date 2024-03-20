@@ -95,6 +95,10 @@ export default {
           this.heaters[this.siteIndex].temp = msg.temps[(this.siteIndex*2)+1]
         }
       }
+    },
+
+    site(val) {
+      this.siteIndex = val.charCodeAt(0) - 65;
     }
   },
 
@@ -136,6 +140,15 @@ export default {
 
   created: function () {
     this.siteIndex = this.site.charCodeAt(0) - 65;
+
+    interval = window.setInterval(() => {
+      var heaterName = "b";
+      if (this.isAmino) {
+        heaterName = "n"
+      }
+      heaterName += this.siteIndex;
+      this.sendMessage({ type: "heaterEnable", enabled: this.heaters[this.siteIndex].enabled, heater: heaterName});
+    }, 100);    
   },
 
   computed: {

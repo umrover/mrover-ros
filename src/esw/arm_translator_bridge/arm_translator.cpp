@@ -3,8 +3,8 @@
 #include "joint_de_translation.hpp"
 #include "linear_joint_translation.hpp"
 
-#include <params_utils.hpp>
 #include <units/units.hpp>
+#include <params_utils.hpp>
 
 namespace mrover {
 
@@ -19,12 +19,12 @@ namespace mrover {
             }
             {
                 auto rawName = static_cast<std::string>(mRawArmNames[i]);
-                [[maybe_unused]] auto [_, was_inserted] = mAdjustServersByRawArmNames.try_emplace(rawName, nh.advertiseService(std::format("{}_adjust", rawName), &ArmTranslator::adjustServiceCallback, this));
+                auto [_, was_inserted] = mAdjustServersByRawArmNames.try_emplace(rawName, nh.advertiseService(std::format("{}_adjust", rawName), &ArmTranslator::adjustServiceCallback, this));
                 assert(was_inserted);
             }
             {
                 auto hwName = static_cast<std::string>(mArmHWNames[i]);
-                [[maybe_unused]] auto [_, was_inserted] = mAdjustClientsByArmHWNames.try_emplace(hwName, nh.serviceClient<AdjustMotor>(std::format("{}_adjust", hwName)));
+                auto [_, was_inserted] = mAdjustClientsByArmHWNames.try_emplace(hwName, nh.serviceClient<AdjustMotor>(std::format("{}_adjust", hwName)));
                 assert(was_inserted);
             }
         }
@@ -216,6 +216,7 @@ namespace mrover {
         // joint a convert linear position (meters) to radians
         auto joint_a_pos = convertLinPos(msg->positions.at(mJointAIndex), mJointALinMult.get());
         position.positions.at(mJointAIndex) = joint_a_pos;
+        
         mPositionPub->publish(position);
     }
 
