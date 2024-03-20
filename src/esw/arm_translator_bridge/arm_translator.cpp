@@ -166,18 +166,18 @@ namespace mrover {
     auto ArmTranslator::updateDeOffsets(ros::TimerEvent const&) -> void {
         if (!mJointDePitchRoll) return;
 
-        Eigen::Matrix2<Radians> motorPositions = PITCH_ROLL_TO_01_SCALED * mJointDePitchRoll.value();
+        Eigen::Vector2<Radians> motorPositions = PITCH_ROLL_TO_01_SCALED * mJointDePitchRoll.value();
         {
-            AdjustMotorRequest request;
-            request.name = "joint_de_0";
-            request.value = motorPositions[0].get();
-            mAdjustClientsByArmHwNames["joint_de_0"].call(request);
+            AdjustMotor adjust;
+            adjust.request.name = "joint_de_0";
+            adjust.request.value = motorPositions[0].get();
+            mAdjustClientsByArmHwNames["joint_de_0"].call(adjust);
         }
         {
-            AdjustMotorRequest request;
-            request.name = "joint_de_1";
-            request.value = motorPositions[1].get();
-            mAdjustClientsByArmHwNames["joint_de_1"].call(request);
+            AdjustMotor adjust;
+            adjust.request.name = "joint_de_1";
+            adjust.request.value = motorPositions[1].get();
+            mAdjustClientsByArmHwNames["joint_de_1"].call(adjust);
         }
     }
 
