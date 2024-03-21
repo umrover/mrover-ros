@@ -43,11 +43,11 @@ class GPSLinearization:
     imu_timer: threading.Timer
 
     # subscribers and publishers
-    left_gps_sub : rospy.Subscriber
-    right_gps_sub : rospy.Subscriber
-    left_rtk_fix_sub: rospy.Subscriber
-    right_rtk_fix_sub: rospy.Subscriber
-    sync_gps_sub: rospy.Subscriber
+    left_gps_sub : message_filters.Subscriber
+    right_gps_sub : message_filters.Subscriber
+    left_rtk_fix_sub: message_filters.Subscriber
+    right_rtk_fix_sub: message_filters.Subscriber
+    sync_gps_sub: message_filters.ApproximateTimeSynchronizer
     imu_sub: rospy.Subscriber
     pose_publisher: rospy.Publisher
     
@@ -164,10 +164,8 @@ class GPSLinearization:
 
             if (right_rtk_fix_msg.RTK_FIX_TYPE == RTKStatus.RTK_FIX and left_rtk_fix_msg.RTK_FIX_TYPE == RTKStatus.RTK_FIX):
                 self.rtk_offset = quaternion_multiply(gps_yaw_quat, quaternion_conjugate(imu_yaw_quat))
-                imu_without_yaw = quaternion_multiply(quaternion_conjugate(imu_yaw_quat), imu_quat)
-                gps_quat = quaternion_multiply(gps_yaw_quat, imu_without_yaw)
-            else:
-                gps_quat = quaternion_multiply(self.rtk_offset, imu_quat)
+
+            gps_quat = quaternion_multiply(self.rtk_offset, imu_quat)
 
             pose = SE3(pose.position, SO3(gps_quat))
 
