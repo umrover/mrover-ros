@@ -5,6 +5,7 @@
 #include <boost/smart_ptr/shared_ptr.hpp>
 #include <cmath>
 #include <complex>
+#include <optional>
 #include <ros/rate.h>
 #include <ros/topic.h>
 
@@ -308,6 +309,9 @@ namespace mrover {
         //Push to the tf tree
         SE3Conversions::pushToTfTree(mTfBroadcaster, "plane", mMapFrameId, mPlaneLocationInWorldSE3d);
         SE3Conversions::pushToTfTree(mTfBroadcaster, "offset", mMapFrameId, mOffsetLocationInWorldSE3d);
+
+        //Compare Rover Location to Target Location
+        if(mOffsetLocationInZEDSE3d.translation().x() < 0) mNormalInZEDVector = std::nullopt;
     }
 
     auto LanderAlignNodelet::PID::rotate_speed(double theta) const -> double {
@@ -418,6 +422,7 @@ namespace mrover {
             switch (mLoopState) {
                 case RTRSTATE::turn1: {
                     if (distanceToTarget < 0.5) mLoopState = RTRSTATE::turn2;
+                    
 
                     double angle_rate = mAngleP * SO3tan.z();
                     angle_rate = (std::abs(angle_rate) > mAngleFloor) ? angle_rate : copysign(mAngleFloor, angle_rate);
