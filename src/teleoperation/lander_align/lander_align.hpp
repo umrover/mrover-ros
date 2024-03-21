@@ -1,6 +1,8 @@
 #pragma once
 
 #include "pch.hpp"
+#include <boost/smart_ptr/shared_ptr.hpp>
+#include <sensor_msgs/PointCloud2.h>
 
 namespace mrover {
 
@@ -39,7 +41,9 @@ namespace mrover {
 
         RTRSTATE mLoopState = RTRSTATE::done;
 
-        //**
+        //Action Server Variables
+        sensor_msgs::PointCloud2ConstPtr mCloud;
+
         double mBestOffset{};
 
         double mPlaneOffsetScalar{};
@@ -55,7 +59,6 @@ namespace mrover {
 
         SE3d mOffsetLocationInWorldSE3d;
         SE3d mPlaneLocationInWorldSE3d;
-        //**
 
         //TF Member Variables
         tf2_ros::Buffer mTfBuffer;
@@ -76,7 +79,7 @@ namespace mrover {
 
         void ActionServerCallBack(LanderAlignGoalConstPtr const& actionRequest);
 
-        void filterNormals(sensor_msgs::PointCloud2Ptr const& cloud);
+        void filterNormals(sensor_msgs::PointCloud2ConstPtr const& cloud);
 
         void ransac(double distanceThreshold, int minInliers, int epochs, double offsetFactor);
 

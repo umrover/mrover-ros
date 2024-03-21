@@ -14,6 +14,7 @@
 #include <ros/names.h>
 #include <ros/node_handle.h>
 #include <ros/this_node.h>
+#include <ros/topic.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <sensor_msgs/point_cloud2_iterator.h>
 

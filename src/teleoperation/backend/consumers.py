@@ -8,6 +8,7 @@ from channels.generic.websocket import JsonWebsocketConsumer
 import rospy
 import tf2_ros
 import cv2
+import actionlib
 from cv_bridge import CvBridge
 from geometry_msgs.msg import Twist
 from mrover.msg import (
@@ -35,6 +36,7 @@ from std_srvs.srv import SetBool, Trigger
 from mrover.srv import EnableDevice, AdjustMotor
 from sensor_msgs.msg import JointState, Joy, NavSatFix
 from geometry_msgs.msg import Twist, Pose, Point, Quaternion
+from mrover.msg import LanderAlignGoal
 
 from util.SE3 import SE3
 
@@ -121,6 +123,9 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.flight_thread = threading.Thread(target=self.flight_attitude_listener)
             self.flight_thread.start()
 
+            #Actions
+            self.landerClient = actionlib.SimpleActionClient('LanderAlignAction', LanderAlignGoal)
+
         except rospy.ROSException as e:
             rospy.logerr(e)
 
@@ -141,7 +146,6 @@ class GUIConsumer(JsonWebsocketConsumer):
         message = json.loads(text_data)
         try:
             if message["type"] == "joystick_values":
-                if not lander_align
                 self.handle_joystick_message(message)
             elif message["type"] == "disable_auton_led":
                 self.disable_auton_led()
@@ -181,6 +185,10 @@ class GUIConsumer(JsonWebsocketConsumer):
                 self.save_basic_waypoint_list(message)
             elif message["type"] == "get_basic_waypoint_list":
                 self.get_basic_waypoint_list(message)
+            elif message["type"] == "start_lander_align":
+                self.start_lander_align(message)
+            elif message["type"] == "cancel_lander_align":
+                self.cancel_lander_align(message)
         except Exception as e:
             rospy.logerr(e)
 
@@ -714,4 +722,10 @@ class GUIConsumer(JsonWebsocketConsumer):
             rate.sleep()
 
     def start_lander_align(self) -> None:
+        goal = LanderAlignGoal()
+        self.landerClient.send_goal(goal)
+        pass
+
+    def stop_lander_align(self) -> None:
+        self.landerClient.cancel_goal()
         pass

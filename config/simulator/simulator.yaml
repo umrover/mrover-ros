@@ -41,4 +41,4 @@ objects:
   - type: urdf
     name: lander
     uri: package://mrover/urdf/world/lander.urdf.xacro
-    translation: [9.81, -4.73, 2]
+    translation: [8, 6, 2]

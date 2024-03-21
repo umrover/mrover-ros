@@ -5,4 +5,4 @@ uint32 num  # Specify which dishwasher we want to use
 uint32 num
 ---
 # Define a feedback message
-uint32 count_ten
+string curr_state

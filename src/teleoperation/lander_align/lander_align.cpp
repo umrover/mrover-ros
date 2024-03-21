@@ -1,7 +1,9 @@
 #include "lander_align.hpp"
 #include "mrover/LanderAlignActionFeedback.h"
 #include "mrover/LanderAlignActionResult.h"
+#include <boost/smart_ptr/shared_ptr.hpp>
 #include <ros/rate.h>
+#include <ros/topic.h>
 
 namespace mrover {
     auto operator<<(std::ostream& ostream, RTRSTATE state) -> std::ostream& {
@@ -32,29 +34,45 @@ namespace mrover {
 
     auto LanderAlignNodelet::LanderCallback(sensor_msgs::PointCloud2Ptr const& cloud) -> void {
 
-        filterNormals(cloud);
-        ransac(0.1, 10, 100, mPlaneOffsetScalar);
-        if (mNormalInZEDVector.has_value()) {
-            sendTwist();
-        }
-        if (mPlaneOffsetScalar == 2.5) {
-            mPlaneOffsetScalar = 0.4;
-            mLoopState = RTRSTATE::turn1;
-        } else {
-            mLoopState = RTRSTATE::done;
-        }
+        // filterNormals(cloud);
+        // ransac(0.1, 10, 100, mPlaneOffsetScalar);
+        // if (mNormalInZEDVector.has_value()) {
+        //     sendTwist();
+        // }
+        // if (mPlaneOffsetScalar == 2.5) {
+        //     mPlaneOffsetScalar = 0.4;
+        //     mLoopState = RTRSTATE::turn1;
+        // } else {
+        //     mLoopState = RTRSTATE::done;
+        // }
     }
 
     auto LanderAlignNodelet::ActionServerCallBack(LanderAlignGoalConstPtr const& actionRequest) -> void {
-        LanderAlignFeedback feedback;
         LanderAlignResult result;
-        result.num=10;
-        ros::Rate r(1);
-        for(int i = 0; i < static_cast<int>(actionRequest->num); i++){
-            feedback.count_ten = i;
-            mActionServer->publishFeedback(feedback);
-            r.sleep();
+        
+        //If we haven't yet defined the point cloud we are working with
+		mCloud = ros::topic::waitForMessage<sensor_msgs::PointCloud2>("/camera/left/points", mNh);
+		filterNormals(mCloud);
+		ransac(0.1, 10, 100, mPlaneOffsetScalar);
+        
+        //If there is a proper normal to drive to
+        if (mNormalInZEDVector.has_value()) {
+            sendTwist();
         }
+
+        mPlaneOffsetScalar = 1;
+        mLoopState = RTRSTATE::turn1;
+
+        //If we haven't yet defined the point cloud we are working with
+		mCloud = ros::topic::waitForMessage<sensor_msgs::PointCloud2>("/camera/left/points", mNh);
+		filterNormals(mCloud);
+		ransac(0.1, 10, 100, mPlaneOffsetScalar);
+        
+        //If there is a proper normal to drive to
+        if (mNormalInZEDVector.has_value()) {
+            sendTwist();
+        }
+
         mActionServer->setSucceeded(result);
     }
 
@@ -109,7 +127,7 @@ namespace mrover {
         mTwistPub.publish(twist);
     }
 
-    void LanderAlignNodelet::filterNormals(sensor_msgs::PointCloud2Ptr const& cloud) {
+    void LanderAlignNodelet::filterNormals(sensor_msgs::PointCloud2ConstPtr const& cloud) {
         // TODO: OPTIMIZE; doing this maobject_detector/debug_imgny push_back calls could slow things down
         mFilteredPoints.clear();
         auto* cloudData = reinterpret_cast<Point const*>(cloud->data.data());
@@ -349,7 +367,14 @@ namespace mrover {
         // roverToPlaneNorm.col(2) = Nleft;
         // manif::SO3d roverToP
         while (ros::ok()) {
-
+            if(mActionServer->isPreemptRequested()){
+                mActionServer->setPreempted();
+                break;
+            }
+                
+        	LanderAlignFeedback feedback;
+			feedback.curr_state = RTRSTRINGS[static_cast<std::size_t>(mLoopState)];
+			mActionServer->publishFeedback(feedback);
             SE3Conversions::pushToTfTree(mTfBroadcaster, "plane", mMapFrameId, mPlaneLocationInWorldSE3d);
             SE3Conversions::pushToTfTree(mTfBroadcaster, "offset", mMapFrameId, mOffsetLocationInWorldSE3d);
             SE3d rover = SE3Conversions::fromTfTree(mTfBuffer, "base_link", "map");
@@ -446,6 +471,7 @@ namespace mrover {
                     twist.linear.x = 0;
                     twist.angular.z = 0;
                     break;
+					mCloud = nullptr;
                 }
             }
             // ROS_INFO("THE TWIST IS: Angular: %f, with linear %f,", twist.angular.z, twist.linear.x);
