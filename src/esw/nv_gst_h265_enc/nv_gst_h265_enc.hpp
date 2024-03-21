@@ -18,7 +18,6 @@ namespace mrover {
         std::optional<StreamServer> mStreamServer;
 
         GstElement *mImageSource{}, *mStreamSink{}, *mPipeline{};
-        bool mIsPipelinePlaying = false;
         GMainLoop* mMainLoop{};
         std::thread mMainLoopThread;
         std::thread mStreamSinkThread;
@@ -30,8 +29,6 @@ namespace mrover {
         auto initPipeline() -> void;
 
         auto imageCallback(sensor_msgs::ImageConstPtr const& msg) -> void;
-
-        friend auto busMessageCallback(GstBus*, GstMessage* message, void* userData) -> gboolean;
 
     public:
         NvGstH265EncNodelet() = default;

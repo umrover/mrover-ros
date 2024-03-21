@@ -1,24 +1,30 @@
-<template>
-  <div class="wrap">
-    <canvas :id="'stream-' + id" class="stream"></canvas>
-  </div>
-</template>
+<!doctype html>
 
-<script lang="ts">
-import { defineComponent } from 'vue'
+<!-- Based off this excellent website: https://w3c.github.io/webcodecs/samples/video-decode-display/ -->
 
-export default defineComponent({
-  props: {
-    id: {
-      type: Number,
-      required: true
-    },
-  },
-  data() {
-    return {}
-  },
-  mounted: function () {
-    function startStream(number: Number) {
+<!--
+    1) set up a websocket
+    2) receive encoded video chunks
+    3) decode them using VideoDecoder
+    4) display them on a canvas using WebGL 2
+-->
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>MRover Test Stream</title>
+</head>
+<body style="background-color: #0F0F0F">
+<main>
+    <h1 style="color: white">H.265 Stream</h1>
+    <canvas id="stream-0"></canvas>
+</main>
+<script>
+    // Requires a canvas named "stream-{number}" to be present in the DOM
+    // The port of the websocket is 8080 + number
+    function startStream(number) {
         // Corresponds to H.265
         // I can't figure out what the other values are for... obtained via guess and check
         const STREAM_CODEC = 'hvc1.1.2.L90.90';
@@ -31,12 +37,12 @@ export default defineComponent({
     varying highp vec2 uv;
 
     void main(void) {
-        gl_Position = vec4(xy, 0.0, 1.0);
-        // Map vertex coordinates (-1 to +1) to UV coordinates (0 to 1).
-        // UV coordinates are Y-flipped relative to vertex coordinates.
-        uv = vec2((1.0 + xy.x) / 2.0, (1.0 - xy.y) / 2.0);
+      gl_Position = vec4(xy, 0.0, 1.0);
+      // Map vertex coordinates (-1 to +1) to UV coordinates (0 to 1).
+      // UV coordinates are Y-flipped relative to vertex coordinates.
+      uv = vec2((1.0 + xy.x) / 2.0, (1.0 - xy.y) / 2.0);
     }
-    `;
+  `;
 
         const fragmentShaderSource = `
     varying highp vec2 uv;
@@ -44,12 +50,12 @@ export default defineComponent({
     uniform sampler2D texture;
 
     void main(void) {
-        gl_FragColor = texture2D(texture, uv);
+      gl_FragColor = texture2D(texture, uv);
     }
-    `;
+  `;
 
         const canvas = document.getElementById(`stream-${number}`);
-        if (!canvas) return;
+        if (!canvas) throw new Error(`Canvas with id "stream-${number}" not found`);
 
         // This WebGL stuff seems like a lot, but it's just setting up a shader that can render a texture
         // This texture is uploaded to whenever we get a frame from the decoder
@@ -103,8 +109,6 @@ export default defineComponent({
 
         const decoder = new VideoDecoder({
             output(frame) {
-                if (!document.getElementById(`stream-${number}`)) return;
-
                 canvas.width = frame.displayWidth;
                 canvas.height = frame.displayHeight;
                 // Upload the frame to the texture
@@ -131,13 +135,13 @@ export default defineComponent({
         })
 
         // TODO(quintin): Set IP too
-        const ws = new WebSocket(`ws://localhost:808${1 + number}`);
+        const ws = new WebSocket(`ws://localhost:808${number}`);
         ws.binaryType = 'arraybuffer';
         ws.onopen = () => {
-            console.log(`Connected to server for stream ${number}`);
+            console.log('Connected to server');
         };
         ws.onclose = () => {
-            console.log(`Disconnected from server for stream ${number}`);
+            console.log('Disconnected from server');
             decoder.close();
             // This recursive-ness stops after the canvas element is removed
             setTimeout(() => startStream(number), 3000);
@@ -151,11 +155,9 @@ export default defineComponent({
             // and we should stop the stream (and all following retries)
             if (!document.getElementById(`stream-${number}`)) {
                 // The canvas has been removed, so stop decoding
-                console.log(`Canvas for stream ${number} was removed`);
                 ws.close();
                 return;
             }
-
             // TODO(quintin): Should the values besides "data" be set better? Parsed from the packet?
             decoder.decode(new EncodedVideoChunk({
                 type: "key",
@@ -165,13 +167,9 @@ export default defineComponent({
             }));
         };
     }
-    startStream(this.id)
-  }
-})
-</script>
 
-<style scoped>
-.wrap {
-  width: fit-content;
-}
-</style>
+    // Example: start stream number zero
+    startStream(0);
+</script>
+</body>
+</html>

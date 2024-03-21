@@ -7,51 +7,47 @@
 
 #include <ros/console.h>
 
+using namespace std::chrono_literals;
+
 StreamServer::StreamServer(std::string_view host, std::uint16_t port, handler_t&& on_open, handler_t&& on_close)
     : m_acceptor{m_context}, m_on_open{std::move(on_open)}, m_on_close{std::move(on_close)} {
 
-    beast::error_code ec;
     tcp::endpoint endpoint{net::ip::make_address(host), port};
 
     ROS_INFO_STREAM("Starting H.265 streaming server @" << endpoint);
 
-    m_acceptor.open(endpoint.protocol(), ec);
-    if (ec) throw std::runtime_error{std::format("Failed to open acceptor: {}", ec.message())};
-
-    m_acceptor.set_option(net::socket_base::reuse_address(true), ec);
-    if (ec) throw std::runtime_error{std::format("Failed to set socket option: {}", ec.message())};
-
-    m_acceptor.bind(endpoint, ec);
-    if (ec) throw std::runtime_error{std::format("Failed to bind: {}", ec.message())};
-
-    m_acceptor.listen(net::socket_base::max_listen_connections, ec);
-    if (ec) throw std::runtime_error{std::format("Failed to listen: {}", ec.message())};
+    m_acceptor.open(endpoint.protocol());
+    m_acceptor.set_option(net::socket_base::reuse_address{true});
+    m_acceptor.bind(endpoint);
+    m_acceptor.listen(net::socket_base::max_listen_connections);
 
     acceptAsync();
 
     m_io_thread = std::jthread{[this] {
         ROS_INFO("IO service started");
         m_context.run();
-        ROS_INFO("IO service stopped");
+        std::cout << "IO service stopped" << std::endl;
     }};
 }
 
 auto StreamServer::acceptAsync() -> void {
-    m_acceptor.async_accept(m_context, [this](beast::error_code ec, tcp::socket socket) {
-        if (m_client) {
-            m_client->close(websocket::close_code::normal);
-            m_on_close();
-            m_client.reset();
-        }
-
+    m_acceptor.async_accept(m_context, [this](beast::error_code const& ec, tcp::socket socket) {
         if (ec) {
             ROS_WARN_STREAM(std::format("Failed to accept: {}", ec.message()));
             return;
         }
 
-        m_client.emplace(std::move(socket));
+        if (m_client) {
+            try {
+                m_client->close(websocket::close_code::normal);
+            } catch (std::exception const& e) {
+                ROS_WARN_STREAM(std::format("Exception closing existing client: {}", e.what()));
+            }
+            if (m_on_close) m_on_close();
+            m_client.reset();
+        }
 
-        using namespace std::chrono_literals;
+        m_client.emplace(std::move(socket));
 
         m_client->binary(true);
         m_client->set_option(websocket::stream_base::timeout{
@@ -66,6 +62,8 @@ auto StreamServer::acceptAsync() -> void {
         m_client->accept();
 
         if (m_on_open) m_on_open();
+
+        m_client->async_read_some(boost::asio::mutable_buffer(nullptr, 0), [](beast::error_code const&, std::size_t) {});
 
         acceptAsync();
     });

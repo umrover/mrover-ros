@@ -84,7 +84,7 @@ can:
       bus: 1
       id: 0x50
     - name: "science"
-      bus: 1
+      bus: 0
       id: 0x51
 
 brushless_motors:
