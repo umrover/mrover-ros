@@ -55,9 +55,7 @@
   `;
 
         const canvas = document.getElementById(`stream-${number}`);
-        // If the canvas disappears this means the frontend removed it,
-        // and we should stop the stream (and all following retries)
-        if (!canvas) return;
+        if (!canvas) throw new Error(`Canvas with id "stream-${number}" not found`);
 
         // This WebGL stuff seems like a lot, but it's just setting up a shader that can render a texture
         // This texture is uploaded to whenever we get a frame from the decoder
@@ -144,6 +142,7 @@
         };
         ws.onclose = () => {
             console.log('Disconnected from server');
+            decoder.close();
             // This recursive-ness stops after the canvas element is removed
             setTimeout(() => startStream(number), 3000);
         };
@@ -152,6 +151,13 @@
             ws.close()
         };
         ws.onmessage = (event) => {
+            // If the canvas disappears this means the frontend removed it,
+            // and we should stop the stream (and all following retries)
+            if (!document.getElementById(`stream-${number}`)) {
+                // The canvas has been removed, so stop decoding
+                ws.close();
+                return;
+            }
             // TODO(quintin): Should the values besides "data" be set better? Parsed from the packet?
             decoder.decode(new EncodedVideoChunk({
                 type: "key",
