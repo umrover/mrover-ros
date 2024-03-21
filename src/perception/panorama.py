@@ -129,9 +129,9 @@ def split_rgb_field(cloud_arr):
 
 def capture_panorama(request: CapturePanoramaRequest) -> CapturePanoramaResponse:
     image_list = []
-
+    latestPosition = None
+    targetPosition = 0
     def received_point_cloud(point: PointCloud2):
-        rospy.loginfo("Received point cloud data")
         # Extract RGB field
         pc = pointcloud2_to_array(point)
         pc = split_rgb_field(pc)
@@ -141,29 +141,34 @@ def capture_panorama(request: CapturePanoramaRequest) -> CapturePanoramaResponse
         rgb[..., 1] = pc["g"]
         rgb[..., 2] = pc["b"]
         image_list.append(cv2.cvtColor((rgb * 255).astype(np.uint8), cv2.COLOR_BGR2RGB))
-        rospy.loginfo("Converted and Saved Image")
-        rospy.loginfo("Total Images Saved" + str(len(image_list)))
-
     def received_motor_position(status: MotorsStatus):
-        rospy.loginfo("Received motor position")
-        mast_throttle.publish(Position(["mast_gimbal_z"], [2]))
-        rospy.loginfo(status.joint_states.position)
+        nonlocal latestPosition
+        # rospy.loginfo("Received motor position")
+        mast_throttle.publish(Position(["mast_gimbal_z"], [targetPosition]))
+        latestPosition = status.joint_states.position
+        # rospy.loginfo(status.joint_states.position)
 
     position_subscriber = rospy.Subscriber("/mast_status", MotorsStatus, received_motor_position, queue_size=1)
     image_subscriber = rospy.Subscriber("/camera/left/points", PointCloud2, received_point_cloud, queue_size=1)
     mast_throttle = rospy.Publisher("/mast_gimbal_position_cmd", Position, queue_size=1)
-    # TODO, make motors spin around
-    if len(image_list) < 2:
-        rospy.sleep(1)
+
+    # Wait until mast_status starts publishing
+
+    while latestPosition == None:
+        rospy.loginfo("NOT AT STARTING POSITION")
+        rospy.loginfo(Position)
+
+    image_list.clear()
+    targetPosition = np.pi
+    while not np.allclose(targetPosition, latestPosition, .1):
+        rospy.loginfo("NOT AT FINAL POSITION")
 
     rospy.loginfo("Creating Panorama..." + str(len(image_list)))
     stitcher = cv2.Stitcher.create()
     (code, outPic) = stitcher.stitch(image_list)
     rospy.loginfo("Panorama Created" + str(len(image_list)))
     desktop_path = "/Users/ryankersten/Desktop/test.png"
-
     cv2.imwrite(desktop_path, image_list[0])
-
     return CapturePanoramaResponse(...)
 
 
