@@ -85,5 +85,6 @@
     <nodelet plugin="${prefix}/plugins/can.xml" />
     <nodelet plugin="${prefix}/plugins/simulator.xml" />
     <nodelet plugin="${prefix}/plugins/nv_gst_h265_enc.xml" />
+    <nodelet plugin="${prefix}/plugins/click_ik.xml" />
   </export>
 </package>
