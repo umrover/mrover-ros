@@ -1,7 +1,10 @@
 #include "lander_align.hpp"
 #include "mrover/LanderAlignActionFeedback.h"
 #include "mrover/LanderAlignActionResult.h"
+#include <algorithm>
 #include <boost/smart_ptr/shared_ptr.hpp>
+#include <cmath>
+#include <complex>
 #include <ros/rate.h>
 #include <ros/topic.h>
 
@@ -354,7 +357,7 @@ namespace mrover {
         geometry_msgs::Twist twist;
 
         //Threhsolds
-        float const linear_thresh = 0.1; // could be member variables
+        float const linear_thresh = 0.01; // could be member variables
         float const angular_thresh = 0.001;
 
 
@@ -417,6 +420,7 @@ namespace mrover {
                     if (distanceToTarget < 0.5) mLoopState = RTRSTATE::turn2;
 
                     double angle_rate = mAngleP * SO3tan.z();
+                    angle_rate = (std::abs(angle_rate) > mAngleFloor) ? angle_rate : copysign(mAngleFloor, angle_rate);
 
                     ROS_INFO("w_z velocity %f", SO3tan.z());
 
@@ -457,6 +461,7 @@ namespace mrover {
 
                 case RTRSTATE::turn2: {
                     double angle_rate = mAngleP * SO3tan.z();
+                    angle_rate = (std::abs(angle_rate) > mAngleFloor) ? angle_rate : copysign(mAngleFloor, angle_rate);
                     twist.angular.z = angle_rate;
                     twist.linear.x = 0;
 
