@@ -1,4 +1,14 @@
 <!doctype html>
+
+<!-- Based off this excellent website: https://w3c.github.io/webcodecs/samples/video-decode-display/ -->
+
+<!--
+    1) set up a websocket
+    2) receive encoded video chunks
+    3) decode them using VideoDecoder
+    4) display them on a canvas using WebGL 2
+-->
+
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -12,6 +22,10 @@
     <canvas id="stream-canvas"></canvas>
 </main>
 <script>
+    const STREAM_CODEC = 'hvc1.1.2.L90.90';
+    const STREAM_WIDTH = 640;
+    const STREAM_HEIGHT = 480;
+
     const vertexShaderSource = `
     attribute vec2 xy;
 
@@ -68,7 +82,7 @@
         -1.0, -1.0,
         -1.0, +1.0,
         +1.0, +1.0,
-        +1.0, -1.0
+        +1.0, -1.0,
     ]), gl.STATIC_DRAW);
 
     const xyLocation = gl.getAttribLocation(shaderProgram, "xy");
@@ -99,10 +113,11 @@
             throw e;
         }
     });
+    // TODO(quintin): Need to know the size ahead of time. Perhaps put in a packet
     decoder.configure({
-        codec: 'hvc1.1.2.L90.90',
-        codedWidth: 640,
-        codedHeight: 480
+        codec: STREAM_CODEC,
+        codedWidth: STREAM_WIDTH,
+        codedHeight: STREAM_HEIGHT,
     })
 
     const ws = new WebSocket('ws://localhost:8080');
@@ -114,11 +129,12 @@
         console.log('Disconnected from server');
     };
     ws.onmessage = (event) => {
+        // TODO(quintin): Should the values besides "data" be set better? Parsed from the packet?
         decoder.decode(new EncodedVideoChunk({
             type: "key",
             timestamp: performance.now(),
             duration: 1000 / 30,
-            data: event.data
+            data: event.data,
         }));
     };
 </script>
