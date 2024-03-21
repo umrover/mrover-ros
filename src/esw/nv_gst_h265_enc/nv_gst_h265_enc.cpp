@@ -33,28 +33,6 @@ namespace mrover {
         }
     }
 
-    auto busMessageCallback(GstBus*, GstMessage* message, void* userData) -> gboolean {
-        auto encoder = static_cast<NvGstH265EncNodelet*>(userData);
-        switch (GST_MESSAGE_TYPE(message)) {
-            case GST_MESSAGE_ERROR: {
-                GError* error;
-                gchar* debug;
-                gst_message_parse_error(message, &error, &debug);
-                ROS_INFO_STREAM(std::format("Error: {} {}", error->message, debug));
-                g_error_free(error);
-                g_free(debug);
-                g_main_loop_quit(encoder->mMainLoop);
-                break;
-            }
-            case GST_MESSAGE_EOS:
-                g_main_loop_quit(encoder->mMainLoop);
-                break;
-            default:
-                break;
-        }
-        return TRUE;
-    }   
-
     auto NvGstH265EncNodelet::initPipeline() -> void {
         ROS_INFO("Initializing and starting GStreamer pipeline...");
 
@@ -65,14 +43,18 @@ namespace mrover {
             if constexpr (IS_JETSON) {
                 // ReSharper disable once CppDFAUnreachableCode
                 launch = std::format(
-                        "appsrc is-live=true name=imageSource " // App source is pushed to when we get a ROS BGRA image message
+                        // App source is pushed to when we get a ROS BGRA image message
+                        // is-live prevents frames from being pushed when the pipeline is in READY
+                        "appsrc is-live=true name=imageSource "
                         "! video/x-raw,format=BGRA,width={},height={},framerate=30/1 "
                         "! videoconvert " // Convert BGRA => I420 (YUV) for the encoder, note we are still on the CPU
                         "! video/x-raw,format=I420 "
                         "! nvvidconv " // Upload to GPU memory for the encoder
                         "! video/x-raw(memory:NVMM),format=I420 "
                         "! nvv4l2h265enc bitrate={} iframeinterval=300 vbv-size=33333 insert-sps-pps=true control-rate=constant_bitrate profile=Main num-B-Frames=0 ratecontrol-enable=true preset-level=UltraFastPreset EnableTwopassCBR=false maxperf-enable=true "
-                        "! appsink sync=false name=streamSink", // App sink is pulled from (getting H265 chunks) on another thread and sent to the stream server
+                        // App sink is pulled from (getting H265 chunks) on another thread and sent to the stream server
+                        // sync=false is needed to avoid weirdness, going from playing => ready => playing will not work otherwise
+                        "! appsink sync=false name=streamSink",
                         mImageWidth, mImageHeight, mBitrate);
             } else {
                 // ReSharper disable once CppDFAUnreachableCode
@@ -105,10 +87,6 @@ namespace mrover {
 
         if (mCaptureDevice.empty()) mImageSource = gstCheck(gst_bin_get_by_name(GST_BIN(mPipeline), "imageSource"));
         mStreamSink = gstCheck(gst_bin_get_by_name(GST_BIN(mPipeline), "streamSink"));
-
-        GstBus* bus = gst_element_get_bus(mPipeline);
-        gst_bus_add_watch(bus, busMessageCallback, this);
-        gst_object_unref(bus);
 
         if (gst_element_set_state(mPipeline, GST_STATE_PAUSED) == GST_STATE_CHANGE_FAILURE)
             throw std::runtime_error{"Failed initial pause on GStreamer pipeline"};

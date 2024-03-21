@@ -19,10 +19,14 @@
 <body style="background-color: #0F0F0F">
 <main>
     <h1 style="color: white">H.265 Stream</h1>
-    <canvas id="stream-canvas"></canvas>
+    <canvas id="stream-0"></canvas>
 </main>
 <script>
-    function startStream(canvasId, port) {
+    // Requires a canvas named "stream-{number}" to be present in the DOM
+    // The port of the websocket is 8080 + number
+    function startStream(number) {
+        // Corresponds to H.265
+        // I can't figure out what the other values are for... obtained via guess and check
         const STREAM_CODEC = 'hvc1.1.2.L90.90';
         const STREAM_WIDTH = 640;
         const STREAM_HEIGHT = 480;
@@ -50,7 +54,15 @@
     }
   `;
 
-        const canvas = document.getElementById(canvasId);
+        const canvas = document.getElementById(`stream-${number}`);
+        // If the canvas disappears this means the frontend removed it,
+        // and we should stop the stream (and all following retries)
+        if (!canvas) return;
+
+        // This WebGL stuff seems like a lot, but it's just setting up a shader that can render a texture
+        // This texture is uploaded to whenever we get a frame from the decoder
+        // More complex than just using a 2D canvas but *may* have lower latency
+
         const gl = canvas.getContext('webgl2');
 
         const vertexShader = gl.createShader(gl.VERTEX_SHADER);
@@ -101,7 +113,10 @@
             output(frame) {
                 canvas.width = frame.displayWidth;
                 canvas.height = frame.displayHeight;
+                // Upload the frame to the texture
                 gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, frame);
+                // Close immediately to free up resources
+                // Otherwise the stream will halt
                 frame.close();
 
                 gl.viewport(0, 0, canvas.width, canvas.height);
@@ -122,16 +137,18 @@
         })
 
         // TODO(quintin): Set IP too
-        const ws = new WebSocket(`ws://localhost:${port}`);
+        const ws = new WebSocket(`ws://localhost:808${number}`);
         ws.binaryType = 'arraybuffer';
         ws.onopen = () => {
             console.log('Connected to server');
         };
         ws.onclose = () => {
             console.log('Disconnected from server');
-            setTimeout(() => startStream(canvasId, port), 1000);
+            // This recursive-ness stops after the canvas element is removed
+            setTimeout(() => startStream(number), 3000);
         };
         ws.onerror = (error) => {
+            console.error('WebSocket error:', error);
             ws.close()
         };
         ws.onmessage = (event) => {
@@ -145,7 +162,8 @@
         };
     }
 
-    startStream('stream-canvas', 8080);
+    // Example: start stream number zero
+    startStream(0);
 </script>
 </body>
 </html>

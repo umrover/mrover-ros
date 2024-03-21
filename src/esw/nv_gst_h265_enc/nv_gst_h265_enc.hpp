@@ -30,8 +30,6 @@ namespace mrover {
 
         auto imageCallback(sensor_msgs::ImageConstPtr const& msg) -> void;
 
-        friend auto busMessageCallback(GstBus*, GstMessage* message, void* userData) -> gboolean;
-
     public:
         NvGstH265EncNodelet() = default;
 
