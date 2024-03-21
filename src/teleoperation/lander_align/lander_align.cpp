@@ -49,7 +49,8 @@ namespace mrover {
 
     auto LanderAlignNodelet::ActionServerCallBack(LanderAlignGoalConstPtr const& actionRequest) -> void {
         LanderAlignResult result;
-        
+        mPlaneOffsetScalar = 2.5;
+
         //If we haven't yet defined the point cloud we are working with
 		mCloud = ros::topic::waitForMessage<sensor_msgs::PointCloud2>("/camera/left/points", mNh);
 		filterNormals(mCloud);
@@ -369,6 +370,9 @@ namespace mrover {
         while (ros::ok()) {
             if(mActionServer->isPreemptRequested()){
                 mActionServer->setPreempted();
+                twist.angular.z = 0;
+                twist.linear.x = 0;
+                mTwistPub.publish(twist);
                 break;
             }
                 
