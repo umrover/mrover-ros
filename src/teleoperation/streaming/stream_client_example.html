@@ -16,17 +16,18 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>MRover Test Stream</title>
 </head>
-<body>
+<body style="background-color: #0F0F0F">
 <main>
-    <h1>H.265 Stream</h1>
+    <h1 style="color: white">H.265 Stream</h1>
     <canvas id="stream-canvas"></canvas>
 </main>
 <script>
-    const STREAM_CODEC = 'hvc1.1.2.L90.90';
-    const STREAM_WIDTH = 640;
-    const STREAM_HEIGHT = 480;
+    function startStream(canvasId, port) {
+        const STREAM_CODEC = 'hvc1.1.2.L90.90';
+        const STREAM_WIDTH = 640;
+        const STREAM_HEIGHT = 480;
 
-    const vertexShaderSource = `
+        const vertexShaderSource = `
     attribute vec2 xy;
 
     varying highp vec2 uv;
@@ -39,7 +40,7 @@
     }
   `;
 
-    const fragmentShaderSource = `
+        const fragmentShaderSource = `
     varying highp vec2 uv;
 
     uniform sampler2D texture;
@@ -49,94 +50,102 @@
     }
   `;
 
-    const canvas = document.getElementById('stream-canvas');
-    const gl = canvas.getContext('webgl2');
+        const canvas = document.getElementById(canvasId);
+        const gl = canvas.getContext('webgl2');
 
-    const vertexShader = gl.createShader(gl.VERTEX_SHADER);
-    gl.shaderSource(vertexShader, vertexShaderSource);
-    gl.compileShader(vertexShader);
-    if (!gl.getShaderParameter(vertexShader, gl.COMPILE_STATUS)) {
-        throw gl.getShaderInfoLog(vertexShader);
-    }
-
-    const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
-    gl.shaderSource(fragmentShader, fragmentShaderSource);
-    gl.compileShader(fragmentShader);
-    if (!gl.getShaderParameter(fragmentShader, gl.COMPILE_STATUS)) {
-        throw gl.getShaderInfoLog(fragmentShader);
-    }
-
-    const shaderProgram = gl.createProgram();
-    gl.attachShader(shaderProgram, vertexShader);
-    gl.attachShader(shaderProgram, fragmentShader);
-    gl.linkProgram(shaderProgram);
-    if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
-        throw gl.getProgramInfoLog(shaderProgram);
-    }
-    gl.useProgram(shaderProgram);
-
-    // Vertex coordinates, clockwise from bottom-left
-    const vertexBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-        -1.0, -1.0,
-        -1.0, +1.0,
-        +1.0, +1.0,
-        +1.0, -1.0,
-    ]), gl.STATIC_DRAW);
-
-    const xyLocation = gl.getAttribLocation(shaderProgram, "xy");
-    gl.vertexAttribPointer(xyLocation, 2, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(xyLocation);
-
-    const texture = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-
-    const decoder = new VideoDecoder({
-        output(frame) {
-            canvas.width = frame.displayWidth;
-            canvas.height = frame.displayHeight;
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, frame);
-            frame.close();
-
-            gl.viewport(0, 0, canvas.width, canvas.height);
-            gl.clearColor(0, 0, 0, 1);
-            gl.clear(gl.COLOR_BUFFER_BIT);
-
-            gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
-        },
-        error(e) {
-            throw e;
+        const vertexShader = gl.createShader(gl.VERTEX_SHADER);
+        gl.shaderSource(vertexShader, vertexShaderSource);
+        gl.compileShader(vertexShader);
+        if (!gl.getShaderParameter(vertexShader, gl.COMPILE_STATUS)) {
+            throw gl.getShaderInfoLog(vertexShader);
         }
-    });
-    // TODO(quintin): Need to know the size ahead of time. Perhaps put in a packet
-    decoder.configure({
-        codec: STREAM_CODEC,
-        codedWidth: STREAM_WIDTH,
-        codedHeight: STREAM_HEIGHT,
-    })
 
-    const ws = new WebSocket('ws://localhost:8080');
-    ws.binaryType = 'arraybuffer';
-    ws.onopen = () => {
-        console.log('Connected to server');
-    };
-    ws.onclose = () => {
-        console.log('Disconnected from server');
-    };
-    ws.onmessage = (event) => {
-        // TODO(quintin): Should the values besides "data" be set better? Parsed from the packet?
-        decoder.decode(new EncodedVideoChunk({
-            type: "key",
-            timestamp: performance.now(),
-            duration: 1000 / 30,
-            data: event.data,
-        }));
-    };
+        const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
+        gl.shaderSource(fragmentShader, fragmentShaderSource);
+        gl.compileShader(fragmentShader);
+        if (!gl.getShaderParameter(fragmentShader, gl.COMPILE_STATUS)) {
+            throw gl.getShaderInfoLog(fragmentShader);
+        }
+
+        const shaderProgram = gl.createProgram();
+        gl.attachShader(shaderProgram, vertexShader);
+        gl.attachShader(shaderProgram, fragmentShader);
+        gl.linkProgram(shaderProgram);
+        if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
+            throw gl.getProgramInfoLog(shaderProgram);
+        }
+        gl.useProgram(shaderProgram);
+
+        // Vertex coordinates, clockwise from bottom-left
+        const vertexBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+            -1.0, -1.0,
+            -1.0, +1.0,
+            +1.0, +1.0,
+            +1.0, -1.0,
+        ]), gl.STATIC_DRAW);
+
+        const xyLocation = gl.getAttribLocation(shaderProgram, "xy");
+        gl.vertexAttribPointer(xyLocation, 2, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(xyLocation);
+
+        const texture = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+        const decoder = new VideoDecoder({
+            output(frame) {
+                canvas.width = frame.displayWidth;
+                canvas.height = frame.displayHeight;
+                gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, frame);
+                frame.close();
+
+                gl.viewport(0, 0, canvas.width, canvas.height);
+                gl.clearColor(0, 0, 0, 1);
+                gl.clear(gl.COLOR_BUFFER_BIT);
+
+                gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
+            },
+            error(e) {
+                throw e;
+            }
+        });
+        // TODO(quintin): Need to know the size ahead of time. Perhaps put in a packet
+        decoder.configure({
+            codec: STREAM_CODEC,
+            codedWidth: STREAM_WIDTH,
+            codedHeight: STREAM_HEIGHT,
+        })
+
+        // TODO(quintin): Set IP too
+        const ws = new WebSocket(`ws://localhost:${port}`);
+        ws.binaryType = 'arraybuffer';
+        ws.onopen = () => {
+            console.log('Connected to server');
+        };
+        ws.onclose = () => {
+            console.log('Disconnected from server');
+            setTimeout(() => startStream(canvasId, port), 1000);
+        };
+        ws.onerror = (error) => {
+            ws.close()
+        };
+        ws.onmessage = (event) => {
+            // TODO(quintin): Should the values besides "data" be set better? Parsed from the packet?
+            decoder.decode(new EncodedVideoChunk({
+                type: "key",
+                timestamp: performance.now(),
+                duration: 1000 / 30,
+                data: event.data,
+            }));
+        };
+    }
+
+    startStream('stream-canvas', 8080);
 </script>
 </body>
 </html>

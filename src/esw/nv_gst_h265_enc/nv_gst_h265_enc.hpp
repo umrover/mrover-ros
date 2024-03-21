@@ -10,7 +10,6 @@ namespace mrover {
 
         std::string mCaptureDevice;
         std::string mImageTopic;
-        std::string mCodec;
         std::uint64_t mBitrate{};
         std::uint32_t mImageWidth{}, mImageHeight{}, mImageFramerate{};
 
@@ -19,7 +18,6 @@ namespace mrover {
         std::optional<StreamServer> mStreamServer;
 
         GstElement *mImageSource{}, *mStreamSink{}, *mPipeline{};
-        bool mIsPipelinePlaying = false;
         GMainLoop* mMainLoop{};
         std::thread mMainLoopThread;
         std::thread mStreamSinkThread;

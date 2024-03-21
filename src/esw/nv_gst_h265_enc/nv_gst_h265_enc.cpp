@@ -53,7 +53,7 @@ namespace mrover {
                 break;
         }
         return TRUE;
-    }
+    }   
 
     auto NvGstH265EncNodelet::initPipeline() -> void {
         ROS_INFO("Initializing and starting GStreamer pipeline...");
@@ -63,10 +63,9 @@ namespace mrover {
         std::string launch;
         if (mCaptureDevice.empty()) {
             if constexpr (IS_JETSON) {
-                // TODO(quintin): Use mCodec
                 // ReSharper disable once CppDFAUnreachableCode
                 launch = std::format(
-                        "appsrc name=imageSource " // App source is pushed to when we get a ROS BGRA image message
+                        "appsrc is-live=true name=imageSource " // App source is pushed to when we get a ROS BGRA image message
                         "! video/x-raw,format=BGRA,width={},height={},framerate=30/1 "
                         "! videoconvert " // Convert BGRA => I420 (YUV) for the encoder, note we are still on the CPU
                         "! video/x-raw,format=I420 "
@@ -78,12 +77,12 @@ namespace mrover {
             } else {
                 // ReSharper disable once CppDFAUnreachableCode
                 launch = std::format(
-                        "appsrc name=imageSource "
+                        "appsrc is-live=true name=imageSource "
                         "! video/x-raw,format=BGRA,width={},height={},framerate=30/1 "
                         "! videoconvert "
-                        "! nv{}enc "
-                        "! appsink name=streamSink",
-                        mImageWidth, mImageHeight, mCodec);
+                        "! nvh265enc "
+                        "! appsink sync=false name=streamSink",
+                        mImageWidth, mImageHeight);
             }
         } else {
             assert(IS_JETSON);
@@ -96,9 +95,9 @@ namespace mrover {
                     "! video/x-raw(memory:NVMM),format=UYVY,width={},height={},framerate={}/1 "
                     "! nvvidconv "
                     "! video/x-raw(memory:NVMM),format=I420 "
-                    "! nvv4l2{}enc bitrate={} iframeinterval=300 vbv-size=33333 insert-sps-pps=true control-rate=constant_bitrate profile=Main num-B-Frames=0 ratecontrol-enable=true preset-level=UltraFastPreset EnableTwopassCBR=false maxperf-enable=true "
+                    "! nvv4l2h265enc bitrate={} iframeinterval=300 vbv-size=33333 insert-sps-pps=true control-rate=constant_bitrate profile=Main num-B-Frames=0 ratecontrol-enable=true preset-level=UltraFastPreset EnableTwopassCBR=false maxperf-enable=true "
                     "! appsink sync=false name=streamSink",
-                    mCaptureDevice, mImageWidth, mImageHeight, mImageFramerate, mCodec, mBitrate);
+                    mCaptureDevice, mImageWidth, mImageHeight, mImageFramerate, mBitrate);
         }
 
         ROS_INFO_STREAM(std::format("GStreamer launch: {}", launch));
@@ -132,13 +131,12 @@ namespace mrover {
     auto NvGstH265EncNodelet::imageCallback(sensor_msgs::ImageConstPtr const& msg) -> void {
         try {
             if (msg->encoding != sensor_msgs::image_encodings::BGRA8) throw std::runtime_error{"Unsupported encoding"};
+            if (msg->width != mImageWidth || msg->height != mImageHeight) throw std::runtime_error{"Unsupported resolution"};
 
             mImageWidth = msg->width;
             mImageHeight = msg->height;
 
             if (!mPipeline) initPipeline();
-
-            if (!mIsPipelinePlaying) return;
 
             // "step" is the number of bytes (NOT pixels) in an image row
             std::size_t size = msg->step * msg->height;
@@ -149,7 +147,7 @@ namespace mrover {
             gst_buffer_unmap(buffer, &info);
 
             if (gst_app_src_push_buffer(GST_APP_SRC(mImageSource), buffer) != GST_FLOW_OK)
-                throw std::runtime_error{"Failed to push buffer"};
+                ROS_WARN("Failed to push image buffer");
 
         } catch (std::exception const& e) {
             ROS_ERROR_STREAM(std::format("Exception encoding frame: {}", e.what()));
@@ -164,17 +162,16 @@ namespace mrover {
 
             mCaptureDevice = mPnh.param<std::string>("device", "");
             mImageTopic = mNh.param<std::string>("image_topic", "image");
-            if (!mCaptureDevice.empty()) {
-                mImageWidth = mPnh.param<int>("width", 640);
-                mImageHeight = mPnh.param<int>("height", 480);
-                mImageFramerate = mPnh.param<int>("framerate", 30);
-            }
+            mImageWidth = mPnh.param<int>("width", 640);
+            mImageHeight = mPnh.param<int>("height", 480);
+            mImageFramerate = mPnh.param<int>("framerate", 30);
             auto address = mPnh.param<std::string>("address", "0.0.0.0");
             auto port = mPnh.param<int>("port", 8080);
             mBitrate = mPnh.param<int>("bitrate", 2000000);
-            mCodec = mPnh.param<std::string>("codec", "h265");
 
             gst_init(nullptr, nullptr);
+
+            initPipeline();
 
             mStreamServer.emplace(
                     address,
@@ -184,23 +181,18 @@ namespace mrover {
                         if (gst_element_set_state(mPipeline, GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE)
                             throw std::runtime_error{"Failed to play GStreamer pipeline"};
 
-                        mIsPipelinePlaying = true;
                         ROS_INFO("Playing GStreamer pipeline");
                     },
                     [this] {
                         ROS_INFO("Client disconnected");
-                        gst_app_src_end_of_stream(GST_APP_SRC(mImageSource));
                         if (gst_element_set_state(mPipeline, GST_STATE_READY) == GST_STATE_CHANGE_FAILURE)
                             throw std::runtime_error{"Failed to pause GStreamer pipeline"};
 
-                        mIsPipelinePlaying = false;
                         ROS_INFO("Paused GStreamer pipeline");
                     });
 
             if (mCaptureDevice.empty()) {
                 mImageSubscriber = mNh.subscribe(mImageTopic, 1, &NvGstH265EncNodelet::imageCallback, this);
-            } else {
-                initPipeline();
             }
 
         } catch (std::exception const& e) {
