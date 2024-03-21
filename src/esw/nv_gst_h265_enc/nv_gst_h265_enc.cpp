@@ -129,12 +129,8 @@ namespace mrover {
         ROS_INFO("Initialized and started GStreamer pipeline");
     }
 
-    std::mutex m;
-
     auto NvGstH265EncNodelet::imageCallback(sensor_msgs::ImageConstPtr const& msg) -> void {
         try {
-            std::scoped_lock lock{m};
-
             if (msg->encoding != sensor_msgs::image_encodings::BGRA8) throw std::runtime_error{"Unsupported encoding"};
 
             mImageWidth = msg->width;
@@ -184,20 +180,19 @@ namespace mrover {
                     address,
                     port,
                     [this] {
-                        std::scoped_lock lock{m};
                         ROS_INFO("Client connected");
                         if (gst_element_set_state(mPipeline, GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE)
                             throw std::runtime_error{"Failed to play GStreamer pipeline"};
+
                         mIsPipelinePlaying = true;
                         ROS_INFO("Playing GStreamer pipeline");
                     },
                     [this] {
-                        std::scoped_lock lock{m};
                         ROS_INFO("Client disconnected");
                         gst_app_src_end_of_stream(GST_APP_SRC(mImageSource));
                         if (gst_element_set_state(mPipeline, GST_STATE_READY) == GST_STATE_CHANGE_FAILURE)
                             throw std::runtime_error{"Failed to pause GStreamer pipeline"};
-                        std::this_thread::sleep_for(std::chrono::milliseconds{100});
+
                         mIsPipelinePlaying = false;
                         ROS_INFO("Paused GStreamer pipeline");
                     });
