@@ -20,7 +20,7 @@ namespace mrover {
     public:
     	Spectral() = default;
 
-    	Spectral(std::shared_ptr<SMBus<uint8_t, uint16_t>> i2c_bus, std::shared_ptr<I2CMux> i2c_mux, uint8_t i2c_mux_channel);
+    	Spectral(std::shared_ptr<SMBus<uint8_t, uint8_t>> i2c_bus, std::shared_ptr<I2CMux> i2c_mux, uint8_t i2c_mux_channel);
 
         enum I2C_OP{
         	READ,
@@ -39,7 +39,7 @@ namespace mrover {
         void init();
 
         void virtual_write(uint8_t virtual_reg, uint8_t data);
-        auto virtual_read(uint8_t virtual_reg) -> std::optional<uint16_t>;
+        uint8_t virtual_read(uint8_t virtual_reg);// -> std::optional<uint16_t>;
 
         constexpr static std::uint16_t SPECTRAL_7b_ADDRESS = 0x49;
         constexpr static std::uint8_t I2C_AS72XX_SLAVE_STATUS_REG = 0x00;
@@ -54,7 +54,7 @@ namespace mrover {
         bool m_error{};
         bool m_initialized{};
 
-        std::shared_ptr<SMBus<uint8_t, uint16_t>> m_i2c_bus;
+        std::shared_ptr<SMBus<uint8_t, uint8_t>> m_i2c_bus;
         std::shared_ptr<I2CMux> m_i2c_mux;
         uint8_t m_i2c_mux_channel;
         constexpr static std::uint8_t CHANNEL_DATA_LENGTH = 6;

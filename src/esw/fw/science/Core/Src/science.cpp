@@ -19,7 +19,8 @@ namespace mrover {
     Science science;
 
     void init() {
-        std::shared_ptr<SMBus<uint8_t, uint16_t>> i2c_bus = std::make_shared<SMBus<uint8_t, uint16_t>>(&hi2c1);
+    	// Instantiation of SMBus provides # of bytes in I2C transactions
+        std::shared_ptr<SMBus<uint8_t, uint8_t>> i2c_bus = std::make_shared<SMBus<uint8_t, uint8_t>>(&hi2c1);
 
         std::shared_ptr<I2CMux> i2c_mux = std::make_shared<I2CMux>(
         		i2c_bus,

@@ -18,7 +18,7 @@ namespace mrover {
     class Science {
     private:
 
-    	std::shared_ptr<SMBus<uint8_t, uint16_t>> m_i2c_bus;
+    	std::shared_ptr<SMBus<uint8_t, uint8_t>> m_i2c_bus;
 
     	FDCAN<InBoundScienceMessage> m_fdcan_bus;
         std::array<Spectral, 3> m_spectral_sensors;
@@ -110,7 +110,6 @@ namespace mrover {
 
         void update_and_send_spectral() {
         	SpectralData spectral_data;
-        	// TEST just 1 spectral (id 0), replace with 0 - 3 later
         	for (int i = 0; i < 3; ++i) {
         		bool op_res = m_spectral_sensors.at(i).update_channel_data();
         		if (!op_res){
