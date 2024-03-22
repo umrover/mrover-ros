@@ -183,7 +183,7 @@ namespace mrover {
             if (link->name.contains("camera"sv)) {
                 Camera camera = makeCameraForLink(simulator, &multiBody->getLink(linkIndex));
                 if (link->name.contains("zed"sv)) {
-                    camera.frameId = "zed2i_left_camera_frame";
+                    camera.frameId = "zed_left_camera_frame";
                     camera.pub = simulator.mNh.advertise<sensor_msgs::Image>("camera/left/image", 1);
                     camera.fov = 60;
                     StereoCamera stereoCamera;

@@ -8,9 +8,11 @@ if (EMSCRIPTEN)
     if (CMAKE_BUILD_TYPE STREQUAL Release)
         message(STATUS "Adding extra optimizations")
         add_compile_options(-msimd128 -flto)
-        add_link_options(-flto --bind)
+        add_link_options(-flto)
     endif ()
+    add_link_options(--bind)
     # See https://github.com/emscripten-core/emscripten/blob/main/src/settings.js
+    # Default memory and stack size were too small for the H265 decoding library
     add_link_options(-sINITIAL_MEMORY=512MB -sSTACK_SIZE=16MB -sEXPORTED_FUNCTIONS=_main,_on_before_unload)
 endif ()
 

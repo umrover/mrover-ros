@@ -1,5 +1,6 @@
 #include <cstdio>
 #include <string>
+#include <chrono>
 
 #include <emscripten/val.h>
 #include <emscripten/websocket.h>
@@ -7,7 +8,6 @@
 #include <libde265/de265.h>
 
 de265_decoder_context* decoder{};
-;
 
 EMSCRIPTEN_WEBSOCKET_T socket{};
 
@@ -22,7 +22,7 @@ auto on_open(int _event_type, EmscriptenWebSocketOpenEvent const* websocket_even
 auto on_error(int _event_type, EmscriptenWebSocketErrorEvent const* websocket_event, void* user_data) -> EM_BOOL {
     std::puts("Stream errored :(");
 
-    create_socket();
+    // create_socket();
 
     return EM_TRUE;
 }
@@ -30,7 +30,7 @@ auto on_error(int _event_type, EmscriptenWebSocketErrorEvent const* websocket_ev
 auto on_close(int _event_type, EmscriptenWebSocketCloseEvent const* websocket_event, void* user_data) -> EM_BOOL {
     std::puts("Stream closed");
 
-    create_socket();
+    // create_socket();
 
     return EM_TRUE;
 }
@@ -46,10 +46,16 @@ auto on_message(int _event_type, EmscriptenWebSocketMessageEvent const* websocke
         return EM_FALSE;
     }
 
+    // auto start = std::chrono::high_resolution_clock::now();
+
     int more = 0;
     de265_error decode_status;
     while ((decode_status = de265_decode(decoder, &more)) == DE265_OK && more) {
     }
+
+    // auto end = std::chrono::high_resolution_clock::now();
+    
+    // printf("%llu ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count());
 
     if (decode_status != DE265_OK && decode_status != DE265_ERROR_WAITING_FOR_INPUT_DATA) {
         std::printf("Errored decoding: %d\n", decode_status);
@@ -136,6 +142,7 @@ auto on_before_unload() -> void {
 auto create_socket() -> void {
     emscripten::val location = emscripten::val::global("location");
     std::string url = "ws://" + location["hostname"].as<std::string>() + ":8080";
+    // std::string url = "ws://10.1.0.10:8080";
     printf("Connecting to %s ...\n", url.c_str());
     EmscriptenWebSocketCreateAttributes create_socket_attributes = {
             .url = url.c_str(),

@@ -22,7 +22,7 @@
       </div> -->
     <!-- ADD BENEDICTS TEST HERE-->
     <div class="shadow p-3 rounded cameras">
-      <Cameras :primary="primary" />
+      <Cameras :primary="primary" :isSA="false"/>
     </div>
     <!-- <div class="shadow p-3 rounded cache">
         <Cache />
@@ -121,12 +121,12 @@ export default {
   grid-template-rows: repeat(7, auto);
   grid-template-areas:
     'header header'
-    'cameras siteSelect'
-    'cameras raman'
-    'cameras chlorophyll'
+    'carousel siteSelect'
+    'carousel raman'
     'carousel chlorophyll'
-    'carousel amino'
-    'cache amino';
+    'cache chlorophyll'
+    'cache amino'
+    'cameras cameras';
   font-family: sans-serif;
   height: auto;
 }
