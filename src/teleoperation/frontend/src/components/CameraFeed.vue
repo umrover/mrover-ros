@@ -59,4 +59,8 @@ export default defineComponent({
 .wrap {
   width: fit-content;
 }
+canvas {
+  width: 640px;
+  height: 480px;
+}
 </style>
