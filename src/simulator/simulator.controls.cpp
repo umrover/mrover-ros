@@ -158,7 +158,7 @@ namespace mrover {
             ik.target.pose.position.x = mIkTarget.x();
             ik.target.pose.position.y = mIkTarget.y();
             ik.target.pose.position.z = mIkTarget.z();
-            ik.target.header.frame_id = "joint_a_static";
+            ik.target.header.frame_id = "arm_base_link";
             mIkTargetPub.publish(ik);
         }
 
