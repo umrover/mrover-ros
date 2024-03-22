@@ -40,13 +40,13 @@ namespace mrover {
         Velocity velocity = *msg;
 
         // joint a convert linear velocity (meters/s) to revolution/s
-        auto x_axis_vel = convertLinVel(static_cast<float>(msg->velocities.at(mXAxisIndex)), mXAxisMult.get());
+        auto x_axis_vel = static_cast<float>(msg->velocities.at(mXAxisIndex)) *mXAxisMult.get();
         velocity.velocities.at(mXAxisIndex) = x_axis_vel;
 
-        auto y_axis_vel = convertLinVel(static_cast<float>(msg->velocities.at(mYAxisIndex)), mYAxisMult.get());
+        auto y_axis_vel = static_cast<float>(msg->velocities.at(mYAxisIndex)) * mYAxisMult.get();
         velocity.velocities.at(mYAxisIndex) = y_axis_vel;
 
-        auto z_axis_vel = convertLinVel(static_cast<float>(msg->velocities.at(mZAxisIndex)), mZAxisMult.get());
+        auto z_axis_vel = static_cast<float>(msg->velocities.at(mZAxisIndex)) * mZAxisMult.get();
         velocity.velocities.at(mZAxisIndex) = z_axis_vel; 
 
         mVelocityPub->publish(velocity);
@@ -62,13 +62,13 @@ namespace mrover {
         Position position = *msg;
 
         // joint a convert linear velocity (meters/s) to revolution/s
-        auto x_axis_pos = convertLinPos(static_cast<float>(msg->positions.at(mXAxisIndex)), mXAxisMult.get());
+        auto x_axis_pos = static_cast<float>(msg->positions.at(mXAxisIndex)) * mXAxisMult.get();
         position.positions.at(mXAxisIndex) = x_axis_pos;
 
-        auto y_axis_pos = convertLinPos(static_cast<float>(msg->positions.at(mYAxisIndex)), mYAxisMult.get());
+        auto y_axis_pos = static_cast<float>(msg->positions.at(mYAxisIndex)) * mYAxisMult.get();
         position.positions.at(mYAxisIndex) = y_axis_pos;
 
-        auto z_axis_pos = convertLinPos(static_cast<float>(msg->positions.at(mZAxisIndex)), mZAxisMult.get());
+        auto z_axis_pos = static_cast<float>(msg->positions.at(mZAxisIndex)) * mZAxisMult.get();
         position.positions.at(mZAxisIndex) = z_axis_pos;                
 
         mPositionPub->publish(position);
@@ -81,14 +81,14 @@ namespace mrover {
         }
 
         // Convert joint  state of joint a from radians/revolutions to meters
-        auto xAxisLinVel = convertLinVel(static_cast<float>(msg->velocity.at(mXAxisIndex)), mXAxisMult.get());
-        auto xAxisLinPos = convertLinPos(static_cast<float>(msg->position.at(mXAxisIndex)), mXAxisMult.get());
+        auto xAxisLinVel = static_cast<float>(msg->velocity.at(mXAxisIndex))* mXAxisMult.get();
+        auto xAxisLinPos = static_cast<float>(msg->position.at(mXAxisIndex))* mXAxisMult.get();
 
-        auto yAxisLinVel = convertLinVel(static_cast<float>(msg->velocity.at(mYAxisIndex)), mYAxisMult.get());
-        auto yAxisLinPos = convertLinPos(static_cast<float>(msg->position.at(mYAxisIndex)), mYAxisMult.get());
+        auto yAxisLinVel = static_cast<float>(msg->velocity.at(mYAxisIndex))* mYAxisMult.get();
+        auto yAxisLinPos = static_cast<float>(msg->position.at(mYAxisIndex))* mYAxisMult.get();
 
-        auto zAxisLinVel = convertLinVel(static_cast<float>(msg->velocity.at(mZAxisIndex)), mZAxisMult.get());
-        auto zAxisLinPos = convertLinPos(static_cast<float>(msg->position.at(mZAxisIndex)), mZAxisMult.get());
+        auto zAxisLinVel = static_cast<float>(msg->velocity.at(mZAxisIndex))* mZAxisMult.get();
+        auto zAxisLinPos = static_cast<float>(msg->position.at(mZAxisIndex))* mZAxisMult.get();
 
         sensor_msgs::JointState jointState = *msg;
         jointState.velocity.at(mXAxisIndex) = xAxisLinVel;
@@ -97,7 +97,6 @@ namespace mrover {
         jointState.position.at(mYAxisIndex) = yAxisLinPos;
         jointState.velocity.at(mZAxisIndex) = zAxisLinVel;
         jointState.position.at(mZAxisIndex) = zAxisLinPos;
-
 
         mJointDataPub->publish(jointState);
     }
