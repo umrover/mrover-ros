@@ -296,7 +296,7 @@ class WaterBottleSearchState(State):
         :param msg: Occupancy Grid representative of a 30 x 30m square area with origin at GNSS waypoint. Values are 0, 1, -1
         """
         # only update our costmap every 0.5 seconds
-        if rospy.get_time() - self.time_last_updated > 0.5:
+        if rospy.get_time() - self.time_last_updated > 1:
             print("RUN ASTAR")
 
             self.resolution = msg.info.resolution # meters/cell
@@ -367,6 +367,7 @@ class WaterBottleSearchState(State):
                 self.DISTANCE_BETWEEN_SPIRALS,
                 self.SEGMENTS_PER_ROTATION,
                 search_center.tag_id,
+                True
             )
             self.origin = context.rover.get_pose().position[0:2]
             print(f"ORIGIN: {self.origin}")

@@ -40,6 +40,7 @@ class SearchState(State):
                     self.DISTANCE_BETWEEN_SPIRALS,
                     self.SEGMENTS_PER_ROTATION,
                     search_center.tag_id,
+                    False
                 )
             else:  # water bottle or mallet
                 self.traj = SearchTrajectory.spiral_traj(
@@ -48,6 +49,7 @@ class SearchState(State):
                     self.OBJECT_DISTANCE_BETWEEN_SPIRALS,
                     self.SEGMENTS_PER_ROTATION,
                     search_center.tag_id,
+                    False
                 )
             self.prev_target = None
 
