@@ -40,13 +40,13 @@ namespace mrover {
         Velocity velocity = *msg;
 
         // joint a convert linear velocity (meters/s) to revolution/s
-        auto x_axis_vel = convertLinVel(msg->velocities.at(mXAxisIndex), mXAxisMult.get());
+        auto x_axis_vel = convertLinVel(static_cast<float>(msg->velocities.at(mXAxisIndex)), mXAxisMult.get());
         velocity.velocities.at(mXAxisIndex) = x_axis_vel;
 
-        auto y_axis_vel = convertLinVel(msg->velocities.at(mYAxisIndex), mYAxisMult.get());
+        auto y_axis_vel = convertLinVel(static_cast<float>(msg->velocities.at(mYAxisIndex)), mYAxisMult.get());
         velocity.velocities.at(mYAxisIndex) = y_axis_vel;
 
-        auto z_axis_vel = convertLinVel(msg->velocities.at(mZAxisIndex), mZAxisMult.get());
+        auto z_axis_vel = convertLinVel(static_cast<float>(msg->velocities.at(mZAxisIndex)), mZAxisMult.get());
         velocity.velocities.at(mZAxisIndex) = z_axis_vel; 
 
         mVelocityPub->publish(velocity);
@@ -62,13 +62,13 @@ namespace mrover {
         Position position = *msg;
 
         // joint a convert linear velocity (meters/s) to revolution/s
-        auto x_axis_pos = convertLinPos(msg->positions.at(mXAxisIndex), mXAxisMult.get());
+        auto x_axis_pos = convertLinPos(static_cast<float>(msg->positions.at(mXAxisIndex)), mXAxisMult.get());
         position.positions.at(mXAxisIndex) = x_axis_pos;
 
-        auto y_axis_pos = convertLinPos(msg->positions.at(mYAxisIndex), mYAxisMult.get());
+        auto y_axis_pos = convertLinPos(static_cast<float>(msg->positions.at(mYAxisIndex)), mYAxisMult.get());
         position.positions.at(mYAxisIndex) = y_axis_pos;
 
-        auto z_axis_pos = convertLinPos(msg->positions.at(mZAxisIndex), mZAxisMult.get());
+        auto z_axis_pos = convertLinPos(static_cast<float>(msg->positions.at(mZAxisIndex)), mZAxisMult.get());
         position.positions.at(mZAxisIndex) = z_axis_pos;                
 
         mPositionPub->publish(position);
@@ -93,10 +93,10 @@ namespace mrover {
         sensor_msgs::JointState jointState = *msg;
         jointState.velocity.at(mXAxisIndex) = xAxisLinVel;
         jointState.position.at(mXAxisIndex) = xAxisLinPos;
-        jointState.velocity.at(mXAxisIndex) = yAxisLinVel;
-        jointState.position.at(mXAxisIndex) = yAxisLinPos;
-        jointState.velocity.at(mXAxisIndex) = zAxisLinVel;
-        jointState.position.at(mXAxisIndex) = zAxisLinPos;
+        jointState.velocity.at(mYAxisIndex) = yAxisLinVel;
+        jointState.position.at(mYAxisIndex) = yAxisLinPos;
+        jointState.velocity.at(mZAxisIndex) = zAxisLinVel;
+        jointState.position.at(mZAxisIndex) = zAxisLinPos;
 
 
         mJointDataPub->publish(jointState);

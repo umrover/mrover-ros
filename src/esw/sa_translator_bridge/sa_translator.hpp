@@ -39,23 +39,15 @@ namespace mrover {
     private:
 
         const std::vector<std::string> mSAHWNames = {"sa_x", "sa_y", "sa_z", "sampler", "sensor_actuator"};
-        std::unique_ptr<ros::Publisher> mThrottlePub;
-        std::unique_ptr<ros::Publisher> mVelocityPub;
-        std::unique_ptr<ros::Publisher> mPositionPub;
-        std::unique_ptr<ros::Publisher> mJointDataPub;
+        
+        std::unique_ptr<ros::Publisher> mThrottlePub, mVelocityPub, mPositionPub, mJointDataPub;
+        ros::Subscriber mThrottleSub, mVelocitySub, mPositionSub, mSAHWJointDataSub;
        
         const size_t mXAxisIndex = std::find(mSAHWNames.begin(), mSAHWNames.end(), "sa_x") - mSAHWNames.begin();
         const size_t mYAxisIndex = std::find(mSAHWNames.begin(), mSAHWNames.end(), "sa_y") - mSAHWNames.begin();
         const size_t mZAxisIndex = std::find(mSAHWNames.begin(), mSAHWNames.end(), "sa_z") - mSAHWNames.begin();
 
-        RadiansPerMeter mXAxisMult{};
-        RadiansPerMeter mYAxisMult{};
-        RadiansPerMeter mZAxisMult{};
-
-        ros::Subscriber mThrottleSub;
-        ros::Subscriber mVelocitySub;
-        ros::Subscriber mPositionSub;
-        ros::Subscriber mSAHWJointDataSub;
+        RadiansPerMeter mXAxisMult{}, mYAxisMult{}, mZAxisMult{};
 
     };
 
