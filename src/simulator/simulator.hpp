@@ -216,8 +216,6 @@ namespace mrover {
         ros::Publisher mMotorStatusPub;
         ros::Publisher mDriveControllerStatePub;
         ros::Publisher mArmControllerStatePub;
-        ros::Publisher mLeftRTKFixPub;
-        ros::Publisher mRightRTKFixPub;
 
         tf2_ros::Buffer mTfBuffer;
         tf2_ros::TransformListener mTfListener{mTfBuffer};

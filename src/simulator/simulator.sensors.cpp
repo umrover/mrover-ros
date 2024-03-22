@@ -183,28 +183,30 @@ namespace mrover {
                 leftGpsInMap += leftGpsNoise;
                 rightGpsInMap += rightGpsNoise; 
 
-                mLeftGpsPub.publish(computeNavSatFix(leftGpsInMap, mGpsLinearizationReferencePoint, mGpsLinerizationReferenceHeading));
-                mRightGpsPub.publish(computeNavSatFix(rightGpsInMap, mGpsLinearizationReferencePoint, mGpsLinerizationReferenceHeading));
-                
-                RTKStatus status;
-                status.header.stamp = ros::Time::now();
-                status.header.frame_id = "map";
+                RTKNavSatFix leftGpsMsg;
+                RTKNavSatFix rightGpsMsg;
+
+                leftGpsMsg.coord = computeNavSatFix(leftGpsInMap, mGpsLinearizationReferencePoint, mGpsLinerizationReferenceHeading);
+                rightGpsMsg.coord = computeNavSatFix(rightGpsInMap, mGpsLinearizationReferencePoint, mGpsLinerizationReferenceHeading);
 
                 if (mRTkFixFreq(mRNG) == 1) {
-                    status.RTK_FIX_TYPE = RTKStatus::RTK_FIX;
-                    mLeftRTKFixPub.publish(status);
-                    mRightRTKFixPub.publish(status);
+                    leftGpsMsg.fix_type = RTKNavSatFix::RTK_FIX;
+                    rightGpsMsg.fix_type = RTKNavSatFix::RTK_FIX;
                 }
-                else if (mRTkFixFreq(mRNG) == 2 || mRTkFixFreq(mRNG) == 3){
-                    status.RTK_FIX_TYPE = RTKStatus::FLOATING_RTK;
-                    mLeftRTKFixPub.publish(status);
-                    mRightRTKFixPub.publish(status);
+                else if (mRTkFixFreq(mRNG) == 2 || mRTkFixFreq(mRNG) == 3) {
+                    leftGpsMsg.fix_type = RTKNavSatFix::FLOATING_FIX;
+                    rightGpsMsg.fix_type = RTKNavSatFix::FLOATING_FIX;
                 }
                 else {
-                    status.RTK_FIX_TYPE = RTKStatus::NO_RTK;
-                    mLeftRTKFixPub.publish(status);
-                    mRightRTKFixPub.publish(status);
+                    leftGpsMsg.fix_type = RTKNavSatFix::NO_FIX;
+                    rightGpsMsg.fix_type = RTKNavSatFix::NO_FIX;
                 }
+
+                leftGpsMsg.header = leftGpsMsg.coord.header;
+                rightGpsMsg.header = leftGpsMsg.coord.header;
+
+                mLeftGpsPub.publish(leftGpsMsg);
+                mRightGpsPub.publish(rightGpsMsg);
             }
             if (mImuTask.shouldUpdate()) {
                 auto dt_s = std::chrono::duration_cast<std::chrono::duration<double>>(dt).count();

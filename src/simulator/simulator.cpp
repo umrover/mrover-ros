@@ -15,16 +15,14 @@ namespace mrover {
         mArmThrottlesSub = mNh.subscribe<Throttle>("/arm_throttle_cmd", 1, &SimulatorNodelet::armThrottlesCallback, this);
 
         mGroundTruthPub = mNh.advertise<nav_msgs::Odometry>("/ground_truth", 1);
-        mLeftGpsPub = mNh.advertise<sensor_msgs::NavSatFix>("/left_gps_driver/fix", 1);
-        mRightGpsPub = mNh.advertise<sensor_msgs::NavSatFix>("/right_gps_driver/fix", 1);
+        mLeftGpsPub = mNh.advertise<RTKNavSatFix>("/left_gps_driver/fix", 1);
+        mRightGpsPub = mNh.advertise<RTKNavSatFix>("/right_gps_driver/fix", 1);
         mImuPub = mNh.advertise<ImuAndMag>("/imu/data", 1);
         mGpsTask = PeriodicTask{mPnh.param<float>("gps_rate", 10)};
         mImuTask = PeriodicTask{mPnh.param<float>("imu_rate", 100)};
         mMotorStatusPub = mNh.advertise<MotorsStatus>("/drive_status", 1);
         mDriveControllerStatePub = mNh.advertise<ControllerState>("/drive_controller_data", 1);
         mArmControllerStatePub = mNh.advertise<ControllerState>("/arm_controller_data", 1);
-        mLeftRTKFixPub = mNh.advertise<RTKStatus>("/left_gps_driver/rtk_fix_status", 1);
-        mRightRTKFixPub = mNh.advertise<RTKStatus>("/right_gps_driver/rtk_fix_status", 1);
 
         mIkTargetPub = mNh.advertise<IK>("/arm_ik", 1);
 
