@@ -106,15 +106,12 @@ namespace mrover {
         ROS_INFO("Initialized and started GStreamer pipeline");
     }
 
-    auto NvGstH265EncNodelet::imageCallback(sensor_msgs::ImageConstPtr const& msg) -> void {
+    auto NvGstH265EncNodelet::imageCallback(sensor_msgs::ImageConstPtr const& msg) const -> void {
         try {
+            if (!mIsLive) return;
+
             if (msg->encoding != sensor_msgs::image_encodings::BGRA8) throw std::runtime_error{"Unsupported encoding"};
             if (msg->width != mImageWidth || msg->height != mImageHeight) throw std::runtime_error{"Unsupported resolution"};
-
-            mImageWidth = msg->width;
-            mImageHeight = msg->height;
-
-            if (!mPipeline) initPipeline();
 
             // "step" is the number of bytes (NOT pixels) in an image row
             std::size_t size = msg->step * msg->height;
@@ -143,7 +140,7 @@ namespace mrover {
             mImageHeight = mPnh.param<int>("height", 480);
             mImageFramerate = mPnh.param<int>("framerate", 30);
             auto address = mPnh.param<std::string>("address", "0.0.0.0");
-            auto port = mPnh.param<int>("port", 8080);
+            auto port = mPnh.param<int>("port", 8081);
             mBitrate = mPnh.param<int>("bitrate", 2000000);
 
             gst_init(nullptr, nullptr);
@@ -158,13 +155,18 @@ namespace mrover {
                         if (gst_element_set_state(mPipeline, GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE)
                             throw std::runtime_error{"Failed to play GStreamer pipeline"};
 
+                        mIsLive = true;
                         ROS_INFO("Playing GStreamer pipeline");
                     },
                     [this] {
                         ROS_INFO("Client disconnected");
+                        // We want ready instead of paused or null
+                        // H265 depends on previous state so paused will not work (the new connection will have no idea about previous frames)
+                        // Null tears down too much and would require a full reinitialization
                         if (gst_element_set_state(mPipeline, GST_STATE_READY) == GST_STATE_CHANGE_FAILURE)
                             throw std::runtime_error{"Failed to pause GStreamer pipeline"};
 
+                        mIsLive = false;
                         ROS_INFO("Stopped GStreamer pipeline");
                     });
 
@@ -181,17 +183,19 @@ namespace mrover {
     NvGstH265EncNodelet::~NvGstH265EncNodelet() {
         if (mImageSource) gst_app_src_end_of_stream(GST_APP_SRC(mImageSource));
 
+        if (mMainLoop) {
+            g_main_loop_quit(mMainLoop);
+            mMainLoopThread.join();
+            g_main_loop_unref(mMainLoop);
+        }
+
         if (mPipeline) {
             gst_element_set_state(mPipeline, GST_STATE_NULL);
+            mStreamSinkThread.join();
             gst_object_unref(mPipeline);
         }
 
-        if (mMainLoop) g_main_loop_quit(mMainLoop);
-
         mStreamServer.reset();
-
-        mMainLoopThread.join();
-        mStreamSinkThread.join();
     }
 
 } // namespace mrover

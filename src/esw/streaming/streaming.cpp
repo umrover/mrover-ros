@@ -63,6 +63,7 @@ auto StreamServer::acceptAsync() -> void {
 
         if (m_on_open) m_on_open();
 
+        // For some DUMB REASON we have to read something so that we properly handle when the other side closes the connection
         m_client->async_read_some(boost::asio::mutable_buffer(nullptr, 0), [](beast::error_code const&, std::size_t) {});
 
         acceptAsync();
