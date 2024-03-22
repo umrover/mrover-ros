@@ -30,7 +30,8 @@ from mrover.msg import (
     Position,
     IK,
     SpectralGroup,
-    ScienceThermistors
+    ScienceThermistors,
+    HeaterData
 )
 from mrover.srv import EnableAuton, AdjustMotor, ChangeCameras, CapturePanorama  # , CapturePhoto
 from sensor_msgs.msg import NavSatFix, Temperature, RelativeHumidity, Image
@@ -96,9 +97,10 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.sa_humidity_data = rospy.Subscriber(
                 "/sa_humidity_data", RelativeHumidity, self.sa_humidity_data_callback
             )
-            self.sa_thermistor_data = rospy.Subscriber(
-                "/science_thermistors", ScienceThermistors, self.sa_thermistor_data_callback
+            self.ish_thermistor_data = rospy.Subscriber(
+                "/science_thermistors", ScienceThermistors, self.ish_thermistor_data_callback
             )
+            self.ish_heater_state = rospy.Subscriber("/science_heater_state", HeaterData, self.ish_heater_state_callback)
             self.science_spectral = rospy.Subscriber("/science_spectral", SpectralGroup, self.science_spectral_callback)
 
             # Services
@@ -146,7 +148,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.imu_calibration.unregister()
         self.sa_temp_data.unregister()
         self.sa_humidity_data.unregister()
-        self.sa_thermistor_data.unregister()
+        self.ish_thermistor_data.unregister()
         self.science_spectral.unregister()
 
     def receive(self, text_data):
@@ -641,7 +643,7 @@ class GUIConsumer(JsonWebsocketConsumer):
     def sa_humidity_data_callback(self, msg):
         self.send(text_data=json.dumps({"type": "relative_humidity", "humidity_data": msg.relative_humidity}))
 
-    def sa_thermistor_data_callback(self, msg):
+    def ish_thermistor_data_callback(self, msg):
         temps = [x.temperature for x in msg.temps]
         self.send(text_data=json.dumps({"type": "thermistor", "temps": temps}))
 
@@ -713,15 +715,18 @@ class GUIConsumer(JsonWebsocketConsumer):
             heater = msg["heater"]
             science_enable = rospy.ServiceProxy("science_enable_heater_" + heater, SetBool)
             result = science_enable(data=msg["enabled"])
-            self.send(text_data=json.dumps({"type": "science_enable", "result": result.success}))
         except rospy.ServiceException as e:
             print(f"Service init failed: {e}")
+
+
+    def ish_heater_state_callback(self, msg):
+        self.send(text_data=json.dumps({"type": "heater_states", "states": msg.state}))
 
     def auto_shutoff_toggle(self, msg):
         try:
             rospy.logerr(msg)
             result = self.heater_auto_shutoff_srv(data=msg["shutoff"])
-            self.send(text_data=json.dumps({"type": "auto_shutoff", "result": result.success}))
+            self.send(text_data=json.dumps({"type": "auto_shutoff", "success": result.success}))
         except rospy.ServiceException as e:
             print(f"Service call failed: {e}")
 

@@ -58,14 +58,14 @@ export default {
   },
   data() {
     return {
-      site: 'A' as string,
+      site: 0 as number,
       primary: false
     }
   },
 
 
   methods: {
-    onSiteChange(value: string) {
+    onSiteChange(value: number) {
       this.site = value
     }
   }

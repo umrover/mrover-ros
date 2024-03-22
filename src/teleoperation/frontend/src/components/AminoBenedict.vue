@@ -5,18 +5,18 @@
     <div class="box1 heaters">
       <ToggleButton
         id="heater"
-        :current-state="heaters[siteIndex].intended"
-        :label-enable-text="'Heater ' + site + ' Intended'"
-        :label-disable-text="'Heater ' + site + ' Intended'"
-        @change="toggleHeater(siteIndex)"
+        :current-state="heaters[site].enabled"
+        :label-enable-text="'Heater ' + site"
+        :label-disable-text="'Heater ' + site"
+        @change="toggleHeater(site)"
       />
-      <p :style="{ color: heaters[siteIndex].color }">
-        Thermistor {{ site }}: {{ (heaters[siteIndex].temp).toFixed(2) }} C°
+      <p :style="{ color: heaters[site].color }">
+        Thermistor {{ site }}: {{ (heaters[site].temp).toFixed(2) }} C°
       </p>
     </div>
     <div class="comms heaterStatus">
       <LEDIndicator
-        :connected="heaters[siteIndex].enabled"
+        :connected="heaters[site].state"
         :name="'Heater ' + site + ' Status'"
         :show_name="true"
       />
@@ -24,15 +24,15 @@
     <div class="box1 shutdown">
       <ToggleButton
         id="autoshutdown"
-        :current-state="autoShutdownIntended"
-        :label-enable-text="'Auto Shutdown Intended'"
-        :label-disable-text="'Auto Shutdown Intended'"
-        @change="sendAutoShutdownCmd(!autoShutdownIntended)"
+        :current-state="autoShutdownEnabled"
+        :label-enable-text="'Auto Shutdown'"
+        :label-disable-text="'Auto Shutdown'"
+        @change="sendAutoShutdownCmd()"
       />
     </div>
     <div class="comms shutdownStatus">
       <LEDIndicator
-        :connected="autoShutdownIntended"
+        :connected="autoShutdownEnabled"
         :name="'Auto Shutdown Status'"
         :show_name="true"
       />
@@ -69,69 +69,59 @@ export default {
     }
   },
 
-  watch: {
-    message(msg) {
-      if (msg.type == 'heaterEnable') {
-        if (!msg.result) {
-          this.heaters[this.siteIndex].enabled = !this.heaters[this.siteIndex].enabled
-          alert('Toggling Heater Enable failed.')
-        }
-      }
-      else if (msg.type == 'autoShutoff') {
-        if (!msg.result) {
-          autoShutdownIntended = !autoShutdownIntended
-          alert('Toggling Auto Shutdown failed.')
-        }
-      }
-      else if (msg.type == 'thermistor') {
-        var heaterID = 'b'
-        if (this.isAmino) {
-          heaterID = 'n'
-        }
-        if (heaterID == 'n') {
-          this.heaters[this.siteIndex].temp = msg.temps[this.siteIndex*2]
-        }
-        else if (heaterID == 'b') {
-          this.heaters[this.siteIndex].temp = msg.temps[(this.siteIndex*2)+1]
-        }
-      }
-    },
-
-    site(val) {
-      this.siteIndex = val.charCodeAt(0) - 65;
-    }
-  },
-
   data() {
     return {
 
       heaters: [
         {
           enabled: false,
-          intended: false,
           temp: 0,
+          state: false,
           color: "grey"
         },
         {
           enabled: false,
-          intended: false,
           temp: 0,
+          state: false,
           color: "grey"
         },
         {
           enabled: false,
-          intended: false,
           temp: 0,
+          state: false,
           color: "grey"
         }
       ],
 
-      siteIndex: 0,
-
       autoShutdownEnabled: true,
-      autoShutdownIntended: true,
-
     };
+  },
+
+  watch: {
+    message(msg) {
+      if (msg.type == 'auto_shutoff') {
+        if (!msg.success) {
+          this.autoShutdownEnabled = !this.autoShutdownEnabled;
+          alert('Toggling Auto Shutdown failed.')
+        }
+      }
+      else if (msg.type == 'thermistor') {
+        if (this.isAmino) {
+          this.heaters[this.site].temp = msg.temps[this.site*2+1];
+        }
+        else {
+          this.heaters[this.site].temp = msg.temps[this.site*2];
+        }
+      }
+      else if(msg.type == 'heater_states') {
+        if (this.isAmino) {
+          this.heaters[this.site].state = msg.states[this.site*2+1];
+        }
+        else {
+          this.heaters[this.site].state = msg.states[this.site*2];
+        }
+      }
+    },
   },
 
   beforeUnmount: function () {
@@ -139,15 +129,8 @@ export default {
   },
 
   created: function () {
-    this.siteIndex = this.site.charCodeAt(0) - 65;
-
     interval = window.setInterval(() => {
-      var heaterName = "b";
-      if (this.isAmino) {
-        heaterName = "n"
-      }
-      heaterName += this.siteIndex;
-      this.sendMessage({ type: "heaterEnable", enabled: this.heaters[this.siteIndex].enabled, heater: heaterName});
+      this.sendHeaterRequest(this.site);
     }, 100);    
   },
 
@@ -159,13 +142,12 @@ export default {
     ...mapActions('websocket', ['sendMessage']),
 
     toggleHeater: function (id) {
-      this.heaters[id].intended = !this.heaters[id].intended;
+      this.heaters[id].enabled = !this.heaters[id].enabled;
       this.sendHeaterRequest(id);
     },
 
     sendHeaterRequest: function (id) {
-      this.heaters[id].enabled = !this.heaters[id].enabled;
-      var heaterName = "b";
+      let heaterName = "b";
       if (this.isAmino) {
         heaterName = "n"
       }
@@ -173,9 +155,9 @@ export default {
       this.sendMessage({ type: "heaterEnable", enabled: this.heaters[id].enabled, heater: heaterName});
     },
 
-    sendAutoShutdownCmd: function (enabled) {
-      this.autoShutdownIntended = enabled;
-      this.sendMessage({ type: "autoShutoff", shutoff: this.autoShutdownIntended });
+    sendAutoShutdownCmd: function () {
+      this.autoShutdownEnabled = !this.autoShutdownEnabled;
+      this.sendMessage({ type: "autoShutoff", shutoff: this.autoShutdownEnabled });
     },
 
     capturePhoto() {
