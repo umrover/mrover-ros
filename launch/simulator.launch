@@ -19,10 +19,10 @@
 
 
   <!-- Transform Values Taken from URDF 3/10/24-->
-  <node pkg="tf" type="static_transform_publisher" name="joint_a_static_broadcaster"
-    args="0.164882 0.200235 0.491172 0 0 0 base_link joint_a_static 100" />
+  <!-- <node pkg="tf" type="static_transform_publisher" name="joint_a_static_broadcaster"
+    args="0.164882 0.200235 0.491172 0 0 0 base_link joint_a_static 10" />
   <node pkg="tf" type="static_transform_publisher" name="joint_b_static_broadcaster"
-    args="0.034346 0.0 0.049024 0 0 0 joint_a_static joint_b_static 100" />
+    args="0.034346 0.0 0.049024 0 0 0 joint_a_static joint_b_static 10" /> -->
 
   <node name="arm_controller" pkg="mrover" type="arm_controller" output="screen" />
 

@@ -1,10 +1,13 @@
 #include "arm_controller.hpp"
 #include "lie.hpp"
 #include <Eigen/src/Core/Matrix.h>
+#include <ros/init.h>
+#include <unistd.h>
 
 namespace mrover {
     ArmController::ArmController() {
         ros::NodeHandle nh;
+        // sleep(2);
         double frequency{};
         nh.param<double>("/frequency", frequency, 100);
         mIkSubscriber = nh.subscribe("arm_ik", 1, &ArmController::ik_callback, this);
@@ -20,24 +23,31 @@ namespace mrover {
         Position positions;
         positions.names = {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll"};
         positions.positions.resize(positions.names.size(), 0.f);
-
-        SE3d target_frame_to_arm_a_static = SE3Conversions::fromTfTree(mTfBuffer, ik_target.target.header.frame_id, "joint_a_static");
-        SE3d target_frame_to_arm_b_static = SE3Conversions::fromTfTree(mTfBuffer, ik_target.target.header.frame_id, "joint_b_static");
-
+        SE3d target_frame_to_arm_b_static;
+        while (ros::ok()) {
+            try {
+                // ROS_INFO("%d", mTfBuffer._frameExists("joint_b_static"));
+                // target_frame_to_arm_a_static = SE3Conversions::fromTfTree(mTfBuffer, ik_target.target.header.frame_id, "joint_a_static");
+                target_frame_to_arm_b_static = SE3Conversions::fromTfTree(mTfBuffer, ik_target.target.header.frame_id, "arm_base_link");
+                // ROS_INFO("Found tf");
+                break;
+            } catch (...) {
+                ROS_INFO("Failed to grab tf");
+                continue;
+            }
+        }
         Eigen::Vector4d target{ik_target.target.pose.position.x, ik_target.target.pose.position.y, ik_target.target.pose.position.z, 1};
         // double x = ik_target.target.pose.position.x;
         // double y = ik_target.target.pose.position.y;
         // double z = ik_target.target.pose.position.z;
         // maybe just add offset instead of doing multiplication (we don't do any rotation?)
         Eigen::Vector4d target_in_arm_b_static = target_frame_to_arm_b_static.transform() * target;
-        Eigen::Vector4d target_in_arm_a_static = target_frame_to_arm_a_static.transform() * target;
-
         double x = target_in_arm_b_static.x() - END_EFFECTOR_LENGTH; // shift back by the length of the end effector
         double z = target_in_arm_b_static.z();
-        double y = target_in_arm_a_static.y();
+        double y = target_in_arm_b_static.y();
         // ROS_INFO("x: %f, y: %f, z: %f", x, y, z);
-        SE3d pos{{target_in_arm_a_static.x(), target_in_arm_a_static.y(), target_in_arm_a_static.z()}, SO3d::Identity()};
-        SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_target", "joint_a_static", pos);
+        // SE3d pos{{target_in_arm_a_static.x(), target_in_arm_a_static.y(), target_in_arm_a_static.z()}, SO3d::Identity()};
+        SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_target", "arm_base_link", target_frame_to_arm_b_static);
 
         // SE3d link_ab = SE3Conversions::fromTfTree(buffer, "arm_a_link", "arm_b_link");
         // SE3d link_bc = SE3Conversions::fromTfTree(buffer, "arm_b_link", "arm_c_link");
@@ -92,7 +102,7 @@ namespace mrover {
             positions.positions[3] = static_cast<float>(q3);
             mPositionPublisher.publish(positions);
         } else {
-            ROS_INFO("Can't reach arm target!");
+            // ROS_INFO("Can't reach arm target!");
         }
     }
 
