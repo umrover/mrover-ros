@@ -1,6 +1,6 @@
 <template>
   <div class="wrap">
-    <canvas :id="'stream-' + id" class="stream"></canvas>
+    <canvas :id="'stream-' + id"></canvas>
   </div>
 </template>
 
@@ -15,17 +15,30 @@ export default defineComponent({
     },
   },
   data() {
-    return {}
+    return {
+      ws: null as WebSocket | null,
+    }
   },
-  mounted: function () {
-    function startStream(number: Number) {
-        // Corresponds to H.265
-        // I can't figure out what the other values are for... obtained via guess and check
-        const STREAM_CODEC = 'hvc1.1.2.L90.90';
-        const STREAM_WIDTH = 640;
-        const STREAM_HEIGHT = 480;
 
-        const vertexShaderSource = `
+  beforeUnmount: function () {
+    this.ws.close();
+  },
+
+  mounted: function () {
+    this.ws = new WebSocket(`ws://localhost:808${1 + this.id}`);
+
+    this.startStream(this.id)
+  },
+
+  methods: {
+    startStream(number: Number) {
+      // Corresponds to H.265
+      // I can't figure out what the other values are for... obtained via guess and check
+      const STREAM_CODEC = 'hvc1.1.2.L90.90';
+      const STREAM_WIDTH = 640;
+      const STREAM_HEIGHT = 480;
+
+      const vertexShaderSource = `
     attribute vec2 xy;
 
     varying highp vec2 uv;
@@ -38,7 +51,7 @@ export default defineComponent({
     }
     `;
 
-        const fragmentShaderSource = `
+      const fragmentShaderSource = `
     varying highp vec2 uv;
 
     uniform sampler2D texture;
@@ -48,124 +61,110 @@ export default defineComponent({
     }
     `;
 
-        const canvas = document.getElementById(`stream-${number}`);
-        if (!canvas) return;
+      const canvas = document.getElementById(`stream-${number}`);
+      if (!canvas) return;
 
-        // This WebGL stuff seems like a lot, but it's just setting up a shader that can render a texture
-        // This texture is uploaded to whenever we get a frame from the decoder
-        // More complex than just using a 2D canvas but *may* have lower latency
+      // This WebGL stuff seems like a lot, but it's just setting up a shader that can render a texture
+      // This texture is uploaded to whenever we get a frame from the decoder
+      // More complex than just using a 2D canvas but *may* have lower latency
 
-        const gl = canvas.getContext('webgl2');
+      const gl = canvas.getContext('webgl2');
 
-        const vertexShader = gl.createShader(gl.VERTEX_SHADER);
-        gl.shaderSource(vertexShader, vertexShaderSource);
-        gl.compileShader(vertexShader);
-        if (!gl.getShaderParameter(vertexShader, gl.COMPILE_STATUS)) {
-            throw gl.getShaderInfoLog(vertexShader);
+      const vertexShader = gl.createShader(gl.VERTEX_SHADER);
+      gl.shaderSource(vertexShader, vertexShaderSource);
+      gl.compileShader(vertexShader);
+      if (!gl.getShaderParameter(vertexShader, gl.COMPILE_STATUS)) {
+        throw gl.getShaderInfoLog(vertexShader);
+      }
+
+      const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
+      gl.shaderSource(fragmentShader, fragmentShaderSource);
+      gl.compileShader(fragmentShader);
+      if (!gl.getShaderParameter(fragmentShader, gl.COMPILE_STATUS)) {
+        throw gl.getShaderInfoLog(fragmentShader);
+      }
+
+      const shaderProgram = gl.createProgram();
+      gl.attachShader(shaderProgram, vertexShader);
+      gl.attachShader(shaderProgram, fragmentShader);
+      gl.linkProgram(shaderProgram);
+      if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
+        throw gl.getProgramInfoLog(shaderProgram);
+      }
+      gl.useProgram(shaderProgram);
+
+      // Vertex coordinates, clockwise from bottom-left
+      const vertexBuffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+        -1.0, -1.0,
+        -1.0, +1.0,
+        +1.0, +1.0,
+        +1.0, -1.0,
+      ]), gl.STATIC_DRAW);
+
+      const xyLocation = gl.getAttribLocation(shaderProgram, "xy");
+      gl.vertexAttribPointer(xyLocation, 2, gl.FLOAT, false, 0, 0);
+      gl.enableVertexAttribArray(xyLocation);
+
+      const texture = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, texture);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+      const decoder = new VideoDecoder({
+        output(frame) {
+          canvas.width = frame.displayWidth;
+          canvas.height = frame.displayHeight;
+          // Upload the frame to the texture
+          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, frame);
+          // Close immediately to free up resources
+          // Otherwise the stream will halt
+          frame.close();
+
+          gl.viewport(0, 0, canvas.width, canvas.height);
+          gl.clearColor(0, 0, 0, 1);
+          gl.clear(gl.COLOR_BUFFER_BIT);
+
+          gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
+        },
+        error(e) {
+          throw e;
         }
+      });
+      // TODO(quintin): Need to know the size ahead of time. Perhaps put in a packet
+      decoder.configure({
+        codec: STREAM_CODEC,
+        codedWidth: STREAM_WIDTH,
+        codedHeight: STREAM_HEIGHT,
+      })
 
-        const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
-        gl.shaderSource(fragmentShader, fragmentShaderSource);
-        gl.compileShader(fragmentShader);
-        if (!gl.getShaderParameter(fragmentShader, gl.COMPILE_STATUS)) {
-            throw gl.getShaderInfoLog(fragmentShader);
-        }
-
-        const shaderProgram = gl.createProgram();
-        gl.attachShader(shaderProgram, vertexShader);
-        gl.attachShader(shaderProgram, fragmentShader);
-        gl.linkProgram(shaderProgram);
-        if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
-            throw gl.getProgramInfoLog(shaderProgram);
-        }
-        gl.useProgram(shaderProgram);
-
-        // Vertex coordinates, clockwise from bottom-left
-        const vertexBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-            -1.0, -1.0,
-            -1.0, +1.0,
-            +1.0, +1.0,
-            +1.0, -1.0,
-        ]), gl.STATIC_DRAW);
-
-        const xyLocation = gl.getAttribLocation(shaderProgram, "xy");
-        gl.vertexAttribPointer(xyLocation, 2, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(xyLocation);
-
-        const texture = gl.createTexture();
-        gl.bindTexture(gl.TEXTURE_2D, texture);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-
-        const decoder = new VideoDecoder({
-            output(frame) {
-                if (!document.getElementById(`stream-${number}`)) return;
-
-                canvas.width = frame.displayWidth;
-                canvas.height = frame.displayHeight;
-                // Upload the frame to the texture
-                gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, frame);
-                // Close immediately to free up resources
-                // Otherwise the stream will halt
-                frame.close();
-
-                gl.viewport(0, 0, canvas.width, canvas.height);
-                gl.clearColor(0, 0, 0, 1);
-                gl.clear(gl.COLOR_BUFFER_BIT);
-
-                gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
-            },
-            error(e) {
-                throw e;
-            }
-        });
-        // TODO(quintin): Need to know the size ahead of time. Perhaps put in a packet
-        decoder.configure({
-            codec: STREAM_CODEC,
-            codedWidth: STREAM_WIDTH,
-            codedHeight: STREAM_HEIGHT,
-        })
-
-        // TODO(quintin): Set IP too
-        const ws = new WebSocket(`ws://localhost:808${1 + number}`);
-        ws.binaryType = 'arraybuffer';
-        ws.onopen = () => {
-            console.log(`Connected to server for stream ${number}`);
-        };
-        ws.onclose = () => {
-            console.log(`Disconnected from server for stream ${number}`);
-            decoder.close();
-            // This recursive-ness stops after the canvas element is removed
-            setTimeout(() => startStream(number), 3000);
-        };
-        ws.onerror = (error) => {
-            console.error('WebSocket error:', error);
-            ws.close()
-        };
-        ws.onmessage = (event) => {
-            // If the canvas disappears this means the frontend removed it,
-            // and we should stop the stream (and all following retries)
-            if (!document.getElementById(`stream-${number}`)) {
-                // The canvas has been removed, so stop decoding
-                console.log(`Canvas for stream ${number} was removed`);
-                ws.close();
-                return;
-            }
-
-            // TODO(quintin): Should the values besides "data" be set better? Parsed from the packet?
-            decoder.decode(new EncodedVideoChunk({
-                type: "key",
-                timestamp: performance.now(),
-                duration: 1000 / 30,
-                data: event.data,
-            }));
-        };
+      // TODO(quintin): Set IP too
+      this.ws.binaryType = 'arraybuffer';
+      this.ws.onopen = () => {
+        console.log(`Connected to server for stream ${number}`);
+      };
+      this.ws.onclose = () => {
+        console.log(`Disconnected from server for stream ${number}`);
+        decoder.close();
+        // This recursive-ness stops after the canvas element is removed
+        setTimeout(() => this.startStream(number), 3000);
+      };
+      this.ws.onerror = (error) => {
+        this.ws.close()
+      };
+      this.ws.onmessage = (event) => {
+        // TODO(quintin): Should the values besides "data" be set better? Parsed from the packet?
+        decoder.decode(new EncodedVideoChunk({
+          type: "key",
+          timestamp: performance.now(),
+          duration: 1000 / 30,
+          data: event.data,
+        }));
+      };
     }
-    startStream(this.id)
   }
 })
 </script>

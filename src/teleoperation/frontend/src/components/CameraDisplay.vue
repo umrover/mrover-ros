@@ -1,15 +1,10 @@
 <template>
     <div class="wrap">
-        <!-- <div v-if="numStreams == 1">
-            <CameraFeed :id="0"></CameraFeed>
-        </div> -->
-        <!-- <div v-else class="grid-container"> -->
-            <div class="grid-container">
+        <div class="grid-container">
             <div v-for="i in 4" :key="i" :class="'feed'+i">
                 <div v-if="i <= numStreams">
                     <CameraFeed :id="streamOrder[i-1]"></CameraFeed>
                 </div>
-               
             </div>
         </div>
     </div>
