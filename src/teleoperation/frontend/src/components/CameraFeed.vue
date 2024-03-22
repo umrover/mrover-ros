@@ -17,21 +17,26 @@ export default defineComponent({
   data() {
     return {
       ws: null as WebSocket | null,
+      isUnmounted: false,
     }
   },
 
   beforeUnmount: function () {
-    this.ws.close();
+    if (this.ws) this.ws.close();
+    this.isUnmounted = true;
   },
 
   mounted: function () {
-    this.ws = new WebSocket(`ws://localhost:808${1 + this.id}`);
-
     this.startStream(this.id)
   },
 
   methods: {
     startStream(number: Number) {
+      // This function is called as a retry when the websocket closes
+      // If our component goes away (unmounts) we should stop trying to reconnect
+      // Otherwise it may preempt a new stream that already connected
+      if (this.isUnmounted) return;
+
       // Corresponds to H.265
       // I can't figure out what the other values are for... obtained via guess and check
       const STREAM_CODEC = 'hvc1.1.2.L90.90';
@@ -132,7 +137,7 @@ export default defineComponent({
         },
         error(e) {
           throw e;
-        }
+        } 
       });
       // TODO(quintin): Need to know the size ahead of time. Perhaps put in a packet
       decoder.configure({
@@ -142,6 +147,7 @@ export default defineComponent({
       })
 
       // TODO(quintin): Set IP too
+      this.ws = new WebSocket(`ws://localhost:808${1 + this.id}`);
       this.ws.binaryType = 'arraybuffer';
       this.ws.onopen = () => {
         console.log(`Connected to server for stream ${number}`);
