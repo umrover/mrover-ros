@@ -9,6 +9,8 @@
 #include <hardware.hpp>
 #include <messaging.hpp>
 #include <pidf.hpp>
+#include <motion_profile.hpp>
+#include "timer.hpp"
 #include <units/units.hpp>
 
 #include "encoders.hpp"
@@ -27,6 +29,7 @@ namespace mrover {
         };
 
         using Mode = std::variant<std::monostate, PositionMode, VelocityMode>;
+        using MotionProfile = TrapezoidalMotionProfile<Radians, Seconds>;
 
         /* ==================== Hardware ==================== */
         FDCAN<InBoundMessage> m_fdcan;
@@ -48,6 +51,9 @@ namespace mrover {
         std::optional<Radians> m_uncalib_position;
         std::optional<RadiansPerSecond> m_velocity;
         BDCMCErrorInfo m_error = BDCMCErrorInfo::DEFAULT_START_UP_NOT_CONFIGURED;
+
+        std::optional<MotionProfile> m_profile;
+        Timer m_profile_timer;
 
         struct StateAfterConfig {
             Dimensionless gear_ratio;
@@ -251,6 +257,54 @@ namespace mrover {
             // TODO(quintin): Use timer for dt
             m_desired_output = mode.pidf.calculate(input, target, Seconds{0.01});
             m_error = BDCMCErrorInfo::NO_ERROR;
+        }
+
+        auto process_command(PositionCommandProfiled const& message, PositionMode& mode) -> void {
+            if (!m_state_after_config) {
+                m_error = BDCMCErrorInfo::RECEIVING_COMMANDS_WHEN_NOT_CONFIGURED;
+                return;
+            }
+            if (!m_state_after_calib) {
+                m_error = BDCMCErrorInfo::RECEIVING_POSITION_COMMANDS_WHEN_NOT_CALIBRATED;
+                return;
+            }
+
+            if (!m_uncalib_position) {
+                m_error = BDCMCErrorInfo::RECEIVING_PID_COMMANDS_WHEN_NO_READER_EXISTS;
+                return;
+            }
+
+            if (!m_velocity) {
+                m_error = BDCMCErrorInfo::RECEIVING_PID_COMMANDS_WHEN_NO_READER_EXISTS;
+                return;
+            }
+
+            Radians current_position = m_uncalib_position.value() - m_state_after_calib->offset_position;
+
+            if (m_profile) {
+                m_profile->update(m_profile_timer.seconds());
+            } else {
+                m_profile = MotionProfile{current_position, message.position, idk, message.max_acceleration};
+                m_profile_timer.reset();
+            }
+
+            mode.pidf.with_p(message.p);
+            mode.pidf.with_d(message.d);
+            mode.pidf.with_ff(message.ff);
+            mode.pidf.with_output_bound(-1.0, 1.0);
+
+            RadiansPerSecond current_velocity = m_velocity.value();
+            RadiansPerSecond target_velocity = m_profile->velocity();
+
+            m_desired_output = mode.pidf.calculate(current_velocity, target_velocity, m_profile_timer.seconds());
+            m_error = BDCMCErrorInfo::NO_ERROR;
+
+            m_fdcan.broadcast(OutBoundMessage{DebugState{
+                    .f1 = m_profile.value().t().get(),
+                    .f2 = target_velocity.get(),
+                    .f3 = current_position.get(),
+                    .f4 = message.position.get()
+            }});
         }
 
         struct detail {

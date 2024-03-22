@@ -9,20 +9,16 @@ namespace mrover {
         TrapezoidalMotionProfile(PositionUnit initialPosition,
                       PositionUnit desiredPosition,
                       VelocityUnit maxVelocity,
-                      AccelerationUnit maxAcceleration) : mInitialPosition{initialPosition},
-                                                          mDesiredPosition{desiredPosition},
-                                                          mMaxVelocity{maxVelocity},
-                                                          mMaxAcceleration{maxAcceleration} {}
+                      AccelerationUnit maxAcceleration) : mMaxVelocity{maxVelocity},
+                                                         mMaxAcceleration{maxAcceleration},
+                                                         mTotalDistance{initialPosition - desiredPosition},
+                                                         mTAccelerationDone{mMaxVelocity / mMaxAcceleration},
+                                                         mTEnd{mTAccelerationDone + mTotalDistance / mMaxVelocity},
+                                                         mTCruiseDone{mTEnd - mTAccelerationDone}
+        {}
 
         void reset () {
             mT = 0;
-        }
-
-        void reset(PositionUnit initialPosition,
-                    PositionUnit desiredPosition) {
-            mInitialPosition = initialPosition;
-            mDesiredPosition = desiredPosition;
-            reset();
         }
 
         void update(TimeUnit dt) {
@@ -30,31 +26,35 @@ namespace mrover {
         }
 
         auto velocity() -> VelocityUnit {
-            double totalDistance = (mDesiredPosition - mInitialPosition);
-            double timeToAccelerate = mMaxVelocity / mMaxAcceleration;
-
-            double tAccelerationDone = timeToAccelerate;
-            double tEnd = tAccelerationDone + totalDistance / mMaxVelocity;
-            double tCruiseDone = tEnd - tAccelerationDone;
-
-            if (mT >= 0 && mT < tAccelerationDone) {
+            if (mT >= 0 && mT < mTAccelerationDone) {
                 return mMaxAcceleration * mT;
-            } else if (mT >= tAccelerationDone && mT < tCruiseDone) {
+            } else if (mT >= mTAccelerationDone && mT < mTCruiseDone) {
                 return mMaxVelocity;
-            } else if (mT >= tCruiseDone && mT <= tEnd) {
-                return -mMaxAcceleration * mT + mMaxAcceleration * tEnd;
+            } else if (mT >= mTCruiseDone && mT <= mTEnd) {
+                return -mMaxAcceleration * mT + mMaxAcceleration * mTEnd;
             } else {
                 return 0.0;
             }
         }
 
+        auto is_finished() -> bool {
+            return mT >= mTEnd;
+        }
+
+        auto t() -> TimeUnit {
+            return mT;
+        }
+
     private:
-        PositionUnit mInitialPosition;
-        PositionUnit mDesiredPosition;
+        const VelocityUnit mMaxVelocity{};
+        const AccelerationUnit mMaxAcceleration{};
 
-        VelocityUnit mMaxVelocity;
-        AccelerationUnit mMaxAcceleration;
+        TimeUnit mT{0};
 
-        TimeUnit mT = 0;
+        const PositionUnit mTotalDistance{};
+        const TimeUnit mTAccelerationDone{};
+        const TimeUnit mTEnd{};
+        const TimeUnit mTCruiseDone{};
+
     };
 }
