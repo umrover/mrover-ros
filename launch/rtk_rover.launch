@@ -1,13 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <launch>
+  <arg name="use_both_gps" default="true" />
 
   <rosparam command="load" file="$(find mrover)/config/esw.yaml" />
   <rosparam command="load" file="$(find mrover)/config/localization.yaml" />
   <rosparam command="load" file="$(find mrover)/config/ekf.yaml" />
 
   <group ns="right_gps_driver">
-    <node pkg="mrover" type="gps_driver.py" name="gps_driver" output="screen"/>
+    <node if="$arg use_both_gps" pkg="mrover" type="gps_driver.py" name="gps_driver" output="screen"/>
   </group>
 
   <group ns="left_gps_driver">
