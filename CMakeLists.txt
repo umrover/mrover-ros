@@ -186,6 +186,7 @@ mrover_add_nodelet(nv_gst_h265_enc src/esw/nv_gst_h265_enc/*.c* src/esw/nv_gst_h
 mrover_nodelet_link_libraries(nv_gst_h265_enc PRIVATE streaming gstreamer-1.0 gstapp-1.0 glib-2.0 gobject-2.0)
 if (MROVER_IS_JETSON)
     mrover_nodelet_defines(nv_gst_h265_enc MROVER_IS_JETSON)
+    mrover_nodelet_include_directories(nv_gst_h265_enc /usr/lib/aarch64-linux-gnu/glib-2.0/include)
 endif ()
 # TODO(quintin): Fix this CMake hard coding
 mrover_nodelet_include_directories(nv_gst_h265_enc /usr/include/gstreamer-1.0 /usr/include/glib-2.0 /usr/lib/x86_64-linux-gnu/glib-2.0/include)

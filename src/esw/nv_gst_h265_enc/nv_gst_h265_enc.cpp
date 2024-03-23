@@ -135,7 +135,7 @@ namespace mrover {
             mPnh = getMTPrivateNodeHandle();
 
             mCaptureDevice = mPnh.param<std::string>("device", "");
-            mImageTopic = mNh.param<std::string>("image_topic", "image");
+            mImageTopic = mPnh.param<std::string>("image_topic", "image");
             mImageWidth = mPnh.param<int>("width", 640);
             mImageHeight = mPnh.param<int>("height", 480);
             mImageFramerate = mPnh.param<int>("framerate", 30);
