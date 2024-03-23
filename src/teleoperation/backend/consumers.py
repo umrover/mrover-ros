@@ -31,7 +31,7 @@ from mrover.msg import (
     IK,
     SpectralGroup,
     ScienceThermistors,
-    HeaterData
+    HeaterData,
 )
 from mrover.srv import EnableAuton, AdjustMotor, ChangeCameras, CapturePanorama  # , CapturePhoto
 from sensor_msgs.msg import NavSatFix, Temperature, RelativeHumidity, Image
@@ -100,7 +100,9 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.ish_thermistor_data = rospy.Subscriber(
                 "/science_thermistors", ScienceThermistors, self.ish_thermistor_data_callback
             )
-            self.ish_heater_state = rospy.Subscriber("/science_heater_state", HeaterData, self.ish_heater_state_callback)
+            self.ish_heater_state = rospy.Subscriber(
+                "/science_heater_state", HeaterData, self.ish_heater_state_callback
+            )
             self.science_spectral = rospy.Subscriber("/science_spectral", SpectralGroup, self.science_spectral_callback)
 
             # Services
@@ -717,7 +719,6 @@ class GUIConsumer(JsonWebsocketConsumer):
             result = science_enable(data=msg["enabled"])
         except rospy.ServiceException as e:
             print(f"Service init failed: {e}")
-
 
     def ish_heater_state_callback(self, msg):
         self.send(text_data=json.dumps({"type": "heater_states", "states": msg.state}))
