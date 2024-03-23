@@ -110,6 +110,7 @@ namespace mrover {
     		uint32_t combined_val = (msb_result_0 << 24) | (msb_result_1 << 16) | (msb_result_2 << 8) | (msb_result_3);
 			channel_data[i] = std::bit_cast<float>(combined_val);
 			*/
+
 //    		if (!msb_result || !lsb_result){
 //    			//throw mrover::I2CRuntimeError("MSB or LSB result not read in update_channel_data");
 //    			m_error = true;

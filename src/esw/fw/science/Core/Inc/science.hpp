@@ -132,6 +132,7 @@ namespace mrover {
 //					spectral_data.spectrals.at(i).error =
 //							m_spectral_sensors.at(i).is_error();
 //        		}
+
         	}
 
         	// TODO - MUTEXS ARE BREAKING CODE!!!! IDK WHY - PLEASE FIX

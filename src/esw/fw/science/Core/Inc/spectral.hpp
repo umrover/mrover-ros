@@ -30,7 +30,7 @@ namespace mrover {
 
     	bool update_channel_data(); // updates all of the channels
 
-        uint16_t get_channel_data(uint8_t channel);
+    	uint16_t get_channel_data(uint8_t channel);
 
         void reboot();
 
@@ -63,7 +63,7 @@ namespace mrover {
         // See pg. 22 of datasheet for more info.
 //        constexpr static std::uint8_t CHANNEL_V_HIGH = 0x08;
         // Sensor Calibrated Data Registers Start (p. 23 on datasheet)
-        constexpr static std::uint8_t CHANNEL_V_HIGH = 0x14;
+        constexpr static std::uint8_t CHANNEL_V_HIGH = 0x08;
     };
 
 } // namespace mrover
