@@ -95,7 +95,7 @@ namespace mrover {
 
     	for(uint8_t i = 0; i < CHANNEL_DATA_LENGTH; ++i){
     		// big endian, so msb is at lowest addr (which we read first)
-    		/* UNCOMMENT ONCE CAN MESSAGE IS FIXED - UNABLE TO SEND 6 FLOAT CURRENTLY
+    		// /* UNCOMMENT ONCE CAN MESSAGE IS FIXED - UNABLE TO SEND 6 FLOAT CURRENTLY
 			uint8_t msb_reg_addr_0 = CHANNEL_V_HIGH + i * 4;
 			uint8_t msb_reg_addr_1 = CHANNEL_V_HIGH + i * 4 + 1;
 			uint8_t msb_reg_addr_2 = CHANNEL_V_HIGH + i * 4 + 2;
@@ -109,14 +109,14 @@ namespace mrover {
 
     		uint32_t combined_val = (msb_result_0 << 24) | (msb_result_1 << 16) | (msb_result_2 << 8) | (msb_result_3);
 			channel_data[i] = std::bit_cast<float>(combined_val);
-			*/
+			// */
 
 //    		if (!msb_result || !lsb_result){
 //    			//throw mrover::I2CRuntimeError("MSB or LSB result not read in update_channel_data");
 //    			m_error = true;
 //    			return false;
 //    		}
-
+			/*
     		uint8_t msb_reg_addr = CHANNEL_V_HIGH + i * 2;
 			uint8_t lsb_reg_addr = CHANNEL_V_HIGH + i * 2 + 1;
 
@@ -128,7 +128,7 @@ namespace mrover {
 			uint16_t msb_result_int = msb_result;
 			uint16_t lsb_result_int = lsb_result;
 			channel_data[i] = ((msb_result_int << 8) | lsb_result_int);
-
+			*/
     	}
     	m_error = false;
     	return true;

@@ -64,6 +64,8 @@ namespace mrover {
 //        constexpr static std::uint8_t CHANNEL_V_HIGH = 0x08;
         // Sensor Calibrated Data Registers Start (p. 23 on datasheet)
         constexpr static std::uint8_t CHANNEL_V_HIGH = 0x08;
+        constexpr static std::uint8_t CHANNEL_V_CAL = 0x14;
+        
     };
 
 } // namespace mrover
