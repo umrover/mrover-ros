@@ -66,16 +66,18 @@ export default defineComponent({
     }
     `;
 
-      const canvas = document.getElementById(`stream-${number}`);
+      const canvas = document.getElementById(`stream-${number}`) as HTMLCanvasElement;
       if (!canvas) return;
 
       // This WebGL stuff seems like a lot, but it's just setting up a shader that can render a texture
       // This texture is uploaded to whenever we get a frame from the decoder
       // More complex than just using a 2D canvas but *may* have lower latency
 
-      const gl = canvas.getContext('webgl2');
+      const gl = canvas.getContext('webgl2') as WebGL2RenderingContext;
 
       const vertexShader = gl.createShader(gl.VERTEX_SHADER);
+      if (!vertexShader) throw new Error("Failed to create vertex shader");
+
       gl.shaderSource(vertexShader, vertexShaderSource);
       gl.compileShader(vertexShader);
       if (!gl.getShaderParameter(vertexShader, gl.COMPILE_STATUS)) {
@@ -83,6 +85,8 @@ export default defineComponent({
       }
 
       const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
+      if (!fragmentShader) throw new Error("Failed to create fragment shader");
+
       gl.shaderSource(fragmentShader, fragmentShaderSource);
       gl.compileShader(fragmentShader);
       if (!gl.getShaderParameter(fragmentShader, gl.COMPILE_STATUS)) {
@@ -90,6 +94,8 @@ export default defineComponent({
       }
 
       const shaderProgram = gl.createProgram();
+      if (!shaderProgram) throw new Error("Failed to create shader program");
+
       gl.attachShader(shaderProgram, vertexShader);
       gl.attachShader(shaderProgram, fragmentShader);
       gl.linkProgram(shaderProgram);
@@ -158,8 +164,8 @@ export default defineComponent({
         // This recursive-ness stops after the canvas element is removed
         setTimeout(() => this.startStream(number), 3000);
       };
-      this.ws.onerror = (error) => {
-        this.ws.close()
+      this.ws.onerror = () => {
+        if (this.ws) this.ws.close()
       };
       this.ws.onmessage = (event) => {
         // TODO(quintin): Should the values besides "data" be set better? Parsed from the packet?
