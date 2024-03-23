@@ -106,9 +106,9 @@ namespace mrover {
         ROS_INFO("Initialized and started GStreamer pipeline");
     }
 
-    auto NvGstH265EncNodelet::imageCallback(sensor_msgs::ImageConstPtr const& msg) const -> void {
+    auto NvGstH265EncNodelet::imageCallback(sensor_msgs::ImageConstPtr const& msg) -> void {
         try {
-            if (!mIsLive) return;
+            if (!mStreamServer->isConnected()) return;
 
             if (msg->encoding != sensor_msgs::image_encodings::BGRA8) throw std::runtime_error{"Unsupported encoding"};
             if (msg->width != mImageWidth || msg->height != mImageHeight) throw std::runtime_error{"Unsupported resolution"};
@@ -155,7 +155,6 @@ namespace mrover {
                         if (gst_element_set_state(mPipeline, GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE)
                             throw std::runtime_error{"Failed to play GStreamer pipeline"};
 
-                        mIsLive = true;
                         ROS_INFO("Playing GStreamer pipeline");
                     },
                     [this] {
@@ -166,7 +165,6 @@ namespace mrover {
                         if (gst_element_set_state(mPipeline, GST_STATE_READY) == GST_STATE_CHANGE_FAILURE)
                             throw std::runtime_error{"Failed to pause GStreamer pipeline"};
 
-                        mIsLive = false;
                         ROS_INFO("Stopped GStreamer pipeline");
                     });
 

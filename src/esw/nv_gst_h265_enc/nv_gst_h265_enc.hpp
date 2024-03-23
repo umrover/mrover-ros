@@ -21,7 +21,6 @@ namespace mrover {
         GMainLoop* mMainLoop{};
         std::thread mMainLoopThread;
         std::thread mStreamSinkThread;
-        std::atomic_bool mIsLive;
 
         auto onInit() -> void override;
 
@@ -29,7 +28,7 @@ namespace mrover {
 
         auto initPipeline() -> void;
 
-        auto imageCallback(sensor_msgs::ImageConstPtr const& msg) const -> void;
+        auto imageCallback(sensor_msgs::ImageConstPtr const& msg) -> void;
 
     public:
         NvGstH265EncNodelet() = default;

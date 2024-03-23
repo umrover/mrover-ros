@@ -11,6 +11,7 @@ using namespace std::chrono_literals;
 
 StreamServer::StreamServer(std::string_view host, std::uint16_t port, handler_t&& on_open, handler_t&& on_close)
     : m_acceptor{m_context}, m_on_open{std::move(on_open)}, m_on_close{std::move(on_close)} {
+    std::scoped_lock guard{m_mutex};
 
     tcp::endpoint endpoint{net::ip::make_address(host), port};
 
@@ -32,6 +33,8 @@ StreamServer::StreamServer(std::string_view host, std::uint16_t port, handler_t&
 
 auto StreamServer::acceptAsync() -> void {
     m_acceptor.async_accept(m_context, [this](beast::error_code const& ec, tcp::socket socket) {
+        std::scoped_lock guard{m_mutex};
+
         if (ec) {
             ROS_WARN_STREAM(std::format("Failed to accept: {}", ec.message()));
             return;
@@ -61,15 +64,14 @@ auto StreamServer::acceptAsync() -> void {
 
         m_client->accept();
 
-        if (m_on_open) m_on_open();
-
         // For some DUMB REASON we have to read something so that we properly handle when the other side closes the connection
         m_client->async_read_some(boost::asio::mutable_buffer(nullptr, 0), [](beast::error_code const&, std::size_t) {});
+
+        if (m_on_open) m_on_open();
 
         acceptAsync();
     });
 }
-
 
 auto StreamServer::feed(std::span<std::byte> data) -> void {
     net::mutable_buffer buffer{data.data(), data.size()};
@@ -83,8 +85,16 @@ auto StreamServer::feed(std::span<std::byte> data) -> void {
     }
 }
 
+auto StreamServer::isConnected() -> bool {
+    std::scoped_lock guard{m_mutex};
+    return m_client.has_value();
+}
+
 StreamServer::~StreamServer() {
-    if (m_client) m_client->close(websocket::close_code::normal);
+    try {
+        m_client->close(websocket::close_code::normal);
+    } catch (std::exception const&) {
+    }
     m_acceptor.close();
     m_context.stop();
 }
