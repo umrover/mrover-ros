@@ -150,7 +150,7 @@ class LongRangeTagStore:
 
     def push_frame(self, tags: List[LongRangeTag]) -> None:
         """
-        Loops through our current list of our stored tags and checks if the new message includes each tag or doesn't. 
+        Loops through our current list of our stored tags and checks if the new message includes each tag or doesn't.
         If it does include it, we will increment our hit count for that tag id and reset the time we saw it.
         If it does not include it, we will decrement our hit count for that tag id, and if the hit count becomes zero, then we remove it from our stored list.
         If there are tag ids in the new message that we don't have stored, we will add it to our stored list.
