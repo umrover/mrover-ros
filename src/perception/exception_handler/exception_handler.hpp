@@ -1,5 +1,6 @@
+#pragma once
+
 #include "pch.hpp"
-#include <ros/node_handle.h>
 
 namespace mrover{
     class ExceptionHandler : public nodelet::Nodelet{
@@ -11,6 +12,6 @@ namespace mrover{
     public:
         ExceptionHandler() = default;
         
-        ~ExceptionHandler() override;
+        ~ExceptionHandler() override = default;
     };
 };
