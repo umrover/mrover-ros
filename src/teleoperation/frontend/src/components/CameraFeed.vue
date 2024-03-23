@@ -40,8 +40,8 @@ export default defineComponent({
       // Corresponds to H.265
       // I can't figure out what the other values are for... obtained via guess and check
       const STREAM_CODEC = 'hvc1.1.2.L90.90';
-      const STREAM_WIDTH = 640;
-      const STREAM_HEIGHT = 480;
+      const STREAM_WIDTH = 1280;
+      const STREAM_HEIGHT = 720;
 
       const vertexShaderSource = `
     attribute vec2 xy;
@@ -147,7 +147,7 @@ export default defineComponent({
       })
 
       // TODO(quintin): Set IP too
-      this.ws = new WebSocket(`ws://localhost:808${1 + this.id}`);
+      this.ws = new WebSocket(`ws://10.1.0.10:808${1 + this.id}`);
       this.ws.binaryType = 'arraybuffer';
       this.ws.onopen = () => {
         console.log(`Connected to server for stream ${number}`);
