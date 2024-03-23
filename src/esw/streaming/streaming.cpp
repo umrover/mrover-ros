@@ -26,7 +26,7 @@ StreamServer::StreamServer(std::string_view host, std::uint16_t port, handler_t&
     m_io_thread = std::jthread{[this] {
         ROS_INFO("IO service started");
         m_context.run();
-        ROS_INFO("IO service stopped");
+        std::cout << "IO service stopped" << std::endl;
     }};
 }
 
@@ -62,6 +62,9 @@ auto StreamServer::acceptAsync() -> void {
         m_client->accept();
 
         if (m_on_open) m_on_open();
+
+        // For some DUMB REASON we have to read something so that we properly handle when the other side closes the connection
+        m_client->async_read_some(boost::asio::mutable_buffer(nullptr, 0), [](beast::error_code const&, std::size_t) {});
 
         acceptAsync();
     });

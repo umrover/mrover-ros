@@ -196,14 +196,15 @@ export default {
   display: grid;
   grid-gap: 10px;
   grid-template-columns: repeat(3, auto);
-  grid-template-rows: auto 50vh repeat(4, auto);
+  grid-template-rows: auto 50vh repeat(4, 1fr);
   grid-template-areas:
     'header header header'
     'map map waypoints'
-    'odom cameras cameras'
+    'odom limit calibration'
     'arm limit calibration'
     'pdb moteus motorData'
-    'pdb moteus soilData';
+    'pdb moteus soilData'
+    'cameras cameras cameras';
   font-family: sans-serif;
   height: auto;
 }

@@ -47,7 +47,7 @@
       </div>
     </div>
     <div class="shadow p-3 rounded cameras">
-      <Cameras :primary="true" />
+      <Cameras :primary="true" :isSA="false"/>
     </div>
     <div class="shadow p-3 rounded moteus">
       <DriveMoteusStateTable :moteus-state-data="moteusState" />
@@ -193,13 +193,14 @@ export default defineComponent({
   display: grid;
   grid-gap: 10px;
   grid-template-columns: 40% 20% auto;
-  grid-template-rows: repeat(5, auto);
+  grid-template-rows: repeat(6, auto);
   grid-template-areas:
     'header header header'
     'map map waypoints'
     'data data waypoints'
     'data data conditions'
-    'cameras moteus moteus';
+    'moteus moteus moteus'
+    'cameras cameras cameras';
 
   font-family: sans-serif;
   height: auto;
