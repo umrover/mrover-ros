@@ -168,12 +168,14 @@ namespace mrover {
     };
 
     struct SpectralInfo {
-        std::array<std::uint16_t, 6> data{};
+        std::array<float, 6> data{};
         bool error{};
     };
 
     struct SpectralData : BaseCommand {
-        std::array<SpectralInfo, 3> spectrals{};
+        std::uint8_t site;
+        std::array<float, 6> data{};
+        bool error{};
     };
 
     struct ThermistorData : BaseCommand {
