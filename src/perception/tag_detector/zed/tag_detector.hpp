@@ -54,7 +54,7 @@ namespace mrover {
 
         auto publishThresholdedImage() -> void;
 
-        std::optional<SE3d> getTagInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t u, size_t v);
+        auto getTagInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t u, size_t v) -> std::optional<SE3d>;
 
     public:
         TagDetectorNodelet() = default;

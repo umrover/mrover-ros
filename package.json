@@ -1,1 +1,1 @@
-{"dependencies":{"@tsconfig/node18":"^18.2.2","@vitejs/plugin-vue":"^4.4.0","bootstrap":"^4.6.2","bootstrap-vue":"^2.23.1","vite":"^4.4.11","vue":"^3.3.4","vue-router":"^4.2.5"},"devDependencies":{"sass":"^1.69.2"}}
+{ "dependencies": { "@tsconfig/node18": "^18.2.2", "@vitejs/plugin-vue": "^4.4.0", "bootstrap": "^4.6.2", "bootstrap-vue": "^2.23.1", "html2canvas": "^1.4.1", "vite": "^4.4.11", "vue": "^3.3.4", "vue-router": "^4.2.5" }, "devDependencies": { "sass": "^1.69.2" } }

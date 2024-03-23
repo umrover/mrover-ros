@@ -112,7 +112,7 @@ auto main(int argc, char** argv) -> int {
     spectralDataPublisher = std::make_unique<ros::Publisher>(nh.advertise<mrover::SpectralGroup>("science_spectral", 1));
     thermistorDataPublisher = std::make_unique<ros::Publisher>(nh.advertise<mrover::ScienceThermistors>("science_thermistors", 1));
 
-    ros::Subscriber CANSubscriber = nh.subscribe<mrover::CAN>("can/pdlb/in", 1, processCANData);
+    ros::Subscriber CANSubscriber = nh.subscribe<mrover::CAN>("can/science/in", 1, processCANData);
 
     // Enter the ROS event loop
     ros::spin();

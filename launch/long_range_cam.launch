@@ -1,19 +1,12 @@
-<!-- This launch file launches nodelets associated with the long range cam -->
 <launch>
-  <!--
-      ==========
-      Perception
-      ==========
-    -->
-  <node pkg="nodelet" type="nodelet" name="perception_nodelet_manager"
-    respawn="true"
-    args="manager" output="screen" />
-  <!-- nodelet to detect AR tags and publish them to the TF tree -->
-  <node
-    pkg="nodelet" type="nodelet" name="long_range_cam" respawn="true"
-    args="load mrover/LongRangeCamNodelet perception_nodelet_manager" output="screen" />
-  <node
-    pkg="nodelet" type="nodelet" name="long_range_tag_detector" respawn="true"
-    args="load mrover/LongRangeTagDetectorNodelet perception_nodelet_manager" output="screen" />
+    <node pkg="nodelet" type="nodelet" name="long_range_cam" respawn="true"
+          args="load mrover/UsbCameraNodelet perception_nodelet_manager" output="screen">
+        <param name="width" value="1920"/>
+        <param name="height" value="1080"/>
+        <param name="framerate" value="5"/>
+        <param name="device" value="/dev/arducam"/>
+        <param name="image_topic" value="/long_range_image"/>
+        <param name="camera_info_topic" value="/long_range_image/camera_info"/>
+    </node>
 </launch>
   

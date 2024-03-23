@@ -21,7 +21,6 @@
 #include <type_traits>
 #include <unordered_map>
 
-
 #include <opencv2/core.hpp>
 #include <opencv2/dnn.hpp>
 #include <opencv2/imgproc.hpp>
@@ -32,18 +31,18 @@
 #include <nodelet/nodelet.h>
 #include <ros/package.h>
 #include <ros/publisher.h>
+#include <sensor_msgs/PointCloud2.h>
 #include <sensor_msgs/image_encodings.h>
+#include <sensor_msgs/point_cloud2_iterator.h>
 #include <std_srvs/SetBool.h>
 #include <tf/exceptions.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
 
-#include <mrover/ObjectDetectorParamsConfig.h>
-
 #include <lie.hpp>
 #include <loop_profiler.hpp>
-#include <sensor_msgs/PointCloud2.h>
-#include <sensor_msgs/point_cloud2_iterator.h>
+
+#include <mrover/ObjectDetectorParamsConfig.h>
 
 //Object Detector Includes
 #include "inference_wrapper.hpp"

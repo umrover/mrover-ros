@@ -106,10 +106,11 @@ namespace mrover {
         for (auto const& [id, tag]: mTags) {
             if (tag.hitCount >= mMinHitCountBeforePublish && tag.tagInCam) {
                 try {
-                    std::string immediateFrame = std::format("immediateFiducial{}", tag.id);
-                    std::string const& parentFrame = mUseOdom ? mOdomFrameId : mMapFrameId;
-                    SE3d immediateTagInParent = SE3Conversions::fromTfTree(mTfBuffer, immediateFrame, parentFrame);
-                    SE3Conversions::pushToTfTree(mTfBroadcaster, std::format("fiducial{}", id), parentFrame, immediateTagInParent);
+                    std::string immediateFrameId = std::format("immediateFiducial{}", tag.id);
+                    // Publish tag to odom
+                    std::string const& parentFrameId = mUseOdom ? mOdomFrameId : mMapFrameId;
+                    SE3d tagInParent = SE3Conversions::fromTfTree(mTfBuffer, immediateFrameId, parentFrameId);
+                    SE3Conversions::pushToTfTree(mTfBroadcaster, std::format("fiducial{}", tag.id), parentFrameId, tagInParent);
                 } catch (tf2::ExtrapolationException const&) {
                     NODELET_WARN("Old data for immediate tag");
                 } catch (tf2::LookupException const&) {

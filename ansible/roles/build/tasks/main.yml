@@ -94,6 +94,17 @@
       - libnl-route-3-dev
       - libtbb-dev
       - libopencv-dev
+      - libgstreamer1.0-dev
+      - libgstreamer-plugins-base1.0-dev
+
+- name: Install Local APT Packages
+  become: True
+  apt:
+    state: present
+    deb: "{{ catkin_workspace }}/src/mrover/pkg/{{ item }}"
+  with_items:
+    - libmanif-dev.deb
+    - libdawn-dev.deb
 
 - name: Initialize rosdep
   become: True

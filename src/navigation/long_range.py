@@ -50,8 +50,9 @@ class LongRangeState(ApproachTargetBaseState):
 
         direction_to_tag = bearing_rotation_mat @ rover_direction[:2]
 
+        direction_to_tag = normalized(direction_to_tag)
         distance = DIST_AHEAD
-        direction_to_tag = np.hstack((direction_to_tag, [0.0]))
+        direction_to_tag = np.array([direction_to_tag[0], direction_to_tag[1], 0.0])
         tag_position = rover_position + direction_to_tag * distance
         return tag_position
 

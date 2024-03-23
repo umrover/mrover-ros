@@ -1,6 +1,10 @@
 #include "arm_translator.hpp"
-#include <numbers>
+
+#include "joint_de_translation.hpp"
+#include "linear_joint_translation.hpp"
+
 #include <units/units.hpp>
+#include <params_utils.hpp>
 
 namespace mrover {
 
@@ -8,31 +12,35 @@ namespace mrover {
         assert(mJointDEPitchIndex == mJointDE0Index);
         assert(mJointDERollIndex == mJointDE1Index);
         assert(mArmHWNames.size() == mRawArmNames.size());
-        for (size_t i = 0; i < mRawArmNames.size(); ++i) {
+        ROS_INFO("hi");
+        for (std::size_t i = 0; i < mRawArmNames.size(); ++i) {
             if (i != mJointDEPitchIndex && i != mJointDERollIndex) {
                 assert(mArmHWNames.at(i) == mRawArmNames.at(i));
             }
-
-            // adjust and calibrate services
-            std::string rawName = mRawArmNames[i];
-            mAdjustServersByRawArmNames[rawName] = std::make_unique<ros::ServiceServer>(nh.advertiseService(std::format("{}_adjust", rawName), &ArmTranslator::adjustServiceCallback, this));
-
-            std::string hwName = mArmHWNames[i];
-            mAdjustClientsByArmHWNames[hwName] = nh.serviceClient<AdjustMotor>(std::format("{}_adjust", hwName));
+            {
+                auto rawName = static_cast<std::string>(mRawArmNames[i]);
+                auto [_, was_inserted] = mAdjustServersByRawArmNames.try_emplace(rawName, nh.advertiseService(std::format("{}_adjust", rawName), &ArmTranslator::adjustServiceCallback, this));
+                assert(was_inserted);
+            }
+            {
+                auto hwName = static_cast<std::string>(mArmHWNames[i]);
+                auto [_, was_inserted] = mAdjustClientsByArmHWNames.try_emplace(hwName, nh.serviceClient<AdjustMotor>(std::format("{}_adjust", hwName)));
+                assert(was_inserted);
+            }
         }
 
-        mJointDEPitchOffset = Radians{getFloatFromRosParam(nh, "joint_de/pitch_offset")};
-        mJointDERollOffset = Radians{getFloatFromRosParam(nh, "joint_de/roll_offset")};
+        mJointDEPitchOffset = requireParamAsUnit<Radians>(nh, "joint_de/pitch_offset");
+        mJointDERollOffset = requireParamAsUnit<Radians>(nh, "joint_de/roll_offset");
 
-        mMinRadPerSecDE0 = RadiansPerSecond{getFloatFromRosParam(nh, "brushless_motors/controllers/joint_de_0/min_velocity")};
-        mMaxRadPerSecDE0 = RadiansPerSecond{getFloatFromRosParam(nh, "brushless_motors/controllers/joint_de_0/max_velocity")};
-        mMinRadPerSecDE1 = RadiansPerSecond{getFloatFromRosParam(nh, "brushless_motors/controllers/joint_de_1/min_velocity")};
-        mMaxRadPerSecDE1 = RadiansPerSecond{getFloatFromRosParam(nh, "brushless_motors/controllers/joint_de_1/max_velocity")};
+        mMinRadPerSecDE0 = requireParamAsUnit<RadiansPerSecond>(nh, "brushless_motors/controllers/joint_de_0/min_velocity");
+        mMaxRadPerSecDE0 = requireParamAsUnit<RadiansPerSecond>(nh, "brushless_motors/controllers/joint_de_0/max_velocity");
+        mMinRadPerSecDE1 = requireParamAsUnit<RadiansPerSecond>(nh, "brushless_motors/controllers/joint_de_1/min_velocity");
+        mMaxRadPerSecDE1 = requireParamAsUnit<RadiansPerSecond>(nh, "brushless_motors/controllers/joint_de_1/max_velocity");
 
         mJointDEPitchPosSub = nh.subscribe<std_msgs::Float32>("joint_de_pitch_raw_position_data", 1, &ArmTranslator::processPitchRawPositionData, this);
         mJointDERollPosSub = nh.subscribe<std_msgs::Float32>("joint_de_roll_raw_position_data", 1, &ArmTranslator::processRollRawPositionData, this);
 
-        mJointALinMult = RadiansPerMeter{getFloatFromRosParam(nh, "brushless_motors/controllers/joint_a/rad_to_meters_ratio")};
+        mJointALinMult = requireParamAsUnit<RadiansPerMeter>(nh, "brushless_motors/controllers/joint_a/rad_to_meters_ratio");
 
         mThrottleSub = nh.subscribe<Throttle>("arm_throttle_cmd", 1, &ArmTranslator::processThrottleCmd, this);
         mVelocitySub = nh.subscribe<Velocity>("arm_velocity_cmd", 1, &ArmTranslator::processVelocityCmd, this);
@@ -166,20 +174,21 @@ namespace mrover {
                 mMinRadPerSecDE1.get(),
                 mMaxRadPerSecDE1.get());
 
-        ROS_INFO("max velocity: %f", joint_de_0_vel);
         velocity.names.at(mJointDEPitchIndex) = "joint_de_0";
         velocity.names.at(mJointDERollIndex) = "joint_de_1";
         velocity.velocities.at(mJointDEPitchIndex) = joint_de_0_vel;
         velocity.velocities.at(mJointDERollIndex) = joint_de_1_vel;
 
         // joint a convert linear velocity (meters/s) to revolution/s
-        auto joint_a_vel = convertLinVel(msg->velocities.at(mJointAIndex), static_cast<float>(mJointALinMult.get() / (2 * std::numbers::pi)));
+        auto joint_a_vel = convertLinVel(msg->velocities.at(mJointAIndex), static_cast<float>(mJointALinMult.get()));
         velocity.velocities.at(mJointAIndex) = joint_a_vel;
+        ROS_INFO("joint a velocity after conversion: %f", joint_a_vel);
 
         mVelocityPub->publish(velocity);
     }
 
     auto ArmTranslator::processPositionCmd(Position::ConstPtr const& msg) -> void {
+        ROS_INFO("msg: %f", msg->positions[0]);
         if (mRawArmNames != msg->names || mRawArmNames.size() != msg->positions.size()) {
             ROS_ERROR("Position requests for arm is ignored!");
             return;
@@ -207,7 +216,7 @@ namespace mrover {
         // joint a convert linear position (meters) to radians
         auto joint_a_pos = convertLinPos(msg->positions.at(mJointAIndex), mJointALinMult.get());
         position.positions.at(mJointAIndex) = joint_a_pos;
-
+        
         mPositionPub->publish(position);
     }
 
@@ -218,7 +227,7 @@ namespace mrover {
         }
 
         // Convert joint state of joint a from radians/revolutions to meters
-        auto jointALinVel = convertLinVel(static_cast<float>(msg->velocity.at(mJointAIndex)), static_cast<float>(mJointALinMult.get() / (2 * std::numbers::pi)));
+        auto jointALinVel = convertLinVel(static_cast<float>(msg->velocity.at(mJointAIndex)), mJointALinMult.get());
         auto jointALinPos = convertLinPos(static_cast<float>(msg->position.at(mJointAIndex)), mJointALinMult.get());
 
 

@@ -210,8 +210,8 @@ namespace mrover {
                 runtimeParameters.confidence_threshold = mDepthConfidence;
                 runtimeParameters.texture_confidence_threshold = mTextureConfidence;
 
-                if (mZed.grab(runtimeParameters) != sl::ERROR_CODE::SUCCESS)
-                    throw std::runtime_error("ZED failed to grab");
+                if (sl::ERROR_CODE error = mZed.grab(runtimeParameters); error != sl::ERROR_CODE::SUCCESS)
+                    throw std::runtime_error(std::format("ZED failed to grab {}", sl::toString(error).c_str()));
                 mGrabThreadProfiler.measureEvent("Grab");
 
                 // Retrieval has to happen on the same thread as grab so that the image and point cloud are synced
@@ -250,7 +250,7 @@ namespace mrover {
                         try {
                             SE3d leftCameraInOdom{{translation.x, translation.y, translation.z},
                                                   Eigen::Quaterniond{orientation.w, orientation.x, orientation.y, orientation.z}.normalized()};
-                            SE3d baseLinkToLeftCamera = SE3Conversions::fromTfTree(mTfBuffer, "base_link", "zed2i_left_camera_frame");
+                            SE3d baseLinkToLeftCamera = SE3Conversions::fromTfTree(mTfBuffer, "base_link", "zed_left_camera_frame");
                             SE3d baseLinkInOdom = leftCameraInOdom * baseLinkToLeftCamera;
                             SE3Conversions::pushToTfTree(mTfBroadcaster, "base_link", "odom", baseLinkInOdom);
                         } catch (tf2::TransformException& e) {
