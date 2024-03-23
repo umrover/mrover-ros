@@ -13,6 +13,8 @@ import message_filters
 import threading
 from tf.transformations import *
 
+import time
+
 class GPSLinearization:
     """
     This node subscribes to GPS and IMU data, linearizes the GPS data
@@ -36,16 +38,13 @@ class GPSLinearization:
     # timeout detection
     gps_timeout_interval: int
     imu_timeout_interval: int
+
     gps_has_timeout: bool
     imu_has_timeout: bool
+
     gps_timer: threading.Timer
     imu_timer: threading.Timer
-
-    left_gps_timer: threading.Timer
-    right_gps_timer: threading.Timer
-    left_gps_has_timeout: bool
-    right_gps_has_timeout: bool
-
+    
     # subscribers and publishers
     left_gps_sub : message_filters.Subscriber
     right_gps_sub : message_filters.Subscriber
@@ -60,7 +59,7 @@ class GPSLinearization:
 
     # timeout callbacks, if both gps and imu fail kill node
     def gps_timeout(self):
-        rospy.loginfo("GPS has timed out")
+        rospy.loginfo("Synchronized GPS has timed out, using one or none")
         self.gps_has_timeout = True
 
         if self.imu_has_timeout == True:
@@ -76,7 +75,6 @@ class GPSLinearization:
             rospy.signal_shutdown("Both IMU and GPS have timed out")
 
         return
-    
 
     def __init__(self):
 
@@ -103,10 +101,9 @@ class GPSLinearization:
         self.right_gps_sub = message_filters.Subscriber("/right_gps_driver/fix", RTKNavSatFix)
         self.imu_sub = rospy.Subscriber("imu/data", ImuAndMag, self.imu_callback)
 
-        # sync subscribers
+        # sync subscribers, callbacks
         self.sync_gps_sub = message_filters.ApproximateTimeSynchronizer([self.right_gps_sub, self.left_gps_sub], 10, 0.5)
         self.sync_gps_sub.registerCallback(self.gps_callback)
-
         self.left_gps_sub.registerCallback(self.left_gps_callback)
         self.right_gps_sub.registerCallback(self.right_gps_callback)
 
@@ -114,43 +111,26 @@ class GPSLinearization:
         self.pose_publisher = rospy.Publisher("linearized_pose", PoseWithCovarianceStamped, queue_size=1)
 
         # timers
-        self.gps_has_timeout = self.left_gps_has_timeout = self.right_gps_has_timeout = self.imu_time_delay = False
+        self.gps_has_timeout = self.imu_has_timeout = False
         self.gps_timeout_interval = self.imu_timeout_interval = 5
         self.gps_timer = threading.Timer(self.gps_timeout_interval, self.gps_timeout)
         self.imu_timer = threading.Timer(self.imu_timeout_interval, self.imu_timeout)
-
-        self.left_gps_timer = threading.Timer(self.gps_timeout_interval, self.left_gps_timeout)
-        self.right_gps_timer = threading.Timer(self.gps_timeout_interval, self.right_gps_timeout)
-
-    def right_gps_timeout(self):
-        print("right gps has timed out")
-        self.right_gps_has_timeout = True
-
-    def left_gps_timeout(self):
-        print("left gps has timed out")
-        self.left_gps_has_timeout = True
     
     def right_gps_callback(self, right_gps_msg: RTKNavSatFix):
-        self.right_gps_has_timeout = False
-
-        self.right_gps_timer.cancel()
-        self.right_gps_timer = threading.Timer(self.gps_timeout_interval, self.right_gps_timeout)
-        self.right_gps_timer.start()
-
-        # what if synchronizer was not working?
-        if (self.left_gps_has_timeout == False):
+        # use right gps only when combined gps fails
+        if (self.gps_has_timeout == False):
             return
 
-        if np.any(np.isnan([right_gps_msg.latitude, right_gps_msg.longitude, right_gps_msg.altitude])):
+        if np.any(np.isnan([right_gps_msg.coord.latitude, right_gps_msg.coord.longitude, right_gps_msg.coord.altitude])):
             return
         
         ref_coord = np.array([self.ref_lat, self.ref_lon, self.ref_alt])
 
         right_cartesian = np.array(
-            geodetic2enu(right_gps_msg.latitude, right_gps_msg.longitude, right_gps_msg.altitude, *ref_coord, deg=True)
+            geodetic2enu(right_gps_msg.coord.latitude, right_gps_msg.coord.longitude, right_gps_msg.coord.altitude, *ref_coord, deg=True)
         )
 
-        pose = SE3(right_cartesian, SO3(np.array[0, 0, 0, 1]))
+        pose = SE3(right_cartesian, SO3(np.array([0, 0, 0, 1])))
 
         if (self.last_imu_orientation is not None):
             imu_quat = self.last_imu_orientation
@@ -175,11 +155,52 @@ class GPSLinearization:
             ),
         )
 
-        self.pose_publisher(pose_msg)
+        # publish pose (right gps only)
+        self.pose_publisher.publish(pose_msg)
 
 
     def left_gps_callback(self, left_gps_msg: RTKNavSatFix):
-        print("left_GPS")
+        # use left gps only when combined gps fails
+        if (self.gps_has_timeout == False):
+            return
+        
+        if np.any(np.isnan([left_gps_msg.coord.latitude, left_gps_msg.coord.longitude, left_gps_msg.coord.altitude])):
+            return
+        
+        ref_coord = np.array([self.ref_lat, self.ref_lon, self.ref_alt])
+
+        left_cartesian = np.array(
+            geodetic2enu(left_gps_msg.coord.latitude, left_gps_msg.coord.longitude, left_gps_msg.coord.altitude, *ref_coord, deg=True)
+        )
+
+        pose = SE3(left_cartesian, SO3(np.array([0, 0, 0, 1])))
+
+        # use imu for orientation
+        if (self.last_imu_orientation is not None):
+            imu_quat = self.last_imu_orientation
+            gps_quat = quaternion_multiply(self.rtk_offset, imu_quat)
+            pose = SE3(pose.position, SO3(gps_quat))
+
+        self.last_gps_pose = pose
+
+        covariance_matrix = np.zeros((6, 6))
+        covariance_matrix[:3, :3] = self.config_gps_covariance.reshape(3, 3)
+        covariance_matrix[3:, 3:] = self.config_imu_covariance.reshape(3, 3)
+
+        # publish to ekf
+        pose_msg = PoseWithCovarianceStamped(
+            header=Header(stamp=rospy.Time.now(), frame_id=self.world_frame),
+            pose=PoseWithCovariance(
+                pose=Pose(
+                    position=Point(*pose.position),
+                    orientation=Quaternion(*pose.rotation.quaternion),
+                ),
+                covariance=covariance_matrix.flatten().tolist(),
+            ),
+        )
+
+        # publish pose (left gps only)
+        self.pose_publisher.publish(pose_msg)
     
     
     def gps_callback(
@@ -194,7 +215,7 @@ class GPSLinearization:
         :param msg: The NavSatFix message containing GPS data that was just received
         TODO: Handle invalid PVTs
         """
-        print("GPS callback")
+
         self.gps_has_timeout = False
 
         # set gps timer
