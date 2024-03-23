@@ -42,6 +42,8 @@ export default defineComponent({
       const STREAM_CODEC = 'hvc1.1.2.L90.90';
       const STREAM_WIDTH = 1280;
       const STREAM_HEIGHT = 720;
+      const STREAM_FPS = 30;
+      const RECONNECT_TIMEOUT_MS = 3000;
 
       const vertexShaderSource = `
     attribute vec2 xy;
@@ -162,7 +164,7 @@ export default defineComponent({
         console.log(`Disconnected from server for stream ${number}`);
         decoder.close();
         // This recursive-ness stops after the canvas element is removed
-        setTimeout(() => this.startStream(number), 3000);
+        setTimeout(() => this.startStream(number), RECONNECT_TIMEOUT_MS);
       };
       this.ws.onerror = () => {
         if (this.ws) this.ws.close()
@@ -172,7 +174,7 @@ export default defineComponent({
         decoder.decode(new EncodedVideoChunk({
           type: "key",
           timestamp: performance.now(),
-          duration: 1000 / 30,
+          duration: 1000 / STREAM_FPS,
           data: event.data,
         }));
       };
