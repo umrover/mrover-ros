@@ -1,6 +1,7 @@
 #pragma once
 
 #include <thread>
+#include <atomic>
 
 #include <nodelet/loader.h>
 #include <sensor_msgs/Image.h>

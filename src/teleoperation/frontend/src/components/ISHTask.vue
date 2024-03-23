@@ -17,6 +17,13 @@
     <div class="shadow p-3 rounded siteSelect">
         <SelectSite @site="onSiteChange" />
     </div>
+    <!-- <div class="shadow p-3 rounded raman">
+        <Raman />
+      </div> -->
+    <!-- ADD BENEDICTS TEST HERE-->
+    <div class="shadow p-3 rounded cameras">
+      <Cameras :primary="primary" :isSA="false"/>
+    </div>
     <div class="shadow p-3 rounded benedicts">
         <AminoBenedict :site="site" :isAmino="false"/>
       </div>
@@ -80,11 +87,15 @@ export default {
   grid-template-rows: repeat(6, auto);
   grid-template-areas:
     'header header'
+    'carousel siteSelect'
+    'carousel raman'
+    'carousel chlorophyll'
+    'cache chlorophyll'
+    'cache amino'
+    'cameras cameras'
     'cameras siteSelect'
     'cameras benedicts'
-    'cameras chlorophyll'
-    'cache chlorophyll'
-    'cache amino';
+    'cameras chlorophyll';
   font-family: sans-serif;
   height: auto;
 }
