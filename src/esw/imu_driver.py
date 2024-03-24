@@ -4,7 +4,7 @@ import rospy
 from sensor_msgs.msg import Temperature, Imu, MagneticField
 from geometry_msgs.msg import Quaternion, Vector3, PoseWithCovarianceStamped, PoseWithCovariance, Vector3Stamped, Pose
 from std_msgs.msg import Header
-from mrover.msg import ImuAndMag
+from mrover.msg import ImuAndMag, CalibrationStatus
 from tf.transformations import quaternion_about_axis, quaternion_multiply, rotation_matrix, quaternion_from_matrix
 from typing import Tuple, List
 from copy import deepcopy
@@ -75,22 +75,16 @@ def main():
     # publishers for all types of IMU data, queue size is 1 to make sure we don't publish old data
     imu_pub = rospy.Publisher("imu/data", ImuAndMag, queue_size=1)
     temp_pub = rospy.Publisher("imu/temp", Temperature, queue_size=1)
-    # calibration_pub = rospy.Publisher("imu/calibration", CalibrationStatus, queue_size=1)
+    calibration_pub = rospy.Publisher("imu/calibration", CalibrationStatus, queue_size=1)
     mag_pose_pub = rospy.Publisher("imu/mag_pose", PoseWithCovarianceStamped, queue_size=1)
 
     # no rate used because rate is effectively set by Arduino serial publisher
     rospy.init_node("imu_driver")
 
     # read serial connection info and IMU frame from parameter server
-<<<<<<< Updated upstream
     port = rospy.get_param("imu_driver/port")
     baud = rospy.get_param("imu_driver/baud", 115200)
     imu_frame = rospy.get_param("imu_driver/frame_id", "imu_link")
-=======
-    port = "/dev/ttyACM0"
-    baud = 115200
-    imu_frame = "imu_link"
->>>>>>> Stashed changes
 
     # create serial connection with Arduino
     ser = serial.Serial(port, baud)
@@ -168,16 +162,12 @@ def main():
 
         temp_msg = Temperature(header=header, temperature=temp_data)
 
-<<<<<<< Updated upstream
-        # calibration_msg = CalibrationStatus(header, cal_data)
-=======
         calibration_msg = CalibrationStatus(header, cal_data)
->>>>>>> Stashed changes
 
         # publish each message
         imu_pub.publish(imu_msg)
         temp_pub.publish(temp_msg)
-        # calibration_pub.publish(calibration_msg)
+        calibration_pub.publish(calibration_msg)
         publish_mag_pose(mag_pose_pub, mag_msg, mag_pose_covariance, world_frame)
 
 
