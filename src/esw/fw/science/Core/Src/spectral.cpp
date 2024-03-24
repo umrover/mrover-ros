@@ -69,7 +69,7 @@ namespace mrover {
 		osDelay(50);
 
 		// Integration time = 2.8ms & 0xFF
-		uint8_t int_time_multiplier = 0xFF;
+		uint8_t int_time_multiplier = 0xFF; //0xFF;
 		virtual_write(INT_TIME_REG, int_time_multiplier);
 
 
@@ -101,8 +101,10 @@ namespace mrover {
 			uint8_t msb_result_3 = virtual_read(msb_reg_addr_3);
     		if(m_error) return false;
 
-    		float combined_val = (msb_result_0 << 24) | (msb_result_1 << 16) | (msb_result_2 << 8) | (msb_result_3 << 0);
-			channel_data[i] = combined_val;
+    		uint32_t combined_val = ((uint32_t)msb_result_0 << 24) | ((uint32_t)msb_result_1 << 16) | ((uint32_t)msb_result_2 << 8) | ((uint32_t)msb_result_3 << 0);
+    		float converted_val = 0;
+    		memcpy(&converted_val, &combined_val, 4);
+			channel_data[i] = converted_val;
 			// */
 
 //    		if (!msb_result || !lsb_result){
