@@ -37,8 +37,6 @@ namespace mrover {
     }
 
     auto LanderAlignNodelet::ActionServerCallBack() -> void {
-        // mActionServer->acceptNewGoal();
-
         LanderAlignResult result;
         mPlaneOffsetScalar = 2.5;
 
@@ -219,7 +217,7 @@ namespace mrover {
                 }
 
                 // update best plane if better inlier count
-                if (numInliers > minInliers && normal.x() != 0 && normal.y() != 0 && normal.z() != 0) { // this don't make no sense
+                if (numInliers > minInliers && normal.x() != 0) { 
                     minInliers = numInliers;
                     mNormalInZEDVector.value() = normal;
                     mBestOffset = offset;
@@ -266,7 +264,6 @@ namespace mrover {
         Eigen::Vector3d worldUp = Eigen::Vector3d::UnitZ();
         Eigen::Vector3d left = worldUp.cross(forward);
         Eigen::Vector3d up = forward.cross(left);
-        ROS_INFO("THE LOCATION OF THE PLANE IS AT: %f, %f, %f with normal vector %f, %f, %f", mPlaneLocationInZEDVector.value().x(), mPlaneLocationInZEDVector.value().y(), mPlaneLocationInZEDVector.value().z(), forward.x(), forward.y(), forward.z());
 
         rot.col(0) = forward;
         rot.col(1) = left;
@@ -290,45 +287,6 @@ namespace mrover {
         if(mOffsetLocationInZEDSE3d.translation().x() < 0) mNormalInZEDVector = std::nullopt;
     }
 
-    auto LanderAlignNodelet::PID::rotate_speed(double theta) const -> double {
-        return Angle_P * theta;
-    }
-
-
-    auto LanderAlignNodelet::PID::find_angle(Eigen::Vector3d const& current, Eigen::Vector3d const& target) -> float {
-        Eigen::Vector3d u1 = current.normalized();
-        u1.z() = 0;
-        Eigen::Vector3d u2 = target.normalized();
-        u2.z() = 0;
-        float theta = fmod(acos(u1.dot(u2)), static_cast<float>(180));
-        float perp_alignment = u2[0] * -u1[1] + u2[1] * u1[0];
-        if (perp_alignment > 0) {
-            return theta;
-        }
-        return -theta;
-    }
-
-    auto LanderAlignNodelet::PID::drive_speed(float distance) -> float {
-        return distance * Linear_P;
-    }
-
-    auto LanderAlignNodelet::PID::find_distance(Eigen::Vector3d const& current, Eigen::Vector3d const& target) -> double {
-        Eigen::Vector3d difference = target - current;
-        double distance = difference.norm();
-        return distance;
-    }
-
-    LanderAlignNodelet::PID::PID(float angle_P, float linear_P) : Angle_P(angle_P), Linear_P(linear_P) {
-    }
-
-    // auto LanderAlignNodelet::PID::calculate(Eigen::Vector3d& input, Eigen::Vector3d& target) -> std::tuple<float> {
-    //     input[2] = 0;
-    //     target[2] = 0;
-
-    //     return {rotate_command(input, target), drive_speed(input, target)};
-    // }
-
-
     void LanderAlignNodelet::sendTwist() {
         //Locations
         Eigen::Vector3d rover_dir;
@@ -341,7 +299,6 @@ namespace mrover {
         float const angular_thresh = 0.001;
 
 
-        PID pid(0.1, 0.1);  // literally just P -- ugly class and probably needs restructuring in the future
         ros::Rate rate(20); // ROS Rate at 20Hzn::Matrix3d roverToPlaneNorm;
                             // Eigen::Vector3d Nup = Eigen::Vector3d::UnitZ();
                             // Eigen::Vector3d Nleft = Nup.cross(mBestNormalInWorld.value());
