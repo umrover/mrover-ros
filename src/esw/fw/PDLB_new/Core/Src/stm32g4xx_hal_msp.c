@@ -125,6 +125,7 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* hadc)
     PA3     ------> ADC1_IN4
     PB0     ------> ADC1_IN15
     PB1     ------> ADC1_IN12
+    PB11     ------> ADC1_IN14
     PB12     ------> ADC1_IN11
     PB14     ------> ADC1_IN5
     */
@@ -138,7 +139,8 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* hadc)
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-    GPIO_InitStruct.Pin = TEMP_12V_BUCK_Pin|TEMP_12V_JETSON_Pin|TEMP_24V_Pin|CURR_5V_Pin;
+    GPIO_InitStruct.Pin = TEMP_12V_BUCK_Pin|TEMP_12V_JETSON_Pin|TEMP_12V_REST_Pin|TEMP_24V_Pin
+                          |CURR_5V_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
@@ -218,6 +220,7 @@ void HAL_ADC_MspDeInit(ADC_HandleTypeDef* hadc)
     PA3     ------> ADC1_IN4
     PB0     ------> ADC1_IN15
     PB1     ------> ADC1_IN12
+    PB11     ------> ADC1_IN14
     PB12     ------> ADC1_IN11
     PB14     ------> ADC1_IN5
     */
@@ -225,7 +228,8 @@ void HAL_ADC_MspDeInit(ADC_HandleTypeDef* hadc)
 
     HAL_GPIO_DeInit(GPIOA, CURR_24V_Pin|CURR_12V_JETSON_Pin|CURR_12V_REST_Pin|CURR_12V_BUCK_Pin);
 
-    HAL_GPIO_DeInit(GPIOB, TEMP_12V_BUCK_Pin|TEMP_12V_JETSON_Pin|TEMP_24V_Pin|CURR_5V_Pin);
+    HAL_GPIO_DeInit(GPIOB, TEMP_12V_BUCK_Pin|TEMP_12V_JETSON_Pin|TEMP_12V_REST_Pin|TEMP_24V_Pin
+                          |CURR_5V_Pin);
 
   /* USER CODE BEGIN ADC1_MspDeInit 1 */
 

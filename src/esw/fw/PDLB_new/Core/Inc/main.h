@@ -87,6 +87,8 @@ void Error_Handler(void);
 #define TEMP_12V_JETSON_GPIO_Port GPIOB
 #define BLUE_LED_Pin GPIO_PIN_2
 #define BLUE_LED_GPIO_Port GPIOB
+#define TEMP_12V_REST_Pin GPIO_PIN_11
+#define TEMP_12V_REST_GPIO_Port GPIOB
 #define TEMP_24V_Pin GPIO_PIN_12
 #define TEMP_24V_GPIO_Port GPIOB
 #define CURR_5V_Pin GPIO_PIN_14

@@ -87,20 +87,20 @@ void Error_Handler(void);
 #define THERM_B2_GPIO_Port GPIOB
 #define THERM_B1_Pin GPIO_PIN_12
 #define THERM_B1_GPIO_Port GPIOB
-#define HEATER_B0_Pin GPIO_PIN_13
-#define HEATER_B0_GPIO_Port GPIOB
-#define HEATER_N0_Pin GPIO_PIN_14
-#define HEATER_N0_GPIO_Port GPIOB
-#define HEATER_B1_Pin GPIO_PIN_15
-#define HEATER_B1_GPIO_Port GPIOB
-#define HEATER_N1_Pin GPIO_PIN_8
-#define HEATER_N1_GPIO_Port GPIOA
-#define HEATER_B2_Pin GPIO_PIN_9
-#define HEATER_B2_GPIO_Port GPIOA
-#define HEATER_N2_Pin GPIO_PIN_10
-#define HEATER_N2_GPIO_Port GPIOA
-#define I2C_MUX_RST_Pin GPIO_PIN_15
+#define I2C_MUX_RST_Pin GPIO_PIN_10
 #define I2C_MUX_RST_GPIO_Port GPIOA
+#define HEATER_B0_Pin GPIO_PIN_15
+#define HEATER_B0_GPIO_Port GPIOA
+#define HEATER_N0_Pin GPIO_PIN_3
+#define HEATER_N0_GPIO_Port GPIOB
+#define HEATER_B1_Pin GPIO_PIN_4
+#define HEATER_B1_GPIO_Port GPIOB
+#define HEATER_N1_Pin GPIO_PIN_5
+#define HEATER_N1_GPIO_Port GPIOB
+#define HEATER_B2_Pin GPIO_PIN_6
+#define HEATER_B2_GPIO_Port GPIOB
+#define HEATER_N2_Pin GPIO_PIN_7
+#define HEATER_N2_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 
