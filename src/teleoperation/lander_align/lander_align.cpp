@@ -37,13 +37,15 @@ namespace mrover {
     }
 
     auto LanderAlignNodelet::ActionServerCallBack() -> void {
+        // mActionServer->acceptNewGoal();
+
         LanderAlignResult result;
         mPlaneOffsetScalar = 2.5;
 
         //If we haven't yet defined the point cloud we are working with
 		mCloud = ros::topic::waitForMessage<sensor_msgs::PointCloud2>("/camera/left/points", mNh);
 		filterNormals(mCloud);
-		ransac(0.1, 10, 100, mPlaneOffsetScalar);
+		ransac(0.1, 10, 100);
         
         //If there is a proper normal to drive to
         if (mNormalInZEDVector.has_value()) {
@@ -56,14 +58,18 @@ namespace mrover {
         //If we haven't yet defined the point cloud we are working with
 		mCloud = ros::topic::waitForMessage<sensor_msgs::PointCloud2>("/camera/left/points", mNh);
 		filterNormals(mCloud);
-		ransac(0.1, 10, 100, mPlaneOffsetScalar);
+		ransac(0.1, 10, 100);
         
         //If there is a proper normal to drive to
         if (mNormalInZEDVector.has_value()) {
             sendTwist();
         }
 
-        mActionServer->setSucceeded(result);
+        if(mActionServer->isPreemptRequested()){
+            mActionServer->setPreempted();
+        }else{
+            mActionServer->setSucceeded(result);
+        }
     }
 
 
@@ -213,7 +219,7 @@ namespace mrover {
                 }
 
                 // update best plane if better inlier count
-                if (numInliers > minInliers && normal.x() != 0 && normal.y() != 0 && normal.z() != 0) {
+                if (numInliers > minInliers && normal.x() != 0 && normal.y() != 0 && normal.z() != 0) { // this don't make no sense
                     minInliers = numInliers;
                     mNormalInZEDVector.value() = normal;
                     mBestOffset = offset;

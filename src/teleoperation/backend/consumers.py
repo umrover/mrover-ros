@@ -728,5 +728,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         pass
 
     def stop_lander_align(self) -> None:
-        self.landerClient.cancel_goal()
+        if(self.landerClient.get_state() != 3):
+            self.landerClient.cancel_goal()
         pass
+
