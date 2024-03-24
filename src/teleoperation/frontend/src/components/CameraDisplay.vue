@@ -1,15 +1,12 @@
 <template>
     <div class="wrap">
-        <div v-if="numStreams == 1">
-            <IKCameraFeed v-if="mission==='ik'" :id="0" :port="0"></IKCameraFeed>
-            <SACameraFeed v-if="mission==='sa'" :id="0" :port="0"></SACameraFeed>
-            <CameraFeed v-if="mission==='other'" :id="0" :port="0"></CameraFeed>
-        </div>
-        <div v-else class="grid-container">
-            <div v-for="i in numStreams" :key="i" :class="'feed'+i">
-                <IKCameraFeed v-if="mission==='ik'" :id="streamOrder[i-1]" :port="8080+i"></IKCameraFeed>
-                <SACameraFeed v-if="mission==='sa'" :id="streamOrder[i-1]" :port="8080+i"></SACameraFeed>
-                <CameraFeed v-if="mission==='other'" :id="streamOrder[i-1]" :port="8080+i"></CameraFeed>
+        <div class="grid-container">
+            <div v-for="i in 4" :key="i" :class="'feed'+i">
+                <div v-if="i <= numStreams">
+                    <IKCameraFeed v-if="mission==='ik'" :id="streamOrder[i-1]"></IKCameraFeed>
+                <SACameraFeed v-if="mission==='sa'" :id="streamOrder[i-1]"></SACameraFeed>
+                <CameraFeed v-if="mission==='other'" :id="streamOrder[i-1]"></CameraFeed>
+                </div>
             </div>
         </div>
     </div>
@@ -51,10 +48,6 @@
             deep: true
         }
     },
-
-    created: function () {
-      
-    }
   })
   </script>
   

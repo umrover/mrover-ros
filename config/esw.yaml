@@ -36,10 +36,10 @@ can:
       bus: 0
       id: 0x15
     - name: "joint_a"
-      bus: 1
+      bus: 0
       id: 0x20
     - name: "joint_b"
-      bus: 1
+      bus: 0
       id: 0x21
     - name: "joint_c"
       bus: 1
@@ -84,7 +84,7 @@ can:
       bus: 1
       id: 0x50
     - name: "science"
-      bus: 1
+      bus: 0
       id: 0x51
 
 brushless_motors:
@@ -133,7 +133,7 @@ brushless_motors:
       limit_1_readjust_position: 494.739 # radians
       limit_max_forward_pos: true
       limit_max_backward_pos: true
-      max_forward_pos: 1.0
+      max_forward_pos: 0.4
       max_backward_pos: 0.0
     joint_c:
       velocity_multiplier: -1.0

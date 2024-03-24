@@ -7,18 +7,18 @@
           output="screen">
         <param name="interface" value="can0"/>
     </node>
-    <node name="can_driver_1" pkg="mrover" type="can_driver"
+    <!-- <node name="can_driver_1" pkg="mrover" type="can_driver"
           respawn="true" respawn_delay="2"
           output="screen">
         <param name="interface" value="can1"/>
-    </node>
+    </node> -->
 
-    <node pkg="nodelet" type="nodelet" name="usb_camera_nodelet" respawn="true"
+    <!-- <node pkg="nodelet" type="nodelet" name="usb_camera_nodelet" respawn="true"
           args="load mrover/UsbCameraNodelet perception_nodelet_manager" output="screen">
-    </node>
-    <node pkg="nodelet" type="nodelet" name="usb_camera_streamer" respawn="true"
+    </node> -->
+    <!-- <node pkg="nodelet" type="nodelet" name="usb_camera_streamer" respawn="true"
           args="load mrover/NvGstH265EncNodelet perception_nodelet_manager" output="screen">
-    </node>
+    </node> -->
 
     <node name="drive_bridge" pkg="mrover" type="drive_bridge" output="screen"/>
 

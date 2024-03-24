@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <optional>
+#include <utility>
 
 namespace mrover {
     /* ABSOLUTE ENCODER PROCESS:
