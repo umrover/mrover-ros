@@ -120,7 +120,7 @@ namespace mrover {
 				//spectral_data.spectrals.at(i).error =
 				//		m_spectral_sensors.at(i).is_error();
         		for (int j = 0; j < 6; ++j) {
-					spectral_data.at(i).spectral_info.data.at(j) =
+					spectral_data.at(i).data.at(j) =
 						m_spectral_sensors.at(i).get_channel_data(j);
         		}
 //        		for (int j = 0; j < 6; ++j) {
@@ -135,7 +135,7 @@ namespace mrover {
 
         	// TODO - MUTEXS ARE BREAKING CODE!!!! IDK WHY - PLEASE FIX
 //        	osMutexAcquire(m_can_tx_mutex, osWaitForever);
-			m_fdcan_bus.broadcast(OutBoundScienceMessage{spectral_data});
+			//m_fdcan_bus.broadcast(OutBoundScienceMessage{spectral_data});
 //			osMutexRelease(m_can_tx_mutex);
         }
 
