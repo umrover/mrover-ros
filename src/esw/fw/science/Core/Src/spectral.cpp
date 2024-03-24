@@ -40,15 +40,9 @@ namespace mrover {
 				case WRITE:
 					if((status.value() & I2C_AS72XX_SLAVE_TX_VALID) == 0) return;
 				case READ:
-//					if((status.value() & I2C_AS72XX_SLAVE_RX_VALID) != 0) return;
-					return;
+					if((status.value() & I2C_AS72XX_SLAVE_RX_VALID) != 0) return;
+					// return;
 				}
-//				if(write && (status.value() & I2C_AS72XX_SLAVE_TX_VALID) == 0){
-//					break;
-//				}
-//				else if(!write && (status.value() & I2C_AS72XX_SLAVE_RX_VALID != 0)){
-//					break;
-//				}
 			}
 
 			osDelay(5); // Non blocking delay
@@ -107,8 +101,8 @@ namespace mrover {
 			uint8_t msb_result_3 = virtual_read(msb_reg_addr_3);
     		if(m_error) return false;
 
-    		uint32_t combined_val = (msb_result_0 << 24) | (msb_result_1 << 16) | (msb_result_2 << 8) | (msb_result_3);
-			channel_data[i] = std::bit_cast<float>(combined_val);
+    		float combined_val = (msb_result_0 << 24) | (msb_result_1 << 16) | (msb_result_2 << 8) | (msb_result_3 << 0);
+			channel_data[i] = combined_val;
 			// */
 
 //    		if (!msb_result || !lsb_result){
@@ -160,6 +154,10 @@ namespace mrover {
     uint8_t Spectral::virtual_read(uint8_t virtual_reg){// -> std::optional<uint16_t>{
     	// Read status register may not work quite how it is described in the datasheet
     	poll_status_reg(I2C_OP::READ);
+
+    	if (m_error) {
+    		return 0;
+    	}
 		uint8_t buf[2];
 		buf[0] = I2C_AS72XX_WRITE_REG;
 		buf[1] = virtual_reg;
@@ -170,6 +168,10 @@ namespace mrover {
 
 
 		poll_status_reg(I2C_OP::READ);
+
+		if (m_error) {
+			return 0;
+		}
 
 		auto result = m_i2c_bus->blocking_transact(SPECTRAL_7b_ADDRESS, I2C_AS72XX_READ_REG);
 //		m_i2c_bus->blocking_transmit(SPECTRAL_7b_ADDRESS, I2C_AS72XX_READ_REG);

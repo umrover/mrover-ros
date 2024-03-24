@@ -109,7 +109,7 @@ namespace mrover {
         }
 
         void update_and_send_spectral() {
-        	for (int i = 0; i < 3; ++i) {
+        	for (int i = 1; i < 2; ++i) {
         		SpectralData spectral_data;
 				spectral_data.site = i;
         		bool op_res = m_spectral_sensors.at(i).update_channel_data();
@@ -117,12 +117,13 @@ namespace mrover {
         			//TODO: add error handling (whatever should have been in catch) here
         		}
 
-				//spectral_data.spectrals.at(i).error =
-				//		m_spectral_sensors.at(i).is_error();
+				spectral_data.error =
+						m_spectral_sensors.at(i).is_error();
         		for (int j = 0; j < 6; ++j) {
 					spectral_data.data.at(j) =
 						m_spectral_sensors.at(i).get_channel_data(j);
         		}
+				m_fdcan_bus.broadcast(OutBoundScienceMessage{spectral_data});
 //        		for (int j = 0; j < 6; ++j) {
 //        			m_spectral_sensors.at(i).update_channel_data(j);
 //					spectral_data.spectrals.at(i).data.at(j) =
@@ -130,7 +131,6 @@ namespace mrover {
 //					spectral_data.spectrals.at(i).error =
 //							m_spectral_sensors.at(i).is_error();
 //        		}
-				m_fdcan_bus.broadcast(OutBoundScienceMessage{spectral_data});
         	}
 
         	// TODO - MUTEXS ARE BREAKING CODE!!!! IDK WHY - PLEASE FIX
