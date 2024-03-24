@@ -33,7 +33,9 @@
   } from '@vue-leaflet/vue-leaflet'
   import {
       mapGetters,
-      mapMutations
+      mapMutations,
+      mapActions,
+      mapState
   } from 'vuex'
   import 'leaflet/dist/leaflet.css'
   import L from '../leaflet-rotatedmarker.js'
@@ -75,6 +77,7 @@
               onlineTileOptions: onlineTileOptions,
               offlineTileOptions: offlineTileOptions,
               roverMarker: null,
+              droneMarker: null,
               waypointIcon: null,
               highlightedWaypointIcon: null,
               map: null,
@@ -85,8 +88,8 @@
               odomPath: [],
               dronePath: [],
               findRover: false,
-              drone_latitude_deg:0,
-              drone_longitude_deg:0,
+              drone_latitude_deg:42.293195,
+              drone_longitude_deg:-83.7096706
           }
       },
   
@@ -122,11 +125,13 @@
       },
   
       methods: {
+        ...mapActions('websocket', ['sendMessage']),
           onMapReady: function () {
               // Pull objects from refs to be able to access data and change w functions
               this.$nextTick(() => {
                   this.map = this.$refs.map.leafletObject
                   this.roverMarker = this.$refs.rover.leafletObject
+                  this.droneMarker = this.$refs.drone.leafletObject
               })
           },
           // Event listener for setting store values to get data to waypoint Editor
@@ -153,6 +158,8 @@
       },
   
       computed: {
+         ...mapState('websocket', ['message']),
+
           ...mapGetters('erd', {
               waypointList: 'waypointList',
               highlightedWaypoint: 'highlightedWaypoint'
@@ -160,6 +167,7 @@
   
           // Convert to latLng object for Leaflet to use
           odomLatLng: function () {
+              console.log(this.odom.latitude_deg, this.odom.longitude_deg)
               return L.latLng(this.odom.latitude_deg, this.odom.longitude_deg)
           },
 
@@ -171,9 +179,9 @@
               return [this.odomLatLng].concat(this.route.map((waypoint: any) => waypoint.latLng))
           },
 
-          // dronepolylinePath: function () {
-          //     return [this.odomLatLng].concat(this.route.map((waypoint: any) => waypoint.latLng))
-          // },
+          dronepolylinePath: function () {
+              return [this.droneLatLng].concat(this.route.map((waypoint: any) => waypoint.latLng))
+          },
       },
   
       props: {
@@ -189,7 +197,7 @@
                 this.drone_latitude_deg = msg.latitude
                 this.drone_longitude_deg = msg.longitude
                 const latLng = L.latLng(this.drone_latitude_deg, this.drone_longitude_deg)
-                this.roverMarker.setLatLng(latLng)
+                this.droneMarker.setLatLng(latLng)
                   // Update the rover path
                   this.droneCount++
                   if (this.droneCount % DRAW_FREQUENCY === 0) {
@@ -200,6 +208,7 @@
                       this.dronePath = [...this.dronePath, latLng]
                       this.droneCount = 0
                   }
+                  console.log(this.dronePath)
             }
           },
 

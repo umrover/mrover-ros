@@ -808,8 +808,8 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.send(text_data=json.dumps({"type": "spectral_data", "data": data, "error": error}))
 
     def drone_waypoint_callback(self, msg):
-        latitude = msg.latitude_degrees
-        longitude = msg.longitude_degrees
+        latitude = msg.latitude
+        longitude = msg.longitude
         self.send(text_data=json.dumps({"type": "drone_waypoint", "latitude": latitude, "longitude": longitude}))
 
     def download_csv(self, msg):

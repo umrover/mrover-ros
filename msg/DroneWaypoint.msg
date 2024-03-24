@@ -1,2 +1,2 @@
-float64 latitude_degrees
-float64 longitude_degrees
+float64 latitude
+float64 longitude
