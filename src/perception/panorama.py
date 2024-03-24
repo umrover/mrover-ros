@@ -11,6 +11,7 @@ from mrover.msg import MotorsStatus, Throttle, Position
 
 import rospy
 import sys
+import actionlib
 
 import cv2 as cv
 from cv_bridge import CvBridge
@@ -42,138 +43,153 @@ pftype_sizes = {
     PointField.FLOAT64: 8,
 }
 
+class PanoramaAction:
 
-def fields_to_dtype(fields, point_step):
-    """Convert a list of PointFields to a numpy record datatype."""
-    offset = 0
-    np_dtype_list = []
-    for f in fields:
-        while offset < f.offset:
-            # might be extra padding between fields
+    def __init__(self, name):
+        self._action_name = name
+        self._as = actionlib.SimpleActionServer(self._action_name, CapturePanorama, execute_cb=self.capture_panorama, auto_start=False)
+        self.stitcher = cv2.Stitcher.create()
+        # TODO: Why no auto start?
+        self._as.start()
+
+        self.position_subscriber = rospy.Subscriber("/mast_status", MotorsStatus, self.get_latest_position, callback_args = Position, queue_size=1)
+        image_subscriber = rospy.Subscriber("/camera/left/points", PointCloud2, self.received_point_cloud, queue_size=1)
+        mast_throttle = rospy.Publisher("/mast_gimbal_position_cmd", Position, queue_size=1)
+
+    def fields_to_dtype(fields, point_step):
+        """Convert a list of PointFields to a numpy record datatype."""
+        offset = 0
+        np_dtype_list = []
+        for f in fields:
+            while offset < f.offset:
+                # might be extra padding between fields
+                np_dtype_list.append(("%s%d" % ("__", offset), np.uint8))
+                offset += 1
+
+            dtype = pftype_to_nptype[f.datatype]
+            if f.count != 1:
+                dtype = np.dtype((dtype, f.count))
+
+            np_dtype_list.append((f.name, dtype))
+            offset += pftype_sizes[f.datatype] * f.count
+
+        # might be extra padding between points
+        while offset < point_step:
             np_dtype_list.append(("%s%d" % ("__", offset), np.uint8))
             offset += 1
 
-        dtype = pftype_to_nptype[f.datatype]
-        if f.count != 1:
-            dtype = np.dtype((dtype, f.count))
-
-        np_dtype_list.append((f.name, dtype))
-        offset += pftype_sizes[f.datatype] * f.count
-
-    # might be extra padding between points
-    while offset < point_step:
-        np_dtype_list.append(("%s%d" % ("__", offset), np.uint8))
-        offset += 1
-
-    return np_dtype_list
+        return np_dtype_list
 
 
-def pointcloud2_to_array(cloud_msg, squeeze=True):
-    """Converts a rospy PointCloud2 message to a numpy recordarray
+    def pointcloud2_to_array(cloud_msg, squeeze=True):
+        """Converts a rospy PointCloud2 message to a numpy recordarray
 
-    Reshapes the returned array to have shape (height, width), even if the height is 1.
+        Reshapes the returned array to have shape (height, width), even if the hei"""  """ght is 1.
 
-    The reason for using np.frombuffer rather than struct.unpack is speed... especially
-    for large point clouds, this will be <much> faster.
-    """
-    # construct a numpy record type equivalent to the point type of this cloud
-    dtype_list = fields_to_dtype(cloud_msg.fields, cloud_msg.point_step)
+        The reason for using np.frombuffer rather than struct.unpack is speed... especially
+        for large point clouds, this will be <much> faster.
+        """
+        # construct a numpy record type equivalent to the point type of this cloud
+        dtype_list = fields_to_dtype(cloud_msg.fields, cloud_msg.point_step)
 
-    # parse the cloud into an array
-    cloud_arr = np.frombuffer(cloud_msg.data, dtype_list)
+        # parse the cloud into an array
+        cloud_arr = np.frombuffer(cloud_msg.data, dtype_list)
 
-    # remove the dummy fields that were added
-    cloud_arr = cloud_arr[[fname for fname, _type in dtype_list if not (fname[: len("__")] == "__")]]
+        # remove the dummy fields that were added
+        cloud_arr = cloud_arr[[fname for fname, _type in dtype_list if not (fname[: len("__")] == "__")]]
 
-    if squeeze and cloud_msg.height == 1:
-        return np.reshape(cloud_arr, (cloud_msg.width,))
-    else:
-        return np.reshape(cloud_arr, (cloud_msg.height, cloud_msg.width))
-
-
-def split_rgb_field(cloud_arr):
-    """Takes an array with a named 'rgb' float32 field, and returns an array in which
-    this has been split into 3 uint 8 fields: 'r', 'g', and 'b'.
-
-    (pcl stores rgb in packed 32 bit floats)
-    """
-    rgb_arr = cloud_arr["rgb"].copy()
-    rgb_arr.dtype = np.uint32
-    r = np.asarray((rgb_arr >> 16) & 255, dtype=np.uint8)
-    g = np.asarray((rgb_arr >> 8) & 255, dtype=np.uint8)
-    b = np.asarray(rgb_arr & 255, dtype=np.uint8)
-
-    # create a new array, without rgb, but with r, g, and b fields
-    new_dtype = []
-    for field_name in cloud_arr.dtype.names:
-        field_type, field_offset = cloud_arr.dtype.fields[field_name]
-        if not field_name == "rgb":
-            new_dtype.append((field_name, field_type))
-    new_dtype.append(("r", np.uint8))
-    new_dtype.append(("g", np.uint8))
-    new_dtype.append(("b", np.uint8))
-    new_cloud_arr = np.zeros(cloud_arr.shape, new_dtype)
-
-    # fill in the new array
-    for field_name in new_cloud_arr.dtype.names:
-        if field_name == "r":
-            new_cloud_arr[field_name] = r
-        elif field_name == "g":
-            new_cloud_arr[field_name] = g
-        elif field_name == "b":
-            new_cloud_arr[field_name] = b
+        if squeeze and cloud_msg.height == 1:
+            return np.reshape(cloud_arr, (cloud_msg.width,))
         else:
-            new_cloud_arr[field_name] = cloud_arr[field_name]
-    return new_cloud_arr
+            return np.reshape(cloud_arr, (cloud_msg.height, cloud_msg.width))
 
 
-def capture_panorama(request: CapturePanoramaRequest) -> CapturePanoramaResponse:
-    image_list = []
-    latestPosition = None
-    targetPosition = 0
-    def received_point_cloud(point: PointCloud2):
-        # Extract RGB field
-        pc = pointcloud2_to_array(point)
-        pc = split_rgb_field(pc)
-        shape = pc.shape + (3,)
-        rgb = np.zeros(shape)
-        rgb[..., 0] = pc["r"]
-        rgb[..., 1] = pc["g"]
-        rgb[..., 2] = pc["b"]
-        image_list.append(cv2.cvtColor((rgb * 255).astype(np.uint8), cv2.COLOR_BGR2RGB))
-    def received_motor_position(status: MotorsStatus):
-        nonlocal latestPosition
-        # rospy.loginfo("Received motor position")
-        mast_throttle.publish(Position(["mast_gimbal_z"], [targetPosition]))
-        latestPosition = status.joint_states.position
-        # rospy.loginfo(status.joint_states.position)
+    def split_rgb_field(cloud_arr):
+        """Takes an array with a named 'rgb' float32 field, and returns an array in which
+        this has been split into 3 uint 8 fields: 'r', 'g', and 'b'.
 
-    position_subscriber = rospy.Subscriber("/mast_status", MotorsStatus, received_motor_position, queue_size=1)
-    image_subscriber = rospy.Subscriber("/camera/left/points", PointCloud2, received_point_cloud, queue_size=1)
-    mast_throttle = rospy.Publisher("/mast_gimbal_position_cmd", Position, queue_size=1)
+        (pcl stores rgb in packed 32 bit floats)
+        """
+        rgb_arr = cloud_arr["rgb"].copy()
+        rgb_arr.dtype = np.uint32
+        r = np.asarray((rgb_arr >> 16) & 255, dtype=np.uint8)
+        g = np.asarray((rgb_arr >> 8) & 255, dtype=np.uint8)
+        b = np.asarray(rgb_arr & 255, dtype=np.uint8)
 
-    # Wait until mast_status starts publishing
+        # create a new array, without rgb, but with r, g, and b fields
+        new_dtype = []
+        for field_name in cloud_arr.dtype.names:
+            field_type, field_offset = cloud_arr.dtype.fields[field_name]
+            if not field_name == "rgb":
+                new_dtype.append((field_name, field_type))
+        new_dtype.append(("r", np.uint8))
+        new_dtype.append(("g", np.uint8))
+        new_dtype.append(("b", np.uint8))
+        new_cloud_arr = np.zeros(cloud_arr.shape, new_dtype)
 
-    while latestPosition == None:
-        rospy.loginfo("NOT AT STARTING POSITION")
-        rospy.loginfo(Position)
+        # fill in the new array
+        for field_name in new_cloud_arr.dtype.names:
+            if field_name == "r":
+                new_cloud_arr[field_name] = r
+            elif field_name == "g":
+                new_cloud_arr[field_name] = g
+            elif field_name == "b":
+                new_cloud_arr[field_name] = b
+            else:
+                new_cloud_arr[field_name] = cloud_arr[field_name]
+        return new_cloud_arr
 
-    image_list.clear()
-    targetPosition = np.pi
-    while not np.allclose(targetPosition, latestPosition, .1):
-        rospy.loginfo("NOT AT FINAL POSITION")
+    # def get_latest_position(status: MotorsStatus, mast_throttle: Position) -> float:
+    #     targetPosition = 0
+    #     mast_throttle.publish(Position(["mast_gimbal_z"], [targetPosition]))
+    #     latest_position = status.joint_states.position
+    #     return latest_position
 
-    rospy.loginfo("Creating Panorama..." + str(len(image_list)))
-    stitcher = cv2.Stitcher.create()
-    (code, outPic) = stitcher.stitch(image_list)
-    rospy.loginfo("Panorama Created" + str(len(image_list)))
-    desktop_path = "/Users/ryankersten/Desktop/test.png"
-    cv2.imwrite(desktop_path, image_list[0])
-    return CapturePanoramaResponse(...)
+    def capture_panorama(self, request: CapturePanoramaRequest) -> CapturePanoramaResponse:
+        image_list = []
+        latestPosition = None
+        targetPosition = 0
+        def received_point_cloud(point: PointCloud2):
+            # Extract RGB field
+            pc = pointcloud2_to_array(point)
+            pc = split_rgb_field(pc)
+            shape = pc.shape + (3,)
+            rgb = np.zeros(shape)
+            rgb[..., 0] = pc["r"]
+            rgb[..., 1] = pc["g"]
+            rgb[..., 2] = pc["b"]
+            image_list.append(cv2.cvtColor((rgb * 255).astype(np.uint8), cv2.COLOR_BGR2RGB))
+        # def received_motor_position(status: MotorsStatus):
+        #     nonlocal latestPosition
+        #     # rospy.loginfo("Received motor position")
+        #     mast_throttle.publish(Position(["mast_gimbal_z"], [targetPosition]))
+        #     latestPosition = status.joint_states.position
+        #     # rospy.loginfo(status.joint_states.position)
+
+
+
+        # Wait until mast_status starts publishing
+
+        while latestPosition == None:
+            rospy.loginfo("NOT AT STARTING POSITION")
+            rospy.loginfo(Position)
+
+        image_list.clear()
+        targetPosition = np.pi
+        while not np.allclose(targetPosition, latestPosition, .1):
+            rospy.loginfo("NOT AT FINAL POSITION")
+
+        rospy.loginfo("Creating Panorama..." + str(len(image_list)))
+        (code, outPic) = self.stitcher.stitch(image_list)
+        rospy.loginfo("Panorama Created" + str(len(image_list)))
+        desktop_path = "/Users/ryankersten/Desktop/test.png"
+        cv2.imwrite(desktop_path, image_list[0])
+        return CapturePanoramaResponse(...)
 
 
 def main() -> int:
-    rospy.init_node("panorama")
+    rospy.init_node(name="panorama")
+    panorama_server = PanoramaAction(rospy.get_name())
     panorama_service = rospy.Service("capture_panorama", CapturePanorama, capture_panorama)
     rospy.spin()
     return 0

@@ -1,0 +1,5 @@
+# Request from teleop
+string request
+---
+# panorama feedback image
+sensor_msgs/Image panorama
