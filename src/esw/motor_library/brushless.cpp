@@ -182,6 +182,12 @@ namespace mrover {
         moteus::Query::Format qFormat{};
         qFormat.aux1_gpio = moteus::kInt8;
         qFormat.aux2_gpio = moteus::kInt8;
+        if (this->isJointDE()) {  // add joint de abs slots to CAN message
+            qFormat.extra[0] = moteus::Query::ItemFormat{
+                .register_number = moteus::Register::kEncoder1Position,
+                .resolution = moteus::kFloat
+            };
+        }
         moteus::CanFdFrame queryFrame = mController.MakeQuery(&qFormat);
         mDevice.publish_moteus_frame(queryFrame);
     }
@@ -203,11 +209,9 @@ namespace mrover {
                  result.aux1_gpio,
                  result.aux2_gpio);
 
-        if (mControllerName == "joint_de_0" || mControllerName == "joint_de_1") {
-            mCurrentPosition = Revolutions{result.aux1_gpio}; //get value of absolute encoder if its joint_de0/1
-        }
-
-        else {
+        if (this->isJointDE()) {
+            mCurrentPosition = Revolutions{result.extra[0].value}; // get value of absolute encoder if its joint_de0/1
+        } else {
             mCurrentPosition = Revolutions{result.position}; // moteus stores position in revolutions.
         }
 
@@ -236,6 +240,10 @@ namespace mrover {
 
         // Map the throttle to the velocity range
         return RadiansPerSecond{(throttle.get() + 1.0f) / 2.0f * (mMaxVelocity.get() - mMinVelocity.get()) + mMinVelocity.get()};
+    }
+
+    auto BrushlessController::isJointDE() -> bool {
+        return mControllerName == "joint_de_0" || mControllerName == "joint_de_1";
     }
 
     auto BrushlessController::moteusErrorCodeToErrorState(moteus::Mode motor_mode, ErrorCode motor_error_code) -> std::string {

@@ -104,6 +104,7 @@ namespace mrover {
 
         // Function to map throttle to velocity
         [[nodiscard]] auto mapThrottleToVelocity(Percent throttle) const -> RadiansPerSecond;
+        auto isJointDE() -> bool;
         // Converts moteus error codes and mode codes to std::string descriptions
         static auto moteusErrorCodeToErrorState(moteus::Mode motor_mode, ErrorCode motor_error_code) -> std::string;
         static auto moteusModeToState(moteus::Mode motor_mode) -> std::string;
