@@ -123,9 +123,9 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.flight_thread = threading.Thread(target=self.flight_attitude_listener)
             self.flight_thread.start()
 
-            #Actions
-            self.landerClient = actionlib.SimpleActionClient('LanderAlignAction', LanderAlignGoal)
-
+            #Actions Servers
+            self.landerClient = actionlib.SimpleActionClient('LanderAlignAction', LanderAlignAction)
+            self.landerClient.wait_for_server()
         except rospy.ROSException as e:
             rospy.logerr(e)
 
