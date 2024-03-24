@@ -135,8 +135,8 @@ export default {
     ...mapActions('websocket', ['sendMessage']),
 
     setCamIndex: function (index: number) {
-      console.log(typeof index)
-      console.log(this.camsEnabled[index])
+      // console.log(typeof index)
+      // console.log(this.camsEnabled[index])
       // every time a button is pressed, it changes cam status and adds/removes from stream
       this.camsEnabled[index] = !this.camsEnabled[index]
       if (this.camsEnabled[index]) this.qualities[index] = 2 //if enabling camera, turn on medium quality
@@ -184,7 +184,7 @@ export default {
     },
 
     takePanorama() {
-      this.sendMessage({ type: "takePanorama" });
+      this.sendMessage({ type: 'takePanorama' })
     }
   }
 }
