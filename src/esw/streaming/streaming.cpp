@@ -46,8 +46,9 @@ auto StreamServer::acceptAsync() -> void {
             } catch (std::exception const& e) {
                 ROS_WARN_STREAM(std::format("Exception closing existing client: {}", e.what()));
             }
-            if (m_on_close) m_on_close();
             m_client.reset();
+
+            if (m_on_close) m_on_close();
         }
 
         m_client.emplace(std::move(socket));
@@ -80,8 +81,9 @@ auto StreamServer::feed(std::span<std::byte> data) -> void {
         m_client->write(buffer);
     } catch (std::exception const& e) {
         ROS_WARN_STREAM(std::format("Exception writing to client: {}", e.what()));
-        m_on_close();
         m_client.reset();
+
+        if (m_on_close) m_on_close();
     }
 }
 
