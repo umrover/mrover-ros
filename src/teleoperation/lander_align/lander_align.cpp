@@ -300,14 +300,9 @@ namespace mrover {
 
 
         ros::Rate rate(20); // ROS Rate at 20Hzn::Matrix3d roverToPlaneNorm;
-                            // Eigen::Vector3d Nup = Eigen::Vector3d::UnitZ();
-                            // Eigen::Vector3d Nleft = Nup.cross(mBestNormalInWorld.value());
-
-        // roverToPlaneNorm.col(0) = mBestNormalInWorld.value();
-        // roverToPlaneNorm.col(1) = Nup;
-        // roverToPlaneNorm.col(2) = Nleft;
-        // manif::SO3d roverToP
+        
         while (ros::ok()) {
+            // If the client has cancelled the server stop moving
             if(mActionServer->isPreemptRequested()){
                 mActionServer->setPreempted();
                 twist.angular.z = 0;
@@ -316,14 +311,19 @@ namespace mrover {
                 break;
             }
                 
+            // Publish the current state of the RTR controller 
         	LanderAlignFeedback feedback;
 			feedback.curr_state = RTRSTRINGS[static_cast<std::size_t>(mLoopState)];
 			mActionServer->publishFeedback(feedback);
+            
+            // Push plane and offset locations for debugging
             SE3Conversions::pushToTfTree(mTfBroadcaster, "plane", mMapFrameId, mPlaneLocationInWorldSE3d);
             SE3Conversions::pushToTfTree(mTfBroadcaster, "offset", mMapFrameId, mOffsetLocationInWorldSE3d);
-            SE3d rover = SE3Conversions::fromTfTree(mTfBuffer, "base_link", "map");
-            Eigen::Vector3d roverPosInWorld{(rover.translation().x()), (rover.translation().y()), 0.0};
+            
+            SE3d roverInWorld = SE3Conversions::fromTfTree(mTfBuffer, "base_link", "map");
+            Eigen::Vector3d roverPosInWorld{(roverInWorld.translation().x()), (roverInWorld.translation().y()), 0.0};
             Eigen::Vector3d targetPosInWorld;
+
             if (mLoopState == RTRSTATE::turn1) {
                 targetPosInWorld = mOffsetLocationInWorldVector.value();
             } else if (mLoopState == RTRSTATE::turn2) {
@@ -344,9 +344,9 @@ namespace mrover {
 
             //SO3 Matrices for lie algebra
             SO3d roverToTargetSO3 = SE3Conversions::fromColumns(roverToTargetForward, left, up);
-            SO3d roverSO3 = rover.asSO3();
+            SO3d roverSO3 = roverInWorld.asSO3();
 
-            Eigen::Vector3d distanceToTargetVector = targetPosInWorld - Eigen::Vector3d{rover.translation().x(), rover.translation().y(), rover.translation().z()};
+            Eigen::Vector3d distanceToTargetVector = targetPosInWorld - Eigen::Vector3d{roverInWorld.translation().x(), roverInWorld.translation().y(), roverInWorld.translation().z()};
 
             double distanceToTarget = std::abs(distanceToTargetVector.norm());
 

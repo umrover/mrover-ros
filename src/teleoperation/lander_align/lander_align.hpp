@@ -23,7 +23,8 @@ namespace mrover {
     };
 
     class LanderAlignNodelet final : public nodelet::Nodelet {
-
+    private:
+    
         //PID CONSTANTS
         double const mAngleP = 1;
         double const mAngleFloor = 0.05;
@@ -74,9 +75,7 @@ namespace mrover {
         std::vector<Point const*> mFilteredPoints;
 
         auto onInit() -> void override;
-
-        void ActionServerCallBack();
-
+        
         void filterNormals(sensor_msgs::PointCloud2ConstPtr const& cloud);
 
         void ransac(double distanceThreshold, int minInliers, int epochs);
@@ -88,6 +87,11 @@ namespace mrover {
         void calcMotion(double desiredVelocity, double desiredOmega);
 
         static auto calcAngleWithWorldX(Eigen::Vector3d xHeading) -> double;
+    
+    public:
+    
+        void ActionServerCallBack();
+
     };
 
 } // namespace mrover
