@@ -62,7 +62,7 @@ osThreadId_t SpectralTaskHandle;
 const osThreadAttr_t SpectralTask_attributes = {
   .name = "SpectralTask",
   .priority = (osPriority_t) osPriorityNormal,
-  .stack_size = 128 * 4
+  .stack_size = 128 * 8
 };
 
 osThreadId_t ThermistorAndAutoShutoffTaskHandle;

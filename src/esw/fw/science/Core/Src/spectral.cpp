@@ -96,15 +96,15 @@ namespace mrover {
     	for(uint8_t i = 0; i < CHANNEL_DATA_LENGTH; ++i){
     		// big endian, so msb is at lowest addr (which we read first)
     		// /* UNCOMMENT ONCE CAN MESSAGE IS FIXED - UNABLE TO SEND 6 FLOAT CURRENTLY
-			uint8_t msb_reg_addr_0 = CHANNEL_V_HIGH + i * 4;
-			uint8_t msb_reg_addr_1 = CHANNEL_V_HIGH + i * 4 + 1;
-			uint8_t msb_reg_addr_2 = CHANNEL_V_HIGH + i * 4 + 2;
-			uint8_t msb_reg_addr_3 = CHANNEL_V_HIGH + i * 4 + 3;
+			uint8_t msb_reg_addr_0 = CHANNEL_V_CAL + i * 4;
+			uint8_t msb_reg_addr_1 = CHANNEL_V_CAL + i * 4 + 1;
+			uint8_t msb_reg_addr_2 = CHANNEL_V_CAL + i * 4 + 2;
+			uint8_t msb_reg_addr_3 = CHANNEL_V_CAL + i * 4 + 3;
 
-			uint32_t msb_result_0 = virtual_read(msb_reg_addr_0);
-			uint32_t msb_result_1 = virtual_read(msb_reg_addr_1);
-			uint32_t msb_result_2 = virtual_read(msb_reg_addr_2);
-			uint32_t msb_result_3 = virtual_read(msb_reg_addr_3);
+			uint8_t msb_result_0 = virtual_read(msb_reg_addr_0);
+			uint8_t msb_result_1 = virtual_read(msb_reg_addr_1);
+			uint8_t msb_result_2 = virtual_read(msb_reg_addr_2);
+			uint8_t msb_result_3 = virtual_read(msb_reg_addr_3);
     		if(m_error) return false;
 
     		uint32_t combined_val = (msb_result_0 << 24) | (msb_result_1 << 16) | (msb_result_2 << 8) | (msb_result_3);
@@ -135,7 +135,7 @@ namespace mrover {
     }
 
 
-    uint16_t Spectral::get_channel_data(uint8_t channel) {
+    float Spectral::get_channel_data(uint8_t channel) {
     	return channel_data.at(channel);
     }
 

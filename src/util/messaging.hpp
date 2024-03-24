@@ -173,8 +173,8 @@ namespace mrover {
     };
 
     struct SpectralData : BaseCommand {
-        std::uint8_t site;
         std::array<float, 6> data{};
+        std::uint8_t site;
         bool error{};
     };
 

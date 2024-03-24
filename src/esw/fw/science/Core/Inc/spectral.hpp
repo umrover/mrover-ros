@@ -30,7 +30,7 @@ namespace mrover {
 
     	bool update_channel_data(); // updates all of the channels
 
-    	uint16_t get_channel_data(uint8_t channel);
+    	float get_channel_data(uint8_t channel);
 
         void reboot();
 
@@ -58,7 +58,7 @@ namespace mrover {
         std::shared_ptr<I2CMux> m_i2c_mux;
         uint8_t m_i2c_mux_channel;
         constexpr static std::uint8_t CHANNEL_DATA_LENGTH = 6;
-        std::array<uint16_t, CHANNEL_DATA_LENGTH> channel_data {};
+        std::array<float, CHANNEL_DATA_LENGTH> channel_data {};
         // Sensor Raw Data Registers Start, 6 channels, 2 bytes each.
         // See pg. 22 of datasheet for more info.
 //        constexpr static std::uint8_t CHANNEL_V_HIGH = 0x08;
