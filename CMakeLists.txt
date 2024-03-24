@@ -19,6 +19,11 @@ else ()
     link_libraries(TBB::tbb)
 endif ()
 
+# make it work on wayland
+if (DEFINED ENV{WAYLAND_DISPLAY})
+    add_definitions(-D_GLFW_WAYLAND)
+endif ()
+
 include_directories(BEFORE SYSTEM src/preload)
 
 set(CMAKE_CXX_STANDARD 23)
