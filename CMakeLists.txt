@@ -108,7 +108,7 @@ add_message_files(FILES ${MROVER_MESSAGE_FILES})
 
 add_service_files(FILES ${MROVER_SERVICE_FILES})
 
-add_action_files(DIRECTORY action FILES ${MROVER_ACTION_FILES})
+# add_action_files(DIRECTORY action FILES ${MROVER_ACTION_FILES})
 
 generate_messages(DEPENDENCIES ${MROVER_MESSAGE_DEPENDENCIES})
 
