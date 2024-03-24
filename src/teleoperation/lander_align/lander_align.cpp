@@ -20,12 +20,12 @@ namespace mrover {
         mZThreshold = .5;
         mXThreshold = .1;
         mPlaneOffsetScalar = 2.5;
-        mVectorSub = mNh.subscribe("/camera/left/points", 1, &LanderAlignNodelet::LanderCallback, this);
         mDebugVectorPub = mNh.advertise<geometry_msgs::Vector3>("/lander_align/Pose", 1);
         mTwistPub = mNh.advertise<geometry_msgs::Twist>("/cmd_vel", 1);
         mDebugPCPub = mNh.advertise<sensor_msgs::PointCloud2>("/lander_align/debugPC", 1);
 
-        mActionServer.emplace(mNh, "LanderAlignAction", [&](LanderAlignGoalConstPtr const& goal) { ActionServerCallBack(goal); }, true);
+        mActionServer.emplace(mNh, "LanderAlignAction", [&](LanderAlignGoalConstPtr const& goal) { ActionServerCallBack(); }, false);
+        mActionServer.value().start();
         
         //TF Create the Reference Frames
         mNh.param<std::string>("camera_frame", mCameraFrameId, "zed_left_camera_frame");
@@ -36,22 +36,7 @@ namespace mrover {
         mLoopState = RTRSTATE::turn1;
     }
 
-    auto LanderAlignNodelet::LanderCallback(sensor_msgs::PointCloud2Ptr const& cloud) -> void {
-
-        // filterNormals(cloud);
-        // ransac(0.1, 10, 100, mPlaneOffsetScalar);
-        // if (mNormalInZEDVector.has_value()) {
-        //     sendTwist();
-        // }
-        // if (mPlaneOffsetScalar == 2.5) {
-        //     mPlaneOffsetScalar = 0.4;
-        //     mLoopState = RTRSTATE::turn1;
-        // } else {
-        //     mLoopState = RTRSTATE::done;
-        // }
-    }
-
-    auto LanderAlignNodelet::ActionServerCallBack(LanderAlignGoalConstPtr const& actionRequest) -> void {
+    auto LanderAlignNodelet::ActionServerCallBack() -> void {
         LanderAlignResult result;
         mPlaneOffsetScalar = 2.5;
 
