@@ -39,8 +39,6 @@ namespace mrover {
 
         ros::Publisher mTwistPub;
 
-        ros::Subscriber mVectorSub;
-
         RTRSTATE mLoopState = RTRSTATE::done;
 
         //Action Server Variables
@@ -77,9 +75,7 @@ namespace mrover {
 
         auto onInit() -> void override;
 
-        void LanderCallback(sensor_msgs::PointCloud2Ptr const& cloud);
-
-        void ActionServerCallBack(LanderAlignGoalConstPtr const& actionRequest);
+        void ActionServerCallBack();
 
         void filterNormals(sensor_msgs::PointCloud2ConstPtr const& cloud);
 
