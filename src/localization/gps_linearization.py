@@ -42,7 +42,8 @@ class GPSLinearization:
         self.ref_lat = rospy.get_param("gps_linearization/reference_point_latitude")
         self.ref_lon = rospy.get_param(param_name="gps_linearization/reference_point_longitude")
         self.ref_alt = rospy.get_param("gps_linearization/reference_point_altitude")
-        self.both_gps = False#rospy.get_param("gps_linearization/use_both_gps")
+        self.ref_coord = np.array([self.ref_lat, self.ref_lon, self.ref_alt])
+        self.both_gps = True#rospy.get_param("gps_linearization/use_both_gps")
         self.world_frame = rospy.get_param("world_frame")
         self.use_dop_covariance = rospy.get_param("global_ekf/use_gps_dop_covariance")
 
@@ -51,6 +52,7 @@ class GPSLinearization:
         self.config_imu_covariance = np.array(rospy.get_param("global_ekf/imu_orientation_covariance", None))
 
         self.last_gps_msg = None
+        self.last_pose = None
         self.last_imu_msg = None
 
         if self.both_gps:
@@ -78,17 +80,16 @@ class GPSLinearization:
         if not self.use_dop_covariance:
             msg.position_covariance = self.config_gps_covariance
 
-        ref_coord = np.array([self.ref_lat, self.ref_lon, self.ref_alt])
-
         self.last_gps_msg =  msg
         print("using single callback")
         
         if self.last_imu_msg is not None:
+            self.last_pose = self.get_linearized_pose_in_world(msg, self.last_imu_msg, self.ref_coord)
             self.publish_pose()
-            self.last_gps_msg = self.get_linearized_pose_in_world(msg, self.last_imu_msg, ref_coord)
         
 
     def duo_gps_callback(self, right_gps_msg: NavSatFix, left_gps_msg: NavSatFix):
+        print("double")
         """
         Callback function that receives GPS messages, assigns their covariance matrix,
         and then publishes the linearized pose.
@@ -101,19 +102,16 @@ class GPSLinearization:
         if np.any(np.isnan([left_gps_msg.latitude, left_gps_msg.longitude, left_gps_msg.altitude])):
             return
 
-        ref_coord = np.array([self.ref_lat, self.ref_lon, self.ref_alt])
-
         right_cartesian = np.array(
-            geodetic2enu(right_gps_msg.latitude, right_gps_msg.longitude, right_gps_msg.altitude, *ref_coord, deg=True)
+            geodetic2enu(right_gps_msg.latitude, right_gps_msg.longitude, right_gps_msg.altitude, *self.ref_coord, deg=True)
         )
         left_cartesian = np.array(
-            geodetic2enu(left_gps_msg.latitude, left_gps_msg.longitude, left_gps_msg.altitude, *ref_coord, deg=True)
+            geodetic2enu(left_gps_msg.latitude, left_gps_msg.longitude, left_gps_msg.altitude, *self.ref_coord, deg=True)
         )
 
-        self.last_gps_msg = GPSLinearization.compute_gps_pose(right_cartesian=right_cartesian, left_cartesian=left_cartesian)
+        self.last_pose = GPSLinearization.compute_gps_pose(right_cartesian=right_cartesian, left_cartesian=left_cartesian)
 
-        if self.last_gps_msg is not None:
-            self.publish_pose()
+        self.publish_pose()
 
     def imu_callback(self, msg: ImuAndMag):
         """
@@ -123,7 +121,10 @@ class GPSLinearization:
         """
         self.last_imu_msg = msg
 
-        if self.last_gps_msg is not None:
+        if self.last_gps_msg is not None and not self.both_gps:
+            self.last_pose = self.get_linearized_pose_in_world(self.last_gps_msg, self.last_imu_msg, self.ref_coord)
+            self.publish_pose()
+        elif self.last_pose is not None and self.both_gps:
             self.publish_pose()
 
     def publish_pose(self):
@@ -139,8 +140,8 @@ class GPSLinearization:
             header=Header(stamp=rospy.Time.now(), frame_id=self.world_frame),
             pose=PoseWithCovariance(
                 pose=Pose(
-                    position=Point(*self.last_gps_msg.position),
-                    orientation=Quaternion(*self.last_gps_msg.rotation.quaternion),
+                    position=Point(*self.last_pose.position),
+                    orientation=Quaternion(*self.last_pose.rotation.quaternion),
                 ),
                 covariance=covariance_matrix.flatten().tolist(),
             ),
