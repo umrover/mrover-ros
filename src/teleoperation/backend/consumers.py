@@ -26,7 +26,8 @@ from mrover.msg import (
     Position,
     IK,
     ClickIkAction,
-    ClickIkGoal
+    ClickIkGoal,
+    ClickIkFeedback,
 )
 import actionlib
 from mrover.srv import EnableAuton, ChangeCameras, CapturePanorama
@@ -728,7 +729,9 @@ class GUIConsumer(JsonWebsocketConsumer):
         goal = ClickIkGoal()
         goal.pointInImageX = msg["data"]["x"]
         goal.pointInImageY = msg["data"]["y"]
-        self.click_ik_client.send_goal(goal)
+        def feedback_cb(feedback: ClickIkFeedback) -> None:
+            self.send(text_data=json.dumps({"type": "click_ik_feedback", "distance": feedback.distance}))
+        self.click_ik_client.send_goal(goal, feedback_cb=feedback_cb)
 
     def cancel_click_ik(self, msg) -> None:
         self.click_ik_client.cancel_all_goals()
