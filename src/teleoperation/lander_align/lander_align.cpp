@@ -118,20 +118,20 @@ namespace mrover {
     }
 
     void LanderAlignNodelet::filterNormals(sensor_msgs::PointCloud2ConstPtr const& cloud) {
-        // TODO: OPTIMIZE; doing this maobject_detector/debug_imgny push_back calls could slow things down
         mFilteredPoints.clear();
+        
+        // Pointer to the underlying point cloud data
         auto* cloudData = reinterpret_cast<Point const*>(cloud->data.data());
-        ROS_INFO("Point cloud size: %i", cloud->height * cloud->width);
 
-        // define randomizer
         std::default_random_engine generator;
         std::uniform_int_distribution<int> pointDistribution(0, mLeastSamplingDistribution);
 
+        // Loop over the entire PC
         for (auto point = cloudData; point < cloudData + (cloud->height * cloud->width); point += pointDistribution(generator)) {
+            // Make sure all of the values are defined
             bool isPointInvalid = (!std::isfinite(point->x) || !std::isfinite(point->y) || !std::isfinite(point->z));
-            if (abs(point->normal_z) < mZThreshold && !isPointInvalid && abs(point->normal_x) > mXThreshold) {
+            if (!isPointInvalid && abs(point->normal_z) < mZThreshold && abs(point->normal_x) > mXThreshold) {
                 mFilteredPoints.push_back(point);
-                // ROS_INFO("Filtered point: %f, %f, %f", point->normal_x, point->normal_y, point->normal_z);
             }
         }
     }
@@ -168,11 +168,7 @@ namespace mrover {
         mDebugPCPub.publish(debugPointCloudPtr);
     }
 
-    void LanderAlignNodelet::ransac(double const distanceThreshold, int minInliers, int const epochs, double offsetFactor) {
-        // TODO: use RANSAC to find the lander face, should be the closest, we may need to modify this to output more information, currently the output is the normal
-        // takes 3 samples for every epoch and terminates after specified number of epochs
-        // Eigen::Vector3d mBestNormal(0, 0, 0); // normal vector representing plane (initialize as zero vector?? default ctor??)
-        // Eigen::Vector3d currentCenter(0, 0, 0); // Keeps track of current center of plane in current epoch
+    void LanderAlignNodelet::ransac(double const distanceThreshold, int minInliers, int const epochs) {
         double offset;
 
         // define randomizer
@@ -192,7 +188,6 @@ namespace mrover {
         int numInliers = 0;
         while (mNormalInZEDVector.value().isZero()) { // TODO add give up condition after X iter
             for (int i = 0; i < epochs; ++i) {
-                // currentCenter *= 0; // Set all vals in current center to zero at the start of each epoch
                 // sample 3 random points (potential inliers)
                 Point const* point1 = mFilteredPoints[distribution(generator)];
                 Point const* point2 = mFilteredPoints[distribution(generator)];
@@ -208,18 +203,11 @@ namespace mrover {
 
                 numInliers = 0;
 
-                // assert(normal.x() != 0 && normal.y() != 0 && normal.z() != 0);
-                // In some situations we get the 0 vector with surprising frequency
-
                 for (auto p: mFilteredPoints) {
                     // calculate distance of each point from potential plane
                     double distance = std::abs(normal.x() * p->x + normal.y() * p->y + normal.z() * p->z + offset); //
 
                     if (distance < distanceThreshold) {
-                        // Add points to current planes center
-                        // currentCenter(0) += p->x;
-                        // currentCenter(1) += p->y;
-                        // currentCenter(2) += p->z;
                         ++numInliers; // count num of inliers that pass the "good enough fit" threshold
                     }
                 }
@@ -229,9 +217,6 @@ namespace mrover {
                     minInliers = numInliers;
                     mNormalInZEDVector.value() = normal;
                     mBestOffset = offset;
-
-                    // If this is the new best plane, set mBestCenterInZED
-                    // mBestCenterInZED = currentCenter / static_cast<float>(minInliers);
                 }
             }
         }
@@ -265,7 +250,7 @@ namespace mrover {
         if (mNormalInZEDVector.value().x() > 0) mNormalInZEDVector.value() *= -1;
 
 
-        mOffsetLocationInZEDVector = std::make_optional<Eigen::Vector3d>(mPlaneLocationInZEDVector.value() + offsetFactor * mNormalInZEDVector.value());
+        mOffsetLocationInZEDVector = std::make_optional<Eigen::Vector3d>(mPlaneLocationInZEDVector.value() + mPlaneOffsetScalar * mNormalInZEDVector.value());
 
         SE3d zedToMap = SE3Conversions::fromTfTree(mTfBuffer, mCameraFrameId, mMapFrameId);
 

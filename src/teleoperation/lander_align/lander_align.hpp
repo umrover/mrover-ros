@@ -79,7 +79,7 @@ namespace mrover {
 
         void filterNormals(sensor_msgs::PointCloud2ConstPtr const& cloud);
 
-        void ransac(double distanceThreshold, int minInliers, int epochs, double offsetFactor);
+        void ransac(double distanceThreshold, int minInliers, int epochs);
 
         void sendTwist();
 
