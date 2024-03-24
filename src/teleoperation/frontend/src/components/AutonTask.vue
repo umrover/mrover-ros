@@ -23,6 +23,12 @@
         <p style="margin-top: 6px">Joystick Values</p>
         <JoystickValues />
       </div>
+      <div class="my-5">
+        <ToggleButton :labelEnableText="'Lander Align Enabled'" 
+        :labelDisableText="'Lander Align Disabled'" 
+        :currentState="landerAlignEnabled"
+        @change="toggleLander()"></ToggleButton>
+      </div>
       <OdometryReading :odom="odom" />
     </div>
     <div class="shadow p-3 rounded map">
@@ -68,6 +74,7 @@ import OdometryReading from './OdometryReading.vue'
 import JoystickValues from './JoystickValues.vue'
 import DriveControls from './DriveControls.vue'
 import MastGimbalControls from './MastGimbalControls.vue'
+import ToggleButton from './ToggleButton.vue'
 import { quaternionToMapAngle } from '../utils.js'
 import { defineComponent } from 'vue'
 
@@ -84,7 +91,8 @@ export default defineComponent({
     OdometryReading,
     JoystickValues,
     DriveControls,
-    MastGimbalControls
+    MastGimbalControls,
+    ToggleButton
   },
 
   // add prop where map has the center property and autontask sends it once it gets it
@@ -121,7 +129,9 @@ export default defineComponent({
         effort: [] as number[],
         state: [] as string[],
         error: [] as string[]
-      }
+      },
+
+      landerAlignEnabled: false,
     }
   },
 
@@ -168,7 +178,13 @@ export default defineComponent({
   },
 
   methods: {
-    ...mapActions('websocket', ['sendMessage'])
+    ...mapActions('websocket', ['sendMessage']),
+
+    toggleLander() {
+      this.landerAlignEnabled = !this.landerAlignEnabled;
+      if(this.landerAlignEnabled) this.sendMessage({"type": "start_lander_align"});
+      else this.sendMessage({"type": "stop_lander_align"});
+    }
   },
 
   beforeUnmount: function () {

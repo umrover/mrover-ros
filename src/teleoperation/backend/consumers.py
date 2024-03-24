@@ -26,6 +26,8 @@ from mrover.msg import (
     Velocity,
     Position,
     IK,
+    LanderAlignAction,
+    LanderAlignGoal
 )
 from mrover.srv import EnableAuton, ChangeCameras, CapturePanorama
 from sensor_msgs.msg import NavSatFix, Temperature, RelativeHumidity, Image
@@ -36,7 +38,6 @@ from std_srvs.srv import SetBool, Trigger
 from mrover.srv import EnableDevice, AdjustMotor
 from sensor_msgs.msg import JointState, Joy, NavSatFix
 from geometry_msgs.msg import Twist, Pose, Point, Quaternion
-from mrover.msg import LanderAlignGoal
 
 from util.SE3 import SE3
 
@@ -125,7 +126,7 @@ class GUIConsumer(JsonWebsocketConsumer):
 
             #Actions Servers
             self.landerClient = actionlib.SimpleActionClient('LanderAlignAction', LanderAlignAction)
-            self.landerClient.wait_for_server()
+        
         except rospy.ROSException as e:
             rospy.logerr(e)
 
@@ -186,9 +187,9 @@ class GUIConsumer(JsonWebsocketConsumer):
             elif message["type"] == "get_basic_waypoint_list":
                 self.get_basic_waypoint_list(message)
             elif message["type"] == "start_lander_align":
-                self.start_lander_align(message)
-            elif message["type"] == "cancel_lander_align":
-                self.cancel_lander_align(message)
+                self.start_lander_align()
+            elif message["type"] == "stop_lander_align":
+                self.stop_lander_align()
         except Exception as e:
             rospy.logerr(e)
 
