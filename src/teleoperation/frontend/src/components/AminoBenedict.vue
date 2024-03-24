@@ -49,6 +49,7 @@
 import ToggleButton from "./ToggleButton.vue";
 import LEDIndicator from "./LEDIndicator.vue";
 import { mapActions } from 'vuex';
+import html2canvas from "html2canvas";
 
 let interval;
 
@@ -168,25 +169,34 @@ export default {
 
     //screenshot
     capture_photo: function() {
-      // downloads screenshots of sites
       for(var i=0; i<4; ++i) {
-        const camera = document.querySelector("#canvas"+i) as HTMLElement;
+        //const camera = document.querySelector("#canvas"+i) as HTMLElement
         var name = getHeaterName(i)
-        html2canvas(camera)
-        .then(canvas => {
-          canvas.style.display = 'none'
-          document.body.appendChild(canvas)
-          return canvas
-        })
-        .then(canvas => {
-          const image = canvas.toDataURL('image/png')
-          const a = document.createElement('a')
-          a.setAttribute('download', name + '.png')
-          a.setAttribute('href', image)
-          a.click()
-          canvas.remove()
-        })
+        const screenshotTarget = camera;
+        html2canvas(screenshotTarget).then((canvas) => {
+            const base64image = canvas.toDataURL("image/png");
+            window.location.href = base64image;
+        });
       }
+    // downloads screenshots of sites
+      // for(var i=0; i<4; ++i) {
+      //   const camera = document.querySelector("#canvas"+i) as HTMLElement
+      //   var name = getHeaterName(i)
+      //   html2canvas(camera)
+      //   .then(canvas => {
+      //     canvas.style.display = 'none'
+      //     document.body.appendChild(canvas)
+      //     return canvas
+      //   })
+      //   .then(canvas => {
+      //     const image = canvas.toDataURL('image/png')
+      //     const a = document.createElement('a')
+      //     a.setAttribute('download', name + '.png')
+      //     a.setAttribute('href', image)
+      //     a.click()
+      //     canvas.remove()
+      //   })
+      // }
     },
   }
 };

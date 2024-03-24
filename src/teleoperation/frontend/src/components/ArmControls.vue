@@ -31,17 +31,17 @@
       </div>
     </div>
     <div class="controls-flex" v-if="arm_mode === 'position'">
-      <div class="col" v-for="(joint, key) in temp_positions" :key="key">
-        <label>{{ key }}</label>
-        <input
+      <label for="customRange3" class="form-label">Joint Range</label>
+      <input type="range" class="form-range" min="joint.min" max="joint.max" step="1.0" id="customRange3">
+
+        <!-- <input
           class="form-control"
           type="number"
           :min="joint.min"
           :max="joint.max"
           @input="validateInput(joint, $event)"
           v-model="joint.value"
-        />
-      </div>
+        /> -->
       <div class="col text-center">
         <button class="btn btn-primary" @click="submit_positions">Submit</button>
       </div>
@@ -96,6 +96,7 @@ import ToggleButton from './ToggleButton.vue'
 import CalibrationCheckbox from './CalibrationCheckbox.vue'
 import MotorAdjust from './MotorAdjust.vue'
 import LimitSwitch from './LimitSwitch.vue'
+
 
 // In seconds
 const updateRate = 0.01
@@ -186,6 +187,14 @@ export default defineComponent({
         }
       }
     }, updateRate * 1000)
+    
+    
+    // var slider = new Slider('#jslider', {
+    //   formatter: function(value) {
+    //     return 'Current value: ' + value;
+    //   }
+    // });
+
   },
 
   methods: {
