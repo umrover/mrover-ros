@@ -43,7 +43,7 @@ class GPSLinearization:
         self.ref_lon = rospy.get_param(param_name="gps_linearization/reference_point_longitude")
         self.ref_alt = rospy.get_param("gps_linearization/reference_point_altitude")
         self.ref_coord = np.array([self.ref_lat, self.ref_lon, self.ref_alt])
-        self.both_gps = True#rospy.get_param("gps_linearization/use_both_gps")
+        self.both_gps = rospy.get_param("gps_linearization/use_both_gps")
         self.world_frame = rospy.get_param("world_frame")
         self.use_dop_covariance = rospy.get_param("global_ekf/use_gps_dop_covariance")
 
@@ -54,7 +54,7 @@ class GPSLinearization:
         self.last_gps_msg = None
         self.last_pose = None
         self.last_imu_msg = None
-
+    
         if self.both_gps:
             right_gps_sub = message_filters.Subscriber("right_gps_driver/fix", NavSatFix)
             left_gps_sub = message_filters.Subscriber("left_gps_driver/fix", NavSatFix)
@@ -81,15 +81,14 @@ class GPSLinearization:
             msg.position_covariance = self.config_gps_covariance
 
         self.last_gps_msg =  msg
-        print("using single callback")
         
         if self.last_imu_msg is not None:
             self.last_pose = self.get_linearized_pose_in_world(msg, self.last_imu_msg, self.ref_coord)
             self.publish_pose()
+            #print("using single callback")
         
 
     def duo_gps_callback(self, right_gps_msg: NavSatFix, left_gps_msg: NavSatFix):
-        print("double")
         """
         Callback function that receives GPS messages, assigns their covariance matrix,
         and then publishes the linearized pose.
@@ -112,6 +111,7 @@ class GPSLinearization:
         self.last_pose = GPSLinearization.compute_gps_pose(right_cartesian=right_cartesian, left_cartesian=left_cartesian)
 
         self.publish_pose()
+        #print("double")
 
     def imu_callback(self, msg: ImuAndMag):
         """
