@@ -2,6 +2,7 @@
 
 #include <thread>
 #include <atomic>
+#include <format>
 
 #include <nodelet/loader.h>
 #include <sensor_msgs/Image.h>
