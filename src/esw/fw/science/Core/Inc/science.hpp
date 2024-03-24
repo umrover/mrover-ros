@@ -109,7 +109,7 @@ namespace mrover {
         }
 
         void update_and_send_spectral() {
-        	for (int i = 1; i < 2; ++i) {
+        	for (int i = 0; i < 3; ++i) {
         		SpectralData spectral_data;
 				spectral_data.site = i;
         		bool op_res = m_spectral_sensors.at(i).update_channel_data();
