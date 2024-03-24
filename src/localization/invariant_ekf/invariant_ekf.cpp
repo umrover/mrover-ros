@@ -1,4 +1,6 @@
 #include "invariant_ekf.hpp"
+#include <Eigen/src/Core/Matrix.h>
+#include <iostream>
 
 InvariantEKF::InvariantEKF(SE_2_3d const& x0, Matrix9d const& P0, Matrix9d const& Q, Matrix3d const& R_gps_default, Matrix3d const& R_accel_default, Matrix3d const& R_mag_default)
     : mX(x0), mP(P0), mQ(Q), mR_gps(R_gps_default), mR_accel(R_accel_default), mR_mag(R_mag_default) {}
@@ -15,6 +17,8 @@ void InvariantEKF::predict(const R3& accel, const R3& gyro, double dt) {
     R3 delta_rot = gyro * dt;
     R3 delta_v = accel_body * dt;
 
+    std::cout << "delta_v: " << delta_v << std::endl;
+
     Matrix3d accLinCross = manif::skew(delta_pos);
     R3 gLin = R.transpose() * accel_g * dt;
     Matrix3d gCross = manif::skew(gLin);
@@ -26,6 +30,8 @@ void InvariantEKF::predict(const R3& accel, const R3& gyro, double dt) {
 
     // increment state with right plus operation and compute jacobians
     mX = mX.rplus(u, J_x_x, J_x_u);
+
+    std::cout << "velocity: " << mX.linearVelocity() << std::endl;
     mX.normalize();
 
     J_u_x.setZero();
@@ -36,14 +42,6 @@ void InvariantEKF::predict(const R3& accel, const R3& gyro, double dt) {
     // TODO: where does this come from? chain rule + Ax + Bu?
     F = J_x_x + J_x_u * J_u_x;
     mP = J_x_x * mP * J_x_x.transpose() + mQ;
-
-
-    if(std::abs(mX.translation().x()) > 1 || std::abs(mX.translation().z()) > 1 || std::abs(mX.translation().y()) > 1){
-        // std::cout << "Accel: " << accel << std::endl << "Gyro: "<< gyro << std::endl <<"dt: " << dt << std::endl;
-        // std::cout << std::endl;
-        std::cout << mX.translation() << std::endl;
-        std::cout << std::endl;
-    }
 
 }
 
@@ -57,10 +55,8 @@ void InvariantEKF::update(const R3& innovation, Matrix39d const& H, Matrix3d con
     // update state mean (overloaded rplus)
     SE_2_3d::Tangent dx = K * innovation;
     mX += dx;
-    // mX.normalize();
+    mX.normalize();
 
-    // update state covariance
-    // mP = mP - (K * S * K.transpose());
     //joseph covariance update
     Matrix9d IKH = Matrix9d::Identity() - K * H;
     mP = IKH * mP * IKH.transpose() + K * R * K.transpose();
@@ -73,6 +69,7 @@ void InvariantEKF::update_gps(R3 const& observed_gps, Matrix3d const& R_gps) {
     //R(0) + t = t
     R3 predicted_gps = mX.act(origin, J_e_x);
     Matrix39d H = J_e_x;
+
     update(observed_gps - predicted_gps, H, R_gps);
 }
 
@@ -89,11 +86,10 @@ void InvariantEKF::update_accel(R3 const& observed_accel, Matrix3d const& R_acce
     R3 predicted_accel = R.inverse(J_Ri_R).act(g, J_e_Ri);
     J_e_R = J_e_Ri * J_Ri_R;
 
-    // final jacobian
-    Matrix39d J_e_x;
-    J_e_x.setZero();
-    J_e_x.block(0, 0, 3, 3) = J_e_R;
-    Matrix39d H = J_e_x;
+    //final jacobian
+    Matrix39d  H = Matrix39d::Zero();
+    H.block(0, 0, 3, 3) = J_e_R;
+
     update(observed_accel - predicted_accel, H, R_accel);
 }
 
@@ -111,18 +107,29 @@ void InvariantEKF::update_mag(R3 const& observed_mag, Matrix3d const& R_mag) {
     R3 predicted_mag = R.inverse(J_Ri_R).act(north, J_e_Ri);
     J_e_R = J_e_Ri * J_Ri_R;
 
-    //final jacobian
     //source: https://arxiv.org/pdf/2007.14097.pdf
-    Matrix39d J_e_x;
-    J_e_x.setZero();
-    J_e_x.block(0, 0, 3, 3) = J_e_R;
-    Matrix39d H = J_e_x;
+    Matrix39d H = Matrix39d::Zero();
+    H.block<3,3>(0,0)= J_e_R;
+
     update(observed_mag - predicted_mag, H, R_mag);
 }
 
 void InvariantEKF::update_mag(R3 const& observed_mag) {
     update_mag(observed_mag, mR_mag);
 }
+
+void InvariantEKF::update_vel(R3 const& observed_vel, Matrix3d const& R_vel) {
+    R3 pred_vel = mX.linearVelocity();
+    Matrix39d H = Matrix39d::Zero();
+    H.block<3,3>(0, 6) = Matrix3d::Identity(); // should be rotation?
+
+    update(observed_vel - pred_vel, H, R_vel);
+}
+
+void InvariantEKF::update_vel(R3 const& observed_vel) {
+    update_gps(observed_vel, mR_vel);
+}
+
 
 [[nodiscard]] SE_2_3d const& InvariantEKF::get_state() const {
     return mX;

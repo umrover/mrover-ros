@@ -1,4 +1,6 @@
 #include "invariant_ekf.hpp"
+#include <sensor_msgs/NavSatFix.h>
+#include <ublox_msgs/NavPVT.h>
 
 using TimePoint = std::chrono::time_point<std::chrono::system_clock>;
 using Duration = std::chrono::duration<double>;
@@ -6,7 +8,7 @@ using Duration = std::chrono::duration<double>;
 class InvariantEKFNode {
 private:
     ros::NodeHandle mNh, mPnh;
-    ros::Subscriber mImuSub, mGpsSub;
+    ros::Subscriber mImuSub, mGpsSub, mVelSub;
     ros::Publisher mOdometryPub;
     tf2_ros::TransformBroadcaster mTfBroadcaster;
     tf2_ros::Buffer mTfBuffer;
@@ -23,6 +25,8 @@ private:
     void gps_callback(const geometry_msgs::PoseWithCovarianceStamped& msg);
 
     void mag_callback(const sensor_msgs::MagneticField& msg);
+
+    void vel_callback(const ublox_msgs::NavPVT& msg);
 
     void publish_odometry();
 

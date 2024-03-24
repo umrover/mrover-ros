@@ -36,7 +36,7 @@ InvariantEKFNode::InvariantEKFNode() : mEKF(init_EKF()) {
     // set up subscribers and publishers
     mImuSub = mNh.subscribe("imu/data", 1, &InvariantEKFNode::imu_mag_callback, this);
     mGpsSub = mNh.subscribe("linearized_pose", 1, &InvariantEKFNode::gps_callback, this);
-    // mMagSub = mNh.subscribe("mag", 1, &InvariantEKFNode::mag_callback, this);
+    mVelSub = mNh.subscribe("TODO: ADD TOPIC", 1, &InvariantEKFNode::vel_callback, this);
 
     mOdometryPub = mNh.advertise<nav_msgs::Odometry>("odometry", 1);
 }
@@ -58,22 +58,19 @@ void InvariantEKFNode::imu_callback(sensor_msgs::Imu const& msg) {
 }
 
 void InvariantEKFNode::mag_callback(sensor_msgs::MagneticField const& msg) {
-    auto now = std::chrono::system_clock::now();
-    double dt = Duration(now - mLastMagTime).count();
-    mLastMagTime = now;
-
     Vector3d mag(msg.magnetic_field.x, msg.magnetic_field.y, msg.magnetic_field.z);
     mEKF.update_mag(mag);
 }
 
 void InvariantEKFNode::gps_callback(geometry_msgs::PoseWithCovarianceStamped const& msg) {
-    auto now = std::chrono::system_clock::now();
-    double dt = Duration(now - mLastGpsTime).count();
-    mLastGpsTime = now;
-
     auto p = msg.pose.pose.position;
     R3 z{p.x, p.y, p.z};
     mEKF.update_gps(z);
+}
+
+void InvariantEKFNode::vel_callback(ublox_msgs::NavPVT const& msg) {
+    R3 v{msg.velE, msg.velN, msg.velD};
+    mEKF.update_vel(v);
 }
 
 void InvariantEKFNode::publish_odometry() {
