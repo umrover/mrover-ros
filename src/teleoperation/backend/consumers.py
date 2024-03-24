@@ -29,7 +29,7 @@ from mrover.msg import (
     Velocity,
     Position,
     IK,
-    SpectralGroup,
+    Spectral,
     ScienceThermistors,
     HeaterData,
 )
@@ -103,7 +103,7 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.ish_heater_state = rospy.Subscriber(
                 "/science_heater_state", HeaterData, self.ish_heater_state_callback
             )
-            self.science_spectral = rospy.Subscriber("/science_spectral", SpectralGroup, self.science_spectral_callback)
+            self.science_spectral = rospy.Subscriber("/science_spectral", Spectral, self.science_spectral_callback)
 
             # Services
             self.laser_service = rospy.ServiceProxy("enable_arm_laser", SetBool)
@@ -807,13 +807,7 @@ class GUIConsumer(JsonWebsocketConsumer):
             rate.sleep()
 
     def science_spectral_callback(self, msg):
-        data = []
-        error = []
-        for spectral in msg.spectrals:
-            data.append(spectral.data)
-            error.append(spectral.error)
-
-        self.send(text_data=json.dumps({"type": "spectral_data", "data": data, "error": error}))
+        self.send(text_data=json.dumps({"type": "spectral_data", "site": msg.site, "data": msg.data, "error": msg.error}))
 
     def download_csv(self, msg):
         username = os.getenv("USERNAME", "-1")

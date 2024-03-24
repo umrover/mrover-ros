@@ -60,7 +60,7 @@ export default {
 
   props: {
     site: {
-      type: String,
+      type: Number,
       required: true
     },
     isAmino: { //true = amino, false = benedict's

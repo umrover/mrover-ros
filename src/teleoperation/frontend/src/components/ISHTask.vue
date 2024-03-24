@@ -17,10 +17,6 @@
     <div class="shadow p-3 rounded siteSelect">
         <SelectSite @site="onSiteChange" />
     </div>
-    <!-- <div class="shadow p-3 rounded raman">
-        <Raman />
-      </div> -->
-    <!-- ADD BENEDICTS TEST HERE-->
     <div class="shadow p-3 rounded cameras">
       <Cameras :primary="primary" :isSA="false"/>
     </div>
@@ -72,8 +68,8 @@ export default {
 
 
   methods: {
-    onSiteChange(value: number) {
-      this.site = value
+    onSiteChange(value: string) {
+      this.site = parseInt(value)
     }
   }
 }
@@ -84,18 +80,13 @@ export default {
   display: grid;
   grid-gap: 10px;
   grid-template-columns: repeat(2, auto);
-  grid-template-rows: repeat(6, auto);
+  grid-template-rows: repeat(5, auto);
   grid-template-areas:
     'header header'
-    'carousel siteSelect'
-    'carousel raman'
-    'carousel chlorophyll'
-    'cache chlorophyll'
-    'cache amino'
-    'cameras cameras'
-    'cameras siteSelect'
-    'cameras benedicts'
-    'cameras chlorophyll';
+    'cache siteSelect'
+    'cache benedicts'
+    'chlorophyll amino'
+    'cameras cameras';
   font-family: sans-serif;
   height: auto;
 }
