@@ -5,33 +5,59 @@
       <div class="row justify-content-md-left">
         <div class="form-group col-md-4">
           <label for="Camera Name">Camera name</label>
-          <input v-model="cameraName" type="message" class="form-control" id="CameraName" placeholder="Enter Camera Name" />
+          <input
+            v-model="cameraName"
+            type="message"
+            class="form-control"
+            id="CameraName"
+            placeholder="Enter Camera Name"
+          />
           <small id="cameraDescrip" class="form-text text-muted"></small>
         </div>
         <div class="form-group col-md-4">
           <label for="Camera ID">Camera ID</label>
-          <input v-model="cameraIdx" type="number" min="0" max="8" class="form-control" id="CameraIdx"
-            placeholder="Camera ID" />
+          <input
+            v-model="cameraIdx"
+            type="number"
+            min="0"
+            max="8"
+            class="form-control"
+            id="CameraIdx"
+            placeholder="Camera ID"
+          />
         </div>
         <button class="btn btn-primary custom-btn" @click="addCameraName()">Change Name</button>
       </div>
       <div class="cameraselection">
-        <CameraSelection :cams-enabled="camsEnabled" :names="names" :capacity="capacity" @cam_index="setCamIndex($event)" />
+        <CameraSelection
+          :cams-enabled="camsEnabled"
+          :names="names"
+          :capacity="capacity"
+          @cam_index="setCamIndex($event)"
+        />
       </div>
     </div>
     <div class="col">
       <h3>All Cameras</h3>
       <div class="info">
-      <template v-for="i in camsEnabled.length" :key="i">
-        <CameraInfo v-if="camsEnabled[i - 1]" :id="i - 1" :name="names[i - 1]" :stream="getStreamNum(i - 1)"
-          @newQuality="changeQuality($event)" @swapStream="swapStream($event)"></CameraInfo>
-      </template>
+        <template v-for="i in camsEnabled.length" :key="i">
+          <CameraInfo
+            v-if="camsEnabled[i - 1]"
+            :id="i - 1"
+            :name="names[i - 1]"
+            :stream="getStreamNum(i - 1)"
+            @newQuality="changeQuality($event)"
+            @swapStream="swapStream($event)"
+          ></CameraInfo>
+        </template>
       </div>
       <div class="d-flex justify-content-end" v-if="isSA">
-        <button class="btn btn-primary btn-lg custom-btn" @click="takePanorama()">Take Panorama</button>
+        <button class="btn btn-primary btn-lg custom-btn" @click="takePanorama()">
+          Take Panorama
+        </button>
       </div>
     </div>
-    <CameraDisplay :streamOrder="streamOrder"></CameraDisplay>
+    <CameraDisplay :streamOrder="streamOrder" :mission="mission"></CameraDisplay>
   </div>
 </template>
 
@@ -56,6 +82,10 @@ export default {
     },
     isSA: {
       type: Boolean,
+      required: true
+    },
+    mission: {
+      type: String, // {'sa', 'ik', 'other'}
       required: true
     }
   },

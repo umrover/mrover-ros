@@ -16,9 +16,6 @@
     </div>
     <div :class="['shadow p-3 rounded data', ledColor]">
       <h2>Nav State: {{ navState }}</h2>
-      <!-- <div style="display: inline-block">
-        <CameraFeed></CameraFeed>
-      </div> -->
       <div style="display: inline-block; vertical-align: top">
         <p style="margin-top: 6px">Joystick Values</p>
         <JoystickValues />
@@ -47,7 +44,7 @@
       </div>
     </div>
     <div class="shadow p-3 rounded cameras">
-      <Cameras :primary="true" :isSA="false"/>
+      <Cameras :primary="true" :isSA="false" :mission="'other'"/>
     </div>
     <div class="shadow p-3 rounded moteus">
       <DriveMoteusStateTable :moteus-state-data="moteusState" />
@@ -61,7 +58,6 @@ import { mapActions, mapState, mapGetters } from 'vuex'
 import DriveMoteusStateTable from './DriveMoteusStateTable.vue'
 import AutonRoverMap from './AutonRoverMap.vue'
 import AutonWaypointEditor from './AutonWaypointEditor.vue'
-import CameraFeed from './CameraFeed.vue'
 import Cameras from './Cameras.vue'
 import MotorsStatusTable from './MotorsStatusTable.vue'
 import OdometryReading from './OdometryReading.vue'
@@ -78,7 +74,6 @@ export default defineComponent({
     DriveMoteusStateTable,
     AutonRoverMap,
     AutonWaypointEditor,
-    CameraFeed,
     Cameras,
     MotorsStatusTable,
     OdometryReading,

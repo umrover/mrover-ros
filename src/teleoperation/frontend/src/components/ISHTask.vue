@@ -22,7 +22,7 @@
       </div> -->
     <!-- ADD BENEDICTS TEST HERE-->
     <div class="shadow p-3 rounded cameras">
-      <Cameras :primary="primary" :isSA="false"/>
+      <Cameras :primary="primary" :isSA="false" :mission="'other'"/>
     </div>
     <!-- <div class="shadow p-3 rounded cache">
         <Cache />

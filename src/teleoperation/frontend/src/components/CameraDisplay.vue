@@ -1,11 +1,15 @@
 <template>
     <div class="wrap">
         <div v-if="numStreams == 1">
-            <CameraFeed :id="0" :port="0"></CameraFeed>
+            <IKCameraFeed v-if="mission==='ik'" :id="0" :port="0"></IKCameraFeed>
+            <SACameraFeed v-if="mission==='sa'" :id="0" :port="0"></SACameraFeed>
+            <CameraFeed v-if="mission==='other'" :id="0" :port="0"></CameraFeed>
         </div>
         <div v-else class="grid-container">
             <div v-for="i in numStreams" :key="i" :class="'feed'+i">
-                <CameraFeed :id="streamOrder[i-1]" :port="8080+i"></CameraFeed>
+                <IKCameraFeed v-if="mission==='ik'" :id="streamOrder[i-1]" :port="8080+i"></IKCameraFeed>
+                <SACameraFeed v-if="mission==='sa'" :id="streamOrder[i-1]" :port="8080+i"></SACameraFeed>
+                <CameraFeed v-if="mission==='other'" :id="streamOrder[i-1]" :port="8080+i"></CameraFeed>
             </div>
         </div>
     </div>
@@ -13,15 +17,23 @@
   
   <script lang="ts">
   import { defineComponent } from 'vue'
-  import CameraFeed from '../components/CameraFeed.vue'
+  import IKCameraFeed from './IKCameraFeed.vue'
+  import SACameraFeed from './SACameraFeed.vue'
+  import CameraFeed from './CameraFeed.vue'
   
   export default defineComponent({
     components: {
+        IKCameraFeed,
+        SACameraFeed,
         CameraFeed
     },
     props: {
         streamOrder: { //array of camera indices to stream. -1 indicates not used
             type: Array,
+            required: true
+        },
+        mission: {
+            type: String, // {'sa', 'ik', 'other'}
             required: true
         }
     },
