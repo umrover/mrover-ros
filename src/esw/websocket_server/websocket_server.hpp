@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cstdint>
-#include <optional>
+#include <list>
 #include <span>
 #include <string_view>
 #include <thread>
@@ -25,10 +25,10 @@ class WebsocketServer {
 
     net::io_context m_context;
     tcp::acceptor m_acceptor;
-    std::optional<websocket_t> m_client;
+    std::list<websocket_t> m_clients; // Linked lists since we need to remove while iterating in the feed function
     std::jthread m_io_thread;
-    std::function<void()> m_on_open, m_on_close;
-    std::recursive_mutex m_mutex;
+    handler_t m_on_open, m_on_close;
+    std::recursive_mutex m_mutex; // User supplied callbacks could call our public functions, avoid self deadlock
 
 public:
     WebsocketServer(std::string_view host, std::uint16_t port, handler_t&& on_open, handler_t&& on_close);
@@ -37,7 +37,7 @@ public:
 
     auto acceptAsync() -> void;
 
-    auto feed(std::span<std::byte> data) -> void;
+    auto broadcast(std::span<std::byte> data) -> void;
 
-    auto isConnected() -> bool;
+    auto clientCount() -> std::size_t;
 };

@@ -26,7 +26,7 @@ namespace mrover {
             GstBuffer* buffer = gst_sample_get_buffer(sample);
             GstMapInfo map;
             gst_buffer_map(buffer, &map, GST_MAP_READ);
-            mStreamServer->feed({reinterpret_cast<std::byte*>(map.data), map.size});
+            mStreamServer->broadcast({reinterpret_cast<std::byte*>(map.data), map.size});
 
             gst_buffer_unmap(buffer, &map);
             gst_sample_unref(sample);
@@ -108,7 +108,7 @@ namespace mrover {
 
     auto GstWebsocketStreamerNodelet::imageCallback(sensor_msgs::ImageConstPtr const& msg) -> void {
         try {
-            if (!mStreamServer->isConnected()) return;
+            if (mStreamServer->clientCount() == 0) return;
 
             if (msg->encoding != sensor_msgs::image_encodings::BGRA8) throw std::runtime_error{"Unsupported encoding"};
             if (msg->width != mImageWidth || msg->height != mImageHeight) throw std::runtime_error{"Unsupported resolution"};
@@ -152,6 +152,10 @@ namespace mrover {
                     port,
                     [this] {
                         ROS_INFO("Client connected");
+                        if (mStreamServer->clientCount() > 1)
+                            // This forces a restart so the new client gets an I-frame (a frame that does not depend on any previous frames)
+                            if (gst_element_set_state(mPipeline, GST_STATE_READY) == GST_STATE_CHANGE_FAILURE)
+                                throw std::runtime_error{"Failed to play GStreamer pipeline"};
                         if (gst_element_set_state(mPipeline, GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE)
                             throw std::runtime_error{"Failed to play GStreamer pipeline"};
 
@@ -160,10 +164,11 @@ namespace mrover {
                     [this] {
                         ROS_INFO("Client disconnected");
                         // We want ready instead of paused or null
-                        // H265 depends on previous state so paused will not work (the new connection will have no idea about previous frames)
+                        // H265 depends on previous state so paused will not work (a new connection later will have no idea about previous frames)
                         // Null tears down too much and would require a full reinitialization
-                        if (gst_element_set_state(mPipeline, GST_STATE_READY) == GST_STATE_CHANGE_FAILURE)
-                            throw std::runtime_error{"Failed to pause GStreamer pipeline"};
+                        if (mStreamServer->clientCount() == 0)
+                            if (gst_element_set_state(mPipeline, GST_STATE_READY) == GST_STATE_CHANGE_FAILURE)
+                                throw std::runtime_error{"Failed to pause GStreamer pipeline"};
 
                         ROS_INFO("Stopped GStreamer pipeline");
                     });

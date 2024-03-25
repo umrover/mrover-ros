@@ -14,8 +14,7 @@ WebsocketServer::WebsocketServer(std::string_view host, std::uint16_t port, hand
     std::scoped_lock guard{m_mutex};
 
     tcp::endpoint endpoint{net::ip::make_address(host), port};
-
-    ROS_INFO_STREAM("Starting streaming server @" << endpoint);
+    ROS_INFO_STREAM("Starting websocket server @" << endpoint);
 
     m_acceptor.open(endpoint.protocol());
     m_acceptor.set_option(net::socket_base::reuse_address{true});
@@ -40,33 +39,22 @@ auto WebsocketServer::acceptAsync() -> void {
             return;
         }
 
-        if (m_client) {
-            try {
-                m_client->close(websocket::close_code::normal);
-            } catch (std::exception const& e) {
-                ROS_WARN_STREAM(std::format("Exception closing existing client: {}", e.what()));
-            }
-            m_client.reset();
+        websocket_t& client = m_clients.emplace_back(std::move(socket));
 
-            if (m_on_close) m_on_close();
-        }
-
-        m_client.emplace(std::move(socket));
-
-        m_client->binary(true);
-        m_client->set_option(websocket::stream_base::timeout{
+        client.binary(true);
+        client.set_option(websocket::stream_base::timeout{
                 .handshake_timeout = 3s,
                 .idle_timeout = 3s,
                 .keep_alive_pings = true,
         });
-        m_client->set_option(websocket::stream_base::decorator([](websocket::response_type& res) {
-            res.set(http::field::server, std::format("{} {}", BOOST_BEAST_VERSION_STRING, "mrover-stream-server"));
+        client.set_option(websocket::stream_base::decorator([](websocket::response_type& res) {
+            res.set(http::field::server, std::format("{} {}", BOOST_BEAST_VERSION_STRING, "mrover-websocket-server"));
         }));
 
-        m_client->accept();
+        client.accept();
 
         // For some DUMB REASON we have to read something so that we properly handle when the other side closes the connection
-        m_client->async_read_some(boost::asio::mutable_buffer(nullptr, 0), [](beast::error_code const&, std::size_t) {});
+        client.async_read_some(boost::asio::mutable_buffer(nullptr, 0), [](beast::error_code const&, std::size_t) {});
 
         if (m_on_open) m_on_open();
 
@@ -74,29 +62,35 @@ auto WebsocketServer::acceptAsync() -> void {
     });
 }
 
-auto WebsocketServer::feed(std::span<std::byte> data) -> void {
-    net::mutable_buffer buffer{data.data(), data.size()};
-    try {
-        // TODO(quintin): async write?
-        m_client->write(buffer);
-    } catch (std::exception const& e) {
-        ROS_WARN_STREAM(std::format("Exception writing to client: {}", e.what()));
-        m_client.reset();
+auto WebsocketServer::broadcast(std::span<std::byte> data) -> void {
+    std::scoped_lock guard{m_mutex};
+    net::const_buffer buffer{data.data(), data.size()};
+    for (auto it = m_clients.begin(); it != m_clients.end();) {
+        try {
+            // TODO(quintin): Could async write here, but need to garuntee that the buffer stays alive until the write is done
+            it->write(buffer);
+            ++it;
+        } catch (std::exception const& e) {
+            ROS_WARN_STREAM(std::format("Exception writing to client: {}", e.what()));
+            it = m_clients.erase(it);
 
-        if (m_on_close) m_on_close();
+            if (m_on_close) m_on_close();
+        }
     }
 }
 
-auto WebsocketServer::isConnected() -> bool {
+auto WebsocketServer::clientCount() -> std::size_t {
     std::scoped_lock guard{m_mutex};
-    return m_client.has_value();
+    return m_clients.size();
 }
 
 WebsocketServer::~WebsocketServer() {
     std::scoped_lock guard{m_mutex};
-    try {
-        m_client->close(websocket::close_code::normal);
-    } catch (std::exception const&) {
+    for (websocket_t& client: m_clients) {
+        try {
+            client.close(websocket::close_code::normal);
+        } catch (std::exception const&) {
+        }
     }
     m_acceptor.close();
     m_context.stop();
