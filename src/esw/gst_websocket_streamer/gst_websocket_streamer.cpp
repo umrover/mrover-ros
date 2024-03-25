@@ -1,4 +1,4 @@
-#include "nv_gst_h265_enc.hpp"
+#include "gst_websocket_streamer.hpp"
 
 #if defined(MROVER_IS_JETSON)
 constexpr bool IS_JETSON = true;
@@ -18,7 +18,7 @@ namespace mrover {
         if (!b) throw std::runtime_error{"Failed to create"};
     }
 
-    auto NvGstH265EncNodelet::pullStreamSamplesLoop() -> void {
+    auto GstWebsocketStreamerNodelet::pullStreamSamplesLoop() -> void {
         // Block until we receive a new encoded chunk from the encoder
         // This is okay since we are on a separate thread
         while (GstSample* sample = gst_app_sink_pull_sample(GST_APP_SINK(mStreamSink))) {
@@ -26,14 +26,14 @@ namespace mrover {
             GstBuffer* buffer = gst_sample_get_buffer(sample);
             GstMapInfo map;
             gst_buffer_map(buffer, &map, GST_MAP_READ);
-            mStreamServer->feed({reinterpret_cast<std::byte*>(map.data), map.size});
+            mStreamServer->broadcast({reinterpret_cast<std::byte*>(map.data), map.size});
 
             gst_buffer_unmap(buffer, &map);
             gst_sample_unref(sample);
         }
     }
 
-    auto NvGstH265EncNodelet::initPipeline() -> void {
+    auto GstWebsocketStreamerNodelet::initPipeline() -> void {
         ROS_INFO("Initializing and starting GStreamer pipeline...");
 
         mMainLoop = gstCheck(g_main_loop_new(nullptr, FALSE));
@@ -106,9 +106,9 @@ namespace mrover {
         ROS_INFO("Initialized and started GStreamer pipeline");
     }
 
-    auto NvGstH265EncNodelet::imageCallback(sensor_msgs::ImageConstPtr const& msg) -> void {
+    auto GstWebsocketStreamerNodelet::imageCallback(sensor_msgs::ImageConstPtr const& msg) -> void {
         try {
-            if (!mStreamServer->isConnected()) return;
+            if (mStreamServer->clientCount() == 0) return;
 
             if (msg->encoding != sensor_msgs::image_encodings::BGRA8) throw std::runtime_error{"Unsupported encoding"};
             if (msg->width != mImageWidth || msg->height != mImageHeight) throw std::runtime_error{"Unsupported resolution"};
@@ -129,7 +129,7 @@ namespace mrover {
         }
     }
 
-    auto NvGstH265EncNodelet::onInit() -> void {
+    auto GstWebsocketStreamerNodelet::onInit() -> void {
         try {
             mNh = getMTNodeHandle();
             mPnh = getMTPrivateNodeHandle();
@@ -150,8 +150,18 @@ namespace mrover {
             mStreamServer.emplace(
                     address,
                     port,
+                    // Note that the encodings we use send an initial seed frame (I-frame) and then encode subsequent frames based on motion deltas
+                    // So when a new client connects, we need to restart the pipeline to ensure they get an I-frame
+
+                    // When restarting we want to set the pipeline state to ready instead of paused or null
+                    // Paused will not re-generate I-frames
+                    // Null tears down too much and would require a full reinitialization
                     [this] {
                         ROS_INFO("Client connected");
+                        if (mStreamServer->clientCount() > 1)
+                            // Ensure new clients get an I-frame as their first frame
+                            if (gst_element_set_state(mPipeline, GST_STATE_READY) == GST_STATE_CHANGE_FAILURE)
+                                throw std::runtime_error{"Failed to play GStreamer pipeline"};
                         if (gst_element_set_state(mPipeline, GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE)
                             throw std::runtime_error{"Failed to play GStreamer pipeline"};
 
@@ -159,17 +169,16 @@ namespace mrover {
                     },
                     [this] {
                         ROS_INFO("Client disconnected");
-                        // We want ready instead of paused or null
-                        // H265 depends on previous state so paused will not work (the new connection will have no idea about previous frames)
-                        // Null tears down too much and would require a full reinitialization
-                        if (gst_element_set_state(mPipeline, GST_STATE_READY) == GST_STATE_CHANGE_FAILURE)
-                            throw std::runtime_error{"Failed to pause GStreamer pipeline"};
+                        // Stop the pipeline only if there are no more clients
+                        if (mStreamServer->clientCount() == 0)
+                            if (gst_element_set_state(mPipeline, GST_STATE_READY) == GST_STATE_CHANGE_FAILURE)
+                                throw std::runtime_error{"Failed to pause GStreamer pipeline"};
 
                         ROS_INFO("Stopped GStreamer pipeline");
                     });
 
             if (mCaptureDevice.empty()) {
-                mImageSubscriber = mNh.subscribe(mImageTopic, 1, &NvGstH265EncNodelet::imageCallback, this);
+                mImageSubscriber = mNh.subscribe(mImageTopic, 1, &GstWebsocketStreamerNodelet::imageCallback, this);
             }
 
         } catch (std::exception const& e) {
@@ -178,7 +187,7 @@ namespace mrover {
         }
     }
 
-    NvGstH265EncNodelet::~NvGstH265EncNodelet() {
+    GstWebsocketStreamerNodelet::~GstWebsocketStreamerNodelet() {
         if (mImageSource) gst_app_src_end_of_stream(GST_APP_SRC(mImageSource));
 
         if (mMainLoop) {

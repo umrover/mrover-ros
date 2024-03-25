@@ -4,7 +4,7 @@
 
 namespace mrover {
 
-    class NvGstH265EncNodelet final : public nodelet::Nodelet {
+    class GstWebsocketStreamerNodelet final : public nodelet::Nodelet {
 
         ros::NodeHandle mNh, mPnh;
 
@@ -15,7 +15,7 @@ namespace mrover {
 
         ros::Subscriber mImageSubscriber;
 
-        std::optional<StreamServer> mStreamServer;
+        std::optional<WebsocketServer> mStreamServer;
 
         GstElement *mImageSource{}, *mStreamSink{}, *mPipeline{};
         GMainLoop* mMainLoop{};
@@ -31,9 +31,9 @@ namespace mrover {
         auto imageCallback(sensor_msgs::ImageConstPtr const& msg) -> void;
 
     public:
-        NvGstH265EncNodelet() = default;
+        GstWebsocketStreamerNodelet() = default;
 
-        ~NvGstH265EncNodelet() override;
+        ~GstWebsocketStreamerNodelet() override;
     };
 
 } // namespace mrover

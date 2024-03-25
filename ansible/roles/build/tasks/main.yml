@@ -190,6 +190,14 @@
     link: /usr/bin/lld
     priority: 160
 
+- name: Set clang-tidy 16 as Default
+  become: True
+  alternatives:
+    name: clang-tidy
+    path: /usr/bin/clang-tidy-16
+    link: /usr/bin/clang-tidy
+    priority: 160
+
 - name: Setup Python Virtual Environment
   pip:
     name:

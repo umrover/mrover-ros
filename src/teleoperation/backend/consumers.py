@@ -801,7 +801,9 @@ class GUIConsumer(JsonWebsocketConsumer):
             rate.sleep()
 
     def science_spectral_callback(self, msg):
-        self.send(text_data=json.dumps({"type": "spectral_data", "site": msg.site, "data": msg.data, "error": msg.error}))
+        self.send(
+            text_data=json.dumps({"type": "spectral_data", "site": msg.site, "data": msg.data, "error": msg.error})
+        )
 
     def download_csv(self, msg):
         username = os.getenv("USERNAME", "-1")
