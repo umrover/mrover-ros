@@ -144,7 +144,7 @@ target_link_libraries(lie PUBLIC MANIF::manif)
 ## ESW
 
 if (NOT APPLE)
-    mrover_add_vendor_header_only_library(moteus src/esw/mjbots)
+    mrover_add_vendor_header_only_library(moteus deps/mjbots)
     mrover_add_header_only_library(can_device src/esw/can_device)
     mrover_add_library(motor_library src/esw/motor_library/*.cpp src/esw/motor_library)
     target_link_libraries(motor_library PUBLIC can_device moteus)
