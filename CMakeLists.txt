@@ -135,10 +135,8 @@ if (NOT APPLE)
 
     if (NetLink_FOUND AND NetLinkRoute_FOUND)
         mrover_add_nodelet(can_driver src/esw/can_driver/*.cpp src/esw/can_driver src/esw/can_driver/pch.hpp)
-        mrover_nodelet_link_libraries(can_driver nl-3 nl-route-3)
-        # TODO(quintin): Fix this CMake hard coding
-        #mrover_nodelet_link_libraries(can ${NetLink_LIBRARIES} ${NetLinkRoute_LIBRARIES}})
-        mrover_nodelet_include_directories(can_driver /usr/include/libnl3)
+        mrover_nodelet_link_libraries(can_driver ${NetLink_LIBRARIES} ${NetLinkRoute_LIBRARIES})
+        mrover_nodelet_include_directories(can_driver ${NetLink_INCLUDE_DIRS} ${NetLinkRoute_INCLUDE_DIRS})
     endif ()
 
     macro(mrover_add_esw_bridge_node name sources)
@@ -221,8 +219,6 @@ if (MROVER_BUILD_SIM)
     mrover_nodelet_link_libraries(simulator ${ASSIMP_LIBRARIES} ${BULLET_LIBRARIES} glfw3webgpu webgpu glfw opencv_core opencv_imgcodecs opencv_imgproc webgpu_hpp imgui lie)
     mrover_nodelet_defines(simulator BOOST_THREAD_PROVIDES_FUTURE)
 endif ()
-
-# TODO
 
 ### ======= ###
 ### Testing ###
