@@ -169,10 +169,10 @@ class GUIConsumer(JsonWebsocketConsumer):
                 self.calibrate_motors(message)
             elif message["type"] == "arm_adjust":
                 self.arm_adjust(message)
-            elif message["type"] == "arm_values" or message["type"] == "cache_values":
+            elif ( message["type"] == "arm_values" or 
+                  message["type"] == "cache_values" or 
+                  message["type"] == "sa_arm_values" ):
                 self.handle_controls_message(message)
-            elif message["type"] == "sa_enable_uv_bulb":
-                self.sa_uv_bulb_callback(message)
             elif message["type"] == "enable_white_leds":
                 self.enable_white_leds_callback(message)
             elif message["type"] == "enable_uv_leds":
@@ -277,7 +277,7 @@ class GUIConsumer(JsonWebsocketConsumer):
             publishers = sa_pubs
 
         if msg["arm_mode"] == "ik":
-            base_link_in_map = SE3.from_tf_tree(self.tf_buffer, "map", "base_link")
+            ee_in_map = SE3.from_tf_tree(self.tf_buffer, "base_link", "arm_e_link")
 
             left_trigger = self.filter_xbox_axis(msg["axes"][self.xbox_mappings["left_trigger"]])
             if left_trigger < 0:
@@ -286,23 +286,23 @@ class GUIConsumer(JsonWebsocketConsumer):
             right_trigger = self.filter_xbox_axis(msg["axes"][self.xbox_mappings["right_trigger"]])
             if right_trigger < 0:
                 right_trigger = 0
-            base_link_in_map.position[0] += (
+            ee_in_map.position[0] += (
                 self.ik_names["x"] * self.filter_xbox_axis(msg["axes"][self.xbox_mappings["left_js_x"]]),
             )
-            base_link_in_map.position[1] += (
+            ee_in_map.position[1] += (
                 self.ik_names["y"] * self.filter_xbox_axis(msg["axes"][self.xbox_mappings["left_js_y"]]),
             )
-            base_link_in_map.position[2] -= self.ik_names["z"] * left_trigger + self.ik_names["z"] * right_trigger
+            ee_in_map.position[2] -= self.ik_names["z"] * left_trigger + self.ik_names["z"] * right_trigger
 
             arm_ik_cmd = IK(
                 pose=Pose(
-                    position=Point(*base_link_in_map.position),
-                    orientation=Quaternion(*base_link_in_map.rotation.quaternion),
+                    position=Point(*ee_in_map.position),
+                    orientation=Quaternion(*ee_in_map.rotation.quaternion),
                 )
             )
             publishers[3].publish(arm_ik_cmd)
 
-        if msg["arm_mode"] == "position":
+        elif msg["arm_mode"] == "position":
             position_names = controls_names
             if msg["type"] == "arm_values":
                 position_names = ["joint_b", "joint_c", "joint_de_pitch", "joint_de_roll"]
@@ -365,7 +365,7 @@ class GUIConsumer(JsonWebsocketConsumer):
                     self.sa_config["cache"]["multiplier"]
                     * self.filter_xbox_button(msg["buttons"], "right_bumper", "left_bumper")
                 ]
-            elif msg["type"] == "sa_arm_values":
+            elif msg["type"] == "arm_values":
                 d_pad_x = msg["axes"][self.xbox_mappings["d_pad_x"]]
                 if d_pad_x > 0.5:
                     ra_slow_mode = True
@@ -387,21 +387,15 @@ class GUIConsumer(JsonWebsocketConsumer):
                         throttle_cmd.throttles[i] *= self.ra_config[name]["slow_mode_multiplier"]
                     if self.ra_config[name]["invert"]:
                         throttle_cmd.throttles[i] *= -1
-            elif msg["type"] == "sa_values":
+            elif msg["type"] == "sa_arm_values":
                 throttle_cmd.throttles = [
-                    self.sa_config[name]["multiplier"]
-                    * self.filter_xbox_axis(msg["axes"][info["xbox_index"]], 0.15, True)
-                    for name, info in self.sa_config.items()
-                    if name.startswith("sa")
+                    self.filter_xbox_axis(msg["axes"][self.sa_config["sa_x"]["xbox_index"]]),
+                    self.filter_xbox_axis(msg["axes"][self.sa_config["sa_y"]["xbox_index"]]),
+                    self.filter_xbox_axis(msg["axes"][self.sa_config["sa_z"]["xbox_index"]]),
+                    self.sa_config["sampler"]["multiplier"] * (right_trigger - left_trigger),
+                    self.sa_config["sensor_actuator"]["multiplier"]
+                    * self.filter_xbox_button(msg["buttons"], "right_bumper", "left_bumper"),
                 ]
-
-                throttle_cmd.throttles.extend(
-                    [
-                        self.sa_config["sampler"]["multiplier"] * (right_trigger - left_trigger),
-                        self.sa_config["sensor_actuator"]["multiplier"]
-                        * self.filter_xbox_button(msg["buttons"], "right_bumper", "left_bumper"),
-                    ]
-                )
 
                 fast_mode_activated = msg["buttons"][self.xbox_mappings["a"]] or msg["buttons"][self.xbox_mappings["b"]]
                 if not fast_mode_activated:
