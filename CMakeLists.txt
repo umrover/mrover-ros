@@ -27,8 +27,10 @@ if (APPLE)
     link_libraries(fmt::fmt)
 else ()
     # TODO(quintin): Fix this
-    find_package(TBB REQUIRED)
-    link_libraries(TBB::tbb)
+    find_package(TBB QUIET)
+    if (TBB_FOUND)
+        link_libraries(TBB::tbb)
+    endif ()
 endif ()
 
 if (NOT APPLE AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang") # Link with LLVM lld instead of GNU ld when using Clang on Linux, it is faster

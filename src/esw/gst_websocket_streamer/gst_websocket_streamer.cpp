@@ -150,10 +150,16 @@ namespace mrover {
             mStreamServer.emplace(
                     address,
                     port,
+                    // Note that the encodings we use send an initial seed frame (I-frame) and then encode subsequent frames based on motion deltas
+                    // So when a new client connects, we need to restart the pipeline to ensure they get an I-frame
+
+                    // When restarting we want to set the pipeline state to ready instead of paused or null
+                    // Paused will not re-generate I-frames
+                    // Null tears down too much and would require a full reinitialization
                     [this] {
                         ROS_INFO("Client connected");
                         if (mStreamServer->clientCount() > 1)
-                            // This forces a restart so the new client gets an I-frame (a frame that does not depend on any previous frames)
+                            // Ensure new clients get an I-frame as their first frame
                             if (gst_element_set_state(mPipeline, GST_STATE_READY) == GST_STATE_CHANGE_FAILURE)
                                 throw std::runtime_error{"Failed to play GStreamer pipeline"};
                         if (gst_element_set_state(mPipeline, GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE)
@@ -163,9 +169,7 @@ namespace mrover {
                     },
                     [this] {
                         ROS_INFO("Client disconnected");
-                        // We want ready instead of paused or null
-                        // H265 depends on previous state so paused will not work (a new connection later will have no idea about previous frames)
-                        // Null tears down too much and would require a full reinitialization
+                        // Stop the pipeline only if there are no more clients
                         if (mStreamServer->clientCount() == 0)
                             if (gst_element_set_state(mPipeline, GST_STATE_READY) == GST_STATE_CHANGE_FAILURE)
                                 throw std::runtime_error{"Failed to pause GStreamer pipeline"};

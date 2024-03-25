@@ -25,7 +25,10 @@ class WebsocketServer {
 
     net::io_context m_context;
     tcp::acceptor m_acceptor;
-    std::list<websocket_t> m_clients; // Linked lists since we need to remove while iterating in the feed function
+    // Linked lists since we need to remove while iterating in the feed function
+    // Clients are added in the acceptAsync function
+    // Clients are removed in the feed function when a write fails
+    std::list<websocket_t> m_clients;
     std::jthread m_io_thread;
     handler_t m_on_open, m_on_close;
     std::recursive_mutex m_mutex; // User supplied callbacks could call our public functions, avoid self deadlock

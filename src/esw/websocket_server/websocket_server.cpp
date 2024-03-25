@@ -19,7 +19,7 @@ WebsocketServer::WebsocketServer(std::string_view host, std::uint16_t port, hand
     m_acceptor.open(endpoint.protocol());
     m_acceptor.set_option(net::socket_base::reuse_address{true});
     m_acceptor.bind(endpoint);
-    m_acceptor.listen(net::socket_base::max_listen_connections);
+    m_acceptor.listen(4);
 
     acceptAsync();
 
@@ -54,6 +54,7 @@ auto WebsocketServer::acceptAsync() -> void {
         client.accept();
 
         // For some DUMB REASON we have to read something so that we properly handle when the other side closes the connection
+        // See: https://live.boost.org/doc/libs/1_84_0/libs/beast/doc/html/beast/using_websocket/control_frames.html
         client.async_read_some(boost::asio::mutable_buffer(nullptr, 0), [](beast::error_code const&, std::size_t) {});
 
         if (m_on_open) m_on_open();
