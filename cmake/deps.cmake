@@ -26,22 +26,17 @@ option(MROVER_BUILD_SIM "Build the simulator" ${dawn_FOUND})
 if (MROVER_BUILD_SIM)
     # Apparently Assimp has different names on different systems
     # find_package is case-sensitive so try both
-    find_package(Assimp QUIET)
-    find_package(assimp QUIET)
-    if (NOT Assimp_FOUND AND NOT assimp_FOUND)
+    find_package(Assimp NAMES Assimp assimp QUIET)
+    if (NOT Assimp_FOUND)
         message(FATAL_ERROR "Assimp not found")
     endif ()
 
     find_package(Bullet REQUIRED)
     find_package(glfw3 REQUIRED)
 
-    add_subdirectory(deps/glfw3webgpu SYSTEM)
-    add_subdirectory(deps/imgui SYSTEM)
-    add_subdirectory(deps/webgpuhpp SYSTEM)
-
-    set_target_properties(glfw3webgpu PROPERTIES CXX_CLANG_TIDY "")
-    set_target_properties(imgui PROPERTIES CXX_CLANG_TIDY "")
-    set_target_properties(webgpu_hpp PROPERTIES CXX_CLANG_TIDY "")
+    add_subdirectory(deps/glfw3webgpu SYSTEM EXCLUDE_FROM_ALL)
+    add_subdirectory(deps/imgui SYSTEM EXCLUDE_FROM_ALL)
+    add_subdirectory(deps/webgpuhpp SYSTEM EXCLUDE_FROM_ALL)
 endif ()
 
 find_package(OpenCV REQUIRED)
@@ -53,7 +48,6 @@ if (NOT manif_FOUND)
     if (EXISTS ${CMAKE_CURRENT_LIST_DIR}/../deps/manif/include/manif)
         add_subdirectory(deps/manif SYSTEM)
         add_library(MANIF::manif ALIAS manif)
-        set_target_properties(manif PROPERTIES CXX_CLANG_TIDY "")
 
         set(manif_FOUND TRUE)
     else ()

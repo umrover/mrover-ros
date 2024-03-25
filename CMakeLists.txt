@@ -1,6 +1,18 @@
 cmake_minimum_required(VERSION 3.16)
 project(mrover VERSION 2024.0.0 LANGUAGES CXX)
 
+option(MROVER_IS_CI "Build for CI" OFF)
+option(MROVER_RUN_CLANG_TIDY "Run clang-tidy" OFF)
+option(MROVER_IS_JETSON "Build for the Jetson" OFF)
+
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # Generate compile_commands.json for clangd
+
+### ============= ###
+### OS & Compiler ###
+### ============= ###
+
 if (APPLE)
     # Ensures that homebrew packages are never used over miniforge packages
     set(CMAKE_IGNORE_PATH /opt/homebrew)
@@ -19,21 +31,23 @@ else ()
     link_libraries(TBB::tbb)
 endif ()
 
-include_directories(BEFORE SYSTEM src/preload)
+if (NOT APPLE AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang") # Link with LLVM lld instead of GNU ld when using Clang on Linux, it is faster
+    add_link_options(-fuse-ld=lld)
+endif ()
 
-set(CMAKE_CXX_STANDARD 23)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # Generate compile_commands.json for clangd
-if (NOT APPLE AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    add_link_options(-fuse-ld=lld) # LLVM lld is faster than GNU ld
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    set(MROVER_CPP_COMPILE_OPTIONS -Wall -Wextra -pedantic -Wno-missing-field-initializers)
+    if (MROVER_IS_CI) # Make warnings errors in CI
+        list(APPEND MROVER_CPP_COMPILE_OPTIONS -Werror)
+    endif ()
 endif ()
-set(MROVER_CPP_COMPILE_OPTIONS -Wall -Wextra -pedantic -Wno-missing-field-initializers)
-if (MROVER_CI)
-    list(APPEND MROVER_CPP_COMPILE_OPTIONS -Werror)
-endif ()
+
 if (MROVER_IS_JETSON)
     add_definitions(-DMROVER_IS_JETSON)
 endif ()
+
+# Inject header files that get included before anything else, including system headers
+include_directories(BEFORE SYSTEM src/preload)
 
 include(cmake/macros.cmake)
 
@@ -178,9 +192,9 @@ mrover_add_nodelet(usb_camera src/perception/usb_camera/*.cpp src/perception/usb
 mrover_nodelet_link_libraries(usb_camera opencv_core opencv_objdetect opencv_aruco opencv_imgproc opencv_highgui)
 
 if (CUDA_FOUND)
-#    mrover_add_node(nv_vid_codec_h265_enc src/esw/nv_vid_codec_h265_enc/*.c*)
-#    target_link_libraries(nv_vid_codec_h265_enc PUBLIC cuda nvidia-encode opencv_core opencv_imgproc streaming)
-#    target_include_directories(nv_vid_codec_h265_enc SYSTEM PUBLIC deps/nvenc)
+    #    mrover_add_node(nv_vid_codec_h265_enc src/esw/nv_vid_codec_h265_enc/*.c*)
+    #    target_link_libraries(nv_vid_codec_h265_enc PUBLIC cuda nvidia-encode opencv_core opencv_imgproc streaming)
+    #    target_include_directories(nv_vid_codec_h265_enc SYSTEM PUBLIC deps/nvenc)
 endif ()
 
 mrover_add_nodelet(nv_gst_h265_enc src/esw/nv_gst_h265_enc/*.c* src/esw/nv_gst_h265_enc src/esw/nv_gst_h265_enc/pch.hpp)
