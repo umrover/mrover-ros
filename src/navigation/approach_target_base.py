@@ -6,11 +6,12 @@ from abc import abstractmethod
 from typing import Optional
 import numpy as np
 
-from navigation import search
+from navigation import search, waypoint
 
 
 class ApproachTargetBaseState(State):
     STOP_THRESH = get_rosparam("single_fiducial/stop_thresh", 0.7)
+    STOP_THRESH_WAYPOINT = get_rosparam("waypoint/stop_thresh", 0.5)
     FIDUCIAL_STOP_THRESHOLD = get_rosparam("single_fiducial/fiducial_stop_threshold", 1.75)
     DRIVE_FWD_THRESH = get_rosparam("waypoint/drive_fwd_thresh", 0.34)  # 20 degrees
 
@@ -37,6 +38,8 @@ class ApproachTargetBaseState(State):
         """
         target_pos = self.get_target_pos(context)
         if target_pos is None:
+            if self.__class__.__name__ == "LongRangeState" and not context.env.arrived_at_waypoint:
+                return waypoint.WaypointState()
             return search.SearchState()
 
         try:

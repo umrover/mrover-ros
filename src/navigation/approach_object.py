@@ -25,6 +25,7 @@ class ApproachObjectState(ApproachTargetBaseState):
         pass
 
     def get_target_pos(self, context) -> Optional[np.ndarray]:
+        # either position or None
         object_pos = context.env.current_target_pos()
         return object_pos
 
