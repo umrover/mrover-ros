@@ -179,8 +179,8 @@ endif ()
 
 ## Perception
 
-mrover_add_library(streaming src/esw/streaming/*.cpp src/esw/streaming)
-target_compile_definitions(streaming PUBLIC BOOST_ASIO_NO_DEPRECATED)
+mrover_add_library(websocket_server src/esw/websocket_server/*.cpp src/esw/websocket_server)
+target_compile_definitions(websocket_server PUBLIC BOOST_ASIO_NO_DEPRECATED)
 
 mrover_add_nodelet(zed_tag_detector src/perception/tag_detector/zed/*.cpp src/perception/tag_detector/zed src/perception/tag_detector/zed/pch.hpp)
 mrover_nodelet_link_libraries(zed_tag_detector opencv_core opencv_objdetect opencv_aruco opencv_imgproc lie)
@@ -197,9 +197,9 @@ if (CUDA_FOUND)
     #    target_include_directories(nv_vid_codec_h265_enc SYSTEM PUBLIC deps/nvenc)
 endif ()
 
-mrover_add_nodelet(nv_gst_h265_enc src/esw/nv_gst_h265_enc/*.c* src/esw/nv_gst_h265_enc src/esw/nv_gst_h265_enc/pch.hpp)
-mrover_nodelet_link_libraries(nv_gst_h265_enc PRIVATE streaming ${Gst_LIBRARIES} ${GstApp_LIBRARIES})
-mrover_nodelet_include_directories(nv_gst_h265_enc ${Gst_INCLUDE_DIRS} ${GstApp_INCLUDE_DIRS})
+mrover_add_nodelet(gst_websocket_streamer src/esw/gst_websocket_streamer/*.c* src/esw/gst_websocket_streamer src/esw/gst_websocket_streamer/pch.hpp)
+mrover_nodelet_link_libraries(gst_websocket_streamer PRIVATE websocket_server ${Gst_LIBRARIES} ${GstApp_LIBRARIES})
+mrover_nodelet_include_directories(gst_websocket_streamer ${Gst_INCLUDE_DIRS} ${GstApp_INCLUDE_DIRS})
 
 if (ZED_FOUND)
     mrover_add_nodelet(object_detector src/perception/object_detector/*.c* src/perception/object_detector src/perception/object_detector/pch.hpp)

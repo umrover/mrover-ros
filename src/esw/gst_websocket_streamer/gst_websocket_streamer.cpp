@@ -1,4 +1,4 @@
-#include "nv_gst_h265_enc.hpp"
+#include "gst_websocket_streamer.hpp"
 
 #if defined(MROVER_IS_JETSON)
 constexpr bool IS_JETSON = true;
@@ -18,7 +18,7 @@ namespace mrover {
         if (!b) throw std::runtime_error{"Failed to create"};
     }
 
-    auto NvGstH265EncNodelet::pullStreamSamplesLoop() -> void {
+    auto GstWebsocketStreamerNodelet::pullStreamSamplesLoop() -> void {
         // Block until we receive a new encoded chunk from the encoder
         // This is okay since we are on a separate thread
         while (GstSample* sample = gst_app_sink_pull_sample(GST_APP_SINK(mStreamSink))) {
@@ -33,7 +33,7 @@ namespace mrover {
         }
     }
 
-    auto NvGstH265EncNodelet::initPipeline() -> void {
+    auto GstWebsocketStreamerNodelet::initPipeline() -> void {
         ROS_INFO("Initializing and starting GStreamer pipeline...");
 
         mMainLoop = gstCheck(g_main_loop_new(nullptr, FALSE));
@@ -106,7 +106,7 @@ namespace mrover {
         ROS_INFO("Initialized and started GStreamer pipeline");
     }
 
-    auto NvGstH265EncNodelet::imageCallback(sensor_msgs::ImageConstPtr const& msg) -> void {
+    auto GstWebsocketStreamerNodelet::imageCallback(sensor_msgs::ImageConstPtr const& msg) -> void {
         try {
             if (!mStreamServer->isConnected()) return;
 
@@ -129,7 +129,7 @@ namespace mrover {
         }
     }
 
-    auto NvGstH265EncNodelet::onInit() -> void {
+    auto GstWebsocketStreamerNodelet::onInit() -> void {
         try {
             mNh = getMTNodeHandle();
             mPnh = getMTPrivateNodeHandle();
@@ -169,7 +169,7 @@ namespace mrover {
                     });
 
             if (mCaptureDevice.empty()) {
-                mImageSubscriber = mNh.subscribe(mImageTopic, 1, &NvGstH265EncNodelet::imageCallback, this);
+                mImageSubscriber = mNh.subscribe(mImageTopic, 1, &GstWebsocketStreamerNodelet::imageCallback, this);
             }
 
         } catch (std::exception const& e) {
@@ -178,7 +178,7 @@ namespace mrover {
         }
     }
 
-    NvGstH265EncNodelet::~NvGstH265EncNodelet() {
+    GstWebsocketStreamerNodelet::~GstWebsocketStreamerNodelet() {
         if (mImageSource) gst_app_src_end_of_stream(GST_APP_SRC(mImageSource));
 
         if (mMainLoop) {

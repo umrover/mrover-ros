@@ -1,4 +1,4 @@
-#include "streaming.hpp"
+#include "websocket_server.hpp"
 
 #include <format>
 #include <iostream>
@@ -9,13 +9,13 @@
 
 using namespace std::chrono_literals;
 
-StreamServer::StreamServer(std::string_view host, std::uint16_t port, handler_t&& on_open, handler_t&& on_close)
+WebsocketServer::WebsocketServer(std::string_view host, std::uint16_t port, handler_t&& on_open, handler_t&& on_close)
     : m_acceptor{m_context}, m_on_open{std::move(on_open)}, m_on_close{std::move(on_close)} {
     std::scoped_lock guard{m_mutex};
 
     tcp::endpoint endpoint{net::ip::make_address(host), port};
 
-    ROS_INFO_STREAM("Starting H.265 streaming server @" << endpoint);
+    ROS_INFO_STREAM("Starting streaming server @" << endpoint);
 
     m_acceptor.open(endpoint.protocol());
     m_acceptor.set_option(net::socket_base::reuse_address{true});
@@ -31,7 +31,7 @@ StreamServer::StreamServer(std::string_view host, std::uint16_t port, handler_t&
     }};
 }
 
-auto StreamServer::acceptAsync() -> void {
+auto WebsocketServer::acceptAsync() -> void {
     m_acceptor.async_accept(m_context, [this](beast::error_code const& ec, tcp::socket socket) {
         std::scoped_lock guard{m_mutex};
 
@@ -74,7 +74,7 @@ auto StreamServer::acceptAsync() -> void {
     });
 }
 
-auto StreamServer::feed(std::span<std::byte> data) -> void {
+auto WebsocketServer::feed(std::span<std::byte> data) -> void {
     net::mutable_buffer buffer{data.data(), data.size()};
     try {
         // TODO(quintin): async write?
@@ -87,12 +87,13 @@ auto StreamServer::feed(std::span<std::byte> data) -> void {
     }
 }
 
-auto StreamServer::isConnected() -> bool {
+auto WebsocketServer::isConnected() -> bool {
     std::scoped_lock guard{m_mutex};
     return m_client.has_value();
 }
 
-StreamServer::~StreamServer() {
+WebsocketServer::~WebsocketServer() {
+    std::scoped_lock guard{m_mutex};
     try {
         m_client->close(websocket::close_code::normal);
     } catch (std::exception const&) {

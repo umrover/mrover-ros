@@ -19,7 +19,7 @@ using tcp = net::ip::tcp;
 
 using websocket_t = websocket::stream<beast::tcp_stream>;
 
-class StreamServer {
+class WebsocketServer {
 
     using handler_t = std::function<void()>;
 
@@ -31,9 +31,9 @@ class StreamServer {
     std::recursive_mutex m_mutex;
 
 public:
-    StreamServer(std::string_view host, std::uint16_t port, handler_t&& on_open, handler_t&& on_close);
+    WebsocketServer(std::string_view host, std::uint16_t port, handler_t&& on_open, handler_t&& on_close);
 
-    ~StreamServer();
+    ~WebsocketServer();
 
     auto acceptAsync() -> void;
 
