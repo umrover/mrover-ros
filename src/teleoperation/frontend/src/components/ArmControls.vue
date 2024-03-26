@@ -31,8 +31,12 @@
       </div>
     </div>
     <div class="controls-flex" v-if="arm_mode === 'position'">
-      <label for="customRange3" class="form-label">Joint Range</label>
-      <input type="range" class="form-range" min="joint.min" max="joint.max" step="1.0" id="customRange3">
+      <div v-for="(joint,key) in temp_positions">
+        <label for="customRange3" class="form-label">{{ key }}: {{ joint.value }}</label>
+        <input type="range" class="form-range" v-model=joint.value :min="joint.min" :max="joint.max" 
+        step="1.0" id="customRange3" oninput="this.nextElementSibling.value = this.value">
+      </div>
+      
 
         <!-- <input
           class="form-control"
@@ -113,6 +117,7 @@ export default defineComponent({
     return {
       arm_mode: 'arm_disabled',
       laser_enabled: false,
+
       temp_positions: {
         /* Positions in degrees! */
         /* Joint A, allen_key and gripper don't need positioning */
