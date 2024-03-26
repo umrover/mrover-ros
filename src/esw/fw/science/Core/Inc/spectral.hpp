@@ -28,7 +28,7 @@ namespace mrover {
         };
         void poll_status_reg(I2C_OP rw);
 
-    	bool update_channel_data(); // updates all of the channels
+    	void update_channel_data(); // updates all of the channels
 
     	float get_channel_data(uint8_t channel);
 

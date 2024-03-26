@@ -112,10 +112,15 @@ namespace mrover {
         	for (int i = 0; i < 3; ++i) {
         		SpectralData spectral_data;
 				spectral_data.site = i;
-        		bool op_res = m_spectral_sensors.at(i).update_channel_data();
+        		m_spectral_sensors.at(i).update_channel_data();
 
 				spectral_data.error =
 						m_spectral_sensors.at(i).is_error();
+				if (spectral_data.error) {
+
+//					reboot_i2c(); // This causes a crash
+
+				}
         		for (int j = 0; j < 6; ++j) {
 					spectral_data.data.at(j) =
 						m_spectral_sensors.at(i).get_channel_data(j);

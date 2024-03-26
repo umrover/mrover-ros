@@ -69,36 +69,34 @@ namespace mrover {
 		m_error = false;
     }
 
-    bool Spectral::update_channel_data() {
+    void Spectral::update_channel_data() {
     	if (!m_initialized) {
     		init();
     		// If it is still not initialized, just return.
 			if (!m_initialized) {
-				return false;
+				return;
 			}
     	}
     	m_i2c_mux->set_channel(m_i2c_mux_channel);
 
     	for(uint8_t i = 0; i < CHANNEL_DATA_LENGTH; ++i){
     		// big endian, so msb is at lowest addr (which we read first)
-			uint8_t msb_reg_addr_0 = CHANNEL_V_CAL + i * 4;
-			uint8_t msb_reg_addr_1 = CHANNEL_V_CAL + i * 4 + 1;
-			uint8_t msb_reg_addr_2 = CHANNEL_V_CAL + i * 4 + 2;
-			uint8_t msb_reg_addr_3 = CHANNEL_V_CAL + i * 4 + 3;
-
-			uint8_t msb_result_0 = virtual_read(msb_reg_addr_0);
-			uint8_t msb_result_1 = virtual_read(msb_reg_addr_1);
-			uint8_t msb_result_2 = virtual_read(msb_reg_addr_2);
-			uint8_t msb_result_3 = virtual_read(msb_reg_addr_3);
-    		if(m_error) return false;
-
-    		uint32_t combined_val = ((uint32_t)msb_result_0 << 24) | ((uint32_t)msb_result_1 << 16) | ((uint32_t)msb_result_2 << 8) | ((uint32_t)msb_result_3 << 0);
+    		uint32_t combined_val = 0;
+    		for (int j = 0; j < 4; ++j) {
+    			uint8_t msb_reg_addr = CHANNEL_V_CAL + i * 4 + j;
+    			uint8_t msb_result = virtual_read(msb_reg_addr);
+				if(m_error) {
+					m_initialized = false;
+					return;
+				}
+    			combined_val |= msb_result << ((3 - j) * 8);
+    		}
     		float converted_val = 0;
     		memcpy(&converted_val, &combined_val, 4);
 			channel_data[i] = converted_val;
     	}
     	m_error = false;
-    	return true;
+    	return;
     }
 
 
@@ -111,7 +109,7 @@ namespace mrover {
 		uint8_t buf[2];
 		buf[0] = I2C_AS72XX_WRITE_REG;
 		buf[1] = (virtual_reg | 0x80);
-		m_i2c_bus->blocking_transmit(SPECTRAL_7b_ADDRESS, buf[0]);
+//		m_i2c_bus->blocking_transmit(SPECTRAL_7b_ADDRESS, buf[0]);
 		// How to send multiple bytes?
     	HAL_I2C_Master_Transmit(&hi2c1, SPECTRAL_7b_ADDRESS << 1, buf, sizeof(buf), 100);
 
