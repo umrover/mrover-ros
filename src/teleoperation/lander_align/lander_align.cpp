@@ -8,6 +8,8 @@ namespace mrover {
     auto LanderAlignNodelet::onInit() -> void {
         mNh = getMTNodeHandle();
         mPnh = getMTPrivateNodeHandle();
+
+		//Get the values from ros 
         mZThreshold = .5;
         mXThreshold = .1;
         mPlaneOffsetScalar = 2.5;
