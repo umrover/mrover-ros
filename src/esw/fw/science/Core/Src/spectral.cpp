@@ -25,12 +25,13 @@ namespace mrover {
     	for(int i = 0; i < 100; ++i){
 			auto status = m_i2c_bus->blocking_transact(SPECTRAL_7b_ADDRESS, I2C_AS72XX_SLAVE_STATUS_REG);
 
-			if (rw == READ) {
-				if((status.value() & I2C_AS72XX_SLAVE_RX_VALID) != 0) return;
-//				return;
-			}
-			else if (rw == WRITE) {
-				if ((status.value() & I2C_AS72XX_SLAVE_TX_VALID) == 0) return;
+			if (status.has_value()) {
+				if (rw == READ) {
+					if((status.value() & I2C_AS72XX_SLAVE_RX_VALID) != 0) return;
+				}
+				else if (rw == WRITE) {
+					if ((status.value() & I2C_AS72XX_SLAVE_TX_VALID) == 0) return;
+				}
 			}
 
 			osDelay(5); // Non blocking delay
@@ -80,7 +81,6 @@ namespace mrover {
 
     	for(uint8_t i = 0; i < CHANNEL_DATA_LENGTH; ++i){
     		// big endian, so msb is at lowest addr (which we read first)
-    		// /* UNCOMMENT ONCE CAN MESSAGE IS FIXED - UNABLE TO SEND 6 FLOAT CURRENTLY
 			uint8_t msb_reg_addr_0 = CHANNEL_V_CAL + i * 4;
 			uint8_t msb_reg_addr_1 = CHANNEL_V_CAL + i * 4 + 1;
 			uint8_t msb_reg_addr_2 = CHANNEL_V_CAL + i * 4 + 2;
@@ -96,26 +96,6 @@ namespace mrover {
     		float converted_val = 0;
     		memcpy(&converted_val, &combined_val, 4);
 			channel_data[i] = converted_val;
-			// */
-
-//    		if (!msb_result || !lsb_result){
-//    			//throw mrover::I2CRuntimeError("MSB or LSB result not read in update_channel_data");
-//    			m_error = true;
-//    			return false;
-//    		}
-			/*
-    		uint8_t msb_reg_addr = CHANNEL_V_HIGH + i * 2;
-			uint8_t lsb_reg_addr = CHANNEL_V_HIGH + i * 2 + 1;
-
-			uint8_t msb_result = virtual_read(msb_reg_addr);
-			uint8_t lsb_result = virtual_read(lsb_reg_addr);
-			if(m_error) return false;
-
-
-			uint16_t msb_result_int = msb_result;
-			uint16_t lsb_result_int = lsb_result;
-			channel_data[i] = ((msb_result_int << 8) | lsb_result_int);
-			*/
     	}
     	m_error = false;
     	return true;
@@ -150,7 +130,7 @@ namespace mrover {
     	auto status = m_i2c_bus->blocking_transact(SPECTRAL_7b_ADDRESS, I2C_AS72XX_SLAVE_STATUS_REG);
 
     	if ((status.value() & I2C_AS72XX_SLAVE_RX_VALID) != 0) {
-    		m_i2c_bus->blocking_transact(SPECTRAL_7b_ADDRESS, I2C_AS72XX_READ_REG);
+    		auto not_used = m_i2c_bus->blocking_transact(SPECTRAL_7b_ADDRESS, I2C_AS72XX_READ_REG);
     	}
 
     	poll_status_reg(I2C_OP::WRITE);
@@ -176,7 +156,7 @@ namespace mrover {
 		auto result = m_i2c_bus->blocking_transact(SPECTRAL_7b_ADDRESS, I2C_AS72XX_READ_REG);
 //		m_i2c_bus->blocking_transmit(SPECTRAL_7b_ADDRESS, I2C_AS72XX_READ_REG);
 //		auto result = m_i2c_bus->blocking_receive(SPECTRAL_7b_ADDRESS);
-		if(!result){
+		if(!result.has_value()){
 			m_error = true;
 			return 0;
 		}

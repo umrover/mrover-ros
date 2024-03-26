@@ -113,9 +113,6 @@ namespace mrover {
         		SpectralData spectral_data;
 				spectral_data.site = i;
         		bool op_res = m_spectral_sensors.at(i).update_channel_data();
-        		if (!op_res){
-        			//TODO: add error handling (whatever should have been in catch) here
-        		}
 
 				spectral_data.error =
 						m_spectral_sensors.at(i).is_error();
@@ -124,19 +121,7 @@ namespace mrover {
 						m_spectral_sensors.at(i).get_channel_data(j);
         		}
 				m_fdcan_bus.broadcast(OutBoundScienceMessage{spectral_data});
-//        		for (int j = 0; j < 6; ++j) {
-//        			m_spectral_sensors.at(i).update_channel_data(j);
-//					spectral_data.spectrals.at(i).data.at(j) =
-//							m_spectral_sensors.at(i).get_channel_data(j);
-//					spectral_data.spectrals.at(i).error =
-//							m_spectral_sensors.at(i).is_error();
-//        		}
         	}
-
-        	// TODO - MUTEXS ARE BREAKING CODE!!!! IDK WHY - PLEASE FIX
-//        	osMutexAcquire(m_can_tx_mutex, osWaitForever);
-			//m_fdcan_bus.broadcast(OutBoundScienceMessage{spectral_data});
-//			osMutexRelease(m_can_tx_mutex);
         }
 
         void update_and_send_thermistor_and_auto_shutoff_if_applicable() {
