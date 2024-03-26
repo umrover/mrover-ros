@@ -182,6 +182,14 @@ namespace mrover {
                 gpsInMap += gpsNoise;
 
                 mGpsPub.publish(computeNavSatFix(gpsInMap, mGpsLinerizationReferencePoint, mGpsLinerizationReferenceHeading));
+                geometry_msgs::Twist vel;
+                vel.linear.x = mRoverLinearVelocity.x();
+                vel.linear.y = mRoverLinearVelocity.y();
+                vel.linear.z = mRoverLinearVelocity.z();
+                vel.angular.x = 0;
+                vel.angular.y = 0;
+                vel.angular.z = 0;
+                mVelPub.publish(vel);
             }
             if (mImuTask.shouldUpdate()) {
                 R3 roverAngularVelocity = btVector3ToR3(rover.physics->getBaseOmega());

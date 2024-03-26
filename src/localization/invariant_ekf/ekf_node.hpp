@@ -1,4 +1,5 @@
 #include "invariant_ekf.hpp"
+#include <geometry_msgs/Twist.h>
 #include <sensor_msgs/NavSatFix.h>
 #include <ublox_msgs/NavPVT.h>
 
@@ -26,7 +27,7 @@ private:
 
     void mag_callback(const sensor_msgs::MagneticField& msg);
 
-    void vel_callback(const ublox_msgs::NavPVT& msg);
+    void vel_callback(const geometry_msgs::Twist& msg);
 
     void publish_odometry();
 

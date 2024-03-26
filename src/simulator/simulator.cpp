@@ -1,4 +1,5 @@
 #include "simulator.hpp"
+#include <geometry_msgs/Twist.h>
 
 namespace mrover {
 
@@ -17,6 +18,8 @@ namespace mrover {
         mGroundTruthPub = mNh.advertise<nav_msgs::Odometry>("/ground_truth", 1);
         mGpsPub = mNh.advertise<sensor_msgs::NavSatFix>("/gps/fix", 1);
         mImuPub = mNh.advertise<ImuAndMag>("/imu/data", 1);
+        mVelPub = mNh.advertise<geometry_msgs::Twist>("/gps/vel", 1);
+
         mGpsTask = PeriodicTask{mPnh.param<float>("gps_rate", 10)};
         mImuTask = PeriodicTask{mPnh.param<float>("imu_rate", 100)};
         mMotorStatusPub = mNh.advertise<MotorsStatus>("/drive_status", 1);

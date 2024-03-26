@@ -1,4 +1,5 @@
 #include "ekf_node.hpp"
+#include <geometry_msgs/Twist.h>
 
 InvariantEKF InvariantEKFNode::init_EKF() {
     // set initial position to zero and initial covariance to very high number
@@ -7,25 +8,33 @@ InvariantEKF InvariantEKFNode::init_EKF() {
     auto P0 = Matrix9d::Identity() * 2;
 
     // load covariance matrices from rosparam
-    std::vector<double> Q_vec, R_gps_vec, R_accel_vec, R_mag_vec;
+    std::vector<double> Q_vec, R_gps_vec, R_accel_vec, R_mag_vec, R_vel_vec;
     if (!mPnh.getParam("process_noise_covariance", Q_vec)) {
         throw std::runtime_error("Failed to load process_noise_covariance from rosparam");
     }
     Matrix9d Q = Eigen::Map<Eigen::Matrix<double, 9, 9, Eigen::RowMajor>>(Q_vec.data());
+
     if (!mPnh.getParam("gps_covariance", R_gps_vec)) {
         throw std::runtime_error("Failed to load gps_covariance from rosparam");
     }
     Matrix3d R_gps = Eigen::Map<Eigen::Matrix<double, 3, 3, Eigen::RowMajor>>(R_gps_vec.data());
+
     if (!mPnh.getParam("accel_covariance", R_accel_vec)) {
         throw std::runtime_error("Failed to load accel_covariance from rosparam");
     }
     Matrix3d R_accel = Eigen::Map<Eigen::Matrix<double, 3, 3, Eigen::RowMajor>>(R_accel_vec.data());
+
     if (!mPnh.getParam("mag_covariance", R_mag_vec)) {
         throw std::runtime_error("Failed to load mag_covariance from rosparam");
     }
     Matrix3d R_mag = Eigen::Map<Eigen::Matrix<double, 3, 3, Eigen::RowMajor>>(R_mag_vec.data());
 
-    return {x0, P0, Q, R_gps, R_accel, R_mag};
+    if (!mPnh.getParam("vel_covariance", R_vel_vec)) {
+        throw std::runtime_error("Failed to load mag_covariance from rosparam");
+    }
+    Matrix3d R_vel = Eigen::Map<Eigen::Matrix<double, 3, 3, Eigen::RowMajor>>(R_vel_vec.data());
+
+    return {x0, P0, Q, R_gps, R_accel, R_mag, R_vel};
 }
 
 InvariantEKFNode::InvariantEKFNode() : mEKF(init_EKF()) {
@@ -36,7 +45,7 @@ InvariantEKFNode::InvariantEKFNode() : mEKF(init_EKF()) {
     // set up subscribers and publishers
     mImuSub = mNh.subscribe("imu/data", 1, &InvariantEKFNode::imu_mag_callback, this);
     mGpsSub = mNh.subscribe("linearized_pose", 1, &InvariantEKFNode::gps_callback, this);
-    mVelSub = mNh.subscribe("TODO: ADD TOPIC", 1, &InvariantEKFNode::vel_callback, this);
+    mVelSub = mNh.subscribe("gps/vel", 1, &InvariantEKFNode::vel_callback, this);
 
     mOdometryPub = mNh.advertise<nav_msgs::Odometry>("odometry", 1);
 }
@@ -54,7 +63,7 @@ void InvariantEKFNode::imu_callback(sensor_msgs::Imu const& msg) {
     Vector3d accel(msg.linear_acceleration.x, msg.linear_acceleration.y, msg.linear_acceleration.z);
     Vector3d gyro(msg.angular_velocity.x, msg.angular_velocity.y, msg.angular_velocity.z);
     mEKF.predict(accel, gyro, dt);
-    // mEKF.update_accel(accel);
+    mEKF.update_accel(accel);
 }
 
 void InvariantEKFNode::mag_callback(sensor_msgs::MagneticField const& msg) {
@@ -68,8 +77,9 @@ void InvariantEKFNode::gps_callback(geometry_msgs::PoseWithCovarianceStamped con
     mEKF.update_gps(z);
 }
 
-void InvariantEKFNode::vel_callback(ublox_msgs::NavPVT const& msg) {
-    R3 v{msg.velE, msg.velN, msg.velD};
+void InvariantEKFNode::vel_callback(geometry_msgs::Twist const& msg) {
+    auto vel = msg.linear;
+    R3 v{vel.x, vel.y, vel.z};
     mEKF.update_vel(v);
 }
 
