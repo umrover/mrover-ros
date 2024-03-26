@@ -226,6 +226,7 @@ endif ()
 ## Teleoperation
 
 mrover_add_node(arm_controller src/teleoperation/arm_controller/*.cpp)
+target_link_libraries(arm_controller PRIVATE lie)
 
 ## Simulator
 
