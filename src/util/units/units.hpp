@@ -311,6 +311,11 @@ namespace mrover {
         return U{std::fabs(u.rep)};
     }
 
+    template<IsUnit U>
+    constexpr auto fmod(U const& u, typename U::rep_t n) {
+        return U{std::fmod(u.rep, n)};
+    }
+
     //
     //  Common units
     //
