@@ -26,7 +26,7 @@ water_bottle_search:
   stop_thresh: 0.5
   drive_fwd_thresh: 0.34
   coverage_radius: 10
-  segments_per_rotation: 8
+  segments_per_rotation: 10
 
 object_search:
   coverage_radius: 10

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import ClassVar, Optional, List, Tuple
+from scipy.signal import convolve2d
 
 import numpy as np
 import pymap3d
@@ -22,6 +23,7 @@ from mrover.msg import (
 from mrover.srv import EnableAuton, EnableAutonRequest, EnableAutonResponse
 from navigation.drive import DriveController
 from navigation import approach_post, long_range, approach_object
+from nav_msgs.msg import OccupancyGrid
 from std_msgs.msg import Time, Bool
 from util.SE3 import SE3
 from visualization_msgs.msg import Marker
@@ -78,6 +80,7 @@ class Environment:
 
     ctx: Context
     long_range_tags: LongRangeTagStore
+    cost_map: CostMap
     NO_FIDUCIAL: ClassVar[int] = -1
     arrived_at_target: bool = False
     last_target_location: Optional[np.ndarray] = None
@@ -176,6 +179,15 @@ class LongRangeTagStore:
         else:
             return None
 
+
+class CostMap:
+    """
+    Context class to represent the costmap generated around the water bottle waypoint
+    """
+    data: np.ndarray
+    resolution: int
+    height: int
+    width: int
 
 @dataclass
 class Course:
@@ -305,6 +317,7 @@ class Context:
     course_listener: rospy.Subscriber
     stuck_listener: rospy.Subscriber
     tag_data_listener: rospy.Subscriber
+    costmap_listener: rospy.Subscriber
 
     # Use these as the primary interfaces in states
     course: Optional[Course]
@@ -328,13 +341,14 @@ class Context:
         self.stuck_listener = rospy.Subscriber("nav_stuck", Bool, self.stuck_callback)
         self.course = None
         self.rover = Rover(self, False, "")
-        self.env = Environment(self, long_range_tags=LongRangeTagStore(self))
+        self.env = Environment(self, long_range_tags=LongRangeTagStore(self), cost_map=CostMap())
         self.disable_requested = False
         self.use_odom = rospy.get_param("use_odom_frame")
         self.world_frame = rospy.get_param("world_frame")
         self.odom_frame = rospy.get_param("odom_frame")
         self.rover_frame = rospy.get_param("rover_frame")
         self.tag_data_listener = rospy.Subscriber("tags", LongRangeTags, self.tag_data_callback)
+        self.costmap_listener = rospy.Subscriber("costmap", OccupancyGrid, self.costmap_callback)
 
     def recv_enable_auton(self, req: EnableAutonRequest) -> EnableAutonResponse:
         if req.enable:
@@ -348,3 +362,23 @@ class Context:
 
     def tag_data_callback(self, tags: LongRangeTags) -> None:
         self.env.long_range_tags.push_frame(tags.longRangeTags)
+
+    def costmap_callback(self, msg: OccupancyGrid):
+        """
+        Callback function for the occupancy grid perception sends
+        :param msg: Occupancy Grid representative of a 30 x 30m square area with origin at GNSS waypoint. Values are 0, 1, -1
+        """
+        self.env.cost_map.resolution = msg.info.resolution # meters/cell
+        self.env.cost_map.height = msg.info.height  # cells
+        self.env.cost_map.width = msg.info.width  # cells
+        self.env.cost_map.data = np.array(msg.data).reshape((int(self.env.cost_map.height), int(self.env.cost_map.width))).astype(np.float32)
+        
+        # change all unidentified points to have a slight cost
+        self.env.cost_map.data[self.env.cost_map.data == -1.0] = 0.1 # TODO: find optimal value
+        self.env.cost_map.data = np.rot90(self.env.cost_map.data, k=3, axes=(0,1)) # rotate 90 degress clockwise
+
+        # apply kernel to average the map with zero padding
+        kernel_shape = (7,7) # TODO: find optimal kernel size
+        kernel = np.ones(kernel_shape, dtype = np.float32) / (kernel_shape[0]*kernel_shape[1])
+        self.env.cost_map.data = convolve2d(self.env.cost_map.data, kernel, mode = "same")
+
