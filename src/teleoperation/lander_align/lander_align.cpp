@@ -1,13 +1,4 @@
 #include "lander_align.hpp"
-#include "mrover/LanderAlignActionFeedback.h"
-#include "mrover/LanderAlignActionResult.h"
-#include <algorithm>
-#include <boost/smart_ptr/shared_ptr.hpp>
-#include <cmath>
-#include <complex>
-#include <optional>
-#include <ros/rate.h>
-#include <ros/topic.h>
 
 namespace mrover {
     auto operator<<(std::ostream& ostream, RTRSTATE state) -> std::ostream& {

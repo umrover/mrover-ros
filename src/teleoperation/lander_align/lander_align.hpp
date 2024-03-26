@@ -1,8 +1,6 @@
 #pragma once
 
 #include "pch.hpp"
-#include <boost/smart_ptr/shared_ptr.hpp>
-#include <sensor_msgs/PointCloud2.h>
 
 namespace mrover {
 
@@ -24,27 +22,10 @@ namespace mrover {
 
     class LanderAlignNodelet final : public nodelet::Nodelet {
     private:
-    
-        //PID CONSTANTS
-        double const mAngleP = 1;
-        double const mAngleFloor = 0.05;
-        double const mLinearP = 0.3;
-        
+		//ROS VARS
         ros::NodeHandle mNh, mPnh;
 
-        std::optional<Server> mActionServer;
-
-        ros::Publisher mDebugVectorPub;
-
-        ros::Publisher mDebugPCPub;
-
-        ros::Publisher mTwistPub;
-
-        RTRSTATE mLoopState = RTRSTATE::done;
-
-        //Action Server Variables
-        sensor_msgs::PointCloud2ConstPtr mCloud;
-
+		//RANSAC VARS
         double mBestOffset{};
 
         double mPlaneOffsetScalar{};
@@ -61,6 +42,31 @@ namespace mrover {
         SE3d mOffsetLocationInWorldSE3d;
         SE3d mPlaneLocationInWorldSE3d;
 
+        double mZThreshold{};
+        double mXThreshold{};
+        int mLeastSamplingDistribution = 10;
+
+        ros::Publisher mDebugPCPub;
+
+        std::vector<Point const*> mFilteredPoints;
+
+		//RTR RTR VARS
+        RTRSTATE mLoopState;
+
+        ros::Publisher mTwistPub;
+
+        //PID CONSTANTS
+        double const mAngleP = 1;
+        double const mAngleFloor = 0.05;
+        double const mLinearP = 0.3;
+        
+        ros::Publisher mDebugVectorPub;
+
+        //Action Server Variables
+        sensor_msgs::PointCloud2ConstPtr mCloud;
+
+        std::optional<Server> mActionServer;
+
         //TF Member Variables
         tf2_ros::Buffer mTfBuffer;
         tf2_ros::TransformListener mTfListener{mTfBuffer};
@@ -69,10 +75,6 @@ namespace mrover {
         std::string mMapFrameId;
 
         //Ransac Params
-        double mZThreshold{};
-        double mXThreshold{};
-        int mLeastSamplingDistribution = 10;
-        std::vector<Point const*> mFilteredPoints;
 
         auto onInit() -> void override;
         
@@ -89,9 +91,7 @@ namespace mrover {
         static auto calcAngleWithWorldX(Eigen::Vector3d xHeading) -> double;
     
     public:
-    
         void ActionServerCallBack();
-
     };
 
 } // namespace mrover

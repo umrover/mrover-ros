@@ -5,6 +5,17 @@
 #include <random>
 #include <string>
 
+#include "mrover/LanderAlignActionFeedback.h"
+#include <algorithm>
+#include <boost/smart_ptr/shared_ptr.hpp>
+#include <sensor_msgs/PointCloud2.h>
+#include <boost/smart_ptr/shared_ptr.hpp>
+#include <cmath>
+#include <complex>
+#include <optional>
+#include <ros/rate.h>
+#include <ros/topic.h>
+#include "mrover/LanderAlignActionResult.h"
 #include <actionlib/server/simple_action_server.h>
 #include <geometry_msgs/Twist.h>
 #include <mrover/LanderAlignAction.h>
