@@ -16,7 +16,7 @@
           </div>
   
           <l-polyline :lat-lngs="odomPath" :color="'blue'" />
-          <l-polyline :lat-lngs="dronePath" :color="'blue'" />
+          <l-polyline :lat-lngs="dronePath" :color="'green'" />
       </l-map>
       <label><input v-model="online" type="checkbox" />Online</label>
   </div>
@@ -41,7 +41,7 @@
   import L from '../leaflet-rotatedmarker.js'
   
   const MAX_ODOM_COUNT = 1000
-  const DRAW_FREQUENCY = 10
+  const DRAW_FREQUENCY = 1
   const onlineUrl = 'http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}'
   const offlineUrl = 'map/{z}/{x}/{y}.png'
   const onlineTileOptions = {
@@ -100,7 +100,7 @@
               iconAnchor: [32, 32]
           })
           this.droneIcon = L.icon({
-              iconUrl: '/drone_icon.png',
+              iconUrl: '/drone_icon_1.png',
               iconSize: [64, 64],
               iconAnchor: [32, 32]
           })
