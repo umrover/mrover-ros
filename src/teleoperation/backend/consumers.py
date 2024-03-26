@@ -365,7 +365,7 @@ class GUIConsumer(JsonWebsocketConsumer):
                     self.sa_config["cache"]["multiplier"]
                     * self.filter_xbox_button(msg["buttons"], "right_bumper", "left_bumper")
                 ]
-            elif msg["type"] == "sa_arm_values":
+            elif msg["type"] == "arm_values":
                 d_pad_x = msg["axes"][self.xbox_mappings["d_pad_x"]]
                 if d_pad_x > 0.5:
                     ra_slow_mode = True
