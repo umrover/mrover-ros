@@ -22,27 +22,15 @@ namespace mrover {
 
     void Spectral::poll_status_reg(I2C_OP rw){
     	m_i2c_mux->set_channel(m_i2c_mux_channel);
-    	for(int i = 0; i < 10; ++i){
-//			m_i2c_bus->blocking_transmit(SPECTRAL_7b_ADDRESS, I2C_AS72XX_SLAVE_STATUS_REG);
-//			uint8_t tx_buf[1];
-//			tx_buf[0] = I2C_AS72XX_SLAVE_STATUS_REG;
-//			uint8_t buf[1];
-//			HAL_I2C_Master_Transmit(&hi2c1, SPECTRAL_7b_ADDRESS, tx_buf, 1, 100);
-//			HAL_I2C_Master_Receive(&hi2c1, SPECTRAL_7b_ADDRESS << 1 | 1, buf, 1, 100);
-//			uint8_t status = buf[0];
-			// Check if we are allowed to proceed with reads + writes
-//			auto status = m_i2c_bus->blocking_receive(SPECTRAL_7b_ADDRESS);
-
+    	for(int i = 0; i < 100; ++i){
 			auto status = m_i2c_bus->blocking_transact(SPECTRAL_7b_ADDRESS, I2C_AS72XX_SLAVE_STATUS_REG);
 
-			if(status){
-				switch(rw){
-				case WRITE:
-					if((status.value() & I2C_AS72XX_SLAVE_TX_VALID) == 0) return;
-				case READ:
-					if((status.value() & I2C_AS72XX_SLAVE_RX_VALID) != 0) return;
-					// return;
-				}
+			if (rw == READ) {
+				if((status.value() & I2C_AS72XX_SLAVE_RX_VALID) != 0) return;
+//				return;
+			}
+			else if (rw == WRITE) {
+				if ((status.value() & I2C_AS72XX_SLAVE_TX_VALID) == 0) return;
 			}
 
 			osDelay(5); // Non blocking delay
@@ -65,13 +53,16 @@ namespace mrover {
 		// DATA_RDY is 0 and RSVD is 0
 		virtual_write(CONTROL_SETUP_REG, control_data);
 		osDelay(50);
-		virtual_write(CONTROL_SETUP_REG, control_data);
-		osDelay(50);
+//		virtual_write(CONTROL_SETUP_REG, control_data);
+//		osDelay(50);
 
 		// Integration time = 2.8ms & 0xFF
 		uint8_t int_time_multiplier = 0xFF; //0xFF;
 		virtual_write(INT_TIME_REG, int_time_multiplier);
 
+		if (m_error) {
+			return;
+		}
 
 		m_initialized = true;
 		m_error = false;
@@ -155,7 +146,14 @@ namespace mrover {
 
     uint8_t Spectral::virtual_read(uint8_t virtual_reg){// -> std::optional<uint16_t>{
     	// Read status register may not work quite how it is described in the datasheet
-    	poll_status_reg(I2C_OP::READ);
+
+    	auto status = m_i2c_bus->blocking_transact(SPECTRAL_7b_ADDRESS, I2C_AS72XX_SLAVE_STATUS_REG);
+
+    	if ((status.value() & I2C_AS72XX_SLAVE_RX_VALID) != 0) {
+    		m_i2c_bus->blocking_transact(SPECTRAL_7b_ADDRESS, I2C_AS72XX_READ_REG);
+    	}
+
+    	poll_status_reg(I2C_OP::WRITE);
 
     	if (m_error) {
     		return 0;
