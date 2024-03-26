@@ -214,11 +214,11 @@
   <xacro:arm_link name="e" m="1" x="0.15" y="0.155" z="0.032" />
 
   <joint name="chassis_link_to_arm_a_link" type="prismatic">
-    <origin xyz="0.164882 0.200235 0.051497" />
+    <origin xyz="0.164882 -0.200235 0.051497" />
     <parent link="chassis_link" />
     <child link="arm_a_link" />
     <axis xyz="0 1 0" />
-    <limit lower="-0.45" upper="0" effort="0" velocity="0" />
+    <limit lower="0" upper="0.4" effort="0" velocity="0" />
   </joint>
 
   <xacro:arm_revolute_joint parent="arm_a" child="arm_b"
