@@ -519,7 +519,7 @@ class GUIConsumer(JsonWebsocketConsumer):
             led_srv = rospy.ServiceProxy(white_led_name, SetBool)
             try:
                 result = led_srv(data=msg["data"])
-                self.send(text_data=json.dumps({"type": "toggle_uv", "result": result.success}))
+                self.send(text_data=json.dumps({"type": "enable_white_leds", "result": result.success}))
             except rospy.ServiceException as e:
                 rospy.logerr(f"Service call failed: {e}")
 

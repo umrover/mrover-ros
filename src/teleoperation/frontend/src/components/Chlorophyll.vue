@@ -81,6 +81,11 @@ export default {
         this.spectral_data[msg.site] = msg.data
         this.error[msg.site] = msg.error
       }
+      else if (msg.type == 'enable_white_leds'){
+        if(!msg.result){
+          this.whiteLEDs_active = false
+        }
+      }
       // TODO: get white LED message back and fix toggle if need be
     }
   },

@@ -9,7 +9,7 @@ import rospy
 from std_srvs.srv import SetBool, SetBoolResponse
 
 # Change these values for the service name and type definition to test different values
-SERVICE_NAME = "science_enable_heater_b1"
+SERVICE_NAME = "science_enable_white_led_0"
 SERVICE_TYPE = SetBool
 
 
