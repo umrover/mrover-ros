@@ -99,9 +99,11 @@ namespace mrover {
 
                 if (limit_switch.pressed()) {
                     if (std::optional<Radians> readjustment_position = limit_switch.get_readjustment_position()) {
-                        if (!m_state_after_calib) m_state_after_calib.emplace();
+                        if (m_uncalib_position) {
+                            if (!m_state_after_calib) m_state_after_calib.emplace();
 
-                        m_state_after_calib->offset_position = m_uncalib_position.value() - readjustment_position.value();
+                            m_state_after_calib->offset_position = m_uncalib_position.value() - readjustment_position.value();
+                        }
                     }
                 }
             }

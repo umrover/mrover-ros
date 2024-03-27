@@ -67,8 +67,12 @@ namespace mrover {
         void update_and_send_current_temp() {
         	// TODO
         	// Commenting out code temporarily because not sure why PDLB is crashing otherwise.
+        	/*
         	m_adc_sensor_1->update();
         	m_adc_sensor_2->update();
+			*/
+
+
 
 			PDBData pdb_data;
 

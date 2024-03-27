@@ -84,6 +84,9 @@ namespace mrover {
                 return;
             }
         }
+        
+
+        velocity = velocity * mVelocityMultiplier;
 
 
         velocity = velocity * mVelocityMultiplier;
@@ -140,7 +143,6 @@ namespace mrover {
         */
         // TODO - implement this
         MoteusLimitSwitchInfo result{};
-
         result.isFwdPressed = false;
         result.isBwdPressed = false;
 

@@ -21,15 +21,11 @@ namespace mrover {
         mJointDataPub = std::make_unique<ros::Publisher>(nh.advertise<sensor_msgs::JointState>("sa_joint_data", 1));
     }
 
-   
+
     void SATranslator::processThrottleCmd(Throttle::ConstPtr const& msg) {
-
-        Throttle throttle = *msg;
-
-        mThrottlePub->publish(throttle);
+        mThrottlePub->publish(*msg);
     }
 
-   
 
     void SATranslator::processVelocityCmd(Velocity::ConstPtr const& msg) {
         if (mSAHWNames != msg->names || mSAHWNames.size() != msg->velocities.size()) {

@@ -3,6 +3,7 @@
 #include <params_utils.hpp>
 #include <ros/duration.h>
 #include <units/units.hpp>
+#include <params_utils.hpp>
 
 #include <Eigen/LU>
 
@@ -55,7 +56,6 @@ namespace mrover {
         assert(mJointDEPitchIndex == mJointDE0Index);
         assert(mJointDERollIndex == mJointDE1Index);
         assert(mArmHWNames.size() == mRawArmNames.size());
-
         for (std::size_t i = 0; i < mRawArmNames.size(); ++i) {
             if (i != mJointDEPitchIndex && i != mJointDERollIndex) {
                 assert(mArmHWNames.at(i) == mRawArmNames.at(i));

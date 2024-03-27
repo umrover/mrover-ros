@@ -17,4 +17,4 @@
 	path = deps/manif
 	url = https://github.com/artivis/manif.git
 	shallow = true
-	branch = master
+	branch = devel

@@ -133,7 +133,7 @@ brushless_motors:
       limit_1_readjust_position: 494.739 # radians
       limit_max_forward_pos: true
       limit_max_backward_pos: true
-      max_forward_pos: 1.0
+      max_forward_pos: 0.4
       max_backward_pos: 0.0
     joint_c:
       velocity_multiplier: -1.0
@@ -217,14 +217,14 @@ brushed_motors:
     joint_b:
       velocity_multiplier: 1.0
       gear_ratio: 1.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
-      limit_0_present: false
-      limit_0_enabled: false
+      limit_0_present: true
+      limit_0_enabled: true
       limit_0_is_active_high: false
       limit_0_limits_fwd: false
       limit_0_used_for_readjustment: true
       abs_present: true
       abs_is_fwd_polarity: true
-      limit_0_readjust_position: 0.0 # radians
+      limit_0_readjust_position: -0.7853981633974483 # radians
       abs_ratio: 1.0 # encoder ratio compared to motor
       abs_offset: 0.0 # 0 for joint position corresponds to this radians reading by absolute encoder
       driver_voltage: 12.0 # used to calculate max pwm
