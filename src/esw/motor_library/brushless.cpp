@@ -187,6 +187,10 @@ namespace mrover {
                 .register_number = moteus::Register::kEncoder1Position,
                 .resolution = moteus::kFloat
             };
+            qFormat.extra[1] = moteus::Query::ItemFormat{
+                .register_number = moteus::Register::kEncoder1Velocity,
+                .resolution = moteus::kFloat
+            };
         }
         moteus::CanFdFrame queryFrame = mController.MakeQuery(&qFormat);
         mDevice.publish_moteus_frame(queryFrame);
@@ -211,11 +215,11 @@ namespace mrover {
 
         if (this->isJointDE()) {
             mCurrentPosition = Revolutions{result.extra[0].value}; // get value of absolute encoder if its joint_de0/1
+            mCurrentVelocity = RevolutionsPerSecond{result.extra[1].value} / mVelocityMultiplier;
         } else {
             mCurrentPosition = Revolutions{result.position}; // moteus stores position in revolutions.
+            mCurrentVelocity = RevolutionsPerSecond{result.velocity} / mVelocityMultiplier; // moteus stores position in revolutions.
         }
-
-        mCurrentVelocity = RevolutionsPerSecond{result.velocity} / mVelocityMultiplier; // moteus stores position in revolutions.
 
         mErrorState = moteusErrorCodeToErrorState(result.mode, static_cast<ErrorCode>(result.fault));
         mState = moteusModeToState(result.mode);
