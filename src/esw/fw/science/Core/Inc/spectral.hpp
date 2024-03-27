@@ -51,8 +51,8 @@ namespace mrover {
         constexpr static std::uint8_t INT_TIME_REG = 0x05;
 
     private:
-        bool m_error{};
-        bool m_initialized{};
+        bool m_error{false};
+        bool m_initialized{false};
 
         std::shared_ptr<SMBus<uint8_t, uint8_t>> m_i2c_bus;
         std::shared_ptr<I2CMux> m_i2c_mux;

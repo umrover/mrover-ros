@@ -10,10 +10,13 @@ namespace mrover {
     void I2CMux::set_channel(uint8_t channel) {
     	uint8_t go_to_channel = 1 << channel;
     	auto result = m_i2c_bus->blocking_transact(MUX_7b_ADDRESS, go_to_channel);
-    	if(result){
+    	if(result.has_value()){
     		current_channel = go_to_channel;
     	}
     	else{
+    		m_reset_pin.write(GPIO_PIN_RESET);
+    		osDelay(50);
+    		m_reset_pin.write(GPIO_PIN_SET);
     		// Error handling
     	}
     }

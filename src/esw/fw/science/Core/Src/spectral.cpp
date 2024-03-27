@@ -27,11 +27,22 @@ namespace mrover {
 
 			if (status.has_value()) {
 				if (rw == READ) {
-					if((status.value() & I2C_AS72XX_SLAVE_RX_VALID) != 0) return;
+					if((status.value() & I2C_AS72XX_SLAVE_RX_VALID) != 0) {
+						m_error = false;
+						return;
+					}
 				}
 				else if (rw == WRITE) {
-					if ((status.value() & I2C_AS72XX_SLAVE_TX_VALID) == 0) return;
+					if ((status.value() & I2C_AS72XX_SLAVE_TX_VALID) == 0) {
+						m_error = false;
+						return;
+					}
 				}
+			}
+			else {
+				m_error = true;
+				m_initialized = false;
+//				return;
 			}
 
 			osDelay(5); // Non blocking delay
@@ -39,6 +50,7 @@ namespace mrover {
 
     	//throw mrover::I2CRuntimeError("SPECTRAL");
     	m_error = true;
+    	m_initialized = false;
     }
 
     void Spectral::init(){
@@ -66,7 +78,6 @@ namespace mrover {
 		}
 
 		m_initialized = true;
-		m_error = false;
     }
 
     void Spectral::update_channel_data() {
@@ -127,8 +138,15 @@ namespace mrover {
 
     	auto status = m_i2c_bus->blocking_transact(SPECTRAL_7b_ADDRESS, I2C_AS72XX_SLAVE_STATUS_REG);
 
-    	if ((status.value() & I2C_AS72XX_SLAVE_RX_VALID) != 0) {
-    		auto not_used = m_i2c_bus->blocking_transact(SPECTRAL_7b_ADDRESS, I2C_AS72XX_READ_REG);
+    	if (status.has_value()) {
+			if ((status.value() & I2C_AS72XX_SLAVE_RX_VALID) != 0) {
+				auto not_used = m_i2c_bus->blocking_transact(SPECTRAL_7b_ADDRESS, I2C_AS72XX_READ_REG);
+			}
+    	}
+    	else {
+    		m_error = true;
+    		m_initialized = false;
+    		return 0;
     	}
 
     	poll_status_reg(I2C_OP::WRITE);
@@ -158,6 +176,7 @@ namespace mrover {
 			m_error = true;
 			return 0;
 		}
+		m_error = false;
 		return result.value();
     }
 
