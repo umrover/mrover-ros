@@ -19,7 +19,7 @@
 #include <sensor_msgs/JointState.h>
 #include <std_msgs/Float32.h>
 
-#include <Eigen/Core>
+#include <Eigen/Dense>
 
 #include <units/units.hpp>
 
