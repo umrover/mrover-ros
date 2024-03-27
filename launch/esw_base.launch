@@ -13,12 +13,13 @@
         <param name="interface" value="can1"/>
     </node> -->
 
-    <!-- <node pkg="nodelet" type="nodelet" name="usb_camera_nodelet" respawn="true"
+    <node pkg="nodelet" type="nodelet" name="usb_camera_nodelet" respawn="true"
           args="load mrover/UsbCameraNodelet perception_nodelet_manager" output="screen">
-    </node> -->
-    <!-- <node pkg="nodelet" type="nodelet" name="usb_camera_streamer" respawn="true"
-          args="load mrover/NvGstH265EncNodelet perception_nodelet_manager" output="screen">
-    </node> -->
+        <param name="device" value="/dev/video2"/>
+    </node>
+    <node pkg="nodelet" type="nodelet" name="usb_camera_streamer" respawn="true"
+          args="load mrover/GstWebsocketStreamerNodelet perception_nodelet_manager" output="screen">
+    </node>
 
     <node name="drive_bridge" pkg="mrover" type="drive_bridge" output="screen"/>
 
@@ -26,7 +27,7 @@
     <node name="led" pkg="mrover" type="led" output="screen"/>
     <!-- This is the STM bridge, not working right now for unknown reasons -->
     <!-- <node name="led_hw_bridge" pkg="mrover" type="led_hw_bridge" /> -->
-    <node name="arduino_led_hw_bridge" pkg="mrover" type="arduino_led_hw_bridge.py" output="screen"/>
+    <!-- <node name="arduino_led_hw_bridge" pkg="mrover" type="arduino_led_hw_bridge.py" output="screen"/> -->
 
     <node name="mast_gimbal_bridge" pkg="mrover" type="mast_gimbal_bridge" output="screen"/>
 </launch>

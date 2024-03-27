@@ -155,7 +155,7 @@ export default defineComponent({
       })
 
       // TODO(quintin): Set IP too
-      this.ws = new WebSocket(`ws://10.1.0.10:808${1 + this.id}`);
+      this.ws = new WebSocket(`ws://localhost:808${1 + this.id}`);
       this.ws.binaryType = 'arraybuffer';
       this.ws.onopen = () => {
         console.log(`Connected to server for stream ${number}`);
