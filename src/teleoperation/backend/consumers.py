@@ -12,12 +12,8 @@ from channels.generic.websocket import JsonWebsocketConsumer
 import rospy
 import tf2_ros
 import cv2
-<<<<<<< HEAD
-from cv_bridge import CvBridge
-=======
 
 # from cv_bridge import CvBridge
->>>>>>> origin/integration
 from geometry_msgs.msg import Twist
 from mrover.msg import (
     PDLB,
@@ -30,17 +26,6 @@ from mrover.msg import (
     CalibrationStatus,
     MotorsStatus,
     CameraCmd,
-<<<<<<< HEAD
-    Calibrated,
-    Velocity,
-    Position,
-    IK,
-)
-from mrover.srv import EnableAuton, ChangeCameras, CapturePanorama
-from sensor_msgs.msg import NavSatFix, Temperature, RelativeHumidity, Image
-from mrover.srv import EnableAuton
-from sensor_msgs.msg import NavSatFix, Temperature, RelativeHumidity
-=======
     Velocity,
     Position,
     IK,
@@ -50,7 +35,6 @@ from sensor_msgs.msg import NavSatFix, Temperature, RelativeHumidity
 )
 from mrover.srv import EnableAuton, AdjustMotor, ChangeCameras, CapturePanorama  # , CapturePhoto
 from sensor_msgs.msg import NavSatFix, Temperature, RelativeHumidity, Image
->>>>>>> origin/integration
 from std_msgs.msg import String, Bool
 from std_srvs.srv import SetBool, Trigger
 from geometry_msgs.msg import Twist, Pose, Point, Quaternion
@@ -113,8 +97,6 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.sa_humidity_data = rospy.Subscriber(
                 "/sa_humidity_data", RelativeHumidity, self.sa_humidity_data_callback
             )
-<<<<<<< HEAD
-=======
             self.ish_thermistor_data = rospy.Subscriber(
                 "/science_thermistors", ScienceThermistors, self.ish_thermistor_data_callback
             )
@@ -122,7 +104,6 @@ class GUIConsumer(JsonWebsocketConsumer):
                 "/science_heater_state", HeaterData, self.ish_heater_state_callback
             )
             self.science_spectral = rospy.Subscriber("/science_spectral", Spectral, self.science_spectral_callback)
->>>>>>> origin/integration
 
             # Services
             self.laser_service = rospy.ServiceProxy("enable_arm_laser", SetBool)
@@ -132,13 +113,9 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.cache_enable_limit = rospy.ServiceProxy("cache_enable_limit_switches", SetBool)
             self.calibrate_service = rospy.ServiceProxy("arm_calibrate", Trigger)
             self.change_cameras_srv = rospy.ServiceProxy("change_cameras", ChangeCameras)
-<<<<<<< HEAD
-            self.capture_panorama_srv: Any = rospy.ServiceProxy("capture_panorama", CapturePanorama)
-=======
             self.capture_panorama_srv = rospy.ServiceProxy("capture_panorama", CapturePanorama)
             self.heater_auto_shutoff_srv = rospy.ServiceProxy("science_change_heater_auto_shutoff_state", SetBool)
             # self.capture_photo_srv = rospy.ServiceProxy("capture_photo", CapturePhoto)
->>>>>>> origin/integration
 
             # ROS Parameters
             self.mappings = rospy.get_param("teleop/joystick_mappings")
@@ -211,13 +188,6 @@ class GUIConsumer(JsonWebsocketConsumer):
             elif message["type"] == "max_streams":
                 self.send_res_streams()
             elif message["type"] == "sendCameras":
-<<<<<<< HEAD
-                self.change_cameras(msg=message)
-            elif message["type"] == "center_map":
-                self.send_center()
-            elif message["type"] == "enable_limit_switch":
-                self.limit_switch(message)
-=======
                 self.change_cameras(message)
             elif message["type"] == "takePanorama":
                 self.capture_panorama()
@@ -227,7 +197,6 @@ class GUIConsumer(JsonWebsocketConsumer):
                 self.heater_enable_service(message)
             elif message["type"] == "autoShutoff":
                 self.auto_shutoff_toggle(message)
->>>>>>> origin/integration
             elif message["type"] == "center_map":
                 self.send_center()
             elif message["type"] == "enable_limit_switch":
@@ -307,64 +276,8 @@ class GUIConsumer(JsonWebsocketConsumer):
             controls_names = SA_NAMES
             publishers = sa_pubs
 
-<<<<<<< HEAD
-        elif msg["arm_mode"] == "velocity":
-            sa_velocity_cmd = Velocity()
-            sa_velocity_cmd.names = SA_NAMES
-            sa_velocity_cmd.velocities = [
-                self.to_velocity(
-                    self.filter_xbox_axis(msg["axes"][self.sa_config["sa_x"]["xbox_index"]]), "sa_x", False
-                ),
-                self.to_velocity(
-                    self.filter_xbox_axis(msg["axes"][self.sa_config["sa_y"]["xbox_index"]]), "sa_y", False
-                ),
-                self.to_velocity(
-                    self.filter_xbox_axis(msg["axes"][self.sa_config["sa_z"]["xbox_index"]]), "sa_z", False
-                ),
-                self.sa_config["sampler"]["multiplier"] * (right_trigger - left_trigger),
-                self.sa_config["sensor_actuator"]["multiplier"]
-                * self.filter_xbox_button(msg["buttons"], "right_bumper", "left_bumper"),
-            ]
-
-            self.sa_velocity_cmd_pub.publish(sa_velocity_cmd)
-
-        elif msg["arm_mode"] == "throttle":
-            sa_throttle_cmd = Throttle()
-            sa_throttle_cmd.names = SA_NAMES
-
-            sa_throttle_cmd.throttles = [
-                self.sa_config[name]["multiplier"]
-                * self.filter_xbox_axis(msg["axes"][self.sa_config["sa_x"]["xbox_index"]], 0.15, True),
-                self.sa_config[name]["multiplier"]
-                * self.filter_xbox_axis(msg["axes"][self.sa_config["sa_y"]["xbox_index"]], 0.15, True),
-                self.sa_config[name]["multiplier"]
-                * self.filter_xbox_axis(msg["axes"][self.sa_config["sa_z"]["xbox_index"]], 0.15, True),
-            ]
-            sa_throttle_cmd.throttles.extend(
-                [
-                    self.sa_config["sampler"]["multiplier"] * (right_trigger - left_trigger),
-                    self.sa_config["sensor_actuator"]["multiplier"]
-                    * self.filter_xbox_button(msg["buttons"], "right_bumper", "left_bumper"),
-                ]
-            )
-
-            fast_mode_activated = msg["buttons"][self.xbox_mappings["a"]] or msg["buttons"][self.xbox_mappings["b"]]
-            if not fast_mode_activated:
-                for i, name in enumerate(SA_NAMES):
-                    # When going up (vel > 0) with SA joint 2, we DON'T want slow mode.
-                    if not (name == "sa_y" and sa_throttle_cmd.throttles[i] > 0):
-                        sa_throttle_cmd.throttles[i] *= self.sa_config[name]["slow_mode_multiplier"]
-
-            self.sa_throttle_cmd_pub.publish(sa_throttle_cmd)
-
-    def handle_arm_message(self, msg):
-        ra_slow_mode = False
-        if msg["arm_mode"] == "ik":
-            base_link_in_map = SE3.from_tf_tree(self.tf_buffer, "map", "base_link")
-=======
         if msg["arm_mode"] == "ik":
             ee_in_map = SE3.from_tf_tree(self.tf_buffer, "base_link", "arm_e_link")
->>>>>>> origin/integration
 
             left_trigger = self.filter_xbox_axis(msg["axes"][self.xbox_mappings["left_trigger"]])
             if left_trigger < 0:
@@ -373,23 +286,6 @@ class GUIConsumer(JsonWebsocketConsumer):
             right_trigger = self.filter_xbox_axis(msg["axes"][self.xbox_mappings["right_trigger"]])
             if right_trigger < 0:
                 right_trigger = 0
-<<<<<<< HEAD
-            base_link_in_map.position[0] += (
-                self.ik_names["x"] * self.filter_xbox_axis(msg["axes"][self.xbox_mappings["left_js_x"]]),
-            )
-            base_link_in_map.position[1] += (
-                self.ik_names["y"] * self.filter_xbox_axis(msg["axes"][self.xbox_mappings["left_js_y"]]),
-            )
-            base_link_in_map.position[2] -= self.ik_names["z"] * left_trigger + self.ik_names["z"] * right_trigger
-
-            arm_ik_cmd = IK(
-                pose=Pose(
-                    position=Point(*base_link_in_map.position),
-                    orientation=Quaternion(*base_link_in_map.rotation.quaternion),
-                )
-            )
-            self.arm_ik_pub.publish(arm_ik_cmd)
-=======
             ee_in_map.position[0] += (
                 self.ik_names["x"] * self.filter_xbox_axis(msg["axes"][self.xbox_mappings["left_js_x"]]),
             )
@@ -405,7 +301,6 @@ class GUIConsumer(JsonWebsocketConsumer):
                 )
             )
             publishers[3].publish(arm_ik_cmd)
->>>>>>> origin/integration
 
         elif msg["arm_mode"] == "position":
             position_names = controls_names
@@ -477,17 +372,6 @@ class GUIConsumer(JsonWebsocketConsumer):
                 elif d_pad_x < -0.5:
                     ra_slow_mode = False
 
-<<<<<<< HEAD
-            arm_throttle_cmd.throttles = [
-                self.filter_xbox_axis(msg["axes"][self.ra_config["joint_a"]["xbox_index"]]),
-                self.filter_xbox_axis(msg["axes"][self.ra_config["joint_b"]["xbox_index"]]),
-                self.filter_xbox_axis(msg["axes"][self.ra_config["joint_c"]["xbox_index"]]),
-                (self.filter_xbox_axis(msg["axes"][2]) - self.filter_xbox_axis(msg["axes"][5])) * 0.3,
-                (self.filter_xbox_button(msg["buttons"], "right_bumper", "left_bumper")) * 0.3,
-                self.ra_config["allen_key"]["multiplier"] * self.filter_xbox_button(msg["buttons"], "y", "a"),
-                self.ra_config["gripper"]["multiplier"] * self.filter_xbox_button(msg["buttons"], "b", "x"),
-            ]
-=======
                 throttle_cmd.throttles = [
                     self.filter_xbox_axis(msg["axes"][self.ra_config["joint_a"]["xbox_index"]]),
                     self.filter_xbox_axis(msg["axes"][self.ra_config["joint_b"]["xbox_index"]]),
@@ -497,7 +381,6 @@ class GUIConsumer(JsonWebsocketConsumer):
                     self.ra_config["allen_key"]["multiplier"] * self.filter_xbox_button(msg["buttons"], "y", "a"),
                     self.ra_config["gripper"]["multiplier"] * self.filter_xbox_button(msg["buttons"], "b", "x"),
                 ]
->>>>>>> origin/integration
 
                 for i, name in enumerate(self.RA_NAMES):
                     if ra_slow_mode:
@@ -780,13 +663,7 @@ class GUIConsumer(JsonWebsocketConsumer):
     def change_cameras(self, msg):
         try:
             camera_cmd = CameraCmd(msg["device"], msg["resolution"])
-<<<<<<< HEAD
-            rospy.logerr(camera_cmd)
             result = self.change_cameras_srv(primary=msg["primary"], camera_cmd=camera_cmd)
-            rospy.logerr(result)
-=======
-            result = self.change_cameras_srv(primary=msg["primary"], camera_cmd=camera_cmd)
->>>>>>> origin/integration
         except rospy.ServiceException as e:
             print(f"Service call failed: {e}")
 
@@ -800,28 +677,6 @@ class GUIConsumer(JsonWebsocketConsumer):
         try:
             response = self.capture_panorama_srv()
             image = response.panorama
-<<<<<<< HEAD
-            self.image_callback(image)
-        except rospy.ServiceException as e:
-            print(f"Service call failed: {e}")
-
-    def image_callback(self, msg):
-        bridge = CvBridge()
-        try:
-            # Convert the image to OpenCV standard format
-            cv_image = bridge.imgmsg_to_cv2(msg, desired_encoding="passthrough")
-        except Exception as e:
-            rospy.logerr("Could not convert image message to OpenCV image: " + str(e))
-            return
-
-        # Save the image to a file (you could change 'png' to 'jpg' or other formats)
-        image_filename = "panorama.png"
-        try:
-            cv2.imwrite(image_filename, cv_image)
-            rospy.loginfo("Saved image to {}".format(image_filename))
-        except Exception as e:
-            rospy.logerr("Could not save image: " + str(e))
-=======
             # self.image_callback(image)
         except rospy.ServiceException as e:
             print(f"Service call failed: {e}")
@@ -869,7 +724,6 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.send(text_data=json.dumps({"type": "auto_shutoff", "success": result.success}))
         except rospy.ServiceException as e:
             print(f"Service call failed: {e}")
->>>>>>> origin/integration
 
     def send_center(self):
         lat = rospy.get_param("gps_linearization/reference_point_latitude")
