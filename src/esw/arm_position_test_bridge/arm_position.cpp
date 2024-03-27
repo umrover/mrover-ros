@@ -53,10 +53,10 @@ auto main(int argc, char** argv) -> int {
         ROS_INFO("****BEGIN BASIC AUTON ARM POSITION TEST****");
 
 
-        ROS_INFO("MOVE A");
+        // ROS_INFO("MOVE A");
 
-        set_arm_position(armPublisher, {0.4, 0, 0, 0, 0, 0, 0}, delay);
-        ROS_INFO("Joint_A: %f", position_data[0]);
+        // set_arm_position(armPublisher, {0.4, 0, 0, 0, 0, 0, 0}, delay);
+        // ROS_INFO("Joint_A: %f", position_data[0]);
         //reset_pos(armPublisher, delay);
 
         // Test forwards limit switch
@@ -75,10 +75,10 @@ auto main(int argc, char** argv) -> int {
         // ROS_INFO("Joint_B: %f", position_data[1]);
         // reset_pos(armPublisher, delay);
 
-        // ROS_INFO("MOVE C");
-        // set_arm_position(armPublisher, {0, 0, -2.0, 0, 0, 0, 0}, delay);
-        // ROS_INFO("Joint_C: %f", position_data[2]);
-        // reset_pos(armPublisher, delay);
+        ROS_INFO("MOVE C");
+        set_arm_position(armPublisher, {0, 0, 2, 0, 0, 0, 0}, delay);
+        ROS_INFO("Joint_C: %f", position_data[2]);
+        reset_pos(armPublisher, delay);
 
         // set_arm_position(armPublisher, {0, 0, 1.7, 0, 0, 0, 0}, delay);
         // ROS_INFO("Joint_C: %f", position_data[2]);
