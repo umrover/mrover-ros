@@ -25,6 +25,12 @@
 
 namespace mrover {
 
+    template<typename E>
+    using Vector2 = Eigen::Matrix<E, 2, 1>;
+
+    template<typename E>
+    using Matrix2 = Eigen::Matrix<E, 2, 2>;
+
     class ArmTranslator {
     public:
         ArmTranslator() = default;
@@ -63,7 +69,7 @@ namespace mrover {
         // RadiansPerSecond mMaxRadPerSecDE0;
         // RadiansPerSecond mMaxRadPerSecDE1;
 
-        std::optional<Eigen::Vector2<Radians>> mJointDePitchRoll;
+        std::optional<Vector2<Radians>> mJointDePitchRoll;
 
         RadiansPerMeter mJointARadiansToMeters;
 

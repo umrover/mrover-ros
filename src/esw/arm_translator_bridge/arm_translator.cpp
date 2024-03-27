@@ -3,7 +3,6 @@
 #include <params_utils.hpp>
 #include <ros/duration.h>
 #include <units/units.hpp>
-#include <params_utils.hpp>
 
 #include <Eigen/LU>
 
@@ -80,8 +79,8 @@ namespace mrover {
         mDeOffsetTimer = nh.createTimer(ros::Duration{1}, &ArmTranslator::updateDeOffsets, this);
     }
 
-    Eigen::Matrix2<Dimensionless> static const PITCH_ROLL_TO_0_1{{1, 1},
-                                                                 {1, -1}};
+    Matrix2<Dimensionless> static const PITCH_ROLL_TO_0_1{{1, 1},
+                                                          {1, -1}};
 
     auto ArmTranslator::processThrottleCmd(Throttle::ConstPtr const& msg) const -> void {
         if (mRawArmNames != msg->names || mRawArmNames.size() != msg->throttles.size()) {
@@ -89,8 +88,8 @@ namespace mrover {
             return;
         }
 
-        Eigen::Vector2<Dimensionless> pitchRollThrottles{msg->throttles.at(mJointDEPitchIndex), msg->throttles.at(mJointDERollIndex)};
-        Eigen::Vector2<Dimensionless> motorThrottles = PITCH_ROLL_TO_0_1 * pitchRollThrottles;
+        Vector2<Dimensionless> pitchRollThrottles{msg->throttles.at(mJointDEPitchIndex), msg->throttles.at(mJointDERollIndex)};
+        Vector2<Dimensionless> motorThrottles = PITCH_ROLL_TO_0_1 * pitchRollThrottles;
 
         Throttle throttle = *msg;
         throttle.names[mJointDEPitchIndex] = "joint_de_0";
@@ -101,7 +100,7 @@ namespace mrover {
     }
 
     constexpr Dimensionless PITCH_ROLL_TO_01_SCALE = 40;
-    Eigen::Matrix2<Dimensionless> static const PITCH_ROLL_TO_01_SCALED = PITCH_ROLL_TO_0_1 * PITCH_ROLL_TO_01_SCALE;
+    Matrix2<Dimensionless> static const PITCH_ROLL_TO_01_SCALED = PITCH_ROLL_TO_0_1 * PITCH_ROLL_TO_01_SCALE;
 
     auto ArmTranslator::processVelocityCmd(Velocity::ConstPtr const& msg) -> void {
         if (mRawArmNames != msg->names || mRawArmNames.size() != msg->velocities.size()) {
@@ -109,8 +108,8 @@ namespace mrover {
             return;
         }
 
-        Eigen::Vector2<RadiansPerSecond> pitchRollVelocities{msg->velocities.at(mJointDEPitchIndex), msg->velocities.at(mJointDERollIndex)};
-        Eigen::Vector2<RadiansPerSecond> motorVelocities = PITCH_ROLL_TO_01_SCALED * pitchRollVelocities;
+        Vector2<RadiansPerSecond> pitchRollVelocities{msg->velocities.at(mJointDEPitchIndex), msg->velocities.at(mJointDERollIndex)};
+        Vector2<RadiansPerSecond> motorVelocities = PITCH_ROLL_TO_01_SCALED * pitchRollVelocities;
 
         Velocity velocity = *msg;
         velocity.names[mJointDEPitchIndex] = "joint_de_0";
@@ -128,8 +127,8 @@ namespace mrover {
             return;
         }
 
-        Eigen::Vector2<RadiansPerSecond> pitchRoll{msg->positions.at(mJointDEPitchIndex), msg->positions.at(mJointDERollIndex)};
-        Eigen::Vector2<RadiansPerSecond> motorPositions = PITCH_ROLL_TO_01_SCALED * pitchRoll;
+        Vector2<RadiansPerSecond> pitchRoll{msg->positions.at(mJointDEPitchIndex), msg->positions.at(mJointDERollIndex)};
+        Vector2<RadiansPerSecond> motorPositions = PITCH_ROLL_TO_01_SCALED * pitchRoll;
 
         Position position = *msg;
         position.names[mJointDEPitchIndex] = "joint_de_0";
@@ -165,7 +164,7 @@ namespace mrover {
     auto ArmTranslator::updateDeOffsets(ros::TimerEvent const&) -> void {
         if (!mJointDePitchRoll) return;
 
-        Eigen::Vector2<Radians> motorPositions = PITCH_ROLL_TO_01_SCALED * mJointDePitchRoll.value();
+        Vector2<Radians> motorPositions = PITCH_ROLL_TO_01_SCALED * mJointDePitchRoll.value();
         {
             AdjustMotor adjust;
             adjust.request.name = "joint_de_0";
