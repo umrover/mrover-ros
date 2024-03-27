@@ -57,7 +57,7 @@
         </button>
       </div>
     </div>
-    <CameraDisplay :streamOrder="streamOrder" :mission="mission"></CameraDisplay>
+    <CameraDisplay :streamOrder="streamOrder" :mission="mission" :names="names" :qualities="qualities"></CameraDisplay>
   </div>
 </template>
 

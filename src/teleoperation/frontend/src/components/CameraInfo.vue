@@ -1,6 +1,6 @@
 <template>
   <div class="shadow my-1 p-3 rounded">
-    <p>{{ name }} • ID: {{ id }}</p>
+    
     <div class="row justify-content-md-left">
       <div class="form-group col-md-4">
         Stream:

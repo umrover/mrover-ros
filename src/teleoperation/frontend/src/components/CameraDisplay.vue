@@ -3,7 +3,7 @@
     <div class="grid-container">
       <div v-for="i in 4" :key="i" :class="'feed' + i">
         <div v-if="i <= numStreams">
-          <CameraFeed :mission="mission" :id="streamOrder[i - 1]"></CameraFeed>
+          <CameraFeed :mission="mission" :id="getID(i)" :name="names[getID(i)]" :quality="qualities[getID(i)]"></CameraFeed>
         </div>
       </div>
     </div>
@@ -19,6 +19,14 @@ export default defineComponent({
     CameraFeed
   },
   props: {
+    name: {
+      type: Array,
+      required: true
+    },
+    id: {
+      type: Array,
+      required: true
+    },
     streamOrder: {
       //array of camera indices to stream. -1 indicates not used
       type: Array,
@@ -32,6 +40,12 @@ export default defineComponent({
   data() {
     return {
       numStreams: 0
+    }
+  },
+
+  computed: {
+    getID(i: number) {
+      return this.streamOrder[i - 1]
     }
   },
 

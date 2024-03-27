@@ -1,16 +1,23 @@
 <template>
   <div class="wrap">
     <canvas :id="'stream-' + id" v-on:click="handleClick"></canvas>
+    <p>{{ name }} • ID: {{ id }}</p>
+    <div class="form-group col-md-4">
+        <label for="quality">Quality:</label>
+        <select
+          v-model="quality"
+          type="number"
+          min="0"
+          max="4"
+          class="form-control"
+          id="quality"
+          @change="changeQuality()"
+        >
+          <option v-for="i in numQuality" :key="i">{{ i - 1 }}</option>
+        </select>
+      </div>
     <Checkbox v-if="mission === 'ik'" :name="'IK Camera'" v-on:toggle="toggleIKMode" />
-    <div v-if="mission === 'sa'" style="display: flex; flex-direction: column">
-      <label for="site">Site on Camera:</label>
-      <select name="site" id="site" v-model="site">
-        <option value="A">A</option>
-        <option value="B">B</option>
-        <option value="C">C</option>
-      </select>
-      <button v-on:click="downloadScreenshot">Capture Screenshot</button>
-    </div>
+    <p>Right Click → 'Save Image As...' to Capture Photo</p>
   </div>
 </template>
 
@@ -21,6 +28,10 @@ import Checkbox from './Checkbox.vue'
 
 export default defineComponent({
   props: {
+    name: {
+      type: String,
+      required: true
+    },
     id: {
       type: Number,
       required: true
@@ -33,6 +44,13 @@ export default defineComponent({
   components: {
     Checkbox
   },
+
+  computed: {
+    isPrimary() {
+      return (this.mission === 'sa') 
+    }
+  },
+
   data() {
     return {
       ws: null as WebSocket | null,
@@ -42,7 +60,8 @@ export default defineComponent({
       IKCam: false,
 
       // SA/ISH Mode
-      site: 'A'
+      site: 'A',
+      quality: 2
     }
   },
 
@@ -92,6 +111,14 @@ export default defineComponent({
       if (this.IKCam && this.mission === 'ik') {
         this.sendMessage({ type: 'start_click_ik', data: { x: event.offsetX, y: event.offsetY } })
       }
+    },
+    changeQuality: function () {
+      this.sendMessage({
+        type: 'sendCameras',
+        primary: this.isPrimary(),
+        device: this.id,
+        resolution: this.quality
+      })
     },
     toggleIKMode: function () {
       this.IKCam = !this.IKCam
