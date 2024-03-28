@@ -87,6 +87,24 @@
       - python3.10-dev
       - python3.10-venv
       - ros-{{ ros_distro }}-rosbash
+      - libbullet-dev
+      - libglfw3-dev
+      - libx11-xcb-dev
+      - libnl-3-dev
+      - libnl-route-3-dev
+      - libtbb-dev
+      - libopencv-dev
+      - libgstreamer1.0-dev
+      - libgstreamer-plugins-base1.0-dev
+
+- name: Install Local APT Packages
+  become: True
+  apt:
+    state: present
+    deb: "{{ catkin_workspace }}/src/mrover/pkg/{{ item }}"
+  with_items:
+    - libmanif-dev.deb
+    - libdawn-dev.deb
 
 - name: Initialize rosdep
   become: True
@@ -114,6 +132,9 @@
 
 - name: Upgrade Bun
   command: ~/.bun/bin/bun upgrade
+
+- name: Install Bun Packages
+  command: ~/.bun/bin/bun install --cwd {{ catkin_workspace }}/src/mrover/src/teleoperation/frontend
 
 - name: Install Catkin Profiles
   synchronize:
@@ -159,6 +180,22 @@
     name: clangd
     path: /usr/bin/clangd-16
     link: /usr/bin/clangd
+    priority: 160
+
+- name: Set LLD 16 as Default
+  become: True
+  alternatives:
+    name: lld
+    path: /usr/bin/lld-16
+    link: /usr/bin/lld
+    priority: 160
+
+- name: Set clang-tidy 16 as Default
+  become: True
+  alternatives:
+    name: clang-tidy
+    path: /usr/bin/clang-tidy-16
+    link: /usr/bin/clang-tidy
     priority: 160
 
 - name: Setup Python Virtual Environment

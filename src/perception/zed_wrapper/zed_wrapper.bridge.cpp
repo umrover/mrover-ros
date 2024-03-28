@@ -6,15 +6,15 @@
 
 namespace mrover {
 
-    constexpr float DEG2RAD = M_PI / 180.0f;
-    constexpr uint64_t NS_PER_S = 1000000000;
+    constexpr static float DEG_TO_RAD = std::numbers::pi_v<float> / 180.0f;
+    constexpr static std::uint64_t NS_PER_S = 1000000000;
 
-    ros::Time slTime2Ros(sl::Timestamp t) {
+    auto slTime2Ros(sl::Timestamp t) -> ros::Time {
         return {static_cast<uint32_t>(t.getNanoseconds() / NS_PER_S),
                 static_cast<uint32_t>(t.getNanoseconds() % NS_PER_S)};
     }
 
-    void fillImageMessage(sl::Mat& bgra, sensor_msgs::ImagePtr const& msg) {
+    auto fillImageMessage(sl::Mat const& bgra, sensor_msgs::ImagePtr const& msg) -> void {
         assert(bgra.getChannels() == 4);
         assert(msg);
 
@@ -29,7 +29,7 @@ namespace mrover {
         checkCudaError(cudaMemcpy(msg->data.data(), bgrGpuPtr, size, cudaMemcpyDeviceToHost));
     }
 
-    void fillImuMessage(sl::SensorsData::IMUData& imuData, sensor_msgs::Imu& msg) {
+    auto fillImuMessage(sl::SensorsData::IMUData& imuData, sensor_msgs::Imu& msg) -> void {
         msg.header.stamp = ros::Time::now();
         msg.orientation.x = imuData.pose.getOrientation().x;
         msg.orientation.y = imuData.pose.getOrientation().y;
@@ -37,13 +37,13 @@ namespace mrover {
         msg.orientation.w = imuData.pose.getOrientation().w;
         for (int i = 0; i < 3; ++i)
             for (int j = 0; j < 3; ++j)
-                msg.orientation_covariance[i * 3 + j] = imuData.pose_covariance(i, j) * DEG2RAD * DEG2RAD;
-        msg.angular_velocity.x = imuData.angular_velocity.x * DEG2RAD;
-        msg.angular_velocity.y = imuData.angular_velocity.y * DEG2RAD;
-        msg.angular_velocity.z = imuData.angular_velocity.z * DEG2RAD;
+                msg.orientation_covariance[i * 3 + j] = imuData.pose_covariance(i, j) * DEG_TO_RAD * DEG_TO_RAD;
+        msg.angular_velocity.x = imuData.angular_velocity.x * DEG_TO_RAD;
+        msg.angular_velocity.y = imuData.angular_velocity.y * DEG_TO_RAD;
+        msg.angular_velocity.z = imuData.angular_velocity.z * DEG_TO_RAD;
         for (int i = 0; i < 3; ++i)
             for (int j = 0; j < 3; ++j)
-                msg.angular_velocity_covariance[i * 3 + j] = imuData.angular_velocity_covariance(i, j) * DEG2RAD * DEG2RAD;
+                msg.angular_velocity_covariance[i * 3 + j] = imuData.angular_velocity_covariance(i, j) * DEG_TO_RAD * DEG_TO_RAD;
         msg.linear_acceleration.x = imuData.linear_acceleration.x;
         msg.linear_acceleration.y = imuData.linear_acceleration.y;
         msg.linear_acceleration.z = imuData.linear_acceleration.z;
@@ -52,7 +52,7 @@ namespace mrover {
                 msg.linear_acceleration_covariance[i * 3 + j] = imuData.linear_acceleration_covariance(i, j);
     }
 
-    void fillMagMessage(sl::SensorsData::MagnetometerData& magData, sensor_msgs::MagneticField& msg) {
+    auto fillMagMessage(sl::SensorsData::MagnetometerData const& magData, sensor_msgs::MagneticField& msg) -> void {
         msg.magnetic_field.x = magData.magnetic_field_calibrated.x;
         msg.magnetic_field.y = magData.magnetic_field_calibrated.y;
         msg.magnetic_field.z = magData.magnetic_field_calibrated.z;
@@ -63,8 +63,8 @@ namespace mrover {
         msg.magnetic_field_covariance[8] = 0.047e-6;
     }
 
-    void fillCameraInfoMessages(sl::CalibrationParameters& calibration, const sl::Resolution& resolution,
-                                sensor_msgs::CameraInfoPtr const& leftInfoMsg, sensor_msgs::CameraInfoPtr const& rightInfoMsg) {
+    auto fillCameraInfoMessages(sl::CalibrationParameters& calibration, sl::Resolution const& resolution,
+                                sensor_msgs::CameraInfoPtr const& leftInfoMsg, sensor_msgs::CameraInfoPtr const& rightInfoMsg) -> void {
         assert(leftInfoMsg);
         assert(rightInfoMsg);
 

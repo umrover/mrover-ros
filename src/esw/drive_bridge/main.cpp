@@ -3,6 +3,7 @@
 
 #include <can_device.hpp>
 #include <motors_group.hpp>
+#include <params_utils.hpp>
 
 using namespace mrover;
 
@@ -11,28 +12,15 @@ void moveDrive(geometry_msgs::Twist::ConstPtr const& msg);
 std::unique_ptr<MotorsGroup> driveManager;
 std::vector<std::string> driveNames{"front_left", "front_right", "middle_left", "middle_right", "back_left", "back_right"};
 
-std::unordered_map<std::string, Dimensionless> motorMultipliers; // Store the multipliers for each motor
-
 Meters WHEEL_DISTANCE_INNER;
 Meters WHEEL_DISTANCE_OUTER;
 compound_unit<Radians, inverse<Meters>> WHEEL_LINEAR_TO_ANGULAR;
 RadiansPerSecond MAX_MOTOR_SPEED;
 
-int main(int argc, char** argv) {
+auto main(int argc, char** argv) -> int {
     // Initialize the ROS node
     ros::init(argc, argv, "drive_bridge");
     ros::NodeHandle nh;
-
-    // Load motor multipliers from the ROS parameter server
-    XmlRpc::XmlRpcValue driveControllers;
-    assert(nh.hasParam("drive/controllers"));
-    nh.getParam("drive/controllers", driveControllers);
-    assert(driveControllers.getType() == XmlRpc::XmlRpcValue::TypeStruct);
-    for (auto const& driveName: driveNames) {
-        assert(driveControllers.hasMember(driveName));
-        assert(driveControllers[driveName].getType() == XmlRpc::XmlRpcValue::TypeStruct);
-        motorMultipliers[driveName] = Dimensionless{xmlRpcValueToTypeOrDefault<double>(driveControllers[driveName], "multiplier", 1.0)};
-    }
 
     // Load rover dimensions and other parameters from the ROS parameter server
     auto roverWidth = requireParamAsUnit<Meters>(nh, "rover/width");
@@ -67,24 +55,20 @@ void moveDrive(geometry_msgs::Twist::ConstPtr const& msg) {
     auto turn = RadiansPerSecond{msg->angular.z};
     // TODO(quintin)    Don't ask me to explain perfectly why we need to cancel out a meters unit in the numerator
     //                  I think it comes from the fact that there is a unit vector in the denominator of the equation
-    auto delta = turn * WHEEL_DISTANCE_INNER / Meters{1};
-    RadiansPerSecond left = forward * WHEEL_LINEAR_TO_ANGULAR - delta;
-    RadiansPerSecond right = forward * WHEEL_LINEAR_TO_ANGULAR + delta;
+    auto delta = turn / Radians{1} * WHEEL_DISTANCE_INNER; // should be in m/s
+    RadiansPerSecond left = (forward - delta) * WHEEL_LINEAR_TO_ANGULAR;
+    RadiansPerSecond right = (forward + delta) * WHEEL_LINEAR_TO_ANGULAR;
 
     std::unordered_map<std::string, RadiansPerSecond> driveCommandVelocities{
-            {"FrontLeft", left},
-            {"FrontRight", right},
-            {"MiddleLeft", left},
-            {"MiddleRight", right},
-            {"BackLeft", left},
-            {"BackRight", right},
+            {"front_left", left},
+            {"front_right", right},
+            {"middle_left", left},
+            {"middle_right", right},
+            {"back_left", left},
+            {"back_right", right},
     };
 
     for (auto [name, angularVelocity]: driveCommandVelocities) {
-        // Set the desired speed for the motor
-        Dimensionless multiplier = motorMultipliers[name];
-        RadiansPerSecond scaledAngularVelocity = angularVelocity * multiplier; // currently in rad/s
-
-        driveManager->getController(name).setDesiredVelocity(scaledAngularVelocity);
+        driveManager->getController(name).setDesiredVelocity(angularVelocity);
     }
 }

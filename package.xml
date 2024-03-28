@@ -18,7 +18,6 @@
   <!-- Example: -->
   <!-- <author email="jane.doe@example.com">Jane Doe</author> -->
 
-
   <!-- The *depend tags are used to specify dependencies -->
   <!-- Dependencies can be catkin packages or system dependencies -->
   <!-- Examples: -->
@@ -50,8 +49,6 @@
   <build_depend>message_generation</build_depend>
   <exec_depend>xacro</exec_depend>
   <exec_depend>robot_state_publisher</exec_depend>
-  <exec_depend>joint_state_publisher</exec_depend>
-  <exec_depend>joint_state_publisher_gui</exec_depend>
   <exec_depend>message_runtime</exec_depend>
 
   <!-- Visualization -->
@@ -67,18 +64,11 @@
   <!-- Localization -->
   <depend>rviz_imu_plugin</depend>
   <depend>robot_localization</depend>
-  <depend>nmea_navsat_driver</depend>
 
   <!-- Navigation -->
-  <depend>smach_ros</depend>
-  <depend>control_msgs</depend>
 
-  <!-- Teleop -->
+  <!-- Utility -->
   <exec_depend>teleop_twist_joy</exec_depend>
-
-  <!-- Simulation -->
-  <depend>gazebo_ros</depend>
-  <exec_depend>hector_gazebo</exec_depend>
   <exec_depend>teleop_twist_keyboard</exec_depend>
 
   <!-- Test -->
@@ -87,8 +77,13 @@
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>
+    <nodelet plugin="${prefix}/plugins/object_detector_plugin.xml"/>
     <nodelet plugin="${prefix}/plugins/tag_detector_plugin.xml"/>
     <nodelet plugin="${prefix}/plugins/zed_plugin.xml"/>
+    <nodelet plugin="${prefix}/plugins/long_range_tag_detector_plugin.xml"/>
+    <nodelet plugin="${prefix}/plugins/usb_camera_plugin.xml"/>
     <nodelet plugin="${prefix}/plugins/can.xml"/>
+    <nodelet plugin="${prefix}/plugins/simulator.xml"/>
+    <nodelet plugin="${prefix}/plugins/gst_websocket_streamer.xml"/>
   </export>
 </package>

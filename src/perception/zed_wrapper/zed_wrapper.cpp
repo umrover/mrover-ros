@@ -1,8 +1,9 @@
 #include "zed_wrapper.hpp"
 
-namespace mrover {
+#include <lie.hpp>
+#include <manif/manif.h>
 
-    using namespace std::chrono_literals;
+namespace mrover {
 
     /**
      * Allows us to store enums as strings in the config file.
@@ -13,7 +14,7 @@ namespace mrover {
      * @return          Enum value
      */
     template<typename TEnum>
-    [[nodiscard]] TEnum stringToZedEnum(std::string_view string) {
+    [[nodiscard]] auto stringToZedEnum(std::string_view string) -> TEnum {
         using int_t = std::underlying_type_t<TEnum>;
         for (int_t i = 0; i < static_cast<int_t>(TEnum::LAST); ++i) {
             if (sl::String{string.data()} == sl::toString(static_cast<TEnum>(i))) {
@@ -26,7 +27,7 @@ namespace mrover {
     /**
      * @brief Load config, open the ZED, and start our threads
      */
-    void ZedNodelet::onInit() {
+    auto ZedNodelet::onInit() -> void {
         try {
             // See: http://wiki.ros.org/roscpp/Overview/NodeHandles for public vs. private node handle
             // MT means multithreaded
@@ -122,14 +123,14 @@ namespace mrover {
      * Takes in the GPU pointers to the image and the point cloud.
      * It fuses these into a point cloud 2 message which is published.
      */
-    void ZedNodelet::pointCloudUpdate() {
+    auto ZedNodelet::pointCloudUpdate() -> void {
         try {
             NODELET_INFO("Starting point cloud thread");
 
             while (ros::ok()) {
                 mPcThreadProfiler.beginLoop();
 
-                // TODO: probably bad that this allocation, best case optimized by tcache
+                // TODO(quintin): May be bad to allocate every update, best case optimized by tcache
                 // Needed because publish directly shares the pointer to other nodelets running in this process
                 auto pointCloudMsg = boost::make_shared<sensor_msgs::PointCloud2>();
 
@@ -142,25 +143,22 @@ namespace mrover {
                     mPcThreadProfiler.measureEvent("Wait");
 
                     fillPointCloudMessageFromGpu(mPcMeasures.leftPoints, mPcMeasures.leftImage, mPointCloudGpu, pointCloudMsg);
-                    pointCloudMsg->header.seq = mPointCloudUpdateTick;
                     pointCloudMsg->header.stamp = mPcMeasures.time;
-                    pointCloudMsg->header.frame_id = "zed2i_left_camera_frame";
+                    pointCloudMsg->header.frame_id = "zed_left_camera_frame";
                     mPcThreadProfiler.measureEvent("Fill Message");
 
                     if (mLeftImgPub.getNumSubscribers()) {
                         auto leftImgMsg = boost::make_shared<sensor_msgs::Image>();
                         fillImageMessage(mPcMeasures.leftImage, leftImgMsg);
-                        leftImgMsg->header.frame_id = "zed2i_left_camera_optical_frame";
+                        leftImgMsg->header.frame_id = "zed_left_camera_optical_frame";
                         leftImgMsg->header.stamp = mPcMeasures.time;
-                        leftImgMsg->header.seq = mPointCloudUpdateTick;
                         mLeftImgPub.publish(leftImgMsg);
                     }
                     if (mRightImgPub.getNumSubscribers()) {
                         auto rightImgMsg = boost::make_shared<sensor_msgs::Image>();
                         fillImageMessage(mPcMeasures.rightImage, rightImgMsg);
-                        rightImgMsg->header.frame_id = "zed2i_right_camera_optical_frame";
+                        rightImgMsg->header.frame_id = "zed_right_camera_optical_frame";
                         rightImgMsg->header.stamp = mPcMeasures.time;
-                        rightImgMsg->header.seq = mPointCloudUpdateTick;
                         mRightImgPub.publish(rightImgMsg);
                     }
                     mPcThreadProfiler.measureEvent("Publish Message");
@@ -176,18 +174,14 @@ namespace mrover {
                     auto leftCamInfoMsg = boost::make_shared<sensor_msgs::CameraInfo>();
                     auto rightCamInfoMsg = boost::make_shared<sensor_msgs::CameraInfo>();
                     fillCameraInfoMessages(calibration, mImageResolution, leftCamInfoMsg, rightCamInfoMsg);
-                    leftCamInfoMsg->header.frame_id = "zed2i_left_camera_optical_frame";
+                    leftCamInfoMsg->header.frame_id = "zed_left_camera_optical_frame";
                     leftCamInfoMsg->header.stamp = mPcMeasures.time;
-                    leftCamInfoMsg->header.seq = mPointCloudUpdateTick;
-                    rightCamInfoMsg->header.frame_id = "zed2i_right_camera_optical_frame";
+                    rightCamInfoMsg->header.frame_id = "zed_right_camera_optical_frame";
                     rightCamInfoMsg->header.stamp = mPcMeasures.time;
-                    rightCamInfoMsg->header.seq = mPointCloudUpdateTick;
                     mLeftCamInfoPub.publish(leftCamInfoMsg);
                     mRightCamInfoPub.publish(rightCamInfoMsg);
                     mPcThreadProfiler.measureEvent("Image + camera info publish");
                 }
-
-                mPointCloudUpdateTick++;
             }
             NODELET_INFO("Tag thread finished");
 
@@ -206,7 +200,7 @@ namespace mrover {
      * As such we retrieve the image and point cloud on the GPU to send to the other thread for processing.
      * This only happens if the other thread is ready to avoid blocking, hence the try lock.
      */
-    void ZedNodelet::grabUpdate() {
+    auto ZedNodelet::grabUpdate() -> void {
         try {
             NODELET_INFO("Starting grab thread");
             while (ros::ok()) {
@@ -216,8 +210,8 @@ namespace mrover {
                 runtimeParameters.confidence_threshold = mDepthConfidence;
                 runtimeParameters.texture_confidence_threshold = mTextureConfidence;
 
-                if (mZed.grab(runtimeParameters) != sl::ERROR_CODE::SUCCESS)
-                    throw std::runtime_error("ZED failed to grab");
+                if (sl::ERROR_CODE error = mZed.grab(runtimeParameters); error != sl::ERROR_CODE::SUCCESS)
+                    throw std::runtime_error(std::format("ZED failed to grab {}", sl::toString(error).c_str()));
                 mGrabThreadProfiler.measureEvent("Grab");
 
                 // Retrieval has to happen on the same thread as grab so that the image and point cloud are synced
@@ -254,11 +248,11 @@ namespace mrover {
                         sl::Translation const& translation = pose.getTranslation();
                         sl::Orientation const& orientation = pose.getOrientation();
                         try {
-                            SE3 leftCameraInOdom{{translation.x, translation.y, translation.z},
-                                                 Eigen::Quaterniond{orientation.w, orientation.x, orientation.y, orientation.z}.normalized()};
-                            SE3 leftCameraInBaseLink = SE3::fromTfTree(mTfBuffer, "base_link", "zed2i_left_camera_frame");
-                            SE3 baseLinkInOdom = leftCameraInBaseLink * leftCameraInOdom;
-                            SE3::pushToTfTree(mTfBroadcaster, "base_link", "odom", baseLinkInOdom);
+                            SE3d leftCameraInOdom{{translation.x, translation.y, translation.z},
+                                                  Eigen::Quaterniond{orientation.w, orientation.x, orientation.y, orientation.z}.normalized()};
+                            SE3d baseLinkToLeftCamera = SE3Conversions::fromTfTree(mTfBuffer, "base_link", "zed_left_camera_frame");
+                            SE3d baseLinkInOdom = leftCameraInOdom * baseLinkToLeftCamera;
+                            SE3Conversions::pushToTfTree(mTfBroadcaster, "base_link", "odom", baseLinkInOdom);
                         } catch (tf2::TransformException& e) {
                             NODELET_WARN_STREAM("Failed to get transform: " << e.what());
                         }
@@ -275,21 +269,17 @@ namespace mrover {
 
                     sensor_msgs::Imu imuMsg;
                     fillImuMessage(sensorData.imu, imuMsg);
-                    imuMsg.header.frame_id = "zed2i_mag_frame";
+                    imuMsg.header.frame_id = "zed_mag_frame";
                     imuMsg.header.stamp = ros::Time::now();
-                    imuMsg.header.seq = mGrabUpdateTick;
                     mImuPub.publish(imuMsg);
 
                     sensor_msgs::MagneticField magMsg;
                     fillMagMessage(sensorData.magnetometer, magMsg);
-                    magMsg.header.frame_id = "zed2i_mag_frame";
+                    magMsg.header.frame_id = "zed_mag_frame";
                     magMsg.header.stamp = ros::Time::now();
-                    magMsg.header.seq = mGrabUpdateTick;
                     mMagPub.publish(magMsg);
                     mGrabThreadProfiler.measureEvent("Sensor data");
                 }
-
-                mGrabUpdateTick++;
             }
 
             mZed.close();
@@ -309,11 +299,11 @@ namespace mrover {
         mGrabThread.join();
     }
 
-    ZedNodelet::Measures::Measures(ZedNodelet::Measures&& other) noexcept {
+    ZedNodelet::Measures::Measures(Measures&& other) noexcept {
         *this = std::move(other);
     }
 
-    ZedNodelet::Measures& ZedNodelet::Measures::operator=(ZedNodelet::Measures&& other) noexcept {
+    auto ZedNodelet::Measures::operator=(Measures&& other) noexcept -> Measures& {
         sl::Mat::swap(other.leftImage, leftImage);
         sl::Mat::swap(other.rightImage, rightImage);
         sl::Mat::swap(other.leftPoints, leftPoints);
@@ -321,20 +311,3 @@ namespace mrover {
         return *this;
     }
 } // namespace mrover
-
-int main(int argc, char** argv) {
-    ros::init(argc, argv, "zed_wrapper");
-
-    // Start the ZED Nodelet
-    nodelet::Loader nodelet;
-    nodelet.load(ros::this_node::getName(), "mrover/ZedNodelet", ros::names::getRemappings(), {});
-
-    ros::spin();
-
-    return EXIT_SUCCESS;
-}
-
-#ifdef MROVER_IS_NODELET
-#include <pluginlib/class_list_macros.h>
-PLUGINLIB_EXPORT_CLASS(mrover::ZedNodelet, nodelet::Nodelet)
-#endif

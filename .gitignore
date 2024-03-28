@@ -21,6 +21,7 @@ yarn.lock*
 yarn-error.log*
 bun.lock*
 package-lock.json*
+db.sqlite3
 
 # Bag Files
 /bags/
@@ -38,3 +39,6 @@ moteus-cal*
 
 # clangd
 .cache/
+
+# macOS
+.DS_Store

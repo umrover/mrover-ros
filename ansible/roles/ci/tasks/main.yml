@@ -1,0 +1,192 @@
+# Allows us to install Python versions newer than 3.8
+- name: Add Python PPA
+  become: True
+  apt_repository:
+    repo: ppa:deadsnakes/ppa
+
+# Allows us to install G++13, so we can use an updated libstdc++ which provides more standard library features (C++20)
+- name: Add GCC PPA
+  become: True
+  apt_repository:
+    repo: ppa:ubuntu-toolchain-r/test
+
+- name: Add LLVM APT Key
+  become: True
+  apt_key:
+    url: https://apt.llvm.org/llvm-snapshot.gpg.key
+
+# Allows us to install Clang 16 and other LLVM tools
+- name: Add LLVM APT List
+  become: True
+  apt_repository:
+    repo: deb http://apt.llvm.org/{{ ubuntu_release }}/ llvm-toolchain-{{ ubuntu_release }}-16 main
+    filename: llvm
+
+- name: Add CMake APT Key
+  become: True
+  apt_key:
+    url: https://apt.kitware.com/keys/kitware-archive-latest.asc
+    keyring: /usr/share/keyrings/kitware-archive-keyring.gpg
+
+# Allows us to install CMake versions newer than 3.16
+- name: Add CMake APT List
+  become: True
+  apt_repository:
+    repo: deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/ubuntu/ {{ ubuntu_release }} main
+    filename: kitware
+
+- name: Add ROS APT Key
+  become: True
+  apt_key:
+    url: https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc
+
+- name: Add ROS APT List
+  become: True
+  apt_repository:
+    repo: deb http://packages.ros.org/ros/ubuntu {{ ubuntu_release }} main
+    filename: ros
+
+- name: Upgrade APT Packages
+  become: True
+  apt:
+    cache_valid_time: 604800
+    state: latest
+    upgrade: yes
+
+- name: Install APT Packages
+  become: True
+  apt:
+    cache_valid_time: 604800
+    state: latest
+    name:
+      - cmake
+      - rsync
+      - python3-rosdep
+      - python3-catkin-tools
+      - clang-16
+      - clang-tidy-16
+      - clang-format-16
+      - lld-16
+      - gcc-13
+      - g++-13
+      - python3.10
+      - python3.10-dev
+      - python3.10-venv
+      - libbullet-dev
+      - libglfw3-dev
+      - libx11-xcb-dev
+      - libnl-3-dev
+      - libnl-route-3-dev
+      - libtbb-dev
+      - libopencv-dev
+      - libgstreamer1.0-dev
+      - libgstreamer-plugins-base1.0-dev
+
+- name: Install Local APT Packages
+  become: True
+  apt:
+    state: present
+    deb: "{{ catkin_workspace }}/src/mrover/pkg/{{ item }}"
+  with_items:
+    - libmanif-dev.deb
+    - libdawn-dev.deb
+
+- name: Initialize rosdep
+  become: True
+  command: rosdep init
+  args:
+    # This command will be skipped if this file already exists
+    creates: /etc/ros/rosdep/sources.list.d/20-default.list
+
+- name: Update rosdep
+  command: rosdep update
+
+- name: Install ROS Packages
+  command: rosdep install --from-paths {{ catkin_workspace }}/src --ignore-src -y --rosdistro={{ ros_distro }}
+
+#- name: Download Bun Installer
+#  get_url:
+#    url: https://bun.sh/install
+#    dest: /tmp/bun_installer.sh
+#    mode: 0755
+#
+#- name: Run Bun Installer
+#  command: /tmp/bun_installer.sh
+#  args:
+#    creates: ~/.bun/bin/bun
+#
+#- name: Upgrade Bun
+#  command: ~/.bun/bin/bun upgrade
+#
+#- name: Install Bun Packages
+#  command: ~/.bun/bin/bun install --cwd {{ catkin_workspace }}/src/mrover/src/teleoperation/frontend
+
+#- name: Install Catkin Profiles
+#  synchronize:
+#    src: files/profiles
+#    dest: "{{ catkin_workspace }}/.catkin_tools"
+#    recursive: true
+
+- name: Set G++ 13 as Default
+  become: True
+  alternatives:
+    name: g++
+    path: /usr/bin/g++-13
+    link: /usr/bin/g++
+    priority: 130
+
+- name: Set GCC 13 as Default
+  become: True
+  alternatives:
+    name: gcc
+    path: /usr/bin/gcc-13
+    link: /usr/bin/gcc
+    priority: 130
+
+- name: Set Clang++ 16 as Default
+  become: True
+  alternatives:
+    name: clang++
+    path: /usr/bin/clang++-16
+    link: /usr/bin/clang++
+    priority: 160
+
+- name: Set Clang 16 as Default
+  become: True
+  alternatives:
+    name: clang
+    path: /usr/bin/clang-16
+    link: /usr/bin/clang
+    priority: 160
+
+#- name: Set clangd 16 as Default
+#  become: True
+#  alternatives:
+#    name: clangd
+#    path: /usr/bin/clangd-16
+#    link: /usr/bin/clangd
+#    priority: 160
+
+- name: Set LLD 16 as Default
+  become: True
+  alternatives:
+    name: lld
+    path: /usr/bin/lld-16
+    link: /usr/bin/lld
+    priority: 160
+
+- name: Set clang-tidy 16 as Default
+  become: True
+  alternatives:
+    name: clang-tidy
+    path: /usr/bin/clang-tidy-16
+    link: /usr/bin/clang-tidy
+    priority: 160
+
+- name: Setup Python Virtual Environment
+  pip:
+    name:
+      # Installs from pyproject.toml
+      - "{{ catkin_workspace }}/src/mrover[dev]"
+    virtualenv: "{{ catkin_workspace }}/src/mrover/venv"
+    virtualenv_command: /usr/bin/python3.10 -m venv

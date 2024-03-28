@@ -17,14 +17,14 @@ std::unique_ptr<ros::Publisher> heaterDataPublisher;
 std::unique_ptr<ros::Publisher> spectralDataPublisher;
 std::unique_ptr<ros::Publisher> thermistorDataPublisher;
 
-bool changeHeaterAutoShutoffState(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) {
+auto changeHeaterAutoShutoffState(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) -> bool {
     scienceCanDevice->publish_message(mrover::InBoundScienceMessage{mrover::HeaterAutoShutOffCommand{.enable_auto_shutoff = static_cast<bool>(req.data)}});
     res.success = true;
     res.message = "DONE";
     return true;
 }
 
-bool enableScienceDeviceCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res, mrover::ScienceDevice scienceDevice) {
+auto enableScienceDeviceCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res, mrover::ScienceDevice scienceDevice) -> bool {
     scienceCanDevice->publish_message(mrover::InBoundScienceMessage{mrover::EnableScienceDeviceCommand{.science_device = scienceDevice, .enable = static_cast<bool>(req.data)}});
     res.success = true;
     res.message = "DONE";
@@ -73,7 +73,7 @@ void processCANData(mrover::CAN::ConstPtr const& msg) {
 }
 
 
-int main(int argc, char** argv) {
+auto main(int argc, char** argv) -> int {
     // Initialize the ROS node
     ros::init(argc, argv, "science_bridge");
     ros::NodeHandle nh;
@@ -112,7 +112,7 @@ int main(int argc, char** argv) {
     spectralDataPublisher = std::make_unique<ros::Publisher>(nh.advertise<mrover::SpectralGroup>("science_spectral", 1));
     thermistorDataPublisher = std::make_unique<ros::Publisher>(nh.advertise<mrover::ScienceThermistors>("science_thermistors", 1));
 
-    ros::Subscriber CANSubscriber = nh.subscribe<mrover::CAN>("can/pdlb/in", 1, processCANData);
+    ros::Subscriber CANSubscriber = nh.subscribe<mrover::CAN>("can/science/in", 1, processCANData);
 
     // Enter the ROS event loop
     ros::spin();

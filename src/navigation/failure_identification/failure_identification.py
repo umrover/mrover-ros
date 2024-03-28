@@ -8,9 +8,8 @@ import numpy as np
 import pandas as pd
 import rospy
 from geometry_msgs.msg import Twist
-from mrover.msg import MotorsStatus
+from mrover.msg import MotorsStatus, StateMachineStateUpdate
 from nav_msgs.msg import Odometry
-from smach_msgs.msg import SmachContainerStatus
 from std_msgs.msg import Bool
 
 from util.ros_utils import get_rosparam
@@ -39,11 +38,9 @@ class FailureIdentifier:
     last_recorded_recovery_time: Optional[rospy.Time] = None
 
     def __init__(self):
-        nav_status_sub = message_filters.Subscriber("smach/container_status", SmachContainerStatus)
-        cmd_vel_sub = rospy.Subscriber("cmd_vel", Twist, self.cmd_vel_update)
+        nav_status_sub = message_filters.Subscriber("nav_state", StateMachineStateUpdate)
         drive_status_sub = message_filters.Subscriber("drive_status", MotorsStatus)
         odometry_sub = message_filters.Subscriber("global_ekf/odometry", Odometry)
-        stuck_button_sub = rospy.Subscriber("/rover_stuck", Bool, self.stuck_button_update)
 
         ts = message_filters.ApproximateTimeSynchronizer(
             [nav_status_sub, drive_status_sub, odometry_sub], 10, 1.0, allow_headerless=True
@@ -70,7 +67,6 @@ class FailureIdentifier:
             + wheel_velocity_variables
             + command_variables
         )
-        print(self.cols)
         self._df = pd.DataFrame(columns=self.cols)
         self.watchdog = WatchDog()
         self.path_name = None  # type: ignore
@@ -81,7 +77,7 @@ class FailureIdentifier:
         """
         if self.actively_collecting and self.data_collecting_mode:
             # append to csv if csv exists else write to csv
-            rospy.loginfo("writing to file")
+            rospy.loginfo("Writing to file")
             if self.path_name is None:
                 path = Path.cwd() / "failure_data"
                 path.mkdir(exist_ok=True)
@@ -92,17 +88,17 @@ class FailureIdentifier:
                 self.path_name = path
                 self._df.to_csv(path)
 
-                rospy.loginfo("===== failure data written to csv =====")
+                rospy.loginfo("===== Failure data written to CSV =====")
             else:
                 self._df.to_csv(self.path_name, mode="a", header=False)
 
-    def stuck_button_update(self, stuck_button: Bool):
+    def stuck_button_update(self, stuck_button: Bool) -> None:
         self.cur_stuck = stuck_button.data
 
-    def cmd_vel_update(self, cmd_vel: Twist):
+    def cmd_vel_update(self, cmd_vel: Twist) -> None:
         self.cur_cmd = cmd_vel
 
-    def update(self, nav_status: SmachContainerStatus, drive_status: MotorsStatus, odometry: Odometry):
+    def update(self, nav_status: StateMachineStateUpdate, drive_status: MotorsStatus, odometry: Odometry) -> None:
         """
         Updates the current row of the data frame with the latest data from the rover
         then appends the row to the data frame
@@ -113,10 +109,10 @@ class FailureIdentifier:
         publishes a message to the /nav_stuck topic indicating if the rover is stuck
         """
 
+        # test recovery state using the stuck button on the GUI rather than analyzing data
         TEST_RECOVERY_STATE = get_rosparam("failure_identification/test_recovery_state", False)
-
         # if the state is 'done' or 'off', write the data frame to a csv file if we were collecting
-        if nav_status.active_states[0] == "DoneState" or nav_status.active_states[0] == "OffState":
+        if nav_status.state == "DoneState" or nav_status.state == "OffState":
             self.write_to_csv()
             if self.actively_collecting and self.data_collecting_mode:
                 self.actively_collecting = False
@@ -164,7 +160,7 @@ class FailureIdentifier:
             cur_row[f"wheel_{wheel_num}_velocity"] = drive_status.joint_states.velocity[wheel_num]
 
         # update the data frame with the cur row
-        self._df = pd.concat([self._df, pd.DataFrame([cur_row])])
+        self._df = pd.concat([self._df, pd.DataFrame([cur_row])]) if self._df.size else pd.DataFrame([cur_row])
 
         if len(self._df) == DATAFRAME_MAX_SIZE:
             self.write_to_csv()
@@ -174,7 +170,7 @@ class FailureIdentifier:
         # publish the watchdog status if the nav state is not recovery
         if TEST_RECOVERY_STATE:
             self.stuck_publisher.publish(Bool(self.cur_stuck))
-        elif nav_status.active_states[0] != "RecoveryState":
+        elif nav_status.state != "RecoveryState":
             if (
                 self.last_recorded_recovery_time is None
                 or rospy.Time.now() - self.last_recorded_recovery_time > rospy.Duration(POST_RECOVERY_GRACE_PERIOD)

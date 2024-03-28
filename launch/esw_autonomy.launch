@@ -1,0 +1,3 @@
+<launch>
+    <rosparam command="load" file="$(find mrover)/config/esw.yaml" />
+</launch>

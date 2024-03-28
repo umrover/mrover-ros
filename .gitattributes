@@ -1,6 +1,18 @@
 text=auto
+# Image files
 *.png filter=lfs diff=lfs merge=lfs -text
+# Model files
 *.dae filter=lfs diff=lfs merge=lfs -text
-*.blend filter=lfs diff=lfs merge=lfs -text
 *.stl filter=lfs diff=lfs merge=lfs -text
+*.blend filter=lfs diff=lfs merge=lfs -text
+# Neural network files
+*.pt filter=lfs diff=lfs merge=lfs -text
+*.onnx filter=lfs diff=lfs merge=lfs -text
+*.engine filter=lfs diff=lfs merge=lfs -text
+# Model files
+*.glb filter=lfs diff=lfs merge=lfs -text
+*.fbx filter=lfs diff=lfs merge=lfs -text
+# Packages
+*.deb filter=lfs diff=lfs merge=lfs -text
+# Program files
 ansible/roles/esw/files/bin/fdcanusb_daemon filter=lfs diff=lfs merge=lfs -text
