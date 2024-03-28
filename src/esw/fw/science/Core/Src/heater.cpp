@@ -7,14 +7,14 @@
 
 namespace mrover {
 
-    constexpr static float MAX_HEATER_TEMP = 65.0f;
-    constexpr static int MAX_HEATER_WATCHDOG_TICK = 3000;
+    constexpr static float MAX_HEATER_TEMP = 50.0f;
+    constexpr static int MAX_HEATER_WATCHDOG_TICK = 1000;
 
     Heater::Heater(DiagTempSensor const& diag_temp_sensor, Pin const& heater_pin)
     	: m_diag_temp_sensor(std::move(diag_temp_sensor)),
 		  m_heater_pin(std::move(heater_pin)),
 		  m_state(false),
-		  m_auto_shutoff_enabled(true),
+		  m_auto_shutoff_enabled(true),  // TODO - may want to make true if thermistors work
 		  m_last_time_received_message(0)
 	   {}
 
@@ -68,4 +68,3 @@ namespace mrover {
     }
 
 } // namespace mrover
-
