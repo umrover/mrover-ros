@@ -97,6 +97,7 @@ namespace mrover {
                     assert(motor);
                     motor->setMaxAppliedImpulse(0.5);
                     motor->setPositionTarget(position, 0.05);
+                    ROS_INFO("Gimbal going to position target");
                 } else if (name == "mast_gimbal_y") {
 
                 } else {

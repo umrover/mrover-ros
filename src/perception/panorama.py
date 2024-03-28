@@ -6,17 +6,18 @@ import struct
 import cv2
 import numpy as np
 import collections
-from sensor_msgs.msg import PointCloud2, PointField
+from sensor_msgs.msg import PointCloud2, PointField, Image
 from mrover.msg import MotorsStatus, Throttle, Position
 
 import rospy
 import sys
 import actionlib
+import pcl
 
 import cv2 as cv
 from cv_bridge import CvBridge
 
-from mrover.srv import CapturePanorama, CapturePanoramaRequest, CapturePanoramaResponse
+from mrover.msg import CapturePanoramaAction, CapturePanoramaActionFeedback, CapturePanoramaGoal
 from sensor_msgs.point_cloud2 import PointCloud2
 from sensor_msgs import point_cloud2
 
@@ -43,18 +44,15 @@ pftype_sizes = {
     PointField.FLOAT64: 8,
 }
 
-class PanoramaAction:
+class Panorama:
 
     def __init__(self, name):
         self._action_name = name
-        self._as = actionlib.SimpleActionServer(self._action_name, CapturePanorama, execute_cb=self.capture_panorama, auto_start=False)
+        self._as = actionlib.SimpleActionServer(self._action_name, CapturePanoramaAction, execute_cb=self.capture_panorama, auto_start=False)
         self.stitcher = cv2.Stitcher.create()
+        self.img_arr = []
         # TODO: Why no auto start?
         self._as.start()
-
-        self.position_subscriber = rospy.Subscriber("/mast_status", MotorsStatus, self.get_latest_position, callback_args = Position, queue_size=1)
-        image_subscriber = rospy.Subscriber("/camera/left/points", PointCloud2, self.received_point_cloud, queue_size=1)
-        mast_throttle = rospy.Publisher("/mast_gimbal_position_cmd", Position, queue_size=1)
 
     def fields_to_dtype(fields, point_step):
         """Convert a list of PointFields to a numpy record datatype."""
@@ -84,7 +82,7 @@ class PanoramaAction:
     def pointcloud2_to_array(cloud_msg, squeeze=True):
         """Converts a rospy PointCloud2 message to a numpy recordarray
 
-        Reshapes the returned array to have shape (height, width), even if the hei"""  """ght is 1.
+        Reshapes the returned array to have shape (height, width), even if the height is 1.
 
         The reason for using np.frombuffer rather than struct.unpack is speed... especially
         for large point clouds, this will be <much> faster.
@@ -145,10 +143,22 @@ class PanoramaAction:
     #     latest_position = status.joint_states.position
     #     return latest_position
 
-    def capture_panorama(self, request: CapturePanoramaRequest) -> CapturePanoramaResponse:
-        image_list = []
-        latestPosition = None
-        targetPosition = 0
+    def image_callback(msg: Image):
+        self.current_img =
+    def capture_panorama(self, goal: CapturePanoramaGoal):
+
+        self.position_subscriber = rospy.Subscriber("/mast_status", MotorsStatus, self.position_callback, callback_args = Position, queue_size=1)
+        self.pc_subscriber = rospy.Subscriber("/mast_camera/left/points", PointCloud2, self.pc_callback, queue_size=1)
+        self.img_subscriber = rospy.Subscriber("/mast_camera/left/image", Image, self.image_callback, queue_size=1)
+        self.mast_pose = rospy.Publisher("/mast_gimbal_position_cmd", Position, queue_size=1)
+
+        # TODO: Don't hardcore or parametrize this?
+        angle_inc = 0.2 # in radians
+        current_angle = 0.0
+        while (current_angle < goal.angle):
+            if not self.current_img:
+                continue
+            image_list.append(cv2.cvtColor((rgb * 255).astype(np.uint8), cv2.COLOR_BGR2RGB))
         def received_point_cloud(point: PointCloud2):
             # Extract RGB field
             pc = pointcloud2_to_array(point)
@@ -158,14 +168,12 @@ class PanoramaAction:
             rgb[..., 0] = pc["r"]
             rgb[..., 1] = pc["g"]
             rgb[..., 2] = pc["b"]
-            image_list.append(cv2.cvtColor((rgb * 255).astype(np.uint8), cv2.COLOR_BGR2RGB))
         # def received_motor_position(status: MotorsStatus):
         #     nonlocal latestPosition
         #     # rospy.loginfo("Received motor position")
         #     mast_throttle.publish(Position(["mast_gimbal_z"], [targetPosition]))
         #     latestPosition = status.joint_states.position
         #     # rospy.loginfo(status.joint_states.position)
-
 
 
         # Wait until mast_status starts publishing
@@ -189,10 +197,10 @@ class PanoramaAction:
 
 def main() -> int:
     rospy.init_node(name="panorama")
-    panorama_server = PanoramaAction(rospy.get_name())
-    panorama_service = rospy.Service("capture_panorama", CapturePanorama, capture_panorama)
+    pano = Panorama(rospy.get_name())
+    # panorama_service = rospy.Service("capture_panorama", CapturePanoramaAction, pano.capture_panorama)
     rospy.spin()
-    return 0
+    # return 0
 
 
 if __name__ == "__main__":

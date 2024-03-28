@@ -1,5 +1,5 @@
-# Request from teleop
-string request
+float32 angle # Panorama sweep angle in radians
 ---
-# panorama feedback image
-sensor_msgs/Image panorama
+float32 percent_done # Percent of the sweep the gimbal has completed
+---
+sensor_msgs/Image panorama # panorama feedback image
