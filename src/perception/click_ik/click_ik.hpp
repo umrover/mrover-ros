@@ -8,6 +8,7 @@ namespace mrover {
         ros::NodeHandle mNh, mPnh;
         ros::Subscriber mPcSub;
         ros::Publisher mIkPub;
+        ros::Subscriber mStatusSub;
         actionlib::SimpleActionServer<mrover::ClickIkAction> server = actionlib::SimpleActionServer<mrover::ClickIkAction>(mNh, "do_click_ik", false);
 
         IK message;
@@ -30,6 +31,7 @@ namespace mrover {
         void onInit() override;
 
         auto pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg) -> void;
+        void statusCallback(ArmStatus const&);
 
         void startClickIk();
         void cancelClickIk();

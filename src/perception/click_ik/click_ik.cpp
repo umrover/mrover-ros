@@ -62,6 +62,9 @@ namespace mrover {
         // IK Publisher
         mIkPub = mNh.advertise<IK>("/arm_ik", 1);
 
+        // ArmStatus subscriber
+        mStatusSub = mNh.subscribe("arm_status", 1, &ClickIkNodelet::statusCallback, this);
+
         ROS_INFO("Starting action server");
         server.registerGoalCallback([this]() { startClickIk(); });
         server.registerPreemptCallback([this] { cancelClickIk(); });
@@ -119,6 +122,14 @@ namespace mrover {
         return std::make_optional<Point>(point);
     }
 
-
+    void ClickIkNodelet::statusCallback(ArmStatus const& status) {
+        if (!status.status) {
+            cancelClickIk();
+            ClickIkResult result;
+            result.success = false;
+            server.setAborted(result, "Arm position unreachable");
+            NODELET_WARN("Arm position unreachable");
+        }
+    }
     
 } // namespace mrover

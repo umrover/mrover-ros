@@ -13,3 +13,4 @@
 #include <mrover/IK.h>
 #include <mrover/Position.h>
 #include <lie.hpp>
+#include <mrover/ArmStatus.h>
