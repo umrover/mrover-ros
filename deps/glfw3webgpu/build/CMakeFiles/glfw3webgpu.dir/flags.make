@@ -4,7 +4,7 @@
 # compile C with /usr/bin/cc
 C_DEFINES = 
 
-C_INCLUDES = -I/home/john/catkin_ws/src/mrover/deps/glfw3webgpu/.
+C_INCLUDES = -I/home/john/catkin_ws/src/mrover/deps/glfw3webgpu/include
 
 C_FLAGS = 
 

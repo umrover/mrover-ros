@@ -19,11 +19,10 @@ set(${PROJECT_NAME}_LIBRARIES "${CMAKE_INSTALL_PREFIX}/lib")
 # Set the include directory relative to install path
 set(${PROJECT_NAME}_INSTALL_INCLUDE_DIRS "${CMAKE_INSTALL_PREFIX}/include")
 
-target_include_directories  (
-                              glfw3webgpu 
-                                PRIVATE 
-                                  .
-                            )
+target_include_directories(${PROJECT_NAME} PUBLIC
+              $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+			  $<INSTALL_INTERFACE:include>  # <prefix>/include/mylib
+)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${${PROJECT_NAME}_INSTALL_INCLUDE_DIRS})
 

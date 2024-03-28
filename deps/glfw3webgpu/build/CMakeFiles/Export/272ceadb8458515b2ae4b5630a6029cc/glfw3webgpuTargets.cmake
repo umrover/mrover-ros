@@ -57,7 +57,7 @@ endif()
 add_library(::glfw3webgpu STATIC IMPORTED)
 
 set_target_properties(::glfw3webgpu PROPERTIES
-  INTERFACE_INCLUDE_DIRECTORIES "/home/john/catkin_ws/src/mrover/deps/glfw3webgpu/install/include"
+  INTERFACE_INCLUDE_DIRECTORIES "/home/john/catkin_ws/src/mrover/deps/glfw3webgpu/install/include;/home/john/catkin_ws/src/mrover/deps/glfw3webgpu/install/include"
   INTERFACE_LINK_LIBRARIES "glfw;webgpu"
 )
 
