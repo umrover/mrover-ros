@@ -29,7 +29,7 @@ from mrover.msg import (
     LanderAlignAction,
     LanderAlignGoal
 )
-from mrover.srv import EnableAuton, ChangeCameras, CapturePanorama
+from mrover.srv import EnableAuton, ChangeCameras
 from sensor_msgs.msg import NavSatFix, Temperature, RelativeHumidity, Image
 from mrover.srv import EnableAuton
 from sensor_msgs.msg import NavSatFix, Temperature, RelativeHumidity
@@ -103,7 +103,7 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.cache_enable_limit = rospy.ServiceProxy("cache_enable_limit_switches", SetBool)
             self.calibrate_service = rospy.ServiceProxy("arm_calibrate", Trigger)
             self.change_cameras_srv = rospy.ServiceProxy("change_cameras", ChangeCameras)
-            self.capture_panorama_srv: Any = rospy.ServiceProxy("capture_panorama", CapturePanorama)
+            # self.capture_panorama_srv = rospy.ServiceProxy("capture_panorama", CapturePanorama)
 
             # ROS Parameters
             self.mappings = rospy.get_param("teleop/joystick_mappings")

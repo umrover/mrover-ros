@@ -91,7 +91,7 @@ namespace mrover {
         static auto calcAngleWithWorldX(Eigen::Vector3d xHeading) -> double;
     
     public:
-        void ActionServerCallBack();
+        void ActionServerCallBack(LanderAlignGoalConstPtr const goal);
     };
 
 } // namespace mrover

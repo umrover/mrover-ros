@@ -1,8 +1,0 @@
-# Define the goal
-uint32 num  # Specify which dishwasher we want to use
----
-# Define the result
-uint32 num
----
-# Define a feedback message
-string curr_state

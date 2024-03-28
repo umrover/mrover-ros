@@ -1,4 +1,6 @@
 #include "lander_align.hpp"
+#include <point.hpp>
+#include <ros/init.h>
 
 namespace mrover {
     auto operator<<(std::ostream& ostream, RTRSTATE state) -> std::ostream& {
@@ -17,7 +19,7 @@ namespace mrover {
         mTwistPub = mNh.advertise<geometry_msgs::Twist>("/cmd_vel", 1);
         mDebugPCPub = mNh.advertise<sensor_msgs::PointCloud2>("/lander_align/debugPC", 1);
 
-        mActionServer.emplace(mNh, "LanderAlignAction", [&](LanderAlignGoalConstPtr const& goal) { ActionServerCallBack(); }, false);
+        mActionServer.emplace(mNh, "LanderAlignAction", [&](LanderAlignGoalConstPtr const& goal) { ActionServerCallBack(goal); }, false);
         mActionServer.value().start();
         
         //TF Create the Reference Frames
@@ -29,22 +31,22 @@ namespace mrover {
         mLoopState = RTRSTATE::turn1;
     }
 
-    auto LanderAlignNodelet::ActionServerCallBack() -> void {
+    auto LanderAlignNodelet::ActionServerCallBack(LanderAlignGoalConstPtr const goal) -> void {
         LanderAlignResult result;
-        mPlaneOffsetScalar = 2.5;
+        // mPlaneOffsetScalar = 2.5;
 
-        //If we haven't yet defined the point cloud we are working with
-		mCloud = ros::topic::waitForMessage<sensor_msgs::PointCloud2>("/camera/left/points", mNh);
-		filterNormals(mCloud);
-		ransac(0.1, 10, 100);
+        // //If we haven't yet defined the point cloud we are working with
+		// mCloud = ros::topic::waitForMessage<sensor_msgs::PointCloud2>("/camera/left/points", mNh);
+		// filterNormals(mCloud);
+		// ransac(0.1, 10, 100);
         
-        //If there is a proper normal to drive to
-        if (mNormalInZEDVector.has_value()) {
-            sendTwist();
-        }
+        // //If there is a proper normal to drive to
+        // if (mNormalInZEDVector.has_value()) {
+        //     sendTwist();
+        // }
 
         mPlaneOffsetScalar = 1;
-        mLoopState = RTRSTATE::turn1;
+        // mLoopState = RTRSTATE::turn1;
 
         //If we haven't yet defined the point cloud we are working with
 		mCloud = ros::topic::waitForMessage<sensor_msgs::PointCloud2>("/camera/left/points", mNh);
@@ -53,7 +55,9 @@ namespace mrover {
         
         //If there is a proper normal to drive to
         if (mNormalInZEDVector.has_value()) {
-            sendTwist();
+            // sendTwist();
+            calcMotion(.5,0);
+                
         }
 
         if(mActionServer->isPreemptRequested()){
@@ -78,40 +82,62 @@ namespace mrover {
     }
 
     void LanderAlignNodelet::calcMotion(double desiredVelocity, double desiredOmega) {
+        
         SE3d roverInWorld = SE3Conversions::fromTfTree(mTfBuffer, "base_link", "map");
-        Eigen::Vector3d xAxisRotation = roverInWorld.rotation().col(0);
-        double roverHeading = calcAngleWithWorldX(xAxisRotation);
-        double targetHeading = calcAngleWithWorldX(-mNormalInWorldVector.value());
-
-        //Current State
-        Eigen::Vector3d currState{roverInWorld.translation().x(), roverInWorld.translation().y(), roverHeading};
+        
+        // Inital State
+        Eigen::Vector2d initState{roverInWorld.translation().x(), roverInWorld.translation().y()};
 
         //Target State
+        double targetHeading = calcAngleWithWorldX(-mNormalInWorldVector.value());
+
         Eigen::Vector3d tarState{mOffsetLocationInWorldVector.value().x(), mOffsetLocationInWorldVector.value().y(), targetHeading};
+        Eigen::Vector2d distanceToTargetVectorInit{tarState.x() - initState.x(), tarState.y() - initState.y()};
+        double distanceToTargetInitial = std::abs(distanceToTargetVectorInit.norm());
 
-        //Constants
-        double Kx = 1;
-        double Ky = 1;
-        double Ktheta = 1;
+        while (ros::ok()) {
+            roverInWorld = SE3Conversions::fromTfTree(mTfBuffer, "base_link", "map");
+            Eigen::Vector3d xOrientation = roverInWorld.rotation().col(0); 
+            double roverHeading = calcAngleWithWorldX(xOrientation);
+            Eigen::Vector3d currState{roverInWorld.translation().x(), roverInWorld.translation().y(), roverHeading};
 
-        Eigen::Matrix3d rotation;
-        rotation << std::cos(roverHeading), std::sin(roverHeading), 0,
-                -std::sin(roverHeading), std::cos(roverHeading), 0,
-                0, 0, 1;
 
-        Eigen::Vector3d errState = rotation * (tarState - currState);
+            Eigen::Vector2d distanceToTargetVector{tarState.x() - currState.x(), tarState.y() - currState.y()};
+            double distanceToTarget = std::abs(distanceToTargetVector.norm());
+            //Constants
+            double Kx = .2;
+            double Ky = .2;
+            double Ktheta = .8;
 
-        //I think this is rad/s
-        double zRotation = desiredOmega + (desiredVelocity / 2) * (Ky * (errState.y() + Ktheta * errState.z()) + (1 / Ky) * std::sin(errState.z()));
+            Eigen::Matrix3d rotation;
+            rotation << std::cos(roverHeading), std::sin(roverHeading), 0,
+                    -std::sin(roverHeading), std::cos(roverHeading), 0,
+                    0, 0, 1;
 
-        //I think this is unit/s
-        double xSpeed = Kx * errState.x() + desiredVelocity * std::cos(errState.z()) - Ktheta * errState.z() * zRotation;
+            Eigen::Vector3d errState = rotation * (tarState - currState);
 
-        geometry_msgs::Twist twist;
-        twist.angular.z = zRotation;
-        twist.linear.x = xSpeed;
+            //I think this is rad/s
+            // (distanceToTarget / distanceToTargetInitial) * 
+            double zRotation = ( desiredOmega + (desiredVelocity / 2) * (Ky * (errState.y() + Ktheta * errState.z()) + (1 / Ktheta) * std::sin(errState.z())));
 
-        mTwistPub.publish(twist);
+            //I think this is unit/s
+            double xSpeed =  (distanceToTarget / distanceToTargetInitial) * (Kx * errState.x() + desiredVelocity * std::cos(errState.z()) - Ktheta * errState.z() * zRotation);
+
+            geometry_msgs::Twist twist;
+            twist.angular.z = zRotation;
+            twist.linear.x = xSpeed;
+            if(mActionServer->isPreemptRequested()){
+                twist.angular.z = 0;
+                twist.linear.x = 0;
+                mActionServer->setPreempted();
+                mTwistPub.publish(twist);
+                break;
+            }
+            if (distanceToTarget < .1) break;
+            mTwistPub.publish(twist);
+        }
+
+        
     }
 
     void LanderAlignNodelet::filterNormals(sensor_msgs::PointCloud2ConstPtr const& cloud) {
@@ -280,146 +306,146 @@ namespace mrover {
         if(mOffsetLocationInZEDSE3d.translation().x() < 0) mNormalInZEDVector = std::nullopt;
     }
 
-    void LanderAlignNodelet::sendTwist() {
-        //Locations
-        Eigen::Vector3d rover_dir;
+    // void LanderAlignNodelet::sendTwist() {
+    //     //Locations
+    //     Eigen::Vector3d rover_dir;
 
-        //Final msg
-        geometry_msgs::Twist twist;
+    //     //Final msg
+    //     geometry_msgs::Twist twist;
 
-        //Threhsolds
-        float const linear_thresh = 0.01; // could be member variables
-        float const angular_thresh = 0.001;
+    //     //Threhsolds
+    //     float const linear_thresh = 0.01; // could be member variables
+    //     float const angular_thresh = 0.001;
 
 
-        ros::Rate rate(20); // ROS Rate at 20Hzn::Matrix3d roverToPlaneNorm;
+    //     ros::Rate rate(20); // ROS Rate at 20Hzn::Matrix3d roverToPlaneNorm;
         
-        while (ros::ok()) {
-            // If the client has cancelled the server stop moving
-            if(mActionServer->isPreemptRequested()){
-                mActionServer->setPreempted();
-                twist.angular.z = 0;
-                twist.linear.x = 0;
-                mTwistPub.publish(twist);
-                break;
-            }
+    //     while (ros::ok()) {
+    //         // If the client has cancelled the server stop moving
+    //         if(mActionServer->isPreemptRequested()){
+    //             mActionServer->setPreempted();
+    //             twist.angular.z = 0;
+    //             twist.linear.x = 0;
+    //             mTwistPub.publish(twist);
+    //             break;
+    //         }
                 
-            // Publish the current state of the RTR controller 
-        	LanderAlignFeedback feedback;
-			feedback.curr_state = RTRSTRINGS[static_cast<std::size_t>(mLoopState)];
-			mActionServer->publishFeedback(feedback);
+    //         // Publish the current state of the RTR controller 
+    //     	LanderAlignFeedback feedback;
+	// 		feedback.curr_state = RTRSTRINGS[static_cast<std::size_t>(mLoopState)];
+	// 		mActionServer->publishFeedback(feedback);
             
-            // Push plane and offset locations for debugging
-            SE3Conversions::pushToTfTree(mTfBroadcaster, "plane", mMapFrameId, mPlaneLocationInWorldSE3d);
-            SE3Conversions::pushToTfTree(mTfBroadcaster, "offset", mMapFrameId, mOffsetLocationInWorldSE3d);
+    //         // Push plane and offset locations for debugging
+    //         SE3Conversions::pushToTfTree(mTfBroadcaster, "plane", mMapFrameId, mPlaneLocationInWorldSE3d);
+    //         SE3Conversions::pushToTfTree(mTfBroadcaster, "offset", mMapFrameId, mOffsetLocationInWorldSE3d);
             
-            SE3d roverInWorld = SE3Conversions::fromTfTree(mTfBuffer, "base_link", "map");
-            Eigen::Vector3d roverPosInWorld{(roverInWorld.translation().x()), (roverInWorld.translation().y()), 0.0};
-            Eigen::Vector3d targetPosInWorld;
+    //         SE3d roverInWorld = SE3Conversions::fromTfTree(mTfBuffer, "base_link", "map");
+    //         Eigen::Vector3d roverPosInWorld{(roverInWorld.translation().x()), (roverInWorld.translation().y()), 0.0};
+    //         Eigen::Vector3d targetPosInWorld;
 
-            if (mLoopState == RTRSTATE::turn1) {
-                targetPosInWorld = mOffsetLocationInWorldVector.value();
-            } else if (mLoopState == RTRSTATE::turn2) {
-                targetPosInWorld = mPlaneLocationInWorldVector.value();
-            }
-            targetPosInWorld.z() = 0;
+    //         if (mLoopState == RTRSTATE::turn1) {
+    //             targetPosInWorld = mOffsetLocationInWorldVector.value();
+    //         } else if (mLoopState == RTRSTATE::turn2) {
+    //             targetPosInWorld = mPlaneLocationInWorldVector.value();
+    //         }
+    //         targetPosInWorld.z() = 0;
 
-            Eigen::Vector3d roverToTargetForward = targetPosInWorld - roverPosInWorld;
-            roverToTargetForward.normalize();
+    //         Eigen::Vector3d roverToTargetForward = targetPosInWorld - roverPosInWorld;
+    //         roverToTargetForward.normalize();
 
-            Eigen::Vector3d up = Eigen::Vector3d::UnitZ();
-            Eigen::Vector3d left = up.cross(roverToTargetForward);
+    //         Eigen::Vector3d up = Eigen::Vector3d::UnitZ();
+    //         Eigen::Vector3d left = up.cross(roverToTargetForward);
 
-            Eigen::Matrix3d roverToTargetMat;
-            roverToTargetMat.col(0) = roverToTargetForward;
-            roverToTargetMat.col(1) = up;
-            roverToTargetMat.col(2) = left;
+    //         Eigen::Matrix3d roverToTargetMat;
+    //         roverToTargetMat.col(0) = roverToTargetForward;
+    //         roverToTargetMat.col(1) = up;
+    //         roverToTargetMat.col(2) = left;
 
-            //SO3 Matrices for lie algebra
-            SO3d roverToTargetSO3 = SE3Conversions::fromColumns(roverToTargetForward, left, up);
-            SO3d roverSO3 = roverInWorld.asSO3();
+    //         //SO3 Matrices for lie algebra
+    //         SO3d roverToTargetSO3 = SE3Conversions::fromColumns(roverToTargetForward, left, up);
+    //         SO3d roverSO3 = roverInWorld.asSO3();
 
-            Eigen::Vector3d distanceToTargetVector = targetPosInWorld - Eigen::Vector3d{roverInWorld.translation().x(), roverInWorld.translation().y(), roverInWorld.translation().z()};
+    //         Eigen::Vector3d distanceToTargetVector = targetPosInWorld - Eigen::Vector3d{roverInWorld.translation().x(), roverInWorld.translation().y(), roverInWorld.translation().z()};
 
-            double distanceToTarget = std::abs(distanceToTargetVector.norm());
+    //         double distanceToTarget = std::abs(distanceToTargetVector.norm());
 
-            manif::SO3Tangentd SO3tan = roverToTargetSO3 - roverSO3; // 3 x 1 matrix of angular velocities (x,y,z)
+    //         manif::SO3Tangentd SO3tan = roverToTargetSO3 - roverSO3; // 3 x 1 matrix of angular velocities (x,y,z)
 
-            switch (mLoopState) {
-                case RTRSTATE::turn1: {
-                    if (distanceToTarget < 0.5) mLoopState = RTRSTATE::turn2;
+    //         switch (mLoopState) {
+    //             case RTRSTATE::turn1: {
+    //                 if (distanceToTarget < 0.5) mLoopState = RTRSTATE::turn2;
                     
 
-                    double angle_rate = mAngleP * SO3tan.z();
-                    angle_rate = (std::abs(angle_rate) > mAngleFloor) ? angle_rate : copysign(mAngleFloor, angle_rate);
+    //                 double angle_rate = mAngleP * SO3tan.z();
+    //                 angle_rate = (std::abs(angle_rate) > mAngleFloor) ? angle_rate : copysign(mAngleFloor, angle_rate);
 
-                    ROS_INFO("w_z velocity %f", SO3tan.z());
+    //                 ROS_INFO("w_z velocity %f", SO3tan.z());
 
-                    twist.angular.z = angle_rate;
+    //                 twist.angular.z = angle_rate;
 
-                    if (std::abs(SO3tan.z()) < angular_thresh) {
-                        mLoopState = RTRSTATE::drive;
-                        twist.angular.z = 0;
-                        twist.linear.x = 0;
-                        ROS_INFO("Done spinning");
-                    }
-                    // ROS_INFO("In state: turning to point...");
-                    break;
-                }
+    //                 if (std::abs(SO3tan.z()) < angular_thresh) {
+    //                     mLoopState = RTRSTATE::drive;
+    //                     twist.angular.z = 0;
+    //                     twist.linear.x = 0;
+    //                     ROS_INFO("Done spinning");
+    //                 }
+    //                 // ROS_INFO("In state: turning to point...");
+    //                 break;
+    //             }
 
-                case RTRSTATE::drive: {
-                    if (std::abs(SO3tan.z()) > angular_thresh) {
-                        mLoopState = RTRSTATE::turn1;
-                        ROS_INFO("Rotation got off");
-                        twist.linear.x = 0;
-                    }
-                    double driveRate = std::min(mLinearP * distanceToTarget, 1.0);
+    //             case RTRSTATE::drive: {
+    //                 if (std::abs(SO3tan.z()) > angular_thresh) {
+    //                     mLoopState = RTRSTATE::turn1;
+    //                     ROS_INFO("Rotation got off");
+    //                     twist.linear.x = 0;
+    //                 }
+    //                 double driveRate = std::min(mLinearP * distanceToTarget, 1.0);
 
-                    ROS_INFO("distance: %f", distanceToTarget);
+    //                 ROS_INFO("distance: %f", distanceToTarget);
 
-                    twist.linear.x = driveRate;
+    //                 twist.linear.x = driveRate;
 
-                    ROS_INFO("distance to target %f", distanceToTarget);
+    //                 ROS_INFO("distance to target %f", distanceToTarget);
 
-                    if (std::abs(distanceToTarget) < linear_thresh) {
-                        mLoopState = RTRSTATE::turn2;
-                        twist.linear.x = 0;
-                        twist.angular.z = 0;
-                    }
-                    // ROS_INFO("In state: driving to point...");
-                    break;
-                }
+    //                 if (std::abs(distanceToTarget) < linear_thresh) {
+    //                     mLoopState = RTRSTATE::turn2;
+    //                     twist.linear.x = 0;
+    //                     twist.angular.z = 0;
+    //                 }
+    //                 // ROS_INFO("In state: driving to point...");
+    //                 break;
+    //             }
 
-                case RTRSTATE::turn2: {
-                    double angle_rate = mAngleP * SO3tan.z();
-                    angle_rate = (std::abs(angle_rate) > mAngleFloor) ? angle_rate : copysign(mAngleFloor, angle_rate);
-                    twist.angular.z = angle_rate;
-                    twist.linear.x = 0;
+    //             case RTRSTATE::turn2: {
+    //                 double angle_rate = mAngleP * SO3tan.z();
+    //                 angle_rate = (std::abs(angle_rate) > mAngleFloor) ? angle_rate : copysign(mAngleFloor, angle_rate);
+    //                 twist.angular.z = angle_rate;
+    //                 twist.linear.x = 0;
 
 
-                    if (std::abs(SO3tan.z()) < angular_thresh) {
-                        mLoopState = RTRSTATE::done;
-                        twist.angular.z = 0;
-                        twist.linear.x = 0;
-                        //  ROS_INFO("Done turning to lander");
-                    }
-                    // ROS_INFO("In state: turning to lander...");
-                    break;
-                }
+    //                 if (std::abs(SO3tan.z()) < angular_thresh) {
+    //                     mLoopState = RTRSTATE::done;
+    //                     twist.angular.z = 0;
+    //                     twist.linear.x = 0;
+    //                     //  ROS_INFO("Done turning to lander");
+    //                 }
+    //                 // ROS_INFO("In state: turning to lander...");
+    //                 break;
+    //             }
 
-                case RTRSTATE::done: {
-                    twist.linear.x = 0;
-                    twist.angular.z = 0;
-                    break;
-					mCloud = nullptr;
-                }
-            }
-            // ROS_INFO("THE TWIST IS: Angular: %f, with linear %f,", twist.angular.z, twist.linear.x);
-            ROS_INFO_STREAM(mLoopState);
-            mTwistPub.publish(twist);
-            if (mLoopState == RTRSTATE::done) {
-                break;
-            }
-        }
-    }
+    //             case RTRSTATE::done: {
+    //                 twist.linear.x = 0;
+    //                 twist.angular.z = 0;
+    //                 break;
+	// 				mCloud = nullptr;
+    //             }
+    //         }
+    //         // ROS_INFO("THE TWIST IS: Angular: %f, with linear %f,", twist.angular.z, twist.linear.x);
+    //         ROS_INFO_STREAM(mLoopState);
+    //         mTwistPub.publish(twist);
+    //         if (mLoopState == RTRSTATE::done) {
+    //             break;
+    //         }
+    //     }
+    // }
 } // namespace mrover
