@@ -9,7 +9,6 @@ project(glfw3webgpu LANGUAGES C)
 add_library(glfw3webgpu STATIC glfw3webgpu.c)
 
 find_package(glfw3 REQUIRED)
-find_package(dawn REQUIRED)
 
 set(CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}/install")
 message("Set the CMAKE_INSTALL_PREFIX to ${CMAKE_INSTALL_PREFIX}")
@@ -22,13 +21,11 @@ set(${PROJECT_NAME}_INSTALL_INCLUDE_DIRS "${CMAKE_INSTALL_PREFIX}/include")
 
 target_include_directories  (
                               glfw3webgpu 
-                                PUBLIC 
+                                PRIVATE 
                                   .
                             )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${${PROJECT_NAME}_INSTALL_INCLUDE_DIRS})
-
-
 
 install (
           TARGETS ${PROJECT_NAME} 
