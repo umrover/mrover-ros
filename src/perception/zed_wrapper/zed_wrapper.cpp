@@ -76,22 +76,21 @@ namespace mrover {
                          grabResolutionString.c_str(), mImageResolution.width, mImageResolution.height, mPointResolution.width, mPointResolution.height);
             NODELET_INFO("Use builtin visual odometry: %s", mUseBuiltinPosTracking ? "true" : "false");
 
-            sl::InitParameters initParameters;
             if (mSvoPath) {
-                initParameters.input.setFromSVOFile(mSvoPath);
+                mInitParameters.input.setFromSVOFile(mSvoPath);
             } else {
-                initParameters.input.setFromCameraID(-1, sl::BUS_TYPE::USB);
+                mInitParameters.input.setFromCameraID(-1, sl::BUS_TYPE::USB);
             }
-            initParameters.depth_stabilization = mUseDepthStabilization;
-            initParameters.camera_resolution = stringToZedEnum<sl::RESOLUTION>(grabResolutionString);
-            initParameters.depth_mode = stringToZedEnum<sl::DEPTH_MODE>(depthModeString);
-            initParameters.coordinate_units = sl::UNIT::METER;
-            initParameters.sdk_verbose = true; // Log useful information
-            initParameters.camera_fps = mGrabTargetFps;
-            initParameters.coordinate_system = sl::COORDINATE_SYSTEM::RIGHT_HANDED_Z_UP_X_FWD; // Match ROS
-            initParameters.depth_maximum_distance = mDepthMaximumDistance;
+            mInitParameters.depth_stabilization = mUseDepthStabilization;
+            mInitParameters.camera_resolution = stringToZedEnum<sl::RESOLUTION>(grabResolutionString);
+            mInitParameters.depth_mode = stringToZedEnum<sl::DEPTH_MODE>(depthModeString);
+            mInitParameters.coordinate_units = sl::UNIT::METER;
+            mInitParameters.sdk_verbose = true; // Log useful information
+            mInitParameters.camera_fps = mGrabTargetFps;
+            mInitParameters.coordinate_system = sl::COORDINATE_SYSTEM::RIGHT_HANDED_Z_UP_X_FWD; // Match ROS
+            mInitParameters.depth_maximum_distance = mDepthMaximumDistance;
 
-            if (mZed.open(initParameters) != sl::ERROR_CODE::SUCCESS) {
+            if (mZed.open(mInitParameters) != sl::ERROR_CODE::SUCCESS) {
                 throw std::runtime_error("ZED failed to open");
             }
             mZedInfo = mZed.getCameraInformation();
@@ -209,20 +208,32 @@ namespace mrover {
                 sl::RuntimeParameters runtimeParameters;
                 runtimeParameters.confidence_threshold = mDepthConfidence;
                 runtimeParameters.texture_confidence_threshold = mTextureConfidence;
+				
 
-                if (sl::ERROR_CODE error = mZed.grab(runtimeParameters); error != sl::ERROR_CODE::SUCCESS)
-                    throw std::runtime_error(std::format("ZED failed to grab {}", sl::toString(error).c_str()));
-                mGrabThreadProfiler.measureEvent("Grab");
+                try{
+                    if (sl::ERROR_CODE error = mZed.grab(runtimeParameters); error != sl::ERROR_CODE::SUCCESS)
+                        throw std::runtime_error(std::format("ZED failed to grab {}", sl::toString(error).c_str()));
+                    mGrabThreadProfiler.measureEvent("Grab");
 
-                // Retrieval has to happen on the same thread as grab so that the image and point cloud are synced
-                if (mRightImgPub.getNumSubscribers())
-                    if (mZed.retrieveImage(mGrabMeasures.rightImage, sl::VIEW::RIGHT, sl::MEM::GPU, mImageResolution) != sl::ERROR_CODE::SUCCESS)
-                        throw std::runtime_error("ZED failed to retrieve right image");
-                // Only left set is used for processing
-                if (mZed.retrieveImage(mGrabMeasures.leftImage, sl::VIEW::LEFT, sl::MEM::GPU, mImageResolution) != sl::ERROR_CODE::SUCCESS)
-                    throw std::runtime_error("ZED failed to retrieve left image");
-                if (mZed.retrieveMeasure(mGrabMeasures.leftPoints, sl::MEASURE::XYZ, sl::MEM::GPU, mPointResolution) != sl::ERROR_CODE::SUCCESS)
-                    throw std::runtime_error("ZED failed to retrieve point cloud");
+                    // Retrieval has to happen on the same thread as grab so that the image and point cloud are synced
+                    if (mRightImgPub.getNumSubscribers())
+                        if (mZed.retrieveImage(mGrabMeasures.rightImage, sl::VIEW::RIGHT, sl::MEM::GPU, mImageResolution) != sl::ERROR_CODE::SUCCESS)
+                            throw std::runtime_error("ZED failed to retrieve right image");
+                    // Only left set is used for processing
+                    if (mZed.retrieveImage(mGrabMeasures.leftImage, sl::VIEW::LEFT, sl::MEM::GPU, mImageResolution) != sl::ERROR_CODE::SUCCESS)
+                        throw std::runtime_error("ZED failed to retrieve left image");
+                    if (mZed.retrieveMeasure(mGrabMeasures.leftPoints, sl::MEASURE::XYZ, sl::MEM::GPU, mPointResolution) != sl::ERROR_CODE::SUCCESS)
+                        throw std::runtime_error("ZED failed to retrieve point cloud");
+                }catch(std::runtime_error& err){
+                    ROS_INFO("Catching");
+                    ROS_ERROR_STREAM("An exception occured while grabbing from the ZED: " << err.what());
+                    ROS_ERROR_STREAM("Trying to restart the ZED");
+                    mZed.close();
+                    if (mZed.open(mInitParameters) != sl::ERROR_CODE::SUCCESS) {
+				    	throw std::runtime_error("ZED failed to open");
+				    }   
+                }
+                
 
                 assert(mGrabMeasures.leftImage.timestamp == mGrabMeasures.leftPoints.timestamp);
 

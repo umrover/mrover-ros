@@ -46,6 +46,7 @@ namespace mrover {
         sl::Camera mZed;
         sl::CameraInformation mZedInfo;
         Measures mGrabMeasures, mPcMeasures;
+        sl::InitParameters mInitParameters;
 
         std::thread mPointCloudThread, mGrabThread;
         std::mutex mSwapMutex;
