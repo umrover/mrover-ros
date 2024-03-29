@@ -40,7 +40,7 @@ namespace mrover {
         Pin m_heater_pin;
         bool m_state {};
         bool m_auto_shutoff_enabled {};
-        float m_last_time_received_message {};
+        uint32_t m_last_time_received_message {};
         float m_max_heater_temp {DEFAULT_MAX_HEATER_TEMP};
     };
 
