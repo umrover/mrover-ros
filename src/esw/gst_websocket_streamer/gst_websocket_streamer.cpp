@@ -68,13 +68,13 @@ namespace mrover {
             }
         } else {
             assert(IS_JETSON);
-            // TODO(quintin): This does not work: https://forums.developer.nvidia.com/t/macrosilicon-usb/157777/4
-            //                nvv4l2camerasrc only supports UYUV, but our cameras use I420... NVIDIA is lazy!
+            // TODO(quintin): I had to apply this patch: https://forums.developer.nvidia.com/t/macrosilicon-usb/157777/4
+            //                nvv4l2camerasrc only supports UYUV by default, but our cameras are YUY2 (YUYV)
 
             // ReSharper disable once CppDFAUnreachableCode
             launch = std::format(
                     "nvv4l2camerasrc device={} "
-                    "! video/x-raw(memory:NVMM),format=UYVY,width={},height={},framerate={}/1 "
+                    "! video/x-raw(memory:NVMM),format=YUY2,width={},height={},framerate={}/1 "
                     "! nvvidconv "
                     "! video/x-raw(memory:NVMM),format=I420 "
                     "! nvv4l2h265enc bitrate={} iframeinterval=300 vbv-size=33333 insert-sps-pps=true control-rate=constant_bitrate profile=Main num-B-Frames=0 ratecontrol-enable=true preset-level=UltraFastPreset EnableTwopassCBR=false maxperf-enable=true "
