@@ -8,6 +8,7 @@
 #include <mrover/Spectral.h>
 #include <ros/ros.h>
 #include <unordered_map>
+#include "params_utils.hpp"
 
 std::unique_ptr<mrover::CanDevice> scienceCanDevice;
 
@@ -100,6 +101,15 @@ auto main(int argc, char** argv) -> int {
     };
 
     scienceCanDevice = std::make_unique<mrover::CanDevice>(nh, "jetson", "science");
+
+
+    float shutoff_temp = 50.0f;  // DEFAULT 
+    if (nh.hasParam("science/shutoff_temp")) {
+        nh.getParam("science/shutoff_temp", shutoff_temp);
+    }
+
+    scienceCanDevice->publish_message(mrover::InBoundScienceMessage{mrover::ConfigThermistorAutoShutOffCommand{.shutoff_temp = shutoff_temp}});
+
     std::vector<ros::ServiceServer> services;
     services.reserve(scienceDeviceByName.size() + 1);
 

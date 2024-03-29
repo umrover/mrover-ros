@@ -76,6 +76,12 @@ namespace mrover {
         	}
         }
 
+		void feed(ConfigThermistorAutoShutOffCommand const& message) {
+			for (int i = 0; i < 6; ++i) {
+				m_heaters.at(i).change_shutoff_temp(message.shutoff_temp);
+			}
+		}
+
     public:
         Science() = default;
 
