@@ -52,6 +52,10 @@ namespace mrover {
         RadiansPerMeter mYAxisMult{};
         RadiansPerMeter mZAxisMult{};
 
+        Dimensionless mXAxisGearRatio;
+        Dimensionless mYAxisGearRatio;
+        Dimensionless mZAxisGearRatio;
+
         ros::Subscriber mThrottleSub;
         ros::Subscriber mVelocitySub;
         ros::Subscriber mPositionSub;

@@ -1,15 +1,19 @@
 
 #include "sa_translator.hpp"
+#include <params_utils.hpp>
+#include <units/units.hpp>
 
 namespace mrover {
 
     SATranslator::SATranslator(ros::NodeHandle& nh) {
-
-
         mXAxisMult = requireParamAsUnit<RadiansPerMeter>(nh, "brushed_motors/controllers/sa_x/rad_to_meters_ratio");
         mYAxisMult = requireParamAsUnit<RadiansPerMeter>(nh, "brushed_motors/controllers/sa_y/rad_to_meters_ratio");
         mZAxisMult = requireParamAsUnit<RadiansPerMeter>(nh, "brushless_motors/controllers/sa_z/rad_to_meters_ratio");
-        
+
+        mXAxisGearRatio = requireParamAsUnit<Dimensionless>(nh, "brushed_motors/controllers/sa_x/gear_ratio");
+        mYAxisGearRatio = requireParamAsUnit<Dimensionless>(nh, "brushed_motors/controllers/sa_y/gear_ratio");
+        mZAxisGearRatio = requireParamAsUnit<Dimensionless>(nh, "brushless_motors/controllers/sa_z/gear_ratio");
+
         mThrottleSub = nh.subscribe<Throttle>("sa_throttle_cmd", 1, &SATranslator::processThrottleCmd, this);
         mVelocitySub = nh.subscribe<Velocity>("sa_velocity_cmd", 1, &SATranslator::processVelocityCmd, this);
         mPositionSub = nh.subscribe<Position>("sa_position_cmd", 1, &SATranslator::processPositionCmd, this);
@@ -36,13 +40,13 @@ namespace mrover {
         Velocity velocity = *msg;
 
         // joint a convert linear velocity (meters/s) to revolution/s
-        auto x_axis_vel = static_cast<float>(msg->velocities.at(mXAxisIndex)) *mXAxisMult.get();
+        auto x_axis_vel = static_cast<float>(msg->velocities.at(mXAxisIndex)) *mXAxisMult.get() * mXAxisGearRatio.get(); // * gearRatio
         velocity.velocities.at(mXAxisIndex) = x_axis_vel;
 
-        auto y_axis_vel = static_cast<float>(msg->velocities.at(mYAxisIndex)) * mYAxisMult.get();
+        auto y_axis_vel = static_cast<float>(msg->velocities.at(mYAxisIndex)) * mYAxisMult.get()*mYAxisGearRatio.get();
         velocity.velocities.at(mYAxisIndex) = y_axis_vel;
 
-        auto z_axis_vel = static_cast<float>(msg->velocities.at(mZAxisIndex)) * mZAxisMult.get();
+        auto z_axis_vel = static_cast<float>(msg->velocities.at(mZAxisIndex)) * mZAxisMult.get() *mZAxisGearRatio.get();
         velocity.velocities.at(mZAxisIndex) = z_axis_vel; 
 
         mVelocityPub->publish(velocity);
@@ -77,14 +81,14 @@ namespace mrover {
         }
 
         // Convert joint  state of joint a from radians/revolutions to meters
-        auto xAxisLinVel = static_cast<float>(msg->velocity.at(mXAxisIndex))* mXAxisMult.get();
-        auto xAxisLinPos = static_cast<float>(msg->position.at(mXAxisIndex))* mXAxisMult.get();
+        auto xAxisLinVel = static_cast<float>(msg->velocity.at(mXAxisIndex))* mXAxisMult.get() *mXAxisGearRatio.get();
+        auto xAxisLinPos = static_cast<float>(msg->position.at(mXAxisIndex))* mXAxisMult.get()*mXAxisGearRatio.get();
 
-        auto yAxisLinVel = static_cast<float>(msg->velocity.at(mYAxisIndex))* mYAxisMult.get();
-        auto yAxisLinPos = static_cast<float>(msg->position.at(mYAxisIndex))* mYAxisMult.get();
+        auto yAxisLinVel = static_cast<float>(msg->velocity.at(mYAxisIndex))* mYAxisMult.get()*mYAxisGearRatio.get();
+        auto yAxisLinPos = static_cast<float>(msg->position.at(mYAxisIndex))* mYAxisMult.get()*mYAxisGearRatio.get();
 
-        auto zAxisLinVel = static_cast<float>(msg->velocity.at(mZAxisIndex))* mZAxisMult.get();
-        auto zAxisLinPos = static_cast<float>(msg->position.at(mZAxisIndex))* mZAxisMult.get();
+        auto zAxisLinVel = static_cast<float>(msg->velocity.at(mZAxisIndex))* mZAxisMult.get()*mZAxisGearRatio.get();
+        auto zAxisLinPos = static_cast<float>(msg->position.at(mZAxisIndex))* mZAxisMult.get()*mZAxisGearRatio.get();
 
         sensor_msgs::JointState jointState = *msg;
         jointState.velocity.at(mXAxisIndex) = xAxisLinVel;

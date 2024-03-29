@@ -153,6 +153,7 @@ brushless_motors:
       velocity_multiplier: 1.0
       min_velocity: -100.0
       max_velocity: 100.0
+      gear_ratio: 1.0
       is_linear: true
       rad_to_meters_ratio: 157.48 #rad/m
       limit_0_present: false
