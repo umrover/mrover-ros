@@ -169,9 +169,11 @@ class GUIConsumer(JsonWebsocketConsumer):
                 self.calibrate_motors(message)
             elif message["type"] == "arm_adjust":
                 self.arm_adjust(message)
-            elif ( message["type"] == "arm_values" or 
-                  message["type"] == "cache_values" or 
-                  message["type"] == "sa_arm_values" ):
+            elif (
+                message["type"] == "arm_values"
+                or message["type"] == "cache_values"
+                or message["type"] == "sa_arm_values"
+            ):
                 self.handle_controls_message(message)
             elif message["type"] == "enable_white_leds":
                 self.enable_white_leds_callback(message)
