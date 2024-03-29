@@ -187,7 +187,7 @@ namespace mrover {
     };
 
     using InBoundScienceMessage = std::variant<
-            EnableScienceDeviceCommand, HeaterAutoShutOffCommand>;
+            EnableScienceDeviceCommand, HeaterAutoShutOffCommand, ConfigThermistorAutoShutOffCommand>;
 
     using OutBoundScienceMessage = std::variant<
             HeaterStateData, SpectralData, ThermistorData>;
