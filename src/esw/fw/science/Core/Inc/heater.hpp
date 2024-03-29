@@ -11,7 +11,7 @@
 
 namespace mrover {
 
-	static float MAX_HEATER_TEMP = 50.0f;
+	constexpr static float DEFAULT_MAX_HEATER_TEMP = 50.0f;
 
     class Heater {
     public:
@@ -29,6 +29,7 @@ namespace mrover {
 
         void turn_off_if_watchdog_not_fed();
 
+        void change_shutoff_temp(float shutoff_temp);
 
         void set_auto_shutoff(bool enable);
 
@@ -40,6 +41,7 @@ namespace mrover {
         bool m_state {};
         bool m_auto_shutoff_enabled {};
         float m_last_time_received_message {};
+        float m_max_heater_temp {DEFAULT_MAX_HEATER_TEMP};
     };
 
 } // namespace mrover

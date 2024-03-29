@@ -77,7 +77,9 @@ namespace mrover {
         }
 
 		void feed(ConfigThermistorAutoShutOffCommand const& message) {
-			MAX_HEATER_TEMP = message.shutoff_temp;
+			for (int i = 0; i < 6; ++i) {
+				m_heaters.at(i).change_shutoff_temp(message.shutoff_temp);
+			}
 		}
 
     public:
