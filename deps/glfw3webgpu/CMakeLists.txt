@@ -67,7 +67,7 @@ install	(
 			FILES
 				${public_headers}
 			DESTINATION 
-				"${${PROJECT_NAME}_INSTALL_INCLUDE_DIRS}"
+				"include"
 		)
 
 target_link_libraries(glfw3webgpu PUBLIC glfw webgpu)
@@ -104,3 +104,8 @@ install(FILES
     "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
     DESTINATION cmake
 )
+
+# where to find our CMake modules
+set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+include(Packing)
+

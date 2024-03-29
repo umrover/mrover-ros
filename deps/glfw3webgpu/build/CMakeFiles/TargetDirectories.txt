@@ -1,4 +1,6 @@
 /home/john/catkin_ws/src/mrover/deps/glfw3webgpu/build/CMakeFiles/glfw3webgpu.dir
+/home/john/catkin_ws/src/mrover/deps/glfw3webgpu/build/CMakeFiles/package.dir
+/home/john/catkin_ws/src/mrover/deps/glfw3webgpu/build/CMakeFiles/package_source.dir
 /home/john/catkin_ws/src/mrover/deps/glfw3webgpu/build/CMakeFiles/edit_cache.dir
 /home/john/catkin_ws/src/mrover/deps/glfw3webgpu/build/CMakeFiles/rebuild_cache.dir
 /home/john/catkin_ws/src/mrover/deps/glfw3webgpu/build/CMakeFiles/list_install_components.dir

@@ -11,6 +11,7 @@ set(CMAKE_MAKEFILE_DEPENDS
   "/home/john/catkin_ws/src/mrover/deps/glfw3webgpu/Config.cmake.in"
   "CMakeFiles/3.28.3/CMakeCCompiler.cmake"
   "CMakeFiles/3.28.3/CMakeSystem.cmake"
+  "/home/john/catkin_ws/src/mrover/deps/glfw3webgpu/cmake/Packing.cmake"
   "/usr/lib/x86_64-linux-gnu/cmake/glfw3/glfw3Config.cmake"
   "/usr/lib/x86_64-linux-gnu/cmake/glfw3/glfw3ConfigVersion.cmake"
   "/usr/lib/x86_64-linux-gnu/cmake/glfw3/glfw3Targets-none.cmake"
@@ -24,6 +25,8 @@ set(CMAKE_MAKEFILE_DEPENDS
   "/usr/share/cmake-3.28/Modules/CMakePackageConfigHelpers.cmake"
   "/usr/share/cmake-3.28/Modules/CMakeSystemSpecificInformation.cmake"
   "/usr/share/cmake-3.28/Modules/CMakeSystemSpecificInitialize.cmake"
+  "/usr/share/cmake-3.28/Modules/CPack.cmake"
+  "/usr/share/cmake-3.28/Modules/CPackComponent.cmake"
   "/usr/share/cmake-3.28/Modules/Compiler/CMakeCommonCompilerMacros.cmake"
   "/usr/share/cmake-3.28/Modules/Compiler/GNU-C.cmake"
   "/usr/share/cmake-3.28/Modules/Compiler/GNU.cmake"
@@ -33,6 +36,7 @@ set(CMAKE_MAKEFILE_DEPENDS
   "/usr/share/cmake-3.28/Modules/Platform/Linux.cmake"
   "/usr/share/cmake-3.28/Modules/Platform/UnixPaths.cmake"
   "/usr/share/cmake-3.28/Modules/WriteBasicConfigVersionFile.cmake"
+  "/usr/share/cmake-3.28/Templates/CPackConfig.cmake.in"
   )
 
 # The corresponding makefile is:
@@ -45,6 +49,8 @@ set(CMAKE_MAKEFILE_OUTPUTS
 set(CMAKE_MAKEFILE_PRODUCTS
   "glfw3webgpuConfigVersion.cmake"
   "glfw3webgpuConfig.cmake"
+  "CPackConfig.cmake"
+  "CPackSourceConfig.cmake"
   "CMakeFiles/CMakeDirectoryInformation.cmake"
   )
 
