@@ -1,4 +1,6 @@
 #include "lander_align.hpp"
+#include <Eigen/src/Core/Matrix.h>
+#include <optional>
 #include <point.hpp>
 #include <ros/init.h>
 
@@ -72,6 +74,7 @@ namespace mrover {
     auto LanderAlignNodelet::calcAngleWithWorldX(Eigen::Vector3d xHeading) -> double { //I want to be editing this variable so it should not be const or &
         xHeading.z() = 0;
         xHeading.normalize();
+        // ROS_INFO_STREAM("fucker" << xHeading.x() << " " << xHeading.y() << " " << xHeading.z());
         Eigen::Vector3d xAxisWorld{1, 0, 0};
         double angle = std::acos(xHeading.dot(xAxisWorld));
         if (xHeading.y() >= 0) {
@@ -89,11 +92,12 @@ namespace mrover {
         Eigen::Vector2d initState{roverInWorld.translation().x(), roverInWorld.translation().y()};
 
         //Target State
+        // double targetHeading = calcAngleWithWorldX({0,1,0});
         double targetHeading = calcAngleWithWorldX(-mNormalInWorldVector.value());
-
+        ROS_INFO_STREAM(mNormalInWorldVector.value().x() << " " << mNormalInWorldVector.value().y() << " " <<  mNormalInWorldVector.value().z());
         Eigen::Vector3d tarState{mOffsetLocationInWorldVector.value().x(), mOffsetLocationInWorldVector.value().y(), targetHeading};
-        Eigen::Vector2d distanceToTargetVectorInit{tarState.x() - initState.x(), tarState.y() - initState.y()};
-        double distanceToTargetInitial = std::abs(distanceToTargetVectorInit.norm());
+        Eigen::Vector2d distanceToTargetVectorInit{tarState.x() - initState.x   (), tarState.y() - initState.y()};
+        //double distanceToTargetInitial = std::abs(distanceToTargetVectorInit.norm());
 
         while (ros::ok()) {
             roverInWorld = SE3Conversions::fromTfTree(mTfBuffer, "base_link", "map");
@@ -106,8 +110,8 @@ namespace mrover {
             double distanceToTarget = std::abs(distanceToTargetVector.norm());
             //Constants
             double Kx = .2;
-            double Ky = .2;
-            double Ktheta = .8;
+            double Ky = .6;
+            double Ktheta = 0.5;
 
             Eigen::Matrix3d rotation;
             rotation << std::cos(roverHeading), std::sin(roverHeading), 0,
@@ -115,13 +119,16 @@ namespace mrover {
                     0, 0, 1;
 
             Eigen::Vector3d errState = rotation * (tarState - currState);
-
+            // desiredVelocity = (distanceToTarget / distanceToTargetInitial) *desiredVelocity;
+            // ROS_INFO_STREAM("ANGLE ERROR: " << errState.z() << std::endl);
+            // ROS_INFO_STREAM("Position ERROR x: " << errState.x() << std::endl);
+            // ROS_INFO_STREAM("Position ERROR y: " << errState.y() << std::endl);
             //I think this is rad/s
             // (distanceToTarget / distanceToTargetInitial) * 
             double zRotation = ( desiredOmega + (desiredVelocity / 2) * (Ky * (errState.y() + Ktheta * errState.z()) + (1 / Ktheta) * std::sin(errState.z())));
 
             //I think this is unit/s
-            double xSpeed =  (distanceToTarget / distanceToTargetInitial) * (Kx * errState.x() + desiredVelocity * std::cos(errState.z()) - Ktheta * errState.z() * zRotation);
+            double xSpeed = (Kx * errState.x() + desiredVelocity * std::cos(errState.z()) - Ktheta * errState.z() * zRotation);
 
             geometry_msgs::Twist twist;
             twist.angular.z = zRotation;
@@ -135,6 +142,7 @@ namespace mrover {
             }
             if (distanceToTarget < .1) break;
             mTwistPub.publish(twist);
+            SE3Conversions::pushToTfTree(mTfBroadcaster, "location_thing", mMapFrameId, SE3d{{mNormalInWorldVector.value().x(), mNormalInWorldVector.value().y(), mNormalInWorldVector.value().z()}, SO3d{Eigen::Quaterniond{0,0,0,0}.normalized()}});
         }
 
         
@@ -272,10 +280,12 @@ namespace mrover {
 
         if (mNormalInZEDVector.value().x() > 0) mNormalInZEDVector.value() *= -1;
 
-
         mOffsetLocationInZEDVector = std::make_optional<Eigen::Vector3d>(mPlaneLocationInZEDVector.value() + mPlaneOffsetScalar * mNormalInZEDVector.value());
 
         SE3d zedToMap = SE3Conversions::fromTfTree(mTfBuffer, mCameraFrameId, mMapFrameId);
+
+
+        mNormalInWorldVector = std::make_optional<Eigen::Vector3d>(zedToMap.rotation() * mNormalInZEDVector.value());
 
         //Calculate the SO3 in the world frame
         Eigen::Matrix3d rot;
@@ -331,7 +341,7 @@ namespace mrover {
     //         }
                 
     //         // Publish the current state of the RTR controller 
-    //     	LanderAlignFeedback feedback;
+    //     	LanderAlignFeedback feedbaSck;
 	// 		feedback.curr_state = RTRSTRINGS[static_cast<std::size_t>(mLoopState)];
 	// 		mActionServer->publishFeedback(feedback);
             
