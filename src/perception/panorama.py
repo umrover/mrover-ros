@@ -1,23 +1,18 @@
 #!/usr/bin/env python3
-import os
-import statistics
-import struct
 
 import cv2
 import numpy as np
-import collections
 from sensor_msgs.msg import PointCloud2, PointField, Image
-from mrover.msg import MotorsStatus, Throttle, Position
+from mrover.msg import MotorsStatus, Position
 
 import rospy
 import sys
 import actionlib
-import pcl
 
 import cv2 as cv
-from cv_bridge import CvBridge
+import time
 
-from mrover.msg import CapturePanoramaAction, CapturePanoramaActionFeedback, CapturePanoramaGoal
+from mrover.msg import CapturePanoramaAction, CapturePanoramaActionFeedback, CapturePanoramaActionResult, CapturePanoramaGoal
 from sensor_msgs.point_cloud2 import PointCloud2
 from sensor_msgs import point_cloud2
 
@@ -49,8 +44,8 @@ class Panorama:
     def __init__(self, name):
         self._action_name = name
         self._as = actionlib.SimpleActionServer(self._action_name, CapturePanoramaAction, execute_cb=self.capture_panorama, auto_start=False)
-        self.stitcher = cv2.Stitcher.create()
-        self.img_arr = []
+        self.img_list = []
+        self.current_img = None
         # TODO: Why no auto start?
         self._as.start()
 
@@ -142,32 +137,51 @@ class Panorama:
     #     mast_throttle.publish(Position(["mast_gimbal_z"], [targetPosition]))
     #     latest_position = status.joint_states.position
     #     return latest_position
+    def pc_callback(self, msg: PointCloud2):
+        #TODO
 
-    def image_callback(msg: Image):
-        self.current_img =
+    def image_callback(self, msg: Image):
+        self.current_img = cv2.cvtColor(np.frombuffer(msg.data, dtype=np.uint8).reshape(msg.height, msg.width, 4), cv2.COLOR_RGBA2RGB)
+
     def capture_panorama(self, goal: CapturePanoramaGoal):
-
-        self.position_subscriber = rospy.Subscriber("/mast_status", MotorsStatus, self.position_callback, callback_args = Position, queue_size=1)
+        # self.position_subscriber = rospy.Subscriber("/mast_status", MotorsStatus, self.position_callback, callback_args = Position, queue_size=1)
         self.pc_subscriber = rospy.Subscriber("/mast_camera/left/points", PointCloud2, self.pc_callback, queue_size=1)
         self.img_subscriber = rospy.Subscriber("/mast_camera/left/image", Image, self.image_callback, queue_size=1)
         self.mast_pose = rospy.Publisher("/mast_gimbal_position_cmd", Position, queue_size=1)
 
-        # TODO: Don't hardcore or parametrize this?
+        # TODO: Don't hardcode or parametrize this?
         angle_inc = 0.2 # in radians
         current_angle = 0.0
         while (current_angle < goal.angle):
-            if not self.current_img:
+            if self._as.is_preempt_requested():
+                rospy.loginfo('%s: Preempted and stopped by operator' % self._action_name)
+                self._as.set_preempted()
+                break
+            if self.current_img is None:
                 continue
-            image_list.append(cv2.cvtColor((rgb * 255).astype(np.uint8), cv2.COLOR_BGR2RGB))
-        def received_point_cloud(point: PointCloud2):
-            # Extract RGB field
-            pc = pointcloud2_to_array(point)
-            pc = split_rgb_field(pc)
-            shape = pc.shape + (3,)
-            rgb = np.zeros(shape)
-            rgb[..., 0] = pc["r"]
-            rgb[..., 1] = pc["g"]
-            rgb[..., 2] = pc["b"]
+            current_angle += angle_inc
+            self.mast_pose.publish(Position(["mast_gimbal_z"], [current_angle]))
+            time.sleep(0.5)
+
+            self.img_list.append(np.copy(self.current_img))
+            # self._as.publish_feedback(CapturePanoramaActionFeedback(current_angle / goal.angle))
+
+        rospy.loginfo("Creating Panorama using %s images...", str(len(self.img_list)))
+        stitcher = cv.Stitcher.create()
+        status, pano = stitcher.stitch(self.img_list)
+        desktop_path = "/home/alison/catkin_ws/src/mrover/data/pano.png"
+        cv2.imwrite(desktop_path, pano)
+        # return CapturePanoramaGoal(...)
+            
+        # def received_point_cloud(point: PointCloud2):
+        #     # Extract RGB field
+        #     pc = pointcloud2_to_array(point)
+        #     pc = split_rgb_field(pc)
+        #     shape = pc.shape + (3,)
+        #     rgb = np.zeros(shape)
+        #     rgb[..., 0] = pc["r"]
+        #     rgb[..., 1] = pc["g"]
+        #     rgb[..., 2] = pc["b"]
         # def received_motor_position(status: MotorsStatus):
         #     nonlocal latestPosition
         #     # rospy.loginfo("Received motor position")
@@ -177,23 +191,6 @@ class Panorama:
 
 
         # Wait until mast_status starts publishing
-
-        while latestPosition == None:
-            rospy.loginfo("NOT AT STARTING POSITION")
-            rospy.loginfo(Position)
-
-        image_list.clear()
-        targetPosition = np.pi
-        while not np.allclose(targetPosition, latestPosition, .1):
-            rospy.loginfo("NOT AT FINAL POSITION")
-
-        rospy.loginfo("Creating Panorama..." + str(len(image_list)))
-        (code, outPic) = self.stitcher.stitch(image_list)
-        rospy.loginfo("Panorama Created" + str(len(image_list)))
-        desktop_path = "/Users/ryankersten/Desktop/test.png"
-        cv2.imwrite(desktop_path, image_list[0])
-        return CapturePanoramaResponse(...)
-
 
 def main() -> int:
     rospy.init_node(name="panorama")
