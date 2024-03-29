@@ -11,6 +11,7 @@ add_library(glfw3webgpu STATIC src/glfw3webgpu.c)
 # Find the required dependencies
 find_package(glfw3 REQUIRED)
 
+# find dawn/webgpu
 find_package(dawn QUIET)
 if (dawn_FOUND)
     message(STATUS "Using Dawn system install")
@@ -50,6 +51,7 @@ target_include_directories	(${PROJECT_NAME}
 								PRIVATE
 									headers
 							)
+
 # Set the public headers we would like to install
 set(
     public_headers 
@@ -118,4 +120,3 @@ install(FILES
 # where to find our CMake modules
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(Packing)
-
