@@ -368,11 +368,11 @@ class GUIConsumer(JsonWebsocketConsumer):
                     * self.filter_xbox_button(msg["buttons"], "right_bumper", "left_bumper")
                 ]
             elif msg["type"] == "arm_values":
-                d_pad_x = msg["axes"][self.xbox_mappings["d_pad_x"]]
-                if d_pad_x > 0.5:
-                    ra_slow_mode = True
-                elif d_pad_x < -0.5:
-                    ra_slow_mode = False
+                # d_pad_x = msg["axes"][self.xbox_mappings["d_pad_x"]]
+                # if d_pad_x > 0.5:
+                #     ra_slow_mode = True
+                # elif d_pad_x < -0.5:
+                #     ra_slow_mode = False
 
                 throttle_cmd.throttles = [
                     self.filter_xbox_axis(msg["axes"][self.ra_config["joint_a"]["xbox_index"]]),
