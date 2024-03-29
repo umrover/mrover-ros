@@ -7,25 +7,25 @@
 #include <units/units.hpp>
 
 
-void test_joint_de(ros::NodeHandle& nh) {
+// void test_joint_de(ros::NodeHandle& nh) {
 
-    auto brushlessController_de0 = std::make_unique<mrover::BrushlessController>(nh, "jetson", "joint_de_0");
-    auto brushlessController_de1 = std::make_unique<mrover::BrushlessController>(nh, "jetson", "joint_de_1");
+//     auto brushlessController_de0 = std::make_unique<mrover::BrushlessController>(nh, "jetson", "joint_de_0");
+//     auto brushlessController_de1 = std::make_unique<mrover::BrushlessController>(nh, "jetson", "joint_de_1");
     
-    brushlessController_de0->setStop();
-    brushlessController_de1->setStop();
+//     brushlessController_de0->setStop();
+//     brushlessController_de1->setStop();
     
-    ros::Rate rate{20};
-    while (ros::ok()) {
-        brushlessController_de0->setDesiredVelocity(mrover::RadiansPerSecond{60.0});
-        brushlessController_de1->setDesiredVelocity(mrover::RadiansPerSecond{60.0});
+//     ros::Rate rate{20};
+//     while (ros::ok()) {
+//         brushlessController_de0->setDesiredVelocity(mrover::RadiansPerSecond{60.0});
+//         brushlessController_de1->setDesiredVelocity(mrover::RadiansPerSecond{60.0});
         
-        ros::spinOnce();
-        rate.sleep();
-    }
+//         ros::spinOnce();
+//         rate.sleep();
+//     }
 
     
-}
+// }
 
 auto main(int argc, char** argv) -> int {
     // Initialize the ROS node
@@ -50,13 +50,13 @@ auto main(int argc, char** argv) -> int {
     // fake DE publisher:
 
     auto DEPub = std::make_unique<ros::Publisher>(nh.advertise<mrover::Velocity>("arm_velocity_cmd", 1));
-    auto SAPub = std::make_unique<ros::Publisher>(nh.advertise<mrover::Velocity>("sa_velocity_cmd", 1));
+    // auto SAPub = std::make_unique<ros::Publisher>(nh.advertise<mrover::Velocity>("sa_velocity_cmd", 1));
 
 
     mrover::Velocity armMsg;
     mrover::Velocity saMsg;
     armMsg.names = {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll", "allen_key", "gripper"};
-    armMsg.velocities = {0, 0, 0, 0, 20, 0, 0};
+    armMsg.velocities = {0, 0, 0, 0, -10, 0, 0};
 
     // saMsg.names = {"sa_x", "sa_y", "sa_z", "sampler", "sensor_actuator"};
     // saMsg.velocities = {0, 0, 0.07,0, 0};
