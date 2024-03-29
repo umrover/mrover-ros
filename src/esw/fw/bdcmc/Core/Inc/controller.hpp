@@ -8,9 +8,8 @@
 
 #include <hardware.hpp>
 #include <messaging.hpp>
-#include <pidf.hpp>
 #include <motion_profile.hpp>
-#include "timer.hpp"
+#include <pidf.hpp>
 #include <units/units.hpp>
 
 #include "encoders.hpp"
@@ -31,10 +30,14 @@ namespace mrover {
         using Mode = std::variant<std::monostate, PositionMode, VelocityMode>;
         using MotionProfile = TrapezoidalMotionProfile<Radians, Seconds>;
 
+        // TODO: maybe pull this from htim directly, I was too lazy to figure that out
+        static constexpr double SECONDS_PER_PROFILE_TIMER_TICK = 1 / (140'000'000.0 / 8.0);
+
         /* ==================== Hardware ==================== */
         FDCAN<InBoundMessage> m_fdcan;
         HBridge m_motor_driver;
         TIM_HandleTypeDef* m_watchdog_timer{};
+        TIM_HandleTypeDef* m_profile_timer{};
         bool m_watchdog_enabled{};
         TIM_HandleTypeDef* m_encoder_timer{};
         TIM_HandleTypeDef* m_encoder_elapsed_timer{};
@@ -53,7 +56,6 @@ namespace mrover {
         BDCMCErrorInfo m_error = BDCMCErrorInfo::DEFAULT_START_UP_NOT_CONFIGURED;
 
         std::optional<MotionProfile> m_profile;
-        Timer m_profile_timer;
 
         struct StateAfterConfig {
             Dimensionless gear_ratio;
@@ -281,13 +283,15 @@ namespace mrover {
 
             Radians current_position = m_uncalib_position.value() - m_state_after_calib->offset_position;
 
+            Seconds time_elapsed{0};
+
             if (m_profile) {
-                m_profile->update(m_profile_timer.seconds());
+                time_elapsed = Seconds{m_profile_timer->Instance->CNT * SECONDS_PER_PROFILE_TIMER_TICK};
             } else {
                 // TODO: grab max velocity from somewhere
 //                m_profile = MotionProfile{current_position, message.position, RadiansPerSecond{0.0}, message.max_acceleration};
                 m_profile.emplace(current_position, message.position, RadiansPerSecond {0.0}, message.max_acceleration);
-                m_profile_timer.reset();
+                m_profile_timer->Instance->CNT = 0;
             }
 
             mode.pidf.with_p(message.p);
@@ -298,7 +302,7 @@ namespace mrover {
             RadiansPerSecond current_velocity = m_velocity.value();
             RadiansPerSecond target_velocity = m_profile->velocity();
 
-            m_desired_output = mode.pidf.calculate(current_velocity, target_velocity, m_profile_timer.seconds());
+            m_desired_output = mode.pidf.calculate(current_velocity, target_velocity, time_elapsed);
             m_error = BDCMCErrorInfo::NO_ERROR;
 
             m_fdcan.broadcast(OutBoundMessage{DebugState{
@@ -333,10 +337,11 @@ namespace mrover {
     public:
         Controller() = default;
 
-        Controller(TIM_HandleTypeDef* hbridge_output, Pin hbridge_forward_pin, Pin hbridge_backward_pin, FDCAN<InBoundMessage> const& fdcan, TIM_HandleTypeDef* watchdog_timer, TIM_HandleTypeDef* encoder_tick_timer, TIM_HandleTypeDef* encoder_elapsed_timer, I2C_HandleTypeDef* absolute_encoder_i2c, std::array<LimitSwitch, 4> const& limit_switches)
+        Controller(TIM_HandleTypeDef* hbridge_output, Pin hbridge_forward_pin, Pin hbridge_backward_pin, FDCAN<InBoundMessage> const& fdcan, TIM_HandleTypeDef* watchdog_timer, TIM_HandleTypeDef* profile_timer, TIM_HandleTypeDef* encoder_tick_timer, TIM_HandleTypeDef* encoder_elapsed_timer, I2C_HandleTypeDef* absolute_encoder_i2c, std::array<LimitSwitch, 4> const& limit_switches)
             : m_fdcan{fdcan},
               m_motor_driver{HBridge(hbridge_output, hbridge_forward_pin, hbridge_backward_pin)},
               m_watchdog_timer{watchdog_timer},
+              m_profile_timer{profile_timer},
               m_encoder_timer{encoder_tick_timer},
               m_encoder_elapsed_timer{encoder_elapsed_timer},
               m_absolute_encoder_i2c{absolute_encoder_i2c},

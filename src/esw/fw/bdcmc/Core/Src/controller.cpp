@@ -26,6 +26,7 @@ extern TIM_HandleTypeDef htim4;
 extern TIM_HandleTypeDef htim3;
 extern TIM_HandleTypeDef htim6;
 extern TIM_HandleTypeDef htim7;
+extern TIM_HandleTypeDef htim8;
 extern TIM_HandleTypeDef htim15;
 extern TIM_HandleTypeDef htim16;
 extern TIM_HandleTypeDef htim17;
@@ -38,6 +39,7 @@ extern TIM_HandleTypeDef htim17;
 #define SEND_TIMER &htim7            // 20 Hz FDCAN repeating timer
 #define PWM_TIMER_1 &htim15          // H-Bridge PWM
 #define FDCAN_WATCHDOG_TIMER &htim16 // FDCAN watchdog timer that needs to be reset every time a message is received
+#define MOTION_PROFILE_TIMER &htim7  // timer for keeping track of motion profile state
 
 namespace mrover {
 
@@ -58,6 +60,7 @@ namespace mrover {
                 Pin{GPIOC, GPIO_PIN_6},
                 fdcan_bus,
                 FDCAN_WATCHDOG_TIMER,
+                MOTION_PROFILE_TIMER,
                 QUADRATURE_TICK_TIMER_1,
                 QUADRATURE_ELAPSED_TIMER_1,
                 ABSOLUTE_I2C,
