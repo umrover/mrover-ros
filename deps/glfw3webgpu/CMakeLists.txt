@@ -10,6 +10,29 @@ add_library(glfw3webgpu STATIC glfw3webgpu.c)
 
 find_package(glfw3 REQUIRED)
 
+find_package(dawn QUIET)
+if (dawn_FOUND)
+    message(STATUS "Using Dawn system install")
+else ()
+    message(STATUS "Using Dawn from source")
+    add_library(webgpu SHARED IMPORTED)
+
+    set(WEBGPU_BUILD_DIR ${CMAKE_CURRENT_LIST_DIR}/../../deps/dawn/out/Release)
+    if (APPLE)
+        set(WEBGPU_SHARED_LIB ${WEBGPU_BUILD_DIR}/src/dawn/native/libwebgpu_dawn.dylib)
+    else ()
+        set(WEBGPU_SHARED_LIB ${WEBGPU_BUILD_DIR}/src/dawn/native/libwebgpu_dawn.so)
+    endif ()
+    if (EXISTS ${WEBGPU_SHARED_LIB})
+        target_include_directories(webgpu INTERFACE ${CMAKE_CURRENT_LIST_DIR}/../../deps/dawn/include ${WEBGPU_BUILD_DIR}/gen/include)
+        set_property(TARGET webgpu PROPERTY IMPORTED_LOCATION ${WEBGPU_SHARED_LIB})
+
+        set(dawn_FOUND TRUE)
+    else ()
+        message(WARNING "Dawn not found. If on Ubuntu install with 'sudo apt install -f ./pkg/libdawn-dev.deb'. Or build from source with ./scripts/build_dawn.sh")
+    endif ()
+endif ()
+
 set(CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}/install")
 message("Set the CMAKE_INSTALL_PREFIX to ${CMAKE_INSTALL_PREFIX}")
 
@@ -19,9 +42,15 @@ set(${PROJECT_NAME}_LIBRARIES "${CMAKE_INSTALL_PREFIX}/lib")
 # Set the include directory relative to install path
 set(${PROJECT_NAME}_INSTALL_INCLUDE_DIRS "${CMAKE_INSTALL_PREFIX}/include")
 
-target_include_directories(${PROJECT_NAME} PUBLIC
-              $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-			  $<INSTALL_INTERFACE:include>  # <prefix>/include/mylib
+message( "webgpu ${webgpu_INCLUDE_DIRS} ${dawn_FOUND}" )
+
+target_include_directories(${PROJECT_NAME} 
+                            PRIVATE
+                                ${webgpu_INCLUDE_DIRS}
+                            
+                            PUBLIC
+                                $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+                                $<INSTALL_INTERFACE:include>
 )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${${PROJECT_NAME}_INSTALL_INCLUDE_DIRS})
