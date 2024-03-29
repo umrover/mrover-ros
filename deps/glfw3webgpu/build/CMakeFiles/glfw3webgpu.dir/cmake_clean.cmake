@@ -1,6 +1,6 @@
 file(REMOVE_RECURSE
-  "CMakeFiles/glfw3webgpu.dir/glfw3webgpu.c.o"
-  "CMakeFiles/glfw3webgpu.dir/glfw3webgpu.c.o.d"
+  "CMakeFiles/glfw3webgpu.dir/src/glfw3webgpu.c.o"
+  "CMakeFiles/glfw3webgpu.dir/src/glfw3webgpu.c.o.d"
   "libglfw3webgpu.a"
   "libglfw3webgpu.pdb"
 )

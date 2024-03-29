@@ -8,7 +8,7 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
-  "/home/john/catkin_ws/src/mrover/deps/glfw3webgpu/glfw3webgpu.c" "CMakeFiles/glfw3webgpu.dir/glfw3webgpu.c.o" "gcc" "CMakeFiles/glfw3webgpu.dir/glfw3webgpu.c.o.d"
+  "/home/john/catkin_ws/src/mrover/deps/glfw3webgpu/src/glfw3webgpu.c" "CMakeFiles/glfw3webgpu.dir/src/glfw3webgpu.c.o" "gcc" "CMakeFiles/glfw3webgpu.dir/src/glfw3webgpu.c.o.d"
   )
 
 # Targets to which this target links which contain Fortran sources.

@@ -6,8 +6,9 @@ project(glfw3webgpu LANGUAGES C)
 # Look at examples/CMakeLists.txt to see how to use it in a project.
 
 # The glfw3webgpu target
-add_library(glfw3webgpu STATIC glfw3webgpu.c)
+add_library(glfw3webgpu STATIC src/glfw3webgpu.c)
 
+# Find the required dependencies
 find_package(glfw3 REQUIRED)
 
 find_package(dawn QUIET)
@@ -33,6 +34,7 @@ else ()
     endif ()
 endif ()
 
+# Set the install directory 
 set(CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}/install")
 message("Set the CMAKE_INSTALL_PREFIX to ${CMAKE_INSTALL_PREFIX}")
 
@@ -42,24 +44,31 @@ set(${PROJECT_NAME}_LIBRARIES "${CMAKE_INSTALL_PREFIX}/lib")
 # Set the include directory relative to install path
 set(${PROJECT_NAME}_INSTALL_INCLUDE_DIRS "${CMAKE_INSTALL_PREFIX}/include")
 
-message( "webgpu ${webgpu_INCLUDE_DIRS} ${dawn_FOUND}" )
-
-target_include_directories(${PROJECT_NAME} 
-                            PRIVATE
-                                ${webgpu_INCLUDE_DIRS}
-                            
-                            PUBLIC
-                                $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-                                $<INSTALL_INTERFACE:include>
+# Include the directories necessary for building
+target_include_directories	(${PROJECT_NAME} 
+								PRIVATE
+									headers
+							)
+# Set the public headers we would like to install
+set(
+    public_headers 
+        headers/glfw3webgpu.h
 )
 
-set_target_properties(${PROJECT_NAME} PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${${PROJECT_NAME}_INSTALL_INCLUDE_DIRS})
-
+#Install the executable
 install (
-          TARGETS ${PROJECT_NAME} 
-          EXPORT "${PROJECT_NAME}Targets"
-          INCLUDES DESTINATION "${${PROJECT_NAME}_INSTALL_INCLUDE_DIRS}"
+          	TARGETS ${PROJECT_NAME} 
+          	EXPORT "${PROJECT_NAME}Targets"
+			LIBRARY DESTINATION lib
         )
+
+# Install the public headers
+install	(
+			FILES
+				${public_headers}
+			DESTINATION 
+				"${${PROJECT_NAME}_INSTALL_INCLUDE_DIRS}"
+		)
 
 target_link_libraries(glfw3webgpu PUBLIC glfw webgpu)
 

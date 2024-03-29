@@ -174,29 +174,29 @@ glfw3webgpu/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/glfw3webgpu.dir/build.make CMakeFiles/glfw3webgpu.dir/build
 .PHONY : glfw3webgpu/fast
 
-glfw3webgpu.o: glfw3webgpu.c.o
-.PHONY : glfw3webgpu.o
+src/glfw3webgpu.o: src/glfw3webgpu.c.o
+.PHONY : src/glfw3webgpu.o
 
 # target to build an object file
-glfw3webgpu.c.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/glfw3webgpu.dir/build.make CMakeFiles/glfw3webgpu.dir/glfw3webgpu.c.o
-.PHONY : glfw3webgpu.c.o
+src/glfw3webgpu.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/glfw3webgpu.dir/build.make CMakeFiles/glfw3webgpu.dir/src/glfw3webgpu.c.o
+.PHONY : src/glfw3webgpu.c.o
 
-glfw3webgpu.i: glfw3webgpu.c.i
-.PHONY : glfw3webgpu.i
+src/glfw3webgpu.i: src/glfw3webgpu.c.i
+.PHONY : src/glfw3webgpu.i
 
 # target to preprocess a source file
-glfw3webgpu.c.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/glfw3webgpu.dir/build.make CMakeFiles/glfw3webgpu.dir/glfw3webgpu.c.i
-.PHONY : glfw3webgpu.c.i
+src/glfw3webgpu.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/glfw3webgpu.dir/build.make CMakeFiles/glfw3webgpu.dir/src/glfw3webgpu.c.i
+.PHONY : src/glfw3webgpu.c.i
 
-glfw3webgpu.s: glfw3webgpu.c.s
-.PHONY : glfw3webgpu.s
+src/glfw3webgpu.s: src/glfw3webgpu.c.s
+.PHONY : src/glfw3webgpu.s
 
 # target to generate assembly for a file
-glfw3webgpu.c.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/glfw3webgpu.dir/build.make CMakeFiles/glfw3webgpu.dir/glfw3webgpu.c.s
-.PHONY : glfw3webgpu.c.s
+src/glfw3webgpu.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/glfw3webgpu.dir/build.make CMakeFiles/glfw3webgpu.dir/src/glfw3webgpu.c.s
+.PHONY : src/glfw3webgpu.c.s
 
 # Help Target
 help:
@@ -211,9 +211,9 @@ help:
 	@echo "... list_install_components"
 	@echo "... rebuild_cache"
 	@echo "... glfw3webgpu"
-	@echo "... glfw3webgpu.o"
-	@echo "... glfw3webgpu.i"
-	@echo "... glfw3webgpu.s"
+	@echo "... src/glfw3webgpu.o"
+	@echo "... src/glfw3webgpu.i"
+	@echo "... src/glfw3webgpu.s"
 .PHONY : help
 
 

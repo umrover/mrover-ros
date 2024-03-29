@@ -69,28 +69,28 @@ include CMakeFiles/glfw3webgpu.dir/progress.make
 # Include the compile flags for this target's objects.
 include CMakeFiles/glfw3webgpu.dir/flags.make
 
-CMakeFiles/glfw3webgpu.dir/glfw3webgpu.c.o: CMakeFiles/glfw3webgpu.dir/flags.make
-CMakeFiles/glfw3webgpu.dir/glfw3webgpu.c.o: /home/john/catkin_ws/src/mrover/deps/glfw3webgpu/glfw3webgpu.c
-CMakeFiles/glfw3webgpu.dir/glfw3webgpu.c.o: CMakeFiles/glfw3webgpu.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/john/catkin_ws/src/mrover/deps/glfw3webgpu/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building C object CMakeFiles/glfw3webgpu.dir/glfw3webgpu.c.o"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/glfw3webgpu.dir/glfw3webgpu.c.o -MF CMakeFiles/glfw3webgpu.dir/glfw3webgpu.c.o.d -o CMakeFiles/glfw3webgpu.dir/glfw3webgpu.c.o -c /home/john/catkin_ws/src/mrover/deps/glfw3webgpu/glfw3webgpu.c
+CMakeFiles/glfw3webgpu.dir/src/glfw3webgpu.c.o: CMakeFiles/glfw3webgpu.dir/flags.make
+CMakeFiles/glfw3webgpu.dir/src/glfw3webgpu.c.o: /home/john/catkin_ws/src/mrover/deps/glfw3webgpu/src/glfw3webgpu.c
+CMakeFiles/glfw3webgpu.dir/src/glfw3webgpu.c.o: CMakeFiles/glfw3webgpu.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/john/catkin_ws/src/mrover/deps/glfw3webgpu/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building C object CMakeFiles/glfw3webgpu.dir/src/glfw3webgpu.c.o"
+	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/glfw3webgpu.dir/src/glfw3webgpu.c.o -MF CMakeFiles/glfw3webgpu.dir/src/glfw3webgpu.c.o.d -o CMakeFiles/glfw3webgpu.dir/src/glfw3webgpu.c.o -c /home/john/catkin_ws/src/mrover/deps/glfw3webgpu/src/glfw3webgpu.c
 
-CMakeFiles/glfw3webgpu.dir/glfw3webgpu.c.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/glfw3webgpu.dir/glfw3webgpu.c.i"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/john/catkin_ws/src/mrover/deps/glfw3webgpu/glfw3webgpu.c > CMakeFiles/glfw3webgpu.dir/glfw3webgpu.c.i
+CMakeFiles/glfw3webgpu.dir/src/glfw3webgpu.c.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/glfw3webgpu.dir/src/glfw3webgpu.c.i"
+	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/john/catkin_ws/src/mrover/deps/glfw3webgpu/src/glfw3webgpu.c > CMakeFiles/glfw3webgpu.dir/src/glfw3webgpu.c.i
 
-CMakeFiles/glfw3webgpu.dir/glfw3webgpu.c.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/glfw3webgpu.dir/glfw3webgpu.c.s"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/john/catkin_ws/src/mrover/deps/glfw3webgpu/glfw3webgpu.c -o CMakeFiles/glfw3webgpu.dir/glfw3webgpu.c.s
+CMakeFiles/glfw3webgpu.dir/src/glfw3webgpu.c.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/glfw3webgpu.dir/src/glfw3webgpu.c.s"
+	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/john/catkin_ws/src/mrover/deps/glfw3webgpu/src/glfw3webgpu.c -o CMakeFiles/glfw3webgpu.dir/src/glfw3webgpu.c.s
 
 # Object files for target glfw3webgpu
 glfw3webgpu_OBJECTS = \
-"CMakeFiles/glfw3webgpu.dir/glfw3webgpu.c.o"
+"CMakeFiles/glfw3webgpu.dir/src/glfw3webgpu.c.o"
 
 # External object files for target glfw3webgpu
 glfw3webgpu_EXTERNAL_OBJECTS =
 
-libglfw3webgpu.a: CMakeFiles/glfw3webgpu.dir/glfw3webgpu.c.o
+libglfw3webgpu.a: CMakeFiles/glfw3webgpu.dir/src/glfw3webgpu.c.o
 libglfw3webgpu.a: CMakeFiles/glfw3webgpu.dir/build.make
 libglfw3webgpu.a: CMakeFiles/glfw3webgpu.dir/link.txt
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/home/john/catkin_ws/src/mrover/deps/glfw3webgpu/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Linking C static library libglfw3webgpu.a"

@@ -1,0 +1,6 @@
+/home/john/catkin_ws/src/mrover/deps/glfw3webgpu/install/lib/libglfw3webgpu.a
+/home/john/catkin_ws/src/mrover/deps/glfw3webgpu/install/include/glfw3webgpu.h
+/home/john/catkin_ws/src/mrover/deps/glfw3webgpu/install/cmake/glfw3webgpuTargets.cmake
+/home/john/catkin_ws/src/mrover/deps/glfw3webgpu/install/cmake/glfw3webgpuTargets-noconfig.cmake
+/home/john/catkin_ws/src/mrover/deps/glfw3webgpu/install/cmake/glfw3webgpuConfig.cmake
+/home/john/catkin_ws/src/mrover/deps/glfw3webgpu/install/cmake/glfw3webgpuConfigVersion.cmake
