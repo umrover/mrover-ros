@@ -5,7 +5,7 @@
 #include <mrover/CAN.h>
 #include <mrover/HeaterData.h>
 #include <mrover/ScienceThermistors.h>
-#include <mrover/SpectralGroup.h>
+#include <mrover/Spectral.h>
 #include <ros/ros.h>
 #include <unordered_map>
 
@@ -42,12 +42,11 @@ void processMessage(mrover::HeaterStateData const& message) {
 }
 
 void processMessage(mrover::SpectralData const& message) {
-    mrover::SpectralGroup spectralData;
-    for (int i = 0; i < 3; ++i) {
-        for (int j = 0; j < 6; ++j) {
-            spectralData.spectrals.at(i).data.at(j) = message.spectrals.at(i).data.at(j);
-            spectralData.spectrals.at(i).error = message.spectrals.at(i).error;
-        }
+    mrover::Spectral spectralData;
+    spectralData.site = message.site;
+    spectralData.error = message.error;
+    for (int i = 0; i < 6; ++i) {
+        spectralData.data.at(i) = message.data.at(i);
     }
     spectralDataPublisher->publish(spectralData);
 }
@@ -98,7 +97,7 @@ auto main(int argc, char** argv) -> int {
     services.reserve(scienceDeviceByName.size() + 1);
 
     for (auto const& [deviceName, scienceDevice]: scienceDeviceByName) {
-        // Advertise services and set the callback using a la0mbda function
+        // Advertise services and set the callback using a lambda function
         services.emplace_back(nh.advertiseService<std_srvs::SetBool::Request, std_srvs::SetBool::Response>(
                 "science_enable_" + deviceName,
                 [scienceDevice](std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) {
@@ -109,7 +108,7 @@ auto main(int argc, char** argv) -> int {
     services.emplace_back(nh.advertiseService<std_srvs::SetBool::Request, std_srvs::SetBool::Response>("science_change_heater_auto_shutoff_state", changeHeaterAutoShutoffState));
 
     heaterDataPublisher = std::make_unique<ros::Publisher>(nh.advertise<mrover::HeaterData>("science_heater_state", 1));
-    spectralDataPublisher = std::make_unique<ros::Publisher>(nh.advertise<mrover::SpectralGroup>("science_spectral", 1));
+    spectralDataPublisher = std::make_unique<ros::Publisher>(nh.advertise<mrover::Spectral>("science_spectral", 1));
     thermistorDataPublisher = std::make_unique<ros::Publisher>(nh.advertise<mrover::ScienceThermistors>("science_thermistors", 1));
 
     ros::Subscriber CANSubscriber = nh.subscribe<mrover::CAN>("can/science/in", 1, processCANData);
