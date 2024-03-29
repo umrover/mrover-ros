@@ -76,6 +76,10 @@ namespace mrover {
         	}
         }
 
+		void feed(ConfigThermistorAutoShutOffCommand const& message) {
+			MAX_HEATER_TEMP = message.shutoff_temp;
+		}
+
     public:
         Science() = default;
 

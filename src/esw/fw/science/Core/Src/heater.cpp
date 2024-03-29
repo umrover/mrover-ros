@@ -5,9 +5,11 @@
 
 #include "heater.hpp"
 
+
+
+
 namespace mrover {
 
-    constexpr static float MAX_HEATER_TEMP = 50.0f;
     constexpr static int MAX_HEATER_WATCHDOG_TICK = 1000;
 
     Heater::Heater(DiagTempSensor const& diag_temp_sensor, Pin const& heater_pin)

@@ -11,6 +11,8 @@
 
 namespace mrover {
 
+	static float MAX_HEATER_TEMP = 50.0f;
+
     class Heater {
     public:
     	Heater() = default;
