@@ -14,7 +14,7 @@ namespace mrover {
     	: m_diag_temp_sensor(std::move(diag_temp_sensor)),
 		  m_heater_pin(std::move(heater_pin)),
 		  m_state(false),
-		  m_auto_shutoff_enabled(true),  // TODO - may want to make true if thermistors work
+		  m_auto_shutoff_enabled(true),
 		  m_last_time_received_message(0)
 	   {}
 
