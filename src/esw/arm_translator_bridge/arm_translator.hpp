@@ -1,12 +1,13 @@
 #pragma once
 
-#include "joint_de_translation.hpp"
-#include "matrix_helper.hpp"
-
+#include <algorithm>
+#include <cmath>
 #include <format>
 #include <memory>
+#include <unordered_map>
 
 #include <XmlRpcValue.h>
+#include <ros/duration.h>
 #include <ros/ros.h>
 
 #include <mrover/AdjustMotor.h>
@@ -14,13 +15,21 @@
 #include <mrover/Position.h>
 #include <mrover/Throttle.h>
 #include <mrover/Velocity.h>
+#include <ros/timer.h>
 #include <sensor_msgs/JointState.h>
 #include <std_msgs/Float32.h>
 
+#include <Eigen/Dense>
+
 #include <units/units.hpp>
-#include <linear_joint_translation.hpp>
 
 namespace mrover {
+
+    template<typename E>
+    using Vector2 = Eigen::Matrix<E, 2, 1>;
+
+    template<typename E>
+    using Matrix2 = Eigen::Matrix<E, 2, 2>;
 
     class ArmTranslator {
     public:
@@ -28,76 +37,51 @@ namespace mrover {
 
         explicit ArmTranslator(ros::NodeHandle& nh);
 
-        auto processPitchRawPositionData(std_msgs::Float32::ConstPtr const& msg) -> void;
-
-        auto processRollRawPositionData(std_msgs::Float32::ConstPtr const& msg) -> void;
-
         auto processVelocityCmd(Velocity::ConstPtr const& msg) -> void;
 
         auto processPositionCmd(Position::ConstPtr const& msg) -> void;
 
         auto processThrottleCmd(Throttle::ConstPtr const& msg) const -> void;
 
-        auto processArmHWJointData(sensor_msgs::JointState::ConstPtr const& msg) -> void;
+        auto processJointState(sensor_msgs::JointState::ConstPtr const& msg) -> void;
 
-        auto adjustServiceCallback(AdjustMotor::Request& req, AdjustMotor::Response& res) -> bool;
+        auto updateDeOffsets(ros::TimerEvent const&) -> void;
 
     private:
-        // static void clampValues(float& val1, float& val2, float minValue1, float maxValue1, float minValue2, float maxValue2);
-        
-        static void mapValue(float& val, float inputMinValue, float inputMaxValue, float outputMinValue, float outputMaxValue);
+        std::vector<std::string> const mRawArmNames{"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll", "allen_key", "gripper"};
+        std::vector<std::string> const mArmHWNames{"joint_a", "joint_b", "joint_c", "joint_de_0", "joint_de_1", "allen_key", "gripper"};
 
-        [[nodiscard]] auto jointDEIsCalibrated() const -> bool;
-
-        auto updatePositionOffsets() -> void;
-
-        const std::vector<std::string> mRawArmNames{"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll", "allen_key", "gripper"};
-        const std::vector<std::string> mArmHWNames{"joint_a", "joint_b", "joint_c", "joint_de_0", "joint_de_1", "allen_key", "gripper"};
         std::unique_ptr<ros::Publisher> mThrottlePub;
         std::unique_ptr<ros::Publisher> mVelocityPub;
         std::unique_ptr<ros::Publisher> mPositionPub;
         std::unique_ptr<ros::Publisher> mJointDataPub;
-        size_t const mJointDEPitchIndex = std::find(mRawArmNames.begin(), mRawArmNames.end(), "joint_de_pitch") - mRawArmNames.begin();
-        size_t const mJointDERollIndex = std::find(mRawArmNames.begin(), mRawArmNames.end(), "joint_de_roll") - mRawArmNames.begin();
-        size_t const mJointDE0Index = std::find(mArmHWNames.begin(), mArmHWNames.end(), "joint_de_0") - mArmHWNames.begin();
-        size_t const mJointDE1Index = std::find(mArmHWNames.begin(), mArmHWNames.end(), "joint_de_1") - mArmHWNames.begin();
 
-        size_t const mJointAIndex = std::find(mArmHWNames.begin(), mArmHWNames.end(), "joint_a") - mArmHWNames.begin();
-        std::optional<Radians> mJointDE0PosOffset = Radians{0};
-        std::optional<Radians> mJointDE1PosOffset = Radians{0};
+        std::size_t const mJointDEPitchIndex = std::ranges::find(mRawArmNames, "joint_de_pitch") - mRawArmNames.begin();
+        std::size_t const mJointDERollIndex = std::ranges::find(mRawArmNames, "joint_de_roll") - mRawArmNames.begin();
+        std::size_t const mJointDE0Index = std::ranges::find(mArmHWNames, "joint_de_0") - mArmHWNames.begin();
+        std::size_t const mJointDE1Index = std::ranges::find(mArmHWNames, "joint_de_1") - mArmHWNames.begin();
+        std::size_t const mJointAIndex = std::ranges::find(mArmHWNames, "joint_a") - mArmHWNames.begin();
 
-        Radians mJointDEPitchOffset;
-        Radians mJointDERollOffset;
+        ros::Timer mDeOffsetTimer;
 
-        std::optional<Radians> mCurrentRawJointDEPitch;
-        std::optional<Radians> mCurrentRawJointDERoll;
-        std::optional<Radians> mCurrentRawJointDE0Position;
-        std::optional<Radians> mCurrentRawJointDE1Position;
+        // RadiansPerSecond mMinRadPerSecDE0;
+        // RadiansPerSecond mMinRadPerSecDE1;
+        // RadiansPerSecond mMaxRadPerSecDE0;
+        // RadiansPerSecond mMaxRadPerSecDE1;
 
-        RadiansPerSecond mMinRadPerSecDE0{};
-        RadiansPerSecond mMinRadPerSecDE1{};
-        RadiansPerSecond mMaxRadPerSecDE0{};
-        RadiansPerSecond mMaxRadPerSecDE1{};
+        std::optional<Vector2<Radians>> mJointDePitchRoll;
 
-        RadiansPerMeter mJointALinMult{}; // TODO: need to be rev/meter for velocity....
+        RadiansPerMeter mJointARadiansToMeters;
 
-        ros::Subscriber mJointDEPitchPosSub;
-        ros::Subscriber mJointDERollPosSub;
+        // ros::Subscriber mJointDEPitchPosSub;
+        // ros::Subscriber mJointDERollPosSub;
 
         ros::Subscriber mThrottleSub;
         ros::Subscriber mVelocitySub;
         ros::Subscriber mPositionSub;
-        ros::Subscriber mArmHWJointDataSub;
+        ros::Subscriber mJointDataSub;
 
-        // TODO:(owen) unique_ptr servers? unique_ptr clients? Both? Neither? The world may never know. (try to learn)
-        std::unordered_map<std::string, ros::ServiceServer> mAdjustServersByRawArmNames;
-        // std::unordered_map<std::string, std::unique_ptr<ros::ServiceServer> > mCalibrateServer;
-
-        std::unordered_map<std::string, ros::ServiceClient> mAdjustClientsByArmHWNames;
-        // std::unique_ptr<ros::ServiceClient> mCalibrateClient;
-
-        std::optional<float> mJointDEPitchAdjust;
-        std::optional<float> mJointDERollAdjust;
+        std::unordered_map<std::string, ros::ServiceClient> mAdjustClientsByArmHwNames;
     };
 
 } // namespace mrover
