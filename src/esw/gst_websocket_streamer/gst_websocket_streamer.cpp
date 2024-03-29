@@ -45,25 +45,25 @@ namespace mrover {
                 launch = std::format(
                         // App source is pushed to when we get a ROS BGRA image message
                         // is-live prevents frames from being pushed when the pipeline is in READY
-                        "appsrc is-live=true name=imageSource "
+                        "appsrc name=imageSource is-live=true "
                         "! video/x-raw,format=BGRA,width={},height={},framerate=30/1 "
                         "! videoconvert " // Convert BGRA => I420 (YUV) for the encoder, note we are still on the CPU
                         "! video/x-raw,format=I420 "
                         "! nvvidconv " // Upload to GPU memory for the encoder
                         "! video/x-raw(memory:NVMM),format=I420 "
-                        "! nvv4l2h265enc bitrate={} iframeinterval=300 vbv-size=33333 insert-sps-pps=true control-rate=constant_bitrate profile=Main num-B-Frames=0 ratecontrol-enable=true preset-level=UltraFastPreset EnableTwopassCBR=false maxperf-enable=true "
+                        "! nvv4l2h265enc name=encoder bitrate={} iframeinterval=300 vbv-size=33333 insert-sps-pps=true control-rate=constant_bitrate profile=Main num-B-Frames=0 ratecontrol-enable=true preset-level=UltraFastPreset EnableTwopassCBR=false maxperf-enable=true "
                         // App sink is pulled from (getting H265 chunks) on another thread and sent to the stream server
                         // sync=false is needed to avoid weirdness, going from playing => ready => playing will not work otherwise
-                        "! appsink sync=false name=streamSink",
+                        "! appsink name=streamSink sync=false",
                         mImageWidth, mImageHeight, mBitrate);
             } else {
                 // ReSharper disable once CppDFAUnreachableCode
                 launch = std::format(
-                        "appsrc is-live=true name=imageSource "
+                        "appsrc name=imageSource is-live=true "
                         "! video/x-raw,format=BGRA,width={},height={},framerate=30/1 "
                         "! videoconvert "
-                        "! nvh265enc "
-                        "! appsink sync=false name=streamSink",
+                        "! nvh265enc name=encoder "
+                        "! appsink name=streamSink sync=false",
                         mImageWidth, mImageHeight);
             }
         } else {
@@ -77,8 +77,8 @@ namespace mrover {
                     "! video/x-raw(memory:NVMM),format=YUY2,width={},height={},framerate={}/1 "
                     "! nvvidconv "
                     "! video/x-raw(memory:NVMM),format=I420 "
-                    "! nvv4l2h265enc bitrate={} iframeinterval=300 vbv-size=33333 insert-sps-pps=true control-rate=constant_bitrate profile=Main num-B-Frames=0 ratecontrol-enable=true preset-level=UltraFastPreset EnableTwopassCBR=false maxperf-enable=true "
-                    "! appsink sync=false name=streamSink",
+                    "! nvv4l2h265enc name=encoder bitrate={} iframeinterval=300 vbv-size=33333 insert-sps-pps=true control-rate=constant_bitrate profile=Main num-B-Frames=0 ratecontrol-enable=true preset-level=UltraFastPreset EnableTwopassCBR=false maxperf-enable=true "
+                    "! appsink name=streamSink sync=false",
                     mCaptureDevice, mImageWidth, mImageHeight, mImageFramerate, mBitrate);
         }
 
