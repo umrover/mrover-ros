@@ -79,14 +79,13 @@ export default {
 .wrapper {
   display: grid;
   grid-gap: 10px;
-  grid-template-columns: repeat(2, auto);
-  grid-template-rows: repeat(5, auto);
+  grid-template-columns: repeat(3, auto);
+  grid-template-rows: repeat(4, auto);
   grid-template-areas:
-    'header header'
-    'cache siteSelect'
-    'cache benedicts'
-    'chlorophyll amino'
-    'cameras cameras';
+    'header header header'
+    'cameras cameras siteSelect'
+    'cameras cameras benedicts'
+    'chlorophyll cache amino';
   font-family: sans-serif;
   height: auto;
 }
