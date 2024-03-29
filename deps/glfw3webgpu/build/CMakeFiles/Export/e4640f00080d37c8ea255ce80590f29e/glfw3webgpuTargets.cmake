@@ -19,7 +19,7 @@ set(CMAKE_IMPORT_FILE_VERSION 1)
 set(_cmake_targets_defined "")
 set(_cmake_targets_not_defined "")
 set(_cmake_expected_targets "")
-foreach(_cmake_expected_target IN ITEMS ::glfw3webgpu)
+foreach(_cmake_expected_target IN ITEMS glfw3webgpu)
   list(APPEND _cmake_expected_targets "${_cmake_expected_target}")
   if(TARGET "${_cmake_expected_target}")
     list(APPEND _cmake_targets_defined "${_cmake_expected_target}")
@@ -46,17 +46,13 @@ unset(_cmake_targets_not_defined)
 unset(_cmake_expected_targets)
 
 
-# Compute the installation prefix relative to this file.
-get_filename_component(_IMPORT_PREFIX "${CMAKE_CURRENT_LIST_FILE}" PATH)
-get_filename_component(_IMPORT_PREFIX "${_IMPORT_PREFIX}" PATH)
-if(_IMPORT_PREFIX STREQUAL "/")
-  set(_IMPORT_PREFIX "")
-endif()
+# The installation prefix configured by this project.
+set(_IMPORT_PREFIX "/usr/local")
 
-# Create imported target ::glfw3webgpu
-add_library(::glfw3webgpu STATIC IMPORTED)
+# Create imported target glfw3webgpu
+add_library(glfw3webgpu STATIC IMPORTED)
 
-set_target_properties(::glfw3webgpu PROPERTIES
+set_target_properties(glfw3webgpu PROPERTIES
   INTERFACE_LINK_LIBRARIES "glfw;webgpu"
 )
 

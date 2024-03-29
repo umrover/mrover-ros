@@ -2,7 +2,7 @@
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
-  set(CMAKE_INSTALL_PREFIX "/home/john/catkin_ws/src/mrover/deps/glfw3webgpu/install")
+  set(CMAKE_INSTALL_PREFIX "/usr/local")
 endif()
 string(REGEX REPLACE "/$" "" CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}")
 
@@ -43,23 +43,47 @@ if(NOT DEFINED CMAKE_OBJDUMP)
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
+  list(APPEND CMAKE_ABSOLUTE_DESTINATION_FILES
+   "/usr/local/lib/libglfw3webgpu.a")
+  if(CMAKE_WARN_ON_ABSOLUTE_INSTALL_DESTINATION)
+    message(WARNING "ABSOLUTE path INSTALL DESTINATION : ${CMAKE_ABSOLUTE_DESTINATION_FILES}")
+  endif()
+  if(CMAKE_ERROR_ON_ABSOLUTE_INSTALL_DESTINATION)
+    message(FATAL_ERROR "ABSOLUTE path INSTALL DESTINATION forbidden (by caller): ${CMAKE_ABSOLUTE_DESTINATION_FILES}")
+  endif()
+  file(INSTALL DESTINATION "/usr/local/lib" TYPE STATIC_LIBRARY FILES "/home/john/catkin_ws/src/mrover/deps/glfw3webgpu/build/libglfw3webgpu.a")
+endif()
+
+if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
+  include("/home/john/catkin_ws/src/mrover/deps/glfw3webgpu/build/CMakeFiles/glfw3webgpu.dir/install-cxx-module-bmi-noconfig.cmake" OPTIONAL)
+endif()
+
+if(CMAKE_INSTALL_COMPONENT STREQUAL "all" OR NOT CMAKE_INSTALL_COMPONENT)
+  list(APPEND CMAKE_ABSOLUTE_DESTINATION_FILES
+   "/usr/local/include/glfw3webgpu.h")
+  if(CMAKE_WARN_ON_ABSOLUTE_INSTALL_DESTINATION)
+    message(WARNING "ABSOLUTE path INSTALL DESTINATION : ${CMAKE_ABSOLUTE_DESTINATION_FILES}")
+  endif()
+  if(CMAKE_ERROR_ON_ABSOLUTE_INSTALL_DESTINATION)
+    message(FATAL_ERROR "ABSOLUTE path INSTALL DESTINATION forbidden (by caller): ${CMAKE_ABSOLUTE_DESTINATION_FILES}")
+  endif()
+  file(INSTALL DESTINATION "/usr/local/include" TYPE FILE FILES "/home/john/catkin_ws/src/mrover/deps/glfw3webgpu/headers/glfw3webgpu.h")
+endif()
+
+if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
   file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" TYPE STATIC_LIBRARY FILES "/home/john/catkin_ws/src/mrover/deps/glfw3webgpu/build/libglfw3webgpu.a")
 endif()
 
-if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/include" TYPE FILE FILES "/home/john/catkin_ws/src/mrover/deps/glfw3webgpu/headers/glfw3webgpu.h")
-endif()
-
-if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  if(EXISTS "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/cmake/glfw3webgpuTargets.cmake")
+if(CMAKE_INSTALL_COMPONENT STREQUAL "all" OR NOT CMAKE_INSTALL_COMPONENT)
+  if(EXISTS "$ENV{DESTDIR}/usr/local/share/cmake/glfw3webgpu/glfw3webgpuTargets.cmake")
     file(DIFFERENT _cmake_export_file_changed FILES
-         "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/cmake/glfw3webgpuTargets.cmake"
-         "/home/john/catkin_ws/src/mrover/deps/glfw3webgpu/build/CMakeFiles/Export/272ceadb8458515b2ae4b5630a6029cc/glfw3webgpuTargets.cmake")
+         "$ENV{DESTDIR}/usr/local/share/cmake/glfw3webgpu/glfw3webgpuTargets.cmake"
+         "/home/john/catkin_ws/src/mrover/deps/glfw3webgpu/build/CMakeFiles/Export/e4640f00080d37c8ea255ce80590f29e/glfw3webgpuTargets.cmake")
     if(_cmake_export_file_changed)
-      file(GLOB _cmake_old_config_files "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/cmake/glfw3webgpuTargets-*.cmake")
+      file(GLOB _cmake_old_config_files "$ENV{DESTDIR}/usr/local/share/cmake/glfw3webgpu/glfw3webgpuTargets-*.cmake")
       if(_cmake_old_config_files)
         string(REPLACE ";" ", " _cmake_old_config_files_text "${_cmake_old_config_files}")
-        message(STATUS "Old export file \"$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/cmake/glfw3webgpuTargets.cmake\" will be replaced.  Removing files [${_cmake_old_config_files_text}].")
+        message(STATUS "Old export file \"$ENV{DESTDIR}/usr/local/share/cmake/glfw3webgpu/glfw3webgpuTargets.cmake\" will be replaced.  Removing files [${_cmake_old_config_files_text}].")
         unset(_cmake_old_config_files_text)
         file(REMOVE ${_cmake_old_config_files})
       endif()
@@ -67,14 +91,38 @@ if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT
     endif()
     unset(_cmake_export_file_changed)
   endif()
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/cmake" TYPE FILE FILES "/home/john/catkin_ws/src/mrover/deps/glfw3webgpu/build/CMakeFiles/Export/272ceadb8458515b2ae4b5630a6029cc/glfw3webgpuTargets.cmake")
+  list(APPEND CMAKE_ABSOLUTE_DESTINATION_FILES
+   "/usr/local/share/cmake/glfw3webgpu/glfw3webgpuTargets.cmake")
+  if(CMAKE_WARN_ON_ABSOLUTE_INSTALL_DESTINATION)
+    message(WARNING "ABSOLUTE path INSTALL DESTINATION : ${CMAKE_ABSOLUTE_DESTINATION_FILES}")
+  endif()
+  if(CMAKE_ERROR_ON_ABSOLUTE_INSTALL_DESTINATION)
+    message(FATAL_ERROR "ABSOLUTE path INSTALL DESTINATION forbidden (by caller): ${CMAKE_ABSOLUTE_DESTINATION_FILES}")
+  endif()
+  file(INSTALL DESTINATION "/usr/local/share/cmake/glfw3webgpu" TYPE FILE FILES "/home/john/catkin_ws/src/mrover/deps/glfw3webgpu/build/CMakeFiles/Export/e4640f00080d37c8ea255ce80590f29e/glfw3webgpuTargets.cmake")
   if(CMAKE_INSTALL_CONFIG_NAME MATCHES "^()$")
-    file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/cmake" TYPE FILE FILES "/home/john/catkin_ws/src/mrover/deps/glfw3webgpu/build/CMakeFiles/Export/272ceadb8458515b2ae4b5630a6029cc/glfw3webgpuTargets-noconfig.cmake")
+    list(APPEND CMAKE_ABSOLUTE_DESTINATION_FILES
+     "/usr/local/share/cmake/glfw3webgpu/glfw3webgpuTargets-noconfig.cmake")
+    if(CMAKE_WARN_ON_ABSOLUTE_INSTALL_DESTINATION)
+      message(WARNING "ABSOLUTE path INSTALL DESTINATION : ${CMAKE_ABSOLUTE_DESTINATION_FILES}")
+    endif()
+    if(CMAKE_ERROR_ON_ABSOLUTE_INSTALL_DESTINATION)
+      message(FATAL_ERROR "ABSOLUTE path INSTALL DESTINATION forbidden (by caller): ${CMAKE_ABSOLUTE_DESTINATION_FILES}")
+    endif()
+    file(INSTALL DESTINATION "/usr/local/share/cmake/glfw3webgpu" TYPE FILE FILES "/home/john/catkin_ws/src/mrover/deps/glfw3webgpu/build/CMakeFiles/Export/e4640f00080d37c8ea255ce80590f29e/glfw3webgpuTargets-noconfig.cmake")
   endif()
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/cmake" TYPE FILE FILES
+  list(APPEND CMAKE_ABSOLUTE_DESTINATION_FILES
+   "/usr/local/share/cmake/glfw3webgpu/glfw3webgpuConfig.cmake;/usr/local/share/cmake/glfw3webgpu/glfw3webgpuConfigVersion.cmake")
+  if(CMAKE_WARN_ON_ABSOLUTE_INSTALL_DESTINATION)
+    message(WARNING "ABSOLUTE path INSTALL DESTINATION : ${CMAKE_ABSOLUTE_DESTINATION_FILES}")
+  endif()
+  if(CMAKE_ERROR_ON_ABSOLUTE_INSTALL_DESTINATION)
+    message(FATAL_ERROR "ABSOLUTE path INSTALL DESTINATION forbidden (by caller): ${CMAKE_ABSOLUTE_DESTINATION_FILES}")
+  endif()
+  file(INSTALL DESTINATION "/usr/local/share/cmake/glfw3webgpu" TYPE FILE FILES
     "/home/john/catkin_ws/src/mrover/deps/glfw3webgpu/build/glfw3webgpuConfig.cmake"
     "/home/john/catkin_ws/src/mrover/deps/glfw3webgpu/build/glfw3webgpuConfigVersion.cmake"
     )

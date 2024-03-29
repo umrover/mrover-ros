@@ -35,11 +35,12 @@ else ()
 endif ()
 
 # Set the install directory 
-set(CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}/install")
+set(CMAKE_INSTALL_PREFIX "/usr/local")
 message("Set the CMAKE_INSTALL_PREFIX to ${CMAKE_INSTALL_PREFIX}")
 
 # Set the lib folder for when it needs to be linked against
 set(${PROJECT_NAME}_LIBRARIES "${CMAKE_INSTALL_PREFIX}/lib")
+
 
 # Set the include directory relative to install path
 set(${PROJECT_NAME}_INSTALL_INCLUDE_DIRS "${CMAKE_INSTALL_PREFIX}/include")
@@ -55,19 +56,18 @@ set(
         headers/glfw3webgpu.h
 )
 
-#Install the executable
+# Install the binary
 install (
-          	TARGETS ${PROJECT_NAME} 
-          	EXPORT "${PROJECT_NAME}Targets"
-			LIBRARY DESTINATION lib
-        )
+			TARGETS ${PROJECT_NAME}
+			DESTINATION ${${PROJECT_NAME}_LIBRARIES}
+		)
 
 # Install the public headers
 install	(
 			FILES
 				${public_headers}
-			DESTINATION 
-				"include"
+			DESTINATION ${${PROJECT_NAME}_INSTALL_INCLUDE_DIRS}
+			COMPONENT all
 		)
 
 target_link_libraries(glfw3webgpu PUBLIC glfw webgpu)
@@ -77,11 +77,21 @@ if (APPLE)
   target_link_libraries(glfw3webgpu PRIVATE "-framework Cocoa" "-framework CoreVideo" "-framework IOKit" "-framework QuartzCore")
 endif ()
 
-# generate and install export file
+set(CONFIG_FILES_DIR "${CMAKE_INSTALL_PREFIX}/share/cmake/${PROJECT_NAME}")
+
+# NOT SURE what these do
+install (
+          	TARGETS ${PROJECT_NAME} 
+          	EXPORT "${PROJECT_NAME}Targets"
+			LIBRARY DESTINATION ${${PROJECT_NAME}_LIBRARIES}
+			COMPONENT all
+        )
+
 install(EXPORT "${PROJECT_NAME}Targets"
     FILE "${PROJECT_NAME}Targets.cmake"
-    NAMESPACE ${namespace}::
-    DESTINATION cmake
+    NAMESPACE ${namespace}
+	DESTINATION ${CONFIG_FILES_DIR}
+	COMPONENT all
 )
 
 include(CMakePackageConfigHelpers)
@@ -102,7 +112,7 @@ configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/Config.cmake.in
 install(FILES
     "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
     "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
-    DESTINATION cmake
+	DESTINATION ${CONFIG_FILES_DIR}
 )
 
 # where to find our CMake modules

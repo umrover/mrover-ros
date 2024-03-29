@@ -1,0 +1,7 @@
+43427b07053415da990e2779b81667cd  usr/lib/libglfw3webgpu.a
+f01acf8d2eaeaadbd8a963baa42c310b  usr/local/include/glfw3webgpu.h
+43427b07053415da990e2779b81667cd  usr/local/lib/libglfw3webgpu.a
+90e47efcdaa50a7f98c48f5bed52a8ff  usr/local/share/cmake/glfw3webgpu/glfw3webgpuConfig.cmake
+3726ff8dc3a4ef1b096cf4b93167837b  usr/local/share/cmake/glfw3webgpu/glfw3webgpuConfigVersion.cmake
+b7c5de41a2b108a2529469e5df49df66  usr/local/share/cmake/glfw3webgpu/glfw3webgpuTargets-noconfig.cmake
+0f98fc790f36f523d3d848760950512c  usr/local/share/cmake/glfw3webgpu/glfw3webgpuTargets.cmake
