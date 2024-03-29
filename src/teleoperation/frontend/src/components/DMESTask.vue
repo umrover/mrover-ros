@@ -225,8 +225,8 @@ export default defineComponent({
   cursor: pointer;
 }
 
-.help:hover ~ .helpscreen,
-.help:hover ~ .helpimages {
+.help:hover~.helpscreen,
+.help:hover~.helpimages {
   visibility: visible;
 }
 
