@@ -259,7 +259,7 @@ namespace mrover {
             m_error = BDCMCErrorInfo::NO_ERROR;
         }
 
-        auto process_command(PositionCommandProfiled const& message, PositionMode& mode) -> void {
+        auto process_command(PositionCommandProfiled const& message, VelocityMode& mode) -> void {
             if (!m_state_after_config) {
                 m_error = BDCMCErrorInfo::RECEIVING_COMMANDS_WHEN_NOT_CONFIGURED;
                 return;
@@ -284,7 +284,9 @@ namespace mrover {
             if (m_profile) {
                 m_profile->update(m_profile_timer.seconds());
             } else {
-                m_profile = MotionProfile{current_position, message.position, idk, message.max_acceleration};
+                // TODO: grab max velocity from somewhere
+//                m_profile = MotionProfile{current_position, message.position, RadiansPerSecond{0.0}, message.max_acceleration};
+                m_profile.emplace(current_position, message.position, RadiansPerSecond {0.0}, message.max_acceleration);
                 m_profile_timer.reset();
             }
 

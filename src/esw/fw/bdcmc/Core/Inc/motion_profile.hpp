@@ -26,14 +26,14 @@ namespace mrover {
         }
 
         auto velocity() -> VelocityUnit {
-            if (mT >= 0 && mT < mTAccelerationDone) {
+            if (mT >= TimeUnit{0} && mT < mTAccelerationDone) {
                 return mMaxAcceleration * mT;
             } else if (mT >= mTAccelerationDone && mT < mTCruiseDone) {
                 return mMaxVelocity;
             } else if (mT >= mTCruiseDone && mT <= mTEnd) {
                 return -mMaxAcceleration * mT + mMaxAcceleration * mTEnd;
             } else {
-                return 0.0;
+                return VelocityUnit{0};
             }
         }
 
@@ -46,15 +46,14 @@ namespace mrover {
         }
 
     private:
-        const VelocityUnit mMaxVelocity{};
-        const AccelerationUnit mMaxAcceleration{};
+        VelocityUnit mMaxVelocity{};
+        AccelerationUnit mMaxAcceleration{};
 
         TimeUnit mT{0};
 
-        const PositionUnit mTotalDistance{};
-        const TimeUnit mTAccelerationDone{};
-        const TimeUnit mTEnd{};
-        const TimeUnit mTCruiseDone{};
-
+        PositionUnit mTotalDistance{};
+        TimeUnit mTAccelerationDone{};
+        TimeUnit mTEnd{};
+        TimeUnit mTCruiseDone{};
     };
 }
