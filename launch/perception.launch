@@ -2,8 +2,13 @@
     <arg name="run_tag_detector" default="true" />
     <arg name="run_object_detector" default="true" />
 
+    <node pkg="nodelet" type="nodelet" name="perception_nodelet_manager" required="true"
+    args="manager" output="screen"/>
+
+    <!-- <include file="$(find mrover)/launch/zed.launch"/> -->
+
     <!-- Nodelet to detect AR tags and publish them to the TF tree -->
-    <node if="$(arg run_tag_detector)"
+    <!-- <node if="$(arg run_tag_detector)"
         pkg="nodelet" type="nodelet" name="zed_tag_detector"
         args="load mrover/TagDetectorNodelet perception_nodelet_manager" output="screen" />
 
@@ -13,5 +18,5 @@
 
     <node if="$(arg run_object_detector)"
         pkg="nodelet" type="nodelet" name="object_detector" respawn="true"
-        args="load mrover/ObjectDetectorNodelet perception_nodelet_manager" output="screen" />
+        args="load mrover/ObjectDetectorNodelet perception_nodelet_manager" output="screen" /> -->
 </launch>
