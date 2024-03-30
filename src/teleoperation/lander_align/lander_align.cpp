@@ -1,5 +1,8 @@
 #include "lander_align.hpp"
 #include <Eigen/src/Core/Matrix.h>
+#include <Eigen/src/Geometry/Quaternion.h>
+#include <manif/impl/se3/SE3.h>
+#include <manif/impl/so3/SO3.h>
 #include <optional>
 #include <point.hpp>
 #include <ros/init.h>
@@ -58,7 +61,7 @@ namespace mrover {
         //If there is a proper normal to drive to
         if (mNormalInZEDVector.has_value()) {
             // sendTwist();
-            calcMotion(.5,0);
+            calcMotion(1,0);
                 
         }
 
@@ -80,7 +83,7 @@ namespace mrover {
         if (xHeading.y() >= 0) {
             return angle;
         } else {
-            return angle + std::numbers::pi;
+            return 2 * std::numbers::pi - angle;
         }
     }
 
@@ -103,23 +106,23 @@ namespace mrover {
             roverInWorld = SE3Conversions::fromTfTree(mTfBuffer, "base_link", "map");
             Eigen::Vector3d xOrientation = roverInWorld.rotation().col(0); 
             double roverHeading = calcAngleWithWorldX(xOrientation);
+            ROS_INFO_STREAM("Current Rover Anlge" << roverHeading);
             Eigen::Vector3d currState{roverInWorld.translation().x(), roverInWorld.translation().y(), roverHeading};
-
 
             Eigen::Vector2d distanceToTargetVector{tarState.x() - currState.x(), tarState.y() - currState.y()};
             double distanceToTarget = std::abs(distanceToTargetVector.norm());
             //Constants
-            double Kx = .2;
-            double Ky = .6;
-            double Ktheta = 0.5;
+            double Kx = 0.5;
+            double Ky = 0.5;
+            double Ktheta = 2;
 
             Eigen::Matrix3d rotation;
-            rotation << std::cos(roverHeading), std::sin(roverHeading), 0,
-                    -std::sin(roverHeading), std::cos(roverHeading), 0,
+            rotation << std::cos(roverHeading),  std::sin(roverHeading), 0,
+                        -std::sin(roverHeading), std::cos(roverHeading), 0,
                     0, 0, 1;
 
             Eigen::Vector3d errState = rotation * (tarState - currState);
-            // desiredVelocity = (distanceToTarget / distanceToTargetInitial) *desiredVelocity;
+            //desiredVelocity = (distanceToTarget / distanceToTargetInitial) *desiredVelocity;
             // ROS_INFO_STREAM("ANGLE ERROR: " << errState.z() << std::endl);
             // ROS_INFO_STREAM("Position ERROR x: " << errState.x() << std::endl);
             // ROS_INFO_STREAM("Position ERROR y: " << errState.y() << std::endl);
@@ -133,19 +136,15 @@ namespace mrover {
             geometry_msgs::Twist twist;
             twist.angular.z = zRotation;
             twist.linear.x = xSpeed;
-            if(mActionServer->isPreemptRequested()){
+            if(mActionServer->isPreemptRequested() || distanceToTarget < .1){
                 twist.angular.z = 0;
                 twist.linear.x = 0;
                 mActionServer->setPreempted();
                 mTwistPub.publish(twist);
                 break;
             }
-            if (distanceToTarget < .1) break;
             mTwistPub.publish(twist);
-            SE3Conversions::pushToTfTree(mTfBroadcaster, "location_thing", mMapFrameId, SE3d{{mNormalInWorldVector.value().x(), mNormalInWorldVector.value().y(), mNormalInWorldVector.value().z()}, SO3d{Eigen::Quaterniond{0,0,0,0}.normalized()}});
-        }
-
-        
+        }        
     }
 
     void LanderAlignNodelet::filterNormals(sensor_msgs::PointCloud2ConstPtr const& cloud) {
@@ -297,6 +296,10 @@ namespace mrover {
         rot.col(0) = forward;
         rot.col(1) = left;
         rot.col(2) = up;
+
+        //TODO: Remove this
+        //SE3d dummy = {{mNormalInWorldVector->x(), mNormalInWorldVector->y(), mNormalInWorldVector->z()}, SO3d{Eigen::Quaterniond{rot}.normalized()}};
+        //SE3Conversions::pushToTfTree(mTfBroadcaster, "dummy", mMapFrameId, dummy);
 
         //Calculate the plane location in the world frame
         SE3d mPlaneLocationInZEDSE3d = {{mPlaneLocationInZEDVector.value().x(), mPlaneLocationInZEDVector.value().y(), mPlaneLocationInZEDVector.value().z()}, SO3d{Eigen::Quaterniond{rot}.normalized()}};
