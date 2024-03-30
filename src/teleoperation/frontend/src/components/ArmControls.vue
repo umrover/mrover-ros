@@ -98,7 +98,7 @@ import MotorAdjust from './MotorAdjust.vue'
 import LimitSwitch from './LimitSwitch.vue'
 
 // In seconds
-const updateRate = 0.05
+const updateRate = 0.01
 let interval: number | undefined
 
 export default defineComponent({
