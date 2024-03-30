@@ -61,7 +61,7 @@ namespace mrover {
         //If there is a proper normal to drive to
         if (mNormalInZEDVector.has_value()) {
             // sendTwist();
-            calcMotion(1,0);
+            calcMotion(0.25,0);
                 
         }
 
@@ -77,7 +77,7 @@ namespace mrover {
     auto LanderAlignNodelet::calcAngleWithWorldX(Eigen::Vector3d xHeading) -> double { //I want to be editing this variable so it should not be const or &
         xHeading.z() = 0;
         xHeading.normalize();
-        // ROS_INFO_STREAM("fucker" << xHeading.x() << " " << xHeading.y() << " " << xHeading.z());
+
         Eigen::Vector3d xAxisWorld{1, 0, 0};
         double angle = std::acos(xHeading.dot(xAxisWorld));
         if (xHeading.y() >= 0) {
@@ -113,13 +113,13 @@ namespace mrover {
             double distanceToTarget = std::abs(distanceToTargetVector.norm());
             //Constants
             double Kx = 0.5;
-            double Ky = 0.5;
-            double Ktheta = 2;
+            double Ky = 10;
+            double Ktheta = 1;
 
             Eigen::Matrix3d rotation;
             rotation << std::cos(roverHeading),  std::sin(roverHeading), 0,
                         -std::sin(roverHeading), std::cos(roverHeading), 0,
-                    0, 0, 1;
+                        0,                          0,                        1;
 
             Eigen::Vector3d errState = rotation * (tarState - currState);
             //desiredVelocity = (distanceToTarget / distanceToTargetInitial) *desiredVelocity;
@@ -136,7 +136,7 @@ namespace mrover {
             geometry_msgs::Twist twist;
             twist.angular.z = zRotation;
             twist.linear.x = xSpeed;
-            if(mActionServer->isPreemptRequested() || distanceToTarget < .1){
+            if(mActionServer->isPreemptRequested() || distanceToTarget < .5){
                 twist.angular.z = 0;
                 twist.linear.x = 0;
                 mActionServer->setPreempted();
