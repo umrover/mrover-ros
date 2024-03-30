@@ -71,20 +71,36 @@ namespace mrover {
                 // TODO(quintin): I had to apply this patch: https://forums.developer.nvidia.com/t/macrosilicon-usb/157777/4
                 //                nvv4l2camerasrc only supports UYUV by default, but our cameras are YUY2 (YUYV)
                 // ReSharper disable once CppDFAUnreachableCode
+
+                // launch = std::format(
+                //         "nvv4l2camerasrc device={} "
+                //         "! video/x-raw(memory:NVMM),format=YUY2,width={},height={},framerate={}/1 "
+                //         "! nvvidconv "
+                //         "! video/x-raw(memory:NVMM),format=I420 "
+                //         "! nvv4l2h265enc name=encoder bitrate={} iframeinterval=300 vbv-size=33333 insert-sps-pps=true control-rate=constant_bitrate profile=Main num-B-Frames=0 ratecontrol-enable=true preset-level=UltraFastPreset EnableTwopassCBR=false maxperf-enable=true "
+                //         "! appsink name=streamSink sync=false",
+                //         mCaptureDevice, mImageWidth, mImageHeight, mImageFramerate, mBitrate);
+
                 launch = std::format(
-                        "nvv4l2camerasrc device={} "
-                        "! video/x-raw(memory:NVMM),format=YUY2,width={},height={},framerate={}/1 "
-                        "! nvvidconv "
-                        "! video/x-raw(memory:NVMM),format=I420 "
-                        "! nvv4l2h265enc name=encoder bitrate={} iframeinterval=300 vbv-size=33333 insert-sps-pps=true control-rate=constant_bitrate profile=Main num-B-Frames=0 ratecontrol-enable=true preset-level=UltraFastPreset EnableTwopassCBR=false maxperf-enable=true "
-                        "! appsink name=streamSink sync=false",
-                        mCaptureDevice, mImageWidth, mImageHeight, mImageFramerate, mBitrate);
+                    "v4l2src device={} "
+                    "! image/jpeg,width={},height={},framerate={}/1 "
+                    "! nvv4l2decoder mjpeg=1 "
+                    "! nvvidconv "
+                    "! video/x-raw(memory:NVMM),format=NV12 "
+                    "! nvv4l2h265enc name=encoder bitrate={} iframeinterval=300 vbv-size=33333 insert-sps-pps=true control-rate=constant_bitrate profile=Main num-B-Frames=0 ratecontrol-enable=true preset-level=UltraFastPreset EnableTwopassCBR=false maxperf-enable=true "
+                    "! appsink name=streamSink sync=false",
+                    mCaptureDevice, mImageWidth, mImageHeight, mImageFramerate, mBitrate);
             } else {
                 launch = std::format(
                         "v4l2src device={} "
-                        "! videoconvert "
-                        "! video/x-raw,format=I420,width={},height={},framerate={}/1 "
-                        "! nvh265enc "
+                        
+                        // "! video/x-raw(memory:NVMM),format=YUY2,width={},height={},framerate={}/1 "
+                        "! image/jpeg,width={},height={},framerate={}/1 "
+                        "! nvv4l2decoder mjpeg=1 "
+
+                        "! nvvidconv "
+                        "! video/x-raw(memory:NVMM),format=NV12 "
+                        "! nvv4l2h265enc name=encoder bitrate={} iframeinterval=300 vbv-size=33333 insert-sps-pps=true control-rate=constant_bitrate profile=Main num-B-Frames=0 ratecontrol-enable=true preset-level=UltraFastPreset EnableTwopassCBR=false maxperf-enable=true "
                         "! appsink name=streamSink sync=false",
                         mCaptureDevice, mImageWidth, mImageHeight, mImageFramerate, mBitrate);
             }
