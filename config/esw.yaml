@@ -33,7 +33,7 @@ can:
       bus: 2
       id: 0x16
     - name: "back_right"
-      bus: 3
+      bus: 2
       id: 0x15
     - name: "joint_a"
       bus: 3
