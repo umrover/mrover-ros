@@ -50,6 +50,8 @@ namespace mrover {
 
         std::vector<Point const*> mFilteredPoints;
 
+        std::vector<Eigen::Vector3d> mPathPoints;
+
 		//RTR RTR VARS
         RTRSTATE mLoopState;
 
