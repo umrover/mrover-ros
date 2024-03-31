@@ -42,9 +42,10 @@ class GPSLinearization:
         self.ref_lat = rospy.get_param("gps_linearization/reference_point_latitude")
         self.ref_lon = rospy.get_param(param_name="gps_linearization/reference_point_longitude")
         self.ref_alt = rospy.get_param("gps_linearization/reference_point_altitude")
-        self.both_gps = True
+        self.both_gps = rospy.get_param("gps_linearization/use_both_gps")
         self.world_frame = rospy.get_param("world_frame")
         self.use_dop_covariance = rospy.get_param("global_ekf/use_gps_dop_covariance")
+        self.ref_coord = np.array([self.ref_lat, self.ref_lon, self.ref_alt])
 
         # config gps and imu convariance matrices
         self.config_gps_covariance = np.array(rospy.get_param("global_ekf/gps_covariance", None))
@@ -79,12 +80,12 @@ class GPSLinearization:
         if not self.use_dop_covariance:
             msg.position_covariance = self.config_gps_covariance
 
-        ref_coord = np.array([self.ref_lat, self.ref_lon, self.ref_alt])
+        
 
         print("using single callback")
         
         if self.last_imu_msg is not None:
-            self.last_gps_msg = self.get_linearized_pose_in_world(msg, self.last_imu_msg, ref_coord)
+            self.last_gps_msg = self.get_linearized_pose_in_world(msg, self.last_imu_msg, self.ref_coord)
             self.publish_pose()
         
 

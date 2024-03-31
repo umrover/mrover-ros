@@ -19,7 +19,7 @@ from pyubx2 import UBXReader, UBX_PROTOCOL, RTCM3_PROTOCOL, protocol, UBXMessage
 from std_msgs.msg import Header
 from sensor_msgs.msg import NavSatFix
 from rtcm_msgs.msg import Message
-# from mrover.msg import rtkStatus
+from mrover.msg import rtkStatus
 import datetime
 
 
@@ -30,7 +30,7 @@ class GPS_Driver:
         self.baud = rospy.get_param("baud")
         self.base_station_sub = rospy.Subscriber("/rtcm", Message, self.process_rtcm)
         self.gps_pub = rospy.Publisher("fix", NavSatFix, queue_size=1)
-        # self.rtk_fix_pub = rospy.Publisher("rtk_fix_status", rtkStatus, queue_size=1)
+        self.rtk_fix_pub = rospy.Publisher("rtk_fix_status", rtkStatus, queue_size=1)
 
         self.lock = threading.Lock()
         self.valid_offset = False
@@ -58,10 +58,12 @@ class GPS_Driver:
         # skip if message could not be parsed
         if not msg:
             return
+        
+        msg_used = None
+
 
         if rover_gps_data.identity == "RXM-RTCM":
             rospy.loginfo("RXM")
-            msg_used = msg.msgUsed
 
             if msg_used == 0:
                 rospy.logwarn("RTCM Usage unknown\n")
@@ -97,7 +99,7 @@ class GPS_Driver:
                     altitude=parsed_altitude,
                 )
             )
-            # self.rtk_fix_pub.publish(rtkStatus(msg_used))
+            self.rtk_fix_pub.publish(rtkStatus(msg_used))
 
             if msg.difSoln == 1:
                 rospy.loginfo_throttle(3, "Differential correction applied")
@@ -126,7 +128,7 @@ def main():
     # change values
     rtk_manager = GPS_Driver()
     rtk_manager.connect()
-    # rover_gps_thread = threading.Thread(rtk_manager.gps_data_thread)
+    # rover_gps_thread = threading.Thread(target=rtk_manager.gps_data_thread)
     # rover_gps_thread.start()
     rtk_manager.gps_data_thread()
     rtk_manager.exit()

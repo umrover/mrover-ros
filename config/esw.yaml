@@ -1,5 +1,5 @@
 right_gps_driver:
-  port: "/dev/ttyACM1"
+  port: "/dev/gps"
   baud: 38400
   frame_id: "base_link"
 
