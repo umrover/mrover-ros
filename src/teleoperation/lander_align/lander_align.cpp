@@ -114,7 +114,7 @@ namespace mrover {
             //Constants
             double Kx = 0.5;
             double Ky = 10;
-            double Ktheta = 1;
+            double Ktheta = 5;
 
             Eigen::Matrix3d rotation;
             rotation << std::cos(roverHeading),  std::sin(roverHeading), 0,
