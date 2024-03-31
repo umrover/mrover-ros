@@ -312,6 +312,11 @@ namespace mrover {
     }
 
     template<IsUnit U>
+    constexpr auto signum(U const& u) -> int {
+        return std::signbit(u.rep) ? -1 : 1;
+    }
+
+    template<IsUnit U>
     constexpr auto fmod(U const& u, typename U::rep_t n) {
         return U{std::fmod(u.rep, n)};
     }

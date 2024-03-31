@@ -34,7 +34,7 @@ extern TIM_HandleTypeDef htim17;
 // #define QUADRATURE_TIMER_2 &htim4
 #define QUADRATURE_ELAPSED_TIMER_1 &htim17 // Measures time since the lsat quadrature tick reading
 #define ABSOLUTE_ENCODER_TIMER &htim2
-// #define UPDATE_TIMER &htim6
+#define THROTTLE_LIMIT_TIMER &htim6
 #define SEND_TIMER &htim7            // 20 Hz FDCAN repeating timer
 #define PWM_TIMER_1 &htim15          // H-Bridge PWM
 #define FDCAN_WATCHDOG_TIMER &htim16 // FDCAN watchdog timer that needs to be reset every time a message is received
@@ -60,6 +60,7 @@ namespace mrover {
                 FDCAN_WATCHDOG_TIMER,
                 QUADRATURE_TICK_TIMER_1,
                 QUADRATURE_ELAPSED_TIMER_1,
+                THROTTLE_LIMIT_TIMER,
                 ABSOLUTE_I2C,
                 {
                         LimitSwitch{Pin{LIMIT_0_0_GPIO_Port, LIMIT_0_0_Pin}},
@@ -71,7 +72,7 @@ namespace mrover {
 
         // TODO: these should probably be in the controller / encoders themselves
         // Necessary for the timer interrupt to work
-        // check(HAL_TIM_Base_Start_IT(UPDATE_TIMER) == HAL_OK, Error_Handler);
+        check(HAL_TIM_Base_Start(THROTTLE_LIMIT_TIMER) == HAL_OK, Error_Handler);
         check(HAL_TIM_Base_Start_IT(SEND_TIMER) == HAL_OK, Error_Handler);
         check(HAL_TIM_Base_Start_IT(ABSOLUTE_ENCODER_TIMER) == HAL_OK, Error_Handler);
     }
