@@ -20,6 +20,12 @@ class Trajectory:
         """
         self.cur_pt += 1
         return self.cur_pt >= len(self.coordinates)
+    
+    def reset(self)-> None:
+        """
+        Resets the trajectory back to its start
+        """
+        self.cur_pt = 0
 
 
 @dataclass
@@ -29,7 +35,7 @@ class SearchTrajectory(Trajectory):
 
     @classmethod
     def gen_spiral_coordinates(
-        cls, coverage_radius: float, distance_between_spirals: float, num_segments_per_rotation: int
+        cls, coverage_radius: float, distance_between_spirals: float, num_segments_per_rotation: int, insert_extra: bool
     ) -> np.ndarray:
         """
         Generates a set of coordinates for a spiral search pattern centered at the origin
@@ -52,7 +58,25 @@ class SearchTrajectory(Trajectory):
         ycoords = np.sin(angles) * radii
         # we want to return as a 2D matrix where each row is a coordinate pair
         # so we reshape x and y coordinates to be (n, 1) matricies then stack horizontally to get (n, 2) matrix
-        return np.hstack((xcoords.reshape(-1, 1), ycoords.reshape(-1, 1)))
+        vertices = np.hstack((xcoords.reshape(-1, 1), ycoords.reshape(-1, 1)))
+        all_points = []
+        print("VERTICES")
+        print(repr(vertices))
+        if insert_extra:
+            for i in range(len(vertices) - 1):
+                all_points.append(vertices[i])
+                vector = vertices[i+1] - vertices[i]
+                magnitude = np.linalg.norm(vector)
+                unit_vector = vector / magnitude
+                count = 0.0
+                while(count < magnitude - 3.5):
+                    all_points.append(all_points[-1]+(unit_vector*2.5))
+                    count += 2.5
+            print("ALL POINTS:")
+            print(repr(np.array(all_points)))
+            return np.array(all_points)
+        
+        return vertices
 
     @classmethod
     def spiral_traj(
@@ -62,6 +86,7 @@ class SearchTrajectory(Trajectory):
         distance_between_spirals: float,
         segments_per_rotation: int,
         fid_id: int,
+        insert_extra: bool
     ):
         """
         Generates a square spiral search pattern around a center position, assumes rover is at the center position
@@ -73,7 +98,7 @@ class SearchTrajectory(Trajectory):
         :return:    SearchTrajectory object
         """
         zero_centered_spiral_r2 = cls.gen_spiral_coordinates(
-            coverage_radius, distance_between_spirals, segments_per_rotation
+            coverage_radius, distance_between_spirals, segments_per_rotation, insert_extra
         )
 
         # numpy broadcasting magic to add center to each row of the spiral coordinates
