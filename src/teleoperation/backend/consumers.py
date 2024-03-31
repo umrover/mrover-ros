@@ -169,9 +169,11 @@ class GUIConsumer(JsonWebsocketConsumer):
                 self.calibrate_motors(message)
             elif message["type"] == "arm_adjust":
                 self.arm_adjust(message)
-            elif ( message["type"] == "arm_values" or 
-                  message["type"] == "cache_values" or 
-                  message["type"] == "sa_arm_values" ):
+            elif (
+                message["type"] == "arm_values"
+                or message["type"] == "cache_values"
+                or message["type"] == "sa_arm_values"
+            ):
                 self.handle_controls_message(message)
             elif message["type"] == "enable_white_leds":
                 self.enable_white_leds_callback(message)
@@ -366,18 +368,20 @@ class GUIConsumer(JsonWebsocketConsumer):
                     * self.filter_xbox_button(msg["buttons"], "right_bumper", "left_bumper")
                 ]
             elif msg["type"] == "arm_values":
-                d_pad_x = msg["axes"][self.xbox_mappings["d_pad_x"]]
-                if d_pad_x > 0.5:
-                    ra_slow_mode = True
-                elif d_pad_x < -0.5:
-                    ra_slow_mode = False
+                # print(msg["buttons"])
+
+                # d_pad_x = msg["axes"][self.xbox_mappings["d_pad_x"]]
+                # if d_pad_x > 0.5:
+                #     ra_slow_mode = True
+                # elif d_pad_x < -0.5:
+                #     ra_slow_mode = False
 
                 throttle_cmd.throttles = [
                     self.filter_xbox_axis(msg["axes"][self.ra_config["joint_a"]["xbox_index"]]),
                     self.filter_xbox_axis(msg["axes"][self.ra_config["joint_b"]["xbox_index"]]),
                     self.filter_xbox_axis(msg["axes"][self.ra_config["joint_c"]["xbox_index"]]),
-                    self.filter_xbox_axis(msg["axes"][self.ra_config["joint_de_pitch"]["xbox_index"]]),
-                    self.filter_xbox_axis(msg["axes"][self.ra_config["joint_de_roll"]["xbox_index"]]),
+                    self.filter_xbox_axis(msg["axes"][self.ra_config["joint_de_pitch"]["xbox_index_right"]] - msg["axes"][self.ra_config["joint_de_pitch"]["xbox_index_left"]]),
+                    self.filter_xbox_axis(msg["buttons"][self.ra_config["joint_de_roll"]["xbox_index_right"]] - msg["buttons"][self.ra_config["joint_de_roll"]["xbox_index_left"]]),
                     self.ra_config["allen_key"]["multiplier"] * self.filter_xbox_button(msg["buttons"], "y", "a"),
                     self.ra_config["gripper"]["multiplier"] * self.filter_xbox_button(msg["buttons"], "b", "x"),
                 ]

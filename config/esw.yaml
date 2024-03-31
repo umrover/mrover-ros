@@ -12,79 +12,79 @@ gps:
 can:
   devices:
     - name: "jetson"
-      bus: 0
+      bus: 2
       id: 0x10
     - name: "jetson"
-      bus: 1
+      bus: 3
       id: 0x10
     - name: "front_left"
-      bus: 0
+      bus: 2
       id: 0x12
     - name: "front_right"
-      bus: 0
+      bus: 2
       id: 0x11
     - name: "middle_left"
-      bus: 0
+      bus: 2
       id: 0x14
     - name: "middle_right"
-      bus: 0
+      bus: 2
       id: 0x13
     - name: "back_left"
-      bus: 0
+      bus: 2
       id: 0x16
     - name: "back_right"
-      bus: 0
+      bus: 2
       id: 0x15
     - name: "joint_a"
-      bus: 0
+      bus: 3
       id: 0x20
     - name: "joint_b"
-      bus: 0
+      bus: 3
       id: 0x21
     - name: "joint_c"
-      bus: 1
+      bus: 3
       id: 0x22
     - name: "joint_de_0"
-      bus: 1
-      id: 0x31
+      bus: 3
+      id: 0x23
     - name: "joint_de_1"
-      bus: 1
+      bus: 3
       id: 0x24
     - name: "allen_key"
-      bus: 1
+      bus: 3
       id: 0x25
     - name: "gripper"
-      bus: 1
+      bus: 3
       id: 0x26
     - name: "mast_gimbal_y"
-      bus: 1
+      bus: 3
       id: 0x28
     - name: "mast_gimbal_z"
-      bus: 1
+      bus: 3
       id: 0x27
     - name: "sa_x"
-      bus: 1
+      bus: 3
       id: 0x29
     - name: "sa_y"
-      bus: 1
+      bus: 3
       id: 0x30
     - name: "sa_z"
-      bus: 1
+      bus: 3
       id: 0x31
     - name: "sampler"
-      bus: 1
+      bus: 3
       id: 0x32
     - name: "sensor_actuator"
-      bus: 1
+      bus: 3
       id: 0x33
     - name: "cache"
-      bus: 1
+      bus: 3
       id: 0x34
     - name: "pdlb"
-      bus: 1
+      bus: 3
       id: 0x50
     - name: "science"
-      bus: 0
+      bus: 2
       id: 0x51
 
 brushless_motors:
@@ -137,8 +137,8 @@ brushless_motors:
       max_backward_pos: 0.0
     joint_c:
       velocity_multiplier: -1.0
-      min_velocity: -5.0 # gear ratio: 484:1
-      max_velocity: 5.0
+      min_velocity: -3.0 # gear ratio: 484:1
+      max_velocity: 3.0
       min_position: 0.0
       max_position: 3.8 # 220 degrees of motion
     joint_de_0:
