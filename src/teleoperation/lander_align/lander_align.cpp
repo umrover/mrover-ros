@@ -122,11 +122,7 @@ namespace mrover {
                         0,                          0,                        1;
 
             Eigen::Vector3d errState = rotation * (tarState - currState);
-            //desiredVelocity = (distanceToTarget / distanceToTargetInitial) *desiredVelocity;
-            // ROS_INFO_STREAM("ANGLE ERROR: " << errState.z() << std::endl);
-            // ROS_INFO_STREAM("Position ERROR x: " << errState.x() << std::endl);
-            // ROS_INFO_STREAM("Position ERROR y: " << errState.y() << std::endl);
-            //I think this is rad/s
+
             // (distanceToTarget / distanceToTargetInitial) * 
             double zRotation = ( desiredOmega + (desiredVelocity / 2) * (Ky * (errState.y() + Ktheta * errState.z()) + (1 / Ktheta) * std::sin(errState.z())));
 
