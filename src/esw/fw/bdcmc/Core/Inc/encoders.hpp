@@ -19,7 +19,7 @@ namespace mrover {
 
     constexpr auto RELATIVE_CPR = CountsPerRad{3355 / tau}; // Measured empirically
     constexpr auto ABSOLUTE_CPR = CountsPerRad{(1 << 14) / tau};
-    auto const CLOCK_FREQ = Hertz{HAL_RCC_GetHCLKFreq()};
+    auto const CLOCK_FREQ = Hertz{140000000};
 
     struct EncoderReading {
         Radians position;

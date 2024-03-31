@@ -313,7 +313,8 @@ namespace mrover {
 
     template<IsUnit U>
     constexpr auto signum(U const& u) -> int {
-        return std::signbit(u.rep) ? -1 : 1;
+        bool is_zero = std::fabs(u.rep) < std::numeric_limits<typename U::rep_t>::epsilon();
+        return is_zero ? 0 : std::signbit(u.rep) ? -1 : 1;
     }
 
     template<IsUnit U>

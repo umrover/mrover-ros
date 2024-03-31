@@ -134,14 +134,23 @@ namespace mrover {
             Percent output_after_limit = output.value_or(0_percent);
             Percent delta = output_after_limit - m_throttled_output;
 
-            Seconds timeDeltaSeconds{static_cast<float>(std::exchange(__HAL_TIM_GetCounter(m_throttle_timer), 0)) / 144000000.f};
+            std::uint64_t ticks_since_last_drive = std::exchange(__HAL_TIM_GetCounter(m_throttle_timer), 0);
+            Seconds dt = 1 / CLOCK_FREQ * ticks_since_last_drive;
 
-            Percent appliedDelta = m_throttle_rate * timeDeltaSeconds;
+            Percent applied_delta = m_throttle_rate * dt;
 
-            if (abs(delta) < appliedDelta) {
+            // bool wants_none = abs(output_after_limit) < Percent{1e-6};
+            bool wants_direction_change = signum(output_after_limit) != signum(m_throttled_output);
+            if (wants_direction_change) {
+                // If we are changing directions, go straight to zero
+                m_throttled_output = 0_percent;
+            }
+
+            if (abs(delta) < applied_delta) {
+                // We are very close to the desired output, just set it
                 m_throttled_output = output_after_limit;
             } else {
-                m_throttled_output += appliedDelta * signum(delta);
+                m_throttled_output += applied_delta * signum(delta);
             }
 
             m_motor_driver.write(m_throttled_output);
