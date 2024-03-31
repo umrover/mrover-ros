@@ -21,7 +21,7 @@ class GPSLinearization:
     orientation into a pose estimate for the rover and publishes it.
     """
 
-    last_gps_msg: Optional[NavSatFix]
+    last_gps_msg: Optional[np.ndarray]
     last_imu_msg: Optional[ImuAndMag]
     pose_publisher: rospy.Publisher
 
@@ -42,7 +42,7 @@ class GPSLinearization:
         self.ref_lat = rospy.get_param("gps_linearization/reference_point_latitude")
         self.ref_lon = rospy.get_param(param_name="gps_linearization/reference_point_longitude")
         self.ref_alt = rospy.get_param("gps_linearization/reference_point_altitude")
-        self.both_gps = False#rospy.get_param("gps_linearization/use_both_gps")
+        self.both_gps = True
         self.world_frame = rospy.get_param("world_frame")
         self.use_dop_covariance = rospy.get_param("global_ekf/use_gps_dop_covariance")
 
@@ -80,12 +80,11 @@ class GPSLinearization:
 
         ref_coord = np.array([self.ref_lat, self.ref_lon, self.ref_alt])
 
-        self.last_gps_msg =  msg
         print("using single callback")
         
         if self.last_imu_msg is not None:
-            self.publish_pose()
             self.last_gps_msg = self.get_linearized_pose_in_world(msg, self.last_imu_msg, ref_coord)
+            self.publish_pose()
         
 
     def duo_gps_callback(self, right_gps_msg: NavSatFix, left_gps_msg: NavSatFix):
@@ -96,6 +95,8 @@ class GPSLinearization:
         :param msg: The NavSatFix message containing GPS data that was just received
         TODO: Handle invalid PVTs
         """
+
+        print("using duo gps")
         if np.any(np.isnan([right_gps_msg.latitude, right_gps_msg.longitude, right_gps_msg.altitude])):
             return
         if np.any(np.isnan([left_gps_msg.latitude, left_gps_msg.longitude, left_gps_msg.altitude])):
@@ -176,7 +177,7 @@ class GPSLinearization:
     @staticmethod
     def get_linearized_pose_in_world(
         gps_msg: NavSatFix, imu_msg: ImuAndMag, ref_coord: np.ndarray
-    ) -> Tuple[SE3, np.ndarray]:
+    ) -> np.ndarray:
         """
         Linearizes the GPS geodetic coordinates into ENU cartesian coordinates,
         then combines them with the IMU orientation into a pose estimate relative
