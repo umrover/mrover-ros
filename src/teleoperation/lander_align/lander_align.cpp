@@ -461,13 +461,12 @@ namespace mrover {
     
 
     void LanderAlignNodelet::LandercreateSpline(double splineLength, int density){
-        int num = static_cast<int>(std::floor(splineLength) * density);//mNormalInWorldVector
         Eigen::Vector3d densityVector = mNormalInWorldVector.value() / density;
 
         Eigen::Vector3d splinePoint = mPlaneLocationInWorldVector.value();
-        for(int i = 0; i < num; i++){
+        while(splinePoint.norm() < splineLength){
             mPathPoints.push_back(splinePoint);
-            splinePoint = splinePoint + splinePoint;
+            splinePoint = splinePoint + densityVector;
         }
     }
 } // namespace mrover
