@@ -98,12 +98,12 @@ class PostBackupState(State):
         self.traj = None
 
     def on_enter(self, context) -> None:
-        if context.env.last_post_location is None:
+        if context.env.last_target_location is None:
             self.traj = None
         else:
             self.traj = AvoidPostTrajectory.avoid_post_trajectory(
                 context.rover.get_pose(),
-                context.env.last_post_location,
+                context.env.last_target_location,
                 context.course.current_waypoint_pose().position,
             )
             self.traj.cur_pt = 0

@@ -8,7 +8,7 @@
 
 #include "units/units.hpp"
 
-#include <read_from_ros_param.hpp>
+#include <params_utils.hpp>
 #include <linear_joint_translation.hpp>
 #include <mrover/AdjustMotor.h>
 #include <mrover/ControllerState.h>
@@ -45,8 +45,8 @@ namespace mrover {
         std::unique_ptr<ros::Publisher> mJointDataPub;
        
         const size_t mXAxisIndex = std::find(mSAHWNames.begin(), mSAHWNames.end(), "sa_x") - mSAHWNames.begin();
-        const size_t mYAxisIndex = std::find(mSAHWNames.begin(), mSAHWNames.end(), "sa_x") - mSAHWNames.begin();
-        const size_t mZAxisIndex = std::find(mSAHWNames.begin(), mSAHWNames.end(), "sa_x") - mSAHWNames.begin();
+        const size_t mYAxisIndex = std::find(mSAHWNames.begin(), mSAHWNames.end(), "sa_y") - mSAHWNames.begin();
+        const size_t mZAxisIndex = std::find(mSAHWNames.begin(), mSAHWNames.end(), "sa_z") - mSAHWNames.begin();
 
         RadiansPerMeter mXAxisMult{};
         RadiansPerMeter mYAxisMult{};

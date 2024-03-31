@@ -14,100 +14,62 @@
           style="width: auto; height: 70%; display: inline-block" />
       </div>
     </div>
-    <!-- <div class="shadow p-3 rounded siteSelect">
+    <div class="shadow p-3 rounded siteSelect">
         <SelectSite @site="onSiteChange" />
-      </div> -->
-    <!-- <div class="shadow p-3 rounded raman">
-        <Raman />
-      </div> -->
-    <!-- ADD BENEDICTS TEST HERE-->
-    <div class="shadow p-3 rounded cameras">
-      <Cameras :primary="primary" />
     </div>
-    <!-- <div class="shadow p-3 rounded cache">
+    <div class="shadow p-3 rounded cameras">
+      <Cameras :primary="primary" :isSA="false"/>
+    </div>
+    <div class="shadow p-3 rounded benedicts">
+        <AminoBenedict :site="site" :isAmino="false"/>
+      </div>
+    <div class="shadow p-3 rounded cameras">
+      <Cameras :primary="primary" :isSA="false"/>
+    </div>
+    <div class="shadow p-3 rounded cache">
         <Cache />
-      </div> -->
-    <!-- <div class="shadow p-3 rounded chlorophyll">
-        <Chlorophyll :spectral_data="spectral_data" />
-      </div> -->
-    <!-- <div class="shadow p-3 rounded amino">
-        <Amino :site="site" :site-index="siteIndex" />
-      </div> -->
+    </div>
+    <div class="shadow p-3 rounded chlorophyll">
+        <Chlorophyll/>
+      </div>
+    <div class="shadow p-3 rounded amino">
+        <AminoBenedict :site="site" :isAmino="true"/>
+    </div>
   </div>
 </template>
 
 <script lang="ts">
-//   import SelectSite from "./SelectSite.vue";
+  import SelectSite from "./SelectSite.vue";
 //   import Raman from "./Raman.vue";
-//   import Cache from "./Cache.vue";
-//   import Chlorophyll from "./Chlorophyll.vue";
-//   import Amino from "./Amino.vue";
-import Cameras from '../components/Cameras.vue'
+import Cache from "./CacheControls.vue";
+import Chlorophyll from "./Chlorophyll.vue";
+import AminoBenedict from "./AminoBenedict.vue";
+import Cameras from './Cameras.vue'
 //   import CommReadout from "./CommReadout.vue";
 //   import MCUReset from "./MCUReset.vue"
 import { disableAutonLED } from '../utils.js'
 
-type StringIntDictionary = {
-  [key: string]: number
-}
-
 export default {
   components: {
-    //   SelectSite,
-    //   Raman,
-    //   Cache,
-    //   Chlorophyll,
-    //   Amino,
+    SelectSite,
+    Cache,
+    Chlorophyll,
+    AminoBenedict,
     Cameras
     //   CommReadout,
     //   MCUReset,
   },
   data() {
     return {
-      site: 'A' as string,
-
-      // Initialize this so that computed property won't be mad
-      siteIndexMapping: { A: 0, B: 1, C: 2 } as StringIntDictionary,
-
-      spectral_data: [0, 0, 0, 0, 0, 0],
-
+      site: 0 as number,
       primary: false
     }
   },
-  computed: {
-    siteIndex: function () {
-      // Return the indice for the specified site
-      return this.siteIndexMapping[this.site]
-    }
-  },
 
-  created: function () {
-    disableAutonLED()
-    //   this.spectral_sub = new ROSLIB.Topic({
-    //     ros: this.$ros,
-    //     name: "science/spectral",
-    //     messageType: "mrover/Spectral",
-    //   });
-
-    //   this.spectral_sub.subscribe((msg) => {
-    //     // Callback for spectral_sub
-    //     this.spectral_data = msg.data;
-    //   });
-
-    //   // Get carousel site index mappings
-    //   let mapping = new ROSLIB.Param({
-    //     ros: this.$ros,
-    //     name: "teleop/site_mappings",
-    //   });
-
-    //   mapping.get((param) => {
-    //     this.siteIndexMapping = param;
-    //   });
-  },
 
   methods: {
-    onSiteChange(value: String) {
-      this.site = value
+    onSiteChange(value: string) {
+      this.site = parseInt(value)
     }
   }
 }
@@ -117,16 +79,13 @@ export default {
 .wrapper {
   display: grid;
   grid-gap: 10px;
-  grid-template-columns: repeat(2, auto);
-  grid-template-rows: repeat(7, auto);
+  grid-template-columns: repeat(3, auto);
+  grid-template-rows: repeat(4, auto);
   grid-template-areas:
-    'header header'
-    'cameras siteSelect'
-    'cameras raman'
-    'cameras chlorophyll'
-    'carousel chlorophyll'
-    'carousel amino'
-    'cache amino';
+    'header header header'
+    'cameras cameras siteSelect'
+    'cameras cameras benedicts'
+    'chlorophyll cache amino';
   font-family: sans-serif;
   height: auto;
 }
@@ -188,16 +147,12 @@ export default {
   grid-area: cameras;
 }
 
+.benedicts {
+  grid-area: benedicts;
+}
+
 .siteSelect {
   grid-area: siteSelect;
-}
-
-.raman {
-  grid-area: raman;
-}
-
-.carousel {
-  grid-area: carousel;
 }
 
 .chlorophyll {

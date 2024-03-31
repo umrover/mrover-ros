@@ -99,9 +99,11 @@ namespace mrover {
 
                 if (limit_switch.pressed()) {
                     if (std::optional<Radians> readjustment_position = limit_switch.get_readjustment_position()) {
-                        if (!m_state_after_calib) m_state_after_calib.emplace();
+                        if (m_uncalib_position) {
+                            if (!m_state_after_calib) m_state_after_calib.emplace();
 
-                        m_state_after_calib->offset_position = m_uncalib_position.value() - readjustment_position.value();
+                            m_state_after_calib->offset_position = m_uncalib_position.value() - readjustment_position.value();
+                        }
                     }
                 }
             }
@@ -114,11 +116,11 @@ namespace mrover {
                 // TODO: verify this is correct
                 bool limit_forward = m_desired_output > 0_percent && (
                                          std::ranges::any_of(m_limit_switches, &LimitSwitch::limit_forward)
-                                         || m_uncalib_position > m_state_after_config->max_position
+                                         //|| m_uncalib_position > m_state_after_config->max_position
                                      );
                 bool limit_backward = m_desired_output < 0_percent && (
                                           std::ranges::any_of(m_limit_switches, &LimitSwitch::limit_backward)
-                                          || m_uncalib_position < m_state_after_config->min_position
+                                          //|| m_uncalib_position < m_state_after_config->min_position
                                       );
                 if (limit_forward || limit_backward) {
                     m_error = BDCMCErrorInfo::OUTPUT_SET_TO_ZERO_SINCE_EXCEEDING_LIMITS;

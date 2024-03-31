@@ -35,7 +35,7 @@ extern TIM_HandleTypeDef htim17;
 #define QUADRATURE_ELAPSED_TIMER_1 &htim17 // Measures time since the lsat quadrature tick reading
 #define ABSOLUTE_ENCODER_TIMER &htim2
 // #define UPDATE_TIMER &htim6
-#define SEND_TIMER &htim7            // 100 Hz FDCAN repeating timer
+#define SEND_TIMER &htim7            // 20 Hz FDCAN repeating timer
 #define PWM_TIMER_1 &htim15          // H-Bridge PWM
 #define FDCAN_WATCHDOG_TIMER &htim16 // FDCAN watchdog timer that needs to be reset every time a message is received
 

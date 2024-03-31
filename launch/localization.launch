@@ -15,8 +15,9 @@
         <remap from="odometry/filtered" to="global_ekf/odometry" />
     </node>
     <!-- Passthrough filter to replace EKF in data path -->
-    <node unless="$(arg use_ekf)" pkg="mrover" type="passthrough_filter.py"
-        name="passthrough_filter" />
+    <node unless="$(arg use_ekf)"
+          pkg="mrover" type="passthrough_filter.py"
+          name="passthrough_filter" />
 
     <!-- Linearize GPS from geodetic to ENU cartesian coords -->
     <node name="gps_linearization" pkg="mrover" type="gps_linearization.py" output="screen" />

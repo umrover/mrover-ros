@@ -63,7 +63,6 @@
 #include <BulletDynamics/MLCPSolvers/btDantzigSolver.h>
 #include <BulletDynamics/MLCPSolvers/btMLCPSolver.h>
 #include <btBulletDynamicsCommon.h>
-// #include <BulletDynamics/Featherstone/btMultiBodyJointFeedback.h>
 
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
@@ -76,7 +75,7 @@
 #include <manif/manif.h>
 #include <params_utils.hpp>
 #include <point.hpp>
-#include <units.hpp>
+#include <units/units.hpp>
 
 #include <mrover/ControllerState.h>
 #include <mrover/IK.h>

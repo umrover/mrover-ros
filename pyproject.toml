@@ -14,9 +14,9 @@ dependencies = [
     "netifaces==0.11.0",
     "defusedxml==0.7.1",
     # MRover dependencies
-    "Django==4.2.7",
+    "Django==4.2.11",
     "empy==3.3.4",
-    "numpy==1.26.3",
+    "numpy==1.26.4",
     "pandas==2.2.0",
     "pyarrow==15.0.0",
     "shapely==2.0.1",
@@ -26,9 +26,8 @@ dependencies = [
     "aenum==3.1.15",
     "daphne==4.0.0",
     "channels==4.0.0",
-    "PyQt5==5.15.10",
-    "Pyarrow==15.0.0",
-    "pyubx2==1.2.35"
+    "pyubx2==1.2.35",
+    "opencv-python==4.9.0.80",
 ]
 
 [project.optional-dependencies]
