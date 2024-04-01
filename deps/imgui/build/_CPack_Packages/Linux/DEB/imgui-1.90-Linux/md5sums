@@ -1,0 +1,14 @@
+c0984d487c8f1d61a948591e7529502d  usr/lib/libimgui.a
+5f6f29d3324a36d473ddcc920577cf2c  usr/local/include/backends/imgui_impl_glfw.h
+33db629a5ebf3a765f6a28450ec05f99  usr/local/include/backends/imgui_impl_wgpu.h
+e69844a9005aa016531a60b4d5c7989a  usr/local/include/imconfig.h
+5cd7c3372f03345449d03f575c734bbb  usr/local/include/imgui.h
+c967c2c58e8e0d00a202a59d64d0a05c  usr/local/include/imgui_internal.h
+b1de604efbfb907f986a2751375a400b  usr/local/include/imstb_rectpack.h
+0e57951dce919e3dd0daa7fdb2e584c5  usr/local/include/imstb_textedit.h
+ea2c837b0aafe5581b247bf88f55a4f6  usr/local/include/imstb_truetype.h
+c0984d487c8f1d61a948591e7529502d  usr/local/lib/libimgui.a
+ac31ed18823a49992b658e8dc2939e0b  usr/local/share/cmake/imgui/imguiConfig.cmake
+3726ff8dc3a4ef1b096cf4b93167837b  usr/local/share/cmake/imgui/imguiConfigVersion.cmake
+a9835751e256180f3eb64bbcf9b46165  usr/local/share/cmake/imgui/imguiTargets-noconfig.cmake
+58f1a640cbcf35d7352800c1da72f322  usr/local/share/cmake/imgui/imguiTargets.cmake

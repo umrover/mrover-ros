@@ -1,0 +1,9 @@
+Architecture: amd64
+Description: imgui Debian Package
+Maintainer: John A
+Package: imgui
+Priority: optional
+Section: devel
+Version: 1.90
+Installed-Size: 4952
+

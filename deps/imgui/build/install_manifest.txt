@@ -1,0 +1,14 @@
+/usr/local/lib/libimgui.a
+/usr/local/include/imconfig.h
+/usr/local/include/imgui.h
+/usr/local/include/imgui_internal.h
+/usr/local/include/imstb_rectpack.h
+/usr/local/include/imstb_textedit.h
+/usr/local/include/imstb_truetype.h
+/usr/local/include/backends/imgui_impl_glfw.h
+/usr/local/include/backends/imgui_impl_wgpu.h
+/usr/lib/libimgui.a
+/usr/local/share/cmake/imgui/imguiTargets.cmake
+/usr/local/share/cmake/imgui/imguiTargets-noconfig.cmake
+/usr/local/share/cmake/imgui/imguiConfig.cmake
+/usr/local/share/cmake/imgui/imguiConfigVersion.cmake
