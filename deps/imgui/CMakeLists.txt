@@ -29,13 +29,43 @@ else ()
     endif ()
 endif ()
 
-file(GLOB_RECURSE IMGUI_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_LIST_DIR}/*.cpp)
-add_library(imgui ${IMGUI_SOURCES})
+# Set the install directory 
+set(CMAKE_INSTALL_PREFIX "/usr/local")
+message("Set the CMAKE_INSTALL_PREFIX to ${CMAKE_INSTALL_PREFIX}")
 
+# Set the lib folder for when it needs to be linked against
+set(${PROJECT_NAME}_LIBRARIES "${CMAKE_INSTALL_PREFIX}/lib")
+
+
+# Set the include directory relative to install path
+set(${PROJECT_NAME}_INSTALL_INCLUDE_DIRS "${CMAKE_INSTALL_PREFIX}/include")
+
+# Grab all of the sources for imgui
+file(GLOB_RECURSE IMGUI_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_LIST_DIR}/*.cpp)
+
+# Create the imgui target and include the headers
+add_library(imgui ${IMGUI_SOURCES})
 target_include_directories(imgui PUBLIC ${CMAKE_CURRENT_LIST_DIR})
 
-get_target_property(imgui_INTERFACE_INCLUDE_DIRECTORIES imgui INTERFACE_INCLUDE_DIRECTORIES)
-file(GLOB_RECURSE ${PROJECT_NAME}_INTERFACE_HEADERS ${${PROJECT_NAME}_INTERFACE_INCLUDE_DIRECTORIES}//*.h*)
+# Grab all of the files that need to be included for imgui and store them in im
+get_target_property(${PROJECT_NAME}_INTERFACE_INCLUDE_DIRECTORIES imgui INTERFACE_INCLUDE_DIRECTORIES)
+file(GLOB_RECURSE ${PROJECT_NAME}_INTERFACE_HEADERS ${${PROJECT_NAME}_INTERFACE_INCLUDE_DIRECTORIES}/*.h*)
+
+# Install the library binary
+install	(
+			TARGETS
+				${PROJECT_NAME}
+			DESTINATION
+				${PROJECT_NAME}_LIBRARIES
+		)
+
+# Install the header files for imgui
+install	(
+			FILES
+				${PROJECT_NAME}_INTERFACE_HEADERS
+			DESTINATION
+				${PROJECT_NAME}_INSTALL_INCLUDE_DIRS
+		)
 
 message("INTERFACE_INCLUDE_DIRECTORIES ${imgui_INTERFACE_INCLUDE_DIRECTORIES}")
 
