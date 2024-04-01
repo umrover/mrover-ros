@@ -1,0 +1,9 @@
+Architecture: amd64
+Description: WEBGPUHPP INTERFACE LIBRARY
+Maintainer: John A
+Package: webgpu_hpp
+Priority: optional
+Section: devel
+Version: 6108
+Installed-Size: 137
+

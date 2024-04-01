@@ -42,6 +42,61 @@ if(NOT DEFINED CMAKE_OBJDUMP)
   set(CMAKE_OBJDUMP "/usr/bin/objdump")
 endif()
 
+if(CMAKE_INSTALL_COMPONENT STREQUAL "all" OR NOT CMAKE_INSTALL_COMPONENT)
+  list(APPEND CMAKE_ABSOLUTE_DESTINATION_FILES
+   "/usr/local/include/webgpu.hpp")
+  if(CMAKE_WARN_ON_ABSOLUTE_INSTALL_DESTINATION)
+    message(WARNING "ABSOLUTE path INSTALL DESTINATION : ${CMAKE_ABSOLUTE_DESTINATION_FILES}")
+  endif()
+  if(CMAKE_ERROR_ON_ABSOLUTE_INSTALL_DESTINATION)
+    message(FATAL_ERROR "ABSOLUTE path INSTALL DESTINATION forbidden (by caller): ${CMAKE_ABSOLUTE_DESTINATION_FILES}")
+  endif()
+  file(INSTALL DESTINATION "/usr/local/include" TYPE FILE FILES "/home/john/catkin_ws/src/mrover/deps/webgpuhpp/headers/webgpu.hpp")
+endif()
+
+if(CMAKE_INSTALL_COMPONENT STREQUAL "all" OR NOT CMAKE_INSTALL_COMPONENT)
+  if(EXISTS "$ENV{DESTDIR}/usr/local/share/cmake/webgpu_hpp/webgpu_hppTargets.cmake")
+    file(DIFFERENT _cmake_export_file_changed FILES
+         "$ENV{DESTDIR}/usr/local/share/cmake/webgpu_hpp/webgpu_hppTargets.cmake"
+         "/home/john/catkin_ws/src/mrover/deps/webgpuhpp/build/CMakeFiles/Export/ce794e56b39dc92dff43230ab19920fb/webgpu_hppTargets.cmake")
+    if(_cmake_export_file_changed)
+      file(GLOB _cmake_old_config_files "$ENV{DESTDIR}/usr/local/share/cmake/webgpu_hpp/webgpu_hppTargets-*.cmake")
+      if(_cmake_old_config_files)
+        string(REPLACE ";" ", " _cmake_old_config_files_text "${_cmake_old_config_files}")
+        message(STATUS "Old export file \"$ENV{DESTDIR}/usr/local/share/cmake/webgpu_hpp/webgpu_hppTargets.cmake\" will be replaced.  Removing files [${_cmake_old_config_files_text}].")
+        unset(_cmake_old_config_files_text)
+        file(REMOVE ${_cmake_old_config_files})
+      endif()
+      unset(_cmake_old_config_files)
+    endif()
+    unset(_cmake_export_file_changed)
+  endif()
+  list(APPEND CMAKE_ABSOLUTE_DESTINATION_FILES
+   "/usr/local/share/cmake/webgpu_hpp/webgpu_hppTargets.cmake")
+  if(CMAKE_WARN_ON_ABSOLUTE_INSTALL_DESTINATION)
+    message(WARNING "ABSOLUTE path INSTALL DESTINATION : ${CMAKE_ABSOLUTE_DESTINATION_FILES}")
+  endif()
+  if(CMAKE_ERROR_ON_ABSOLUTE_INSTALL_DESTINATION)
+    message(FATAL_ERROR "ABSOLUTE path INSTALL DESTINATION forbidden (by caller): ${CMAKE_ABSOLUTE_DESTINATION_FILES}")
+  endif()
+  file(INSTALL DESTINATION "/usr/local/share/cmake/webgpu_hpp" TYPE FILE FILES "/home/john/catkin_ws/src/mrover/deps/webgpuhpp/build/CMakeFiles/Export/ce794e56b39dc92dff43230ab19920fb/webgpu_hppTargets.cmake")
+endif()
+
+if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
+  list(APPEND CMAKE_ABSOLUTE_DESTINATION_FILES
+   "/usr/local/share/cmake/webgpu_hpp/webgpu_hppConfig.cmake;/usr/local/share/cmake/webgpu_hpp/webgpu_hppConfigVersion.cmake")
+  if(CMAKE_WARN_ON_ABSOLUTE_INSTALL_DESTINATION)
+    message(WARNING "ABSOLUTE path INSTALL DESTINATION : ${CMAKE_ABSOLUTE_DESTINATION_FILES}")
+  endif()
+  if(CMAKE_ERROR_ON_ABSOLUTE_INSTALL_DESTINATION)
+    message(FATAL_ERROR "ABSOLUTE path INSTALL DESTINATION forbidden (by caller): ${CMAKE_ABSOLUTE_DESTINATION_FILES}")
+  endif()
+  file(INSTALL DESTINATION "/usr/local/share/cmake/webgpu_hpp" TYPE FILE FILES
+    "/home/john/catkin_ws/src/mrover/deps/webgpuhpp/build/webgpu_hppConfig.cmake"
+    "/home/john/catkin_ws/src/mrover/deps/webgpuhpp/build/webgpu_hppConfigVersion.cmake"
+    )
+endif()
+
 if(CMAKE_INSTALL_COMPONENT)
   set(CMAKE_INSTALL_MANIFEST "install_manifest_${CMAKE_INSTALL_COMPONENT}.txt")
 else()

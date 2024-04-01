@@ -34,10 +34,11 @@ if (MROVER_BUILD_SIM)
     find_package(Bullet REQUIRED)
     find_package(glfw3 REQUIRED)
 	find_package(glfw3webgpu REQUIRED)
+	find_package(webgpu_hpp REQUIRED)
 
 	#add_subdirectory(deps/glfw3webgpu SYSTEM EXCLUDE_FROM_ALL)
     add_subdirectory(deps/imgui SYSTEM EXCLUDE_FROM_ALL)
-    add_subdirectory(deps/webgpuhpp SYSTEM EXCLUDE_FROM_ALL)
+	#add_subdirectory(deps/webgpuhpp SYSTEM EXCLUDE_FROM_ALL)
 endif ()
 
 find_package(OpenCV REQUIRED)

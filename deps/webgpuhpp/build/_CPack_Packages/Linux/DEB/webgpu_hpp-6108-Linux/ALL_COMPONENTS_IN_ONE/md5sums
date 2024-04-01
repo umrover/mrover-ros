@@ -1,0 +1,4 @@
+45bc45c46a5bb21fed490fa7ef8c13be  usr/local/include/webgpu.hpp
+38eac3685ccdee807031c5150cfab76b  usr/local/share/cmake/webgpu_hpp/webgpu_hppConfig.cmake
+3726ff8dc3a4ef1b096cf4b93167837b  usr/local/share/cmake/webgpu_hpp/webgpu_hppConfigVersion.cmake
+fa485f6865cc1583baaeb03cbc4a31df  usr/local/share/cmake/webgpu_hpp/webgpu_hppTargets.cmake
