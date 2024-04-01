@@ -52,6 +52,9 @@ namespace mrover {
         return angle;
     }
 
+    /**
+     * \return Wrapped angle in the range [-𝜏/2, 𝜏/2), same as [-π, π)
+     */
     auto wrap_angle(Radians angle) -> Radians {
         constexpr Radians PI_F{std::numbers::pi};
         return fmod(angle + PI_F, TAU_F) - PI_F;
@@ -61,8 +64,11 @@ namespace mrover {
         if (std::optional<std::uint64_t> count = try_read_buffer()) {
             Seconds elapsed_time = cycle_time(m_elapsed_timer, CLOCK_FREQ);
 
+            // Absolute encoder returns [0, COUNTS_PER_REVOLUTION)
+            // We need to convert this to [-𝜏/2, 𝜏/2)
+            // Angles always need to be wrapped after addition/subtraction
             m_position = wrap_angle(m_multiplier * Ticks{count.value()} / ABSOLUTE_CPR + m_offset);
-            m_velocity_filter.add_reading((m_position - m_position_prev) / elapsed_time);
+            m_velocity_filter.add_reading(wrap_angle(m_position - m_position_prev) / elapsed_time);
             m_position_prev = m_position;
         }
 
