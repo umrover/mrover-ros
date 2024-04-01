@@ -54,13 +54,12 @@ namespace mrover {
 
     auto wrapAngle(Radians angle) -> Radians {
         constexpr Radians pi{std::numbers::pi};
-        return Radians{fmod(angle + pi, tau) - pi};
+        return Radians{fmod(angle + pi, TAU_F) - pi};
     }
 
     [[nodiscard]] auto AbsoluteEncoderReader::read() -> std::optional<EncoderReading> {
         if (std::optional<std::uint64_t> count = try_read_buffer()) {
-            std::uint32_t elapsed_count = std::exchange(__HAL_TIM_GetCounter(m_elapsed_timer), 0);
-            Seconds elapsed_time = 1 / CLOCK_FREQ * elapsed_count;
+            Seconds elapsed_time = cycle_time(m_elapsed_timer, CLOCK_FREQ);
 
             m_position = wrapAngle(m_multiplier * Ticks{count.value()} / ABSOLUTE_CPR + m_offset);
             m_velocity_filter.add_reading((m_position - m_position_prev) / elapsed_time);
