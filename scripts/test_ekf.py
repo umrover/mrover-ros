@@ -25,18 +25,18 @@ SQUARE_PATH = [
         Waypoint(tag_id=0, type=WaypointType(val=WaypointType.NO_SEARCH)),
         SE3(position=np.array([3, 3, 0])),
     ),
-    (
-        Waypoint(tag_id=1, type=WaypointType(val=WaypointType.NO_SEARCH)),
-        SE3(position=np.array([0, 6, 0])),
-    ),
-    (
-        Waypoint(tag_id=2, type=WaypointType(val=WaypointType.NO_SEARCH)),
-        SE3(position=np.array([-3, 3, 0])),
-    ),
-    (
-        Waypoint(tag_id=3, type=WaypointType(val=WaypointType.NO_SEARCH)),
-        SE3(position=np.array([0, 0, 0])),
-    ),
+    # (
+    #     Waypoint(tag_id=1, type=WaypointType(val=WaypointType.NO_SEARCH)),
+    #     SE3(position=np.array([0, 3, 0])),
+    # ),
+    # (
+    #     Waypoint(tag_id=2, type=WaypointType(val=WaypointType.NO_SEARCH)),
+    #     SE3(position=np.array([3, -3, 0])),
+    # ),
+    # (
+    #     Waypoint(tag_id=3, type=WaypointType(val=WaypointType.NO_SEARCH)),
+    #     SE3(position=np.array([0, 0, 0])),
+    # ),
 ]
 ANGLE_PATH = [
     (
@@ -82,7 +82,7 @@ class EKF_Test:
         self.nav_state = ""
 
         # whether or not this is being run in sim
-        self.in_sim = rospy.get_param("use_sim_time", False)
+        self.in_sim = True
 
         # subscribe to both odometry topics and synchronize them
         raw_sub = message_filters.Subscriber("linearized_pose", PoseWithCovarianceStamped)
@@ -152,7 +152,7 @@ class EKF_Test:
         Publish a sequence of waypoints for the rover to drive, wait until it has finished driving to them,
         then plot the collected data.
         """        
-        path = LINE_PATH
+        path = ANGLE_PATH
         publish_waypoints([convert_waypoint_to_gps(waypoint) for waypoint in path])
 
         # wait until we reach the waypoint

@@ -7,6 +7,7 @@ Panels:
         - /Perception1
         - /Perception1/ZED Camera1
         - /Odometry1
+        - /Odometry1/Shape1
         - /Odometry1/Covariance1
         - /Odometry1/Covariance1/Position1
         - /Odometry2
@@ -213,7 +214,7 @@ Visualization Manager:
         Shaft Length: 1
         Shaft Radius: 0.05000000074505806
         Value: Arrow
-      Topic: /odometry
+      Topic: /global_ekf/odometry
       Unreliable: false
       Value: true
     - Angle Tolerance: 0.10000000149011612
@@ -279,7 +280,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 2.8066656589508057
+      Distance: 4.815720558166504
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
