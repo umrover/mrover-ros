@@ -8,6 +8,6 @@ control -->
 <launch>
     <include file="$(find mavros)/launch/px4.launch">
         <arg name="fcu_url" value="udp://:14445@" />
-        <remap from="/mavros/global_position/global" to="/drone_position" />
+        <remap from="/mavros/global_position/raw/fix" to="/drone_position" />
     </include>
 </launch>
