@@ -13,16 +13,11 @@ set(${PROJECT_NAME}_LIBRARIES "${CMAKE_INSTALL_PREFIX}/lib")
 # Set the include directory relative to install path
 set(${PROJECT_NAME}_INSTALL_INCLUDE_DIRS "${CMAKE_INSTALL_PREFIX}/include")
 
-message("lol ${PUBLIC_HEADER}")
-
-set	(
-		public_headers
-			headers/webgpu.hpp
-	)
-
+# Get include directories from library and install them
+get_target_property(${PROJECT_NAME}_INTERFACE_INCLUDE_DIRECTORIES webgpu_hpp SOURCES)
 install (
 			FILES
-                ${public_headers}
+                ${${PROJECT_NAME}_INTERFACE_INCLUDE_DIRECTORIES}
             DESTINATION
 				${${PROJECT_NAME}_INSTALL_INCLUDE_DIRS}
 			COMPONENT all
