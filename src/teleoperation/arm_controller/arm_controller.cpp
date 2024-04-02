@@ -9,7 +9,7 @@ namespace mrover {
         ros::NodeHandle nh;
         // sleep(2);
         double frequency{};
-        nh.param<double>("/frequency", frequency, 100);
+        mNh.param<double>("/frequency", frequency, 100);
         mIkSubscriber = nh.subscribe("arm_ik", 1, &ArmController::ik_callback, this);
         mPositionPublisher = nh.advertise<Position>("arm_position_cmd", 1);
         mStatusPublisher = nh.advertise<ArmStatus>("arm_status", 1);
