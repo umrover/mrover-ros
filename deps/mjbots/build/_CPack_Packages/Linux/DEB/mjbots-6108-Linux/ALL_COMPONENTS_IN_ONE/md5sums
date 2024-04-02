@@ -1,0 +1,9 @@
+78bea19100d1c33503f6af8abe6c5a66  usr/local/include/moteus.h
+3d58b64d713d4f8ad91c640b4048ddf7  usr/local/include/moteus_multiplex.h
+aa36a99cbe4b3f92a70d43e5bc3723a5  usr/local/include/moteus_optional.h
+56ef76502e72adea32fd8502ce8d5dd1  usr/local/include/moteus_protocol.h
+de5172372939f2028830a4c6102c8356  usr/local/include/moteus_tokenizer.h
+4057c1671d0a6c3e2daead1a29590955  usr/local/include/moteus_transport.h
+4a03ec68d0469129fb45f70f79b0977f  usr/local/share/cmake/mjbots/mjbotsConfig.cmake
+3726ff8dc3a4ef1b096cf4b93167837b  usr/local/share/cmake/mjbots/mjbotsConfigVersion.cmake
+1d84d45068e8c0d940666451d5df8d6f  usr/local/share/cmake/mjbots/mjbotsTargets.cmake

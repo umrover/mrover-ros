@@ -1,0 +1,9 @@
+Architecture: amd64
+Description: MJBOTS INTERFACE LIBRARY
+Maintainer: John A
+Package: mjbots
+Priority: optional
+Section: devel
+Version: 6108
+Installed-Size: 150
+
