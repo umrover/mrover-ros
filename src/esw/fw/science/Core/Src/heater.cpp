@@ -7,8 +7,8 @@
 
 namespace mrover {
 
-    constexpr static float MAX_HEATER_TEMP = 65.0f;
-    constexpr static int MAX_HEATER_WATCHDOG_TICK = 3000;
+    constexpr static float MAX_HEATER_TEMP = 50.0f;
+    constexpr static int MAX_HEATER_WATCHDOG_TICK = 1000;
 
     Heater::Heater(DiagTempSensor const& diag_temp_sensor, Pin const& heater_pin)
     	: m_diag_temp_sensor(std::move(diag_temp_sensor)),
@@ -42,8 +42,8 @@ namespace mrover {
     }
 
     void Heater::update_temp_and_auto_shutoff_if_applicable() {
-    	m_diag_temp_sensor.update_temp();
-    	if (m_state && m_auto_shutoff_enabled && get_temp() >= MAX_HEATER_TEMP) {
+    	m_diag_temp_sensor.update_science_temp();
+    	if (m_state && m_auto_shutoff_enabled && (get_temp() >= MAX_HEATER_TEMP)) {
 			m_state = false;
 			m_heater_pin.write(GPIO_PIN_RESET);
 		}
@@ -68,4 +68,3 @@ namespace mrover {
     }
 
 } // namespace mrover
-

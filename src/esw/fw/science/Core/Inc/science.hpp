@@ -12,12 +12,15 @@
 #include "hardware_adc.hpp"
 #include "hardware_i2c.hpp"
 
+
 namespace mrover {
 
     class Science {
     private:
 
-    	FDCAN m_fdcan_bus;
+    	std::shared_ptr<SMBus<uint8_t, uint8_t>> m_i2c_bus;
+
+    	FDCAN<InBoundScienceMessage> m_fdcan_bus;
         std::array<Spectral, 3> m_spectral_sensors;
         std::shared_ptr<ADCSensor> m_adc_sensor;
         std::array<Heater, 6> m_heaters;
@@ -76,7 +79,7 @@ namespace mrover {
     public:
         Science() = default;
 
-        Science(FDCAN const& fdcan_bus,
+        Science(FDCAN<InBoundScienceMessage> const& fdcan_bus,
         		std::array<Spectral, 3> spectral_sensors,
 				std::shared_ptr<ADCSensor> adc_sensor,
 				std::array<DiagTempSensor, 6> diag_temp_sensors,
@@ -100,38 +103,30 @@ namespace mrover {
             std::visit([&](auto const& command) { feed(command); }, message);
         }
 
-        void poll_spectral_status() {
-        	m_spectral_sensors.at(0).poll_status_reg();
-        }
-
-        void reboot_spectral() {
-        	m_spectral_sensors.at(0).reboot();
+        void reboot_i2c() {
+        	//m_spectral_sensors.at(0).reboot();
+        	m_i2c_bus->reboot();
         }
 
         void update_and_send_spectral() {
-        	SpectralData spectral_data;
         	for (int i = 0; i < 3; ++i) {
+        		SpectralData spectral_data;
+				spectral_data.site = i;
         		m_spectral_sensors.at(i).update_channel_data();
 
-				spectral_data.spectrals.at(i).error =
+				spectral_data.error =
 						m_spectral_sensors.at(i).is_error();
+				if (spectral_data.error) {
+
+//					reboot_i2c(); // This causes a crash
+
+				}
         		for (int j = 0; j < 6; ++j) {
-					spectral_data.spectrals.at(i).data.at(j) =
+					spectral_data.data.at(j) =
 						m_spectral_sensors.at(i).get_channel_data(j);
         		}
-//        		for (int j = 0; j < 6; ++j) {
-//        			m_spectral_sensors.at(i).update_channel_data(j);
-//					spectral_data.spectrals.at(i).data.at(j) =
-//							m_spectral_sensors.at(i).get_channel_data(j);
-//					spectral_data.spectrals.at(i).error =
-//							m_spectral_sensors.at(i).is_error();
-//        		}
+				m_fdcan_bus.broadcast(OutBoundScienceMessage{spectral_data});
         	}
-
-        	// TODO - MUTEXS ARE BREAKING CODE!!!! IDK WHY - PLEASE FIX
-//        	osMutexAcquire(m_can_tx_mutex, osWaitForever);
-			m_fdcan_bus.broadcast(OutBoundScienceMessage{spectral_data});
-//			osMutexRelease(m_can_tx_mutex);
         }
 
         void update_and_send_thermistor_and_auto_shutoff_if_applicable() {
@@ -145,9 +140,9 @@ namespace mrover {
 
 
 			/* send current and temperature over CAN */
-			osMutexAcquire(m_can_tx_mutex, osWaitForever);
+//			osMutexAcquire(m_can_tx_mutex, osWaitForever);
 			m_fdcan_bus.broadcast(OutBoundScienceMessage{thermistor_data});
-			osMutexRelease(m_can_tx_mutex);
+//			osMutexRelease(m_can_tx_mutex);
         }
 
         void update_and_send_heater() {
@@ -162,9 +157,9 @@ namespace mrover {
         		SET_BIT_AT_INDEX(heater_state_data.heater_state_info.on, i, m_heaters.at(i).get_state());
         	}
 
-        	osMutexAcquire(m_can_tx_mutex, osWaitForever);
+//        	osMutexAcquire(m_can_tx_mutex, osWaitForever);
 			m_fdcan_bus.broadcast(OutBoundScienceMessage{heater_state_data});
-			osMutexRelease(m_can_tx_mutex);
+//			osMutexRelease(m_can_tx_mutex);
         }
 
     };

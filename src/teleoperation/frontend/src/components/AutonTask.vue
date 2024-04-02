@@ -6,19 +6,19 @@
       <!-- <MCUReset class="mcu_reset"></MCUReset>
         <CommReadout class="comms"></CommReadout> -->
       <div class="help">
-        <img src="help.png" alt="Help" title="Help" width="48" height="48" />
+        <img src="/help.png" alt="Help" title="Help" width="48" height="48" />
       </div>
       <div class="helpscreen"></div>
       <div class="helpimages" style="display: flex; align-items: center; justify-content: space-evenly">
-        <img src="joystick.png" alt="Joystick" title="Joystick Controls"
+        <img src="/joystick.png" alt="Joystick" title="Joystick Controls"
           style="width: auto; height: 70%; display: inline-block" />
       </div>
     </div>
     <div :class="['shadow p-3 rounded data', ledColor]">
       <h2>Nav State: {{ navState }}</h2>
-      <div style="display: inline-block">
+      <!-- <div style="display: inline-block">
         <CameraFeed></CameraFeed>
-      </div>
+      </div> -->
       <div style="display: inline-block; vertical-align: top">
         <p style="margin-top: 6px">Joystick Values</p>
         <JoystickValues />
@@ -47,11 +47,11 @@
       </div>
     </div>
     <div class="shadow p-3 rounded cameras">
-      <Cameras :primary="true" />
+      <Cameras :primary="true" :isSA="false"/>
     </div>
     <div class="shadow p-3 rounded moteus">
       <DriveMoteusStateTable :moteus-state-data="moteusState" />
-      <JointStateTable :joint-state-data="jointState" :vertical="true" />
+      <MotorsStatusTable :motor-data="motorData" :vertical="true" />
     </div>
   </div>
 </template>
@@ -63,7 +63,7 @@ import AutonRoverMap from './AutonRoverMap.vue'
 import AutonWaypointEditor from './AutonWaypointEditor.vue'
 import CameraFeed from './CameraFeed.vue'
 import Cameras from './Cameras.vue'
-import JointStateTable from './JointStateTable.vue'
+import MotorsStatusTable from './MotorsStatusTable.vue'
 import OdometryReading from './OdometryReading.vue'
 import JoystickValues from './JoystickValues.vue'
 import DriveControls from './DriveControls.vue'
@@ -80,12 +80,14 @@ export default defineComponent({
     AutonWaypointEditor,
     CameraFeed,
     Cameras,
-    JointStateTable,
+    MotorsStatusTable,
     OdometryReading,
     JoystickValues,
     DriveControls,
     MastGimbalControls
   },
+
+  // add prop where map has the center property and autontask sends it once it gets it
 
   data() {
     return {
@@ -94,7 +96,7 @@ export default defineComponent({
         latitude_deg: 42.293195,
         longitude_deg: -83.7096706,
         bearing_deg: 0,
-        altitude: 0,
+        altitude: 0
       },
 
       teleopEnabledCheck: false,
@@ -108,14 +110,17 @@ export default defineComponent({
       moteusState: {
         name: [] as string[],
         error: [] as string[],
-        state: [] as string[]
+        state: [] as string[],
+        limit_hit: [] as boolean[] /* Each motor stores an array of 4 indicating which limit switches are hit */
       },
 
-      jointState: {
+      motorData: {
         name: [] as string[],
         position: [] as number[],
         velocity: [] as number[],
-        effort: [] as number[]
+        effort: [] as number[],
+        state: [] as string[],
+        error: [] as string[]
       }
     }
   },
@@ -131,26 +136,18 @@ export default defineComponent({
 
   watch: {
     message(msg) {
-      if (msg.type == 'joint_state') {
-        this.jointState.name = msg.name
-        this.jointState.position = msg.position
-        this.jointState.velocity = msg.velocity
-        this.jointState.effort = msg.effort
+      if (msg.type == 'drive_status') {
+        this.motorData.name = msg.name
+        this.motorData.position = msg.position
+        this.motorData.velocity = msg.velocity
+        this.motorData.effort = msg.effort
+        this.motorData.state = msg.state
+        this.motorData.error = msg.error
       } else if (msg.type == 'drive_moteus') {
-        let index = this.moteusState.name.findIndex((n) => n === msg.name)
-        if (this.moteusState.name.length == 6 || index != -1) {
-          //if all motors are in table or there's an update to one before all are in
-          if (index !== -1) {
-            this.moteusState.state[index] = msg.state
-            this.moteusState.error[index] = msg.error
-          } else {
-            console.log('Invalid arm moteus name: ' + msg.name)
-          }
-        } else {
-          this.moteusState.name.push(msg.name)
-          this.moteusState.state.push(msg.state)
-          this.moteusState.error.push(msg.error)
-        }
+        this.moteusState.name = msg.name
+        this.moteusState.state = msg.state
+        this.moteusState.error = msg.error
+        this.moteusState.limit_hit = msg.limit_hit
       } else if (msg.type == 'led') {
         if (msg.red) this.ledColor = 'bg-danger' //red
         else if (msg.green) this.ledColor = 'blink' //blinking green
@@ -160,9 +157,12 @@ export default defineComponent({
       } else if (msg.type == 'nav_sat_fix') {
         this.odom.latitude_deg = msg.latitude
         this.odom.longitude_deg = msg.longitude
-        this.odom.altitude = msg.altitude;
+        this.odom.altitude = msg.altitude
       } else if (msg.type == 'auton_tfclient') {
         this.odom.bearing_deg = quaternionToMapAngle(msg.rotation)
+      } else if (msg.type == "center_map") {
+        this.odom.latitude_deg = msg.latitude
+        this.odom.longitude_deg = msg.longitude
       }
     }
   },
@@ -176,11 +176,15 @@ export default defineComponent({
     window.clearInterval(interval)
   },
 
-  created() {
-    interval = setInterval(() => {
+  created: function () {
+    window.setTimeout(() => {
+      this.sendMessage({ "type": "center_map" });
+    }, 250)
+      interval = setInterval(() => {
       this.sendMessage({ type: 'auton_tfclient' })
     }, 1000)
-  }
+  },
+
 })
 </script>
 
@@ -189,13 +193,14 @@ export default defineComponent({
   display: grid;
   grid-gap: 10px;
   grid-template-columns: 40% 20% auto;
-  grid-template-rows: repeat(5,auto);
+  grid-template-rows: repeat(6, auto);
   grid-template-areas:
     'header header header'
     'map map waypoints'
     'data data waypoints'
     'data data conditions'
-    'cameras moteus moteus';
+    'moteus moteus moteus'
+    'cameras cameras cameras';
 
   font-family: sans-serif;
   height: auto;
@@ -208,7 +213,6 @@ export default defineComponent({
 }
 
 @keyframes blinkAnimation {
-
   0%,
   100% {
     background-color: var(--bs-success);
@@ -278,8 +282,8 @@ h2 {
   cursor: pointer;
 }
 
-.help:hover~.helpscreen,
-.help:hover~.helpimages {
+.help:hover ~ .helpscreen,
+.help:hover ~ .helpimages {
   visibility: visible;
 }
 
@@ -287,7 +291,6 @@ h2 {
 .map {
   grid-area: map;
 }
-
 .waypoints {
   grid-area: waypoints;
 }

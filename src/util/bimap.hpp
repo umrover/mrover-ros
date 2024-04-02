@@ -1,3 +1,5 @@
+#pragma once
+
 #include <unordered_map>
 
 namespace mrover {
@@ -11,6 +13,12 @@ namespace mrover {
         std::unordered_map<U, T, UHash> m_reverse;
 
     public:
+        bimap() = default;
+
+        bimap(std::initializer_list<std::pair<T, U>> const& list) {
+            for (auto const& [t, u]: list) emplace(t, u);
+        }
+
         void emplace(T const& t, U const& u) {
             m_forward.emplace(t, u);
             m_reverse.emplace(u, t);

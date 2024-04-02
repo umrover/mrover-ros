@@ -31,6 +31,7 @@ class TipDetection:
         self.tf_listener = tf2_ros.TransformListener(self.buffer)
         self.world_frame = rospy.get_param("world_frame")
         self.rover_frame = rospy.get_param("rover_frame")
+        time.sleep(2)
         self.in_loop()
 
     def in_loop(self):

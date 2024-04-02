@@ -26,7 +26,7 @@ void setup(){
 void loop(){
 
   float temp = sht20.readTemperature();
-  float humidity = sht20.readHumidity();
+  float humidity = sht20.readHumidity() / 100.0;
 
   temperature_data.temperature = temp;
   temperature_pub.publish(&temperature_data);

@@ -15,13 +15,11 @@ namespace mrover {
         std::uint8_t enabled : 4 {};
         std::uint8_t active_high : 4 {};
         std::uint8_t limits_forward : 4 {};
-        std::uint8_t is_default_enabled : 4 {};
         std::uint8_t limit_max_forward_position : 1 {};
         std::uint8_t limit_max_backward_position : 1 {};
         std::uint8_t use_for_readjustment : 4 {};
         std::array<Radians, 4> limit_readj_pos;
     };
-    static_assert(sizeof(ConfigLimitSwitchInfo) == 20);
 
     struct ConfigEncoderInfo {
         [[maybe_unused]] std::uint8_t _ignore : 4 {}; // 8 bits - (4 meaningful bits) = 4 ignored bits
@@ -29,8 +27,10 @@ namespace mrover {
         std::uint8_t quad_is_forward_polarity : 1 {};
         std::uint8_t abs_present : 1 {};
         std::uint8_t abs_is_forward_polarity : 1 {};
+        Ratio quad_ratio;
+        Ratio abs_ratio;
+        Radians abs_offset;
     };
-    static_assert(sizeof(ConfigEncoderInfo) == 1);
 
     enum struct BDCMCErrorInfo : std::uint8_t {
         NO_ERROR,
@@ -47,13 +47,11 @@ namespace mrover {
         std::uint8_t calibrated : 1 {};
         BDCMCErrorInfo error : 4 {}; // 0 means no error, anything else is error
     };
-    static_assert(sizeof(ConfigCalibErrorInfo) == 1);
 
     struct LimitStateInfo {
         [[maybe_unused]] std::uint8_t _ignore : 4 {}; // 8 bits - (4 meaningful bits) = 4 ignored bits
         std::uint8_t hit : 4 {};
     };
-    static_assert(sizeof(LimitStateInfo) == 1);
 
     struct BaseCommand {
     };
@@ -65,16 +63,10 @@ namespace mrover {
     struct ConfigCommand : BaseCommand {
         Dimensionless gear_ratio;
         ConfigLimitSwitchInfo limit_switch_info;
-        ConfigEncoderInfo quad_abs_enc_info;
-        Ratio quad_enc_out_ratio;
-        Ratio abs_enc_out_ratio;
+        ConfigEncoderInfo enc_info;
         Percent max_pwm;
-        Radians max_forward_pos;
-        Radians max_backward_pos;
-    };
-
-    struct EnableLimitSwitchesCommand : BaseCommand {
-        bool enable;
+        Radians min_position, max_position;
+        RadiansPerSecond min_velocity, max_velocity;
     };
 
     struct IdleCommand : BaseCommand {
@@ -86,24 +78,33 @@ namespace mrover {
 
     struct VelocityCommand : BaseCommand {
         RadiansPerSecond velocity;
+        float p{}, i{}, d{}, ff{};
     };
 
     struct PositionCommand : BaseCommand {
         Radians position;
+        float p{}, i{}, d{};
     };
 
-    struct ControllerDataState : BaseCommand {
+    struct ControllerDataState {
         Radians position;
         RadiansPerSecond velocity;
         ConfigCalibErrorInfo config_calib_error_data;
         LimitStateInfo limit_switches;
     };
 
+    struct DebugState {
+        float f1{};
+        float f2{};
+        float f3{};
+        float f4{};
+    };
+
     using InBoundMessage = std::variant<
-            AdjustCommand, ConfigCommand, EnableLimitSwitchesCommand, IdleCommand, ThrottleCommand, VelocityCommand, PositionCommand>;
+            AdjustCommand, ConfigCommand, IdleCommand, ThrottleCommand, VelocityCommand, PositionCommand>;
 
     using OutBoundMessage = std::variant<
-            ControllerDataState>;
+            ControllerDataState, DebugState>;
 
     struct ArmLaserCommand : BaseCommand {
         bool enable;
@@ -116,7 +117,6 @@ namespace mrover {
         std::uint8_t blue : 1 {};
         std::uint8_t blinking : 1 {};
     };
-    static_assert(sizeof(LEDInfo) == 1);
 
     struct LEDCommand : BaseCommand {
         LEDInfo led_info;
@@ -162,23 +162,24 @@ namespace mrover {
         [[maybe_unused]] std::uint8_t _ignore : 2 {};
         std::uint8_t on : 6 {};
     };
-    static_assert(sizeof(HeaterStateInfo) == 1);
 
     struct HeaterStateData : BaseCommand {
         HeaterStateInfo heater_state_info;
     };
 
     struct SpectralInfo {
-        std::array<std::uint16_t, 6> data;
-        bool error;
+        std::array<float, 6> data{};
+        bool error{};
     };
 
     struct SpectralData : BaseCommand {
-        std::array<SpectralInfo, 3> spectrals{};
+        std::array<float, 6> data{};
+        std::uint8_t site;
+        bool error{};
     };
 
     struct ThermistorData : BaseCommand {
-        std::array<float, 6> temps;
+        std::array<float, 6> temps{};
     };
 
     using InBoundScienceMessage = std::variant<

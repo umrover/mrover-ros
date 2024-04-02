@@ -1,59 +1,70 @@
 # You will need to restart basestation.launch for
 # Any changes to take effect
 teleop:
-  ra_joints: ["joint_a", "joint_b", "joint_c", "joint_d", "joint_e"]
-
+  ra_names: ["joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll", "allen_key", "gripper"]
   ra_controls:
     joint_a:
       multiplier: 1
       slow_mode_multiplier: 0.5
       invert: False
+      xbox_index: 0
     joint_b:
       multiplier: -1
       slow_mode_multiplier: 1
-      invert: False
+      invert: True
+      xbox_index: 1
     joint_c:
-      multiplier: 1
+      multiplier: -1
       slow_mode_multiplier: 0.6
       invert: True
-    joint_d:
+      xbox_index: 3
+    joint_de_pitch:
+      multiplier: 0.5
+      slow_mode_multiplier: 1
+      invert: False
+      xbox_index_left: 4
+      xbox_index_right: 5
+    joint_de_roll:
+      multiplier: 0.5
+      slow_mode_multiplier: 1
+      invert: False
+      xbox_index_left: 4
+      xbox_index_right: 5
+    allen_key:
       multiplier: 1
       slow_mode_multiplier: 1
       invert: False
-    joint_e:
-      multiplier: 1
-      slow_mode_multiplier: 1
-      invert: False
-    joint_f:
-      multiplier: 1
-      slow_mode_multiplier: 1
-      invert: False
-    finger:
-      multiplier: 1
-      slow_mode_multiplier: 1
-      invert: False
+      # xbox_index: 7
     gripper:
       multiplier: 1
       slow_mode_multiplier: 1
       invert: False
-      
+      # xbox_index: 7
+
   sa_controls:
-    sa_joint_1:
+    sa_x:
       multiplier: 1
       slow_mode_multiplier: 0.5
-    sa_joint_2:
+      xbox_index: 1
+    sa_y:
       multiplier: -1
       slow_mode_multiplier: 0.5
-    sa_joint_3:
+      xbox_index: 0
+    sa_z:
       multiplier: -1
       slow_mode_multiplier: 0.5
-    scoop:
+      xbox_index: 4
+    sampler:
       multiplier: 1
       slow_mode_multiplier: 1.0
-    microscope:
+      xbox_index: 5
+    sensor_actuator:
       multiplier: 1
       slow_mode_multiplier: 0.5
-  
+    cache:
+      multiplier: 1
+      xbox_index: 4
+
   drive_controls:
     forward_back:
       multiplier: 1
@@ -63,24 +74,23 @@ teleop:
       multiplier: 1
     twist:
       multiplier: 0.7
-    
 
   xbox_mappings:
     left_js_x: 0
     left_js_y: 1
-    left_trigger: 2
+    right_js_x: 2
+    right_js_y: 3
+    left_trigger: 4
     right_trigger: 5
-    right_js_x: 3
-    right_js_y: 4
-    right_bumper: 5
-    left_bumper: 4
-    d_pad_x: 6
-    d_pad_y: 7
     a: 0
     b: 1
-    x: 2
-    y: 3
-  
+    x: 3
+    y: 2
+    left_bumper: 4
+    right_bumper: 5
+    d_pad_x: 6
+    d_pad_y: 7
+
   joystick_mappings:
     left_right: 1
     forward_back: 0
@@ -115,3 +125,8 @@ teleop:
     blah: ["/tf", "/tf_static", "/rosout"]
     foo: ["/rosout", "/tf"]
     bar: ["/tf_static", "/rosout", "/tf"]
+
+  ik_multipliers:
+    x: 1
+    y: 1
+    z: 1

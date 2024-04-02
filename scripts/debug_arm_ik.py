@@ -11,19 +11,23 @@ if __name__ == "__main__":
 
     rospy.sleep(1.0)
 
-    pub.publish(IK(pose=Pose(
-        position=Point(x=0.5, y=0.5, z=0.5),
-        orientation=Quaternion(x=0.0, y=0.0, z=0.0, w=1.0),
-    )))
-
+    pub.publish(
+        IK(
+            pose=Pose(
+                position=Point(x=0.5, y=0.5, z=0.5),
+                orientation=Quaternion(x=0.0, y=0.0, z=0.0, w=1.0),
+            )
+        )
+    )
 
     def on_clicked_point(clicked_point: PointStamped):
-        ik = IK(pose=Pose(
-            position=clicked_point.point,
-            orientation=Quaternion(x=0.0, y=0.0, z=0.0, w=1.0),
-        ))
+        ik = IK(
+            pose=Pose(
+                position=clicked_point.point,
+                orientation=Quaternion(x=0.0, y=0.0, z=0.0, w=1.0),
+            )
+        )
         pub.publish(ik)
-
 
     sub = rospy.Subscriber("clicked_point", PointStamped, on_clicked_point)
 

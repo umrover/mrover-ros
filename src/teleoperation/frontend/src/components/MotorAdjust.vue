@@ -1,105 +1,88 @@
-<!--
-  MotorAdjust.vue
-
-  Component for adjusting the angle of a motor using the AdjustMotors service.
-  If multiple motors are passed in, the user can select which motor to adjust.
-  Otherwise, the motor to adjust is the only motor passed in.
-
-  Properties:
-    options: Array of objects in format {name: "joint_a", option: "Joint A"}
-      Required
-      Default to empty array
-      If array is empty, no motor adjustment UI is shown
-      If array has one element, the motor to adjust is the only element
-      If array has multiple elements, the user can select which motor to adjust
-fit
-  Example:
-    <MotorAdjust :options="[{name: 'joint_a', option: 'Joint A'}]" />
--->
 <template>
   <div class="wrap">
-    <div v-if="options.length > 1">
+    <div v-if="motors.length > 1">
       <h4>Adjust Motor Angles</h4>
     </div>
     <div v-else>
-      <h4>Adjust {{ options[0].option }} Angle</h4>
+      <h4>Adjust {{ motors[0].option }} Angle</h4>
     </div>
     <div>
-      <div v-if="options.length > 1">
+      <div v-if="motors.length > 1">
         <label for="joint">Motor to adjust</label>
         <select v-model="selectedMotor">
           <option disabled value="">Select a motor</option>
-          <option v-for="option in options" :key="option.name" :value="option.name">
-            {{ option.option }}
+          <option v-for="option in motors" :key="option.esw_name" :value="option.esw_name">
+            {{ option.display_name }}
           </option>
         </select>
       </div>
       <div>
         <label for="angle">Angle (in Rad)</label>
         <input v-model="adjustmentAngle" type="number" :min="-2 * Math.PI" :max="2 * Math.PI" />
-        <button class="btn btn-primary" @click="publishAdjustmentMessage">Adjust</button>
+        <button class="btn btn-primary mx-3" type="button" @click="publishAdjustmentMessage">
+          Adjust
+        </button>
       </div>
     </div>
   </div>
 </template>
 
 <script lang="ts">
-export default {
+import { defineComponent } from 'vue'
+import { mapState, mapActions } from 'vuex'
+
+export default defineComponent({
   props: {
-    options: {
-      type: Array,
+    motors: {
+      type: Array<{ esw_name: string; display_name: string }>,
       required: true,
-      // Default to empty array
-      // Should be array of object in format {name: "joint_a", option: "A"}
-      default: () => []
     }
   },
 
   data() {
     return {
       adjustmentAngle: 0,
-      selectedMotor: '',
-
-      serviceClient: null
+      selectedMotor: ''
     }
   },
 
-  created() {
-    // this.serviceClient = new ROSLIB.Service({
-    //   ros: this.$ros,
-    //   name: "/adjust",
-    //   serviceType: "mrover/AdjustMotors",
-    // });
-
-    if (this.options.length == 1) {
-      this.selectedMotor = this.options[0].name
+  created: function () {
+    if (this.motors.length == 1) {
+      this.selectedMotor = this.motors[0].esw_name
     }
+  },
+
+  watch: {
+    message(msg) {
+      if (msg.type == 'arm_adjust') {
+        if (!msg.success) {
+          alert('Adjustment failed')
+        }
+      }
+    }
+  },
+
+  computed: {
+    ...mapState('websocket', ['message'])
   },
 
   methods: {
+    ...mapActions('websocket', ['sendMessage']),
     publishAdjustmentMessage() {
-      // const request = new ROSLIB.ServiceRequest({
-      //   name: this.selectedMotor,
-      //   value: this.clamp(
-      //     parseFloat(this.adjustmentAngle),
-      //     -2 * Math.PI,
-      //     2 * Math.PI
-      //   ),
-      // });
-      // if (this.selectedMotor != "") {
-      //   this.serviceClient.callService(request, (result) => {
-      //     if (!result.success) {
-      //       alert("Adjustment failed");
-      //     }
-      //   });
-      // }
+      if (this.selectedMotor != '') {
+        this.sendMessage({
+          type: 'arm_adjust',
+          name: this.selectedMotor,
+          value: this.clamp(parseFloat(this.adjustmentAngle.toString()), -2 * Math.PI, 2 * Math.PI)
+        })
+      }
     },
 
     clamp(value: number, min: number, max: number) {
       return Math.min(Math.max(value, min), max)
     }
   }
-}
+})
 </script>
 
 <style scoped>
