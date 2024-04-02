@@ -80,12 +80,10 @@ class GPSLinearization:
         if not self.use_dop_covariance:
             msg.position_covariance = self.config_gps_covariance
 
-        
-
-        print("using single callback")
+        # print("using single callback")
         
         if self.last_imu_msg is not None:
-            self.last_gps_msg = self.get_linearized_pose_in_world(msg, self.last_imu_msg, self.ref_coord)
+            self.last_pose = self.get_linearized_pose_in_world(msg, self.last_imu_msg, self.ref_coord)
             self.publish_pose()
         
 
@@ -97,8 +95,7 @@ class GPSLinearization:
         :param msg: The NavSatFix message containing GPS data that was just received
         TODO: Handle invalid PVTs
         """
-
-        print("using duo gps")
+        # print("using duo gps")
         if np.any(np.isnan([right_gps_msg.latitude, right_gps_msg.longitude, right_gps_msg.altitude])):
             return
         if np.any(np.isnan([left_gps_msg.latitude, left_gps_msg.longitude, left_gps_msg.altitude])):
