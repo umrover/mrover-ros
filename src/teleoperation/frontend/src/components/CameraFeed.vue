@@ -23,7 +23,7 @@ export default defineComponent({
   },
   data() {
     return {
-      IKCam: false
+      IKCam: false,
       ws: null as WebSocket | null,
       isUnmounted: false,
     }
