@@ -154,7 +154,7 @@ export default {
     },
 
     takePanorama() {
-      //TODO: take panorama
+      this.sendMessage({ type: "takePanorama" });
     }
   }
 }

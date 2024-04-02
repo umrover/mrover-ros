@@ -69,7 +69,6 @@ import MotorsStatusTable from './MotorsStatusTable.vue'
 import OdometryReading from './OdometryReading.vue'
 import DriveControls from './DriveControls.vue'
 import MastGimbalControls from './MastGimbalControls.vue'
-import type ArmMoteusStateTableVue from './ArmMoteusStateTable.vue'
 
 export default defineComponent({
   components: {
@@ -234,8 +233,8 @@ export default defineComponent({
   cursor: pointer;
 }
 
-.help:hover ~ .helpscreen,
-.help:hover ~ .helpimages {
+.help:hover~.helpscreen,
+.help:hover~.helpimages {
   visibility: visible;
 }
 

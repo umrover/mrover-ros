@@ -26,6 +26,7 @@
 #ifndef ARDUINO
 
 #include <limits>
+#include <vector>
 #define NaN std::numeric_limits<double>::quiet_NaN();
 
 #else
@@ -197,6 +198,7 @@ enum Register : uint16_t {
   kSetOutputNearest = 0x130,
   kSetOutputExact = 0x131,
   kRequireReindex = 0x132,
+  kRecapturePositionVelocity = 0x133,
 
   kDriverFault1 = 0x140,
   kDriverFault2 = 0x141,
@@ -399,7 +401,7 @@ struct Query {
       // below.
       if (required_registers > 512) { ::abort(); }
 
-      Resolution resolutions[required_registers];
+      std::vector<Resolution> resolutions(required_registers);
       ::memset(&resolutions[0], 0, sizeof(Resolution) * required_registers);
 
       for (int16_t this_register = min_register_number, index = 0;
@@ -415,7 +417,7 @@ struct Query {
       }
       WriteCombiner combiner(
           frame, 0x10, min_register_number,
-          resolutions, required_registers);
+          &resolutions[0], required_registers);
       for (uint16_t i = 0; i < required_registers; i++) {
         combiner.MaybeWrite();
       }
@@ -640,6 +642,7 @@ struct Query {
       { R::kSetOutputNearest, 3, MP::kInt, },
       // { R::kSetOutputExact, 1, MP::kInt, },
       // { R::kRequireReindex, 1, MP::kInt, },
+      // { R::kRecapturePositionVelocity, 1, MP::kInt, }
 
       { R::kDriverFault1, 2, MP::kInt, },
       // { R::kDriverFault2, 1, MP::kInt, },
@@ -721,7 +724,7 @@ struct GenericQuery {
     // below.
     if (required_registers > 512) { ::abort(); }
 
-    Resolution resolutions[required_registers];
+    std::vector<Resolution> resolutions(required_registers);
     ::memset(&resolutions[0], 0, sizeof(Resolution) * required_registers);
 
     for (int16_t this_register = min_register_number, index = 0;
@@ -737,7 +740,7 @@ struct GenericQuery {
     }
     WriteCombiner combiner(
         frame, 0x10, min_register_number,
-          resolutions, required_registers);
+          &resolutions[0], required_registers);
     for (uint16_t i = 0; i < required_registers; i++) {
       combiner.MaybeWrite();
     }
@@ -1145,6 +1148,18 @@ struct RequireReindex {
   static uint8_t Make(WriteCanData* frame, const Command&, const Format&) {
     frame->Write<int8_t>(Multiplex::kWriteInt8 | 0x01);
     frame->WriteVaruint(Register::kRequireReindex);
+    frame->Write<int8_t>(1);
+    return 0;
+  }
+};
+
+struct RecapturePositionVelocity {
+  struct Command {};
+  struct Format {};
+
+  static uint8_t Make(WriteCanData* frame, const Command&, const Format&) {
+    frame->Write<int8_t>(Multiplex::kWriteInt8 | 0x01);
+    frame->WriteVaruint(Register::kRecapturePositionVelocity);
     frame->Write<int8_t>(1);
     return 0;
   }

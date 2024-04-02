@@ -36,5 +36,4 @@ namespace mrover {
 
         void ik_callback(IK const& new_ik_target);
     };
-
 } // namespace mrover

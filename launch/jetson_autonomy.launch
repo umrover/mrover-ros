@@ -1,5 +1,6 @@
 <launch>
     <arg name="run_object_detector" default="true"/>
+    <arg name="use_ekf" default="true" />
 
     <include file="$(find mrover)/launch/jetson_base.launch"/>
 
@@ -10,5 +11,6 @@
 
     <include file="$(find mrover)/launch/autonomy.launch">
         <arg name="run_object_detector" value="$(arg run_object_detector)"/>
+        <arg name="use_ekf" value="$(arg use_ekf)" />
     </include>
 </launch>

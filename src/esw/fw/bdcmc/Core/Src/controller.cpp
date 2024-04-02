@@ -13,7 +13,7 @@ extern I2C_HandleTypeDef hi2c1;
 #define ABSOLUTE_I2C &hi2c1
 
 /**
- * For each timer, the update rate is determined by the .ioc file.
+ * For each repeating timer, the update rate is determined by the .ioc file.
  *
  * Specifically the ARR value. You can use the following equation: ARR = (MCU Clock Speed) / (Update Rate) / (Prescaler + 1) - 1
  * For the STM32G4 we have a 140 MHz clock speed configured.
@@ -26,23 +26,25 @@ extern TIM_HandleTypeDef htim4;
 extern TIM_HandleTypeDef htim3;
 extern TIM_HandleTypeDef htim6;
 extern TIM_HandleTypeDef htim7;
+extern TIM_HandleTypeDef htim8;
 extern TIM_HandleTypeDef htim15;
 extern TIM_HandleTypeDef htim16;
 extern TIM_HandleTypeDef htim17;
 
-#define QUADRATURE_TICK_TIMER_1 &htim3 // Special encoder timer which externally reads quadrature encoder ticks
+#define QUADRATURE_TICK_TIMER_1 &htim3      // Special encoder timer which externally reads quadrature encoder ticks
 // #define QUADRATURE_TIMER_2 &htim4
-#define QUADRATURE_ELAPSED_TIMER_1 &htim17 // Measures time since the lsat quadrature tick reading
-#define ABSOLUTE_ENCODER_TIMER &htim2
-// #define UPDATE_TIMER &htim6
-#define SEND_TIMER &htim7            // 20 Hz FDCAN repeating timer
-#define PWM_TIMER_1 &htim15          // H-Bridge PWM
-#define FDCAN_WATCHDOG_TIMER &htim16 // FDCAN watchdog timer that needs to be reset every time a message is received
+#define QUADRATURE_ELAPSED_TIMER_1 &htim17  // Measures time since the lsat quadrature tick reading
+#define ABSOLUTE_ENCODER_TIMER &htim2       // 20 Hz repeating timer to kick off I2C transactions with the absolute encoder
+#define THROTTLE_LIMIT_TIMER &htim6         // Measures time since the last throttle command
+#define SEND_TIMER &htim7                   // 20 Hz FDCAN repeating timer
+#define PIDF_TIMER &htim8                   // Measures time since the last PIDF update, used for the "D" term
+#define PWM_TIMER_1 &htim15                 // H-Bridge PWM
+#define FDCAN_WATCHDOG_TIMER &htim16        // FDCAN watchdog timer that needs to be reset every time a message is received
 
 namespace mrover {
 
     // NOTE: Change This For Each Motor Controller
-    constexpr static std::uint8_t DEVICE_ID = 0x25; // currently set for joint_b
+    constexpr static std::uint8_t DEVICE_ID = 0x21; // currently set for joint_b
 
     // Usually this is the Jetson
     constexpr static std::uint8_t DESTINATION_DEVICE_ID = 0x10;
@@ -60,6 +62,8 @@ namespace mrover {
                 FDCAN_WATCHDOG_TIMER,
                 QUADRATURE_TICK_TIMER_1,
                 QUADRATURE_ELAPSED_TIMER_1,
+                THROTTLE_LIMIT_TIMER,
+                PIDF_TIMER,
                 ABSOLUTE_I2C,
                 {
                         LimitSwitch{Pin{LIMIT_0_0_GPIO_Port, LIMIT_0_0_Pin}},
@@ -71,7 +75,8 @@ namespace mrover {
 
         // TODO: these should probably be in the controller / encoders themselves
         // Necessary for the timer interrupt to work
-        // check(HAL_TIM_Base_Start_IT(UPDATE_TIMER) == HAL_OK, Error_Handler);
+        check(HAL_TIM_Base_Start(THROTTLE_LIMIT_TIMER) == HAL_OK, Error_Handler);
+        check(HAL_TIM_Base_Start(PIDF_TIMER) == HAL_OK, Error_Handler);
         check(HAL_TIM_Base_Start_IT(SEND_TIMER) == HAL_OK, Error_Handler);
         check(HAL_TIM_Base_Start_IT(ABSOLUTE_ENCODER_TIMER) == HAL_OK, Error_Handler);
     }
@@ -155,7 +160,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim) {
     } else if (htim == ABSOLUTE_ENCODER_TIMER) {
         mrover::request_absolute_encoder_data_callback();
     }
-    // TODO: check for slow update timer and call on controller to send out i2c frame
 }
 
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef* htim) {
@@ -176,13 +180,13 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef* hfdcan, uint32_t RxFifo0ITs)
     }
 }
 
-// TODO: implement
+// TODO(quintin): Error handling
 
 void HAL_FDCAN_ErrorCallback(FDCAN_HandleTypeDef* hfdcan) {}
 
 void HAL_FDCAN_ErrorStatusCallback(FDCAN_HandleTypeDef* hfdcan, uint32_t ErrorStatusITs) {}
 
-// TODO DMA receive callback, this should eventually call a function on the controller with most up to date info
+// TODO(quintin): Do we need these two callbacks?
 
 void HAL_I2C_SlaveRxCpltCallback(I2C_HandleTypeDef* hi2c) {}
 
