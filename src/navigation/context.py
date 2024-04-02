@@ -79,6 +79,7 @@ class Environment:
     long_range_tags: LongRangeTagStore
     NO_FIDUCIAL: ClassVar[int] = -1
     arrived_at_target: bool = False
+    arrived_at_waypoint: bool = False
     last_target_location: Optional[np.ndarray] = None
 
     def get_target_pos(self, id: str, in_odom_frame: bool = True) -> Optional[np.ndarray]:
@@ -106,7 +107,7 @@ class Environment:
     def current_target_pos(self, odom_override: bool = True) -> Optional[np.ndarray]:
         """
         Retrieves the position of the current fiducial or object (and we are looking for it)
-        :param: odom_override if false will force it to be in the map frame
+        :param odom_override: if false will force it to be in the map frame
         """
         assert self.ctx.course
         in_odom = self.ctx.use_odom and odom_override
@@ -126,6 +127,10 @@ class Environment:
 
 
 class LongRangeTagStore:
+    """
+    Context class to represent the tags seen in the long range camera
+    """
+
     @dataclass
     class TagData:
         hit_count: int
@@ -144,6 +149,13 @@ class LongRangeTagStore:
         self.max_hits = max_hits
 
     def push_frame(self, tags: List[LongRangeTag]) -> None:
+        """
+        Loops through our current list of our stored tags and checks if the new message includes each tag or doesn't.
+        If it does include it, we will increment our hit count for that tag id and reset the time we saw it.
+        If it does not include it, we will decrement our hit count for that tag id, and if the hit count becomes zero, then we remove it from our stored list.
+        If there are tag ids in the new message that we don't have stored, we will add it to our stored list.
+        :param tags: a list of LongRangeTags sent by perception, which includes an id and bearing for each tag in the list
+        """
         for _, cur_tag in list(self.__data.items()):
             tags_ids = [tag.id for tag in tags]
             if cur_tag.tag.id not in tags_ids:
@@ -161,6 +173,11 @@ class LongRangeTagStore:
                 self.__data[tag.id] = self.TagData(hit_count=INCREMENT_WEIGHT, tag=tag, time=rospy.get_time())
 
     def get(self, tag_id: int) -> Optional[LongRangeTag]:
+        """
+        Returns the corresponding tag if the tag has been seen by the long range camera enough times recently
+        :param tag_id: id corresponding to the tag we want to return
+        :return: LongRangeTag if we have seen the tag enough times recently in the long range camera, otherwise return None
+        """
         if len(self.__data) == 0:
             return None
         if tag_id not in self.__data:
@@ -203,7 +220,7 @@ class Course:
         """
         Returns the currently active waypoint
 
-        :return: Next waypoint to reach if we have an active course
+        :return:    Next waypoint to reach if we have an active course
         """
         if self.course_data is None or self.waypoint_index >= len(self.course_data.waypoints):
             return None
@@ -234,14 +251,13 @@ class Course:
     def is_complete(self) -> bool:
         return self.waypoint_index == len(self.course_data.waypoints)
 
-    def check_approach(self) -> Optional[State]:
+    def get_approach_target_state(self) -> Optional[State]:
         """
         Returns one of the approach states (ApproachPostState, LongRangeState, or ApproachObjectState)
         if we are looking for a post or object and we see it in one of the cameras (ZED or long range)
         """
+        current_waypoint = self.current_waypoint()
         if self.look_for_post():
-            current_waypoint = self.current_waypoint()
-            assert current_waypoint is not None
             # if we see the tag in the ZED, go to ApproachPostState
             if self.ctx.env.current_target_pos() is not None:
                 return approach_post.ApproachPostState()
