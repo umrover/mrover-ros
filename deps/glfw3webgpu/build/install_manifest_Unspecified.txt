@@ -1,4 +1,3 @@
-/usr/local/lib/libglfw3webgpu.a
 /usr/lib/libglfw3webgpu.a
 /usr/local/share/cmake/glfw3webgpu/glfw3webgpuConfig.cmake
 /usr/local/share/cmake/glfw3webgpu/glfw3webgpuConfigVersion.cmake

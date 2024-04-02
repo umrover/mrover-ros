@@ -5,5 +5,5 @@ Package: glfw3webgpu
 Priority: optional
 Section: devel
 Version: 0.1.1
-Installed-Size: 45
+Installed-Size: 39
 

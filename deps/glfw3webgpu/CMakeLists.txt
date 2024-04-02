@@ -52,22 +52,15 @@ target_include_directories	(${PROJECT_NAME}
 									headers
 							)
 
-# Set the public headers we would like to install
-set(
-    public_headers 
-        headers/glfw3webgpu.h
-)
-
-# Install the binary
-install (
-			TARGETS ${PROJECT_NAME}
-			DESTINATION ${${PROJECT_NAME}_LIBRARIES}
-		)
+# Grab all of the files that need to be included for imgui and store them in im
+get_target_property(${PROJECT_NAME}_INTERFACE_INCLUDE_DIRECTORIES glfw3webgpu INCLUDE_DIRECTORIES)
+file(GLOB ${PROJECT_NAME}_INTERFACE_HEADERS ${${PROJECT_NAME}_INTERFACE_INCLUDE_DIRECTORIES}/*.h*)
+message ("yooo ${${PROJECT_NAME}_INTERFACE_HEADERS}")
 
 # Install the public headers
 install	(
 			FILES
-				${public_headers}
+				${${PROJECT_NAME}_INTERFACE_HEADERS}
 			DESTINATION ${${PROJECT_NAME}_INSTALL_INCLUDE_DIRS}
 			COMPONENT all
 		)
