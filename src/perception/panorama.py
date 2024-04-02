@@ -3,7 +3,9 @@
 import cv2
 import numpy as np
 from sensor_msgs.msg import PointCloud2, PointField, Image
+from std_msgs.msg import Header
 from mrover.msg import MotorsStatus, Position
+import sensor_msgs.point_cloud2 as pc2
 
 import rospy
 import sys
@@ -46,6 +48,8 @@ class Panorama:
         self._as = actionlib.SimpleActionServer(self._action_name, CapturePanoramaAction, execute_cb=self.capture_panorama, auto_start=False)
         self.img_list = []
         self.current_img = None
+        self.current_pc = None
+        self.arr_pc = None
         # TODO: Why no auto start?
         self._as.start()
 
@@ -132,13 +136,18 @@ class Panorama:
                 new_cloud_arr[field_name] = cloud_arr[field_name]
         return new_cloud_arr
 
-    # def get_latest_position(status: MotorsStatus, mast_throttle: Position) -> float:
-    #     targetPosition = 0
-    #     mast_throttle.publish(Position(["mast_gimbal_z"], [targetPosition]))
-    #     latest_position = status.joint_states.position
-    #     return latest_position
+    def rotate_pc(self, angle, pc):
+        # rotate the provided point cloud's x, y points by the specified angle (rad)
+        pc[:, 0] = pc[:, 0] * np.cos(angle) - pc[:, 1] * np.sin(angle)
+        pc[:, 1] = pc[:, 0] * np.sin(angle) + pc[:, 1] * np.cos(angle)
+        return pc
+
     def pc_callback(self, msg: PointCloud2):
-        #TODO
+        self.current_pc = msg
+
+        # extract xyzrgb fields
+        # TODO: dtype hard-coded to float32
+        self.arr_pc = np.frombuffer(bytearray(msg.data), dtype=np.float32).reshape(msg.height * msg.width, int(msg.point_step / 4))
 
     def image_callback(self, msg: Image):
         self.current_img = cv2.cvtColor(np.frombuffer(msg.data, dtype=np.uint8).reshape(msg.height, msg.width, 4), cv2.COLOR_RGBA2RGB)
@@ -148,10 +157,12 @@ class Panorama:
         self.pc_subscriber = rospy.Subscriber("/mast_camera/left/points", PointCloud2, self.pc_callback, queue_size=1)
         self.img_subscriber = rospy.Subscriber("/mast_camera/left/image", Image, self.image_callback, queue_size=1)
         self.mast_pose = rospy.Publisher("/mast_gimbal_position_cmd", Position, queue_size=1)
-
+        self.pc_publisher = rospy.Publisher("/stitched_pc", PointCloud2)
         # TODO: Don't hardcode or parametrize this?
         angle_inc = 0.2 # in radians
         current_angle = 0.0
+        stitched_pc = np.empty((0,8))
+        
         while (current_angle < goal.angle):
             if self._as.is_preempt_requested():
                 rospy.loginfo('%s: Preempted and stopped by operator' % self._action_name)
@@ -164,6 +175,8 @@ class Panorama:
             time.sleep(0.5)
 
             self.img_list.append(np.copy(self.current_img))
+            rotated_pc = self.rotate_pc(current_angle, self.arr_pc)
+            stitched_pc = np.vstack((stitched_pc, rotated_pc))
             # self._as.publish_feedback(CapturePanoramaActionFeedback(current_angle / goal.angle))
 
         rospy.loginfo("Creating Panorama using %s images...", str(len(self.img_list)))
@@ -171,6 +184,23 @@ class Panorama:
         status, pano = stitcher.stitch(self.img_list)
         desktop_path = "/home/alison/catkin_ws/src/mrover/data/pano.png"
         cv2.imwrite(desktop_path, pano)
+
+        # construct pc from stitched
+        stitched_pc.flatten()
+        header = Header()
+        header.frame_id = 'base_link'
+        pc_msg = PointCloud2()
+        pc_msg.header = header
+        pc_msg.fields = self.current_pc.fields
+        pc_msg.is_bigendian = self.current_pc.is_bigendian
+        pc_msg.data = stitched_pc.tobytes()
+        pc_msg.height = 1
+        pc_msg.point_step = 1
+        pc_msg.width = len(pc_msg.data)
+        pc_msg.is_dense = self.current_pc.is_dense
+        while not rospy.is_shutdown():
+            self.pc_publisher.publish(pc_msg)
+
         # return CapturePanoramaGoal(...)
             
         # def received_point_cloud(point: PointCloud2):
