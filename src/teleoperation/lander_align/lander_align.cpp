@@ -1,11 +1,15 @@
 #include "lander_align.hpp"
 #include <Eigen/src/Core/Matrix.h>
 #include <Eigen/src/Geometry/Quaternion.h>
+#include <cmath>
+#include <format>
 #include <manif/impl/se3/SE3.h>
 #include <manif/impl/so3/SO3.h>
 #include <optional>
 #include <point.hpp>
 #include <ros/init.h>
+#include <unistd.h>
+#include <vector>
 
 namespace mrover {
     auto operator<<(std::ostream& ostream, RTRSTATE state) -> std::ostream& {
@@ -38,37 +42,20 @@ namespace mrover {
 
     auto LanderAlignNodelet::ActionServerCallBack(LanderAlignGoalConstPtr const goal) -> void {
         LanderAlignResult result;
-        // mPlaneOffsetScalar = 2.5;
-
-        // //If we haven't yet defined the point cloud we are working with
-		// mCloud = ros::topic::waitForMessage<sensor_msgs::PointCloud2>("/camera/left/points", mNh);
-		// filterNormals(mCloud);
-		// ransac(0.1, 10, 100);
-        
-        // //If there is a proper normal to drive to
-        // if (mNormalInZEDVector.has_value()) {
-        //     sendTwist();
-        // }
-
-        mPlaneOffsetScalar = 1;
-        // mLoopState = RTRSTATE::turn1;
 
         //If we haven't yet defined the point cloud we are working with
 		mCloud = ros::topic::waitForMessage<sensor_msgs::PointCloud2>("/camera/left/points", mNh);
 		filterNormals(mCloud);
 		ransac(0.1, 10, 100);
-        
-        //If there is a proper normal to drive to
-        if (mNormalInZEDVector.has_value()) {
-            // sendTwist();
-            calcMotion(0.25,0);
-                
-        }
+        createSpline(2);
+        for(int i = 0; i < static_cast<int>(mPathPoints.size()); i++){
+            Eigen::Matrix3d rot;
+            rot <<  1, 0, 0,
+                    0, 1, 0,
+                    0, 0, 1;
 
-        if(mActionServer->isPreemptRequested()){
-            mActionServer->setPreempted();
-        }else{
-            mActionServer->setSucceeded(result);
+            SE3d temp = {{mPathPoints.at(i).coeff(0,0), mPathPoints.at(i).coeff(1, 0), 0}, SO3d{Eigen::Quaterniond{rot}.normalized()}};
+            SE3Conversions::pushToTfTree(mTfBroadcaster, std::format("spline_point_{}", i), mMapFrameId, temp);
         }
     }
 
@@ -141,6 +128,70 @@ namespace mrover {
             }
             mTwistPub.publish(twist);
         }        
+    }
+
+    void LanderAlignNodelet::calcMotionToo(std::vector<Vector5d> points) {
+        geometry_msgs::Twist twist;
+        SE3d roverInWorld = SE3Conversions::fromTfTree(mTfBuffer, "base_link", "map");
+        
+        // Inital State
+        Eigen::Vector2d initState{roverInWorld.translation().x(), roverInWorld.translation().y()};
+
+        //Target State
+        // double targetHeading = calcAngleWithWorldX({0,1,0});
+        double targetHeading = calcAngleWithWorldX(-mNormalInWorldVector.value());
+        ROS_INFO_STREAM(mNormalInWorldVector.value().x() << " " << mNormalInWorldVector.value().y() << " " <<  mNormalInWorldVector.value().z());
+        Eigen::Vector3d tarState{mOffsetLocationInWorldVector.value().x(), mOffsetLocationInWorldVector.value().y(), targetHeading};
+        Eigen::Vector2d distanceToTargetVectorInit{tarState.x() - initState.x   (), tarState.y() - initState.y()};
+        //double distanceToTargetInitial = std::abs(distanceToTargetVectorInit.norm());
+
+        for (const Vector5d& point : mPathPoints) {
+            double K1 = 1;
+            double K2 = 1;
+            double K3 = 1;
+
+
+            while (ros::ok()) {
+                roverInWorld = SE3Conversions::fromTfTree(mTfBuffer, "base_link", "map");
+                Eigen::Vector3d xOrientation = roverInWorld.rotation().col(0); 
+                double roverHeading = calcAngleWithWorldX(xOrientation);
+                ROS_INFO_STREAM("Current Rover Anlge" << roverHeading);
+                Eigen::Vector3d currState{roverInWorld.translation().x(), roverInWorld.translation().y(), roverHeading};
+
+                Eigen::Vector2d distanceToTargetVector{tarState.x() - currState.x(), tarState.y() - currState.y()};
+                double distanceToTarget = std::abs(distanceToTargetVector.norm());
+
+                Eigen::Matrix3d rotation;
+                    rotation << std::cos(roverHeading),  std::sin(roverHeading), 0,
+                        -std::sin(roverHeading), std::cos(roverHeading), 0,
+                        0,                          0,                        1;
+                Eigen::Vector3d errState = rotation * (tarState - currState); // maybe check error angle incase anything goes silly
+
+                double v = (point.coeff(3, 0) - K1 * abs(point.coeff(3, 0) * (errState.x() + errState.y() * tan(errState.z()))))/(cos(errState.z()));
+                double omega = point.coeff(4, 0) - ((K2*point.coeff(3, 0)*errState.y() + K3*abs(point.coeff(3, 0))*tan(errState.z()))*pow(cos(errState.z()), 2));
+                twist.angular.z = omega;
+                twist.linear.x = v;
+                
+                // Radius for moving on to the next loop
+                if (distanceToTarget < .5) {
+                    break;
+                }
+
+                if(mActionServer->isPreemptRequested()){
+                    twist.angular.z = 0;
+                    twist.linear.x = 0;
+                    mActionServer->setPreempted();
+                    mTwistPub.publish(twist);
+                    break;
+                }
+                mTwistPub.publish(twist);
+            }        
+            
+        }
+        twist.angular.z = 0;
+        twist.linear.x = 0;
+        mActionServer->setPreempted();
+        mTwistPub.publish(twist);
     }
 
     void LanderAlignNodelet::filterNormals(sensor_msgs::PointCloud2ConstPtr const& cloud) {
@@ -306,11 +357,7 @@ namespace mrover {
         SE3Conversions::pushToTfTree(mTfBroadcaster, "plane", mMapFrameId, mPlaneLocationInWorldSE3d);
         SE3Conversions::pushToTfTree(mTfBroadcaster, "offset", mMapFrameId, mOffsetLocationInWorldSE3d);
 
-        SE3d roverInWorld = SE3Conversions::fromTfTree(mTfBuffer, "base_link", "map");
-        Eigen::Vector3d roverPosInWorld{(roverInWorld.translation().x()), (roverInWorld.translation().y()), 0.0};
-        Eigen::Vector3d projRover = mNormalInWorldVector.value().dot(roverPosInWorld) * mNormalInWorldVector.value();
-        Eigen::Vector3d projPlane = mNormalInWorldVector.value().dot(mPlaneLocationInWorldVector.value()) * mNormalInWorldVector.value();
-        double splineLength = (projPlane - projRover).norm();
+        
 
         //Compare Rover Location to Target Location
         if(mOffsetLocationInZEDSE3d.translation().x() < 0) mNormalInZEDVector = std::nullopt;
@@ -460,12 +507,36 @@ namespace mrover {
     }
     
 
-    void LanderAlignNodelet::LandercreateSpline(double splineLength, int density){
-        Eigen::Vector3d densityVector = mNormalInWorldVector.value() / density;
+    void LanderAlignNodelet::createSpline(int density){
+        //Constants
+        const double kSpline = 7.0/8;
+        const double dOmega = 0;
+        const double dVelocity = 1;
 
-        Eigen::Vector3d splinePoint = mPlaneLocationInWorldVector.value();
+        // Calculate the angle to the world
+        const double dAngle = calcAngleWithWorldX(mNormalInWorldVector.value());
+
+        //Calcuulate the spline length
+        ros::Duration(0.5).sleep();
+        SE3d planeInRover = SE3Conversions::fromTfTree(mTfBuffer, "plane", "base_link");
+        double yDistanceFromRoverToPlane = planeInRover.translation().x();
+        double splineLength = kSpline * yDistanceFromRoverToPlane;
+        
+        // Append all of the points to each other
+        Eigen::Vector3d densityVector = mNormalInWorldVector.value() / density;
+        Eigen::Vector3d splinePoint = Eigen::Vector3d::Zero();
+        
         while(splinePoint.norm() < splineLength){
-            mPathPoints.push_back(splinePoint);
+            Eigen::Vector3d splinePointInWorld = mPlaneLocationInWorldVector.value() + splinePoint;
+            // Create the new point to be added to the vector
+            Vector5d newPoint;
+            newPoint << splinePointInWorld.x(),
+                        splinePointInWorld.y(),
+                        dAngle,
+                        dVelocity,
+                        dOmega;
+                        
+            mPathPoints.emplace_back(newPoint);
             splinePoint = splinePoint + densityVector;
         }
     }

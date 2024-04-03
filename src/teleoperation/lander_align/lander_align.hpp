@@ -1,10 +1,14 @@
 #pragma once
 
 #include "pch.hpp"
+#include <Eigen/src/Core/Matrix.h>
 
 namespace mrover {
 
     using Server = actionlib::SimpleActionServer<LanderAlignAction>;
+
+    // {x, y, omega, dVelocity, dOmega}
+    using Vector5d = Eigen::Matrix<double, 5, 1>;
 
     enum struct RTRSTATE {
         turn1 = 0,
@@ -50,7 +54,7 @@ namespace mrover {
 
         std::vector<Point const*> mFilteredPoints;
 
-        std::vector<Eigen::Vector3d> mPathPoints;
+        std::vector<Vector5d> mPathPoints;
 
 		//RTR RTR VARS
         RTRSTATE mLoopState;
@@ -90,7 +94,11 @@ namespace mrover {
 
         void calcMotion(double desiredVelocity, double desiredOmega);
 
+        void calcMotionToo(std::vector<Vector5d> points);
+
         static auto calcAngleWithWorldX(Eigen::Vector3d xHeading) -> double;
+
+        void createSpline(int density);
     
     public:
         void ActionServerCallBack(LanderAlignGoalConstPtr const goal);
