@@ -64,7 +64,18 @@ namespace mrover {
             assert(was_inserted);
         }
 
+    
         mJointARadiansToMeters = requireParamAsUnit<RadiansPerMeter>(nh, "brushless_motors/controllers/joint_a/rad_to_meters_ratio");
+        mJointBMult = requireParamAsUnit<RadiansPerMeter>(nh, "brushless_motors/controllers/joint_b/rad_to_meters_ratio");
+        mJointCMult = requireParamAsUnit<RadiansPerMeter>(nh, "brushless_motors/controllers/joint_c/rad_to_meters_ratio");
+        mJointDEMult = requireParamAsUnit<RadiansPerMeter>(nh, "brushless_motors/controllers/joint_de/rad_to_meters_ratio");
+
+        mJointAGearRatio = requireParamAsUnit<Dimensionless>(nh, "brushless_motors/controllers/joint_a/gear_ratio");
+        mJointBGearRatio = requireParamAsUnit<Dimensionless>(nh, "brushless_motors/controllers/joint_b/gear_ratio");
+        mJointCGearRatio = requireParamAsUnit<Dimensionless>(nh, "brushless_motors/controllers/joint_c/gear_ratio");
+        mJointDEGearRatio = requireParamAsUnit<Dimensionless>(nh, "brushless_motors/controllers/joint_de/gear_ratio");
+
+
 
         mThrottleSub = nh.subscribe<Throttle>("arm_throttle_cmd", 1, &ArmTranslator::processThrottleCmd, this);
         mVelocitySub = nh.subscribe<Velocity>("arm_velocity_cmd", 1, &ArmTranslator::processVelocityCmd, this);
@@ -98,8 +109,9 @@ namespace mrover {
         mThrottlePub->publish(throttle);
     }
 
-    constexpr Dimensionless PITCH_ROLL_TO_01_SCALE = 40;
+    constexpr Dimensionless PITCH_ROLL_TO_01_SCALE = mJointDEGearRatio.get();
     Matrix2<Dimensionless> static const PITCH_ROLL_TO_01_SCALED = PITCH_ROLL_TO_0_1 * PITCH_ROLL_TO_01_SCALE;
+    
 
     auto ArmTranslator::processVelocityCmd(Velocity::ConstPtr const& msg) -> void {
         if (mRawArmNames != msg->names || mRawArmNames.size() != msg->velocities.size()) {
@@ -115,8 +127,15 @@ namespace mrover {
         velocity.names[mJointDERollIndex] = "joint_de_1";
         velocity.velocities[mJointDEPitchIndex] = motorVelocities[0].get();
         velocity.velocities[mJointDERollIndex] = motorVelocities[1].get();
-        RadiansPerSecond jointAVelocity = MetersPerSecond{msg->velocities[mJointAIndex]} * mJointARadiansToMeters;
+        RadiansPerSecond jointAVelocity = MetersPerSecond{msg->velocities[mJointAIndex]} * mJointARadiansToMeters*mJointAGearRatio;
         velocity.velocities[mJointAIndex] = jointAVelocity.get();
+
+        RadiansPerSecond jointBVelocity = MetersPerSecond{msg->velocities[mJointBIndex]} * mJointBMult*mJointBGearRatio;
+        velocity.velocities[mJointBIndex] = jointBVelocity.get();
+
+        RadiansPerSecond jointCVelocity = MetersPerSecond{msg->velocities[mJointCIndex]} * mJointCMult*mJointCGearRatio;
+        velocity.velocities[mJointCIndex] = jointCVelocity.get();
+
         mVelocityPub->publish(velocity);
     }
 
@@ -134,8 +153,12 @@ namespace mrover {
         position.names[mJointDERollIndex] = "joint_de_1";
         position.positions[mJointDEPitchIndex] = motorPositions[0].get();
         position.positions[mJointDERollIndex] = motorPositions[1].get();
-        RadiansPerSecond jointAPosition = MetersPerSecond{msg->positions[mJointAIndex]} * mJointARadiansToMeters;
+        RadiansPerSecond jointAPosition = MetersPerSecond{msg->positions[mJointAIndex]} * mJointARadiansToMeters*mJointAGearRatio;
         position.positions[mJointAIndex] = jointAPosition.get();
+         RadiansPerSecond jointBPosition = MetersPerSecond{msg->positions[mJointBIndex]} * mJointBMult*mJointBGearRatio;
+        position.positions[mJointBIndex] = jointBPosition.get();
+         RadiansPerSecond jointCPosition = MetersPerSecond{msg->positions[mJointCIndex]} * mJointCMult*mJointCGearRatio;
+        position.positions[mJointCIndex] = jointCPosition.get();
         mPositionPub->publish(position);
     }
 
@@ -146,8 +169,14 @@ namespace mrover {
         }
 
         // Convert joint state of joint a from radians/s to meters/s
-        MetersPerSecond jointALinearVelocity = RadiansPerSecond{msg->velocity.at(mJointAIndex)} / mJointARadiansToMeters;
-        Meters jointAPosition = Radians{msg->position.at(mJointAIndex)} / mJointARadiansToMeters;
+        MetersPerSecond jointALinearVelocity = RadiansPerSecond{msg->velocity.at(mJointAIndex)} / mJointARadiansToMeters/mJointAGearRatio;
+        Meters jointAPosition = Radians{msg->position.at(mJointAIndex)} / mJointARadiansToMeters/mJointAGearRatio;
+
+        MetersPerSecond jointBLinearVelocity = RadiansPerSecond{msg->velocity.at(mJointBIndex)} / mJointBMult/mJointBGearRatio;
+        Meters jointBPosition = Radians{msg->position.at(mJointBIndex)} / mJointBMult/mJointBGearRatio;
+
+         MetersPerSecond jointCLinearVelocity = RadiansPerSecond{msg->velocity.at(mJointCIndex)} / mJointCMult/mJointCGearRatio;
+        Meters jointCPosition = Radians{msg->position.at(mJointCIndex)} / mJointCMult/mJointCGearRatio;
 
         mJointDePitchRoll = {
                 msg->position.at(mJointDE0Index),
@@ -157,6 +186,12 @@ namespace mrover {
         sensor_msgs::JointState jointState = *msg;
         jointState.velocity[mJointAIndex] = jointALinearVelocity.get();
         jointState.position[mJointAIndex] = jointAPosition.get();
+
+        jointState.velocity[mJointBIndex] = jointBLinearVelocity.get();
+        jointState.position[mJointBIndex] = jointBPosition.get();
+
+        jointState.velocity[mJointCIndex] = jointCLinearVelocity.get();
+        jointState.position[mJointCIndex] = jointCPosition.get();
         mJointDataPub->publish(jointState);
     }
 

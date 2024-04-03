@@ -71,7 +71,19 @@ namespace mrover {
 
         std::optional<Vector2<Radians>> mJointDePitchRoll;
 
+        // mult
         RadiansPerMeter mJointARadiansToMeters;
+        RadiansPerMeter mJointBMult;
+        RadiansPerMeter mJointCMult;
+        RadiansPerMeter mJointDEMult;
+
+
+        Dimensionless mJointAGearRatio;
+        Dimensionless mJointBGearRatio;
+        Dimensionless mJointCGearRatio;
+        Dimensionless mJointDEGearRatio;
+    
+
 
         // ros::Subscriber mJointDEPitchPosSub;
         // ros::Subscriber mJointDERollPosSub;
