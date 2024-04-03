@@ -12,49 +12,55 @@ gps:
 can:
   devices:
     - name: "jetson"
+      bus: 0
+      id: 0x10
+    - name: "jetson"
+      bus: 1
+      id: 0x10
+    - name: "jetson"
       bus: 2
       id: 0x10
     - name: "jetson"
       bus: 3
       id: 0x10
     - name: "front_left"
-      bus: 2
+      bus: 0
       id: 0x12
     - name: "front_right"
-      bus: 2
+      bus: 0
       id: 0x11
     - name: "middle_left"
-      bus: 2
+      bus: 0
       id: 0x14
     - name: "middle_right"
-      bus: 2
+      bus: 0
       id: 0x13
     - name: "back_left"
-      bus: 2
+      bus: 0
       id: 0x16
     - name: "back_right"
-      bus: 2
+      bus: 0
       id: 0x15
     - name: "joint_a"
-      bus: 3
+      bus: 1
       id: 0x20
     - name: "joint_b"
-      bus: 3
+      bus: 1
       id: 0x21
     - name: "joint_c"
-      bus: 3
+      bus: 1
       id: 0x22
     - name: "joint_de_0"
-      bus: 3
+      bus: 1
       id: 0x23
     - name: "joint_de_1"
-      bus: 3
+      bus: 1
       id: 0x24
     - name: "allen_key"
-      bus: 3
+      bus: 1
       id: 0x25
     - name: "gripper"
-      bus: 3
+      bus: 1
       id: 0x26
     - name: "mast_gimbal_y"
       bus: 3
@@ -63,22 +69,22 @@ can:
       bus: 3
       id: 0x27
     - name: "sa_x"
-      bus: 3
+      bus: 1
       id: 0x29
     - name: "sa_y"
-      bus: 3
+      bus: 1
       id: 0x30
     - name: "sa_z"
-      bus: 3
+      bus: 1
       id: 0x31
     - name: "sampler"
-      bus: 3
+      bus: 1
       id: 0x32
     - name: "sensor_actuator"
-      bus: 3
+      bus: 1
       id: 0x33
     - name: "cache"
-      bus: 3
+      bus: 2
       id: 0x34
     - name: "pdlb"
       bus: 3
