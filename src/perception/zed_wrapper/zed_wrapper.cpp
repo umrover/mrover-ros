@@ -1,5 +1,6 @@
 #include "zed_wrapper.hpp"
 
+#include <format>
 #include <lie.hpp>
 #include <manif/manif.h>
 
@@ -225,13 +226,20 @@ namespace mrover {
                     if (mZed.retrieveMeasure(mGrabMeasures.leftPoints, sl::MEASURE::XYZ, sl::MEM::GPU, mPointResolution) != sl::ERROR_CODE::SUCCESS)
                         throw std::runtime_error("ZED failed to retrieve point cloud");
                 }catch(std::runtime_error& err){
-                    ROS_INFO("Catching");
+                    int attempts = 1;
                     ROS_ERROR_STREAM("An exception occured while grabbing from the ZED: " << err.what());
-                    ROS_ERROR_STREAM("Trying to restart the ZED");
-                    mZed.close();
-                    if (mZed.open(mInitParameters) != sl::ERROR_CODE::SUCCESS) {
-				    	throw std::runtime_error("ZED failed to open");
-				    }   
+
+                    sl::ERROR_CODE openCode = sl::ERROR_CODE::FAILURE;
+                    while(openCode != sl::ERROR_CODE::SUCCESS){
+                        ROS_ERROR_STREAM("Trying to restart the ZED: attempt to reopen #" << attempts);
+
+                        mZed.close();
+                        openCode = mZed.open(mInitParameters);                        
+
+                        attempts++;
+                    }
+
+                    
                 }
                 
 
