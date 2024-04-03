@@ -698,14 +698,6 @@ class GUIConsumer(JsonWebsocketConsumer):
         except rospy.ServiceException as e:
             print(f"Service call failed: {e}")
 
-    # def capture_photo(self):
-    #     try:
-    #         response = self.capture_photo_srv()
-    #         image = response.photo
-    #         self.image_callback(image)
-    #     except rospy.ServiceException as e:
-    #         print(f"Service call failed: {e}")
-
     # def image_callback(self, msg):
     #     bridge = CvBridge()
     #     try:

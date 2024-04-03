@@ -20,6 +20,9 @@
         <p style="margin-top: 6px">Joystick Values</p>
         <JoystickValues />
       </div>
+      <div class="d-flex justify-content-end">
+        <CameraFeed :mission="'ZED'" :id="999" :name="'ZED'"></CameraFeed>
+      </div>
       <OdometryReading :odom="odom" />
     </div>
     <div class="shadow p-3 rounded map">
@@ -44,7 +47,7 @@
       </div>
     </div>
     <div class="shadow p-3 rounded cameras">
-      <Cameras :primary="true" :isSA="false" :mission="'other'"/>
+      <Cameras :primary="true" :isSA="false" :mission="'auton'"/>
     </div>
     <div class="shadow p-3 rounded moteus">
       <DriveMoteusStateTable :moteus-state-data="moteusState" />
@@ -59,6 +62,7 @@ import DriveMoteusStateTable from './DriveMoteusStateTable.vue'
 import AutonRoverMap from './AutonRoverMap.vue'
 import AutonWaypointEditor from './AutonWaypointEditor.vue'
 import Cameras from './Cameras.vue'
+import CameraFeed from './CameraFeed.vue'
 import MotorsStatusTable from './MotorsStatusTable.vue'
 import OdometryReading from './OdometryReading.vue'
 import JoystickValues from './JoystickValues.vue'
@@ -75,6 +79,7 @@ export default defineComponent({
     AutonRoverMap,
     AutonWaypointEditor,
     Cameras,
+    CameraFeed,
     MotorsStatusTable,
     OdometryReading,
     JoystickValues,

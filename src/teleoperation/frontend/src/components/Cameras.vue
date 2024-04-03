@@ -39,18 +39,6 @@
     </div>
     <div class="col">
       <h3>All Cameras</h3>
-      <div class="info">
-        <template v-for="i in camsEnabled.length" :key="i">
-          <CameraInfo
-            v-if="camsEnabled[i - 1]"
-            :id="i - 1"
-            :name="names[i - 1]"
-            :stream="getStreamNum(i - 1)"
-            @newQuality="changeQuality($event)"
-            @swapStream="swapStream($event)"
-          ></CameraInfo>
-        </template>
-      </div>
       <div class="d-flex justify-content-end" v-if="isSA">
         <button class="btn btn-primary btn-lg custom-btn" @click="takePanorama()">
           Take Panorama
@@ -135,8 +123,6 @@ export default {
     ...mapActions('websocket', ['sendMessage']),
 
     setCamIndex: function (index: number) {
-      // console.log(typeof index)
-      // console.log(this.camsEnabled[index])
       // every time a button is pressed, it changes cam status and adds/removes from stream
       this.camsEnabled[index] = !this.camsEnabled[index]
       if (this.camsEnabled[index]) this.qualities[index] = 2 //if enabling camera, turn on medium quality

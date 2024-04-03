@@ -3,7 +3,7 @@
     <div class="grid-container">
       <div v-for="i in 4" :key="i" :class="'feed' + i">
         <div v-if="i <= numStreams">
-          <CameraFeed :mission="mission" :id="getID(i)" :name="names[getID(i)]" :quality="qualities[getID(i)]"></CameraFeed>
+          <CameraFeed :mission="mission" :id="getID(i)" :name="names[getID(i)]"></CameraFeed>
         </div>
       </div>
     </div>
@@ -19,11 +19,7 @@ export default defineComponent({
     CameraFeed
   },
   props: {
-    name: {
-      type: Array,
-      required: true
-    },
-    id: {
+    names: {
       type: Array,
       required: true
     },
@@ -33,7 +29,7 @@ export default defineComponent({
       required: true
     },
     mission: {
-      type: String, // {'sa', 'ik', 'other'}
+      type: String, // {'sa', 'ik', 'auton'}
       required: true
     }
   },
@@ -44,9 +40,13 @@ export default defineComponent({
   },
 
   computed: {
+    
+  },
+
+  methods: {
     getID(i: number) {
       return this.streamOrder[i - 1]
-    }
+    },
   },
 
   watch: {

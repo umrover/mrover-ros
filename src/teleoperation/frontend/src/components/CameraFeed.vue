@@ -1,23 +1,23 @@
 <template>
   <div class="wrap">
     <canvas :id="'stream-' + id" v-on:click="handleClick"></canvas>
-    <p>{{ name }} • ID: {{ id }}</p>
-    <div class="form-group col-md-4">
-        <label for="quality">Quality:</label>
-        <select
-          v-model="quality"
-          type="number"
-          min="0"
-          max="4"
-          class="form-control"
-          id="quality"
-          @change="changeQuality()"
-        >
-          <option v-for="i in numQuality" :key="i">{{ i - 1 }}</option>
-        </select>
-      </div>
-    <Checkbox v-if="mission === 'ik'" :name="'IK Camera'" v-on:toggle="toggleIKMode" />
-    <p>Right Click → 'Save Image As...' to Capture Photo</p>
+    <div v-if="mission != 'ZED'">
+      <p>{{ name }} • ID: {{ id }}</p>
+      <div class="form-group col-md-4">
+          <label for="quality">Quality:</label>
+          <select
+            v-model="quality"
+            min="0"
+            max="4"
+            class="form-control"
+            id="quality"
+            @change="changeQuality()"
+          >
+            <option v-for="i in 5" :key="i">{{ i - 1 }}</option>
+          </select>
+        </div>
+      <Checkbox v-if="mission === 'ik'" :name="'IK Camera'" v-on:toggle="toggleIKMode" />
+    </div>
   </div>
 </template>
 
@@ -37,18 +37,12 @@ export default defineComponent({
       required: true
     },
     mission: {
-      type: String, // {'sa', 'ik', 'other'}
+      type: String, // {'sa', 'ik', 'auton'}
       required: true
     }
   },
   components: {
     Checkbox
-  },
-
-  computed: {
-    isPrimary() {
-      return (this.mission === 'sa') 
-    }
   },
 
   data() {
@@ -115,9 +109,9 @@ export default defineComponent({
     changeQuality: function () {
       this.sendMessage({
         type: 'sendCameras',
-        primary: this.isPrimary(),
+        primary: this.mission === 'sa',
         device: this.id,
-        resolution: this.quality
+        resolution: parseInt(this.quality)
       })
     },
     toggleIKMode: function () {
@@ -282,4 +276,10 @@ export default defineComponent({
   flex-direction: column;
   gap: 5px;
 }
+
+canvas {
+  width:640px;
+  height:480px;
+}
 </style>
+
