@@ -14,7 +14,6 @@ import tf2_ros
 import cv2
 
 # from cv_bridge import CvBridge
-from geometry_msgs.msg import Twist
 from mrover.msg import (
     PDLB,
     ControllerState,
@@ -29,11 +28,13 @@ from mrover.msg import (
     Velocity,
     Position,
     IK,
-    SpectralGroup,
+    Spectral,
+    ScienceThermistors,
+    HeaterData,
 )
-from mrover.srv import EnableAuton, AdjustMotor, ChangeCameras, CapturePanorama  # , CapturePhoto
+from mrover.srv import EnableAuton, AdjustMotor, ChangeCameras, CapturePanorama
 from sensor_msgs.msg import NavSatFix, Temperature, RelativeHumidity, Image
-from std_msgs.msg import String, Bool
+from std_msgs.msg import String
 from std_srvs.srv import SetBool, Trigger
 from geometry_msgs.msg import Twist, Pose, Point, Quaternion
 
@@ -95,10 +96,14 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.sa_humidity_data = rospy.Subscriber(
                 "/sa_humidity_data", RelativeHumidity, self.sa_humidity_data_callback
             )
-            self.sa_thermistor_data = rospy.Subscriber(
-                "/science_thermistors", Temperature, self.sa_thermistor_data_callback
+            self.ish_thermistor_data = rospy.Subscriber(
+                "/science_thermistors", ScienceThermistors, self.ish_thermistor_data_callback
             )
-            self.science_spectral = rospy.Subscriber("/science_spectral", SpectralGroup, self.science_spectral_callback)
+            self.ish_heater_state = rospy.Subscriber(
+                "/science_heater_state", HeaterData, self.ish_heater_state_callback
+            )
+            self.science_spectral = rospy.Subscriber("/science_spectral", Spectral, self.science_spectral_callback)
+            self.cmd_vel = rospy.Subscriber("/cmd_vel", Twist, self.cmd_vel_callback)
 
             # Services
             self.laser_service = rospy.ServiceProxy("enable_arm_laser", SetBool)
@@ -110,7 +115,6 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.change_cameras_srv = rospy.ServiceProxy("change_cameras", ChangeCameras)
             self.capture_panorama_srv = rospy.ServiceProxy("capture_panorama", CapturePanorama)
             self.heater_auto_shutoff_srv = rospy.ServiceProxy("science_change_heater_auto_shutoff_state", SetBool)
-            # self.capture_photo_srv = rospy.ServiceProxy("capture_photo", CapturePhoto)
 
             # ROS Parameters
             self.mappings = rospy.get_param("teleop/joystick_mappings")
@@ -145,7 +149,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.imu_calibration.unregister()
         self.sa_temp_data.unregister()
         self.sa_humidity_data.unregister()
-        self.sa_thermistor_data.unregister()
+        self.ish_thermistor_data.unregister()
         self.science_spectral.unregister()
 
     def receive(self, text_data):
@@ -164,14 +168,16 @@ class GUIConsumer(JsonWebsocketConsumer):
                 self.calibrate_motors(message)
             elif message["type"] == "arm_adjust":
                 self.arm_adjust(message)
-            elif message["type"] == "arm_values" or message["type"] == "cache_values":
+            elif (
+                message["type"] == "arm_values"
+                or message["type"] == "cache_values"
+                or message["type"] == "sa_arm_values"
+            ):
                 self.handle_controls_message(message)
-            elif message["type"] == "sa_arm_values":
-                self.handle_sa_arm_message(message)
-            elif message["type"] == "sa_enable_uv_bulb":
-                self.sa_uv_bulb_callback(message)
             elif message["type"] == "enable_white_leds":
                 self.enable_white_leds_callback(message)
+            elif message["type"] == "enable_uv_leds":
+                self.enable_uv_leds_callback(message)
             elif message["type"] == "auton_command":
                 self.send_auton_command(message)
             elif message["type"] == "teleop_enabled":
@@ -272,7 +278,7 @@ class GUIConsumer(JsonWebsocketConsumer):
             publishers = sa_pubs
 
         if msg["arm_mode"] == "ik":
-            base_link_in_map = SE3.from_tf_tree(self.tf_buffer, "map", "base_link")
+            ee_in_map = SE3.from_tf_tree(self.tf_buffer, "base_link", "arm_e_link")
 
             left_trigger = self.filter_xbox_axis(msg["axes"][self.xbox_mappings["left_trigger"]])
             if left_trigger < 0:
@@ -281,23 +287,23 @@ class GUIConsumer(JsonWebsocketConsumer):
             right_trigger = self.filter_xbox_axis(msg["axes"][self.xbox_mappings["right_trigger"]])
             if right_trigger < 0:
                 right_trigger = 0
-            base_link_in_map.position[0] += (
+            ee_in_map.position[0] += (
                 self.ik_names["x"] * self.filter_xbox_axis(msg["axes"][self.xbox_mappings["left_js_x"]]),
             )
-            base_link_in_map.position[1] += (
+            ee_in_map.position[1] += (
                 self.ik_names["y"] * self.filter_xbox_axis(msg["axes"][self.xbox_mappings["left_js_y"]]),
             )
-            base_link_in_map.position[2] -= self.ik_names["z"] * left_trigger + self.ik_names["z"] * right_trigger
+            ee_in_map.position[2] -= self.ik_names["z"] * left_trigger + self.ik_names["z"] * right_trigger
 
             arm_ik_cmd = IK(
                 pose=Pose(
-                    position=Point(*base_link_in_map.position),
-                    orientation=Quaternion(*base_link_in_map.rotation.quaternion),
+                    position=Point(*ee_in_map.position),
+                    orientation=Quaternion(*ee_in_map.rotation.quaternion),
                 )
             )
             publishers[3].publish(arm_ik_cmd)
 
-        if msg["arm_mode"] == "position":
+        elif msg["arm_mode"] == "position":
             position_names = controls_names
             if msg["type"] == "arm_values":
                 position_names = ["joint_b", "joint_c", "joint_de_pitch", "joint_de_roll"]
@@ -360,19 +366,27 @@ class GUIConsumer(JsonWebsocketConsumer):
                     self.sa_config["cache"]["multiplier"]
                     * self.filter_xbox_button(msg["buttons"], "right_bumper", "left_bumper")
                 ]
-            elif msg["type"] == "sa_arm_values":
-                d_pad_x = msg["axes"][self.xbox_mappings["d_pad_x"]]
-                if d_pad_x > 0.5:
-                    ra_slow_mode = True
-                elif d_pad_x < -0.5:
-                    ra_slow_mode = False
+            elif msg["type"] == "arm_values":
+                # print(msg["buttons"])
+
+                # d_pad_x = msg["axes"][self.xbox_mappings["d_pad_x"]]
+                # if d_pad_x > 0.5:
+                #     ra_slow_mode = True
+                # elif d_pad_x < -0.5:
+                #     ra_slow_mode = False
 
                 throttle_cmd.throttles = [
                     self.filter_xbox_axis(msg["axes"][self.ra_config["joint_a"]["xbox_index"]]),
                     self.filter_xbox_axis(msg["axes"][self.ra_config["joint_b"]["xbox_index"]]),
                     self.filter_xbox_axis(msg["axes"][self.ra_config["joint_c"]["xbox_index"]]),
-                    self.filter_xbox_axis(msg["axes"][self.ra_config["joint_de_pitch"]["xbox_index"]]),
-                    self.filter_xbox_axis(msg["axes"][self.ra_config["joint_de_roll"]["xbox_index"]]),
+                    self.filter_xbox_axis(
+                        msg["axes"][self.ra_config["joint_de_pitch"]["xbox_index_right"]]
+                        - msg["axes"][self.ra_config["joint_de_pitch"]["xbox_index_left"]]
+                    ),
+                    self.filter_xbox_axis(
+                        msg["buttons"][self.ra_config["joint_de_roll"]["xbox_index_right"]]
+                        - msg["buttons"][self.ra_config["joint_de_roll"]["xbox_index_left"]]
+                    ),
                     self.ra_config["allen_key"]["multiplier"] * self.filter_xbox_button(msg["buttons"], "y", "a"),
                     self.ra_config["gripper"]["multiplier"] * self.filter_xbox_button(msg["buttons"], "b", "x"),
                 ]
@@ -382,21 +396,15 @@ class GUIConsumer(JsonWebsocketConsumer):
                         throttle_cmd.throttles[i] *= self.ra_config[name]["slow_mode_multiplier"]
                     if self.ra_config[name]["invert"]:
                         throttle_cmd.throttles[i] *= -1
-            elif msg["type"] == "sa_values":
+            elif msg["type"] == "sa_arm_values":
                 throttle_cmd.throttles = [
-                    self.sa_config[name]["multiplier"]
-                    * self.filter_xbox_axis(msg["axes"][info["xbox_index"]], 0.15, True)
-                    for name, info in self.sa_config.items()
-                    if name.startswith("sa")
+                    self.filter_xbox_axis(msg["axes"][self.sa_config["sa_x"]["xbox_index"]]),
+                    self.filter_xbox_axis(msg["axes"][self.sa_config["sa_y"]["xbox_index"]]),
+                    self.filter_xbox_axis(msg["axes"][self.sa_config["sa_z"]["xbox_index"]]),
+                    self.sa_config["sampler"]["multiplier"] * (right_trigger - left_trigger),
+                    self.sa_config["sensor_actuator"]["multiplier"]
+                    * self.filter_xbox_button(msg["buttons"], "right_bumper", "left_bumper"),
                 ]
-
-                throttle_cmd.throttles.extend(
-                    [
-                        self.sa_config["sampler"]["multiplier"] * (right_trigger - left_trigger),
-                        self.sa_config["sensor_actuator"]["multiplier"]
-                        * self.filter_xbox_button(msg["buttons"], "right_bumper", "left_bumper"),
-                    ]
-                )
 
                 fast_mode_activated = msg["buttons"][self.xbox_mappings["a"]] or msg["buttons"][self.xbox_mappings["b"]]
                 if not fast_mode_activated:
@@ -514,17 +522,20 @@ class GUIConsumer(JsonWebsocketConsumer):
             except rospy.ServiceException as e:
                 print(f"Service call failed: {e}")
 
-    def sa_uv_bulb_callback(self, msg):
-        try:
-            result = self.toggle_uv(data=msg["data"])
-            self.send(text_data=json.dumps({"type": "toggle_uv", "result": result.success}))
-        except rospy.ServiceException as e:
-            rospy.logerr(f"Service call failed: {e}")
-
     def enable_white_leds_callback(self, msg):
         for i in range(0, 3):
             white_led_name = f"science_enable_white_led_{i}"
             led_srv = rospy.ServiceProxy(white_led_name, SetBool)
+            try:
+                result = led_srv(data=msg["data"])
+                self.send(text_data=json.dumps({"type": "toggle_uv", "result": result.success}))
+            except rospy.ServiceException as e:
+                rospy.logerr(f"Service call failed: {e}")
+
+    def enable_uv_leds_callback(self, msg):
+        for i in range(0, 3):
+            uv_led_name = f"science_enable_uv_led_{i}"
+            led_srv = rospy.ServiceProxy(uv_led_name, SetBool)
             try:
                 result = led_srv(data=msg["data"])
                 self.send(text_data=json.dumps({"type": "toggle_uv", "result": result.success}))
@@ -592,6 +603,13 @@ class GUIConsumer(JsonWebsocketConsumer):
             )
         )
 
+    def cmd_vel_callback(self, msg):
+        self.send(
+            text_data=json.dumps(
+                {"type": "cmd_vel", "linear_x": msg.linear.x, "angular_z": msg.angular.z}
+            )
+        )
+
     def gps_fix_callback(self, msg):
         self.send(
             text_data=json.dumps(
@@ -632,13 +650,14 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.send(text_data=json.dumps({"type": "nav_state", "state": msg.state}))
 
     def sa_temp_data_callback(self, msg):
-        self.send(text_data=json.dumps(obj={"type": "temp_data", "temp_data": msg.temperature}))
+        self.send(text_data=json.dumps({"type": "temp_data", "temp_data": msg.temperature}))
 
     def sa_humidity_data_callback(self, msg):
-        self.send(text_data=json.dumps(obj={"type": "relative_humidity", "humidity_data": msg.relative_humidity}))
+        self.send(text_data=json.dumps({"type": "relative_humidity", "humidity_data": msg.relative_humidity}))
 
-    def sa_thermistor_data_callback(self, msg):
-        self.send(text_data=json.dumps(obj={"type": "thermistor", "thermistor_data": msg.thermistor}))
+    def ish_thermistor_data_callback(self, msg):
+        temps = [x.temperature for x in msg.temps]
+        self.send(text_data=json.dumps({"type": "thermistor", "temps": temps}))
 
     def auton_bearing(self):
         base_link_in_map = SE3.from_tf_tree(self.tf_buffer, "map", "base_link")
@@ -707,17 +726,18 @@ class GUIConsumer(JsonWebsocketConsumer):
         try:
             heater = msg["heater"]
             science_enable = rospy.ServiceProxy("science_enable_heater_" + heater, SetBool)
-            rospy.logerr("science_enable_heater_" + heater)
             result = science_enable(data=msg["enabled"])
-            self.send(text_data=json.dumps({"type": "science_enable", "result": result.success}))
         except rospy.ServiceException as e:
             print(f"Service init failed: {e}")
+
+    def ish_heater_state_callback(self, msg):
+        self.send(text_data=json.dumps({"type": "heater_states", "states": msg.state}))
 
     def auto_shutoff_toggle(self, msg):
         try:
             rospy.logerr(msg)
             result = self.heater_auto_shutoff_srv(data=msg["shutoff"])
-            self.send(text_data=json.dumps({"type": "auto_shutoff", "result": result.success}))
+            self.send(text_data=json.dumps({"type": "auto_shutoff", "success": result.success}))
         except rospy.ServiceException as e:
             print(f"Service call failed: {e}")
 
@@ -797,13 +817,9 @@ class GUIConsumer(JsonWebsocketConsumer):
             rate.sleep()
 
     def science_spectral_callback(self, msg):
-        data = []
-        error = []
-        for spectral in msg.spectrals:
-            data.append(spectral.data)
-            error.append(spectral.error)
-
-        self.send(text_data=json.dumps({"type": "spectral_data", "data": data, "error": error}))
+        self.send(
+            text_data=json.dumps({"type": "spectral_data", "site": msg.site, "data": msg.data, "error": msg.error})
+        )
 
     def download_csv(self, msg):
         username = os.getenv("USERNAME", "-1")

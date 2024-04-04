@@ -1,5 +1,6 @@
 <template>
   <div class="wrap">
+    <h3>Cache Controls</h3>
     <div class="controls-flex">
       <h5>Control Mode</h5>
       <div class="form-check">

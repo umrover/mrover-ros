@@ -45,6 +45,10 @@
 #include "moteus_protocol.h"
 #include "moteus_tokenizer.h"
 
+#ifdef CANFD_FDF
+#define MJBOTS_MOTEUS_ENABLE_SOCKETCAN 1
+#endif
+
 namespace mjbots {
 namespace moteus {
 
@@ -313,7 +317,8 @@ class TimeoutTransport : public Transport {
         expected_ok_count++;
         CHILD_SendCanFdFrame(frames[i]);
         if (frames[i].reply_required) {
-          if ((frames[i].destination + 1) > expected_reply_count_.size()) {
+          if ((frames[i].destination + 1) >
+              static_cast<int>(expected_reply_count_.size())) {
             expected_reply_count_.resize(frames[i].destination + 1);
           }
           expected_reply_count_[frames[i].destination]++;
@@ -528,7 +533,7 @@ class Fdcanusb : public details::TimeoutTransport {
 
   virtual ConsumeCount CHILD_ConsumeData(
       std::vector<CanFdFrame>* replies,
-      int expected_ok_count,
+      int /* expected_ok_count */,
       std::vector<int>* expected_reply_count) override {
     // Read into our line buffer.
     const int to_read = sizeof(line_buffer_) - line_buffer_pos_;
@@ -620,7 +625,8 @@ class Fdcanusb : public details::TimeoutTransport {
     }
 
     if (expected_reply_count) {
-      if (this_frame.source < expected_reply_count->size()) {
+      if (this_frame.source <
+          static_cast<int>(expected_reply_count->size())) {
         (*expected_reply_count)[this_frame.source] = std::max(
             (*expected_reply_count)[this_frame.source] - 1, 0);
       }
@@ -754,6 +760,7 @@ class Fdcanusb : public details::TimeoutTransport {
 };
 
 
+#ifdef MJBOTS_MOTEUS_ENABLE_SOCKETCAN
 class Socketcan : public details::TimeoutTransport {
  public:
   struct Options : details::TimeoutTransport::Options {
@@ -836,7 +843,7 @@ class Socketcan : public details::TimeoutTransport {
 
   virtual ConsumeCount CHILD_ConsumeData(
       std::vector<CanFdFrame>* replies,
-      int expected_ok_count,
+      int /* expected_ok_count */,
       std::vector<int>* expected_reply_count) override {
     struct canfd_frame recv_frame = {};
     FailIf(::read(socket_, &recv_frame, sizeof(recv_frame)) < 0,
@@ -857,7 +864,8 @@ class Socketcan : public details::TimeoutTransport {
     this_frame.size = recv_frame.len;
 
     if (expected_reply_count) {
-      if (this_frame.source < expected_reply_count->size()) {
+      if (this_frame.source <
+          static_cast<int>(expected_reply_count->size())) {
         (*expected_reply_count)[this_frame.source] = std::max(
             (*expected_reply_count)[this_frame.source] - 1, 0);
       }
@@ -878,7 +886,7 @@ class Socketcan : public details::TimeoutTransport {
   const Options options_;
   details::FileDescriptor socket_;
 };
-
+#endif  // MJBOTS_MOTEUS_ENABLE_SOCKETCAN
 
 /// A factory which can create transports given an optional set of
 /// commandline arguments.
@@ -968,6 +976,7 @@ class FdcanusbFactory : public TransportFactory {
   }
 };
 
+#ifdef MJBOTS_MOTEUS_ENABLE_SOCKETCAN
 class SocketcanFactory : public TransportFactory {
  public:
   virtual ~SocketcanFactory() {}
@@ -1019,6 +1028,7 @@ class SocketcanFactory : public TransportFactory {
     return false;
   }
 };
+#endif  // MJBOTS_MOTEUS_ENABLE_SOCKETCAN
 
 class TransportRegistry {
  public:
@@ -1106,7 +1116,9 @@ class TransportRegistry {
  private:
   TransportRegistry() {
     Register<FdcanusbFactory>();
+#ifdef MJBOTS_MOTEUS_ENABLE_SOCKETCAN
     Register<SocketcanFactory>();
+#endif
   }
 
   std::vector<std::shared_ptr<TransportFactory>> items_;

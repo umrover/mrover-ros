@@ -3,8 +3,8 @@
 #include "joint_de_translation.hpp"
 #include "linear_joint_translation.hpp"
 
-#include <params_utils.hpp>
 #include <units/units.hpp>
+#include <params_utils.hpp>
 
 namespace mrover {
 
@@ -216,6 +216,7 @@ namespace mrover {
         // joint a convert linear position (meters) to radians
         auto joint_a_pos = convertLinPos(msg->positions.at(mJointAIndex), mJointALinMult.get());
         position.positions.at(mJointAIndex) = joint_a_pos;
+        
         mPositionPub->publish(position);
     }
 
