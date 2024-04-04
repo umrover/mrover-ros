@@ -172,7 +172,7 @@ class LongRangeTagStore:
                 self.__data[tag.id] = self.TagData(hit_count=INCREMENT_WEIGHT, tag=tag, time=rospy.get_time())
             else:
                 self.__data[tag.id].tag = tag
-                cur_tag.time = rospy.get_time()
+                self.__data[tag.id].time = rospy.get_time()
 
     def get(self, tag_id: int) -> Optional[LongRangeTag]:
         """
