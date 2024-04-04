@@ -37,11 +37,11 @@ def main() -> None:
                         svin_complete = True
                         rospy.loginfo(f"basestation survey-in complete, accuracy = {msg.meanAcc}")
                     if svin_started and not svin_complete:
-                        print(f"current accuracy: {msg.meanAcc}")
+                        rospy.loginfo(f"current accuracy: {msg.meanAcc}")
 
                 # fix quality information
                 elif msg.identity == "NAV-PVT":
-                    print(f"{'valid' if msg.gnssFixOk else 'invalid'} fix, {msg.numSV} satellites used")
+                    rospy.loginfo(f"{'valid' if msg.gnssFixOk else 'invalid'} fix, {msg.numSV} satellites used")
 
 
 if __name__ == "__main__":

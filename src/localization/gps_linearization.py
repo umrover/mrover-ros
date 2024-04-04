@@ -21,8 +21,9 @@ class GPSLinearization:
     orientation into a pose estimate for the rover and publishes it.
     """
 
-    last_gps_msg: Optional[np.ndarray]
+    last_gps_msg: Optional[NavSatFix]
     last_imu_msg: Optional[ImuAndMag]
+    last_pose: Optional[SE3]
     pose_publisher: rospy.Publisher
 
     # reference coordinates
@@ -59,7 +60,7 @@ class GPSLinearization:
             right_gps_sub = message_filters.Subscriber("right_gps_driver/fix", NavSatFix)
             left_gps_sub = message_filters.Subscriber("left_gps_driver/fix", NavSatFix)
             sync_gps_sub = message_filters.ApproximateTimeSynchronizer([right_gps_sub, left_gps_sub], 10, 0.5)
-            sync_gps_sub.registerCallback(self.duo_gps_callback)
+            sync_gps_sub.registerCallback(self.dual_gps_callback)
         else:
             rospy.Subscriber("left_gps_driver/fix", NavSatFix, self.single_gps_callback)
 
@@ -85,7 +86,7 @@ class GPSLinearization:
             self.last_pose = self.get_linearized_pose_in_world(msg, self.last_imu_msg, self.ref_coord)
             self.publish_pose()
 
-    def duo_gps_callback(self, right_gps_msg: NavSatFix, left_gps_msg: NavSatFix):
+    def dual_gps_callback(self, right_gps_msg: NavSatFix, left_gps_msg: NavSatFix):
         """
         Callback function that receives GPS messages, assigns their covariance matrix,
         and then publishes the linearized pose.
@@ -153,10 +154,8 @@ class GPSLinearization:
         self.pose_publisher.publish(pose_msg)
 
     @staticmethod
-    def compute_gps_pose(right_cartesian, left_cartesian) -> np.ndarray:
+    def compute_gps_pose(right_cartesian, left_cartesian) -> SE3:
         # TODO: give simulated GPS non zero altitude so we can stop erasing the z component
-        # left_cartesian[2] = 0
-        # right_cartesian[2] = 0
         vector_connecting = left_cartesian - right_cartesian
         vector_connecting[2] = 0
         magnitude = np.linalg.norm(vector_connecting)
@@ -179,7 +178,7 @@ class GPSLinearization:
         return pose
 
     @staticmethod
-    def get_linearized_pose_in_world(gps_msg: NavSatFix, imu_msg: ImuAndMag, ref_coord: np.ndarray) -> np.ndarray:
+    def get_linearized_pose_in_world(gps_msg: NavSatFix, imu_msg: ImuAndMag, ref_coord: np.ndarray) -> SE3:
         """
         Linearizes the GPS geodetic coordinates into ENU cartesian coordinates,
         then combines them with the IMU orientation into a pose estimate relative
