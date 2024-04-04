@@ -54,7 +54,7 @@ class GPS_Driver:
 
     # rospy subscriber automatically runs this callback in separate thread
     def process_rtcm(self, data) -> None:
-        print("processing RTCM")
+        rospy.loginfo("processing RTCM")
         with self.lock:
             self.ser.write(data.message)
 
