@@ -13,6 +13,16 @@
     dest: ~/
     recursive: true
 
+- name: ZSH Automatic Suggestions Plugin
+  git:
+    repo: https://github.com/zsh-users/zsh-autosuggestions
+    dest: ~/.oh-my-zsh/custom/plugins/zsh-autosuggestions
+
+- name: ZSH Syntax Highlighting Plugin
+  git:
+    repo: https://github.com/zsh-users/zsh-syntax-highlighting
+    dest: ~/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting
+
 - name: Use ZSH as a default shell
   become: true
   command: chsh --shell /usr/bin/zsh {{ ansible_user_id }}
