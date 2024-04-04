@@ -158,6 +158,10 @@ namespace mrover {
         bool enable_auto_shutoff{};
     };
 
+    struct ConfigThermistorAutoShutOffCommand : BaseCommand {
+        float shutoff_temp{};
+    };
+
     struct HeaterStateInfo {
         [[maybe_unused]] std::uint8_t _ignore : 2 {};
         std::uint8_t on : 6 {};
@@ -183,7 +187,7 @@ namespace mrover {
     };
 
     using InBoundScienceMessage = std::variant<
-            EnableScienceDeviceCommand, HeaterAutoShutOffCommand>;
+            EnableScienceDeviceCommand, HeaterAutoShutOffCommand, ConfigThermistorAutoShutOffCommand>;
 
     using OutBoundScienceMessage = std::variant<
             HeaterStateData, SpectralData, ThermistorData>;
