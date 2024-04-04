@@ -11,6 +11,8 @@ set(CMAKE_MAKEFILE_DEPENDS
   "/home/john/catkin_ws/src/mrover/deps/glfw3webgpu/Config.cmake.in"
   "CMakeFiles/3.28.3/CMakeCCompiler.cmake"
   "CMakeFiles/3.28.3/CMakeSystem.cmake"
+  "CMakeFiles/VerifyGlobs.cmake"
+  "CMakeFiles/cmake.verify_globs"
   "/home/john/catkin_ws/src/mrover/deps/glfw3webgpu/cmake/Packing.cmake"
   "/usr/lib/x86_64-linux-gnu/cmake/glfw3/glfw3Config.cmake"
   "/usr/lib/x86_64-linux-gnu/cmake/glfw3/glfw3ConfigVersion.cmake"

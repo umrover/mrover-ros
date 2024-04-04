@@ -54,7 +54,7 @@ target_include_directories	(${PROJECT_NAME}
 
 # Grab all of the files that need to be included for imgui and store them in im
 get_target_property(${PROJECT_NAME}_INTERFACE_INCLUDE_DIRECTORIES glfw3webgpu INCLUDE_DIRECTORIES)
-file(GLOB ${PROJECT_NAME}_INTERFACE_HEADERS ${${PROJECT_NAME}_INTERFACE_INCLUDE_DIRECTORIES}/*.h*)
+file(GLOB ${PROJECT_NAME}_INTERFACE_HEADERS CONFIGURE_DEPENDS ${${PROJECT_NAME}_INTERFACE_INCLUDE_DIRECTORIES}/*.h*)
 message ("yooo ${${PROJECT_NAME}_INTERFACE_HEADERS}")
 
 # Install the public headers

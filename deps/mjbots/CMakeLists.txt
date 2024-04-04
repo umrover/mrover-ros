@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 project(mjbots VERSION 6108 LANGUAGES CXX)
 
-file(GLOB ${PROJECT_NAME}_INCLUDE_FILES GLOB moteus/*.h*)
+file(GLOB ${PROJECT_NAME}_INCLUDE_FILES CONFIGURE_DEPENDS moteus/*.h*)
 
 add_library(mjbots INTERFACE ${${PROJECT_NAME}_INCLUDE_FILES})
 
