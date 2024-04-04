@@ -1,5 +1,5 @@
 <template>
-  <div class="wrap">
+  <div class="wrap mx-2">
     <div>
       <h3>Drive Moteus States</h3>
     </div>
