@@ -4,9 +4,10 @@ from serial import Serial
 from pyubx2 import UBXReader, UBX_PROTOCOL, RTCM3_PROTOCOL, protocol
 from rtcm_msgs.msg import Message
 
+
 def main() -> None:
-    rtcm_pub = rospy.Publisher('rtcm', Message, queue_size=1)
-    rospy.init_node('basestation_driver')
+    rtcm_pub = rospy.Publisher("rtcm", Message, queue_size=1)
+    rospy.init_node("basestation_driver")
     port = rospy.get_param("basestation_gps_driver/port")
     baud = rospy.get_param("basestation_gps_driver/baud")
     svin_started = False
@@ -18,7 +19,7 @@ def main() -> None:
         while not rospy.is_shutdown():
             if ser.in_waiting:
                 (raw_msg, msg) = reader.read()
-                
+
                 # skip if message could not be parsed
                 if not msg:
                     continue
@@ -37,11 +38,11 @@ def main() -> None:
                         rospy.loginfo(f"basestation survey-in complete, accuracy = {msg.meanAcc}")
                     if svin_started and not svin_complete:
                         print(f"current accuracy: {msg.meanAcc}")
-                
+
                 # fix quality information
                 elif msg.identity == "NAV-PVT":
                     print(f"{'valid' if msg.gnssFixOk else 'invalid'} fix, {msg.numSV} satellites used")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

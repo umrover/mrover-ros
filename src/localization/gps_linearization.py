@@ -54,7 +54,7 @@ class GPSLinearization:
         self.last_gps_msg = None
         self.last_pose = None
         self.last_imu_msg = None
-    
+
         if self.both_gps:
             right_gps_sub = message_filters.Subscriber("right_gps_driver/fix", NavSatFix)
             left_gps_sub = message_filters.Subscriber("left_gps_driver/fix", NavSatFix)
@@ -65,7 +65,6 @@ class GPSLinearization:
 
         rospy.Subscriber("imu/data", ImuAndMag, self.imu_callback)
         self.pose_publisher = rospy.Publisher("linearized_pose", PoseWithCovarianceStamped, queue_size=1)
-
 
     def single_gps_callback(self, msg: NavSatFix):
         """
@@ -81,11 +80,10 @@ class GPSLinearization:
             msg.position_covariance = self.config_gps_covariance
 
         # print("using single callback")
-        
+
         if self.last_imu_msg is not None:
             self.last_pose = self.get_linearized_pose_in_world(msg, self.last_imu_msg, self.ref_coord)
             self.publish_pose()
-        
 
     def duo_gps_callback(self, right_gps_msg: NavSatFix, left_gps_msg: NavSatFix):
         """
@@ -102,16 +100,22 @@ class GPSLinearization:
             return
 
         right_cartesian = np.array(
-            geodetic2enu(right_gps_msg.latitude, right_gps_msg.longitude, right_gps_msg.altitude, *self.ref_coord, deg=True)
+            geodetic2enu(
+                right_gps_msg.latitude, right_gps_msg.longitude, right_gps_msg.altitude, *self.ref_coord, deg=True
+            )
         )
         left_cartesian = np.array(
-            geodetic2enu(left_gps_msg.latitude, left_gps_msg.longitude, left_gps_msg.altitude, *self.ref_coord, deg=True)
+            geodetic2enu(
+                left_gps_msg.latitude, left_gps_msg.longitude, left_gps_msg.altitude, *self.ref_coord, deg=True
+            )
         )
 
-        self.last_pose = GPSLinearization.compute_gps_pose(right_cartesian=right_cartesian, left_cartesian=left_cartesian)
+        self.last_pose = GPSLinearization.compute_gps_pose(
+            right_cartesian=right_cartesian, left_cartesian=left_cartesian
+        )
 
         self.publish_pose()
-        #print("double")
+        # print("double")
 
     def imu_callback(self, msg: ImuAndMag):
         """
@@ -173,11 +177,9 @@ class GPSLinearization:
         pose = SE3(rover_position, SO3.from_matrix(rotation_matrix=rotation_matrix))
 
         return pose
-    
+
     @staticmethod
-    def get_linearized_pose_in_world(
-        gps_msg: NavSatFix, imu_msg: ImuAndMag, ref_coord: np.ndarray
-    ) -> np.ndarray:
+    def get_linearized_pose_in_world(gps_msg: NavSatFix, imu_msg: ImuAndMag, ref_coord: np.ndarray) -> np.ndarray:
         """
         Linearizes the GPS geodetic coordinates into ENU cartesian coordinates,
         then combines them with the IMU orientation into a pose estimate relative

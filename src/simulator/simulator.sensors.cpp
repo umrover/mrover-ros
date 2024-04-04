@@ -181,7 +181,7 @@ namespace mrover {
                 R3 leftGpsNoise{mGPSDist(mRNG), mGPSDist(mRNG), mGPSDist(mRNG)},
                         rightGpsNoise{mGPSDist(mRNG), mGPSDist(mRNG), mGPSDist(mRNG)};
                 leftGpsInMap += leftGpsNoise;
-                rightGpsInMap += rightGpsNoise; 
+                rightGpsInMap += rightGpsNoise;
 
                 mLeftGpsPub.publish(computeNavSatFix(leftGpsInMap, mGpsLinearizationReferencePoint, mGpsLinerizationReferenceHeading));
                 mRightGpsPub.publish(computeNavSatFix(rightGpsInMap, mGpsLinearizationReferencePoint, mGpsLinerizationReferenceHeading));

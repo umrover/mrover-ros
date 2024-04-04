@@ -58,9 +58,8 @@ class GPS_Driver:
         # skip if message could not be parsed
         if not msg:
             return
-        
-        msg_used = None
 
+        msg_used = None
 
         if rover_gps_data.identity == "RXM-RTCM":
             rospy.loginfo("RXM")
@@ -79,7 +78,7 @@ class GPS_Driver:
             parsed_latitude = msg.lat
             parsed_longitude = msg.lon
             parsed_altitude = msg.hMSL
-            time = datetime.datetime(year=msg.year, month=msg.month, day=msg.day, hour= msg.hour, second=msg.second)
+            time = datetime.datetime(year=msg.year, month=msg.month, day=msg.day, hour=msg.hour, second=msg.second)
             time = rospy.Time(secs=time.timestamp() + (msg.nano / 1e6))
             if not self.valid_offset:
                 self.time_offset = rospy.Time.now() - time
