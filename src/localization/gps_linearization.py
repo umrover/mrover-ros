@@ -13,6 +13,8 @@ from util.SO3 import SO3
 from util.np_utils import numpify
 import message_filters
 
+QUEUE_SIZE = 10
+SLOP = 0.5
 
 class GPSLinearization:
     """
@@ -41,7 +43,7 @@ class GPSLinearization:
     def __init__(self):
         # read required parameters, if they don't exist an error will be thrown
         self.ref_lat = rospy.get_param("gps_linearization/reference_point_latitude")
-        self.ref_lon = rospy.get_param(param_name="gps_linearization/reference_point_longitude")
+        self.ref_lon = rospy.get_param("gps_linearization/reference_point_longitude")
         self.ref_alt = rospy.get_param("gps_linearization/reference_point_altitude")
         self.both_gps = rospy.get_param("gps_linearization/use_both_gps")
         self.world_frame = rospy.get_param("world_frame")
@@ -59,7 +61,7 @@ class GPSLinearization:
         if self.both_gps:
             right_gps_sub = message_filters.Subscriber("right_gps_driver/fix", NavSatFix)
             left_gps_sub = message_filters.Subscriber("left_gps_driver/fix", NavSatFix)
-            sync_gps_sub = message_filters.ApproximateTimeSynchronizer([right_gps_sub, left_gps_sub], 10, 0.5)
+            sync_gps_sub = message_filters.ApproximateTimeSynchronizer([right_gps_sub, left_gps_sub], QUEUE_SIZE, SLOP)
             sync_gps_sub.registerCallback(self.dual_gps_callback)
         else:
             rospy.Subscriber("left_gps_driver/fix", NavSatFix, self.single_gps_callback)
@@ -74,13 +76,14 @@ class GPSLinearization:
 
         :param msg: The NavSatFix message containing GPS data that was just received
         """
+
+        rospy.logdebug("using single gps")
+
         if np.any(np.isnan([msg.latitude, msg.longitude, msg.altitude])):
             return
 
         if not self.use_dop_covariance:
             msg.position_covariance = self.config_gps_covariance
-
-        # print("using single callback")
 
         if self.last_imu_msg is not None:
             self.last_pose = self.get_linearized_pose_in_world(msg, self.last_imu_msg, self.ref_coord)
@@ -94,7 +97,9 @@ class GPSLinearization:
         :param msg: The NavSatFix message containing GPS data that was just received
         TODO: Handle invalid PVTs
         """
-        # print("using duo gps")
+
+        rospy.logdebug("using dual gps")
+
         if np.any(np.isnan([right_gps_msg.latitude, right_gps_msg.longitude, right_gps_msg.altitude])):
             return
         if np.any(np.isnan([left_gps_msg.latitude, left_gps_msg.longitude, left_gps_msg.altitude])):
@@ -116,7 +121,6 @@ class GPSLinearization:
         )
 
         self.publish_pose()
-        # print("double")
 
     def imu_callback(self, msg: ImuAndMag):
         """
