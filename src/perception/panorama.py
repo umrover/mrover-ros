@@ -161,7 +161,7 @@ class Panorama:
         # TODO: Don't hardcode or parametrize this?
         angle_inc = 0.2 # in radians
         current_angle = 0.0
-        stitched_pc = np.empty((0,8))
+        stitched_pc = np.empty((0,8), dtype=np.float32)
         
         while (current_angle < goal.angle):
             if self._as.is_preempt_requested():
@@ -186,17 +186,17 @@ class Panorama:
         cv2.imwrite(desktop_path, pano)
 
         # construct pc from stitched
-        stitched_pc.flatten()
+        pc_msg = PointCloud2()
+        pc_msg.width = stitched_pc.shape[0]
+        stitched_pc = stitched_pc.flatten()
         header = Header()
         header.frame_id = 'base_link'
-        pc_msg = PointCloud2()
         pc_msg.header = header
         pc_msg.fields = self.current_pc.fields
         pc_msg.is_bigendian = self.current_pc.is_bigendian
         pc_msg.data = stitched_pc.tobytes()
         pc_msg.height = 1
-        pc_msg.point_step = 1
-        pc_msg.width = len(pc_msg.data)
+        pc_msg.point_step = int(len(pc_msg.data) / pc_msg.width)
         pc_msg.is_dense = self.current_pc.is_dense
         while not rospy.is_shutdown():
             self.pc_publisher.publish(pc_msg)
