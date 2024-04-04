@@ -94,7 +94,7 @@ namespace mrover {
 
         void calcMotion(double desiredVelocity, double desiredOmega);
 
-        void calcMotionToo(std::vector<Vector5d> points);
+        void calcMotionToo();
 
         static auto calcAngleWithWorldX(Eigen::Vector3d xHeading) -> double;
 

@@ -57,6 +57,7 @@ namespace mrover {
             SE3d temp = {{mPathPoints.at(i).coeff(0,0), mPathPoints.at(i).coeff(1, 0), 0}, SO3d{Eigen::Quaterniond{rot}.normalized()}};
             SE3Conversions::pushToTfTree(mTfBroadcaster, std::format("spline_point_{}", i), mMapFrameId, temp);
         }
+		calcMotionToo();
     }
 
 
@@ -130,41 +131,35 @@ namespace mrover {
         }        
     }
 
-    void LanderAlignNodelet::calcMotionToo(std::vector<Vector5d> points) {
+    void LanderAlignNodelet::calcMotionToo() {
         geometry_msgs::Twist twist;
         SE3d roverInWorld = SE3Conversions::fromTfTree(mTfBuffer, "base_link", "map");
         
         // Inital State
         Eigen::Vector2d initState{roverInWorld.translation().x(), roverInWorld.translation().y()};
 
-        //Target State
-        // double targetHeading = calcAngleWithWorldX({0,1,0});
-        double targetHeading = calcAngleWithWorldX(-mNormalInWorldVector.value());
-        ROS_INFO_STREAM(mNormalInWorldVector.value().x() << " " << mNormalInWorldVector.value().y() << " " <<  mNormalInWorldVector.value().z());
-        Eigen::Vector3d tarState{mOffsetLocationInWorldVector.value().x(), mOffsetLocationInWorldVector.value().y(), targetHeading};
-        Eigen::Vector2d distanceToTargetVectorInit{tarState.x() - initState.x   (), tarState.y() - initState.y()};
-        //double distanceToTargetInitial = std::abs(distanceToTargetVectorInit.norm());
-
         for (const Vector5d& point : mPathPoints) {
-            double K1 = 1;
-            double K2 = 1;
-            double K3 = 1;
+            double K1 = 0.01;
+            double K2 = 0.01;
+            double K3 = 0.01;  
 
+            // Grab the current target state from the spline
+            Eigen::Vector3d tarState{point.coeff(0, 0), point.coeff(1, 0), point.coeff(2, 0)};
+            ROS_INFO_STREAM("Switching to target position: (x, y, theta): (" << tarState.x() << ", " << tarState.y() << ", " << tarState.z() << ")");
 
             while (ros::ok()) {
                 roverInWorld = SE3Conversions::fromTfTree(mTfBuffer, "base_link", "map");
                 Eigen::Vector3d xOrientation = roverInWorld.rotation().col(0); 
                 double roverHeading = calcAngleWithWorldX(xOrientation);
-                ROS_INFO_STREAM("Current Rover Anlge" << roverHeading);
                 Eigen::Vector3d currState{roverInWorld.translation().x(), roverInWorld.translation().y(), roverHeading};
 
                 Eigen::Vector2d distanceToTargetVector{tarState.x() - currState.x(), tarState.y() - currState.y()};
                 double distanceToTarget = std::abs(distanceToTargetVector.norm());
 
                 Eigen::Matrix3d rotation;
-                    rotation << std::cos(roverHeading),  std::sin(roverHeading), 0,
-                        -std::sin(roverHeading), std::cos(roverHeading), 0,
-                        0,                          0,                        1;
+                rotation << std::cos(roverHeading),  std::sin(roverHeading), 0,
+                            -std::sin(roverHeading), std::cos(roverHeading), 0,
+                            0,                          0,                        1;
                 Eigen::Vector3d errState = rotation * (tarState - currState); // maybe check error angle incase anything goes silly
 
                 double v = (point.coeff(3, 0) - K1 * abs(point.coeff(3, 0) * (errState.x() + errState.y() * tan(errState.z()))))/(cos(errState.z()));
@@ -514,7 +509,7 @@ namespace mrover {
         const double dVelocity = 1;
 
         // Calculate the angle to the world
-        const double dAngle = calcAngleWithWorldX(mNormalInWorldVector.value());
+        const double dAngle = calcAngleWithWorldX(-mNormalInWorldVector.value());
 
         //Calcuulate the spline length
         ros::Duration(0.5).sleep();
