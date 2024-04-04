@@ -25,11 +25,10 @@ import os
 import subprocess
 from pathlib import Path
 
-MOTEUS_SAVE_DIR =  str(Path.cwd()) + "/config/moteus/" # Need to change this for other laptops.
+MOTEUS_SAVE_DIR = str(Path.cwd()) + "/config/moteus/"  # Need to change this for other laptops.
 
 
 def main():
-
     command: str
     if len(sys.argv) >= 2:
         command = sys.argv[1]
