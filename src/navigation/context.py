@@ -120,7 +120,7 @@ class Environment:
             return self.get_target_pos(f"fiducial{current_waypoint.tag_id}", in_odom)
         elif current_waypoint.type.val == WaypointType.MALLET:
             return self.get_target_pos("hammer", in_odom)
-        elif current_waypoint.type == WaypointType.WATER_BOTTLE:
+        elif current_waypoint.type.val == WaypointType.WATER_BOTTLE:
             return self.get_target_pos("bottle", in_odom)
         else:
             return None
@@ -151,26 +151,28 @@ class LongRangeTagStore:
     def push_frame(self, tags: List[LongRangeTag]) -> None:
         """
         Loops through our current list of our stored tags and checks if the new message includes each tag or doesn't.
-        If it does include it, we will increment our hit count for that tag id and reset the time we saw it.
+        If it does include it, we will increment our hit count for that tag id, store the new tag information, and reset the time we saw it.
         If it does not include it, we will decrement our hit count for that tag id, and if the hit count becomes zero, then we remove it from our stored list.
         If there are tag ids in the new message that we don't have stored, we will add it to our stored list.
         :param tags: a list of LongRangeTags sent by perception, which includes an id and bearing for each tag in the list
         """
+        tags_ids = [tag.id for tag in tags]
         for _, cur_tag in list(self.__data.items()):
-            tags_ids = [tag.id for tag in tags]
             if cur_tag.tag.id not in tags_ids:
                 cur_tag.hit_count -= DECREMENT_WEIGHT
                 if cur_tag.hit_count <= 0:
                     del self.__data[cur_tag.tag.id]
             else:
                 cur_tag.hit_count += INCREMENT_WEIGHT
-                cur_tag.time = rospy.get_time()
                 if cur_tag.hit_count > self.max_hits:
                     cur_tag.hit_count = self.max_hits
 
         for tag in tags:
             if tag.id not in self.__data:
                 self.__data[tag.id] = self.TagData(hit_count=INCREMENT_WEIGHT, tag=tag, time=rospy.get_time())
+            else:
+                self.__data[tag.id].tag = tag
+                cur_tag.time = rospy.get_time()
 
     def get(self, tag_id: int) -> Optional[LongRangeTag]:
         """
