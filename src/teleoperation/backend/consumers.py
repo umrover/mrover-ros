@@ -31,7 +31,7 @@ from mrover.msg import (
     Spectral,
     ScienceThermistors,
     HeaterData,
-    NetworkBandwidth
+    NetworkBandwidth,
 )
 from mrover.srv import EnableAuton, AdjustMotor, ChangeCameras, CapturePanorama
 from sensor_msgs.msg import NavSatFix, Temperature, RelativeHumidity, Image
@@ -119,7 +119,9 @@ class GUIConsumer(JsonWebsocketConsumer):
             )
             self.science_spectral = rospy.Subscriber("/science_spectral", Spectral, self.science_spectral_callback)
             self.cmd_vel = rospy.Subscriber("/cmd_vel", Twist, self.cmd_vel_callback)
-            self.network_bandwidth = rospy.Subscriber("/network_bandwidth", NetworkBandwidth, self.network_bandwidth_callback)
+            self.network_bandwidth = rospy.Subscriber(
+                "/network_bandwidth", NetworkBandwidth, self.network_bandwidth_callback
+            )
 
             # Services
             self.laser_service = rospy.ServiceProxy("enable_arm_laser", SetBool)
@@ -606,18 +608,10 @@ class GUIConsumer(JsonWebsocketConsumer):
         )
 
     def cmd_vel_callback(self, msg):
-        self.send(
-            text_data=json.dumps(
-                {"type": "cmd_vel", "linear_x": msg.linear.x, "angular_z": msg.angular.z}
-            )
-        )
+        self.send(text_data=json.dumps({"type": "cmd_vel", "linear_x": msg.linear.x, "angular_z": msg.angular.z}))
 
     def network_bandwidth_callback(self, msg):
-        self.send(
-            text_data=json.dumps(
-                {"type": "network_bandwidth", "tx": msg.tx, "rx": msg.rx}
-            )
-        )
+        self.send(text_data=json.dumps({"type": "network_bandwidth", "tx": msg.tx, "rx": msg.rx}))
 
     def gps_fix_callback(self, msg):
         self.send(
