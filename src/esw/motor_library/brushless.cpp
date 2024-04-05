@@ -146,10 +146,10 @@ namespace mrover {
         result.isFwdPressed = false;
         result.isBwdPressed = false;
 
-        // TODO do both switch0 and switch1 use aux2?
+        // Limit switches now wired to AUX2 (index 0 and 1)
         if (limitSwitch0Present && limitSwitch0Enabled) {
-            int bitMask = 2; // 0b0010
-            bool gpioState = bitMask & moteusAux1Info;
+            int bitMask = 0; // 0b0001
+            bool gpioState = bitMask & moteusAux2Info;
             mLimitHit.at(0) = gpioState == limitSwitch0ActiveHigh;
         }
         if (limitSwitch1Present && limitSwitch1Enabled) {
