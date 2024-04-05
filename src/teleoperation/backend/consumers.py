@@ -604,11 +604,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         )
 
     def cmd_vel_callback(self, msg):
-        self.send(
-            text_data=json.dumps(
-                {"type": "cmd_vel", "linear_x": msg.linear.x, "angular_z": msg.angular.z}
-            )
-        )
+        self.send(text_data=json.dumps({"type": "cmd_vel", "linear_x": msg.linear.x, "angular_z": msg.angular.z}))
 
     def gps_fix_callback(self, msg):
         self.send(

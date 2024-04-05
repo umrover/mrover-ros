@@ -27,10 +27,12 @@ from pathlib import Path
 
 MOTEUS_SAVE_DIR = str(Path.cwd()) + "/config/moteus/"  # Need to change this for other laptops.
 
+
 def list_cfgs():
     files = os.listdir(MOTEUS_SAVE_DIR)
     print("Saved configs:\n\t")
     print(*files, sep="\n\t")
+
 
 def main():
     command: str
