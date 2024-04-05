@@ -31,6 +31,7 @@ from mrover.msg import (
     Spectral,
     ScienceThermistors,
     HeaterData,
+    NetworkBandwidth
 )
 from mrover.srv import EnableAuton, AdjustMotor, ChangeCameras, CapturePanorama
 from sensor_msgs.msg import NavSatFix, Temperature, RelativeHumidity, Image
@@ -64,6 +65,20 @@ class GUIConsumer(JsonWebsocketConsumer):
     def connect(self):
         self.accept()
         try:
+            # ROS Parameters
+            self.mappings = rospy.get_param("teleop/joystick_mappings")
+            self.drive_config = rospy.get_param("teleop/drive_controls")
+            self.max_wheel_speed = rospy.get_param("rover/max_speed")
+            self.wheel_radius = rospy.get_param("wheel/radius")
+            self.max_angular_speed = self.max_wheel_speed / self.wheel_radius
+            self.ra_config = rospy.get_param("teleop/ra_controls")
+            self.ik_names = rospy.get_param("teleop/ik_multipliers")
+            self.RA_NAMES = rospy.get_param("teleop/ra_names")
+            self.brushless_motors = rospy.get_param("brushless_motors/controllers")
+            self.brushed_motors = rospy.get_param("brushed_motors/controllers")
+            self.xbox_mappings = rospy.get_param("teleop/xbox_mappings")
+            self.sa_config = rospy.get_param("teleop/sa_controls")
+
             # Publishers
             self.twist_pub = rospy.Publisher("/cmd_vel", Twist, queue_size=1)
             self.led_pub = rospy.Publisher("/auton_led_cmd", String, queue_size=1)
@@ -104,6 +119,7 @@ class GUIConsumer(JsonWebsocketConsumer):
             )
             self.science_spectral = rospy.Subscriber("/science_spectral", Spectral, self.science_spectral_callback)
             self.cmd_vel = rospy.Subscriber("/cmd_vel", Twist, self.cmd_vel_callback)
+            self.network_bandwidth = rospy.Subscriber("/network_bandwidth", NetworkBandwidth, self.network_bandwidth_callback)
 
             # Services
             self.laser_service = rospy.ServiceProxy("enable_arm_laser", SetBool)
@@ -115,20 +131,6 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.change_cameras_srv = rospy.ServiceProxy("change_cameras", ChangeCameras)
             self.capture_panorama_srv = rospy.ServiceProxy("capture_panorama", CapturePanorama)
             self.heater_auto_shutoff_srv = rospy.ServiceProxy("science_change_heater_auto_shutoff_state", SetBool)
-
-            # ROS Parameters
-            self.mappings = rospy.get_param("teleop/joystick_mappings")
-            self.drive_config = rospy.get_param("teleop/drive_controls")
-            self.max_wheel_speed = rospy.get_param("rover/max_speed")
-            self.wheel_radius = rospy.get_param("wheel/radius")
-            self.max_angular_speed = self.max_wheel_speed / self.wheel_radius
-            self.ra_config = rospy.get_param("teleop/ra_controls")
-            self.ik_names = rospy.get_param("teleop/ik_multipliers")
-            self.RA_NAMES = rospy.get_param("teleop/ra_names")
-            self.brushless_motors = rospy.get_param("brushless_motors/controllers")
-            self.brushed_motors = rospy.get_param("brushed_motors/controllers")
-            self.xbox_mappings = rospy.get_param("teleop/xbox_mappings")
-            self.sa_config = rospy.get_param("teleop/sa_controls")
 
             self.tf_buffer = tf2_ros.Buffer()
             self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
@@ -607,6 +609,13 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.send(
             text_data=json.dumps(
                 {"type": "cmd_vel", "linear_x": msg.linear.x, "angular_z": msg.angular.z}
+            )
+        )
+
+    def network_bandwidth_callback(self, msg):
+        self.send(
+            text_data=json.dumps(
+                {"type": "network_bandwidth", "tx": msg.tx, "rx": msg.rx}
             )
         )
 

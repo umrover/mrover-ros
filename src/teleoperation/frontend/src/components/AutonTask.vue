@@ -3,8 +3,8 @@
     <div class="shadow p-3 mb-5 header">
       <img class="logo" src="/mrover.png" alt="MRover" title="MRover" width="200" />
       <h1>Auton Dashboard</h1>
-      <!-- <MCUReset class="mcu_reset"></MCUReset>
-        <CommReadout class="comms"></CommReadout> -->
+      <!-- <MCUReset class="mcu_reset"></MCUReset> -->
+      <NetworkBandwidth class="comms"></NetworkBandwidth>
       <div class="help">
         <img src="/help.png" alt="Help" title="Help" width="48" height="48" />
       </div>
@@ -68,6 +68,7 @@ import OdometryReading from './OdometryReading.vue'
 import JoystickValues from './JoystickValues.vue'
 import DriveControls from './DriveControls.vue'
 import MastGimbalControls from './MastGimbalControls.vue'
+import NetworkBandwidth from './NetworkBandwidth.vue'
 import { quaternionToMapAngle } from '../utils.js'
 import { defineComponent } from 'vue'
 
@@ -84,7 +85,8 @@ export default defineComponent({
     OdometryReading,
     JoystickValues,
     DriveControls,
-    MastGimbalControls
+    MastGimbalControls,
+    NetworkBandwidth
   },
 
   data() {
@@ -241,7 +243,8 @@ h2 {
 }
 
 .comms {
-  margin-right: 5px;
+  position: absolute;
+  right: 25%;
 }
 
 .helpscreen {
