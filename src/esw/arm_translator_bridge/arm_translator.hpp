@@ -61,6 +61,8 @@ namespace mrover {
         std::size_t const mJointDE0Index = std::ranges::find(mArmHWNames, "joint_de_0") - mArmHWNames.begin();
         std::size_t const mJointDE1Index = std::ranges::find(mArmHWNames, "joint_de_1") - mArmHWNames.begin();
         std::size_t const mJointAIndex = std::ranges::find(mArmHWNames, "joint_a") - mArmHWNames.begin();
+        std::size_t const mJointBIndex = std::ranges::find(mArmHWNames, "joint_b") - mArmHWNames.begin();
+        std::size_t const mJointCIndex = std::ranges::find(mArmHWNames, "joint_c") - mArmHWNames.begin();
 
         ros::Timer mDeOffsetTimer;
 
@@ -83,6 +85,9 @@ namespace mrover {
         Dimensionless mJointCGearRatio;
         Dimensionless mJointDEGearRatio;
     
+        Dimensionless PITCH_ROLL_TO_01_SCALE;
+        Matrix2<Dimensionless> PITCH_ROLL_TO_01_SCALED;
+        Matrix2<Dimensionless> const PITCH_ROLL_TO_0_1 = (Matrix2<Dimensionless>{} << 1, 1, -1, 1).finished();
 
 
         // ros::Subscriber mJointDEPitchPosSub;

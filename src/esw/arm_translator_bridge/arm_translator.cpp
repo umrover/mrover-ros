@@ -75,8 +75,6 @@ namespace mrover {
         mJointCGearRatio = requireParamAsUnit<Dimensionless>(nh, "brushless_motors/controllers/joint_c/gear_ratio");
         mJointDEGearRatio = requireParamAsUnit<Dimensionless>(nh, "brushless_motors/controllers/joint_de/gear_ratio");
 
-
-
         mThrottleSub = nh.subscribe<Throttle>("arm_throttle_cmd", 1, &ArmTranslator::processThrottleCmd, this);
         mVelocitySub = nh.subscribe<Velocity>("arm_velocity_cmd", 1, &ArmTranslator::processVelocityCmd, this);
         mPositionSub = nh.subscribe<Position>("arm_position_cmd", 1, &ArmTranslator::processPositionCmd, this);
@@ -88,9 +86,14 @@ namespace mrover {
         mJointDataPub = std::make_unique<ros::Publisher>(nh.advertise<sensor_msgs::JointState>("arm_joint_data", 1));
 
         mDeOffsetTimer = nh.createTimer(ros::Duration{1}, &ArmTranslator::updateDeOffsets, this);
+
+        PITCH_ROLL_TO_01_SCALE = mJointDEGearRatio.get();
+        PITCH_ROLL_TO_01_SCALED = PITCH_ROLL_TO_0_1 * PITCH_ROLL_TO_01_SCALE;
+    
+
     }
 
-    auto static const PITCH_ROLL_TO_0_1 = (Matrix2<Dimensionless>{} << 1, 1, -1, 1).finished();
+    
 
     auto ArmTranslator::processThrottleCmd(Throttle::ConstPtr const& msg) const -> void {
         if (mRawArmNames != msg->names || mRawArmNames.size() != msg->throttles.size()) {
@@ -109,9 +112,6 @@ namespace mrover {
         mThrottlePub->publish(throttle);
     }
 
-    constexpr Dimensionless PITCH_ROLL_TO_01_SCALE = mJointDEGearRatio.get();
-    Matrix2<Dimensionless> static const PITCH_ROLL_TO_01_SCALED = PITCH_ROLL_TO_0_1 * PITCH_ROLL_TO_01_SCALE;
-    
 
     auto ArmTranslator::processVelocityCmd(Velocity::ConstPtr const& msg) -> void {
         if (mRawArmNames != msg->names || mRawArmNames.size() != msg->velocities.size()) {
@@ -175,7 +175,7 @@ namespace mrover {
         MetersPerSecond jointBLinearVelocity = RadiansPerSecond{msg->velocity.at(mJointBIndex)} / mJointBMult/mJointBGearRatio;
         Meters jointBPosition = Radians{msg->position.at(mJointBIndex)} / mJointBMult/mJointBGearRatio;
 
-         MetersPerSecond jointCLinearVelocity = RadiansPerSecond{msg->velocity.at(mJointCIndex)} / mJointCMult/mJointCGearRatio;
+        MetersPerSecond jointCLinearVelocity = RadiansPerSecond{msg->velocity.at(mJointCIndex)} / mJointCMult/mJointCGearRatio;
         Meters jointCPosition = Radians{msg->position.at(mJointCIndex)} / mJointCMult/mJointCGearRatio;
 
         mJointDePitchRoll = {
