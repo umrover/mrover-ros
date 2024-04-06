@@ -7,7 +7,7 @@
             output="screen">
             <param name="interface" value="can0" />
       </node>
-      <node name="can_driver_1" pkg="mrover" type="can_driver"
+      <!-- <node name="can_driver_1" pkg="mrover" type="can_driver"
             respawn="true" respawn_delay="2"
             output="screen">
             <param name="interface" value="can1" />
@@ -21,7 +21,7 @@
             respawn="true" respawn_delay="2"
             output="screen">
             <param name="interface" value="can3" />
-      </node>
+      </node> -->
 
       <node pkg="mrover" type="gst_websocket_streamer" name="gst_websocket_streamer_0"
             output="screen">
