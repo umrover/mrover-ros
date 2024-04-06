@@ -21,7 +21,7 @@
         <JoystickValues />
       </div>
       <div class="d-flex justify-content-end">
-        <CameraFeed :mission="'ZED'" :id="999" :name="'ZED'"></CameraFeed>
+        <CameraFeed :mission="'ZED'" :id="0" :name="'ZED'"></CameraFeed>
       </div>
       <OdometryReading :odom="odom" />
     </div>
