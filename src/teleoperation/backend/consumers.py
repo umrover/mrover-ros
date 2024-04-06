@@ -380,8 +380,14 @@ class GUIConsumer(JsonWebsocketConsumer):
                     self.filter_xbox_axis(msg["axes"][self.ra_config["joint_a"]["xbox_index"]]),
                     self.filter_xbox_axis(msg["axes"][self.ra_config["joint_b"]["xbox_index"]]),
                     self.filter_xbox_axis(msg["axes"][self.ra_config["joint_c"]["xbox_index"]]),
-                    self.filter_xbox_axis(msg["axes"][self.ra_config["joint_de_pitch"]["xbox_index_right"]] - msg["axes"][self.ra_config["joint_de_pitch"]["xbox_index_left"]]),
-                    self.filter_xbox_axis(msg["buttons"][self.ra_config["joint_de_roll"]["xbox_index_right"]] - msg["buttons"][self.ra_config["joint_de_roll"]["xbox_index_left"]]),
+                    self.filter_xbox_axis(
+                        msg["axes"][self.ra_config["joint_de_pitch"]["xbox_index_right"]]
+                        - msg["axes"][self.ra_config["joint_de_pitch"]["xbox_index_left"]]
+                    ),
+                    self.filter_xbox_axis(
+                        msg["buttons"][self.ra_config["joint_de_roll"]["xbox_index_right"]]
+                        - msg["buttons"][self.ra_config["joint_de_roll"]["xbox_index_left"]]
+                    ),
                     self.ra_config["allen_key"]["multiplier"] * self.filter_xbox_button(msg["buttons"], "y", "a"),
                     self.ra_config["gripper"]["multiplier"] * self.filter_xbox_button(msg["buttons"], "b", "x"),
                 ]

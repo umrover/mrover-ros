@@ -43,12 +43,6 @@ extern TIM_HandleTypeDef htim17;
 
 namespace mrover {
 
-    // NOTE: Change This For Each Motor Controller
-    constexpr static std::uint8_t DEVICE_ID = 0x21; // currently set for joint_b
-
-    // Usually this is the Jetson
-    constexpr static std::uint8_t DESTINATION_DEVICE_ID = 0x10;
-
     FDCAN<InBoundMessage> fdcan_bus;
     Controller controller;
 

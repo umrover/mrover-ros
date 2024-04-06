@@ -61,39 +61,22 @@ namespace mrover {
                 launch = std::format(
                         "appsrc name=imageSource is-live=true "
                         "! video/x-raw,format=BGRA,width={},height={},framerate=30/1 "
-                        "! videoconvert "
                         "! nvh265enc name=encoder "
                         "! appsink name=streamSink sync=false",
                         mImageWidth, mImageHeight);
             }
         } else {
             if constexpr (IS_JETSON) {
-                // TODO(quintin): I had to apply this patch: https://forums.developer.nvidia.com/t/macrosilicon-usb/157777/4
-                //                nvv4l2camerasrc only supports UYUV by default, but our cameras are YUY2 (YUYV)
                 // ReSharper disable once CppDFAUnreachableCode
 
-                // launch = std::format(
-                //         "nvv4l2camerasrc device={} "
-                //         "! video/x-raw(memory:NVMM),format=YUY2,width={},height={},framerate={}/1 "
-                //         "! nvvidconv "
-                //         "! video/x-raw(memory:NVMM),format=I420 "
-                //         "! nvv4l2h265enc name=encoder bitrate={} iframeinterval=300 vbv-size=33333 insert-sps-pps=true control-rate=constant_bitrate profile=Main num-B-Frames=0 ratecontrol-enable=true preset-level=UltraFastPreset EnableTwopassCBR=false maxperf-enable=true "
-                //         "! appsink name=streamSink sync=false",
-                //         mCaptureDevice, mImageWidth, mImageHeight, mImageFramerate, mBitrate);
+                // TODO(quintin): I had to apply this patch: https://forums.developer.nvidia.com/t/macrosilicon-usb/157777/4
+                //                nvv4l2camerasrc only supports UYUV by default, but our cameras are YUY2 (YUYV)
 
                 launch = std::format(
-                    "v4l2src device={} "
-                    "! image/jpeg,width={},height={},framerate={}/1 "
-                    "! nvv4l2decoder mjpeg=1 "
-                    "! nvvidconv "
-                    "! video/x-raw(memory:NVMM),format=NV12 "
-                    "! nvv4l2h265enc name=encoder bitrate={} iframeinterval=300 vbv-size=33333 insert-sps-pps=true control-rate=constant_bitrate profile=Main num-B-Frames=0 ratecontrol-enable=true preset-level=UltraFastPreset EnableTwopassCBR=false maxperf-enable=true "
-                    "! appsink name=streamSink sync=false",
-                    mCaptureDevice, mImageWidth, mImageHeight, mImageFramerate, mBitrate);
-            } else {
-                launch = std::format(
+                        // "nvv4l2camerasrc device={} "
+
                         "v4l2src device={} "
-                        
+
                         // "! video/x-raw(memory:NVMM),format=YUY2,width={},height={},framerate={}/1 "
                         "! image/jpeg,width={},height={},framerate={}/1 "
                         "! nvv4l2decoder mjpeg=1 "
@@ -103,6 +86,15 @@ namespace mrover {
                         "! nvv4l2h265enc name=encoder bitrate={} iframeinterval=300 vbv-size=33333 insert-sps-pps=true control-rate=constant_bitrate profile=Main num-B-Frames=0 ratecontrol-enable=true preset-level=UltraFastPreset EnableTwopassCBR=false maxperf-enable=true "
                         "! appsink name=streamSink sync=false",
                         mCaptureDevice, mImageWidth, mImageHeight, mImageFramerate, mBitrate);
+            } else {
+                // ReSharper disable once CppDFAUnreachableCode
+                launch = std::format(
+                        "v4l2src device={}  "
+                        "! video/x-raw,format=YUY2,width={},height={},framerate=30/1 "
+                        "! videoconvert "
+                        "! nvh265enc name=encoder "
+                        "! appsink name=streamSink sync=false",
+                        mCaptureDevice, mImageWidth, mImageHeight);
             }
         }
 
