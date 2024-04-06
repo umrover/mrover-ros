@@ -156,17 +156,25 @@ class LongRangeTagStore:
         If there are tag ids in the new message that we don't have stored, we will add it to our stored list.
         :param tags: a list of LongRangeTags sent by perception, which includes an id and bearing for each tag in the list
         """
+        # Update our current tags
         tags_ids = [tag.id for tag in tags]
         for _, cur_tag in list(self.__data.items()):
+            # if we don't see one of our tags in the new message, decrement its hit count
             if cur_tag.tag.id not in tags_ids:
                 cur_tag.hit_count -= DECREMENT_WEIGHT
                 if cur_tag.hit_count <= 0:
-                    del self.__data[cur_tag.tag.id]
+                    cur_tag.hit_count = 0
+                    # if we haven't seen the tag in a while, remove it from our list
+                    time_difference = rospy.get_time() - cur_tag.time
+                    if time_difference > LONG_RANGE_TAG_EXPIRATION_TIME_SECONDS:
+                        del self.__data[cur_tag.tag.id]
+            # if we do see one of our tags in the new message, increment its hit count 
             else:
                 cur_tag.hit_count += INCREMENT_WEIGHT
                 if cur_tag.hit_count > self.max_hits:
                     cur_tag.hit_count = self.max_hits
 
+        # Add newly seen tags to our data structure and update current tag's information
         for tag in tags:
             if tag.id not in self.__data:
                 self.__data[tag.id] = self.TagData(hit_count=INCREMENT_WEIGHT, tag=tag, time=rospy.get_time())
@@ -186,9 +194,8 @@ class LongRangeTagStore:
             return None
         time_difference = rospy.get_time() - self.__data[tag_id].time
         if (
-            tag_id in self.__data
-            and self.__data[tag_id].hit_count >= self.min_hits
-            and time_difference <= LONG_RANGE_TAG_EXPIRATION_TIME_SECONDS
+            # self.__data[tag_id].hit_count >= self.min_hits and
+            time_difference <= LONG_RANGE_TAG_EXPIRATION_TIME_SECONDS
         ):
             return self.__data[tag_id].tag
         else:
