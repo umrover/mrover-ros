@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 """
 Script for converting moteus config into a writable format.
 Takes in file generated from:

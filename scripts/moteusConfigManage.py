@@ -28,6 +28,12 @@ from pathlib import Path
 MOTEUS_SAVE_DIR = str(Path.cwd()) + "/config/moteus/"  # Need to change this for other laptops.
 
 
+def list_cfgs():
+    files = os.listdir(MOTEUS_SAVE_DIR)
+    print("Saved configs:\n\t")
+    print(*files, sep="\n\t")
+
+
 def main():
     command: str
     if len(sys.argv) >= 2:
@@ -37,8 +43,11 @@ def main():
 
     if command == "save":
         saveFName = input("Please enter name for saved config: ")
+        if not saveFName.endswith("cfg"):
+            saveFName += ".cfg"
         id = int(input("Please enter ID of moteus: "))
 
+        print("Saving config - this may ~30 seconds")
         result = subprocess.run(["moteus_tool", "-t", str(id), "--dump-config"], capture_output=True)
         if result.returncode != 0:
             print(
@@ -49,17 +58,16 @@ def main():
             return
 
         saveFile = open(MOTEUS_SAVE_DIR + saveFName, "w")
-        saveFile.write(result.stdout)
+        saveFile.write(result.stdout.decode())
         saveFile.close()
 
         print(f"Saved config {saveFName}")
 
     elif command == "list":
-        files = os.listdir(MOTEUS_SAVE_DIR)
-        print("Saved configs:\n\t")
-        print(*files, sep="\n\t")
+        list_cfgs()
 
     elif command == "flash":
+        list_cfgs()
         storedConfigName = input("Please enter name for config to flash: ")
         id = int(input("Please enter ID of moteus: "))
 
@@ -67,7 +75,7 @@ def main():
         if storedConfigName not in files:
             print("Error: given config name not in saved configs")
             return
-
+        print("Flashing config - this may ~30 seconds")
         result = subprocess.run(
             ["moteus_tool", "-t", str(id), "--restore-config", MOTEUS_SAVE_DIR + storedConfigName], capture_output=True
         )
@@ -75,6 +83,8 @@ def main():
             print(
                 "Moteus_tool returned an error trying to save config to moteus. Check moteus is correctly connected and that you chose the correct ID"
             )
+            print("Moteus_tool stdout: ", result.stdout.decode())
+            print("Moteus_tool stderr: ", result.stderr.decode())
             return
 
         print("Wrote config to moteus")

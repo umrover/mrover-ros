@@ -28,7 +28,7 @@
       <BasicWaypointEditor :odom="odom" />
     </div>
     <div class="shadow p-3 rounded cameras">
-      <Cameras :primary="true" :isSA="true" />
+      <Cameras :primary="true" :isSA="true" :mission="'sa'" />
     </div>
     <div class="shadow p-3 rounded soildata">
       <SoilData />
@@ -164,7 +164,7 @@ export default {
   },
 
   computed: {
-    ...mapState('websocket', ['message']),
+    ...mapState('websocket', ['message'])
   },
 
   watch: {
@@ -181,13 +181,11 @@ export default {
         this.moteusState.state = msg.state
         this.moteusState.error = msg.error
         this.moteusState.limit_hit = msg.limit_hit
-      } 
+      }
     }
   },
 
-  created: function () {
-
-  }
+  created: function () {}
 }
 </script>
 

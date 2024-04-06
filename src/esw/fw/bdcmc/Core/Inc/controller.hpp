@@ -57,6 +57,7 @@ namespace mrover {
         std::optional<Radians> m_uncalib_position;
         std::optional<RadiansPerSecond> m_velocity;
         BDCMCErrorInfo m_error = BDCMCErrorInfo::DEFAULT_START_UP_NOT_CONFIGURED;
+        std::size_t m_missed_absolute_encoder_reads{0};
 
         struct StateAfterConfig {
             Dimensionless gear_ratio;
@@ -94,8 +95,8 @@ namespace mrover {
                 m_uncalib_position = position;
                 m_velocity = velocity;
             } else {
-                m_uncalib_position = std::nullopt;
-                m_velocity = std::nullopt;
+                m_uncalib_position.reset();
+                m_velocity.reset();
             }
         }
 
@@ -459,6 +460,10 @@ namespace mrover {
             // Only read the encoder if we are configured
             if (m_absolute_encoder) {
                 m_absolute_encoder->request_raw_angle();
+                // TODO(quintin): No magic numbers
+                if (m_missed_absolute_encoder_reads++ > 32) {
+                    m_state_after_calib.reset();
+                }
             }
         }
 
@@ -468,12 +473,17 @@ namespace mrover {
             }
         }
 
+        /**
+         * Called after a successful I2C transaction
+         */
         auto update_absolute_encoder() -> void {
             if (!m_absolute_encoder) return;
 
             if (std::optional<EncoderReading> reading = m_absolute_encoder->read()) {
                 auto const& [position, velocity] = reading.value();
                 if (!m_state_after_calib) m_state_after_calib.emplace();
+
+                m_missed_absolute_encoder_reads = 0;
 
                 // TODO(quintin): This is pretty stupid
                 m_state_after_calib->offset_position = -position;
@@ -485,8 +495,8 @@ namespace mrover {
                 m_uncalib_position.emplace(); // Reset to zero
                 m_velocity = velocity;
             } else {
-                m_uncalib_position = std::nullopt;
-                m_velocity = std::nullopt;
+                m_uncalib_position.reset();
+                m_velocity.reset();
             }
         }
     };
