@@ -16,12 +16,12 @@
     </div>
     <div :class="['shadow p-3 rounded data', ledColor]">
       <h2>Nav State: {{ navState }}</h2>
-      <!-- <div style="display: inline-block">
-        <CameraFeed></CameraFeed>
-      </div> -->
       <div style="display: inline-block; vertical-align: top">
         <p style="margin-top: 6px">Joystick Values</p>
         <JoystickValues />
+      </div>
+      <div class="d-flex justify-content-end">
+        <CameraFeed :mission="'ZED'" :id="999" :name="'ZED'"></CameraFeed>
       </div>
       <OdometryReading :odom="odom" />
     </div>
@@ -47,7 +47,7 @@
       </div>
     </div>
     <div class="shadow p-3 rounded cameras">
-      <Cameras :primary="true" :isSA="false"/>
+      <Cameras :primary="true" :isSA="false" :mission="'auton'"/>
     </div>
     <div class="shadow p-3 rounded moteus">
       <DriveMoteusStateTable :moteus-state-data="moteusState" />
@@ -61,8 +61,8 @@ import { mapActions, mapState, mapGetters } from 'vuex'
 import DriveMoteusStateTable from './DriveMoteusStateTable.vue'
 import AutonRoverMap from './AutonRoverMap.vue'
 import AutonWaypointEditor from './AutonWaypointEditor.vue'
-import CameraFeed from './CameraFeed.vue'
 import Cameras from './Cameras.vue'
+import CameraFeed from './CameraFeed.vue'
 import MotorsStatusTable from './MotorsStatusTable.vue'
 import OdometryReading from './OdometryReading.vue'
 import JoystickValues from './JoystickValues.vue'
@@ -78,16 +78,14 @@ export default defineComponent({
     DriveMoteusStateTable,
     AutonRoverMap,
     AutonWaypointEditor,
-    CameraFeed,
     Cameras,
+    CameraFeed,
     MotorsStatusTable,
     OdometryReading,
     JoystickValues,
     DriveControls,
     MastGimbalControls
   },
-
-  // add prop where map has the center property and autontask sends it once it gets it
 
   data() {
     return {
@@ -192,15 +190,15 @@ export default defineComponent({
 .wrapper {
   display: grid;
   grid-gap: 10px;
-  grid-template-columns: 40% 20% auto;
+  grid-template-columns: 60% 40%;
   grid-template-rows: repeat(6, auto);
   grid-template-areas:
-    'header header header'
-    'map map waypoints'
-    'data data waypoints'
-    'data data conditions'
-    'moteus moteus moteus'
-    'cameras cameras cameras';
+    'header header'
+    'map waypoints'
+    'data waypoints'
+    'data conditions'
+    'moteus moteus'
+    'cameras cameras';
 
   font-family: sans-serif;
   height: auto;

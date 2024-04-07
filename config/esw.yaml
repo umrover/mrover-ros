@@ -17,6 +17,12 @@ can:
     - name: "jetson"
       bus: 1
       id: 0x10
+    - name: "jetson"
+      bus: 2
+      id: 0x10
+    - name: "jetson"
+      bus: 3
+      id: 0x10
     - name: "front_left"
       bus: 0
       id: 0x12
@@ -46,7 +52,7 @@ can:
       id: 0x22
     - name: "joint_de_0"
       bus: 1
-      id: 0x31
+      id: 0x23
     - name: "joint_de_1"
       bus: 1
       id: 0x24
@@ -57,10 +63,10 @@ can:
       bus: 1
       id: 0x26
     - name: "mast_gimbal_y"
-      bus: 1
+      bus: 3
       id: 0x28
     - name: "mast_gimbal_z"
-      bus: 1
+      bus: 3
       id: 0x27
     - name: "sa_x"
       bus: 1
@@ -78,13 +84,13 @@ can:
       bus: 1
       id: 0x33
     - name: "cache"
-      bus: 1
+      bus: 2
       id: 0x34
     - name: "pdlb"
-      bus: 1
+      bus: 3
       id: 0x50
     - name: "science"
-      bus: 1
+      bus: 2
       id: 0x51
 
 brushless_motors:

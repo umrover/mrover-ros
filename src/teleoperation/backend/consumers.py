@@ -14,7 +14,6 @@ import tf2_ros
 import cv2
 
 # from cv_bridge import CvBridge
-from geometry_msgs.msg import Twist
 from mrover.msg import (
     PDLB,
     ControllerState,
@@ -33,9 +32,9 @@ from mrover.msg import (
     ScienceThermistors,
     HeaterData,
 )
-from mrover.srv import EnableAuton, AdjustMotor, ChangeCameras, CapturePanorama  # , CapturePhoto
+from mrover.srv import EnableAuton, AdjustMotor, ChangeCameras, CapturePanorama
 from sensor_msgs.msg import NavSatFix, Temperature, RelativeHumidity, Image
-from std_msgs.msg import String, Bool
+from std_msgs.msg import String
 from std_srvs.srv import SetBool, Trigger
 from geometry_msgs.msg import Twist, Pose, Point, Quaternion
 
@@ -104,6 +103,7 @@ class GUIConsumer(JsonWebsocketConsumer):
                 "/science_heater_state", HeaterData, self.ish_heater_state_callback
             )
             self.science_spectral = rospy.Subscriber("/science_spectral", Spectral, self.science_spectral_callback)
+            self.cmd_vel = rospy.Subscriber("/cmd_vel", Twist, self.cmd_vel_callback)
 
             # Services
             self.laser_service = rospy.ServiceProxy("enable_arm_laser", SetBool)
@@ -115,7 +115,6 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.change_cameras_srv = rospy.ServiceProxy("change_cameras", ChangeCameras)
             self.capture_panorama_srv = rospy.ServiceProxy("capture_panorama", CapturePanorama)
             self.heater_auto_shutoff_srv = rospy.ServiceProxy("science_change_heater_auto_shutoff_state", SetBool)
-            # self.capture_photo_srv = rospy.ServiceProxy("capture_photo", CapturePhoto)
 
             # ROS Parameters
             self.mappings = rospy.get_param("teleop/joystick_mappings")
@@ -169,9 +168,11 @@ class GUIConsumer(JsonWebsocketConsumer):
                 self.calibrate_motors(message)
             elif message["type"] == "arm_adjust":
                 self.arm_adjust(message)
-            elif ( message["type"] == "arm_values" or 
-                  message["type"] == "cache_values" or 
-                  message["type"] == "sa_arm_values" ):
+            elif (
+                message["type"] == "arm_values"
+                or message["type"] == "cache_values"
+                or message["type"] == "sa_arm_values"
+            ):
                 self.handle_controls_message(message)
             elif message["type"] == "enable_white_leds":
                 self.enable_white_leds_callback(message)
@@ -366,18 +367,26 @@ class GUIConsumer(JsonWebsocketConsumer):
                     * self.filter_xbox_button(msg["buttons"], "right_bumper", "left_bumper")
                 ]
             elif msg["type"] == "arm_values":
-                d_pad_x = msg["axes"][self.xbox_mappings["d_pad_x"]]
-                if d_pad_x > 0.5:
-                    ra_slow_mode = True
-                elif d_pad_x < -0.5:
-                    ra_slow_mode = False
+                # print(msg["buttons"])
+
+                # d_pad_x = msg["axes"][self.xbox_mappings["d_pad_x"]]
+                # if d_pad_x > 0.5:
+                #     ra_slow_mode = True
+                # elif d_pad_x < -0.5:
+                #     ra_slow_mode = False
 
                 throttle_cmd.throttles = [
                     self.filter_xbox_axis(msg["axes"][self.ra_config["joint_a"]["xbox_index"]]),
                     self.filter_xbox_axis(msg["axes"][self.ra_config["joint_b"]["xbox_index"]]),
                     self.filter_xbox_axis(msg["axes"][self.ra_config["joint_c"]["xbox_index"]]),
-                    self.filter_xbox_axis(msg["axes"][self.ra_config["joint_de_pitch"]["xbox_index"]]),
-                    self.filter_xbox_axis(msg["axes"][self.ra_config["joint_de_roll"]["xbox_index"]]),
+                    self.filter_xbox_axis(
+                        msg["axes"][self.ra_config["joint_de_pitch"]["xbox_index_right"]]
+                        - msg["axes"][self.ra_config["joint_de_pitch"]["xbox_index_left"]]
+                    ),
+                    self.filter_xbox_axis(
+                        msg["buttons"][self.ra_config["joint_de_roll"]["xbox_index_right"]]
+                        - msg["buttons"][self.ra_config["joint_de_roll"]["xbox_index_left"]]
+                    ),
                     self.ra_config["allen_key"]["multiplier"] * self.filter_xbox_button(msg["buttons"], "y", "a"),
                     self.ra_config["gripper"]["multiplier"] * self.filter_xbox_button(msg["buttons"], "b", "x"),
                 ]
@@ -593,6 +602,9 @@ class GUIConsumer(JsonWebsocketConsumer):
                 }
             )
         )
+
+    def cmd_vel_callback(self, msg):
+        self.send(text_data=json.dumps({"type": "cmd_vel", "linear_x": msg.linear.x, "angular_z": msg.angular.z}))
 
     def gps_fix_callback(self, msg):
         self.send(

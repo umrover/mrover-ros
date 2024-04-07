@@ -17,25 +17,29 @@ teleop:
       multiplier: -1
       slow_mode_multiplier: 0.6
       invert: True
-      xbox_index: 4
+      xbox_index: 3
     joint_de_pitch:
       multiplier: 0.5
       slow_mode_multiplier: 1
       invert: False
-      xbox_index: 2
+      xbox_index_left: 4
+      xbox_index_right: 5
     joint_de_roll:
       multiplier: 0.5
       slow_mode_multiplier: 1
       invert: False
-      xbox_index: 5
+      xbox_index_left: 4
+      xbox_index_right: 5
     allen_key:
       multiplier: 1
       slow_mode_multiplier: 1
       invert: False
+      # xbox_index: 7
     gripper:
       multiplier: 1
       slow_mode_multiplier: 1
       invert: False
+      # xbox_index: 7
 
   sa_controls:
     sa_x:
@@ -74,22 +78,22 @@ teleop:
   xbox_mappings:
     left_js_x: 0
     left_js_y: 1
-    left_trigger: 2
+    right_js_x: 2
+    right_js_y: 3
+    left_trigger: 4
     right_trigger: 5
-    right_js_x: 3
-    right_js_y: 4
-    right_bumper: 5
-    left_bumper: 4
-    d_pad_x: 6
-    d_pad_y: 7
     a: 0
     b: 1
-    x: 2
-    y: 3
+    x: 3
+    y: 2
+    left_bumper: 4
+    right_bumper: 5
+    d_pad_x: 6
+    d_pad_y: 7
 
   joystick_mappings:
-    left_right: 0
-    forward_back: 1
+    left_right: 1
+    forward_back: 0
     twist: 2
     dampen: 3
     pan: 4

@@ -57,14 +57,14 @@ namespace mrover {
             }
         }
 
-        auto async_transmit(const std::uint16_t address, TSend const& send) -> void {
+        auto async_transmit(std::uint16_t const address, TSend const& send) -> void {
             // TODO: make sure actually sends to absolute encoder
             check(HAL_I2C_Master_Transmit_DMA(m_i2c, address << 1, address_of<std::uint8_t>(send), sizeof(send)) == HAL_OK, Error_Handler);
             while (HAL_I2C_GetState(m_i2c) != HAL_I2C_STATE_READY) {
             }
         }
 
-        auto async_receive(const std::uint16_t address) -> void {
+        auto async_receive(std::uint16_t const address) -> void {
             m_receive_buffer = TReceive{};
             check(HAL_I2C_Master_Receive_DMA(m_i2c, address << 1 | 1, address_of<std::uint8_t>(m_receive_buffer), sizeof(m_receive_buffer)) == HAL_OK, Error_Handler);
         }

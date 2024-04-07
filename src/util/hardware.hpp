@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <optional>
 #include <type_traits>
+#include <utility>
 
 #include <units/units.hpp>
 
@@ -243,5 +244,9 @@ namespace mrover {
         FDCAN_HandleTypeDef* m_fdcan{};
         std::uint8_t m_source{}, m_destination{};
     };
+
+    inline auto cycle_time(TIM_HandleTypeDef* timer, Hertz clock_freq) -> Seconds {
+        return 1 / clock_freq * std::exchange(__HAL_TIM_GetCounter(timer), 0);
+    }
 
 } // namespace mrover

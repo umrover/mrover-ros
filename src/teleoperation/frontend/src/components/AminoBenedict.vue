@@ -37,11 +37,6 @@
         :show_name="true"
       />
     </div>
-    <div class="capture sample picture">
-      <div class="d-flex justify-content-end">
-        <button class="btn btn-primary btn-lg cutstom-btn" @click="capturePhoto()">Capture Photo</button>
-      </div>
-    </div>
   </div>
 </template>
 

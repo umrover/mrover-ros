@@ -1,33 +1,78 @@
 <launch>
-    <rosparam command="load" file="$(find mrover)/config/esw.yaml"/>
+      <rosparam command="load" file="$(find mrover)/config/esw.yaml" />
 
-    <!-- Bridges between ROS and SocketCAN -->
-    <!-- <node name="can_driver_0" pkg="mrover" type="can_driver"
-          respawn="true" respawn_delay="2"
-          output="screen">
-        <param name="interface" value="can0"/>
-    </node> -->
-    <node name="can_driver_1" pkg="mrover" type="can_driver"
-          respawn="true" respawn_delay="2"
-          output="screen">
-        <param name="interface" value="can1"/>
-    </node>
+      <!-- Bridges between ROS and SocketCAN -->
+      <!-- <node name="can_driver_0" pkg="mrover" type="can_driver"
+            respawn="true" respawn_delay="2"
+            output="screen">
+            <param name="interface" value="can0" />
+      </node> -->
+      <node name="can_driver_1" pkg="mrover" type="can_driver"
+            respawn="true" respawn_delay="2"
+            output="screen">
+            <param name="interface" value="can1" />
+      </node>
+      <!-- <node name="can_driver_2" pkg="mrover" type="can_driver"
+            respawn="true" respawn_delay="2"
+            output="screen">
+            <param name="interface" value="can2" />
+      </node>
+      <node name="can_driver_3" pkg="mrover" type="can_driver"
+            respawn="true" respawn_delay="2"
+            output="screen">
+            <param name="interface" value="can3" />
+      </node> -->
 
-    <node pkg="nodelet" type="nodelet" name="usb_camera_nodelet" respawn="true"
-          args="load mrover/UsbCameraNodelet perception_nodelet_manager" output="screen">
-        <param name="device" value="/dev/video2"/>
-    </node>
-    <node pkg="nodelet" type="nodelet" name="usb_camera_streamer" respawn="true"
-          args="load mrover/GstWebsocketStreamerNodelet perception_nodelet_manager" output="screen">
-    </node>
+      <node pkg="mrover" type="gst_websocket_streamer" name="gst_websocket_streamer_0"
+            output="screen">
+            <param name="image_topic" value="/camera/left/image" />
+            <param name="port" value="8081" />
+            <param name="width" value="1280" />
+            <param name="height" value="720" />
+      </node>
 
-    <node name="drive_bridge" pkg="mrover" type="drive_bridge" output="screen"/>
+      <!-- 
+      <node pkg="mrover" type="gst_websocket_streamer" name="gst_websocket_streamer_0"
+            output="screen">
+            <param name="device" value="/dev/video0" />
+            <param name="port" value="8081" />
+            <param name="width" value="640" />
+            <param name="height" value="480" />
+      </node>
 
-    <!-- Interprets status from navigation and teleoperation to deliver the correct LED mode to the bridge -->
-    <node name="led" pkg="mrover" type="led" output="screen"/>
-    <!-- This is the STM bridge, not working right now for unknown reasons -->
-    <!-- <node name="led_hw_bridge" pkg="mrover" type="led_hw_bridge" /> -->
-    <!-- <node name="arduino_led_hw_bridge" pkg="mrover" type="arduino_led_hw_bridge.py" output="screen"/> -->
+      <node pkg="mrover" type="gst_websocket_streamer" name="gst_websocket_streamer_1"
+            output="screen">
+            <param name="device" value="/dev/video2" />
+            <param name="port" value="8082" />
+            <param name="width" value="640" />
+            <param name="height" value="480" />
+      </node>
 
-    <node name="mast_gimbal_bridge" pkg="mrover" type="mast_gimbal_bridge" output="screen"/>
+      <node pkg="mrover" type="gst_websocket_streamer" name="gst_websocket_streamer_2"
+            output="screen">
+            <param name="device" value="/dev/video4" />
+            <param name="port" value="8083" />
+            <param name="width" value="640" />
+            <param name="height" value="480" />
+      </node>
+      
+      <node pkg="mrover" type="gst_websocket_streamer" name="gst_websocket_streamer_3"
+            output="screen">
+            <param name="device" value="/dev/video6" />
+            <param name="port" value="8084" />
+            <param name="width" value="640" />
+            <param name="height" value="480" />
+      </node> -->
+
+      <node name="drive_bridge" pkg="mrover" type="drive_bridge" output="screen" />
+
+      <!-- Interprets status from navigation and teleoperation to deliver the correct LED mode to
+      the bridge -->
+      <node name="led" pkg="mrover" type="led" output="screen" />
+      <!-- This is the STM bridge, not working right now for unknown reasons -->
+      <!-- <node name="led_hw_bridge" pkg="mrover" type="led_hw_bridge" /> -->
+      <node name="arduino_led_hw_bridge" pkg="mrover" type="arduino_led_hw_bridge.py"
+            output="screen" />
+
+      <node name="mast_gimbal_bridge" pkg="mrover" type="mast_gimbal_bridge" output="screen" />
 </launch>

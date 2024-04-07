@@ -184,6 +184,3 @@ namespace mrover {
     	return m_error;
     }
 } // namespace mrover
-
-
-

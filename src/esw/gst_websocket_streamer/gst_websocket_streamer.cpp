@@ -45,41 +45,57 @@ namespace mrover {
                 launch = std::format(
                         // App source is pushed to when we get a ROS BGRA image message
                         // is-live prevents frames from being pushed when the pipeline is in READY
-                        "appsrc is-live=true name=imageSource "
+                        "appsrc name=imageSource is-live=true "
                         "! video/x-raw,format=BGRA,width={},height={},framerate=30/1 "
                         "! videoconvert " // Convert BGRA => I420 (YUV) for the encoder, note we are still on the CPU
                         "! video/x-raw,format=I420 "
                         "! nvvidconv " // Upload to GPU memory for the encoder
                         "! video/x-raw(memory:NVMM),format=I420 "
-                        "! nvv4l2h265enc bitrate={} iframeinterval=300 vbv-size=33333 insert-sps-pps=true control-rate=constant_bitrate profile=Main num-B-Frames=0 ratecontrol-enable=true preset-level=UltraFastPreset EnableTwopassCBR=false maxperf-enable=true "
+                        "! nvv4l2h265enc name=encoder bitrate={} iframeinterval=300 vbv-size=33333 insert-sps-pps=true control-rate=constant_bitrate profile=Main num-B-Frames=0 ratecontrol-enable=true preset-level=UltraFastPreset EnableTwopassCBR=false maxperf-enable=true "
                         // App sink is pulled from (getting H265 chunks) on another thread and sent to the stream server
                         // sync=false is needed to avoid weirdness, going from playing => ready => playing will not work otherwise
-                        "! appsink sync=false name=streamSink",
+                        "! appsink name=streamSink sync=false",
                         mImageWidth, mImageHeight, mBitrate);
             } else {
                 // ReSharper disable once CppDFAUnreachableCode
                 launch = std::format(
-                        "appsrc is-live=true name=imageSource "
+                        "appsrc name=imageSource is-live=true "
                         "! video/x-raw,format=BGRA,width={},height={},framerate=30/1 "
-                        "! videoconvert "
-                        "! nvh265enc "
-                        "! appsink sync=false name=streamSink",
+                        "! nvh265enc name=encoder "
+                        "! appsink name=streamSink sync=false",
                         mImageWidth, mImageHeight);
             }
         } else {
-            assert(IS_JETSON);
-            // TODO(quintin): This does not work: https://forums.developer.nvidia.com/t/macrosilicon-usb/157777/4
-            //                nvv4l2camerasrc only supports UYUV, but our cameras use I420... NVIDIA is lazy!
+            if constexpr (IS_JETSON) {
+                // ReSharper disable once CppDFAUnreachableCode
 
-            // ReSharper disable once CppDFAUnreachableCode
-            launch = std::format(
-                    "nvv4l2camerasrc device={} "
-                    "! video/x-raw(memory:NVMM),format=UYVY,width={},height={},framerate={}/1 "
-                    "! nvvidconv "
-                    "! video/x-raw(memory:NVMM),format=I420 "
-                    "! nvv4l2h265enc bitrate={} iframeinterval=300 vbv-size=33333 insert-sps-pps=true control-rate=constant_bitrate profile=Main num-B-Frames=0 ratecontrol-enable=true preset-level=UltraFastPreset EnableTwopassCBR=false maxperf-enable=true "
-                    "! appsink sync=false name=streamSink",
-                    mCaptureDevice, mImageWidth, mImageHeight, mImageFramerate, mBitrate);
+                // TODO(quintin): I had to apply this patch: https://forums.developer.nvidia.com/t/macrosilicon-usb/157777/4
+                //                nvv4l2camerasrc only supports UYUV by default, but our cameras are YUY2 (YUYV)
+
+                launch = std::format(
+                        // "nvv4l2camerasrc device={} "
+
+                        "v4l2src device={} "
+
+                        // "! video/x-raw(memory:NVMM),format=YUY2,width={},height={},framerate={}/1 "
+                        "! image/jpeg,width={},height={},framerate={}/1 "
+                        "! nvv4l2decoder mjpeg=1 "
+
+                        "! nvvidconv "
+                        "! video/x-raw(memory:NVMM),format=NV12 "
+                        "! nvv4l2h265enc name=encoder bitrate={} iframeinterval=300 vbv-size=33333 insert-sps-pps=true control-rate=constant_bitrate profile=Main num-B-Frames=0 ratecontrol-enable=true preset-level=UltraFastPreset EnableTwopassCBR=false maxperf-enable=true "
+                        "! appsink name=streamSink sync=false",
+                        mCaptureDevice, mImageWidth, mImageHeight, mImageFramerate, mBitrate);
+            } else {
+                // ReSharper disable once CppDFAUnreachableCode
+                launch = std::format(
+                        "v4l2src device={}  "
+                        "! video/x-raw,format=YUY2,width={},height={},framerate=30/1 "
+                        "! videoconvert "
+                        "! nvh265enc name=encoder "
+                        "! appsink name=streamSink sync=false",
+                        mCaptureDevice, mImageWidth, mImageHeight);
+            }
         }
 
         ROS_INFO_STREAM(std::format("GStreamer launch: {}", launch));
