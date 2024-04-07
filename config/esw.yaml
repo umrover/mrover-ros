@@ -223,8 +223,8 @@ brushed_motors:
     joint_b:
       velocity_multiplier: 1.0
       gear_ratio: 1.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
-      limit_0_present: true
-      limit_0_enabled: true
+      limit_0_present: false
+      limit_0_enabled: false
       limit_0_is_active_high: false
       limit_0_limits_fwd: false
       limit_0_used_for_readjustment: true
