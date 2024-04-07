@@ -19,6 +19,9 @@
       <div>
         <p>Altitude: {{ odom.altitude.toFixed(2) }}m</p>
       </div>
+      <div>
+        <p>Status: {{get_status}}</p>
+      </div>
     </div>
     <div class="calibration imu">
       <IMUCalibration></IMUCalibration>
@@ -64,6 +67,14 @@ export default {
     },
     alt_available: function () {
       return !isNan(this.odom.altitude)
+    },
+    get_status: function () {
+      if(this.odom.status){
+        return "fixed"
+      }
+      else{
+        return "not fixed"
+      }
     }
   }
 }

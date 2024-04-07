@@ -94,7 +94,8 @@ export default defineComponent({
         latitude_deg: 42.293195,
         longitude_deg: -83.7096706,
         bearing_deg: 0,
-        altitude: 0
+        altitude: 0,
+        status: false
       },
 
       teleopEnabledCheck: false,
@@ -156,6 +157,7 @@ export default defineComponent({
         this.odom.latitude_deg = msg.latitude
         this.odom.longitude_deg = msg.longitude
         this.odom.altitude = msg.altitude
+        this.odom.status = msg.status
       } else if (msg.type == 'auton_tfclient') {
         this.odom.bearing_deg = quaternionToMapAngle(msg.rotation)
       } else if (msg.type == "center_map") {

@@ -607,9 +607,12 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.send(text_data=json.dumps({"type": "cmd_vel", "linear_x": msg.linear.x, "angular_z": msg.angular.z}))
 
     def gps_fix_callback(self, msg):
+        fixed = True
+        if msg.status == -1:
+            fixed = False
         self.send(
             text_data=json.dumps(
-                {"type": "nav_sat_fix", "latitude": msg.latitude, "longitude": msg.longitude, "altitude": msg.altitude}
+                {"type": "nav_sat_fix", "latitude": msg.latitude, "longitude": msg.longitude, "altitude": msg.altitude, "status": fixed}
             )
         )
 

@@ -99,7 +99,8 @@ export default defineComponent({
         latitude_deg: 38.406025,
         longitude_deg: -110.7923723,
         bearing_deg: 0,
-        altitude: 0
+        altitude: 0,
+        status: false
       },
 
       moteusDrive: {
@@ -122,7 +123,7 @@ export default defineComponent({
   },
 
   computed: {
-    ...mapState('websocket', ['message'])
+    ...mapState('websocket', ['message']),
   },
 
   watch: {
@@ -143,6 +144,7 @@ export default defineComponent({
         this.odom.latitude_deg = msg.latitude
         this.odom.longitude_deg = msg.longitude
       }
+
     }
   },
 
