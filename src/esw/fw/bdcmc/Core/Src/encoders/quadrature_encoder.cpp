@@ -1,6 +1,7 @@
 #include "encoders.hpp"
 
 #include <cstdint>
+#include <utility>
 
 #include <units/units.hpp>
 
@@ -29,14 +30,14 @@ namespace mrover {
         std::uint32_t now = __HAL_TIM_GetCounter(timer);
         std::uint32_t max_value = __HAL_TIM_GetAutoreload(timer);
 
-        // adapted from: https://electronics.stackexchange.com/questions/605278/how-to-increase-stm32-timer-encoder-mode-counter-value
-        // handle when timer wraps around
-        std::int64_t c64 = static_cast<std::int64_t>(now) - max_value / 2; // remove half period to determine (+/-) sign of the wrap
+        // Adapted from: https://electronics.stackexchange.com/questions/605278/how-to-increase-stm32-timer-encoder-mode-counter-value
+        // Handles when the timer wraps around
+        std::int64_t c64 = static_cast<std::int64_t>(now) - max_value / 2; // Remove half period to determine (+/-) sign of the wrap
         std::int64_t dif = c64 - store;                                    // prev + (current - prev) = current
 
-        // wrap difference from -HALF_PERIOD to HALF_PERIOD. modulo prevents differences after the wrap from having an incorrect result
+        // Wrap difference from -HALF_PERIOD to HALF_PERIOD. The modulo prevents differences after the wrap from having an incorrect result
         std::int64_t mod_dif = (dif + max_value / 2) % max_value - max_value / 2;
-        if (dif < -max_value / 2) mod_dif += max_value; // account for mod of negative number behavior in C
+        if (dif < -max_value / 2) mod_dif += max_value; // Account for the behavior of the modulo operator with negative numbers in C++
 
         std::int64_t unwrapped = store + mod_dif;
         store = unwrapped;
@@ -50,18 +51,13 @@ namespace mrover {
     }
 
     auto QuadratureEncoderReader::update() -> void {
-        std::uint32_t elapsed_count = std::exchange(__HAL_TIM_GetCounter(m_elapsed_timer), 0);
+        Seconds elapsed_time = cycle_time(m_elapsed_timer, CLOCK_FREQ);
         std::int64_t delta_ticks = count_delta(m_counts_unwrapped_prev, m_tick_timer);
-
-        // if (delta_ticks == 0 || elapsed_count == 0) return;
-
         Radians delta_angle = m_multiplier * Ticks{delta_ticks} / RELATIVE_CPR;
-        Seconds elapsed_time = 1 / CLOCK_FREQ * elapsed_count;
 
         m_position += delta_angle;
         // m_velocity = delta_angle / elapsed_time;
         m_velocity_filter.add_reading(delta_angle / elapsed_time);
     }
-
 
 } // namespace mrover
