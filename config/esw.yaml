@@ -143,6 +143,7 @@ brushless_motors:
       limit_max_backward_pos: true
       max_forward_pos: 0.4
       max_backward_pos: 0.0
+      max_torque: 20.0
     joint_c:
       velocity_multiplier: -1.0
       min_velocity: -0.6 # in terms of output
