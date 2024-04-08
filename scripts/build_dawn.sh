@@ -1,7 +1,6 @@
 #!/bin/bash
 
-# git submodule sync --recursive
-# git submodule update --init deps/dawn
+git submodule update --init deps/dawn
 
 pushd deps/dawn || exit
 CC=clang CXX=clang++ cmake \
