@@ -39,6 +39,8 @@ namespace mrover {
         limitSwitch1UsedForReadjustment = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "limit_1_used_for_readjustment", false);
         limitSwitch0ReadjustPosition = Radians{xmlRpcValueToTypeOrDefault<double>(brushlessMotorData, "limit_0_readjust_position", 0.0)};
         limitSwitch1ReadjustPosition = Radians{xmlRpcValueToTypeOrDefault<double>(brushlessMotorData, "limit_1_readjust_position", 0.0)};
+
+        mAvoidConversionToRevolutions = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "avoid_conversion_to_revolutions", false);
     }
 
     auto BrushlessController::setDesiredThrottle(Percent throttle) -> void {
@@ -57,7 +59,15 @@ namespace mrover {
             }
         }
 
-        Revolutions position_revs = std::clamp(position, mMinPosition, mMaxPosition);
+        Radians position_rad = std::clamp(position, mMinPosition, mMaxPosition);
+
+        Revolutions position_revs;
+        if (mAvoidConversionToRevolutions) {
+            position_revs = Revolutions{position_rad.get()};
+        }
+        else {
+            position_revs = position_rad;
+        }
         moteus::PositionMode::Command command{
                 .position = position_revs.get(),
                 .velocity = 0.0,
@@ -93,7 +103,15 @@ namespace mrover {
 
         // ROS_INFO("my velocity rev s = %f", velocity.get());
 
-        RevolutionsPerSecond velocity_rev_s = std::clamp(velocity, mMinVelocity, mMaxVelocity);
+        RadiansPerSecond velocity_rad_s = std::clamp(velocity, mMinVelocity, mMaxVelocity);
+        RevolutionsPerSecond velocity_rev_s;
+        if (mAvoidConversionToRevolutions) {
+            velocity_rev_s = RevolutionsPerSecond{velocity_rad_s.get()};
+        }
+        else {
+            velocity_rev_s = velocity_rad_s;
+        }
+         
         if (abs(velocity_rev_s).get() < 1e-5) {
             setBrake();
             ROS_INFO("In brake mode because velocity_rev_s = %f", velocity_rev_s.get());

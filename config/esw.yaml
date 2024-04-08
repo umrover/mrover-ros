@@ -126,6 +126,7 @@ brushless_motors:
       # gear ratio is currently at 0.005080 revolutions = 1 meter
       min_velocity: -0.15  # this means -0.15 meters per second.
       max_velocity: 0.15
+      avoid_conversion_to_revolutions: true  # this is used because we are trying to send the values directly
       limit_0_present: true
       limit_1_present: true
       limit_0_enabled: true
