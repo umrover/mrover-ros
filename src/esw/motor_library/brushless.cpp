@@ -68,6 +68,7 @@ namespace mrover {
         else {
             position_revs = position_rad;
         }
+
         moteus::PositionMode::Command command{
                 .position = position_revs.get(),
                 .velocity = 0.0,

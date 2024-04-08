@@ -64,8 +64,6 @@ namespace mrover {
             assert(was_inserted);
         }
 
-        mJointARadiansToMeters = requireParamAsUnit<RadiansPerMeter>(nh, "brushless_motors/controllers/joint_a/rad_to_meters_ratio");
-
         mThrottleSub = nh.subscribe<Throttle>("arm_throttle_cmd", 1, &ArmTranslator::processThrottleCmd, this);
         mVelocitySub = nh.subscribe<Velocity>("arm_velocity_cmd", 1, &ArmTranslator::processVelocityCmd, this);
         mPositionSub = nh.subscribe<Position>("arm_position_cmd", 1, &ArmTranslator::processPositionCmd, this);
@@ -115,8 +113,6 @@ namespace mrover {
         velocity.names[mJointDERollIndex] = "joint_de_1";
         velocity.velocities[mJointDEPitchIndex] = motorVelocities[0].get();
         velocity.velocities[mJointDERollIndex] = motorVelocities[1].get();
-        RadiansPerSecond jointAVelocity = MetersPerSecond{msg->velocities[mJointAIndex]} * mJointARadiansToMeters;
-        velocity.velocities[mJointAIndex] = jointAVelocity.get();
         mVelocityPub->publish(velocity);
     }
 
@@ -134,8 +130,6 @@ namespace mrover {
         position.names[mJointDERollIndex] = "joint_de_1";
         position.positions[mJointDEPitchIndex] = motorPositions[0].get();
         position.positions[mJointDERollIndex] = motorPositions[1].get();
-        RadiansPerSecond jointAPosition = MetersPerSecond{msg->positions[mJointAIndex]} * mJointARadiansToMeters;
-        position.positions[mJointAIndex] = jointAPosition.get();
         mPositionPub->publish(position);
     }
 
@@ -145,18 +139,12 @@ namespace mrover {
             return;
         }
 
-        // Convert joint state of joint a from radians/s to meters/s
-        MetersPerSecond jointALinearVelocity = RadiansPerSecond{msg->velocity.at(mJointAIndex)} / mJointARadiansToMeters;
-        Meters jointAPosition = Radians{msg->position.at(mJointAIndex)} / mJointARadiansToMeters;
-
         mJointDePitchRoll = {
                 msg->position.at(mJointDE0Index),
                 msg->position.at(mJointDE1Index),
         };
 
         sensor_msgs::JointState jointState = *msg;
-        jointState.velocity[mJointAIndex] = jointALinearVelocity.get();
-        jointState.position[mJointAIndex] = jointAPosition.get();
         mJointDataPub->publish(jointState);
     }
 
