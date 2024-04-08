@@ -19,7 +19,7 @@ void setup() {
     Serial.begin(115200);
     while(!Serial){};
 
-    while (CAN_OK != CAN.begin(CAN20_1000KBPS)) {
+    while (CAN_OK != CAN.begin(CAN_1000K_4M)) {
         Serial.println("CAN init fail, retry...");
         delay(100);
     }
