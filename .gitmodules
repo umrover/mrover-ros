@@ -7,7 +7,7 @@
 	path = deps/dawn
 	url = https://dawn.googlesource.com/dawn
 	shallow = true
-	branch = chromium/6108
+	branch = chromium/6376
 [submodule "deps/emsdk"]
 	path = deps/emsdk
 	url = git@github.com:emscripten-core/emsdk.git
