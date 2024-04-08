@@ -1,18 +1,8 @@
-[submodule "deps/libde265"]
-	path = deps/libde265
-	url = https://github.com/strukturag/libde265.git
-	shallow = true
-	branch = v1.0.15
 [submodule "deps/dawn"]
 	path = deps/dawn
 	url = https://dawn.googlesource.com/dawn
 	shallow = true
 	branch = chromium/6376
-[submodule "deps/emsdk"]
-	path = deps/emsdk
-	url = git@github.com:emscripten-core/emsdk.git
-	shallow = true
-	branch = 3.1.53
 [submodule "deps/manif"]
 	path = deps/manif
 	url = https://github.com/artivis/manif.git
