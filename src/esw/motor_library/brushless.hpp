@@ -68,8 +68,8 @@ namespace mrover {
         ~BrushlessController() override = default;
 
         void setDesiredThrottle(Percent throttle) override;
-        void setDesiredVelocity(RadiansPerSecond velocity) override;
-        void setDesiredPosition(Radians position) override;
+        void setDesiredVelocity(ControllerVelocity velocity) override;
+        void setDesiredPosition(ControllerPosition position) override;
         void processCANMessage(CAN::ConstPtr const& msg) override;
         auto getEffort() -> double override;
         void setStop();

@@ -86,7 +86,7 @@ namespace mrover {
         mDevice.publish_message(InBoundMessage{ThrottleCommand{.throttle = throttle}});
     }
 
-    auto BrushedController::setDesiredPosition(Radians position) -> void {
+    auto BrushedController::setDesiredPosition(ControllerPosition position) -> void {
         if (!mIsConfigured) {
             sendConfiguration();
             return;
@@ -102,7 +102,7 @@ namespace mrover {
         }});
     }
 
-    auto BrushedController::setDesiredVelocity(RadiansPerSecond velocity) -> void {
+    auto BrushedController::setDesiredVelocity(ControllerVelocity velocity) -> void {
         if (!mIsConfigured) {
             sendConfiguration();
             return;

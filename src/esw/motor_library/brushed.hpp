@@ -18,8 +18,8 @@ namespace mrover {
     class BrushedController : public Controller {
     public:
         void setDesiredThrottle(Percent throttle) override; // from -1.0 to 1.0
-        void setDesiredVelocity(RadiansPerSecond velocity) override;
-        void setDesiredPosition(Radians position) override;
+        void setDesiredVelocity(ControllerVelocity velocity) override;
+        void setDesiredPosition(ControllerPosition position) override;
         void adjust(Radians position) override;
 
         void processCANMessage(CAN::ConstPtr const& msg) override;

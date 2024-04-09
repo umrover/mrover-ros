@@ -60,7 +60,7 @@ namespace mrover {
         setDesiredVelocity(mapThrottleToVelocity(throttle));
     }
 
-    auto BrushlessController::setDesiredPosition(Radians position) -> void {
+    auto BrushlessController::setDesiredPosition(ControllerPosition position) -> void {
         // only check for limit switches if at least one limit switch exists and is enabled
         if ((limitSwitch0Enabled && limitSwitch0Present) || (limitSwitch1Enabled && limitSwitch0Present)) {
             sendQuery();
@@ -97,7 +97,7 @@ namespace mrover {
     // 1.0          0.0         = Stay put at 1 rev round
     // Nan          0.0         = Don't move
 
-    auto BrushlessController::setDesiredVelocity(RadiansPerSecond velocity) -> void {
+    auto BrushlessController::setDesiredVelocity(ControllerVelocity velocity) -> void {
         // only check for limit switches if at least one limit switch exists and is enabled
         if ((limitSwitch0Enabled && limitSwitch0Present) || (limitSwitch1Enabled && limitSwitch0Present)) {
             sendQuery();

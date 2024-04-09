@@ -19,6 +19,9 @@
 
 namespace mrover {
 
+    using ControllerVelocity = std::variant<RadiansPerSecond>;
+    using ControllerPosition = std::variant<Radians>;
+
     class Controller {
     public:
         Controller(ros::NodeHandle const& nh, std::string name, std::string controllerName)
@@ -46,8 +49,8 @@ namespace mrover {
         virtual ~Controller() = default;
 
         virtual void setDesiredThrottle(Percent throttle) = 0;          // from -1.0 to 1.0
-        virtual void setDesiredVelocity(RadiansPerSecond velocity) = 0; // joint output
-        virtual void setDesiredPosition(Radians position) = 0;          // joint output
+        virtual void setDesiredVelocity(ControllerVelocity velocity) = 0; // joint output
+        virtual void setDesiredPosition(ControllerPosition position) = 0;          // joint output
         virtual void processCANMessage(CAN::ConstPtr const& msg) = 0;
         virtual double getEffort() = 0;
         virtual void adjust(Radians position) = 0;
