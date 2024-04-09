@@ -31,6 +31,8 @@ namespace mrover {
         limitSwitch1Present = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "limit_1_present", false);
         limitSwitch0Enabled = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "limit_0_enabled", true);
         limitSwitch1Enabled = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "limit_1_enabled", true);
+
+
         limitSwitch0LimitsFwd = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "limit_0_limits_fwd", false);
         limitSwitch1LimitsFwd = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "limit_1_limits_fwd", false);
         limitSwitch0ActiveHigh = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "limit_0_is_active_high", true);
@@ -39,6 +41,17 @@ namespace mrover {
         limitSwitch1UsedForReadjustment = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "limit_1_used_for_readjustment", false);
         limitSwitch0ReadjustPosition = Radians{xmlRpcValueToTypeOrDefault<double>(brushlessMotorData, "limit_0_readjust_position", 0.0)};
         limitSwitch1ReadjustPosition = Radians{xmlRpcValueToTypeOrDefault<double>(brushlessMotorData, "limit_1_readjust_position", 0.0)};
+
+        // if active low, we want to make the default value make it believe that
+        // the limit switch is NOT pressed.
+        // This is because we may not receive the newest query message from the moteus
+        // as a result of either testing or startup.
+        if (limitSwitch0Present && !limitSwitch0ActiveHigh) {
+            moteusAux2Info |= 0b1; 
+        }
+        if (limitSwitch1Present) {
+            moteusAux2Info |= 0b10;
+        }
 
         mAvoidConversionToRevolutions = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "avoid_conversion_to_revolutions", false);
     }
@@ -167,12 +180,12 @@ namespace mrover {
 
         // Limit switches now wired to AUX2 (index 0 and 1)
         if (limitSwitch0Present && limitSwitch0Enabled) {
-            int bitMask = 0; // 0b0001
+            int bitMask = 0b1; // 0b0001
             bool gpioState = bitMask & moteusAux2Info;
             mLimitHit.at(0) = gpioState == limitSwitch0ActiveHigh;
         }
         if (limitSwitch1Present && limitSwitch1Enabled) {
-            int bitMask = 2; // 0b0010
+            int bitMask = 0b10; // 0b0010
             bool gpioState = bitMask & moteusAux2Info;
             mLimitHit.at(1) = gpioState == limitSwitch1ActiveHigh;
         }
