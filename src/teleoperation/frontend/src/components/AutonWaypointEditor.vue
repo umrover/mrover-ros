@@ -2,86 +2,50 @@
   <div class="wrap">
     <div class="col-wrap" style="left: 0">
       <div class="box">
-        <div class="row">
-          <div class="form-group col-md-6">
-            <label for="waypointname">Name:</label>
-            <input class="form-control" id="waypointname" v-model="name" />
-          </div>
-          <div class="form-group col-md-6">
-            <label for="waypointid">Tag ID:</label>
-            <input v-if="type == 1" class="form-control" id="waypointid" v-model="id" type="number" max="249" min="0"
-              step="1" />
-            <input v-else class="form-control" id="waypointid" type="number" placeholder="-1" step="1" disabled />
-          </div>
-        </div>
-
-        <select class="form-select my-3" v-model="type">
-          <option value="0" selected>No Search</option>
-          <option value="1" selected>Post</option>
-          <option value="2">Mallet</option>
-          <option value="3">Water Bottle</option>
-        </select>
-
-        <div class="form-check form-check-inline">
-          <input v-model="odom_format_in" class="form-check-input" type="radio" id="radioD" value="D" />
-          <label class="form-check-label" for="radioD">D</label>
-        </div>
-        <div class="form-check form-check-inline">
-          <input v-model="odom_format_in" class="form-check-input" type="radio" id="radioDM" value="DM" />
-          <label class="form-check-label" for="radioDM">DM</label>
-        </div>
-        <div class="form-check form-check-inline">
-          <input v-model="odom_format_in" class="form-check-input" type="radio" id="radioDMS" value="DMS" />
-          <label class="form-check-label" for="radioDMS">DMS</label>
-        </div>
-
-        <div class="row">
-          <div class="col input-group">
-            <input class="form-control" id="deg1" v-model.number="input.lat.d" />
-            <span for="deg1" class="input-group-text">º</span>
-          </div>
-          <div v-if="min_enabled" class="col input-group">
-            <input class="form-control" id="min1" v-model.number="input.lat.m" />
-            <span for="min1" class="input-group-text">'</span>
-          </div>
-          <div v-if="sec_enabled" class="col input-group">
-            <input class="form-control" id="sec1" v-model.number="input.lat.s" />
-            <span for="sec1" class="input-group-text">"</span>
-          </div>
-          N
-        </div>
-        <div class="row">
-          <div class="col input-group">
-            <input class="form-control" id="deg2" v-model.number="input.lon.d" />
-            <span for="deg2" class="input-group-text">º</span>
-          </div>
-          <div v-if="min_enabled" class="col input-group">
-            <input class="form-control" id="min2" v-model.number="input.lon.m" />
-            <span for="min2" class="input-group-text">'</span>
-          </div>
-          <div v-if="sec_enabled" class="col input-group">
-            <input class="form-control" id="sec2" v-model.number="input.lon.s" />
-            <span for="sec2" class="input-group-text">"</span>
-          </div>
-          E
-        </div>
-
-        <div class="add-drop">
-          <button class="btn btn-primary" @click="addWaypoint(input)">Add Waypoint</button>
-          <button class="btn btn-primary" @click="addWaypoint(formatted_odom)">
-            Drop Waypoint
-          </button>
-        </div>
-      </div>
-      <div class="box">
         <div class="waypoint-header">
           <h4>All Waypoints</h4>
-          <button class="btn btn-primary" @click="clearWaypoint">Clear Waypoints</button>
         </div>
-        <div class="waypoints">
+        <div class="card w-75 col mb-3" v-for="waypoint in waypoints">
+          <div class="card-body">
+            <h5>{{ waypoint.name }}</h5>
+            <p>ID: {{ waypoint.id }}  Type: {{ waypoint.type }}</p>
+            <div class="row">
+              <div class="col input-group">
+                <input class="form-control" id="deg1" v-model.number="input.lat.d" />
+                <span for="deg1" class="input-group-text">º</span>
+              </div>
+              <!-- <div v-if="min_enabled" class="col input-group">
+                <input class="form-control" id="min1" v-model.number="input.lat.m" />
+                <span for="min1" class="input-group-text">'</span>
+              </div>
+              <div v-if="sec_enabled" class="col input-group">
+                <input class="form-control" id="sec1" v-model.number="input.lat.s" />
+                <span for="sec1" class="input-group-text">"</span>
+              </div> -->
+              N
+            </div>
+            <div class="row">
+              <div class="col input-group">
+                <input class="form-control" id="deg2" v-model.number="input.lon.d" />
+                <span for="deg2" class="input-group-text">º</span>
+              </div>
+              <!-- <div v-if="min_enabled" class="col input-group">
+                <input class="form-control" id="min2" v-model.number="input.lon.m" />
+                <span for="min2" class="input-group-text">'</span>
+              </div>
+              <div v-if="sec_enabled" class="col input-group">
+                <input class="form-control" id="sec2" v-model.number="input.lon.s" />
+                <span for="sec2" class="input-group-text">"</span>
+              </div> -->
+              E
+            </div>
+            <button class="btn btn-primary custom-btn" @click="addItem(waypoint)">Add Waypoint</button>
+          </div>     
+        </div>
+        <!-- <div class="waypoints">
           <WaypointItem v-for="(waypoint, i) in storedWaypoints" :key="i" :waypoint="waypoint" :in_route="false"
             :index="i" @delete="deleteItem($event)"  @add="addItem($event)" />
-        </div>
+        </div> -->
       </div>
     </div>
     <div class="col-wrap" style="left: 50%">
@@ -97,7 +61,7 @@
       <h4 class="waypoint-headers my-3">Current Course</h4>
       <div class="box route">
         <WaypointItem v-for="(waypoint, i) in route" :id="id" :key="i" :waypoint="waypoint" :in_route="true" :index="i"
-          :name="name" @delete="deleteItem($event)" @add="addItem($event)" />
+          :name="name" @delete="deleteItem($event)" />
       </div>
     </div>
   </div>
@@ -132,10 +96,38 @@ export default {
 
   data() {
     return {
-      name: 'Waypoint',
-      id: '0',
-      type: 0,
-      odom_format_in: 'DM',
+      waypoints: [
+        { 
+          name: 'No Search',
+          id: -1,
+          type: 0 
+        },
+        {
+          name: 'Post 1',
+          id: 1,
+          type: 1
+        },
+        {
+          name: 'Post 2',
+          id: 2,
+          type: 1
+        },
+        {
+          name: 'Post 3',
+          id: 3,
+          type: 1
+        },
+        {
+          name: 'Mallet',
+          id: -1,
+          type: 2
+        },
+        {
+          name: 'Water Bottle',
+          id: -1,
+          type: 3
+        }],
+      odom_format_in: 'D',
       input: {
         lat: {
           d: 0,
@@ -157,7 +149,6 @@ export default {
         total_wps: 0
       },
 
-      storedWaypoints: [],
       route: [],
 
       autonButtonColor: 'btn-danger',
@@ -226,7 +217,7 @@ export default {
         this.autonButtonColor = this.autonEnabled ? 'btn-success' : 'btn-danger'
       } else if (msg.type == 'get_auton_waypoint_list') {
         // Get waypoints from server on page load
-        this.storedWaypoints = msg.data
+        this.waypoints = msg.data
         const waypoints = msg.data.map((waypoint: { lat: any; lon: any; name: any }) => {
           const lat = waypoint.lat
           const lon = waypoint.lon
@@ -236,7 +227,7 @@ export default {
       }
     },
 
-    storedWaypoints: {
+    waypoints: {
       handler: function (newList) {
         const waypoints = newList.map((waypoint: { lat: any; lon: any; name: any }) => {
           const lat = waypoint.lat
@@ -335,7 +326,7 @@ export default {
         this.setHighlightedWaypoint(-1)
       }
       if (!waypoint.in_route) {
-        this.storedWaypoints.splice(waypoint.index, 1)
+        this.waypoints.splice(waypoint.index, 1)
       } else if (waypoint.in_route) {
         this.route.splice(waypoint.index, 1)
       }
@@ -352,9 +343,7 @@ export default {
     // Add item from all waypoints div to current waypoints div
     addItem: function (waypoint: { in_route: boolean; index: number }) {
       if (!waypoint.in_route) {
-        this.route.push(this.storedWaypoints[waypoint.index])
-      } else if (waypoint.in_route) {
-        this.storedWaypoints.push(this.route[waypoint.index])
+        this.route.push(this.waypoints[waypoint.index])
       }
     },
 
@@ -363,7 +352,7 @@ export default {
         alert('Waypoint ID must be unique')
         return
       }
-      this.storedWaypoints.push({
+      this.waypoints.push({
         name: this.name,
         id: this.type == 1 ? this.id : -1, // Check if type is post, if so, set id to -1
         lat: convertDMS(coord.lat, 'D').d,
@@ -374,11 +363,11 @@ export default {
     },
 
     checkWaypointIDUnique: function (id: any) {
-      return this.storedWaypoints.every((waypoint: { id: any }) => waypoint.id != id)
+      return this.waypoints.every((waypoint: { id: any }) => waypoint.id != id)
     },
 
     clearWaypoint: function () {
-      this.storedWaypoints = []
+      this.waypoints = []
     },
 
     toggleAutonMode: function (val: boolean) {

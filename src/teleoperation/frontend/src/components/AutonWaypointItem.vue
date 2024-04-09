@@ -5,12 +5,9 @@
     </div>
     <div class="row">
       <div class="col text-center">
-        <button v-if="!in_route" class="btn btn-danger" @click="$emit('add', { in_route: in_route, index: index })">
-          Add
-        </button>
         <button
           class="btn btn-danger"
-          @click="$emit('delete', { in_route: in_route, index: index })"
+          @click="$emit('delete', { index: index })"
         >
           Delete
         </button>
@@ -50,11 +47,6 @@ export default {
   props: {
     waypoint: {
       type: Object,
-      required: true
-    },
-
-    in_route: {
-      type: Boolean,
       required: true
     },
 
