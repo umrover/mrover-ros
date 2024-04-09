@@ -3,6 +3,7 @@
 #include <Eigen/src/Geometry/Quaternion.h>
 #include <cmath>
 #include <format>
+#include <limits>
 #include <manif/impl/se3/SE3.h>
 #include <manif/impl/so3/SO3.h>
 #include <optional>
@@ -55,76 +56,6 @@ namespace mrover {
 		calcMotionToo();
     }
 
-    //Returns angle (yaw) around the z axis
-    auto LanderAlignNodelet::calcAngleWithWorldX(Eigen::Vector3d xHeading) -> double { //I want to be editing this variable so it should not be const or &
-        xHeading.z() = 0;
-        xHeading.normalize();
-
-        Eigen::Vector3d xAxisWorld{1, 0, 0};
-        double angle = std::acos(xHeading.dot(xAxisWorld));
-        if (xHeading.y() >= 0) {
-            return angle;
-        } else {
-            return 2 * std::numbers::pi - angle;
-        }
-    };
-
-    void LanderAlignNodelet::calcMotion(double desiredVelocity, double desiredOmega) {
-        
-        SE3d roverInWorld = SE3Conversions::fromTfTree(mTfBuffer, "base_link", "map");
-        
-        // Inital State
-        Eigen::Vector2d initState{roverInWorld.translation().x(), roverInWorld.translation().y()};
-
-        //Target State
-        // double targetHeading = calcAngleWithWorldX({0,1,0});
-        double targetHeading = calcAngleWithWorldX(-mNormalInWorldVector.value());
-        ROS_INFO_STREAM(mNormalInWorldVector.value().x() << " " << mNormalInWorldVector.value().y() << " " <<  mNormalInWorldVector.value().z());
-        Eigen::Vector3d tarState{mOffsetLocationInWorldVector.value().x(), mOffsetLocationInWorldVector.value().y(), targetHeading};
-        Eigen::Vector2d distanceToTargetVectorInit{tarState.x() - initState.x   (), tarState.y() - initState.y()};
-        //double distanceToTargetInitial = std::abs(distanceToTargetVectorInit.norm());
-
-        while (ros::ok()) {
-            roverInWorld = SE3Conversions::fromTfTree(mTfBuffer, "base_link", "map");
-            Eigen::Vector3d xOrientation = roverInWorld.rotation().col(0); 
-            double roverHeading = calcAngleWithWorldX(xOrientation);
-            ROS_INFO_STREAM("Current Rover Anlge" << roverHeading);
-            Eigen::Vector3d currState{roverInWorld.translation().x(), roverInWorld.translation().y(), roverHeading};
-
-            Eigen::Vector2d distanceToTargetVector{tarState.x() - currState.x(), tarState.y() - currState.y()};
-            double distanceToTarget = std::abs(distanceToTargetVector.norm());
-            //Constants
-            double Kx = 0.5;
-            double Ky = 10;
-            double Ktheta = 5;
-
-            Eigen::Matrix3d rotation;
-            rotation << std::cos(roverHeading),  std::sin(roverHeading), 0,
-                        -std::sin(roverHeading), std::cos(roverHeading), 0,
-                        0,                          0,                        1;
-
-            Eigen::Vector3d errState = rotation * (tarState - currState);
-
-            // (distanceToTarget / distanceToTargetInitial) * 
-            double zRotation = ( desiredOmega + (desiredVelocity / 2) * (Ky * (errState.y() + Ktheta * errState.z()) + (1 / Ktheta) * std::sin(errState.z())));
-
-            //I think this is unit/s
-            double xSpeed = (Kx * errState.x() + desiredVelocity * std::cos(errState.z()) - Ktheta * errState.z() * zRotation);
-
-            geometry_msgs::Twist twist;
-            twist.angular.z = zRotation;
-            twist.linear.x = xSpeed;
-            if(mActionServer->isPreemptRequested() || distanceToTarget < .5){
-                twist.angular.z = 0;
-                twist.linear.x = 0;
-                mActionServer->setPreempted();
-                mTwistPub.publish(twist);
-                break;
-            }
-            mTwistPub.publish(twist);
-        }        
-    }
-
     void LanderAlignNodelet::calcMotionToo() {
         geometry_msgs::Twist twist;
         SE3d roverInWorld = SE3Conversions::fromTfTree(mTfBuffer, "base_link", "map");
@@ -149,7 +80,7 @@ namespace mrover {
             SE3Conversions::pushToTfTree(mTfBroadcaster, "spline_point", mMapFrameId, temp);
             ROS_INFO_STREAM("Switching to target position: (x, y, theta): (" << tarState.x() << ", " << tarState.y() << ", " << tarState.z() << ")");
 
-            double distanceToTarget = 1000000; // TODO: Replace with double max
+            double distanceToTarget = std::numeric_limits<double>::max();
 
             while (ros::ok() && distanceToTarget > 1) {
                 roverInWorld = SE3Conversions::fromTfTree(mTfBuffer, "base_link", "map");
@@ -166,10 +97,10 @@ namespace mrover {
                             0,                       0,                      1;
                 
                 Eigen::Vector3d errState = rotation * (tarState - currState); // maybe check error angle incase anything goes silly
-
+                ROS_INFO_STREAM("err state" << errState.coeff(0,0) << ", " << errState.coeff(1,0) << ", " << errState.coeff(2,0));
                 double v = (point.coeff(3, 0) - K1 * abs(point.coeff(3, 0) * (errState.x() + errState.y() * tan(errState.z()))))/(cos(errState.z()));
                 double omega = point.coeff(4, 0) - ((K2*point.coeff(3, 0)*errState.y() + K3*abs(point.coeff(3, 0))*tan(errState.z()))*pow(cos(errState.z()), 2));
-                
+                    
                 twist.angular.z = omega;
                 twist.linear.x = v;
 

@@ -13,7 +13,7 @@ import rospy
 import tf2_ros
 import cv2
 import actionlib
-from cv_bridge import CvBridge
+# from cv_bridge import CvBridge
 from geometry_msgs.msg import Twist
 from mrover.msg import (
     PDLB,
@@ -30,7 +30,10 @@ from mrover.msg import (
     Position,
     IK,
     LanderAlignAction,
-    LanderAlignGoal
+    LanderAlignGoal,
+    Spectral,
+    ScienceThermistors,
+    HeaterData,
 )
 from mrover.srv import EnableAuton, AdjustMotor, ChangeCameras
 from sensor_msgs.msg import NavSatFix, Temperature, RelativeHumidity, Image
@@ -64,6 +67,21 @@ class GUIConsumer(JsonWebsocketConsumer):
     def connect(self):
         self.accept()
         try:
+            # ROS Parameters
+            self.mappings = rospy.get_param("teleop/joystick_mappings")
+            self.drive_config = rospy.get_param("teleop/drive_controls")
+            self.max_wheel_speed = rospy.get_param("rover/max_speed")
+            self.wheel_radius = rospy.get_param("wheel/radius")
+            self.max_angular_speed = self.max_wheel_speed / self.wheel_radius
+            self.ra_config = rospy.get_param("teleop/ra_controls")
+            self.ik_names = rospy.get_param("teleop/ik_multipliers")
+            self.RA_NAMES = rospy.get_param("teleop/ra_names")
+            self.brushless_motors = rospy.get_param("brushless_motors/controllers")
+            self.brushed_motors = rospy.get_param("brushed_motors/controllers")
+            self.xbox_mappings = rospy.get_param("teleop/xbox_mappings")
+            self.sa_config = rospy.get_param("teleop/sa_controls")
+
+
             # Publishers
             self.twist_pub = rospy.Publisher("/cmd_vel", Twist, queue_size=1)
             self.led_pub = rospy.Publisher("/auton_led_cmd", String, queue_size=1)
@@ -81,14 +99,14 @@ class GUIConsumer(JsonWebsocketConsumer):
 
             # Subscribers
             self.pdb_sub = rospy.Subscriber("/pdb_data", PDLB, self.pdb_callback)
-            # self.arm_moteus_sub = rospy.Subscriber(
-            #     "/arm_controller_data", ControllerState, self.arm_controller_callback
-            # )
-            # self.drive_moteus_sub = rospy.Subscriber(
-            #     "/drive_controller_data", ControllerState, self.drive_controller_callback
-            # )
+            self.arm_moteus_sub = rospy.Subscriber(
+                "/arm_controller_data", ControllerState, self.arm_controller_callback
+            )
+            self.drive_moteus_sub = rospy.Subscriber(
+                "/drive_controller_data", ControllerState, self.drive_controller_callback
+            )
             self.gps_fix = rospy.Subscriber("/gps/fix", NavSatFix, self.gps_fix_callback)
-            #self.drive_status_sub = rospy.Subscriber("/drive_status", MotorsStatus, self.drive_status_callback)
+            self.drive_status_sub = rospy.Subscriber("/drive_status", MotorsStatus, self.drive_status_callback)
             self.led_sub = rospy.Subscriber("/led", LED, self.led_callback)
             self.nav_state_sub = rospy.Subscriber("/nav_state", StateMachineStateUpdate, self.nav_state_callback)
             self.imu_calibration = rospy.Subscriber("imu/calibration", CalibrationStatus, self.imu_calibration_callback)
@@ -113,32 +131,17 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.cache_enable_limit = rospy.ServiceProxy("cache_enable_limit_switches", SetBool)
             self.calibrate_service = rospy.ServiceProxy("arm_calibrate", Trigger)
             self.change_cameras_srv = rospy.ServiceProxy("change_cameras", ChangeCameras)
-            self.capture_panorama_srv = rospy.ServiceProxy("capture_panorama", CapturePanorama)
             self.heater_auto_shutoff_srv = rospy.ServiceProxy("science_change_heater_auto_shutoff_state", SetBool)
-
-            # ROS Parameters
-            self.mappings = rospy.get_param("teleop/joystick_mappings")
-            self.drive_config = rospy.get_param("teleop/drive_controls")
-            self.max_wheel_speed = rospy.get_param("rover/max_speed")
-            self.wheel_radius = 1#rospy.get_param("wheel/radius")
-            self.max_angular_speed = self.max_wheel_speed / self.wheel_radius
-            self.ra_config = rospy.get_param("teleop/ra_controls")
-            self.ik_names = rospy.get_param("teleop/ik_multipliers")
-            self.RA_NAMES = rospy.get_param("teleop/ra_names")
-            self.brushless_motors = rospy.get_param("brushless_motors/controllers")
-            self.brushed_motors = rospy.get_param("brushed_motors/controllers")
-            self.xbox_mappings = rospy.get_param("teleop/xbox_mappings")
-            self.sa_config = rospy.get_param("teleop/sa_controls")
 
             self.tf_buffer = tf2_ros.Buffer()
             self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
             self.flight_thread = threading.Thread(target=self.flight_attitude_listener)
             self.flight_thread.start()
-
+            
             #Actions Servers
             self.landerClient = actionlib.SimpleActionClient('LanderAlignAction', LanderAlignAction)
         
-        except rospy.ROSException as e:
+        except Exception as e:
             rospy.logerr(e)
 
     def disconnect(self, close_code):
