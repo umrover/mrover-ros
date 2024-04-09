@@ -59,7 +59,13 @@ namespace mrover {
         depthStencil.depthWriteEnabled = true;
         depthStencil.format = DEPTH_FORMAT;
         depthStencil.stencilFront.compare = wgpu::CompareFunction::Always;
+        depthStencil.stencilFront.failOp = wgpu::StencilOperation::Keep;
+        depthStencil.stencilFront.depthFailOp = wgpu::StencilOperation::Keep;
+        depthStencil.stencilFront.passOp = wgpu::StencilOperation::Keep;
         depthStencil.stencilBack.compare = wgpu::CompareFunction::Always;
+        depthStencil.stencilBack.failOp = wgpu::StencilOperation::Keep;
+        depthStencil.stencilBack.depthFailOp = wgpu::StencilOperation::Keep;
+        depthStencil.stencilBack.passOp = wgpu::StencilOperation::Keep;
         descriptor.depthStencil = &depthStencil;
 
 
@@ -345,7 +351,12 @@ namespace mrover {
             IMGUI_CHECKVERSION();
             ImGui::CreateContext();
             ImGui_ImplGlfw_InitForOther(mWindow.get(), true);
-            ImGui_ImplWGPU_Init(mDevice, 1, COLOR_FORMAT, DEPTH_FORMAT);
+            ImGui_ImplWGPU_InitInfo initInfo;
+            initInfo.DepthStencilFormat = DEPTH_FORMAT;
+            initInfo.RenderTargetFormat = COLOR_FORMAT;
+            initInfo.Device = mDevice;
+            initInfo.NumFramesInFlight = 1;
+            ImGui_ImplWGPU_Init(&initInfo);
 
             int x, y, w, h;
             glfwGetMonitorWorkarea(glfwGetPrimaryMonitor(), &x, &y, &w, &h);
@@ -652,9 +663,11 @@ namespace mrover {
         colorAttachment.loadOp = wgpu::LoadOp::Clear;
         colorAttachment.storeOp = wgpu::StoreOp::Store;
         colorAttachment.clearValue = {mSkyColor.x(), mSkyColor.y(), mSkyColor.z(), mSkyColor.w()};
+        colorAttachment.depthSlice = -1;
         normalAttachment.loadOp = wgpu::LoadOp::Clear;
         normalAttachment.storeOp = wgpu::StoreOp::Store;
         normalAttachment.clearValue = {0, 0, 0, 0};
+        normalAttachment.depthSlice = -1;
 
         wgpu::RenderPassDepthStencilAttachment depthStencilAttachment;
         depthStencilAttachment.depthClearValue = 1.0f;

@@ -12,19 +12,19 @@ namespace mrover {
         assert(mJointDEPitchIndex == mJointDE0Index);
         assert(mJointDERollIndex == mJointDE1Index);
         assert(mArmHWNames.size() == mRawArmNames.size());
-
+        ROS_INFO("hi");
         for (std::size_t i = 0; i < mRawArmNames.size(); ++i) {
             if (i != mJointDEPitchIndex && i != mJointDERollIndex) {
                 assert(mArmHWNames.at(i) == mRawArmNames.at(i));
             }
             {
                 auto rawName = static_cast<std::string>(mRawArmNames[i]);
-                auto [_, was_inserted] = mAdjustServersByRawArmNames.try_emplace(rawName, nh.advertiseService(std::format("{}_adjust", rawName), &ArmTranslator::adjustServiceCallback, this));
+                [[maybe_unused]] auto [_, was_inserted] = mAdjustServersByRawArmNames.try_emplace(rawName, nh.advertiseService(std::format("{}_adjust", rawName), &ArmTranslator::adjustServiceCallback, this));
                 assert(was_inserted);
             }
             {
                 auto hwName = static_cast<std::string>(mArmHWNames[i]);
-                auto [_, was_inserted] = mAdjustClientsByArmHWNames.try_emplace(hwName, nh.serviceClient<AdjustMotor>(std::format("{}_adjust", hwName)));
+                [[maybe_unused]] auto [_, was_inserted] = mAdjustClientsByArmHWNames.try_emplace(hwName, nh.serviceClient<AdjustMotor>(std::format("{}_adjust", hwName)));
                 assert(was_inserted);
             }
         }
@@ -188,6 +188,7 @@ namespace mrover {
     }
 
     auto ArmTranslator::processPositionCmd(Position::ConstPtr const& msg) -> void {
+        ROS_INFO("msg: %f", msg->positions[0]);
         if (mRawArmNames != msg->names || mRawArmNames.size() != msg->positions.size()) {
             ROS_ERROR("Position requests for arm is ignored!");
             return;
@@ -215,7 +216,7 @@ namespace mrover {
         // joint a convert linear position (meters) to radians
         auto joint_a_pos = convertLinPos(msg->positions.at(mJointAIndex), mJointALinMult.get());
         position.positions.at(mJointAIndex) = joint_a_pos;
-
+        
         mPositionPub->publish(position);
     }
 

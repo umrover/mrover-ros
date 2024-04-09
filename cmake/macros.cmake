@@ -11,6 +11,10 @@ macro(target_rosify target)
             LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
             RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
     )
+
+    if (MROVER_RUN_CLANG_TIDY)
+        set_target_properties(${target} PROPERTIES CXX_CLANG_TIDY clang-tidy)
+    endif ()
 endmacro()
 
 macro(mrover_add_library name sources includes)
