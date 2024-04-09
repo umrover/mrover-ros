@@ -663,11 +663,11 @@ namespace mrover {
         colorAttachment.loadOp = wgpu::LoadOp::Clear;
         colorAttachment.storeOp = wgpu::StoreOp::Store;
         colorAttachment.clearValue = {mSkyColor.x(), mSkyColor.y(), mSkyColor.z(), mSkyColor.w()};
-        colorAttachment.depthSlice = -1;
+        colorAttachment.depthSlice = wgpu::kDepthSliceUndefined;
         normalAttachment.loadOp = wgpu::LoadOp::Clear;
         normalAttachment.storeOp = wgpu::StoreOp::Store;
         normalAttachment.clearValue = {0, 0, 0, 0};
-        normalAttachment.depthSlice = -1;
+        normalAttachment.depthSlice = wgpu::kDepthSliceUndefined;
 
         wgpu::RenderPassDepthStencilAttachment depthStencilAttachment;
         depthStencilAttachment.depthClearValue = 1.0f;

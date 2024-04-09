@@ -119,7 +119,7 @@ public:
 
 #define END };
 
-
+constexpr static uint32_t kDepthSliceUndefined = std::numeric_limits<uint32_t>::max();
 
 // Other type aliases
 using Flags = uint32_t;
