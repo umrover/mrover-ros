@@ -1,0 +1,34 @@
+- name: Install MAVROS Packages
+  become: True
+  apt:
+    cache_valid_time: 604800
+    state: latest
+    name:
+      - ros-noetic-mavros
+      - ros-noetic-mavros-extras
+      - ros-noetic-mavros-msgs
+
+- name: Install Geographiclib Datasets
+  become: True
+  ansible.builtin.script:
+    cmd: "{{ role_path }}/files/install_geographiclib_datasets.sh"
+
+- name: Install QGroundControl Packages
+  become: True
+  apt:
+    cache_valid_time: 604800
+    state: latest
+    name:
+      - gstreamer1.0-plugins-bad
+      - gstreamer1.0-libav
+      - gstreamer1.0-gl
+      - libfuse2
+      - libxcb-xinerama0
+      - libxkbcommon-x11-0
+      - libxcb-cursor0
+
+- name: Install QGroundControl
+  ansible.builtin.shell:
+    chdir: ~/Documents
+    cmd: wget https://d176tv9ibo4jno.cloudfront.net/latest/QGroundControl.AppImage
+    creates: QGroundControl.AppImage

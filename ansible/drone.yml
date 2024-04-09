@@ -1,0 +1,7 @@
+---
+- hosts: all
+  vars:
+    ubuntu_release: focal
+  roles:
+    # - build
+    - drone_basestation
