@@ -140,6 +140,8 @@ namespace mrover {
         std::string mState;
         std::array<bool, 4> mLimitHit{};
 
+        bool mAvoidConversionToRevolutions{false};
+
         ros::Subscriber mMoveThrottleSub;
         ros::Subscriber mMoveVelocitySub;
         ros::Subscriber mMovePositionSub;

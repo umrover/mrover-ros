@@ -93,8 +93,6 @@ namespace mrover {
         Radians limitSwitch0ReadjustPosition{};
         Radians limitSwitch1ReadjustPosition{};
 
-        bool mAvoidConversionToRevolutions{false};
-
         double mMaxTorque{0.5};
         double mWatchdogTimeout{0.1};
 

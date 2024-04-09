@@ -67,6 +67,8 @@ namespace mrover {
         mCalibrationThrottle = Percent{xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "calibration_throttle", 0.0)};
         mErrorState = "Unknown";
         mState = "Unknown";
+
+        mAvoidConversionToRevolutions = xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, "avoid_conversion_to_revolutions", false);
     }
 
     auto BrushedController::setDesiredThrottle(Percent throttle) -> void {
