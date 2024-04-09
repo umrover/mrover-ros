@@ -89,7 +89,6 @@ void HAL_PostInit();
   */
 int main(void)
 {
-
   /* USER CODE BEGIN 1 */
 
   /* USER CODE END 1 */
@@ -731,13 +730,13 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pins : LIMIT_0_0_Pin LIMIT_0_1_Pin LIMIT_0_2_Pin LIMIT_1_0_Pin */
   GPIO_InitStruct.Pin = LIMIT_0_0_Pin|LIMIT_0_1_Pin|LIMIT_0_2_Pin|LIMIT_1_0_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
   /*Configure GPIO pin : LIMIT_0_3_Pin */
   GPIO_InitStruct.Pin = LIMIT_0_3_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(LIMIT_0_3_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : DEBUG_LED_0_Pin DEBUG_LED_1_Pin DEBUG_LED_2_Pin CAN_STANDBY_Pin */
@@ -750,7 +749,7 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pins : LIMIT_1_1_Pin LIMIT_1_2_Pin LIMIT_1_3_Pin */
   GPIO_InitStruct.Pin = LIMIT_1_1_Pin|LIMIT_1_2_Pin|LIMIT_1_3_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /*Configure GPIO pin : MOTOR_0_DIR_Pin */
