@@ -96,8 +96,9 @@ namespace mrover {
         mThrottlePub->publish(throttle);
     }
 
-    constexpr Dimensionless PITCH_ROLL_TO_01_SCALE = 40;
-    Matrix2<Dimensionless> static const PITCH_ROLL_TO_01_SCALED = PITCH_ROLL_TO_0_1 * PITCH_ROLL_TO_01_SCALE;
+    // constexpr Dimensionless PITCH_ROLL_TO_01_SCALE = 40;
+    // Matrix2<Dimensionless> static const PITCH_ROLL_TO_01_SCALED = PITCH_ROLL_TO_0_1 * PITCH_ROLL_TO_01_SCALE;
+    // Note (Isabel) PITCH_ROLL_TO_01_SCALE is unnecessary, moteus config will scale for gear ratio
 
     auto ArmTranslator::processVelocityCmd(Velocity::ConstPtr const& msg) -> void {
         if (mRawArmNames != msg->names || mRawArmNames.size() != msg->velocities.size()) {
@@ -106,7 +107,7 @@ namespace mrover {
         }
 
         Vector2<RadiansPerSecond> pitchRollVelocities{msg->velocities.at(mJointDEPitchIndex), msg->velocities.at(mJointDERollIndex)};
-        Vector2<RadiansPerSecond> motorVelocities = PITCH_ROLL_TO_01_SCALED * pitchRollVelocities;
+        Vector2<RadiansPerSecond> motorVelocities = PITCH_ROLL_TO_0_1 * pitchRollVelocities;
 
         Velocity velocity = *msg;
         velocity.names[mJointDEPitchIndex] = "joint_de_0";
@@ -123,7 +124,7 @@ namespace mrover {
         }
 
         Vector2<RadiansPerSecond> pitchRoll{msg->positions.at(mJointDEPitchIndex), msg->positions.at(mJointDERollIndex)};
-        Vector2<RadiansPerSecond> motorPositions = PITCH_ROLL_TO_01_SCALED * pitchRoll;
+        Vector2<RadiansPerSecond> motorPositions = PITCH_ROLL_TO_0_1 * pitchRoll;
 
         Position position = *msg;
         position.names[mJointDEPitchIndex] = "joint_de_0";
@@ -151,7 +152,7 @@ namespace mrover {
     auto ArmTranslator::updateDeOffsets(ros::TimerEvent const&) -> void {
         if (!mJointDePitchRoll) return;
 
-        Vector2<Radians> motorPositions = PITCH_ROLL_TO_01_SCALED * mJointDePitchRoll.value();
+        Vector2<Radians> motorPositions = PITCH_ROLL_TO_0_1 * mJointDePitchRoll.value();
         {
             AdjustMotor adjust;
             adjust.request.name = "joint_de_0";
