@@ -35,14 +35,6 @@ export default defineComponent({
   },
 
   mounted: function () {
-    this.$nextTick(() => {
-      const canvas: HTMLCanvasElement = document.getElementById(
-        'canvas' + this.id
-      ) as HTMLCanvasElement
-      const context = canvas.getContext('2d') ?? new CanvasRenderingContext2D()
-      context.fillStyle = 'black'
-      context.fillRect(0, 0, canvas.width, canvas.height)
-    }),
     this.startStream(this.id)
   },
   methods: {
