@@ -1,6 +1,6 @@
 <template>
   <div class="wrap">
-    <canvas :id="'stream-' + id" v-on:click="handleClick"></canvas>
+    <canvas :class="[getSize]" :id="'stream-' + id" v-on:click="handleClick"></canvas>
     <div v-if="mission != 'ZED'">
       <p>{{ name }} • ID: {{ id }}</p>
       <div class="form-group col-md-4">
@@ -37,12 +37,17 @@ export default defineComponent({
       required: true
     },
     mission: {
-      type: String, // {'sa', 'ik', 'auton'}
+      type: String, // {'sa', 'ik', 'auton', 'zed'}
       required: true
-    }
+    },
   },
   components: {
     Checkbox
+  },
+  computed: {
+    getSize: function() {
+      return this.mission == 'ZED' ? 'zed' : 'regular'
+    }
   },
 
   data() {
@@ -277,9 +282,14 @@ export default defineComponent({
   gap: 5px;
 }
 
-canvas {
+.regular {
   width:640px;
   height:480px;
+}
+
+.zed {
+  width:2560px;
+  height:720px;
 }
 </style>
 
