@@ -48,18 +48,12 @@ namespace mrover {
 		filterNormals(mCloud);
 		ransac(0.1, 10, 100);
         createSpline(2);
-        for(int i = 0; i < static_cast<int>(mPathPoints.size()); i++){
-            Eigen::Matrix3d rot;
-            rot <<  1, 0, 0,
-                    0, 1, 0,
-                    0, 0, 1;
+        // for(int i = 0; i < static_cast<int>(mPathPoints.size()); i++){
+            
 
-            SE3d temp = {{mPathPoints.at(i).coeff(0,0), mPathPoints.at(i).coeff(1, 0), 0}, SO3d{Eigen::Quaterniond{rot}.normalized()}};
-            SE3Conversions::pushToTfTree(mTfBroadcaster, std::format("spline_point_{}", i), mMapFrameId, temp);
-        }
+        // }
 		calcMotionToo();
     }
-
 
     //Returns angle (yaw) around the z axis
     auto LanderAlignNodelet::calcAngleWithWorldX(Eigen::Vector3d xHeading) -> double { //I want to be editing this variable so it should not be const or &
@@ -145,32 +139,39 @@ namespace mrover {
 
             // Grab the current target state from the spline
             Eigen::Vector3d tarState{point.coeff(0, 0), point.coeff(1, 0), point.coeff(2, 0)};
+
+            // Publish the target position in the spline
+            Eigen::Matrix3d rot;
+            rot <<  1, 0, 0,
+                    0, 1, 0,
+                    0, 0, 1;
+            SE3d temp = {{point.coeff(0,0), point.coeff(1, 0), 0}, SO3d{Eigen::Quaterniond{rot}.normalized()}};
+            SE3Conversions::pushToTfTree(mTfBroadcaster, "spline_point", mMapFrameId, temp);
             ROS_INFO_STREAM("Switching to target position: (x, y, theta): (" << tarState.x() << ", " << tarState.y() << ", " << tarState.z() << ")");
 
-            while (ros::ok()) {
+            double distanceToTarget = 1000000; // TODO: Replace with double max
+
+            while (ros::ok() && distanceToTarget > 1) {
                 roverInWorld = SE3Conversions::fromTfTree(mTfBuffer, "base_link", "map");
                 Eigen::Vector3d xOrientation = roverInWorld.rotation().col(0); 
                 double roverHeading = calcAngleWithWorldX(xOrientation);
                 Eigen::Vector3d currState{roverInWorld.translation().x(), roverInWorld.translation().y(), roverHeading};
 
                 Eigen::Vector2d distanceToTargetVector{tarState.x() - currState.x(), tarState.y() - currState.y()};
-                double distanceToTarget = std::abs(distanceToTargetVector.norm());
+                distanceToTarget = distanceToTargetVector.norm();
 
                 Eigen::Matrix3d rotation;
                 rotation << std::cos(roverHeading),  std::sin(roverHeading), 0,
                             -std::sin(roverHeading), std::cos(roverHeading), 0,
-                            0,                          0,                        1;
+                            0,                       0,                      1;
+                
                 Eigen::Vector3d errState = rotation * (tarState - currState); // maybe check error angle incase anything goes silly
 
                 double v = (point.coeff(3, 0) - K1 * abs(point.coeff(3, 0) * (errState.x() + errState.y() * tan(errState.z()))))/(cos(errState.z()));
                 double omega = point.coeff(4, 0) - ((K2*point.coeff(3, 0)*errState.y() + K3*abs(point.coeff(3, 0))*tan(errState.z()))*pow(cos(errState.z()), 2));
+                
                 twist.angular.z = omega;
                 twist.linear.x = v;
-                
-                // Radius for moving on to the next loop
-                if (distanceToTarget < .5) {
-                    break;
-                }
 
                 if(mActionServer->isPreemptRequested()){
                     twist.angular.z = 0;
@@ -504,7 +505,7 @@ namespace mrover {
 
     void LanderAlignNodelet::createSpline(int density){
         //Constants
-        const double kSpline = 7.0/8;
+        const double kSplineStart = 7.0/8;
         const double dOmega = 0;
         const double dVelocity = 1;
 
@@ -515,14 +516,15 @@ namespace mrover {
         ros::Duration(0.5).sleep();
         SE3d planeInRover = SE3Conversions::fromTfTree(mTfBuffer, "plane", "base_link");
         double yDistanceFromRoverToPlane = planeInRover.translation().x();
-        double splineLength = kSpline * yDistanceFromRoverToPlane;
+        double splineLength = kSplineStart * yDistanceFromRoverToPlane;
         
         // Append all of the points to each other
+        Eigen::Vector3d baseSplinePoint = mPlaneLocationInWorldVector.value() + splineLength * mNormalInWorldVector.value();
         Eigen::Vector3d densityVector = mNormalInWorldVector.value() / density;
         Eigen::Vector3d splinePoint = Eigen::Vector3d::Zero();
         
         while(splinePoint.norm() < splineLength){
-            Eigen::Vector3d splinePointInWorld = mPlaneLocationInWorldVector.value() + splinePoint;
+            Eigen::Vector3d splinePointInWorld = baseSplinePoint - splinePoint;
             // Create the new point to be added to the vector
             Vector5d newPoint;
             newPoint << splinePointInWorld.x(),

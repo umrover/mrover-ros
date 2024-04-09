@@ -31,9 +31,6 @@ from mrover.msg import (
     IK,
     LanderAlignAction,
     LanderAlignGoal
-    Spectral,
-    ScienceThermistors,
-    HeaterData,
 )
 from mrover.srv import EnableAuton, AdjustMotor, ChangeCameras
 from sensor_msgs.msg import NavSatFix, Temperature, RelativeHumidity, Image
@@ -84,14 +81,14 @@ class GUIConsumer(JsonWebsocketConsumer):
 
             # Subscribers
             self.pdb_sub = rospy.Subscriber("/pdb_data", PDLB, self.pdb_callback)
-            self.arm_moteus_sub = rospy.Subscriber(
-                "/arm_controller_data", ControllerState, self.arm_controller_callback
-            )
-            self.drive_moteus_sub = rospy.Subscriber(
-                "/drive_controller_data", ControllerState, self.drive_controller_callback
-            )
+            # self.arm_moteus_sub = rospy.Subscriber(
+            #     "/arm_controller_data", ControllerState, self.arm_controller_callback
+            # )
+            # self.drive_moteus_sub = rospy.Subscriber(
+            #     "/drive_controller_data", ControllerState, self.drive_controller_callback
+            # )
             self.gps_fix = rospy.Subscriber("/gps/fix", NavSatFix, self.gps_fix_callback)
-            self.drive_status_sub = rospy.Subscriber("/drive_status", MotorsStatus, self.drive_status_callback)
+            #self.drive_status_sub = rospy.Subscriber("/drive_status", MotorsStatus, self.drive_status_callback)
             self.led_sub = rospy.Subscriber("/led", LED, self.led_callback)
             self.nav_state_sub = rospy.Subscriber("/nav_state", StateMachineStateUpdate, self.nav_state_callback)
             self.imu_calibration = rospy.Subscriber("imu/calibration", CalibrationStatus, self.imu_calibration_callback)
@@ -123,7 +120,7 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.mappings = rospy.get_param("teleop/joystick_mappings")
             self.drive_config = rospy.get_param("teleop/drive_controls")
             self.max_wheel_speed = rospy.get_param("rover/max_speed")
-            self.wheel_radius = rospy.get_param("wheel/radius")
+            self.wheel_radius = 1#rospy.get_param("wheel/radius")
             self.max_angular_speed = self.max_wheel_speed / self.wheel_radius
             self.ra_config = rospy.get_param("teleop/ra_controls")
             self.ik_names = rospy.get_param("teleop/ik_multipliers")
