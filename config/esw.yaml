@@ -148,8 +148,8 @@ brushless_motors:
       velocity_multiplier: -1.0
       min_velocity: -0.6 # in terms of output
       max_velocity: 0.6 # max output shaft speed: 5 rpm (for now)
-      min_position: 0.0
-      max_position: 3.8 # 220 degrees of motion
+      min_position: -1.9
+      max_position: 1.9 # 220 degrees of motion is the entire range
     joint_de_0:
       velocity_multiplier: 1.0
       min_velocity: -67.0
