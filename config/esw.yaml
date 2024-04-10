@@ -124,8 +124,8 @@ brushless_motors:
       velocity_multiplier: 1.0
       # 1236.8475 rad/meter, or 196.850393476 rev/meter, and we want a max vel of 40 meter/s. 
       # gear ratio is currently at 0.005080 revolutions = 1 meter
-      min_velocity: -0.15  # this means -0.15 meters per second.
-      max_velocity: 0.15
+      min_velocity: -0.10  # this means -0.10 meters per second.
+      max_velocity: 0.10
       avoid_conversion_to_revolutions: true  # this is used because we are trying to send the values directly
       limit_0_present: true
       limit_1_present: true
