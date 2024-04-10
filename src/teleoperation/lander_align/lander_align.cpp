@@ -9,6 +9,7 @@
 #include <optional>
 #include <point.hpp>
 #include <ros/init.h>
+#include <ros/rate.h>
 #include <unistd.h>
 #include <vector>
 
@@ -56,6 +57,20 @@ namespace mrover {
 		calcMotionToo();
     }
 
+    //Returns angle (yaw) around the z axis
+    auto LanderAlignNodelet::calcAngleWithWorldX(Eigen::Vector3d xHeading) -> double { //I want to be editing this variable so it should not be const or &
+        xHeading.z() = 0;
+        xHeading.normalize();
+
+        Eigen::Vector3d xAxisWorld{1, 0, 0};
+        double angle = std::acos(xHeading.dot(xAxisWorld));
+        if (xHeading.y() >= 0) {
+            return angle;
+        } else {
+            return 2 * std::numbers::pi - angle;
+        }
+    };
+
     void LanderAlignNodelet::calcMotionToo() {
         geometry_msgs::Twist twist;
         SE3d roverInWorld = SE3Conversions::fromTfTree(mTfBuffer, "base_link", "map");
@@ -64,9 +79,9 @@ namespace mrover {
         Eigen::Vector2d initState{roverInWorld.translation().x(), roverInWorld.translation().y()};
 
         for (const Vector5d& point : mPathPoints) {
-            double K1 = 0.01;
-            double K2 = 0.01;
-            double K3 = 0.01;  
+            double K1 = .3;
+            double K2 = 0.5;
+            double K3 = 0.5;  
 
             // Grab the current target state from the spline
             Eigen::Vector3d tarState{point.coeff(0, 0), point.coeff(1, 0), point.coeff(2, 0)};
@@ -82,7 +97,7 @@ namespace mrover {
 
             double distanceToTarget = std::numeric_limits<double>::max();
 
-            while (ros::ok() && distanceToTarget > 1) {
+            while (ros::ok() && distanceToTarget > 0.3) {
                 roverInWorld = SE3Conversions::fromTfTree(mTfBuffer, "base_link", "map");
                 Eigen::Vector3d xOrientation = roverInWorld.rotation().col(0); 
                 double roverHeading = calcAngleWithWorldX(xOrientation);
@@ -97,10 +112,20 @@ namespace mrover {
                             0,                       0,                      1;
                 
                 Eigen::Vector3d errState = rotation * (tarState - currState); // maybe check error angle incase anything goes silly
-                ROS_INFO_STREAM("err state" << errState.coeff(0,0) << ", " << errState.coeff(1,0) << ", " << errState.coeff(2,0));
+                ROS_INFO_STREAM("err state " << errState.coeff(0,0) << ", " << errState.coeff(1,0) << ", " << errState.coeff(2,0));
+                
+                ROS_INFO_STREAM("Rover Heading " << roverHeading);
+
+                ROS_INFO_STREAM("Term 1: " << (K2*point.coeff(3, 0)*errState.y())*pow(cos(errState.z()), 2));
+                ROS_INFO_STREAM("Term 2: " << (K3*abs(point.coeff(3, 0))*tan(errState.z()))*pow(cos(errState.z()), 2));
+                
+                ros::Rate r(10);
+                r.sleep();
                 double v = (point.coeff(3, 0) - K1 * abs(point.coeff(3, 0) * (errState.x() + errState.y() * tan(errState.z()))))/(cos(errState.z()));
-                double omega = point.coeff(4, 0) - ((K2*point.coeff(3, 0)*errState.y() + K3*abs(point.coeff(3, 0))*tan(errState.z()))*pow(cos(errState.z()), 2));
-                    
+                double omega = point.coeff(4, 0) + ((K2*point.coeff(3, 0)*errState.y() + K3*abs(point.coeff(3, 0))*tan(errState.z()))*pow(cos(errState.z()), 2));
+                ROS_INFO_STREAM("v: " << v);
+                ROS_INFO_STREAM("omega: " << omega);
+                
                 twist.angular.z = omega;
                 twist.linear.x = v;
 
