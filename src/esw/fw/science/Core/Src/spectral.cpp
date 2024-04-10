@@ -116,13 +116,15 @@ namespace mrover {
 		uint8_t buf[2];
 		buf[0] = I2C_AS72XX_WRITE_REG;
 		buf[1] = (virtual_reg | 0x80);
-    	HAL_I2C_Master_Transmit(&hi2c1, SPECTRAL_7b_ADDRESS << 1, buf, sizeof(buf), 100);
+    	//HAL_I2C_Master_Transmit(&hi2c1, SPECTRAL_7b_ADDRESS << 1, buf, sizeof(buf), 100);
+		m_i2c_bus->blocking_transmit<uint8_t[2]>(SPECTRAL_7b_ADDRESS, buf);
 
 		poll_status_reg(I2C_OP::WRITE);
 		buf[0] = I2C_AS72XX_WRITE_REG;
 		buf[1] = data;
 
-		HAL_I2C_Master_Transmit(&hi2c1, SPECTRAL_7b_ADDRESS << 1, buf, sizeof(buf), 100);
+		//HAL_I2C_Master_Transmit(&hi2c1, SPECTRAL_7b_ADDRESS << 1, buf, sizeof(buf), 100);
+		m_i2c_bus->blocking_transmit<uint8_t[2]>(SPECTRAL_7b_ADDRESS, buf);
 
     }
 
@@ -150,7 +152,8 @@ namespace mrover {
 		uint8_t buf[2];
 		buf[0] = I2C_AS72XX_WRITE_REG;
 		buf[1] = virtual_reg;
-		HAL_I2C_Master_Transmit(&hi2c1, SPECTRAL_7b_ADDRESS << 1, buf, sizeof(buf), 100);
+		//HAL_I2C_Master_Transmit(&hi2c1, SPECTRAL_7b_ADDRESS << 1, buf, sizeof(buf), 100);
+		m_i2c_bus->blocking_transmit<uint8_t[2]>(SPECTRAL_7b_ADDRESS, buf);
 
 		poll_status_reg(I2C_OP::READ);
 
