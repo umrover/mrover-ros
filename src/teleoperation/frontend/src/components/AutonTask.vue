@@ -94,7 +94,8 @@ export default defineComponent({
         latitude_deg: 42.293195,
         longitude_deg: -83.7096706,
         bearing_deg: 0,
-        altitude: 0
+        altitude: 0,
+        status: false
       },
 
       teleopEnabledCheck: false,

@@ -208,7 +208,6 @@
                       this.dronePath = [...this.dronePath, latLng]
                       this.droneCount = 0
                   }
-                  console.log(this.dronePath)
             }
           },
 
