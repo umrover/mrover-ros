@@ -214,6 +214,20 @@ namespace mrover {
             using type = typename compound<typename exp_add<U1, U2>::type, Us...>::type;
         };
 
+        template<IsUnit U>
+        struct strip_conversion {
+            using type = Unit<typename U::rep_t,
+                              std::ratio<1>,
+                              typename U::meter_exp_t,
+                              typename U::kilogram_exp_t,
+                              typename U::second_exp_t,
+                              typename U::radian_exp_t,
+                              typename U::ampere_exp_t,
+                              typename U::kelvin_exp_t,
+                              typename U::byte_exp_t,
+                              typename U::tick_exp_t>;
+        };
+
     } // namespace detail
 
     template<IsUnit U1, IsUnit U2>

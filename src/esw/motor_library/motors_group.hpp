@@ -16,7 +16,7 @@
 
 namespace mrover {
 
-    using Controller = std::variant<std::monostate, BrushedController, BrushlessController<Radians>, BrushlessController<Meters>>;
+    using Controller = std::variant<BrushedController, BrushlessController<Revolutions>, BrushlessController<Meters>>;
 
     class MotorsGroup {
     public:

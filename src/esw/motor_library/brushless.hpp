@@ -170,11 +170,11 @@ namespace mrover {
 
             if constexpr (AreExponentsSame<OutputPosition, Radians>) {
                 if (this->isJointDe()) {
-                    mCurrentPosition = Revolutions{result.extra[0].value}; // get value of absolute encoder if its joint_de0/1
-                    mCurrentVelocity = RevolutionsPerSecond{result.extra[1].value} / mVelocityMultiplier;
+                    mCurrentPosition = OutputPosition{result.extra[0].value}; // get value of absolute encoder if its joint_de0/1
+                    mCurrentVelocity = OutputVelocity{result.extra[1].value} / mVelocityMultiplier;
                 } else {
-                    mCurrentPosition = Revolutions{result.position};                                // moteus stores position in revolutions.
-                    mCurrentVelocity = RevolutionsPerSecond{result.velocity} / mVelocityMultiplier; // moteus stores position in revolutions.
+                    mCurrentPosition = OutputPosition{result.position};                                // moteus stores position in revolutions.
+                    mCurrentVelocity = OutputVelocity{result.velocity} / mVelocityMultiplier; // moteus stores position in revolutions.
                 }
             }
 

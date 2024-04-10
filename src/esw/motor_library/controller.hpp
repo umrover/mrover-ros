@@ -70,7 +70,10 @@ namespace mrover {
                 return;
             }
 
-            static_cast<Derived*>(this)->setDesiredVelocity(OutputVelocity{msg->velocities.front()});
+            // ROS message will always be in SI units with no conversions
+            using Velocity = typename detail::strip_conversion<OutputVelocity>::type;
+            OutputVelocity velocity = Velocity{msg->velocities.front()};
+            static_cast<Derived*>(this)->setDesiredVelocity(velocity);
         }
 
         auto setDesiredPosition(Position::ConstPtr const& msg) -> void {
@@ -79,7 +82,10 @@ namespace mrover {
                 return;
             }
 
-            static_cast<Derived*>(this)->setDesiredPosition(OutputPosition{msg->positions.front()});
+            // ROS message will always be in SI units with no conversions
+            using Position = typename detail::strip_conversion<OutputPosition>::type;
+            OutputPosition position = Position{msg->positions.front()};
+            static_cast<Derived*>(this)->setDesiredPosition(position);
         }
 
         auto adjustEncoder(MotorsAdjust::ConstPtr const& msg) -> void {
@@ -88,7 +94,9 @@ namespace mrover {
                 return;
             }
 
-            static_cast<Derived*>(this)->adjust(OutputPosition{msg->values.front()});
+            using Position = typename detail::strip_conversion<OutputPosition>::type;
+            OutputPosition position = Position{msg->values.front()};
+            static_cast<Derived*>(this)->adjust(position);
         }
 
         [[nodiscard]] auto isJointDe() const -> bool {
