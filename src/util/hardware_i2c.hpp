@@ -34,7 +34,6 @@ public:
                             sizeof(send), I2C_TIMEOUT);
   }
 
-  template <IsI2CSerializable ImmediateTSend = TSend>
   auto blocking_receive(std::uint16_t address) -> TReceive {
     // TODO(quintin): Error handling? Shouldn't this return an optional
     if (TReceive receive{};
