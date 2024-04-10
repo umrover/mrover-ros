@@ -4,6 +4,7 @@
 
 #include <can_device.hpp>
 #include <controller.hpp>
+#include <moteus/moteus_multiplex.h>
 
 namespace mrover {
 
@@ -72,7 +73,6 @@ namespace mrover {
         using Base::mMasterName;
         using Base::mNh;
         using Base::mState;
-        using Base::mVelocityMultiplier;
 
     public:
         BrushlessController(ros::NodeHandle const& nh, std::string masterName, std::string controllerName)
@@ -82,11 +82,6 @@ namespace mrover {
             assert(mNh.hasParam(std::format("brushless_motors/controllers/{}", mControllerName)));
             mNh.getParam(std::format("brushless_motors/controllers/{}", mControllerName), brushlessMotorData);
             assert(brushlessMotorData.getType() == XmlRpc::XmlRpcValue::TypeStruct);
-
-            mVelocityMultiplier = Ratio{xmlRpcValueToTypeOrDefault<double>(brushlessMotorData, "velocity_multiplier", 1.0)};
-            if (abs(mVelocityMultiplier) < Ratio{1e-5}) {
-                throw std::runtime_error("Velocity multiplier can't be 0!");
-            }
 
             mMinVelocity = OutputVelocity{xmlRpcValueToTypeOrDefault<double>(brushlessMotorData, "min_velocity", -1.0)};
             mMaxVelocity = OutputVelocity{xmlRpcValueToTypeOrDefault<double>(brushlessMotorData, "max_velocity", 1.0)};
@@ -185,21 +180,19 @@ namespace mrover {
                      result.aux1_gpio,
                      result.aux2_gpio);
 
-            if constexpr (AreExponentsSame<OutputPosition, Radians>) {
-                if (this->isJointDe()) {
-                    mCurrentPosition = OutputPosition{result.extra[0].value}; // get value of absolute encoder if its joint_de0/1
-                    mCurrentVelocity = OutputVelocity{result.extra[1].value} / mVelocityMultiplier;
-                } else {
-                    mCurrentPosition = OutputPosition{result.position};                       // moteus stores position in revolutions.
-                    mCurrentVelocity = OutputVelocity{result.velocity} / mVelocityMultiplier; // moteus stores position in revolutions.
-                }
+            if (this->isJointDe()) {
+                mCurrentPosition = OutputPosition{result.extra[0].value}; // get value of absolute encoder if its joint_de0/1
+                mCurrentVelocity = OutputVelocity{result.extra[1].value};
+            } else {
+                mCurrentPosition = OutputPosition{result.position};                                // moteus stores position in revolutions.
+                mCurrentVelocity = OutputVelocity{result.velocity}; // moteus stores position in revolutions.
             }
 
             mErrorState = moteusErrorCodeToErrorState(result.mode, static_cast<ErrorCode>(result.fault));
             mState = moteusModeToState(result.mode);
 
-            mMoteusAux1Info = result.aux1_gpio ? result.aux1_gpio : mMoteusAux1Info;
-            mMoteusAux2Info = result.aux1_gpio ? result.aux2_gpio : mMoteusAux2Info;
+            mMoteusAux1Info = result.aux1_gpio;
+            mMoteusAux2Info = result.aux2_gpio;
 
             if (result.mode == moteus::Mode::kPositionTimeout || result.mode == moteus::Mode::kFault) {
                 setStop();
@@ -218,8 +211,6 @@ namespace mrover {
                     return;
                 }
             }
-
-            velocity = velocity * mVelocityMultiplier;
 
             // ROS_INFO("my velocity rev s = %f", velocity.get());
 
@@ -285,13 +276,11 @@ namespace mrover {
 
             // Limit switches now wired to AUX2 (index 0 and 1)
             if (limitSwitch0Present && limitSwitch0Enabled) {
-                int bitMask = 0b1; // 0b0001
-                bool gpioState = bitMask & mMoteusAux2Info;
+                bool gpioState = 0b01 & mMoteusAux2Info;
                 mLimitHit.at(0) = gpioState == limitSwitch0ActiveHigh;
             }
             if (limitSwitch1Present && limitSwitch1Enabled) {
-                int bitMask = 0b10; // 0b0010
-                bool gpioState = bitMask & mMoteusAux2Info;
+                bool gpioState = 0b10 & mMoteusAux2Info;
                 mLimitHit.at(1) = gpioState == limitSwitch1ActiveHigh;
             }
 
@@ -347,9 +336,7 @@ namespace mrover {
 
         [[nodiscard]] auto mapThrottleToVelocity(Percent throttle) const -> OutputVelocity {
             throttle = std::clamp(throttle, -1_percent, 1_percent);
-
-            // Map the throttle to the velocity range
-            return OutputVelocity{(throttle.get() + 1.0f) / 2.0f * (mMaxVelocity.get() - mMinVelocity.get()) + mMinVelocity.get()};
+            return abs(throttle) * (throttle > 0_percent ? mMaxVelocity : mMinVelocity);
         }
 
         // Converts moteus error codes and mode codes to std::string descriptions

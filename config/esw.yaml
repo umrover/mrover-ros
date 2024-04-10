@@ -120,13 +120,10 @@ brushless_motors:
       min_velocity: -70.0
       max_velocity: 70.0
     joint_a:
-      # for joint a, the moteus should be receiving stuff in terms of meters
-      velocity_multiplier: 1.0
       # 1236.8475 rad/meter, or 196.850393476 rev/meter, and we want a max vel of 40 meter/s. 
       # gear ratio is currently at 0.005080 revolutions = 1 meter
       min_velocity: -0.10  # this means -0.10 meters per second.
       max_velocity: 0.10
-      avoid_conversion_to_revolutions: true  # this is used because we are trying to send the values directly
       limit_0_present: true
       limit_1_present: true
       limit_0_enabled: true
@@ -137,8 +134,8 @@ brushless_motors:
       limit_1_is_active_high: false
       limit_0_used_for_readjustment: true
       limit_1_used_for_readjustment: true
-      limit_0_readjust_position: 0.0 # meters - TODO
-      limit_1_readjust_position: 0.4 # meters
+      limit_0_readjust_position: 0.4
+      limit_1_readjust_position: 0.0
       limit_max_forward_pos: true
       limit_max_backward_pos: true
       max_forward_pos: 0.4

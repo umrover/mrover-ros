@@ -109,14 +109,14 @@ namespace mrover {
         constexpr Unit(U const& other)
             requires AreExponentsSame<Unit, U>
         {
-            rep = other.get();
+            rep = other.rep;
         }
 
         template<IsUnit U>
         constexpr auto operator=(U const& rhs) -> Unit&
             requires AreExponentsSame<Unit, U>
         {
-            rep = rhs.get();
+            rep = rhs.rep;
             return *this;
         }
     };

@@ -34,12 +34,12 @@ teleop:
       multiplier: 1
       slow_mode_multiplier: 1
       invert: False
-      # xbox_index: 7
+      xbox_index: 7
     gripper:
       multiplier: 1
       slow_mode_multiplier: 1
       invert: False
-      # xbox_index: 7
+      xbox_index: 7
 
   sa_controls:
     sa_x:

@@ -105,11 +105,14 @@ namespace mrover {
 
         auto publishDataCallback(ros::TimerEvent const&) -> void {
             {
+                using Position = typename detail::strip_conversion<OutputPosition>::type;
+                using Velocity = typename detail::strip_conversion<OutputVelocity>::type;
+
                 sensor_msgs::JointState jointState;
                 jointState.header.stamp = ros::Time::now();
                 jointState.name = {mControllerName};
-                jointState.position = {mCurrentPosition.get()};
-                jointState.velocity = {mCurrentVelocity.get()};
+                jointState.position = {Position{mCurrentPosition}.get()};
+                jointState.velocity = {Velocity{mCurrentVelocity}.get()};
                 jointState.effort = {static_cast<Derived*>(this)->getEffort()};
                 mJointDataPub.publish(jointState);
             }
