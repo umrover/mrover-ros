@@ -121,6 +121,23 @@ namespace mrover {
             if (limitSwitch1Present) {
                 mMoteusAux2Info |= 0b10;
             }
+
+            moteus::Controller::Options options;
+            moteus::Query::Format queryFormat;
+            queryFormat.aux1_gpio = moteus::kInt8;
+            queryFormat.aux2_gpio = moteus::kInt8;
+            if (this->isJointDe()) { // add joint de abs slots to CAN message
+                queryFormat.extra[0] = moteus::Query::ItemFormat{
+                        .register_number = moteus::Register::kEncoder1Position,
+                        .resolution = moteus::kFloat,
+                };
+                queryFormat.extra[1] = moteus::Query::ItemFormat{
+                        .register_number = moteus::Register::kEncoder1Velocity,
+                        .resolution = moteus::kFloat,
+                };
+            }
+            options.query_format = queryFormat;
+            mMoteus.emplace(options);
         }
 
         auto setDesiredThrottle(Percent throttle) -> void {
@@ -147,7 +164,7 @@ namespace mrover {
                     .maximum_torque = mMaxTorque,
                     .watchdog_timeout = mWatchdogTimeout,
             };
-            moteus::CanFdFrame positionFrame = mMoteus.MakePosition(command);
+            moteus::CanFdFrame positionFrame = mMoteus->MakePosition(command);
             mDevice.publish_moteus_frame(positionFrame);
         }
 
@@ -173,7 +190,7 @@ namespace mrover {
                     mCurrentPosition = OutputPosition{result.extra[0].value}; // get value of absolute encoder if its joint_de0/1
                     mCurrentVelocity = OutputVelocity{result.extra[1].value} / mVelocityMultiplier;
                 } else {
-                    mCurrentPosition = OutputPosition{result.position};                                // moteus stores position in revolutions.
+                    mCurrentPosition = OutputPosition{result.position};                       // moteus stores position in revolutions.
                     mCurrentVelocity = OutputVelocity{result.velocity} / mVelocityMultiplier; // moteus stores position in revolutions.
                 }
             }
@@ -219,7 +236,7 @@ namespace mrover {
                         .watchdog_timeout = mWatchdogTimeout,
                 };
 
-                moteus::CanFdFrame positionFrame = mMoteus.MakePosition(command);
+                moteus::CanFdFrame positionFrame = mMoteus->MakePosition(command);
                 ROS_INFO("sending this velocity: %f", command.velocity);
                 mDevice.publish_moteus_frame(positionFrame);
             }
@@ -232,12 +249,12 @@ namespace mrover {
         }
 
         auto setStop() -> void {
-            moteus::CanFdFrame setStopFrame = mMoteus.MakeStop();
+            moteus::CanFdFrame setStopFrame = mMoteus->MakeStop();
             mDevice.publish_moteus_frame(setStopFrame);
         }
 
         auto setBrake() -> void {
-            moteus::CanFdFrame setBrakeFrame = mMoteus.MakeBrake();
+            moteus::CanFdFrame setBrakeFrame = mMoteus->MakeBrake();
             mDevice.publish_moteus_frame(setBrakeFrame);
         }
 
@@ -296,28 +313,17 @@ namespace mrover {
                     .position = position.get(),
             };
             moteus::OutputExact::Command outputExactCmd{command};
-            moteus::CanFdFrame setPositionFrame = mMoteus.MakeOutputExact(outputExactCmd);
+            moteus::CanFdFrame setPositionFrame = mMoteus->MakeOutputExact(outputExactCmd);
             mDevice.publish_moteus_frame(setPositionFrame);
         }
 
         auto sendQuery() -> void {
-            moteus::Query::Format qFormat{};
-            qFormat.aux1_gpio = moteus::kInt8;
-            qFormat.aux2_gpio = moteus::kInt8;
-            if (this->isJointDe()) { // add joint de abs slots to CAN message
-                qFormat.extra[0] = moteus::Query::ItemFormat{
-                        .register_number = moteus::Register::kEncoder1Position,
-                        .resolution = moteus::kFloat};
-                qFormat.extra[1] = moteus::Query::ItemFormat{
-                        .register_number = moteus::Register::kEncoder1Velocity,
-                        .resolution = moteus::kFloat};
-            }
-            moteus::CanFdFrame queryFrame = mMoteus.MakeQuery(&qFormat);
+            moteus::CanFdFrame queryFrame = mMoteus->MakeQuery();
             mDevice.publish_moteus_frame(queryFrame);
         }
 
     private:
-        moteus::Controller mMoteus{moteus::Controller::Options{}};
+        std::optional<moteus::Controller> mMoteus;
         bool limitSwitch0Present{};
         bool limitSwitch1Present{};
         bool limitSwitch0Enabled{};
