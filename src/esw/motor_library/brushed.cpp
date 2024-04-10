@@ -2,8 +2,8 @@
 
 namespace mrover {
 
-    BrushedController::BrushedController(ros::NodeHandle const& nh, std::string name, std::string controllerName)
-        : ControllerBase{nh, std::move(name), std::move(controllerName)} {
+    BrushedController::BrushedController(ros::NodeHandle const& nh, std::string masterName, std::string controllerName)
+        : ControllerBase{nh, std::move(masterName), std::move(controllerName)} {
 
         XmlRpc::XmlRpcValue brushedMotorData;
         assert(mNh.hasParam(std::format("brushed_motors/controllers/{}", mControllerName)));
@@ -156,7 +156,7 @@ namespace mrover {
 
     auto BrushedController::processCANMessage(CAN::ConstPtr const& msg) -> void {
         assert(msg->source == mControllerName);
-        assert(msg->destination == mName);
+        assert(msg->destination == mMasterName);
 
         OutBoundMessage const& message = *reinterpret_cast<OutBoundMessage const*>(msg->data.data());
 

@@ -62,11 +62,11 @@ namespace mrover {
             // TODO: avoid hard coding Jetson here - can move into constructor of MotorsGroup
             // and let the bridge nodes hardcode as jetson.
             if (type == "brushed") {
-                mControllers.emplace(name, BrushedController{mNh, "jetson", name});
+                mControllers[name].emplace<BrushedController>(mNh, "jetson", name);
             } else if (type == "brushless") {
-                mControllers.emplace(name, BrushlessController<Radians>(mNh, "jetson", name));
+                mControllers[name].emplace<BrushlessController<Radians>>(mNh, "jetson", name);
             } else if (type == "brushless_linear") {
-                mControllers.emplace(name, BrushlessController<Meters>(mNh, "jetson", name));
+                mControllers[name].emplace<BrushlessController<Meters>>(mNh, "jetson", name);
             } else {
                 ROS_ERROR_STREAM(std::format("Unknown motor type %s!", type));
                 throw;

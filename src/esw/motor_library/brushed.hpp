@@ -18,7 +18,7 @@ namespace mrover {
     // For now only revolute joints are supported => hardcode to Radians
     class BrushedController final : public ControllerBase<Radians, BrushedController> {
     public:
-        BrushedController(ros::NodeHandle const& nh, std::string name, std::string controllerName);
+        BrushedController(ros::NodeHandle const& nh, std::string masterName, std::string controllerName);
 
         auto setDesiredThrottle(Percent throttle) -> void; // from -1.0 to 1.0
 

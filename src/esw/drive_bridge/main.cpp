@@ -12,7 +12,6 @@ void moveDrive(geometry_msgs::Twist::ConstPtr const& msg);
 ros::Publisher leftVelocityPub, rightVelocityPub;
 
 Meters WHEEL_DISTANCE_INNER;
-Meters WHEEL_DISTANCE_OUTER;
 compound_unit<Radians, inverse<Meters>> WHEEL_LINEAR_TO_ANGULAR;
 RadiansPerSecond MAX_MOTOR_SPEED;
 
@@ -23,9 +22,7 @@ auto main(int argc, char** argv) -> int {
 
     // Load rover dimensions and other parameters from the ROS parameter server
     auto roverWidth = requireParamAsUnit<Meters>(nh, "rover/width");
-    auto roverLength = requireParamAsUnit<Meters>(nh, "rover/length");
     WHEEL_DISTANCE_INNER = roverWidth / 2;
-    WHEEL_DISTANCE_OUTER = sqrt(((roverWidth / 2) * (roverWidth / 2)) + ((roverLength / 2) * (roverLength / 2)));
 
     auto ratioMotorToWheel = requireParamAsUnit<Dimensionless>(nh, "wheel/gear_ratio");
     auto wheelRadius = requireParamAsUnit<Meters>(nh, "wheel/radius");
@@ -37,14 +34,14 @@ auto main(int argc, char** argv) -> int {
 
     MAX_MOTOR_SPEED = maxLinearSpeed * WHEEL_LINEAR_TO_ANGULAR;
 
-    std::ignore = std::make_unique<MotorsGroup>(nh, "drive_left");
-    std::ignore = std::make_unique<MotorsGroup>(nh, "drive_right");
+    auto leftGroup = std::make_unique<MotorsGroup>(nh, "drive_left");
+    auto rightGroup = std::make_unique<MotorsGroup>(nh, "drive_right");
 
     leftVelocityPub = nh.advertise<Velocity>("drive_left_velocity_cmd", 1);
     rightVelocityPub = nh.advertise<Velocity>("drive_right_velocity_cmd", 1);
 
     // Subscribe to the ROS topic for drive commands
-    std::ignore = nh.subscribe<geometry_msgs::Twist>("cmd_vel", 1, moveDrive);
+    auto twistSubscriber = nh.subscribe<geometry_msgs::Twist>("cmd_vel", 1, moveDrive);
 
     // Enter the ROS event loop
     ros::spin();

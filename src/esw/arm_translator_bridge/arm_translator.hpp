@@ -35,6 +35,12 @@ namespace mrover {
     public:
         ArmTranslator() = default;
 
+        ArmTranslator(ArmTranslator const&) = delete;
+        ArmTranslator(ArmTranslator&&) = delete;
+
+        auto operator=(ArmTranslator const&) -> ArmTranslator& = delete;
+        auto operator=(ArmTranslator&&) -> ArmTranslator& = delete;
+
         explicit ArmTranslator(ros::NodeHandle& nh);
 
         auto processVelocityCmd(Velocity::ConstPtr const& msg) -> void;

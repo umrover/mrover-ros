@@ -28,11 +28,11 @@ namespace mrover {
         using OutputPosition = TOutputPosition;
         using OutputVelocity = compound_unit<OutputPosition, inverse<Seconds>>;
 
-        ControllerBase(ros::NodeHandle const& nh, std::string name, std::string controllerName)
+        ControllerBase(ros::NodeHandle const& nh, std::string masterName, std::string controllerName)
             : mNh{nh},
-              mName{std::move(name)},
+              mMasterName{std::move(masterName)},
               mControllerName{std::move(controllerName)},
-              mDevice{nh, mName, mControllerName},
+              mDevice{mNh, mMasterName, mControllerName},
               mIncomingCANSub{mNh.subscribe<CAN>(std::format("can/{}/in", mControllerName), 16, &ControllerBase::processCANMessage, this)},
               mMoveThrottleSub{mNh.subscribe<Throttle>(std::format("{}_throttle_cmd", mControllerName), 1, &ControllerBase::setDesiredThrottle, this)},
               mMoveVelocitySub{mNh.subscribe<Velocity>(std::format("{}_velocity_cmd", mControllerName), 1, &ControllerBase::setDesiredVelocity, this)},
@@ -43,6 +43,12 @@ namespace mrover {
               mPublishDataTimer{mNh.createTimer(ros::Duration{0.1}, &ControllerBase::publishDataCallback, this)},
               mAdjustServer{mNh.advertiseService(std::format("{}_adjust", mControllerName), &ControllerBase::adjustServiceCallback, this)} {
         }
+
+        ControllerBase(ControllerBase const&) = delete;
+        ControllerBase(ControllerBase&&) = delete;
+
+        auto operator=(ControllerBase const&) -> ControllerBase& = delete;
+        auto operator=(ControllerBase&&) -> ControllerBase& = delete;
 
         // TODO(quintin): Why can't I bind directly to &Derived::processCANMessage?
         auto processCANMessage(CAN::ConstPtr const& msg) -> void {
@@ -85,8 +91,8 @@ namespace mrover {
             static_cast<Derived*>(this)->adjust(OutputPosition{msg->values.front()});
         }
 
-        [[nodiscard]] auto isJointDE() const -> bool {
-            return mName == "joint_de_0" || mName == "joint_de_1";
+        [[nodiscard]] auto isJointDe() const -> bool {
+            return mControllerName == "joint_de_0" || mControllerName == "joint_de_1";
         }
 
         auto publishDataCallback(ros::TimerEvent const&) -> void {
@@ -129,7 +135,7 @@ namespace mrover {
     protected:
         Ratio mVelocityMultiplier;
         ros::NodeHandle mNh;
-        std::string mName, mControllerName;
+        std::string mMasterName, mControllerName;
         CanDevice mDevice;
         ros::Subscriber mIncomingCANSub;
         OutputPosition mCurrentPosition{};

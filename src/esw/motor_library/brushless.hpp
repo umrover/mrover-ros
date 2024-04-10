@@ -69,14 +69,14 @@ namespace mrover {
         using Base::mDevice;
         using Base::mErrorState;
         using Base::mLimitHit;
-        using Base::mName;
+        using Base::mMasterName;
         using Base::mNh;
         using Base::mState;
         using Base::mVelocityMultiplier;
 
     public:
-        BrushlessController(ros::NodeHandle const& nh, std::string name, std::string controllerName)
-            : Base{nh, std::move(name), std::move(controllerName)} {
+        BrushlessController(ros::NodeHandle const& nh, std::string masterName, std::string controllerName)
+            : Base{nh, std::move(masterName), std::move(controllerName)} {
 
             XmlRpc::XmlRpcValue brushlessMotorData;
             assert(mNh.hasParam(std::format("brushless_motors/controllers/{}", mControllerName)));
@@ -153,7 +153,7 @@ namespace mrover {
 
         auto processCANMessage(CAN::ConstPtr const& msg) -> void {
             assert(msg->source == mControllerName);
-            assert(msg->destination == mName);
+            assert(msg->destination == mMasterName);
             auto result = moteus::Query::Parse(msg->data.data(), msg->data.size());
             ROS_INFO("controller: %s    %3d p/a/v/t=(%7.3f,%7.3f,%7.3f,%7.3f)  v/t/f=(%5.1f,%5.1f,%3d) GPIO: Aux1-%X , Aux2-%X",
                      mControllerName.c_str(),
@@ -169,7 +169,7 @@ namespace mrover {
                      result.aux2_gpio);
 
             if constexpr (AreExponentsSame<OutputPosition, Radians>) {
-                if (this->isJointDE()) {
+                if (this->isJointDe()) {
                     mCurrentPosition = Revolutions{result.extra[0].value}; // get value of absolute encoder if its joint_de0/1
                     mCurrentVelocity = RevolutionsPerSecond{result.extra[1].value} / mVelocityMultiplier;
                 } else {
@@ -304,7 +304,7 @@ namespace mrover {
             moteus::Query::Format qFormat{};
             qFormat.aux1_gpio = moteus::kInt8;
             qFormat.aux2_gpio = moteus::kInt8;
-            if (this->isJointDE()) { // add joint de abs slots to CAN message
+            if (this->isJointDe()) { // add joint de abs slots to CAN message
                 qFormat.extra[0] = moteus::Query::ItemFormat{
                         .register_number = moteus::Register::kEncoder1Position,
                         .resolution = moteus::kFloat};

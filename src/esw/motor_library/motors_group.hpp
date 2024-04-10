@@ -16,11 +16,17 @@
 
 namespace mrover {
 
-    using Controller = std::variant<BrushedController, BrushlessController<Radians>, BrushlessController<Meters>>;
+    using Controller = std::variant<std::monostate, BrushedController, BrushlessController<Radians>, BrushlessController<Meters>>;
 
     class MotorsGroup {
     public:
         MotorsGroup() = default;
+
+        MotorsGroup(MotorsGroup const&) = delete;
+        MotorsGroup(MotorsGroup&&) = delete;
+
+        auto operator=(MotorsGroup const&) -> MotorsGroup& = delete;
+        auto operator=(MotorsGroup&&) -> MotorsGroup& = delete;
 
         MotorsGroup(ros::NodeHandle const& nh, std::string groupName);
 
@@ -54,7 +60,7 @@ namespace mrover {
         
         std::unordered_map<std::string, size_t> mIndexByName;
 
-        std::unordered_map<std::string, Controller> mControllers;
+        std::map<std::string, Controller> mControllers;
         std::string mGroupName;
         std::vector<std::string> mControllerNames;
 
