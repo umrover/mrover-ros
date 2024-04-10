@@ -162,7 +162,6 @@ brushless_motors:
       velocity_multiplier: 1.0
       min_velocity: -100.0
       max_velocity: 100.0
-      is_linear: true
       rad_to_meters_ratio: 157.48 #rad/m
       limit_0_present: false
       limit_1_present: false
@@ -288,7 +287,6 @@ brushed_motors:
     sa_x:
       velocity_multiplier: 1.0
       gear_ratio: 75.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
-      is_linear: true
       rad_to_meters_ratio: 1.0 #TODO 5.0 = 5 motor radians -> 1 meter
       limit_0_present: false
       limit_1_present: false
@@ -318,7 +316,6 @@ brushed_motors:
     sa_y:
       velocity_multiplier: -1.0
       gear_ratio: 75.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
-      is_linear: true
       rad_to_meters_ratio: 1.0 #TODO 5.0 = 5 motor radians -> 1 meter
       limit_0_present: false
       limit_1_present: false
@@ -342,7 +339,6 @@ brushed_motors:
       calibration_throttle: 0.5  # throttle during calibration
     sampler:
       gear_ratio: 75.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
-      is_linear: true
       rad_to_meters_ratio: 1.0 #TODO 5.0 = 5 motor radians -> 1 meter
       limit_0_present: false
       limit_1_present: false
