@@ -45,7 +45,7 @@ public:
   }
 
   template <IsI2CSerializable ImmediateTSend = TSend>
-  auto blocking_transact(std::uint16_t address, ImmediateTSend const &send)
+  auto blocking_transact(std::uint16_t address, ImmediateTSend send)
       -> std::optional<TReceive> {
     if (HAL_I2C_Master_Transmit(m_i2c, address << 1, address_of<ImmediateTSend>(send),
                                 sizeof(send), I2C_TIMEOUT) != HAL_OK) {
@@ -66,7 +66,7 @@ public:
   }
 
   template <IsI2CSerializable ImmediateTSend = TSend>
-  auto async_transmit(const std::uint16_t address, ImmediateTSend const &send) -> void {
+  auto async_transmit(const std::uint16_t address, ImmediateTSend send) -> void {
     // TODO: make sure actually sends to absolute encoder
     check(HAL_I2C_Master_Transmit_DMA(m_i2c, address << 1,
                                       address_of<ImmediateTSend>(send),
