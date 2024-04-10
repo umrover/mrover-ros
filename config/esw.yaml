@@ -548,18 +548,19 @@ motors_group:
     - "sa_z"
     - "sampler"
     - "sensor_actuator"
-  drive:
+  drive_left:
     - "front_left"
-    - "front_right"
     - "middle_left"
-    - "middle_right"
     - "back_left"
+  drive_right:
+    - "front_right"
+    - "middle_right"
     - "back_right"
 
 motors:
   controllers:
     joint_a:
-      type: "brushless"
+      type: "brushless_linear"
     joint_b:
       type: "brushed"
     joint_c:

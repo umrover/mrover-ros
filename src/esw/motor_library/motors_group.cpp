@@ -62,9 +62,14 @@ namespace mrover {
             // TODO: avoid hard coding Jetson here - can move into constructor of MotorsGroup
             // and let the bridge nodes hardcode as jetson.
             if (type == "brushed") {
-                mControllers.emplace(name, std::make_unique<BrushedController>(mNh, "jetson", name));
+                mControllers.emplace(name, BrushedController{mNh, "jetson", name});
             } else if (type == "brushless") {
-                mControllers.emplace(name, std::make_unique<BrushlessController>(mNh, "jetson", name));
+                mControllers.emplace(name, BrushlessController<Radians>(mNh, "jetson", name));
+            } else if (type == "brushless_linear") {
+                mControllers.emplace(name, BrushlessController<Meters>(mNh, "jetson", name));
+            } else {
+                ROS_ERROR_STREAM(std::format("Unknown motor type %s!", type));
+                throw;
             }
         }
 
@@ -76,8 +81,8 @@ namespace mrover {
         mJointDataPub = mNh.advertise<sensor_msgs::JointState>(std::format("{}_joint_data", mGroupName), 1);
     }
 
-    auto MotorsGroup::getController(std::string const& name) const -> Controller& {
-        return *mControllers.at(name);
+    auto MotorsGroup::getController(std::string const& name) -> Controller& {
+        return mControllers.at(name);
     }
 
     auto MotorsGroup::moveMotorsThrottle(Throttle::ConstPtr const& msg) -> void {

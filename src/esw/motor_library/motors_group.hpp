@@ -5,7 +5,8 @@
 #include <ros/ros.h>
 #include <sensor_msgs/JointState.h>
 
-#include <controller.hpp>
+#include <brushed.hpp>
+#include <brushless.hpp>
 
 #include <mrover/ControllerState.h>
 #include <mrover/Position.h>
@@ -15,13 +16,15 @@
 
 namespace mrover {
 
+    using Controller = std::variant<BrushedController, BrushlessController<Radians>, BrushlessController<Meters>>;
+
     class MotorsGroup {
     public:
         MotorsGroup() = default;
 
         MotorsGroup(ros::NodeHandle const& nh, std::string groupName);
 
-        auto getController(std::string const& name) const -> Controller&;
+        auto getController(std::string const& name) -> Controller&;
 
         auto moveMotorsThrottle(Throttle::ConstPtr const& msg) -> void;
 
@@ -51,7 +54,7 @@ namespace mrover {
         
         std::unordered_map<std::string, size_t> mIndexByName;
 
-        std::unordered_map<std::string, std::unique_ptr<Controller>> mControllers;
+        std::unordered_map<std::string, Controller> mControllers;
         std::string mGroupName;
         std::vector<std::string> mControllerNames;
 

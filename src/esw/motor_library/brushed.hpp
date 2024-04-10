@@ -15,32 +15,35 @@ namespace mrover {
         double p{}, i{}, d{}, ff{};
     };
 
-    class BrushedController : public Controller {
+    // For now only revolute joints are supported => hardcode to Radians
+    class BrushedController final : public ControllerBase<Radians, BrushedController> {
     public:
-        void setDesiredThrottle(Percent throttle) override; // from -1.0 to 1.0
-        void setDesiredVelocity(RadiansPerSecond velocity) override;
-        void setDesiredPosition(Radians position) override;
-        void adjust(Radians position) override;
-
-        void processCANMessage(CAN::ConstPtr const& msg) override;
-
-        void processMessage(ControllerDataState const& state);
-
-        void processMessage(DebugState const&) {}
-
-        void sendConfiguration();
-
-        double getEffort() override;
-
         BrushedController(ros::NodeHandle const& nh, std::string name, std::string controllerName);
-        ~BrushedController() override = default;
 
-        bool calibrateServiceCallback(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
+        auto setDesiredThrottle(Percent throttle) -> void; // from -1.0 to 1.0
+
+        auto setDesiredPosition(Radians position) -> void;
+
+        auto setDesiredVelocity(RadiansPerSecond velocity) -> void;
+
+        auto adjust(Radians position) -> void;
+
+        auto processCANMessage(CAN::ConstPtr const& msg) -> void;
+
+        auto processMessage(ControllerDataState const& state) -> void;
+
+        auto processMessage(DebugState const&) -> void {}
+
+        auto sendConfiguration() -> void;
+
+        auto getEffort() -> double;
+
+        auto calibrateServiceCallback(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res) -> bool;
 
     private:
-        static std::string errorToString(BDCMCErrorInfo errorCode);
+        static auto errorToString(BDCMCErrorInfo errorCode) -> std::string;
 
-        bool mIsConfigured = false;
+        bool mIsConfigured{false};
         ConfigCommand mConfigCommand;
 
         Gains mPositionGains;

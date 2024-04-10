@@ -3,16 +3,16 @@
 namespace mrover {
 
     BrushedController::BrushedController(ros::NodeHandle const& nh, std::string name, std::string controllerName)
-        : Controller{nh, std::move(name), std::move(controllerName)} {
+        : ControllerBase{nh, std::move(name), std::move(controllerName)} {
 
         XmlRpc::XmlRpcValue brushedMotorData;
         assert(mNh.hasParam(std::format("brushed_motors/controllers/{}", mControllerName)));
         mNh.getParam(std::format("brushed_motors/controllers/{}", mControllerName), brushedMotorData);
         assert(brushedMotorData.getType() == XmlRpc::XmlRpcValue::TypeStruct);
 
-        mVelocityMultiplier = Dimensionless{xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "velocity_multiplier", 1.0)};
-        if (mVelocityMultiplier.get() == 0) {
-            throw std::runtime_error("Velocity multiplier can't be 0!");
+        mVelocityMultiplier = Ratio{xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "velocity_multiplier", 1.0)};
+        if (abs(mVelocityMultiplier) < Ratio{1e-5}) {
+            throw std::runtime_error{"Velocity output must be nonzero"};
         }
 
         mConfigCommand.gear_ratio = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "gear_ratio");
@@ -62,13 +62,11 @@ namespace mrover {
         mVelocityGains.ff = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "velocity_ff", 0.0);
 
         for (int i = 0; i < 4; ++i) {
-            mhasLimit |= xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, std::format("limit_{}_enabled", i), false);
+            mHasLimit |= xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, std::format("limit_{}_enabled", i), false);
         }
         mCalibrationThrottle = Percent{xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "calibration_throttle", 0.0)};
         mErrorState = "Unknown";
         mState = "Unknown";
-
-        mAvoidConversionToRevolutions = xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, "avoid_conversion_to_revolutions", false);
     }
 
     auto BrushedController::setDesiredThrottle(Percent throttle) -> void {
@@ -79,7 +77,7 @@ namespace mrover {
 
         assert(throttle >= -1_percent && throttle <= 1_percent);
 
-        if (mVelocityMultiplier.get() < 0) {
+        if (mVelocityMultiplier < Ratio{0}) {
             throttle *= -1.0;
         }
 
@@ -190,14 +188,14 @@ namespace mrover {
     }
 
     auto BrushedController::calibrateServiceCallback([[maybe_unused]] std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res) -> bool {
-        if (!mhasLimit) {
+        if (!mHasLimit) {
             res.success = false;
-            res.message = mControllerName + " does not have limit switches, cannot calibrate";
+            res.message = std::format("{} does not have limit switches, cannot calibrate", mControllerName);
             return true;
         }
         if (mIsCalibrated) {
             res.success = false;
-            res.message = mControllerName + " already calibrated";
+            res.message = std::format("{} already calibrated", mControllerName);
             return true;
         }
         // sends throttle command until a limit switch is hit
