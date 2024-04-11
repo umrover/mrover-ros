@@ -133,7 +133,7 @@ int main(void)
 	  // turns the lights on/off for 1 second
 	  //flip_flop_lights();
 
-	  uint32_t delay_between_switch = 2000;
+ 	  uint32_t delay_between_switch = 2000;
 	  ramp_up_down_reverse(delay_between_switch);
 		TIM15->CCR1 = 100;
 		HAL_Delay(delay_between_switch);
