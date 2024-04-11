@@ -29,6 +29,7 @@ ADD --chown=mrover:mrover ./pkg ./pkg
 RUN ./ansible.sh ci.yml
 
 USER root
+RUN apt-get purge ansible -y && apt-get autoremove -y
 # Remove apt cache to free up space in the image
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 

@@ -6,11 +6,10 @@ Logs the service request to stdout
 
 from typing import Any
 import rospy
-from mrover.srv import AdjustMotor, AdjustMotorResponse
-from std_srvs.srv import Trigger, TriggerResponse, SetBool, SetBoolResponse
+from std_srvs.srv import SetBool, SetBoolResponse
 
 # Change these values for the service name and type definition to test different values
-SERVICE_NAME = "enable_arm_laser"
+SERVICE_NAME = "science_enable_heater_b1"
 SERVICE_TYPE = SetBool
 
 

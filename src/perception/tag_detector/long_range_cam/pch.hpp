@@ -28,8 +28,8 @@
 #include <sensor_msgs/image_encodings.h>
 #include <std_srvs/SetBool.h>
 
-#include <loop_profiler.hpp>
 #include <lie.hpp>
+#include <loop_profiler.hpp>
 
 #include <mrover/LongRangeTag.h>
 #include <mrover/LongRangeTags.h>

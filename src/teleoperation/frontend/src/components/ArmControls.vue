@@ -136,7 +136,7 @@ export default defineComponent({
           max: 135
         }
       },
-      positions: []
+      positions: [],
     }
   },
 
@@ -153,6 +153,15 @@ export default defineComponent({
         }
       }
     }
+  },
+
+  mounted: function() {
+    document.addEventListener('keydown', this.keyDown);
+  },
+
+  beforeUnmount: function () {
+    window.clearInterval(interval)
+    document.removeEventListener('keydown', this.keyMonitorDown)
   },
 
   created: function () {
@@ -212,7 +221,13 @@ export default defineComponent({
       this.positions = Object.values(this.temp_positions).map(
         (obj) => (Number(obj.value) * Math.PI) / 180
       )
-    }
+    },
+
+    keyDown: function(event: { key: string }) {
+      if (event.key == ' ') {
+        this.arm_mode = 'arm_disabled';
+      }
+    },
   }
 })
 </script>
