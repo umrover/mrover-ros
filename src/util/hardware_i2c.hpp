@@ -69,7 +69,7 @@ public:
   auto async_transmit(const std::uint16_t address, ImmediateTSend send) -> void {
     // TODO: make sure actually sends to absolute encoder
     check(HAL_I2C_Master_Transmit_DMA(m_i2c, address << 1,
-                                      address_of<ImmediateTSend>(send),
+                                      address_of<uint8_t>(send),
                                       sizeof(send)) == HAL_OK,
           Error_Handler);
     while (HAL_I2C_GetState(m_i2c) != HAL_I2C_STATE_READY) {
@@ -79,7 +79,7 @@ public:
   auto async_receive(const std::uint16_t address) -> void {
     m_receive_buffer = TReceive{};
     check(HAL_I2C_Master_Receive_DMA(m_i2c, address << 1 | 1,
-                                     address_of<TReceive>(m_receive_buffer),
+                                     address_of<uint8_t>(m_receive_buffer),
                                      sizeof(m_receive_buffer)) == HAL_OK,
           Error_Handler);
   }
