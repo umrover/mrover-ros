@@ -80,7 +80,7 @@ namespace mrover {
 
         for (const Vector5d& point : mPathPoints) {
             double K1 = .3;
-            double K2 = 0.5;
+            double K2 = 0.3;
             double K3 = 0.5;  
 
             // Grab the current target state from the spline
@@ -111,7 +111,7 @@ namespace mrover {
                             -std::sin(roverHeading), std::cos(roverHeading), 0,
                             0,                       0,                      1;
                 
-                Eigen::Vector3d errState = rotation * (tarState - currState); // maybe check error angle incase anything goes silly
+                Eigen::Vector3d errState = rotation * (currState - tarState); // maybe check error angle incase anything goes silly
                 ROS_INFO_STREAM("err state " << errState.coeff(0,0) << ", " << errState.coeff(1,0) << ", " << errState.coeff(2,0));
                 
                 ROS_INFO_STREAM("Rover Heading " << roverHeading);
@@ -122,9 +122,10 @@ namespace mrover {
                 ros::Rate r(10);
                 r.sleep();
                 double v = (point.coeff(3, 0) - K1 * abs(point.coeff(3, 0) * (errState.x() + errState.y() * tan(errState.z()))))/(cos(errState.z()));
-                double omega = point.coeff(4, 0) + ((K2*point.coeff(3, 0)*errState.y() + K3*abs(point.coeff(3, 0))*tan(errState.z()))*pow(cos(errState.z()), 2));
+                double omega = point.coeff(4, 0) - ((K2*point.coeff(3, 0)*errState.y() + K3*abs(point.coeff(3, 0))*tan(errState.z()))*pow(cos(errState.z()), 2));
                 ROS_INFO_STREAM("v: " << v);
                 ROS_INFO_STREAM("omega: " << omega);
+                ROS_INFO_STREAM("tan: " << tan(errState.z()));
                 
                 twist.angular.z = omega;
                 twist.linear.x = v;
