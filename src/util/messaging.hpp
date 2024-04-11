@@ -86,6 +86,13 @@ namespace mrover {
         float p{}, i{}, d{};
     };
 
+    using RadiansPerSecondPerSecond = compound_unit<RadiansPerSecond, inverse<Seconds>>;
+    struct PositionCommandProfiled : BaseCommand {
+        Radians position;
+        float p{}, i{}, d{}, ff{};
+        RadiansPerSecondPerSecond max_acceleration;
+    };
+
     struct ControllerDataState {
         Radians position;
         RadiansPerSecond velocity;
