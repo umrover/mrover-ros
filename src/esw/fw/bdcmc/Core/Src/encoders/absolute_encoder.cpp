@@ -33,7 +33,7 @@ namespace mrover {
     }
 
     auto AbsoluteEncoderReader::request_raw_angle() -> void {
-        m_i2cBus.async_transmit<std::uint16_t>(m_address, REQUEST_ANGLE);
+        m_i2cBus.async_transmit(m_address, REQUEST_ANGLE);
     }
 
     auto AbsoluteEncoderReader::read_raw_angle_into_buffer() -> void {

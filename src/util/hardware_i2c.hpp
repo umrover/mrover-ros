@@ -65,7 +65,6 @@ public:
     }
   }
 
-  template <IsI2CSerializable ImmediateTSend = TSend>
   auto async_transmit(const std::uint16_t address, ImmediateTSend send) -> void {
     // TODO: make sure actually sends to absolute encoder
     check(HAL_I2C_Master_Transmit_DMA(m_i2c, address << 1,
