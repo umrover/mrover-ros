@@ -29,12 +29,15 @@ namespace mrover {
 
         void onInit() override;
 
+        ros::ServiceServer mServer;
+
     public:
         CostMapNodelet() = default;
 
         ~CostMapNodelet() override = default;
 
         auto pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg) -> void;
+        auto moveCostMapCallback(MoveCostMap::Request& req, MoveCostMap::Response& res) -> bool;
     };
 
 } // namespace mrover

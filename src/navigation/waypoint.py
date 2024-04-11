@@ -1,10 +1,11 @@
 import tf2_ros
-
+import rospy
 from util.ros_utils import get_rosparam
 from util.state_lib.state import State
 
 from navigation import search, recovery, approach_post, post_backup, state, approach_object, long_range, water_bottle_search
 from mrover.msg import WaypointType
+from mrover.srv import MoveCostMap
 
 
 class WaypointState(State):
@@ -13,6 +14,16 @@ class WaypointState(State):
     NO_FIDUCIAL = get_rosparam("waypoint/no_fiducial", -1)
 
     def on_enter(self, context) -> None:
+        #TODO: In context find the access for type of waypoint
+        
+        current_waypoint = context.course.current_waypoint()
+        if current_waypoint.type.val == WaypointType.WATER_BOTTLE:
+            rospy.wait_for_service("move_cost_map")
+            move_cost_map = rospy.ServiceProxy("move_cost_map", MoveCostMap)
+            try:
+                resp = move_cost_map(f"course{context.course.waypoint_index}")
+            except rospy.ServiceException as exc:
+                rospy.logerr(f"Service call failed: {exc}")
         pass
 
     def on_exit(self, context) -> None:

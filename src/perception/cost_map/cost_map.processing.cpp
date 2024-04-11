@@ -37,7 +37,7 @@ namespace mrover {
                     int yIndex = std::floor((yInMap - mGlobalGridMsg.info.origin.position.y) / mGlobalGridMsg.info.resolution);
                     auto costMapIndex = mGlobalGridMsg.info.width * yIndex + xIndex;
 
-                    // Z is the vertical component of of hte normal
+                    // Z is the vertical component of the normal
                     // A small Z component indicates largely horizontal normal (surface is vertical)
                     std::int8_t cost = normalInMap.z() < mNormalThreshold ? OCCUPIED_COST : FREE_COST;
 

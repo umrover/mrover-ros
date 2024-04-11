@@ -18,3 +18,4 @@
 
 #include <lie.hpp>
 #include <point.hpp>
+#include <mrover/MoveCostMap.h>

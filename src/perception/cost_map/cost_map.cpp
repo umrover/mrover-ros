@@ -11,6 +11,8 @@ namespace mrover {
 
         mCostMapPub = mCmt.advertise<nav_msgs::OccupancyGrid>("costmap", 1); // We publish our results to "costmap"
 
+        mServer = mNh.advertiseService("move_cost_map", &CostMapNodelet::moveCostMapCallback, this);
+
         mPcSub = mNh.subscribe("camera/left/points", 1, &CostMapNodelet::pointCloudCallback, this);
 
         mGlobalGridMsg.info.resolution = mResolution;
@@ -23,4 +25,11 @@ namespace mrover {
         mGlobalGridMsg.data.resize(mGlobalGridMsg.info.width * mGlobalGridMsg.info.height, UNKNOWN_COST);
     }
 
+    auto CostMapNodelet::moveCostMapCallback(MoveCostMap::Request& req, MoveCostMap::Response& res) -> bool {
+        SE3d waypointPos = SE3Conversions::fromTfTree(mTfBuffer, req.course, "map");
+        mGlobalGridMsg.info.origin.position.x = waypointPos.x() - 1 * mDimension / 2;
+        mGlobalGridMsg.info.origin.position.y = waypointPos.y() - 1 * mDimension / 2;
+        res.success = true;
+        return true;
+    }
 } // namespace mrover
