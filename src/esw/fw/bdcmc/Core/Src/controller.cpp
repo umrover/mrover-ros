@@ -75,10 +75,8 @@ namespace mrover {
         check(HAL_TIM_Base_Start(MOTION_PROFILE_TIMER) == HAL_OK, Error_Handler);
         check(HAL_TIM_Base_Start_IT(SEND_TIMER) == HAL_OK, Error_Handler);
         check(HAL_TIM_Base_Start_IT(ABSOLUTE_ENCODER_TIMER) == HAL_OK, Error_Handler);
-    }
 
-    auto test_mopro_command() -> void {
-        std::variant<AdjustCommand, ConfigCommand, >
+        controller.test_mopro_command();
     }
 
     auto fdcan_received_callback() -> void {

@@ -381,6 +381,19 @@ namespace mrover {
               m_limit_switches{limit_switches} {
         }
 
+        auto test_mopro_command() -> void {
+            InBoundMessage message = PositionCommandProfiled{
+                    .position = Radians{0.0},
+                    .p = 0.0,
+                    .i = 0.0,
+                    .d = 0.0,
+                    .ff = 0.0,
+                    .max_acceleration = RadiansPerSecondPerSecond{0.0}
+            };
+
+            receive(message);
+        }
+
         template<typename Command>
         auto process_command(Command const& command) -> void {
             // Find the "process_command" function that has the right type for the command
