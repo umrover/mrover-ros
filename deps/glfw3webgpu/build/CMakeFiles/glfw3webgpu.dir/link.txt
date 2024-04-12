@@ -1,2 +1,0 @@
-/usr/bin/ar qc libglfw3webgpu.a CMakeFiles/glfw3webgpu.dir/src/glfw3webgpu.c.o
-/usr/bin/ranlib libglfw3webgpu.a
