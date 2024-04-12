@@ -80,8 +80,8 @@ namespace mrover {
 
         for (const Vector5d& point : mPathPoints) {
             double K1 = .3;
-            double K2 = 0.3;
-            double K3 = 0.5;  
+            double K2 = 1;
+            double K3 = 1;  
 
             // Grab the current target state from the spline
             Eigen::Vector3d tarState{point.coeff(0, 0), point.coeff(1, 0), point.coeff(2, 0)};
@@ -97,7 +97,7 @@ namespace mrover {
 
             double distanceToTarget = std::numeric_limits<double>::max();
 
-            while (ros::ok() && distanceToTarget > 0.3) {
+            while (ros::ok() && distanceToTarget > 0.7) {
                 roverInWorld = SE3Conversions::fromTfTree(mTfBuffer, "base_link", "map");
                 Eigen::Vector3d xOrientation = roverInWorld.rotation().col(0); 
                 double roverHeading = calcAngleWithWorldX(xOrientation);
