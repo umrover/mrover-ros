@@ -206,6 +206,7 @@ export default {
 
 .wrap {
   align-items: center;
+  width: 100%;
   height: 100%;
   display: grid;
   overflow: hidden;
@@ -217,22 +218,6 @@ export default {
     'map'
     'controls';
 }
-
-/* .custom-tooltip {
->>>>>>> 467f453fc814fb83532e90412d432c5622b2afcf
-  display: inline-block;
-  margin: 10px 20px;
-  opacity: 1;
-  position: relative;
-}
-
-.custom-tooltip .tooltip-inner {
-  background: #0088cc;
-}
-
-.custom-tooltip.top .tooltip-arrow {
-  border-top-color: #0088cc;
-} */
 
 /* Grid area declarations */
 .map {
