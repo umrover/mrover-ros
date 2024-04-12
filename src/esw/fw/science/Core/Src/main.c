@@ -191,7 +191,6 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_THREADS */
 
-  // TODO - Using spectral causes a hardfault!!!
   SpectralTaskHandle = osThreadNew(SpectralTask, NULL, &SpectralTask_attributes);
   ThermistorAndAutoShutoffTaskHandle = osThreadNew(ThermistorAndAutoShutoffTask, NULL, &ThermistorAndAutoShutoffTask_attributes);
 
@@ -582,12 +581,11 @@ void SpectralTask(void *argument) {
 	for(;;) {
 		tick = osKernelGetTickCount() + osKernelGetTickFreq(); // 1 Hz
 
-		// finish
-//		poll_spectral_status();
 		update_and_send_spectral();
 		osDelayUntil(tick);
 	}
 }
+
 void ThermistorAndAutoShutoffTask(void *argument) {
 	uint32_t tick = osKernelGetTickCount();
 	for(;;) {

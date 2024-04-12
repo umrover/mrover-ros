@@ -110,7 +110,6 @@ namespace mrover {
         }
 
         void reboot_i2c() {
-        	//m_spectral_sensors.at(0).reboot();
         	m_i2c_bus->reboot();
         }
 
@@ -123,9 +122,7 @@ namespace mrover {
 				spectral_data.error =
 						m_spectral_sensors.at(i).is_error();
 				if (spectral_data.error) {
-
-//					reboot_i2c(); // This causes a crash
-
+					reboot_i2c(); // Does this still cause crashes?
 				}
         		for (int j = 0; j < 6; ++j) {
 					spectral_data.data.at(j) =
