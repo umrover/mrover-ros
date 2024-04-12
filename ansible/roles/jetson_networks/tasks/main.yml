@@ -10,3 +10,11 @@
     gw4: 10.1.0.2
     dns4: [10.1.0.2]
     method6: disabled
+- name: Install the can0 systemd service
+  become: True
+  #Insert method of installation. Maybe make a package and install it
+- name: Start up the can systemd service
+  become: True
+  ansible.builtin.systemd_service:
+    state: started
+    name: can0
