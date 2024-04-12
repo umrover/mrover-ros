@@ -23,6 +23,7 @@ extern I2C_HandleTypeDef hi2c1;
 
 extern TIM_HandleTypeDef htim2;
 extern TIM_HandleTypeDef htim3;
+extern TIM_HandleTypeDef htim4;
 extern TIM_HandleTypeDef htim6;
 extern TIM_HandleTypeDef htim7;
 extern TIM_HandleTypeDef htim8;
@@ -31,7 +32,7 @@ extern TIM_HandleTypeDef htim16;
 extern TIM_HandleTypeDef htim17;
 
 #define QUADRATURE_TICK_TIMER_1 &htim3 // Special encoder timer which externally reads quadrature encoder ticks
-// #define QUADRATURE_TIMER_2 &htim4
+#define MOTION_PROFILE_TIMER &htim4        // Mesasures time since last motion profile update
 #define QUADRATURE_ELAPSED_TIMER_1 &htim17 // Measures time since the lsat quadrature tick reading
 #define ABSOLUTE_ENCODER_TIMER &htim2      // 20 Hz repeating timer to kick off I2C transactions with the absolute encoder
 #define THROTTLE_LIMIT_TIMER &htim6        // Measures time since the last throttle command
@@ -53,11 +54,11 @@ namespace mrover {
                 Pin{GPIOC, GPIO_PIN_6},
                 fdcan_bus,
                 FDCAN_WATCHDOG_TIMER,
-                MOTION_PROFILE_TIMER,
                 QUADRATURE_TICK_TIMER_1,
                 QUADRATURE_ELAPSED_TIMER_1,
                 THROTTLE_LIMIT_TIMER,
                 PIDF_TIMER,
+                MOTION_PROFILE_TIMER,
                 ABSOLUTE_I2C,
                 {
                         LimitSwitch{Pin{LIMIT_0_0_GPIO_Port, LIMIT_0_0_Pin}},

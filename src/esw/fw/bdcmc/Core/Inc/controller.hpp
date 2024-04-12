@@ -366,17 +366,17 @@ namespace mrover {
         Controller(TIM_HandleTypeDef* hbridge_output, Pin hbridge_forward_pin, Pin hbridge_backward_pin,
                    FDCAN<InBoundMessage> const& fdcan, TIM_HandleTypeDef* watchdog_timer,
                    TIM_HandleTypeDef* encoder_tick_timer,
-                   TIM_HandleTypeDef* encoder_elapsed_timer, TIM_HandleTypeDef* throttle_timer, TIM_HandleTypeDef* pid_timer,
+                   TIM_HandleTypeDef* encoder_elapsed_timer, TIM_HandleTypeDef* throttle_timer, TIM_HandleTypeDef* pid_timer, TIM_HandleTypeDef* profile_timer,
                    I2C_HandleTypeDef* absolute_encoder_i2c,
                    std::array<LimitSwitch, 4> const& limit_switches)
             : m_fdcan{fdcan},
               m_motor_driver{HBridge(hbridge_output, hbridge_forward_pin, hbridge_backward_pin)},
               m_watchdog_timer{watchdog_timer},
-              m_profile_timer{profile_timer},
               m_encoder_timer{encoder_tick_timer},
               m_encoder_elapsed_timer{encoder_elapsed_timer},
               m_throttle_timer{throttle_timer},
               m_pidf_timer{pid_timer},
+              m_profile_timer{profile_timer},
               m_absolute_encoder_i2c{absolute_encoder_i2c},
               m_limit_switches{limit_switches} {
         }
