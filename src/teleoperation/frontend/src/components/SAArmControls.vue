@@ -112,25 +112,7 @@ export default defineComponent({
 
   created: function () {
     interval = window.setInterval(() => {
-      const gamepads = navigator.getGamepads()
-      for (let i = 0; i < 4; i++) {
-        const gamepad = gamepads[i]
-        if (gamepad) {
-          // Microsoft and Xbox for old Xbox 360 controllers
-          // X-Box for new PowerA Xbox One controllers
-          if (
-            gamepad.id.includes('Microsoft') ||
-            gamepad.id.includes('Xbox') ||
-            gamepad.id.includes('X-Box')
-          ) {
-            let buttons = gamepad.buttons.map((button) => {
-              return button.value
-            })
-
-            this.publishJoystickMessage(gamepad.axes, buttons, this.arm_mode, this.positions)
-          }
-        }
-      }
+      this.publishJoystickMessage(this.arm_mode, this.positions)
     }, updateRate * 1000)
   },
 
@@ -161,12 +143,10 @@ export default defineComponent({
       joint.value = event.target.value
     },
 
-    publishJoystickMessage: function (axes: any, buttons: any, arm_mode: any, positions: any) {
+    publishJoystickMessage: function (arm_mode: any, positions: any) {
       if (arm_mode != 'arm_disabled') {
         this.sendMessage({
           type: 'sa_arm_values',
-          axes: axes,
-          buttons: buttons,
           arm_mode: arm_mode,
           positions: positions
         })
