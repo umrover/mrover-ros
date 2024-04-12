@@ -138,8 +138,7 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.flight_thread.start()
 
             self.xbox = Xbox()
-            rospy.logerr(self.xbox)
-            self.xbox_thread = threading.Thread(target=self.xbox.run())
+            self.xbox_thread = threading.Thread(target=self.xbox.run)
             self.xbox_thread.start()
 
         except Exception as e:
@@ -262,15 +261,11 @@ class GUIConsumer(JsonWebsocketConsumer):
 
     def handle_controls_message(self, msg):
         axes, buttons = self.xbox.get_gamepad_input()
-        rospy.logerr(axes)
         CACHE = ["cache"]
         SA_NAMES = ["sa_x", "sa_y", "sa_z", "sampler", "sensor_actuator"]
         RA_NAMES = self.RA_NAMES
-        ra_slow_mode = False
-        raw_left_trigger = axes[self.xbox_mappings["left_trigger"]]
-        left_trigger = raw_left_trigger if raw_left_trigger > 0 else 0
-        raw_right_trigger = axes[self.xbox_mappings["right_trigger"]]
-        right_trigger = raw_right_trigger if raw_right_trigger > 0 else 0
+        left_trigger = self.filter_xbox_axis(axes[self.xbox_mappings["left_trigger"]])
+        right_trigger = self.filter_xbox_axis(axes[self.xbox_mappings["right_trigger"]])
         arm_pubs = [self.arm_position_cmd_pub, self.arm_velocity_cmd_pub, self.arm_throttle_cmd_pub, self.arm_ik_pub]
         sa_pubs = [self.sa_position_cmd_pub, self.sa_velocity_cmd_pub, self.sa_throttle_cmd_pub]
         cache_pubs = [self.cache_position_cmd_pub, self.cache_velocity_cmd_pub, self.cache_throttle_cmd_pub]
@@ -289,13 +284,6 @@ class GUIConsumer(JsonWebsocketConsumer):
         if msg["arm_mode"] == "ik":
             ee_in_map = SE3.from_tf_tree(self.tf_buffer, "base_link", "arm_e_link")
 
-            left_trigger = self.filter_xbox_axis(axes[self.xbox_mappings["left_trigger"]])
-            if left_trigger < 0:
-                left_trigger = 0
-
-            right_trigger = self.filter_xbox_axis(axes[self.xbox_mappings["right_trigger"]])
-            if right_trigger < 0:
-                right_trigger = 0
             ee_in_map.position[0] += (
                 self.ik_names["x"] * self.filter_xbox_axis(axes[self.xbox_mappings["left_js_x"]]),
             )
@@ -384,10 +372,7 @@ class GUIConsumer(JsonWebsocketConsumer):
                         axes[self.ra_config["joint_de_pitch"]["xbox_index_right"]]
                         - axes[self.ra_config["joint_de_pitch"]["xbox_index_left"]]
                     ),
-                    self.filter_xbox_axis(
-                        buttons[self.ra_config["joint_de_roll"]["xbox_index_right"]]
-                        - buttons[self.ra_config["joint_de_roll"]["xbox_index_left"]]
-                    ),
+                    self.filter_xbox_button( buttons, "right_bumper", "left_bumper"), # de_roll
                     self.ra_config["allen_key"]["multiplier"] * self.filter_xbox_button(buttons, "y", "a"),
                     self.ra_config["gripper"]["multiplier"] * self.filter_xbox_button(buttons, "b", "x"),
                 ]
@@ -720,7 +705,6 @@ class GUIConsumer(JsonWebsocketConsumer):
 
     def auto_shutoff_toggle(self, msg):
         try:
-            rospy.logerr(msg)
             result = self.heater_auto_shutoff_srv(data=msg["shutoff"])
             self.send(text_data=json.dumps({"type": "auto_shutoff", "success": result.success}))
         except rospy.ServiceException as e:

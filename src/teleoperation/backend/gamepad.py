@@ -17,7 +17,6 @@ class Xbox():
         """
         Reads Xbox input and returns an array of axes and buttons
         """
-        rospy.logerr(self.gamepad)
         axes = [
             self.gamepad.leftx,
             self.gamepad.lefty,
