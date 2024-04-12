@@ -23,9 +23,9 @@ install (
 			COMPONENT all
         )
 
-add_subdirectory(imgui/ SYSTEM EXCLUDE_FROM_ALL)
+find_package(imgui REQUIRED)
 
-target_include_directories(imgui PUBLIC ${CMAKE_CURRENT_LIST_DIR})
+target_include_directories(imgui INTERFACE ${CMAKE_CURRENT_LIST_DIR})
 
 set(CONFIG_FILES_DIR "${CMAKE_INSTALL_PREFIX}/share/cmake/${PROJECT_NAME}")
 
