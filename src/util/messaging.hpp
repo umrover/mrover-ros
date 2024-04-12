@@ -108,7 +108,7 @@ namespace mrover {
     };
 
     using InBoundMessage = std::variant<
-            AdjustCommand, ConfigCommand, IdleCommand, ThrottleCommand, VelocityCommand, PositionCommand>;
+            AdjustCommand, ConfigCommand, IdleCommand, ThrottleCommand, VelocityCommand, PositionCommand, PositionCommandProfiled>;
 
     using OutBoundMessage = std::variant<
             ControllerDataState, DebugState>;

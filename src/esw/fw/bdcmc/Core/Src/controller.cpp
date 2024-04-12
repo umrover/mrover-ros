@@ -77,6 +77,10 @@ namespace mrover {
         check(HAL_TIM_Base_Start_IT(ABSOLUTE_ENCODER_TIMER) == HAL_OK, Error_Handler);
     }
 
+    auto test_mopro_command() -> void {
+        std::variant<AdjustCommand, ConfigCommand, >
+    }
+
     auto fdcan_received_callback() -> void {
         std::optional<std::pair<FDCAN_RxHeaderTypeDef, InBoundMessage>> received = fdcan_bus.receive();
         if (!received) Error_Handler(); // This function is called WHEN we receive a message so this should never happen
@@ -168,12 +172,12 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef* htim) {
  * \note FDCAN1 has to be configured with "HAL_FDCAN_ActivateNotification" and started with "HAL_FDCAN_Start" for this interrupt to work.
  */
 void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef* hfdcan, uint32_t RxFifo0ITs) {
-    if (RxFifo0ITs & FDCAN_IT_RX_FIFO0_NEW_MESSAGE) {
-        mrover::fdcan_received_callback();
-    } else {
-        // Mailbox is full OR we lost a frame
-        Error_Handler();
-    }
+//    if (RxFifo0ITs & FDCAN_IT_RX_FIFO0_NEW_MESSAGE) {
+//        mrover::fdcan_received_callback();
+//    } else {
+//        // Mailbox is full OR we lost a frame
+//        Error_Handler();
+//    }
 }
 
 // TODO(quintin): Error handling
