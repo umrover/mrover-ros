@@ -1,2 +1,0 @@
-/usr/local/share/cmake/mjbots/mjbotsConfig.cmake
-/usr/local/share/cmake/mjbots/mjbotsConfigVersion.cmake

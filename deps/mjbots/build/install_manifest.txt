@@ -1,9 +1,0 @@
-/usr/local/include/moteus.h
-/usr/local/include/moteus_multiplex.h
-/usr/local/include/moteus_optional.h
-/usr/local/include/moteus_protocol.h
-/usr/local/include/moteus_tokenizer.h
-/usr/local/include/moteus_transport.h
-/usr/local/share/cmake/mjbots/mjbotsTargets.cmake
-/usr/local/share/cmake/mjbots/mjbotsConfig.cmake
-/usr/local/share/cmake/mjbots/mjbotsConfigVersion.cmake
