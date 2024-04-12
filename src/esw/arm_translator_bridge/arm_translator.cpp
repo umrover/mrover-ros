@@ -158,13 +158,13 @@ namespace mrover {
         {
             AdjustMotor adjust;
             adjust.request.name = "joint_de_0";
-            adjust.request.value = motorPositions[0].get() - -0.24650526f;
+            adjust.request.value = motorPositions[0].get();
             mAdjustClientsByArmHwNames["joint_de_0"].call(adjust);
         }
         {
             AdjustMotor adjust;
             adjust.request.name = "joint_de_1";
-            adjust.request.value = motorPositions[1].get() - 6.44957685f;
+            adjust.request.value = motorPositions[1].get();
             mAdjustClientsByArmHwNames["joint_de_1"].call(adjust);
         }
     }

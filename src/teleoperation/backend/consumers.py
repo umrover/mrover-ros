@@ -42,7 +42,6 @@ from util.SE3 import SE3
 
 from backend.models import AutonWaypoint, BasicWaypoint
 
-
 DEFAULT_ARM_DEADZONE = 0.15
 
 
@@ -367,8 +366,6 @@ class GUIConsumer(JsonWebsocketConsumer):
                     * self.filter_xbox_button(msg["buttons"], "right_bumper", "left_bumper")
                 ]
             elif msg["type"] == "arm_values":
-                # print(msg["buttons"])
-
                 # d_pad_x = msg["axes"][self.xbox_mappings["d_pad_x"]]
                 # if d_pad_x > 0.5:
                 #     ra_slow_mode = True
@@ -380,8 +377,11 @@ class GUIConsumer(JsonWebsocketConsumer):
                     self.filter_xbox_axis(msg["axes"][self.ra_config["joint_b"]["xbox_index"]]),
                     self.filter_xbox_axis(msg["axes"][self.ra_config["joint_c"]["xbox_index"]]),
                     self.filter_xbox_axis(
-                        msg["axes"][self.ra_config["joint_de_pitch"]["xbox_index_right"]]
-                        - msg["axes"][self.ra_config["joint_de_pitch"]["xbox_index_left"]]
+                        (
+                            msg["axes"][self.ra_config["joint_de_pitch"]["xbox_index_right"]]
+                            - msg["axes"][self.ra_config["joint_de_pitch"]["xbox_index_left"]]
+                        )
+                        / 2
                     ),
                     self.filter_xbox_axis(
                         msg["buttons"][self.ra_config["joint_de_roll"]["xbox_index_right"]]
