@@ -124,7 +124,7 @@ namespace mrover {
         }
 
         Vector2<RadiansPerSecond> pitchRoll{msg->positions.at(mJointDEPitchIndex), msg->positions.at(mJointDERollIndex)};
-        Vector2<RadiansPerSecond> motorPositions = PITCH_ROLL_TO_0_1 * pitchRoll;
+        Vector2<RadiansPerSecond> motorPositions = 40 * PITCH_ROLL_TO_0_1 * pitchRoll;
 
         Position position = *msg;
         position.names[mJointDEPitchIndex] = "joint_de_0";
@@ -134,6 +134,12 @@ namespace mrover {
         mPositionPub->publish(position);
     }
 
+    auto wrapAngle(float angle) -> float {
+        constexpr float pi = std::numbers::pi_v<float>;
+        constexpr float tau = 2 * pi;
+        return std::fmod(angle + pi, tau) - pi;
+    }
+
     auto ArmTranslator::processJointState(sensor_msgs::JointState::ConstPtr const& msg) -> void {
         if (mArmHWNames != msg->name || mArmHWNames.size() != msg->position.size() || mArmHWNames.size() != msg->velocity.size() || mArmHWNames.size() != msg->effort.size()) {
             ROS_ERROR("Forwarding joint data for arm is ignored!");
@@ -141,8 +147,8 @@ namespace mrover {
         }
 
         mJointDePitchRoll = {
-                msg->position.at(mJointDE0Index),
-                msg->position.at(mJointDE1Index),
+                -wrapAngle(msg->position.at(mJointDE0Index)),
+                wrapAngle(msg->position.at(mJointDE1Index)),
         };
 
         sensor_msgs::JointState jointState = *msg;
@@ -154,7 +160,7 @@ namespace mrover {
     auto ArmTranslator::updateDeOffsets(ros::TimerEvent const&) -> void {
         if (!mJointDePitchRoll) return;
 
-        Vector2<Radians> motorPositions = PITCH_ROLL_TO_0_1 * mJointDePitchRoll.value();
+        Vector2<Radians> motorPositions = 40 * PITCH_ROLL_TO_0_1 * mJointDePitchRoll.value();
         {
             AdjustMotor adjust;
             adjust.request.name = "joint_de_0";

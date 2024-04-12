@@ -37,7 +37,7 @@ namespace mrover {
               mMoveThrottleSub{mNh.subscribe<Throttle>(std::format("{}_throttle_cmd", mControllerName), 1, &ControllerBase::setDesiredThrottle, this)},
               mMoveVelocitySub{mNh.subscribe<Velocity>(std::format("{}_velocity_cmd", mControllerName), 1, &ControllerBase::setDesiredVelocity, this)},
               mMovePositionSub{mNh.subscribe<Position>(std::format("{}_position_cmd", mControllerName), 1, &ControllerBase::setDesiredPosition, this)},
-              mAdjustEncoderSub{mNh.subscribe<MotorsAdjust>(std::format("{}_adjust_cmd", mControllerName), 1, &ControllerBase::adjustEncoder, this)},
+              // mAdjustEncoderSub{mNh.subscribe<MotorsAdjust>(std::format("{}_adjust_cmd", mControllerName), 1, &ControllerBase::adjustEncoder, this)},
               mJointDataPub{mNh.advertise<sensor_msgs::JointState>(std::format("{}_joint_data", mControllerName), 1)},
               mControllerDataPub{mNh.advertise<ControllerState>(std::format("{}_controller_data", mControllerName), 1)},
               mPublishDataTimer{mNh.createTimer(ros::Duration{0.1}, &ControllerBase::publishDataCallback, this)},
@@ -138,7 +138,9 @@ namespace mrover {
                 return true;
             }
 
-            static_cast<Derived*>(this)->adjust(OutputPosition{req.value});
+            using Position = typename detail::strip_conversion<OutputPosition>::type;
+            OutputPosition position = Position{req.value};
+            static_cast<Derived*>(this)->adjust(position);
             res.success = true;
             return true;
         }

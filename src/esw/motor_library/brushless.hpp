@@ -159,6 +159,9 @@ namespace mrover {
                     .maximum_torque = mMaxTorque,
                     .watchdog_timeout = mWatchdogTimeout,
             };
+            if (this->isJointDe()) {
+                ROS_INFO_STREAM(std::format("Setting position to {}", position.get()).c_str());
+            }
             moteus::CanFdFrame positionFrame = mMoteus->MakePosition(command);
             mDevice.publish_moteus_frame(positionFrame);
         }
@@ -167,24 +170,26 @@ namespace mrover {
             assert(msg->source == mControllerName);
             assert(msg->destination == mMasterName);
             auto result = moteus::Query::Parse(msg->data.data(), msg->data.size());
-            ROS_INFO("controller: %s    %3d p/a/v/t=(%7.3f,%7.3f,%7.3f,%7.3f)  v/t/f=(%5.1f,%5.1f,%3d) GPIO: Aux1-%X , Aux2-%X",
-                     mControllerName.c_str(),
-                     result.mode,
-                     result.position,
-                     result.abs_position,
-                     result.velocity,
-                     result.torque,
-                     result.voltage,
-                     result.temperature,
-                     result.fault,
-                     result.aux1_gpio,
-                     result.aux2_gpio);
+            if (this->isJointDe()) {
+                ROS_INFO("controller: %s    %3d p/a/v/t=(%7.3f,%7.3f,%7.3f,%7.3f)  v/t/f=(%5.1f,%5.1f,%3d) GPIO: Aux1-%X , Aux2-%X",
+                         mControllerName.c_str(),
+                         result.mode,
+                         result.position,
+                         result.abs_position,
+                         result.velocity,
+                         result.torque,
+                         result.voltage,
+                         result.temperature,
+                         result.fault,
+                         result.aux1_gpio,
+                         result.aux2_gpio);
+            }
 
             if (this->isJointDe()) {
                 mCurrentPosition = OutputPosition{result.extra[0].value}; // get value of absolute encoder if its joint_de0/1
                 mCurrentVelocity = OutputVelocity{result.extra[1].value};
             } else {
-                mCurrentPosition = OutputPosition{result.position};                                // moteus stores position in revolutions.
+                mCurrentPosition = OutputPosition{result.position}; // moteus stores position in revolutions.
                 mCurrentVelocity = OutputVelocity{result.velocity}; // moteus stores position in revolutions.
             }
 
@@ -212,13 +217,10 @@ namespace mrover {
                 }
             }
 
-            // ROS_INFO("my velocity rev s = %f", velocity.get());
-
             velocity = std::clamp(velocity, mMinVelocity, mMaxVelocity);
 
             if (abs(velocity) < OutputVelocity{1e-5}) {
                 setBrake();
-                ROS_INFO_STREAM(std::format("In brake mode because velocity_rev_s = {}", velocity.get()).c_str());
             } else {
                 moteus::PositionMode::Command command{
                         .position = std::numeric_limits<double>::quiet_NaN(),
@@ -228,7 +230,6 @@ namespace mrover {
                 };
 
                 moteus::CanFdFrame positionFrame = mMoteus->MakePosition(command);
-                ROS_INFO("sending this velocity: %f", command.velocity);
                 mDevice.publish_moteus_frame(positionFrame);
             }
         }
