@@ -1,0 +1,9 @@
+[Unit]
+Wants=network-online.target
+After=network-online.target
+[Service]
+ExecStart=/usr/sbin/ip link set can3 up type can bitrate 1000000 dbitrate 1000000 berr-reporting on fd on restart-ms 5000
+ExecStartPost=/usr/sbin/ip link set can3 txqueuelen 512
+[Install]
+WantedBy=multi-user.target
+
