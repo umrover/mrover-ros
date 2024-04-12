@@ -169,9 +169,6 @@ brushless_motors:
       limit_0_readjust_position: 0.0 # radians TODO
       limit_1_readjust_position: 0.0 # radians TODO
       max_torque: 0.5
-joint_de:
-  pitch_offset: 0.0
-  roll_offset: 0.0
 
 brushed_motors:
   controllers:

@@ -141,8 +141,8 @@ namespace mrover {
         }
 
         mJointDePitchRoll = {
-                msg->position.at(mJointDE0Index) - 3.7171666622161865f,
-                msg->position.at(mJointDE1Index) - 3.340053081512451f,
+                msg->position.at(mJointDE0Index),
+                msg->position.at(mJointDE1Index),
         };
 
         sensor_msgs::JointState jointState = *msg;
