@@ -74,7 +74,7 @@ namespace mrover {
         mPositionPub = std::make_unique<ros::Publisher>(nh.advertise<Position>("arm_hw_position_cmd", 1));
         mJointDataPub = std::make_unique<ros::Publisher>(nh.advertise<sensor_msgs::JointState>("arm_joint_data", 1));
 
-        // mDeOffsetTimer = nh.createTimer(ros::Duration{1}, &ArmTranslator::updateDeOffsets, this);
+        mDeOffsetTimer = nh.createTimer(ros::Duration{1}, &ArmTranslator::updateDeOffsets, this);
     }
 
     auto static const PITCH_ROLL_TO_0_1 = (Matrix2<Dimensionless>{} << 1, -1, 1, 1).finished();
@@ -141,11 +141,13 @@ namespace mrover {
         }
 
         mJointDePitchRoll = {
-                msg->position.at(mJointDE0Index),
-                msg->position.at(mJointDE1Index),
+                msg->position.at(mJointDE0Index) - 3.7171666622161865f,
+                msg->position.at(mJointDE1Index) - 3.340053081512451f,
         };
 
         sensor_msgs::JointState jointState = *msg;
+        jointState.position[mJointDEPitchIndex] = mJointDePitchRoll->x().get();
+        jointState.position[mJointDERollIndex] = mJointDePitchRoll->y().get();
         mJointDataPub->publish(jointState);
     }
 
@@ -156,13 +158,13 @@ namespace mrover {
         {
             AdjustMotor adjust;
             adjust.request.name = "joint_de_0";
-            adjust.request.value = motorPositions[0].get();
+            adjust.request.value = motorPositions[0].get() - -0.24650526f;
             mAdjustClientsByArmHwNames["joint_de_0"].call(adjust);
         }
         {
             AdjustMotor adjust;
             adjust.request.name = "joint_de_1";
-            adjust.request.value = motorPositions[1].get();
+            adjust.request.value = motorPositions[1].get() - 6.44957685f;
             mAdjustClientsByArmHwNames["joint_de_1"].call(adjust);
         }
     }
