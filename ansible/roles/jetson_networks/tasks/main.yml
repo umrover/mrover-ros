@@ -10,11 +10,12 @@
     gw4: 10.1.0.2
     dns4: [10.1.0.2]
     method6: disabled
-- name: Copy can services into systemd
+- name: Sync can services into systemd
   become: True
-  ansible.builtin.copy:
+  ansible.posix.synchronize:
     src: ../files/can/
     dest: /etc/systemd/system/
+    delete: false
 - name: Start up the can systemd service
   become: True
   ansible.builtin.systemd_service:
