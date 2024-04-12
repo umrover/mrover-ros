@@ -13,8 +13,6 @@ import rospy
 import tf2_ros
 import cv2
 
-import pyglet
-
 # from cv_bridge import CvBridge
 from mrover.msg import (
     PDLB,
@@ -43,6 +41,8 @@ from geometry_msgs.msg import Twist, Pose, Point, Quaternion
 from util.SE3 import SE3
 
 from backend.models import AutonWaypoint, BasicWaypoint
+
+from backend.gamepad import Xbox
 
 
 DEFAULT_ARM_DEADZONE = 0.15
@@ -79,12 +79,6 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.brushed_motors = rospy.get_param("brushed_motors/controllers")
             self.xbox_mappings = rospy.get_param("teleop/xbox_mappings")
             self.sa_config = rospy.get_param("teleop/sa_controls")
-
-            # TODO: fix assumption
-            self.gamepad = pyglet.input.get_controllers()[0] # assumes Xbox is the first controller
-            self.gamepad.open()
-            rospy.logerr(self.gamepad)
-
 
             # Publishers
             self.twist_pub = rospy.Publisher("/cmd_vel", Twist, queue_size=1)
@@ -142,6 +136,11 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
             self.flight_thread = threading.Thread(target=self.flight_attitude_listener)
             self.flight_thread.start()
+
+            self.xbox = Xbox()
+            rospy.logerr(self.xbox)
+            self.xbox_thread = threading.Thread(target=self.xbox.run())
+            self.xbox_thread.start()
 
         except Exception as e:
             rospy.logerr(e)
@@ -223,28 +222,6 @@ class GUIConsumer(JsonWebsocketConsumer):
         except Exception as e:
             rospy.logerr(e)
 
-    def get_gamepad_input(self):
-        """
-        Reads Xbox input and returns an array of axes and buttons
-        """
-        axes = [
-            self.gamepad.leftx,
-            self.gamepad.lefty,
-            self.gamepad.rightx,
-            self.gamepad.righty,
-            self.gamepad.lefttrigger,
-            self.gamepad.righttrigger,
-        ]
-        buttons = [
-            self.gamepad.a,
-            self.gamepad.b,
-            self.gamepad.x,
-            self.gamepad.y,
-            self.gamepad.leftshoulder,
-            self.gamepad.rightshoulder, #can add more buttons (dpad, start, back)
-        ]
-        return axes, buttons
-
     def filter_xbox_axis(
         self,
         value: int,
@@ -284,7 +261,7 @@ class GUIConsumer(JsonWebsocketConsumer):
             )
 
     def handle_controls_message(self, msg):
-        axes, buttons = self.get_gamepad_input()
+        axes, buttons = self.xbox.get_gamepad_input()
         rospy.logerr(axes)
         CACHE = ["cache"]
         SA_NAMES = ["sa_x", "sa_y", "sa_z", "sampler", "sensor_actuator"]
