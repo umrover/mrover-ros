@@ -1,2 +1,0 @@
-/usr/local/share/cmake/webgpu_hpp/webgpu_hppConfig.cmake
-/usr/local/share/cmake/webgpu_hpp/webgpu_hppConfigVersion.cmake

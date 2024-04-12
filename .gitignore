@@ -42,3 +42,9 @@ moteus-cal*
 
 # macOS
 .DS_Store
+
+# Packages
+deps/webgpuhpp/build/
+deps/mjbots/build/
+deps/imgui/build/
+deps/glfw3webgpu/build/
