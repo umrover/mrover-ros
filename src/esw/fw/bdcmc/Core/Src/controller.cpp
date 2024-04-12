@@ -72,6 +72,7 @@ namespace mrover {
         // Necessary for the timer interrupt to work
         check(HAL_TIM_Base_Start(THROTTLE_LIMIT_TIMER) == HAL_OK, Error_Handler);
         check(HAL_TIM_Base_Start(PIDF_TIMER) == HAL_OK, Error_Handler);
+        check(HAL_TIM_Base_Start(MOTION_PROFILE_TIMER) == HAL_OK, Error_Handler);
         check(HAL_TIM_Base_Start_IT(SEND_TIMER) == HAL_OK, Error_Handler);
         check(HAL_TIM_Base_Start_IT(ABSOLUTE_ENCODER_TIMER) == HAL_OK, Error_Handler);
     }
