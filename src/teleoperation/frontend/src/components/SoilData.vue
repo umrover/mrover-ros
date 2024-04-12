@@ -16,19 +16,27 @@
                     </tr>
                 </tbody>
             </table>
-            </div>
+        </div>
+        <Checkbox :name="'Read Temp Data'" @toggle="readData = $event"></Checkbox>
     </div>
 </template>
   
 <script lang="ts">
 
 import { mapState } from 'vuex'
+import Checkbox from './Checkbox.vue';
 
 export default {
+    components: {
+        Checkbox
+    },
+
     data() {
         return {
             temp: 0,
-            humidity: 0
+            humidity: 0,
+
+            readData: false
         }
     },
 
@@ -40,12 +48,21 @@ export default {
         message(msg) {
             if (msg.type == 'temp_data') {
                 this.temp = msg.temp_data;
+                if(this.readData) {
+                    // TODO: add temp to tempArray
+                }
             }
             else if (msg.type == 'relative_humidity') {
                 this.humidity = msg.humidity_data;
             }
         }
     },
+
+    methods: {
+        // TODO: add a function that calculates the polyfit
+
+        // TODO: add a function that predicts current temp based off polyfit
+    }
 }
 </script>
   
