@@ -256,7 +256,7 @@ brushed_motors:
       quad_ratio: 1.0 # encoder ratio compared to motor
       driver_voltage: 12.0 # used to calculate max pwm
       motor_max_voltage: 12.0 # used to calculate max pwm
-      calibration_throttle: 0.5  # throttle during calibration
+      calibration_throttle: 0.9  # throttle during calibration, does not move unless close to max voltage
     gripper:
       gear_ratio: 47.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
       quad_present: false
