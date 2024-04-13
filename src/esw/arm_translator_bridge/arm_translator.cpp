@@ -78,6 +78,11 @@ namespace mrover {
     }
 
     auto ArmTranslator::processThrottleCmd(Throttle::ConstPtr const& msg) const -> void {
+        if (msg->names.size() != msg->throttles.size()) {
+            ROS_ERROR("Name count and value count mismatched!");
+            return;
+        }
+
         Throttle throttle = *msg;
 
         // If present, replace the entries for DE0 and DE1 with the pitch and roll values respectively
@@ -103,6 +108,11 @@ namespace mrover {
     // Note (Isabel) PITCH_ROLL_TO_01_SCALE is unnecessary, moteus config will scale for gear ratio
 
     auto ArmTranslator::processVelocityCmd(Velocity::ConstPtr const& msg) -> void {
+        if (msg->names.size() != msg->velocities.size()) {
+            ROS_ERROR("Name count and value count mismatched!");
+            return;
+        }
+
         Velocity velocity = *msg;
 
         // TODO(quintin): Decrease code duplication
@@ -124,6 +134,11 @@ namespace mrover {
     }
 
     auto ArmTranslator::processPositionCmd(Position::ConstPtr const& msg) -> void {
+        if (msg->names.size() != msg->positions.size()) {
+            ROS_ERROR("Name count and value count mismatched!");
+            return;
+        }
+
         Position position = *msg;
 
         // TODO(quintin): Decrease code duplication
