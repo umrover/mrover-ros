@@ -37,11 +37,19 @@ namespace mrover {
               mMoveThrottleSub{mNh.subscribe<Throttle>(std::format("{}_throttle_cmd", mControllerName), 1, &ControllerBase::setDesiredThrottle, this)},
               mMoveVelocitySub{mNh.subscribe<Velocity>(std::format("{}_velocity_cmd", mControllerName), 1, &ControllerBase::setDesiredVelocity, this)},
               mMovePositionSub{mNh.subscribe<Position>(std::format("{}_position_cmd", mControllerName), 1, &ControllerBase::setDesiredPosition, this)},
+            //   mJointDataPub{mNh.advertise<sensor_msgs::JointState>(std::format("{}_joint_data", mControllerName), 1)},
               // mAdjustEncoderSub{mNh.subscribe<MotorsAdjust>(std::format("{}_adjust_cmd", mControllerName), 1, &ControllerBase::adjustEncoder, this)},
-              mJointDataPub{mNh.advertise<sensor_msgs::JointState>(std::format("{}_joint_data", mControllerName), 1)},
               mControllerDataPub{mNh.advertise<ControllerState>(std::format("{}_controller_data", mControllerName), 1)},
               mPublishDataTimer{mNh.createTimer(ros::Duration{0.1}, &ControllerBase::publishDataCallback, this)},
               mAdjustServer{mNh.advertiseService(std::format("{}_adjust", mControllerName), &ControllerBase::adjustServiceCallback, this)} {
+
+            if (mControllerName == "joint_de_0") {
+                mJointDataPub = mNh.advertise<sensor_msgs::JointState>("joint_de_pitch_joint_data", 1);
+            } else if(mControllerName == "joint_de_1") {
+                mJointDataPub = mNh.advertise<sensor_msgs::JointState>("joint_de_roll_joint_data", 1);
+            } else {
+                mJointDataPub = mNh.advertise<sensor_msgs::JointState>(std::format("{}_joint_data", mControllerName), 1);
+            }
         }
 
         ControllerBase(ControllerBase const&) = delete;
@@ -110,11 +118,20 @@ namespace mrover {
 
                 sensor_msgs::JointState jointState;
                 jointState.header.stamp = ros::Time::now();
-                jointState.name = {mControllerName};
                 jointState.position = {Position{mCurrentPosition}.get()};
                 jointState.velocity = {Velocity{mCurrentVelocity}.get()};
                 jointState.effort = {static_cast<Derived*>(this)->getEffort()};
                 mJointDataPub.publish(jointState);
+
+                if (isJointDe()) {
+                    if (mControllerName == "joint_de_0") {
+                        jointState.name = {"joint_de_pitch"};
+                    } else {
+                        jointState.name = {"joint_de_roll"};
+                    }
+                } else {
+                    jointState.name = {mControllerName};
+                }
             }
             {
                 ControllerState controllerState;

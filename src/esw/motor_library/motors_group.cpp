@@ -14,6 +14,7 @@ namespace mrover {
           mGroupName{std::move(groupName)} {
 
         XmlRpc::XmlRpcValue motorControllerNames;
+        ROS_INFO("mGroupName: %s", mGroupName.c_str());
         assert(mNh.hasParam(std::format("motors_group/{}", mGroupName)));
         mNh.getParam(std::format("motors_group/{}", mGroupName), motorControllerNames);
         assert(motorControllerNames.getType() == XmlRpc::XmlRpcValue::TypeArray);
@@ -24,11 +25,27 @@ namespace mrover {
             mThrottlePubsByName[name] = mNh.advertise<Throttle>(std::format("{}_throttle_cmd", name), 1);
             mVelocityPubsByName[name] = mNh.advertise<Velocity>(std::format("{}_velocity_cmd", name), 1);
             mPositionPubsByName[name] = mNh.advertise<Position>(std::format("{}_position_cmd", name), 1);
-            mJointDataSubsByName[name] = mNh.subscribe<sensor_msgs::JointState>(
+            
+            if (name == "joint_de_0") {
+                mJointDataSubsByName[name] = mNh.subscribe<sensor_msgs::JointState>(
+                    std::format("joint_de_pitch_joint_data"), 1,
+                    [name, this](sensor_msgs::JointState::ConstPtr const& msg) {
+                        return processJointData(msg, name);
+                    });
+            } else if (name == "joint_de_1") {
+                mJointDataSubsByName[name] = mNh.subscribe<sensor_msgs::JointState>(
+                    std::format("joint_de_roll_joint_data"), 1,
+                    [name, this](sensor_msgs::JointState::ConstPtr const& msg) {
+                        return processJointData(msg, name);
+                    });
+            } else {
+                mJointDataSubsByName[name] = mNh.subscribe<sensor_msgs::JointState>(
                     std::format("{}_joint_data", name), 1,
                     [name, this](sensor_msgs::JointState::ConstPtr const& msg) {
                         return processJointData(msg, name);
                     });
+            }
+            
             mControllerDataSubsByName[name] = mNh.subscribe<ControllerState>(
                     std::format("{}_controller_data", name), 1,
                     [name, this](ControllerState::ConstPtr const& msg) {
