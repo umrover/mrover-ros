@@ -192,6 +192,7 @@ namespace mrover {
                 mCurrentPosition = OutputPosition{result.position}; // moteus stores position in revolutions.
                 mCurrentVelocity = OutputVelocity{result.velocity}; // moteus stores position in revolutions.
             }
+            mCurrentEffort = result.torque;
 
             mErrorState = moteusErrorCodeToErrorState(result.mode, static_cast<ErrorCode>(result.fault));
             mState = moteusModeToState(result.mode);
@@ -237,7 +238,7 @@ namespace mrover {
         auto getEffort() -> double {
             // TODO - need to properly set mMeasuredEFfort elsewhere.
             // (Art Boyarov): return quiet_Nan, same as Brushed Controller
-            return std::numeric_limits<double>::quiet_NaN();
+            return mCurrentEffort;
         }
 
         auto setStop() -> void {
@@ -334,6 +335,7 @@ namespace mrover {
 
         OutputPosition mMinPosition, mMaxPosition;
         OutputVelocity mMinVelocity, mMaxVelocity;
+        double mCurrentEffort{std::numeric_limits<double>::quiet_NaN()};
 
         [[nodiscard]] auto mapThrottleToVelocity(Percent throttle) const -> OutputVelocity {
             throttle = std::clamp(throttle, -1_percent, 1_percent);
