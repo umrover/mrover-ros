@@ -52,14 +52,7 @@ namespace Eigen {
 namespace mrover {
 
     ArmTranslator::ArmTranslator(ros::NodeHandle& nh) {
-        assert(mJointDEPitchIndex == mJointDE0Index);
-        assert(mJointDERollIndex == mJointDE1Index);
-        assert(mArmHWNames.size() == mRawArmNames.size());
-        for (std::size_t i = 0; i < mRawArmNames.size(); ++i) {
-            if (i != mJointDEPitchIndex && i != mJointDERollIndex) {
-                assert(mArmHWNames.at(i) == mRawArmNames.at(i));
-            }
-            auto hwName = static_cast<std::string>(mArmHWNames[i]);
+        for (std::string const& hwName: mArmHWNames) {
             auto [_, was_inserted] = mAdjustClientsByArmHwNames.try_emplace(hwName, nh.serviceClient<AdjustMotor>(std::format("{}_adjust", hwName)));
             assert(was_inserted);
         }
@@ -79,20 +72,29 @@ namespace mrover {
 
     auto static const PITCH_ROLL_TO_0_1 = (Matrix2<Dimensionless>{} << 1, 1, 1, -1).finished();
 
+    auto findJointByName(std::vector<std::string> const& names, std::string const& name) -> std::optional<std::size_t> {
+        auto it = std::ranges::find(names, name);
+        return it == names.end() ? std::nullopt : std::make_optional(std::distance(names.begin(), it));
+    }
+
     auto ArmTranslator::processThrottleCmd(Throttle::ConstPtr const& msg) const -> void {
-        if (mRawArmNames != msg->names || mRawArmNames.size() != msg->throttles.size()) {
-            ROS_ERROR("Throttle requests for arm is ignored!");
-            return;
+        Throttle throttle = *msg;
+
+        // If present, replace the entries for DE0 and DE1 with the pitch and roll values respectively
+        std::optional<std::size_t> jointDePitchIndex = findJointByName(msg->names, "joint_de_pitch"), jointDeRollIndex = findJointByName(msg->names, "joint_de_roll");
+        if (jointDePitchIndex && jointDeRollIndex) {
+
+            std::size_t pitchIndex = jointDePitchIndex.value(), rollIndex = jointDeRollIndex.value();
+
+            Vector2<Dimensionless> pitchRollThrottles{msg->throttles.at(pitchIndex), msg->throttles.at(rollIndex)};
+            Vector2<Dimensionless> motorThrottles = PITCH_ROLL_TO_0_1 * pitchRollThrottles;
+
+            throttle.names[pitchIndex] = "joint_de_0";
+            throttle.names[rollIndex] = "joint_de_1";
+            throttle.throttles[pitchIndex] = motorThrottles[0].get();
+            throttle.throttles[rollIndex] = motorThrottles[1].get();
         }
 
-        Vector2<Dimensionless> pitchRollThrottles{msg->throttles.at(mJointDEPitchIndex), msg->throttles.at(mJointDERollIndex)};
-        Vector2<Dimensionless> motorThrottles = PITCH_ROLL_TO_0_1 * pitchRollThrottles;
-
-        Throttle throttle = *msg;
-        throttle.names[mJointDEPitchIndex] = "joint_de_0";
-        throttle.names[mJointDERollIndex] = "joint_de_1";
-        throttle.throttles[mJointDEPitchIndex] = motorThrottles[0].get();
-        throttle.throttles[mJointDERollIndex] = motorThrottles[1].get();
         mThrottlePub->publish(throttle);
     }
 
@@ -101,36 +103,44 @@ namespace mrover {
     // Note (Isabel) PITCH_ROLL_TO_01_SCALE is unnecessary, moteus config will scale for gear ratio
 
     auto ArmTranslator::processVelocityCmd(Velocity::ConstPtr const& msg) -> void {
-        if (mRawArmNames != msg->names || mRawArmNames.size() != msg->velocities.size()) {
-            ROS_ERROR("Velocity requests for arm is ignored!");
-            return;
+        Velocity velocity = *msg;
+
+        // TODO(quintin): Decrease code duplication
+        // If present, replace the entries for DE0 and DE1 with the pitch and roll values respectively
+        std::optional<std::size_t> jointDePitchIndex = findJointByName(msg->names, "joint_de_pitch"), jointDeRollIndex = findJointByName(msg->names, "joint_de_roll");
+        if (jointDePitchIndex && jointDeRollIndex) {
+            std::size_t pitchIndex = jointDePitchIndex.value(), rollIndex = jointDeRollIndex.value();
+
+            Vector2<RadiansPerSecond> pitchRollVelocities{msg->velocities.at(pitchIndex), msg->velocities.at(rollIndex)};
+            Vector2<RadiansPerSecond> motorVelocities = PITCH_ROLL_TO_0_1 * pitchRollVelocities;
+
+            velocity.names[pitchIndex] = "joint_de_0";
+            velocity.names[rollIndex] = "joint_de_1";
+            velocity.velocities[pitchIndex] = motorVelocities[0].get();
+            velocity.velocities[rollIndex] = motorVelocities[1].get();
         }
 
-        Vector2<RadiansPerSecond> pitchRollVelocities{msg->velocities.at(mJointDEPitchIndex), msg->velocities.at(mJointDERollIndex)};
-        Vector2<RadiansPerSecond> motorVelocities = PITCH_ROLL_TO_0_1 * pitchRollVelocities;
-
-        Velocity velocity = *msg;
-        velocity.names[mJointDEPitchIndex] = "joint_de_0";
-        velocity.names[mJointDERollIndex] = "joint_de_1";
-        velocity.velocities[mJointDEPitchIndex] = motorVelocities[0].get();
-        velocity.velocities[mJointDERollIndex] = motorVelocities[1].get();
         mVelocityPub->publish(velocity);
     }
 
     auto ArmTranslator::processPositionCmd(Position::ConstPtr const& msg) -> void {
-        if (mRawArmNames != msg->names || mRawArmNames.size() != msg->positions.size()) {
-            ROS_ERROR("Position requests for arm is ignored!");
-            return;
+        Position position = *msg;
+
+        // TODO(quintin): Decrease code duplication
+        // If present, replace the entries for DE0 and DE1 with the pitch and roll values respectively
+        std::optional<std::size_t> jointDePitchIndex = findJointByName(msg->names, "joint_de_pitch"), jointDeRollIndex = findJointByName(msg->names, "joint_de_roll");
+        if (jointDePitchIndex && jointDeRollIndex) {
+            std::size_t pitchIndex = jointDePitchIndex.value(), rollIndex = jointDeRollIndex.value();
+
+            Vector2<RadiansPerSecond> pitchRoll{msg->positions.at(pitchIndex), msg->positions.at(rollIndex)};
+            Vector2<RadiansPerSecond> motorPositions = 40 * PITCH_ROLL_TO_0_1 * pitchRoll;
+
+            position.names[pitchIndex] = "joint_de_0";
+            position.names[rollIndex] = "joint_de_1";
+            position.positions[pitchIndex] = motorPositions[0].get();
+            position.positions[rollIndex] = motorPositions[1].get();
         }
 
-        Vector2<RadiansPerSecond> pitchRoll{msg->positions.at(mJointDEPitchIndex), msg->positions.at(mJointDERollIndex)};
-        Vector2<RadiansPerSecond> motorPositions = 40 * PITCH_ROLL_TO_0_1 * pitchRoll;
-
-        Position position = *msg;
-        position.names[mJointDEPitchIndex] = "joint_de_0";
-        position.names[mJointDERollIndex] = "joint_de_1";
-        position.positions[mJointDEPitchIndex] = motorPositions[0].get();
-        position.positions[mJointDERollIndex] = motorPositions[1].get();
         mPositionPub->publish(position);
     }
 
@@ -146,14 +156,19 @@ namespace mrover {
             return;
         }
 
-        mJointDePitchRoll = {
-                -wrapAngle(msg->position.at(mJointDE0Index)),
-                wrapAngle(msg->position.at(mJointDE1Index)),
-        };
-
         sensor_msgs::JointState jointState = *msg;
-        jointState.position[mJointDEPitchIndex] = mJointDePitchRoll->x().get();
-        jointState.position[mJointDERollIndex] = mJointDePitchRoll->y().get();
+
+        std::optional<std::size_t> jointDe0Index = findJointByName(msg->name, "joint_de_0"), jointDe1Index = findJointByName(msg->name, "joint_de_1");
+        if (jointDe0Index && jointDe1Index) {
+            auto pitchWrapped = -wrapAngle(static_cast<float>(msg->position.at(jointDe0Index.value())));
+            auto rollWrapped = wrapAngle(static_cast<float>(msg->position.at(jointDe1Index.value())));
+            mJointDePitchRoll = {pitchWrapped, rollWrapped};
+            jointState.name[jointDe0Index.value()] = "joint_de_pitch";
+            jointState.name[jointDe1Index.value()] = "joint_de_roll";
+            jointState.position[jointDe0Index.value()] = pitchWrapped;
+            jointState.position[jointDe1Index.value()] = rollWrapped;
+        }
+
         mJointDataPub->publish(jointState);
     }
 

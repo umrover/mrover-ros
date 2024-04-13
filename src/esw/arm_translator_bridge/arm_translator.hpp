@@ -54,7 +54,6 @@ namespace mrover {
         auto updateDeOffsets(ros::TimerEvent const&) -> void;
 
     private:
-        std::vector<std::string> const mRawArmNames{"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll", "allen_key", "gripper"};
         std::vector<std::string> const mArmHWNames{"joint_a", "joint_b", "joint_c", "joint_de_0", "joint_de_1", "allen_key", "gripper"};
 
         std::unique_ptr<ros::Publisher> mThrottlePub;
@@ -62,25 +61,9 @@ namespace mrover {
         std::unique_ptr<ros::Publisher> mPositionPub;
         std::unique_ptr<ros::Publisher> mJointDataPub;
 
-        std::size_t const mJointDEPitchIndex = std::ranges::find(mRawArmNames, "joint_de_pitch") - mRawArmNames.begin();
-        std::size_t const mJointDERollIndex = std::ranges::find(mRawArmNames, "joint_de_roll") - mRawArmNames.begin();
-        std::size_t const mJointDE0Index = std::ranges::find(mArmHWNames, "joint_de_0") - mArmHWNames.begin();
-        std::size_t const mJointDE1Index = std::ranges::find(mArmHWNames, "joint_de_1") - mArmHWNames.begin();
-        std::size_t const mJointAIndex = std::ranges::find(mArmHWNames, "joint_a") - mArmHWNames.begin();
-
         ros::Timer mDeOffsetTimer;
 
-        // RadiansPerSecond mMinRadPerSecDE0;
-        // RadiansPerSecond mMinRadPerSecDE1;
-        // RadiansPerSecond mMaxRadPerSecDE0;
-        // RadiansPerSecond mMaxRadPerSecDE1;
-
         std::optional<Vector2<Radians>> mJointDePitchRoll;
-
-        RadiansPerMeter mJointARadiansToMeters;
-
-        // ros::Subscriber mJointDEPitchPosSub;
-        // ros::Subscriber mJointDERollPosSub;
 
         ros::Subscriber mThrottleSub;
         ros::Subscriber mVelocitySub;
