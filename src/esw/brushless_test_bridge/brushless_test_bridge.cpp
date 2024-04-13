@@ -49,14 +49,14 @@ auto main(int argc, char** argv) -> int {
     
     // fake DE publisher:
 
-    auto DEPub = std::make_unique<ros::Publisher>(nh.advertise<mrover::Position>("arm_position_cmd", 1));
+    auto DEPub = std::make_unique<ros::Publisher>(nh.advertise<mrover::Velocity>("arm_velocity_cmd", 1));
     // auto SAPub = std::make_unique<ros::Publisher>(nh.advertise<mrover::Velocity>("sa_velocity_cmd", 1));
 
 
-    mrover::Position armMsg;
+    mrover::Velocity armMsg;
     mrover::Velocity saMsg;
     armMsg.names = {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll", "allen_key", "gripper"};
-    armMsg.positions = {0, 0, 0, 0.5, 0.5, 0, 0};
+    armMsg.velocities = {0, 0, 0, 0, -10, 0, 0};
 
     // saMsg.names = {"sa_x", "sa_y", "sa_z", "sampler", "sensor_actuator"};
     // saMsg.velocities = {0, 0, 0.07,0, 0};
@@ -76,8 +76,8 @@ auto main(int argc, char** argv) -> int {
         count++;
 
         if(count > 100) {
-            armMsg.positions[3] *= -1;
-            armMsg.positions[4] *= -1;
+            armMsg.velocities[3] *= -1;
+            armMsg.velocities[4] *= -1;
             count = 0;
         }   
 
