@@ -7,8 +7,8 @@
 #include <stdexcept>
 #include <string>
 
-#include <ros/node_handle.h>
 #include <XmlRpcValue.h>
+#include <ros/node_handle.h>
 
 #include "units/units.hpp"
 

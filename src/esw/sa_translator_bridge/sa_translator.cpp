@@ -9,7 +9,7 @@ namespace mrover {
         mXAxisMult = requireParamAsUnit<RadiansPerMeter>(nh, "brushed_motors/controllers/sa_x/rad_to_meters_ratio");
         mYAxisMult = requireParamAsUnit<RadiansPerMeter>(nh, "brushed_motors/controllers/sa_y/rad_to_meters_ratio");
         mZAxisMult = requireParamAsUnit<RadiansPerMeter>(nh, "brushless_motors/controllers/sa_z/rad_to_meters_ratio");
-        
+
         mThrottleSub = nh.subscribe<Throttle>("sa_throttle_cmd", 1, &SATranslator::processThrottleCmd, this);
         mVelocitySub = nh.subscribe<Velocity>("sa_velocity_cmd", 1, &SATranslator::processVelocityCmd, this);
         mPositionSub = nh.subscribe<Position>("sa_position_cmd", 1, &SATranslator::processPositionCmd, this);
@@ -21,15 +21,11 @@ namespace mrover {
         mJointDataPub = std::make_unique<ros::Publisher>(nh.advertise<sensor_msgs::JointState>("sa_joint_data", 1));
     }
 
-   
+
     void SATranslator::processThrottleCmd(Throttle::ConstPtr const& msg) {
-
-        Throttle throttle = *msg;
-
-        mThrottlePub->publish(throttle);
+        mThrottlePub->publish(*msg);
     }
 
-   
 
     void SATranslator::processVelocityCmd(Velocity::ConstPtr const& msg) {
         if (mSAHWNames != msg->names || mSAHWNames.size() != msg->velocities.size()) {
@@ -47,7 +43,7 @@ namespace mrover {
         velocity.velocities.at(mYAxisIndex) = y_axis_vel;
 
         auto z_axis_vel = convertLinVel(msg->velocities.at(mZAxisIndex), mZAxisMult.get());
-        velocity.velocities.at(mZAxisIndex) = z_axis_vel; 
+        velocity.velocities.at(mZAxisIndex) = z_axis_vel;
 
         mVelocityPub->publish(velocity);
     }
@@ -69,7 +65,7 @@ namespace mrover {
         position.positions.at(mYAxisIndex) = y_axis_pos;
 
         auto z_axis_pos = convertLinPos(msg->positions.at(mZAxisIndex), mZAxisMult.get());
-        position.positions.at(mZAxisIndex) = z_axis_pos;                
+        position.positions.at(mZAxisIndex) = z_axis_pos;
 
         mPositionPub->publish(position);
     }

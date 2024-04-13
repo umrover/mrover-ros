@@ -39,7 +39,7 @@ export function threeSetup(containerId) {
     {
       name: "chassis",
       file: "rover_chassis.fbx",
-      translation: [0.164882, 0.200235, 0.051497],
+      translation: [0.164882, -0.200235, 0.051497],
       rotation: [0, 0, 0],
     },
     {

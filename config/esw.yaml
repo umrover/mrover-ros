@@ -17,6 +17,12 @@ can:
     - name: "jetson"
       bus: 1
       id: 0x10
+    - name: "jetson"
+      bus: 2
+      id: 0x10
+    - name: "jetson"
+      bus: 3
+      id: 0x10
     - name: "front_left"
       bus: 0
       id: 0x12
@@ -36,17 +42,17 @@ can:
       bus: 0
       id: 0x15
     - name: "joint_a"
-      bus: 0
+      bus: 1
       id: 0x20
     - name: "joint_b"
-      bus: 0
+      bus: 1
       id: 0x21
     - name: "joint_c"
       bus: 1
       id: 0x22
     - name: "joint_de_0"
       bus: 1
-      id: 0x31
+      id: 0x23
     - name: "joint_de_1"
       bus: 1
       id: 0x24
@@ -57,10 +63,10 @@ can:
       bus: 1
       id: 0x26
     - name: "mast_gimbal_y"
-      bus: 1
+      bus: 3
       id: 0x28
     - name: "mast_gimbal_z"
-      bus: 1
+      bus: 3
       id: 0x27
     - name: "sa_x"
       bus: 1
@@ -78,13 +84,13 @@ can:
       bus: 1
       id: 0x33
     - name: "cache"
-      bus: 1
+      bus: 2
       id: 0x34
     - name: "pdlb"
-      bus: 1
+      bus: 3
       id: 0x50
     - name: "science"
-      bus: 1
+      bus: 2
       id: 0x51
 
 brushless_motors:
@@ -137,8 +143,10 @@ brushless_motors:
       max_backward_pos: 0.0
     joint_c:
       velocity_multiplier: -1.0
-      min_velocity: -250.0 # gear ratio: 484:1
-      max_velocity: 250.0 # max output shaft speed: 5 rpm (for now)
+      min_velocity: -0.6 # gear ratio: 484:1
+      max_velocity: 0.6
+      min_position: 0.0
+      max_position: 3.8 # 220 degrees of motion
     joint_de_0:
       velocity_multiplier: 1.0
       min_velocity: -67.0
@@ -215,14 +223,14 @@ brushed_motors:
     joint_b:
       velocity_multiplier: 1.0
       gear_ratio: 1.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
-      limit_0_present: false
-      limit_0_enabled: false
+      limit_0_present: true
+      limit_0_enabled: true
       limit_0_is_active_high: false
       limit_0_limits_fwd: false
       limit_0_used_for_readjustment: true
       abs_present: true
       abs_is_fwd_polarity: true
-      limit_0_readjust_position: 0.0 # radians
+      limit_0_readjust_position: -0.7853981633974483 # radians
       abs_ratio: 1.0 # encoder ratio compared to motor
       abs_offset: 0.0 # 0 for joint position corresponds to this radians reading by absolute encoder
       driver_voltage: 12.0 # used to calculate max pwm
@@ -596,3 +604,6 @@ default_network_iface: "enp0s31f6"
 auton_led_driver:
   port: "/dev/ttyACM0"
   baud: 115200
+
+science:
+  shutoff_temp: 50.0f

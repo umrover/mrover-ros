@@ -1,5 +1,5 @@
 <template>
-    <div class="wrap">
+    <div class="wrapper">
       <h3 class="header">Rover 3D</h3>
       <div id="threejs"></div>
     </div>
@@ -21,7 +21,6 @@
  
     mounted() {
         this.threeScene = threeSetup("threejs");
-        // this.threeScene.fk([0,0,0,0,0]);
     },
 
     computed: {
@@ -42,7 +41,7 @@
   </script>
   
   <style scoped>
-  .wrap {
+  .wrapper {
     margin: 5px;
     border: 1px solid black;
   }
@@ -52,7 +51,7 @@
   }
 
   #threejs {
-    width: 600px;
-    height: 600px;
+    width: 300px;
+    height: 300px;
   }
   </style>
