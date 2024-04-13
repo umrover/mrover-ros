@@ -77,7 +77,7 @@ namespace mrover {
         mDeOffsetTimer = nh.createTimer(ros::Duration{1}, &ArmTranslator::updateDeOffsets, this);
     }
 
-    auto static const PITCH_ROLL_TO_0_1 = (Matrix2<Dimensionless>{} << 1, -1, 1, 1).finished();
+    auto static const PITCH_ROLL_TO_0_1 = (Matrix2<Dimensionless>{} << 1, 1, 1, -1).finished();
 
     auto ArmTranslator::processThrottleCmd(Throttle::ConstPtr const& msg) const -> void {
         if (mRawArmNames != msg->names || mRawArmNames.size() != msg->throttles.size()) {

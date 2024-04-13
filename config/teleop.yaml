@@ -25,7 +25,7 @@ teleop:
       xbox_index_left: 2
       xbox_index_right: 5
     joint_de_roll:
-      multiplier: 0.5
+      multiplier: -0.5
       slow_mode_multiplier: 1
       invert: False
       xbox_index_left: 4
