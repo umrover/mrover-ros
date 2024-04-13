@@ -384,8 +384,8 @@ class GUIConsumer(JsonWebsocketConsumer):
                         / 2
                     ),
                     self.filter_xbox_axis(
-                        msg["buttons"][self.ra_config["joint_de_roll"]["xbox_index_right"]]
-                        - msg["buttons"][self.ra_config["joint_de_roll"]["xbox_index_left"]]
+                        msg["buttons"][self.ra_config["joint_de_roll"]["xbox_index_left"]]
+                        - msg["buttons"][self.ra_config["joint_de_roll"]["xbox_index_right"]]
                     ),
                     self.ra_config["allen_key"]["multiplier"] * self.filter_xbox_button(msg["buttons"], "y", "a"),
                     self.ra_config["gripper"]["multiplier"] * self.filter_xbox_button(msg["buttons"], "b", "x"),
