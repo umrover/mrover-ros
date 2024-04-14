@@ -815,9 +815,6 @@ class GUIConsumer(JsonWebsocketConsumer):
             rate.sleep()
     
     def start_click_ik(self, msg) -> None:
-        rospy.logerr("before server")
-        # self.click_ik_client.wait_for_server()
-        rospy.logerr("after server")
         goal = ClickIkGoal()
         goal.pointInImageX = msg["data"]["x"]
         goal.pointInImageY = msg["data"]["y"]

@@ -1,11 +1,12 @@
 #include "click_ik.hpp"
+#include <tf2/exceptions.h>
 
 namespace mrover {
 
     void ClickIkNodelet::startClickIk() {
         ROS_INFO("Executing goal");
 
-        const mrover::ClickIkGoalConstPtr& goal = server.acceptNewGoal();
+        mrover::ClickIkGoalConstPtr const& goal = server.acceptNewGoal();
         auto target_point = spiralSearchInImg(static_cast<size_t>(goal->pointInImageX), static_cast<size_t>(goal->pointInImageY));
 
         //Check if optional has value
@@ -24,36 +25,40 @@ namespace mrover {
 
         message.target.pose = pose;
         message.target.header.frame_id = "zed_left_camera_frame";
-        timer = mNh.createTimer(ros::Duration(0.010), [&, pose](const ros::TimerEvent) {
+        timer = mNh.createTimer(ros::Duration(0.010), [&, pose](ros::TimerEvent const) {
             if (server.isPreemptRequested()) {
                 timer.stop();
                 return;
             }
             // Check if done
             const float tolerance = 0.02; // 2 cm
-            SE3d arm_position = SE3Conversions::fromTfTree(mTfBuffer, "arm_e_link", "zed_left_camera_frame");
-            double distance = pow(pow(arm_position.x() + ArmController::END_EFFECTOR_LENGTH - pose.position.x, 2) + pow(arm_position.y() - pose.position.y, 2) + pow(arm_position.z() - pose.position.z, 2), 0.5);
-            ROS_INFO("Distance to target: %f", distance);
-            mrover::ClickIkFeedback feedback;
-            feedback.distance = static_cast<float>(distance);
-            server.publishFeedback(feedback);
-            
-            if (distance < tolerance) {
-                timer.stop();
-                mrover::ClickIkResult result;
-                result.success = true;
-                server.setSucceeded(result);
-                return;
+            try {
+                SE3d arm_position = SE3Conversions::fromTfTree(mTfBuffer, "arm_e_link", "zed_left_camera_frame");
+                double distance = pow(pow(arm_position.x() + ArmController::END_EFFECTOR_LENGTH - pose.position.x, 2) + pow(arm_position.y() - pose.position.y, 2) + pow(arm_position.z() - pose.position.z, 2), 0.5);
+                ROS_INFO("Distance to target: %f", distance);
+                mrover::ClickIkFeedback feedback;
+                feedback.distance = static_cast<float>(distance);
+                server.publishFeedback(feedback);
+
+                if (distance < tolerance) {
+                    timer.stop();
+                    mrover::ClickIkResult result;
+                    result.success = true;
+                    server.setSucceeded(result);
+                    return;
+                }
+                // Otherwise publish message
+                mIkPub.publish(message);
+            } catch (tf2::ExtrapolationException& e) {
+                ROS_WARN("ExtrapolationException (due to lag?): %s", e.what());
             }
-            // Otherwise publish message
-            mIkPub.publish(message);
         });
     }
 
     void ClickIkNodelet::cancelClickIk() {
         timer.stop();
     }
-    
+
     void ClickIkNodelet::onInit() {
         mNh = getMTNodeHandle();
         mPnh = getMTPrivateNodeHandle();
@@ -70,7 +75,6 @@ namespace mrover {
         server.registerPreemptCallback([this] { cancelClickIk(); });
         server.start();
         ROS_INFO("Action server started");
-
     }
 
     void ClickIkNodelet::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg) {
@@ -125,11 +129,13 @@ namespace mrover {
     void ClickIkNodelet::statusCallback(ArmStatus const& status) {
         if (!status.status) {
             cancelClickIk();
-            ClickIkResult result;
-            result.success = false;
-            server.setAborted(result, "Arm position unreachable");
-            NODELET_WARN("Arm position unreachable");
+            if (server.isActive()) {
+                mrover::ClickIkResult result;
+                result.success = false;
+                server.setAborted(result, "Arm position unreachable");
+                NODELET_WARN("Arm position unreachable");
+            }
         }
     }
-    
+
 } // namespace mrover
