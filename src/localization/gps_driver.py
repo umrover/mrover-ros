@@ -14,6 +14,8 @@ from std_msgs.msg import Header
 from sensor_msgs.msg import NavSatFix
 from rtcm_msgs.msg import Message
 from mrover.msg import rtkStatus
+from geometry_msgs.msg import Twist
+from geometry_msgs.msg import Vector3
 import datetime
 
 
@@ -35,6 +37,8 @@ class GPS_Driver:
         self.baud = rospy.get_param("baud")
         # self.base_station_sub = rospy.Subscriber("/rtcm", Message, self.process_rtcm)
         self.gps_pub = rospy.Publisher("fix", NavSatFix, queue_size=1)
+        self.vel_pub = rospy.Publisher("vel", Twist, queue_size=1)
+
         self.rtk_fix_pub = rospy.Publisher("rtk_fix_status", rtkStatus, queue_size=1)
 
         self.lock = threading.Lock()
@@ -99,6 +103,9 @@ class GPS_Driver:
                 )
             )
             self.rtk_fix_pub.publish(rtkStatus(msg.carrSoln))
+
+            lin_vel = Vector3(x=msg.velE, y=msg.velN, z=-(msg.velD))
+            self.vel_pub.publish(Twist(linear=lin_vel))
 
             if msg.difSoln == 1:
                 rospy.loginfo_throttle(3, "Differential correction applied")
