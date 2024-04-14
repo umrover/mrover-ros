@@ -208,9 +208,9 @@ namespace mrover {
         ros::Subscriber mTwistSub, mArmPositionsSub, mArmVelocitiesSub, mArmThrottlesSub;
 
         ros::Publisher mGroundTruthPub;
-        ros::Publisher mGpsPub;
+        ros::Publisher mLeftGpsPub;
+        ros::Publisher mRightGpsPub;
         ros::Publisher mImuPub;
-        ros::Publisher mVelPub;
         ros::Publisher mMotorStatusPub;
         ros::Publisher mDriveControllerStatePub;
         ros::Publisher mArmControllerStatePub;

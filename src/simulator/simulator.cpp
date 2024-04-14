@@ -16,7 +16,8 @@ namespace mrover {
         mArmThrottlesSub = mNh.subscribe<Throttle>("/arm_throttle_cmd", 1, &SimulatorNodelet::armThrottlesCallback, this);
 
         mGroundTruthPub = mNh.advertise<nav_msgs::Odometry>("/ground_truth", 1);
-        mGpsPub = mNh.advertise<sensor_msgs::NavSatFix>("/gps/fix", 1);
+        mLeftGpsPub = mNh.advertise<sensor_msgs::NavSatFix>("/left_gps_driver/fix", 1);
+        mRightGpsPub = mNh.advertise<sensor_msgs::NavSatFix>("/right_gps_driver/fix", 1);
         mImuPub = mNh.advertise<ImuAndMag>("/imu/data", 1);
         mVelPub = mNh.advertise<geometry_msgs::Twist>("/gps/vel", 1);
 

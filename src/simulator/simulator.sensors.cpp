@@ -176,12 +176,12 @@ namespace mrover {
                 mGroundTruthPub.publish(odometry);
             }
             if (mGpsTask.shouldUpdate()) {
-                R3 gpsInMap = rover.linkInWorld("chassis_link").translation();
-                R3 gpsNoise;
-                gpsNoise << mGPSDist(mRNG), mGPSDist(mRNG), mGPSDist(mRNG);
-                gpsInMap += gpsNoise;
+                SE3 leftGpsInMap = rover.linkInWorld("left_gps");
+                mLeftGpsPub.publish(computeNavSatFix(leftGpsInMap, mGpsLinerizationReferencePoint, mGpsLinerizationReferenceHeading));
 
-                mGpsPub.publish(computeNavSatFix(gpsInMap, mGpsLinerizationReferencePoint, mGpsLinerizationReferenceHeading));
+                SE3 rightGpsInMap = rover.linkInWorld("right_gps");
+                mRightGpsPub.publish(computeNavSatFix(rightGpsInMap, mGpsLinerizationReferencePoint, mGpsLinerizationReferenceHeading));
+
                 geometry_msgs::Twist vel;
                 vel.linear.x = mRoverLinearVelocity.x() + mVelDist(mRNG);
                 vel.linear.y = mRoverLinearVelocity.y() + mVelDist(mRNG);
@@ -190,32 +190,15 @@ namespace mrover {
                 vel.angular.y = 0;
                 vel.angular.z = 0;
                 mVelPub.publish(vel);
+
             }
             if (mImuTask.shouldUpdate()) {
-                R3 roverAngularVelocity = btVector3ToR3(rover.physics->getBaseOmega());
+                R3 imuAngularVelocity = btVector3ToR3(rover.physics->getBaseOmega());
                 R3 roverLinearVelocity = btVector3ToR3(rover.physics->getBaseVel());
-                R3 roverLinearAcceleration = (roverLinearVelocity - mRoverLinearVelocity) / std::chrono::duration_cast<std::chrono::duration<float>>(dt).count();
+                R3 imuLinearAcceleration = (roverLinearVelocity - mRoverLinearVelocity) / std::chrono::duration_cast<std::chrono::duration<float>>(dt).count();
                 mRoverLinearVelocity = roverLinearVelocity;
-                SO3d imuInMap = rover.linkInWorld("imu").asSO3();
-                R3 roverMagVector = imuInMap.inverse().rotation().col(1);
-
-                constexpr double g = 9.81;
-                R3 gravityInMap{0, 0, g};
-                R3 gravityInRover = imuInMap.inverse().rotation() * gravityInMap;
-                roverLinearAcceleration += gravityInRover;
-
-                R3 accelNoise{mAccelDist(mRNG), mAccelDist(mRNG), mAccelDist(mRNG)},
-                        gyroNoise{mGyroDist(mRNG), mGyroDist(mRNG), mGyroDist(mRNG)},
-                        magNoise{mMagDist(mRNG), mMagDist(mRNG), mMagDist(mRNG)};
-                roverLinearAcceleration += accelNoise;
-                roverAngularVelocity += gyroNoise;
-                roverMagVector += magNoise;
-
-                SO3d::Tangent orientationNoise;
-                orientationNoise << mRollDist(mRNG), mPitchDist(mRNG), mYawDist(mRNG);
-                imuInMap += orientationNoise;
-
-                mImuPub.publish(computeImu(imuInMap, roverAngularVelocity, roverLinearAcceleration, roverMagVector));
+                SE3 imuInMap = rover.linkInWorld("imu");
+                mImuPub.publish(computeImu(imuInMap, imuAngularVelocity, imuLinearAcceleration, imuInMap.rotation().matrix().transpose().col(1)));
             }
         }
     }
