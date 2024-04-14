@@ -13,8 +13,8 @@ ros::Publisher humidity_pub("sa_humidity_data", &humidity_data);
 
 DFRobot_SHT20 sht20(&Wire, SHT20_I2C_ADDR);
 
-void setup(){
-
+void setup() {
+  nh.getHardware()->setBaud(57600);  // Have to set this parameter
   nh.initNode();
   nh.advertise(temperature_pub);
   nh.advertise(humidity_pub);
@@ -23,7 +23,7 @@ void setup(){
   delay(100);
 }
 
-void loop(){
+void loop() {
 
   float temp = sht20.readTemperature();
   float humidity = sht20.readHumidity() / 100.0;
