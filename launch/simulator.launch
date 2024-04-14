@@ -3,7 +3,7 @@
     <rosparam command="load" file="$(find mrover)/config/simulator/simulator.yaml" />
 
     <include file="$(find mrover)/launch/autonomy.launch">
-        <arg name="sim" value="true" />
+        <arg name="sim" value="true"/>
         <arg name="ekf_start_delay" value="1" />
     </include>
 

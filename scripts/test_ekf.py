@@ -25,18 +25,23 @@ SQUARE_PATH = [
         Waypoint(tag_id=0, type=WaypointType(val=WaypointType.NO_SEARCH)),
         SE3(position=np.array([3, 3, 0])),
     ),
-    # (
-    #     Waypoint(tag_id=1, type=WaypointType(val=WaypointType.NO_SEARCH)),
-    #     SE3(position=np.array([0, 3, 0])),
-    # ),
-    # (
-    #     Waypoint(tag_id=2, type=WaypointType(val=WaypointType.NO_SEARCH)),
-    #     SE3(position=np.array([3, -3, 0])),
-    # ),
-    # (
-    #     Waypoint(tag_id=3, type=WaypointType(val=WaypointType.NO_SEARCH)),
-    #     SE3(position=np.array([0, 0, 0])),
-    # ),
+    (
+         Waypoint(tag_id=1, type=WaypointType(val=WaypointType.NO_SEARCH)),
+         SE3(position=np.array([6, 3, 0])),
+    ),
+    (
+        Waypoint(tag_id=2, type=WaypointType(val=WaypointType.NO_SEARCH)),
+        SE3(position=np.array([6, 0, 0])),
+    ),
+    (
+        Waypoint(tag_id=3, type=WaypointType(val=WaypointType.NO_SEARCH)),
+        SE3(position=np.array([3, 0, 0])),
+    ),
+        (
+        Waypoint(tag_id=3, type=WaypointType(val=WaypointType.NO_SEARCH)),
+        SE3(position=np.array([3, 3, 0])),
+    ),
+
 ]
 ANGLE_PATH = [
     (
@@ -82,11 +87,14 @@ class EKF_Test:
         self.nav_state = ""
 
         # whether or not this is being run in sim
-        self.in_sim = True
+        # print(rospy.get_param_names())
+        # self.in_sim = self.in_sim = rospy.get_param("sim", False)
+        self.in_sim = self.in_sim = True
+
 
         # subscribe to both odometry topics and synchronize them
         raw_sub = message_filters.Subscriber("linearized_pose", PoseWithCovarianceStamped)
-        ekf_sub = message_filters.Subscriber("odometry", Odometry)
+        ekf_sub = message_filters.Subscriber("global_ekf/odometry", Odometry)
         rospy.Subscriber("smach/container_status", SmachContainerStatus, self.nav_status_callback)
 
         subs = [raw_sub, ekf_sub]
@@ -152,7 +160,7 @@ class EKF_Test:
         Publish a sequence of waypoints for the rover to drive, wait until it has finished driving to them,
         then plot the collected data.
         """        
-        path = ANGLE_PATH
+        path = SQUARE_PATH
         publish_waypoints([convert_waypoint_to_gps(waypoint) for waypoint in path])
 
         # wait until we reach the waypoint
@@ -205,7 +213,7 @@ class EKF_Test:
         yaw_rmse = np.sqrt(np.sum(yaw_err**2) / yaw_err.shape[0])
 
         fig, axs = plt.subplots(2, 3)
-        axs[0, 0].plot(raw_arr[:, 0], raw_arr[:, 1], "tab:red", label="Raw GPS")
+        # axs[0, 0].plot(raw_arr[:, 0], raw_arr[:, 1], "tab:red", label="Raw GPS")
         axs[0, 0].plot(ekf_arr[:, 0], ekf_arr[:, 1], "tab:green", label="EKF")
         if self.in_sim:
             axs[0, 0].plot(gt_arr[:, 0], gt_arr[:, 1], "tab:blue", label="Ground Truth")
@@ -216,7 +224,8 @@ class EKF_Test:
 
         axs[0, 1].plot(times, pos_err, "tab:green", label=f"EKF, RMSE = {pos_rmse:.3f}")
         if self.in_sim:
-            axs[0, 1].plot(times, raw_pos_err, "tab:red", label=f"Raw GPS, RMSE = {raw_pos_rmse:.3f}")
+            # axs[0, 1].plot(times, raw_pos_err, "tab:red", label=f"Raw GPS, RMSE = {raw_pos_rmse:.3f}")
+            pass
         axs[0, 1].set_xlabel("time (s)")
         axs[0, 1].set_ylabel("error (meters)")
         axs[0, 1].set_title("Position Error")
@@ -224,14 +233,15 @@ class EKF_Test:
 
         axs[0, 2].plot(times, yaw_err, "tab:green", label=f"EKF, RMSE = {yaw_rmse:.3f}")
         if self.in_sim:
-            axs[0, 2].plot(times, raw_yaw_err, "tab:red", label=f"Raw IMU, RMSE = {raw_yaw_rmse:.3f}")
+            # axs[0, 2].plot(times, raw_yaw_err, "tab:red", label=f"Raw IMU, RMSE = {raw_yaw_rmse:.3f}")
+            pass
         axs[0, 2].set_xlabel("time (s)")
         axs[0, 2].set_ylabel("yaw error (radians)")
         axs[0, 2].set_title("Yaw Error vs Time")
         axs[0, 2].legend()
 
         axs[1, 0].plot(times, ekf_arr[:, 0], "tab:green", label="EKF")
-        axs[1, 0].plot(times, raw_arr[:, 0], "tab:red", label="Raw GPS")
+        # axs[1, 0].plot(times, raw_arr[:, 0], "tab:red", label="Raw GPS")
         if self.in_sim:
             axs[1, 0].plot(times, gt_arr[:, 0], "tab:blue", label="Ground Truth")
         axs[1, 0].set_xlabel("time (s)")
@@ -240,7 +250,7 @@ class EKF_Test:
         axs[1, 0].legend()
 
         axs[1, 1].plot(times, ekf_arr[:, 1], "tab:green", label="EKF")
-        axs[1, 1].plot(times, raw_arr[:, 1], "tab:red", label="Raw GPS")
+        # axs[1, 1].plot(times, raw_arr[:, 1], "tab:red", label="Raw GPS")
         if self.in_sim:
             axs[1, 1].plot(times, gt_arr[:, 1], "tab:blue", label="Ground Truth")
         axs[1, 1].set_xlabel("time (s)")
@@ -249,7 +259,7 @@ class EKF_Test:
         axs[1, 1].legend()
 
         axs[1, 2].plot(times, ekf_yaw, "tab:green", label="EKF")
-        axs[1, 2].plot(times, raw_yaw, "tab:red", label="Raw IMU")
+        # axs[1, 2].plot(times, raw_yaw, "tab:red", label="Raw IMU")
         if self.in_sim:
             axs[1, 2].plot(times, gt_yaw, "tab:blue", label="Ground Truth")
         axs[1, 2].set_xlabel("time (s)")

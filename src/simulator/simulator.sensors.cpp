@@ -183,9 +183,9 @@ namespace mrover {
 
                 mGpsPub.publish(computeNavSatFix(gpsInMap, mGpsLinerizationReferencePoint, mGpsLinerizationReferenceHeading));
                 geometry_msgs::Twist vel;
-                vel.linear.x = mRoverLinearVelocity.x();
-                vel.linear.y = mRoverLinearVelocity.y();
-                vel.linear.z = mRoverLinearVelocity.z();
+                vel.linear.x = mRoverLinearVelocity.x() + mVelDist(mRNG);
+                vel.linear.y = mRoverLinearVelocity.y() + mVelDist(mRNG);
+                vel.linear.z = mRoverLinearVelocity.z() + mVelDist(mRNG);
                 vel.angular.x = 0;
                 vel.angular.y = 0;
                 vel.angular.z = 0;

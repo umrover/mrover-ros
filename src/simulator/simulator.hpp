@@ -230,6 +230,7 @@ namespace mrover {
         std::default_random_engine mRNG;
         std::normal_distribution<double> mGPSDist{0, 0.1},
                 mAccelDist{0, 0.05},
+                mVelDist{0, 0.1},
                 mGyroDist{0, 0.02},
                 mMagDist{0, 0.1},
                 mRollDist{0, 0.05},
