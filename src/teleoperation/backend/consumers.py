@@ -253,6 +253,14 @@ class GUIConsumer(JsonWebsocketConsumer):
             )
 
     def handle_controls_message(self, msg):
+        if msg["type"] == "arm_values" and msg["arm_mode"] == "position":
+            position_names = ["joint_b", "joint_c", "joint_de_pitch", "joint_de_roll"]
+            position_cmd = Position(
+                names=position_names,
+                positions=msg["positions"],
+            )
+            self.arm_position_cmd_pub.publish(position_cmd)
+            return
         CACHE = ["cache"]
         SA_NAMES = ["sa_x", "sa_y", "sa_z", "sampler", "sensor_actuator"]
         RA_NAMES = self.RA_NAMES
@@ -301,16 +309,6 @@ class GUIConsumer(JsonWebsocketConsumer):
                 )
             )
             publishers[3].publish(arm_ik_cmd)
-
-        if msg["arm_mode"] == "position":
-            position_names = controls_names
-            if msg["type"] == "arm_values":
-                position_names = ["joint_b", "joint_c", "joint_de_pitch", "joint_de_roll"]
-            position_cmd = Position(
-                names=position_names,
-                positions=msg["positions"],
-            )
-            publishers[0].publish(position_cmd)
 
         elif msg["arm_mode"] == "velocity":
             velocity_cmd = Velocity()
