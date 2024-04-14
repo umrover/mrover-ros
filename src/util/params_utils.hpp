@@ -1,13 +1,16 @@
 #pragma once
 
 #include <cstdint>
+#include <filesystem>
+#include <format>
 #include <optional>
 #include <stdexcept>
 #include <string>
-#include <filesystem>
-#include <format>
 
 #include <XmlRpcValue.h>
+#include <ros/node_handle.h>
+
+#include "units/units.hpp"
 
 namespace mrover {
 
@@ -72,6 +75,15 @@ namespace mrover {
             }
         }
         return result;
+    }
+
+    template<IsUnit Unit>
+    auto requireParamAsUnit(ros::NodeHandle const& nh, std::string const& name) -> Unit {
+        assert(nh.hasParam(name));
+
+        typename Unit::rep_t value;
+        nh.getParam(name, value);
+        return Unit{value};
     }
 
 } // namespace mrover

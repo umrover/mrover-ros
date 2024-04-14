@@ -1,7 +1,0 @@
-
-<launch>
-
-    <!-- node to manage and run the integration test -->
-    <rosparam command="load" file="$(find mrover)/config/teleop.yaml" />
-    <test test-name="teleop_test" pkg="mrover" type="teleop_test.py" />
-</launch>

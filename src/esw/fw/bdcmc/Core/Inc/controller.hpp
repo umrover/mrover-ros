@@ -11,6 +11,7 @@
 #include <pidf.hpp>
 #include <units/units.hpp>
 
+#include "common.hpp"
 #include "encoders.hpp"
 #include "hbridge.hpp"
 #include "testing.hpp"
@@ -35,6 +36,8 @@ namespace mrover {
         bool m_watchdog_enabled{};
         TIM_HandleTypeDef* m_encoder_timer{};
         TIM_HandleTypeDef* m_encoder_elapsed_timer{};
+        TIM_HandleTypeDef* m_throttle_timer{};
+        TIM_HandleTypeDef* m_pidf_timer{};
         I2C_HandleTypeDef* m_absolute_encoder_i2c{};
         std::optional<QuadratureEncoderReader> m_relative_encoder;
         std::optional<AbsoluteEncoderReader> m_absolute_encoder;
@@ -45,6 +48,12 @@ namespace mrover {
         // "Desired" since it may be overridden.
         // For example if we are trying to drive into a limit switch it will be overriden to zero.
         Percent m_desired_output;
+        // Actual output after throttling.
+        // Changing the output quickly can result in back-EMF which can damage the board.
+        // This is a temporary fix until EHW adds TVS diodes.
+        Percent m_throttled_output;
+        using PercentPerSecond = compound_unit<Percent, inverse<Seconds>>;
+        PercentPerSecond m_throttle_rate{100};
         std::optional<Radians> m_uncalib_position;
         std::optional<RadiansPerSecond> m_velocity;
         BDCMCErrorInfo m_error = BDCMCErrorInfo::DEFAULT_START_UP_NOT_CONFIGURED;
@@ -99,9 +108,11 @@ namespace mrover {
 
                 if (limit_switch.pressed()) {
                     if (std::optional<Radians> readjustment_position = limit_switch.get_readjustment_position()) {
-                        if (!m_state_after_calib) m_state_after_calib.emplace();
+                        if (m_uncalib_position) {
+                            if (!m_state_after_calib) m_state_after_calib.emplace();
 
-                        m_state_after_calib->offset_position = m_uncalib_position.value() - readjustment_position.value();
+                            m_state_after_calib->offset_position = m_uncalib_position.value() - readjustment_position.value();
+                        }
                     }
                 }
             }
@@ -112,14 +123,12 @@ namespace mrover {
 
             if (m_state_after_config) {
                 // TODO: verify this is correct
-                bool limit_forward = m_desired_output > 0_percent && (
-                                         std::ranges::any_of(m_limit_switches, &LimitSwitch::limit_forward)
-                                         || m_uncalib_position > m_state_after_config->max_position
-                                     );
-                bool limit_backward = m_desired_output < 0_percent && (
-                                          std::ranges::any_of(m_limit_switches, &LimitSwitch::limit_backward)
-                                          || m_uncalib_position < m_state_after_config->min_position
-                                      );
+                bool limit_forward = m_desired_output > 0_percent && (std::ranges::any_of(m_limit_switches, &LimitSwitch::limit_forward)
+                                                                      //|| m_uncalib_position > m_state_after_config->max_position
+                                                                     );
+                bool limit_backward = m_desired_output < 0_percent && (std::ranges::any_of(m_limit_switches, &LimitSwitch::limit_backward)
+                                                                       //|| m_uncalib_position < m_state_after_config->min_position
+                                                                      );
                 if (limit_forward || limit_backward) {
                     m_error = BDCMCErrorInfo::OUTPUT_SET_TO_ZERO_SINCE_EXCEEDING_LIMITS;
                 } else {
@@ -127,7 +136,27 @@ namespace mrover {
                 }
             }
 
-            m_motor_driver.write(output.value_or(0_percent));
+            Percent output_after_limit = output.value_or(0_percent);
+            Percent delta = output_after_limit - m_throttled_output;
+
+            Seconds dt = cycle_time(m_throttle_timer, CLOCK_FREQ);
+
+            Percent applied_delta = m_throttle_rate * dt;
+
+            if (signum(output_after_limit) != signum(m_throttled_output)) {
+                // If we are changing directions, go straight to zero
+                // This also includes when going to zero from a non-zero value (since signum(0) == 0), helpful for when you want to stop moving quickly on input release
+                m_throttled_output = 0_percent;
+            }
+
+            if (abs(delta) < applied_delta) {
+                // We are very close to the desired output, just set it
+                m_throttled_output = output_after_limit;
+            } else {
+                m_throttled_output += applied_delta * signum(delta);
+            }
+
+            m_motor_driver.write(m_throttled_output);
         }
 
         auto process_command(AdjustCommand const& message) -> void {
@@ -140,7 +169,6 @@ namespace mrover {
         }
 
         auto process_command(ConfigCommand const& message) -> void {
-            // Initialize values
             StateAfterConfig config{.gear_ratio = message.gear_ratio};
 
             if (message.enc_info.quad_present) {
@@ -157,7 +185,8 @@ namespace mrover {
             config.min_position = message.min_position;
             config.max_position = message.max_position;
 
-            // TODO: verify this is correct
+            // Boolean configs are stored as bitfields so we have to extract them carefully
+
             for (std::size_t i = 0; i < m_limit_switches.size(); ++i) {
                 if (GET_BIT_AT_INDEX(message.limit_switch_info.present, i)) {
                     bool enabled = GET_BIT_AT_INDEX(message.limit_switch_info.enabled, i);
@@ -179,7 +208,6 @@ namespace mrover {
         }
 
         auto process_command(IdleCommand const&) -> void {
-            // TODO - what is the expected behavior? just afk?
             if (!m_state_after_config) {
                 m_error = BDCMCErrorInfo::RECEIVING_COMMANDS_WHEN_NOT_CONFIGURED;
                 return;
@@ -217,8 +245,7 @@ namespace mrover {
             mode.pidf.with_d(message.d);
             mode.pidf.with_ff(message.ff);
             mode.pidf.with_output_bound(-1.0, 1.0);
-            // TODO(quintin): Use timer for dt
-            m_desired_output = mode.pidf.calculate(input, target, Seconds{0.01});
+            m_desired_output = mode.pidf.calculate(input, target, cycle_time(m_pidf_timer, CLOCK_FREQ));
             m_error = BDCMCErrorInfo::NO_ERROR;
 
             m_fdcan.broadcast(OutBoundMessage{DebugState{
@@ -248,8 +275,7 @@ namespace mrover {
             // mode.pidf.with_i(message.i);
             mode.pidf.with_d(message.d);
             mode.pidf.with_output_bound(-1.0, 1.0);
-            // TODO(quintin): Use timer for dt
-            m_desired_output = mode.pidf.calculate(input, target, Seconds{0.01});
+            m_desired_output = mode.pidf.calculate(input, target, cycle_time(m_pidf_timer, CLOCK_FREQ));
             m_error = BDCMCErrorInfo::NO_ERROR;
         }
 
@@ -277,14 +303,22 @@ namespace mrover {
     public:
         Controller() = default;
 
-        Controller(TIM_HandleTypeDef* hbridge_output, Pin hbridge_forward_pin, Pin hbridge_backward_pin, FDCAN<InBoundMessage> const& fdcan, TIM_HandleTypeDef* watchdog_timer, TIM_HandleTypeDef* encoder_tick_timer, TIM_HandleTypeDef* encoder_elapsed_timer, I2C_HandleTypeDef* absolute_encoder_i2c, std::array<LimitSwitch, 4> const& limit_switches)
+        Controller(TIM_HandleTypeDef* hbridge_output, Pin hbridge_forward_pin, Pin hbridge_backward_pin,
+                   FDCAN<InBoundMessage> const& fdcan, TIM_HandleTypeDef* watchdog_timer,
+                   TIM_HandleTypeDef* encoder_tick_timer,
+                   TIM_HandleTypeDef* encoder_elapsed_timer, TIM_HandleTypeDef* throttle_timer, TIM_HandleTypeDef* pid_timer,
+                   I2C_HandleTypeDef* absolute_encoder_i2c,
+                   std::array<LimitSwitch, 4> const& limit_switches)
             : m_fdcan{fdcan},
               m_motor_driver{HBridge(hbridge_output, hbridge_forward_pin, hbridge_backward_pin)},
               m_watchdog_timer{watchdog_timer},
               m_encoder_timer{encoder_tick_timer},
               m_encoder_elapsed_timer{encoder_elapsed_timer},
+              m_throttle_timer{throttle_timer},
+              m_pidf_timer{pid_timer},
               m_absolute_encoder_i2c{absolute_encoder_i2c},
-              m_limit_switches{limit_switches} {}
+              m_limit_switches{limit_switches} {
+        }
 
         template<typename Command>
         auto process_command(Command const& command) -> void {

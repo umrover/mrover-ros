@@ -7,7 +7,7 @@ PLUGINLIB_EXPORT_CLASS(mrover::CanNodelet, nodelet::Nodelet)
 
 #else
 
-int main(int argc, char** argv) {
+auto main(int argc, char** argv) -> int {
     ros::init(argc, argv, "can_driver");
 
     // Start the CAN Nodelet

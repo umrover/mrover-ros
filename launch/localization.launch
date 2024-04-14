@@ -2,6 +2,7 @@
     <arg name="sim" default="false" />
     <arg name="use_ekf" default="true" />
     <arg name="ekf_start_delay" default="0" />
+    <arg name="use_both_gps" default="true" />
 
     <rosparam command="load" file="$(find mrover)/config/localization.yaml" />
     <rosparam command="load" file="$(find mrover)/config/esw.yaml" />
@@ -20,8 +21,9 @@
         launch-prefix="bash -c 'sleep 5; $0 $@'" /> -->
 
     <!-- Passthrough filter to replace EKF in data path -->
-    <!-- <node unless="$(arg use_ekf)" pkg="mrover" type="passthrough_filter.py"
-        name="passthrough_filter" /> -->
+    <node unless="$(arg use_ekf)"
+          pkg="mrover" type="passthrough_filter.py"
+          name="passthrough_filter" />
 
     <!-- Linearize GPS from geodetic to ENU cartesian coords -->
     <node name="gps_linearization" pkg="mrover" type="gps_linearization.py" output="screen" />
@@ -29,9 +31,13 @@
     <!-- Launch IMU driver -->
     <node unless="$(arg sim)" name="imu_driver" pkg="mrover" type="imu_driver.py" output="screen" />
 
-    <!-- Launch GPS driver -->
-    <group ns="gps">
-        <node unless="$(arg sim)" name="gps_driver" pkg="mrover" type="gps_driver.py" output="screen" />
+    <!-- Launch GPS driver(s) -->
+    <group ns="right_gps_driver" unless="$(arg sim)">
+        <node if="$(arg use_both_gps)" pkg="mrover" type="gps_driver.py" name="gps_driver" output="screen"/>
+    </group>
+
+    <group ns="left_gps_driver" unless="$(arg sim)">
+        <node pkg="mrover" type="gps_driver.py" name="gps_driver" output="screen"/>
     </group>
 
 </launch>

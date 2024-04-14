@@ -113,7 +113,7 @@ namespace mrover {
         }
 
         template<IsUnit U>
-        [[nodiscard]] constexpr auto operator=(U const& rhs) -> Unit&
+        constexpr auto operator=(U const& rhs) -> Unit&
             requires AreExponentsSame<Unit, U>
         {
             rep = rhs.get();
@@ -309,6 +309,18 @@ namespace mrover {
     template<IsUnit U>
     constexpr auto abs(U const& u) {
         return U{std::fabs(u.rep)};
+    }
+
+    template<IsUnit U>
+    constexpr auto signum(U const& u) -> int {
+        bool is_zero = std::fabs(u.rep) < std::numeric_limits<typename U::rep_t>::epsilon();
+        return is_zero ? 0 : std::signbit(u.rep) ? -1
+                                                 : 1;
+    }
+
+    template<IsUnit U>
+    constexpr auto fmod(U const& u, typename U::rep_t n) {
+        return U{std::fmod(u.rep, n)};
     }
 
     //

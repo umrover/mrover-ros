@@ -64,6 +64,32 @@ Visualization Manager:
       Frame Timeout: 15
       Frames:
         All Enabled: false
+        back_left_wheel_link:
+          Value: false
+        back_right_wheel_link:
+          Value: false
+        base_link:
+          Value: true
+        camera_link:
+          Value: false
+        center_left_wheel_link:
+          Value: false
+        center_right_wheel_link:
+          Value: false
+        chassis_link:
+          Value: true
+        front_left_wheel_link:
+          Value: false
+        front_right_wheel_link:
+          Value: false
+        imu_link:
+          Value: false
+        map:
+          Value: true
+        right_camera_link:
+          Value: true
+        zed_left_camera_frame:
+          Value: true
       Marker Alpha: 1
       Marker Scale: 1
       Name: TF
@@ -71,7 +97,29 @@ Visualization Manager:
       Show Axes: true
       Show Names: true
       Tree:
-        {}
+        map:
+          base_link:
+            chassis_link:
+              back_left_wheel_link:
+                {}
+              back_right_wheel_link:
+                {}
+              camera_link:
+                {}
+              center_left_wheel_link:
+                {}
+              center_right_wheel_link:
+                {}
+              front_left_wheel_link:
+                {}
+              front_right_wheel_link:
+                {}
+              imu_link:
+                {}
+              right_camera_link:
+                {}
+            zed_left_camera_frame:
+              {}
       Update Interval: 0
       Value: false
     - Alpha: 1

@@ -1,22 +1,26 @@
 <launch>
-    <arg name="run_rviz" default="true" />
-    <rosparam command="load" file="$(find mrover)/config/simulator/simulator.yaml" />
+  <arg name="headless" default="false"/>
+  <arg name="run_rviz" default="true"/>
 
-    <include file="$(find mrover)/launch/autonomy.launch">
-        <arg name="sim" value="true"/>
-        <arg name="ekf_start_delay" value="1" />
-    </include>
+  <rosparam command="load" file="$(find mrover)/config/simulator/simulator.yaml"/>
 
-    <node pkg="nodelet" type="nodelet" name="nodelet_manager" required="true"
-        args="manager" output="screen" />
+  <include file="$(find mrover)/launch/autonomy.launch">
+    <arg name="sim" value="true"/>
+    <arg name="ekf_start_delay" value="1"/>
+  </include>
 
-    <node pkg="nodelet" type="nodelet" name="simulator_nodelet"
-        args="load mrover/SimulatorNodelet nodelet_manager" output="screen" />
+  <node pkg="nodelet" type="nodelet" name="perception_nodelet_manager" required="true"
+        args="manager" output="screen"/>
 
-    <node name="arm_controller" pkg="mrover" type="arm_controller" output="screen" />
+  <node pkg="nodelet" type="nodelet" name="simulator_nodelet"
+        args="load mrover/SimulatorNodelet perception_nodelet_manager" output="screen">
+    <param name="headless" value="$(arg headless)"/>
+  </node>
 
-    <group if="$(arg run_rviz)">
-        <arg name="rvizconfig" default="$(find mrover)/config/rviz/auton_sim.rviz" />
-        <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" />
-    </group>
+  <node name="arm_controller" pkg="mrover" type="arm_controller" output="screen"/>
+
+  <group if="$(arg run_rviz)">
+    <arg name="rvizconfig" default="$(find mrover)/config/rviz/auton_sim.rviz"/>
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)"/>
+  </group>
 </launch>
