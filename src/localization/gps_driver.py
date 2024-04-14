@@ -16,7 +16,7 @@ from os import getenv
 from pyubx2 import UBXReader, UBX_PROTOCOL, RTCM3_PROTOCOL, protocol, UBXMessage
 from std_msgs.msg import Header
 from sensor_msgs.msg import NavSatFix
-from rtcm_msgs.msg import Message
+# from rtcm_msgs.msg import Message
 # from mrover.msg import rtkStatus
 import datetime
 
@@ -26,7 +26,7 @@ class GPS_Driver:
         rospy.init_node("gps_driver")
         self.port = rospy.get_param("port")
         self.baud = rospy.get_param("baud")
-        self.base_station_sub = rospy.Subscriber("/rtcm", Message, self.process_rtcm)
+        # self.base_station_sub = rospy.Subscriber("/rtcm", Message, self.process_rtcm)
         self.gps_pub = rospy.Publisher("fix", NavSatFix, queue_size=1)
         # self.rtk_fix_pub = rospy.Publisher("rtk_fix_status", rtkStatus, queue_size=1)
 
@@ -45,11 +45,11 @@ class GPS_Driver:
         # close connection
         self.ser.close()
 
-    def process_rtcm(self, data) -> None:
-        print("processing RTCM")
-        with self.lock:
-            # rtcm_data = RTCM.decode(data)
-            self.ser.write(data.message)
+    # def process_rtcm(self, data) -> None:
+    #     print("processing RTCM")
+    #     with self.lock:
+    #         # rtcm_data = RTCM.decode(data)
+    #         self.ser.write(data.message)
 
     def parse_rover_gps_data(self, rover_gps_data) -> None:
         msg = rover_gps_data
