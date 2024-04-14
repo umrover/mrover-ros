@@ -49,11 +49,7 @@ namespace mrover {
 		mCloud = ros::topic::waitForMessage<sensor_msgs::PointCloud2>("/camera/left/points", mNh);
 		filterNormals(mCloud);
 		ransac(0.1, 10, 100);
-        createSpline(2);
-        // for(int i = 0; i < static_cast<int>(mPathPoints.size()); i++){
-            
-
-        // }
+        createSpline(4,0.5);    
 		calcMotionToo();
     }
 
@@ -81,7 +77,7 @@ namespace mrover {
         for (const Vector5d& point : mPathPoints) {
             double K1 = .3;
             double K2 = 1;
-            double K3 = 1;  
+            double K3 = 1.5;  
 
             // Grab the current target state from the spline
             Eigen::Vector3d tarState{point.coeff(0, 0), point.coeff(1, 0), point.coeff(2, 0)};
@@ -460,7 +456,7 @@ namespace mrover {
     }
     
 
-    void LanderAlignNodelet::createSpline(int density){
+    void LanderAlignNodelet::createSpline(int density, double offset){
         //Constants
         const double kSplineStart = 7.0/8;
         const double dOmega = 0;
@@ -480,7 +476,7 @@ namespace mrover {
         Eigen::Vector3d densityVector = mNormalInWorldVector.value() / density;
         Eigen::Vector3d splinePoint = Eigen::Vector3d::Zero();
         
-        while(splinePoint.norm() < splineLength){
+        while(splinePoint.norm() < (splineLength- offset)){
             Eigen::Vector3d splinePointInWorld = baseSplinePoint - splinePoint;
             // Create the new point to be added to the vector
             Vector5d newPoint;
