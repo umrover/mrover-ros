@@ -182,7 +182,7 @@ endif ()
 ## Localization
 
 mrover_add_node(invariant_ekf src/localization/invariant_ekf/*.cpp src/localization/invariant_ekf/ src/localization/invariant_ekf/pch.hpp)
-target_link_libraries(invariant_ekf PRIVATE lie manif)
+target_link_libraries(invariant_ekf PRIVATE lie)
 
 ## Perception
 
