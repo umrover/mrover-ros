@@ -70,6 +70,7 @@
   <!-- Utility -->
   <exec_depend>teleop_twist_joy</exec_depend>
   <exec_depend>teleop_twist_keyboard</exec_depend>
+  <exec_depend>hector_trajectory_server</exec_depend>
 
   <!-- Test -->
   <test_depend>rosunit</test_depend>

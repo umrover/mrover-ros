@@ -18,4 +18,11 @@
     <arg name="use_ekf" value="$(arg use_ekf)" />
     <arg name="ekf_start_delay" value="$(arg ekf_start_delay)" />
   </include>
+
+  <node name="hector_trajectory_server" output="screen" pkg="hector_trajectory_server" type="hector_trajectory_server">
+    <param name="target_frame_name" type="string" value="map"/>
+    <param name="source_frame_name" type="string" value="base_link"/>
+    <param name="trajectory_update_rate" type="double" value="4"/>
+    <param name="trajectory_publish_rate" type="double" value="4"/>
+  </node>
 </launch>
