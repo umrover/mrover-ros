@@ -1,10 +1,10 @@
-[submodule "deps/libde265"]
-	path = deps/libde265
-	url = git@github.com:strukturag/libde265.git
-	shallow = true
-	branch = 0.1-20240106
 [submodule "deps/dawn"]
 	path = deps/dawn
 	url = https://dawn.googlesource.com/dawn
 	shallow = true
-	branch = chromium/6108
+	branch = chromium/6376
+[submodule "deps/manif"]
+	path = deps/manif
+	url = https://github.com/artivis/manif.git
+	shallow = true
+	branch = devel

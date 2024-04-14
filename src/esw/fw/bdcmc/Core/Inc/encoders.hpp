@@ -8,15 +8,10 @@
 #include <hardware_i2c.hpp>
 #include <units/units.hpp>
 
+#include "common.hpp"
+#include "filtering.hpp"
+
 namespace mrover {
-
-    constexpr auto tau = 2 * std::numbers::pi_v<float>;
-
-    // Counts (ticks) per radian (NOT per rotation)
-    using CPR = compound_unit<Ticks, inverse<Radians>>;
-
-    constexpr auto RELATIVE_CPR = CPR{4096 / tau};
-    constexpr auto ABSOLUTE_CPR = CPR{1024 / tau};
 
     struct EncoderReading {
         Radians position;
@@ -25,9 +20,11 @@ namespace mrover {
 
     class AbsoluteEncoderReader {
     public:
+        using AS5048B_Bus = SMBus<std::uint8_t, std::array<std::uint8_t, 2>>;
+
         AbsoluteEncoderReader() = default;
 
-        AbsoluteEncoderReader(SMBus i2c_bus, std::uint8_t A1, std::uint8_t A2, Ratio multiplier);
+        AbsoluteEncoderReader(AS5048B_Bus i2c_bus, Radians offset, Ratio multiplier, TIM_HandleTypeDef* elapsed_timer);
 
         auto request_raw_angle() -> void;
         auto read_raw_angle_into_buffer() -> void;
@@ -44,39 +41,45 @@ namespace mrover {
                     device_slave_address_both_high = 0x43;
         };
 
-        std::uint16_t m_address{};
-        SMBus m_i2cBus;
+        TIM_HandleTypeDef* m_elapsed_timer{};
+
+        std::uint16_t m_address = I2CAddress::device_slave_address_none_high;
+        AS5048B_Bus m_i2cBus;
 
         std::uint64_t m_previous_raw_data{};
 
-        std::uint32_t m_ticks_prev{};
-        Radians m_angle_prev;
+        Radians m_offset;
         Ratio m_multiplier;
 
         Radians m_position;
-        RadiansPerSecond m_velocity;
+        Radians m_position_prev;
+        RunningMeanFilter<RadiansPerSecond, 16> m_velocity_filter;
     };
 
     class QuadratureEncoderReader {
     public:
         QuadratureEncoderReader() = default;
 
-        QuadratureEncoderReader(TIM_HandleTypeDef* timer, Ratio multiplier);
+        QuadratureEncoderReader(TIM_HandleTypeDef* tick_timer, Ratio multiplier, TIM_HandleTypeDef* elapsed_timer);
 
-        [[nodiscard]] auto read() -> std::optional<EncoderReading>;
+        [[nodiscard]] auto read() const -> std::optional<EncoderReading>;
+
+        auto update() -> void;
+
+        auto expired() -> void {
+            m_velocity_filter.clear();
+        }
 
     private:
-        TIM_HandleTypeDef* m_timer{};
+        TIM_HandleTypeDef* m_tick_timer{};
+        TIM_HandleTypeDef* m_elapsed_timer{};
         std::int64_t m_counts_unwrapped_prev{};
-        std::uint32_t m_counts_raw_now{};
-        std::uint32_t m_ticks_prev{};
-        std::uint32_t m_ticks_now{};
         Ratio m_multiplier;
 
         Radians m_position;
-        RadiansPerSecond m_velocity;
-
-        std::int64_t count_delta();
+        // RadiansPerSecond m_velocity;
+        RunningMeanFilter<RadiansPerSecond, 16> m_velocity_filter;
+        // IIRFilter<RadiansPerSecond, 0.05> m_velocity_filter;
     };
 
 } // namespace mrover

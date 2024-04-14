@@ -3,16 +3,6 @@
     <div class="identification">
       <p>{{ waypoint.name }} | ID: {{ waypoint.id }} | Type: {{ WAYPOINT_TYPES[waypoint.type] }}</p>
     </div>
-    <div class="location">
-      <p>{{ output.lat.d }}º</p>
-      <p v-if="min_enabled">{{ output.lat.m }}'</p>
-      <p v-if="sec_enabled">{{ output.lat.s }}"</p>
-      N <b>|</b>
-      <p>{{ output.lon.d }}º</p>
-      <p v-if="min_enabled">{{ output.lon.m }}'</p>
-      <p v-if="sec_enabled">{{ output.lon.s }}"</p>
-      W
-    </div>
     <div class="row">
       <div class="col text-center">
         <button v-if="!in_route" class="btn btn-danger" @click="$emit('add', { in_route: in_route, index: index })">
@@ -25,6 +15,16 @@
           Delete
         </button>
       </div>
+    </div>
+    <div class="location">
+      <p>{{ output.lat.d }}º</p>
+      <p v-if="min_enabled">{{ output.lat.m }}'</p>
+      <p v-if="sec_enabled">{{ output.lat.s }}"</p>
+      N <b>|</b>
+      <p>{{ output.lon.d }}º</p>
+      <p v-if="min_enabled">{{ output.lon.m }}'</p>
+      <p v-if="sec_enabled">{{ output.lon.s }}"</p>
+      W
     </div>
   </div>
 </template>

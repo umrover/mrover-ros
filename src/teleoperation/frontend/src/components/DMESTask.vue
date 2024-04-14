@@ -5,17 +5,24 @@
       <h1 v-else>DM GUI Dashboard</h1>
       <img class="logo" src="/mrover.png" alt="MRover" title="MRover" width="200" />
       <div class="help">
-        <img src="help.png" alt="Help" title="Help" width="48" height="48" />
+        <img src="/help.png" alt="Help" title="Help" width="48" height="48" />
       </div>
       <div class="helpscreen"></div>
-      <div class="helpimages" style="display: flex; align-items: center; justify-content: space-evenly">
-        <img src="joystick.png" alt="Joystick" title="Joystick Controls"
-          style="width: auto; height: 70%; display: inline-block" />
+      <div
+        class="helpimages"
+        style="display: flex; align-items: center; justify-content: space-evenly"
+      >
+        <img
+          src="/joystick.png"
+          alt="Joystick"
+          title="Joystick Controls"
+          style="width: auto; height: 70%; display: inline-block"
+        />
       </div>
     </div>
 
     <div class="shadow p-3 rounded cameras">
-      <Cameras :primary="true" />
+      <Cameras :primary="true" :isSA="false" :mission="'ik'" />
     </div>
     <div v-if="type === 'DM'" class="shadow p-3 rounded odom">
       <OdometryReading :odom="odom" />
@@ -27,7 +34,7 @@
       <PDBFuse />
     </div>
     <div class="shadow p-3 rounded drive-vel-data">
-      <JointStateTable :joint-state-data="jointState" :vertical="true" />
+      <MotorsStatusTable :motorData="motorData" :vertical="true" />
     </div>
     <div v-if="type === 'DM'" class="shadow p-3 rounded waypoint-editor">
       <BasicWaypointEditor :odom="odom" />
@@ -39,7 +46,7 @@
       <ArmControls />
     </div>
     <div class="shadow p-3 rounded moteus">
-      <DriveMoteusStateTable :moteus-state-data="moteusState" />
+      <DriveMoteusStateTable :moteus-state-data="moteusDrive" />
       <ArmMoteusStateTable />
     </div>
     <div v-show="false">
@@ -50,7 +57,7 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue'
-import { mapState } from 'vuex'
+import { mapState, mapActions } from 'vuex'
 import PDBFuse from './PDBFuse.vue'
 import DriveMoteusStateTable from './DriveMoteusStateTable.vue'
 import ArmMoteusStateTable from './ArmMoteusStateTable.vue'
@@ -58,7 +65,7 @@ import ArmControls from './ArmControls.vue'
 import BasicMap from './BasicRoverMap.vue'
 import BasicWaypointEditor from './BasicWaypointEditor.vue'
 import Cameras from './Cameras.vue'
-import JointStateTable from './JointStateTable.vue'
+import MotorsStatusTable from './MotorsStatusTable.vue'
 import OdometryReading from './OdometryReading.vue'
 import DriveControls from './DriveControls.vue'
 import MastGimbalControls from './MastGimbalControls.vue'
@@ -72,7 +79,7 @@ export default defineComponent({
     BasicMap,
     BasicWaypointEditor,
     Cameras,
-    JointStateTable,
+    MotorsStatusTable,
     OdometryReading,
     DriveControls,
     MastGimbalControls
@@ -92,21 +99,24 @@ export default defineComponent({
         latitude_deg: 38.406025,
         longitude_deg: -110.7923723,
         bearing_deg: 0,
-        altitude: 0,
+        altitude: 0
       },
 
-      // Default object isn't empty, so has to be initialized to ""
-      moteusState: {
-        name: ['', '', '', '', '', ''],
-        error: ['', '', '', '', '', ''],
-        state: ['', '', '', '', '', '']
+      moteusDrive: {
+        name: [] as string[],
+        error: [] as string[],
+        state: [] as string[],
+        limit_hit:
+          [] as boolean[] /* Each motor stores an array of 4 indicating which limit switches are hit */
       },
 
-      jointState: {
-        name: [],
-        position: [],
-        velocity: [],
-        effort: []
+      motorData: {
+        name: [] as string[],
+        position: [] as number[],
+        velocity: [] as number[],
+        effort: [] as number[],
+        state: [] as string[],
+        error: [] as string[]
       }
     }
   },
@@ -117,13 +127,41 @@ export default defineComponent({
 
   watch: {
     message(msg) {
-      if (msg.type == 'joint_state') {
-        this.jointState.name = msg.name
-        this.jointState.position = msg.position
-        this.jointState.velocity = msg.velocity
-        this.jointState.effort = msg.effort
+      if (msg.type == 'drive_status') {
+        this.motorData.name = msg.name
+        this.motorData.position = msg.position
+        this.motorData.velocity = msg.velocity
+        this.motorData.effort = msg.effort
+        this.motorData.state = msg.state
+        this.motorData.error = msg.error
+      } else if (msg.type == 'drive_moteus') {
+        this.moteusDrive.name = msg.name
+        this.moteusDrive.state = msg.state
+        this.moteusDrive.error = msg.error
+        this.moteusDrive.limit_hit = msg.limit_hit
+      } else if (msg.type == 'center_map') {
+        this.odom.latitude_deg = msg.latitude
+        this.odom.longitude_deg = msg.longitude
       }
     }
+  },
+
+  methods: {
+    ...mapActions('websocket', ['sendMessage']),
+    cancelIK: function () {
+      this.sendMessage({ type: 'cancel_click_ik' })
+    }
+  },
+
+  created: function () {
+    window.setTimeout(() => {
+      this.sendMessage({ type: 'center_map' })
+    }, 250)
+    window.addEventListener('keydown', (event: KeyboardEvent) => {
+      if (event.key === ' ') {
+        this.cancelIK(event)
+      }
+    })
   }
 })
 </script>
@@ -138,9 +176,9 @@ export default defineComponent({
     'header header'
     'map waypoint-editor'
     'map odom'
-    'map cameras'
     'arm-controls drive-vel-data'
-    'moteus pdb';
+    'moteus pdb'
+    'cameras cameras';
   font-family: sans-serif;
   height: auto;
 }
@@ -152,9 +190,9 @@ export default defineComponent({
   grid-template-rows: repeat(4, auto);
   grid-template-areas:
     'header header'
-    'cameras arm-controls'
-    'drive-vel-data moteus'
-    'pdb pdb';
+    'drive-vel-data arm-controls'
+    'pdb moteus'
+    'cameras cameras';
   font-family: sans-serif;
   height: auto;
 }
@@ -195,8 +233,8 @@ export default defineComponent({
   cursor: pointer;
 }
 
-.help:hover~.helpscreen,
-.help:hover~.helpimages {
+.help:hover ~ .helpscreen,
+.help:hover ~ .helpimages {
   visibility: visible;
 }
 

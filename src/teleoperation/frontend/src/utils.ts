@@ -4,7 +4,7 @@ const convertDMS = function (coord_in, odom_format) {
   const MIN_DECIMALS = 6
   const SEC_DECIMALS = 4
   const coord_total = coord_in.d + coord_in.m / 60 + coord_in.s / 3600
-  let coord_out = {}
+  const coord_out = {}
   if (odom_format === 'DMS') {
     coord_out.d = Math.trunc(coord_total.toFixed(DEG_DECIMALS))
     coord_out.m = Math.trunc(((coord_total - coord_out.d) * 60).toFixed(MIN_DECIMALS))

@@ -1,6 +1,13 @@
 <template>
   <div class="wrap">
-    <l-map @ready="onMapReady" ref="map" class="map" :zoom="22" :center="center" @click="getClickedLatLon($event)">
+    <l-map
+      @ready="onMapReady"
+      ref="map"
+      class="map"
+      :zoom="22"
+      :center="center"
+      @click="getClickedLatLon($event)"
+    >
       <l-control-scale :imperial="false" />
       <l-tile-layer
         ref="tileLayer"
@@ -12,20 +19,11 @@
       <l-marker ref="rover" :lat-lng="odomLatLng" :icon="locationIcon" />
 
       <div v-for="(waypoint, index) in waypointList" :key="index">
-        <div v-if="index === highlightedWaypoint">
-          <l-marker :lat-lng="waypoint.latLng" :icon="highlightedWaypointIcon">
-            <l-tooltip :options="{ permanent: 'true', direction: 'top' }">
-              {{ waypoint.name }}, {{ index }}
-            </l-tooltip>
-          </l-marker>
-        </div>
-        <div v-else>
-          <l-marker :lat-lng="waypoint.latLng" :icon="waypointIcon">
-            <l-tooltip :options="{ permanent: 'true', direction: 'top' }">
-              {{ waypoint.name }}, {{ index }}
-            </l-tooltip>
-          </l-marker>
-        </div>
+        <l-marker :lat-lng="waypoint.latLng" :icon="getWaypointIcon(waypoint.drone)">
+          <l-tooltip :options="{ permanent: 'true', direction: 'top' }">
+            {{ waypoint.name }}, {{ index }}
+          </l-tooltip>
+        </l-marker>
       </div>
 
       <l-polyline :lat-lngs="odomPath" :color="'blue'" />
@@ -106,6 +104,12 @@ export default {
       iconAnchor: [32, 64],
       popupAnchor: [0, -32]
     })
+    this.droneWaypointIcon = L.icon({
+      iconUrl: '/map_marker_drone.png',
+      iconSize: [64, 64],
+      iconAnchor: [32, 64],
+      popupAnchor: [0, -32]
+    })
     this.highlightedWaypointIcon = L.icon({
       iconUrl: '/map_marker_highlighted.png',
       iconSize: [64, 64],
@@ -115,9 +119,9 @@ export default {
   },
 
   methods: {
-    onMapReady: function() {
+    onMapReady: function () {
       // Pull objects from refs to be able to access data and change w functions
-        this.$nextTick(() => {
+      this.$nextTick(() => {
         this.map = this.$refs.map.leafletObject
         this.roverMarker = this.$refs.rover.leafletObject
       })
@@ -128,6 +132,15 @@ export default {
         lat: e.latlng.lat,
         lon: e.latlng.lng
       })
+    },
+    getWaypointIcon: function (isDrone: boolean) {
+      if (this.index === this.highlightedWaypoint) {
+        return this.highlightedWaypointIcon
+      } else if (isDrone) {
+        return this.droneWaypointIcon
+      } else {
+        return this.waypointIcon
+      }
     },
     ...mapMutations('erd', {
       setClickPoint: 'setClickPoint',
@@ -184,18 +197,18 @@ export default {
         // Update the rover path
         this.odomCount++
         if (this.odomCount % DRAW_FREQUENCY === 0) {
-          if(this.odomPath.length > MAX_ODOM_COUNT) {
+          if (this.odomPath.length > MAX_ODOM_COUNT) {
             this.odomPath = [...this.odomPath.slice(1), latLng] //remove oldest element
           }
-          
+
           this.odomPath = [...this.odomPath, latLng]
-          this.odomCount = 0;
+          this.odomCount = 0
         }
       },
       // Deep will watch for changes in children of an object
       deep: true
     }
-  },
+  }
 }
 </script>
 
@@ -208,5 +221,6 @@ export default {
   display: flex;
   align-items: center;
   height: 100%;
+  width: 100%;
 }
 </style>

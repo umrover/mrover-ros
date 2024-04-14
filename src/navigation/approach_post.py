@@ -2,52 +2,37 @@ import tf2_ros
 
 from util.ros_utils import get_rosparam
 from util.state_lib.state import State
+from typing import Optional
+import numpy as np
 
-from navigation import search, waypoint
+from navigation import state, recovery
+from navigation.approach_target_base import ApproachTargetBaseState
 
 
-class ApproachPostState(State):
-    STOP_THRESH = get_rosparam("single_fiducial/stop_thresh", 0.7)
-    FIDUCIAL_STOP_THRESHOLD = get_rosparam("single_fiducial/fiducial_stop_threshold", 1.75)
-    DRIVE_FWD_THRESH = get_rosparam("waypoint/drive_fwd_thresh", 0.34)  # 20 degrees
+class ApproachPostState(ApproachTargetBaseState):
+    """
+    State for when the tag is seen in the ZED camera.
+    Transitions:
+    -If arrived at target: DoneState
+    -Did not arrive at target: ApproachPostState
+    """
 
-    def on_enter(self, context) -> None:
+    def on_enter(self, context):
         pass
 
-    def on_exit(self, context) -> None:
+    def on_exit(self, context):
         pass
 
-    def on_loop(self, context) -> State:
-        """
-        Drive towards a single fiducial if we see it and stop within a certain threshold if we see it.
-        Else conduct a search to find it.
-        :param ud:  State machine user data
-        :return:    Next state
-        """
-        fid_pos = context.env.current_fid_pos()
-        if fid_pos is None:
-            return search.SearchState()
+    def get_target_pos(self, context) -> Optional[np.ndarray]:
+        # return fid_pos, either position or None
+        fid_pos = context.env.current_target_pos()
+        return fid_pos
 
-        try:
-            cmd_vel, arrived = context.rover.driver.get_drive_command(
-                fid_pos,
-                context.rover.get_pose(in_odom_frame=True),
-                self.STOP_THRESH,
-                self.DRIVE_FWD_THRESH,
-                in_odom=context.use_odom,
-            )
-            if arrived:
-                context.env.arrived_at_post = True
-                context.env.last_post_location = context.env.current_fid_pos(odom_override=False)
-                context.course.increment_waypoint()
-                return waypoint.WaypointState()
-            context.rover.send_drive_command(cmd_vel)
-        except (
-            tf2_ros.LookupException,
-            tf2_ros.ConnectivityException,
-            tf2_ros.ExtrapolationException,
-        ):
-            # TODO: probably go into some waiting state
-            pass
+    def determine_next(self, context, finished: bool) -> State:
+        if finished:
+            return state.DoneState()
+        if context.rover.stuck:
+            context.rover.previous_state = self
+            return recovery.RecoveryState()
 
         return self

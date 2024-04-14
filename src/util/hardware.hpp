@@ -1,11 +1,13 @@
 #pragma once
 
+#include <array>
 #include <bit>
 #include <bitset>
 #include <concepts>
 #include <cstdint>
 #include <optional>
 #include <type_traits>
+#include <utility>
 
 #include <units/units.hpp>
 
@@ -43,7 +45,7 @@ namespace mrover {
             return HAL_GPIO_ReadPin(m_port, m_pin);
         }
 
-        inline auto write(GPIO_PinState val) const -> void {
+        auto write(GPIO_PinState val) const -> void {
             HAL_GPIO_WritePin(m_port, m_pin, val);
         }
 
@@ -71,11 +73,9 @@ namespace mrover {
 
         auto update_limit_switch() -> void {
             // This suggests active low
-            if (m_enabled) {
-                m_is_pressed = m_active_high == m_pin.read();
-            } else {
-                m_is_pressed = false;
-            }
+            m_is_pressed = m_enabled
+                                   ? m_active_high == m_pin.read()
+                                   : false;
         }
 
         [[nodiscard]] auto pressed() const -> bool {
@@ -92,11 +92,13 @@ namespace mrover {
 
         [[nodiscard]] auto get_readjustment_position() const -> std::optional<Radians> {
             // Returns std::null_opt if the value should not be readjusted
-            if (m_valid && m_enabled && m_used_for_readjustment && m_is_pressed) {
-                return m_associated_position;
-            } else {
-                return std::nullopt;
-            }
+            return is_used_for_readjustment() && m_is_pressed
+                           ? std::make_optional(m_associated_position)
+                           : std::nullopt;
+        }
+
+        [[nodiscard]] auto is_used_for_readjustment() const -> bool {
+            return m_valid && m_enabled && m_used_for_readjustment;
         }
 
         void enable() {
@@ -119,6 +121,7 @@ namespace mrover {
         Radians m_associated_position{};
     };
 
+    template<IsFdcanSerializable TReceive>
     class FDCAN {
         //        constexpr static std::uint8_t NO_DATA = 0x50;
 
@@ -137,7 +140,7 @@ namespace mrover {
         explicit FDCAN(std::uint8_t source, std::uint8_t destination, FDCAN_HandleTypeDef* fdcan)
             : m_fdcan{fdcan}, m_source{source}, m_destination{destination} {
 
-            configure_filter();
+            // configure_filter();
 
             check(HAL_FDCAN_ActivateNotification(m_fdcan, FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0) == HAL_OK, Error_Handler);
             check(HAL_FDCAN_Start(m_fdcan) == HAL_OK, Error_Handler);
@@ -152,7 +155,7 @@ namespace mrover {
             std::bitset<16> destinationBits{m_destination};
             std::bitset<16> filter = source_bits << 8 | destinationBits;
 
-            std::bitset<15> mask; // 15 lowest bits set for source and destination, 16th (reply bit) and above should be ignored
+            std::bitset<15> mask; // 15 lowestc bits set for source and destination, 16th (reply bit) and above should be ignored
             mask.set();
 
             FDCAN_FilterTypeDef filter_config{
@@ -171,14 +174,16 @@ namespace mrover {
          * \tparam TReceive The type of the message to receive
          * \return          Header and message, or none if queue is empty
          */
-        template<IsFdcanSerializable TReceive>
         [[nodiscard]] auto receive() -> std::optional<std::pair<FDCAN_RxHeaderTypeDef, TReceive>> {
             if (HAL_FDCAN_GetRxFifoFillLevel(m_fdcan, FDCAN_RX_FIFO0) == 0)
                 return std::nullopt;
 
             FDCAN_RxHeaderTypeDef header{};
-            TReceive receive{};
-            check(HAL_FDCAN_GetRxMessage(m_fdcan, FDCAN_RX_FIFO0, &header, address_of<std::uint8_t>(receive)) == HAL_OK, Error_Handler);
+            union {
+                TReceive receive{};
+                std::array<std::uint8_t, FDCAN_MAX_FRAME_SIZE> bytes;
+            };
+            check(HAL_FDCAN_GetRxMessage(m_fdcan, FDCAN_RX_FIFO0, &header, bytes.data()) == HAL_OK, Error_Handler);
             return std::make_pair(header, receive);
         }
 
@@ -219,7 +224,7 @@ namespace mrover {
                     .TxFrameType = FDCAN_DATA_FRAME,
                     .DataLength = nearest_fitting_can_fd_frame_size(sizeof(send)),
                     .ErrorStateIndicator = FDCAN_ESI_ACTIVE,
-                    .BitRateSwitch = FDCAN_BRS_ON,
+                    .BitRateSwitch = FDCAN_BRS_OFF,
                     .FDFormat = FDCAN_FD_CAN,
                     .TxEventFifoControl = FDCAN_NO_TX_EVENTS,
             };
@@ -241,5 +246,9 @@ namespace mrover {
         FDCAN_HandleTypeDef* m_fdcan{};
         std::uint8_t m_source{}, m_destination{};
     };
+
+    inline auto cycle_time(TIM_HandleTypeDef* timer, Hertz clock_freq) -> Seconds {
+        return 1 / clock_freq * std::exchange(__HAL_TIM_GetCounter(timer), 0);
+    }
 
 } // namespace mrover

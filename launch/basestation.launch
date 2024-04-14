@@ -7,9 +7,11 @@
 
   <rosparam command="load" file="$(find mrover)/config/esw.yaml" />
   <rosparam command="load" file="$(find mrover)/config/teleop.yaml" />
+  <rosparam command="load" file="$(find mrover)/config/localization.yaml" />
 
   <node name="gui_frontend" pkg="mrover" type="gui_frontend.sh" cwd="node" required="true" />
   <node name="gui_backend" pkg="mrover" type="gui_backend.sh" cwd="node" required="true" />
+  <node name="gui_chromium" pkg="mrover" type="gui_chromium.sh" />
 
   <group if="$(arg run_rviz)">
     <arg name="rvizconfig" default="$(find mrover)/config/rviz/basestation.rviz" />

@@ -1,0 +1,27 @@
+#pragma once
+
+#include_next <execution>
+
+#ifdef __APPLE__
+
+#include <algorithm>
+
+namespace std {
+
+    enum class execution {
+        seq,
+        unseq,
+        par_unseq,
+        par
+    };
+
+    // implementation of std::for_each that takes an execution policy
+    template<class InputIt, class UnaryFunction>
+    void for_each([[maybe_unused]] execution&&, InputIt first, InputIt last, UnaryFunction f) {
+        // forward to std::for_each without the execution policy
+        std::for_each(first, last, f);
+    }
+
+} // namespace std
+
+#endif

@@ -20,7 +20,7 @@
 
       <!-- Polylines -->
       <l-polyline :lat-lngs="polylinePath" :color="'red'" :dash-array="'5, 5'" />
-      <l-polyline :lat-lngs="odomPath" :color="'blue'" :dash-array="'5, 5'"/>
+      <l-polyline :lat-lngs="odomPath" :color="'blue'" :dash-array="'5, 5'" />
     </l-map>
     <!-- Controls that go directly under the map -->
     <div class="controls">
@@ -40,7 +40,7 @@ import {
   LTooltip,
   LControlScale
 } from '@vue-leaflet/vue-leaflet'
-import { mapGetters, mapMutations } from 'vuex'
+import { mapGetters, mapMutations, mapActions } from 'vuex'
 import 'leaflet/dist/leaflet.css'
 import L from '../leaflet-rotatedmarker'
 
@@ -61,7 +61,6 @@ const offlineTileOptions = {
 
 export default {
   name: 'AutonRoverMap',
-
   components: {
     LMap,
     LTileLayer,
@@ -74,7 +73,7 @@ export default {
     odom: {
       type: Object,
       required: true
-    }
+    },
   },
   data() {
     return {
@@ -113,7 +112,7 @@ export default {
       return [this.odomLatLng].concat(
         this.route.map((waypoint: { latLng: any }) => waypoint.latLng)
       )
-    },
+    }
   },
   watch: {
     odom: {
@@ -132,25 +131,25 @@ export default {
         }
 
         // Update the rover marker using bearing angle
-        this.roverMarker.setRotationAngle(angle)
-
-        this.roverMarker.setLatLng(latLng)
+        if (this.roverMarker !== null) {
+          this.roverMarker.setRotationAngle(angle)
+          this.roverMarker.setLatLng(latLng)
+        }
 
         // Update the rover path
         this.odomCount++
         if (this.odomCount % DRAW_FREQUENCY === 0) {
-          if(this.odomPath.length > MAX_ODOM_COUNT) {
+          if (this.odomPath.length > MAX_ODOM_COUNT) {
             this.odomPath = [...this.odomPath.slice(1), latLng] //remove oldest element
           }
-          
+
           this.odomPath = [...this.odomPath, latLng]
-          this.odomCount = 0;
+          this.odomCount = 0
         }
-        
       },
       // Deep will watch for changes in children of an object
       deep: true
-    },
+    }
   },
   created: function () {
     // Get Icons for Map
@@ -168,9 +167,9 @@ export default {
   },
 
   methods: {
-    onMapReady: function() {
+    onMapReady: function () {
       // Pull objects from refs to be able to access data and change w functions
-        this.$nextTick(() => {
+      this.$nextTick(() => {
         this.map = this.$refs.map.leafletObject
         this.roverMarker = this.$refs.rover.leafletObject
       })
@@ -207,6 +206,7 @@ export default {
 
 .wrap {
   align-items: center;
+  width: 100%;
   height: 100%;
   display: grid;
   overflow: hidden;
@@ -218,21 +218,6 @@ export default {
     'map'
     'controls';
 }
-
-/* .custom-tooltip {
-  display: inline-block;
-  margin: 10px 20px;
-  opacity: 1;
-  position: relative;
-}
-
-.custom-tooltip .tooltip-inner {
-  background: #0088cc;
-}
-
-.custom-tooltip.top .tooltip-arrow {
-  border-top-color: #0088cc;
-} */
 
 /* Grid area declarations */
 .map {

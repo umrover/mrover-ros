@@ -69,9 +69,13 @@
       </div>
 
       <div class="add-drop">
-        <button class="btn btn-primary" @click="addWaypoint(input)">Add Waypoint</button>
-        <button class="btn btn-primary" @click="addWaypoint(formatted_odom)">Drop Waypoint</button>
-        <button class="btn btn-primary">Add Drone Position</button>
+        <button class="btn btn-primary" @click="addWaypoint(input, false)">Add Waypoint</button>
+        <button class="btn btn-primary" @click="addWaypoint(formatted_odom, false)">
+          Drop Waypoint
+        </button>
+        <button class="btn btn-primary" @click="addWaypoint(input, true)">
+          Add Drone Position
+        </button>
       </div>
     </div>
     <div class="box">
@@ -96,7 +100,7 @@
 <script lang="ts">
 import { convertDMS } from '../utils.js'
 import WaypointItem from './BasicWaypointItem.vue'
-import { mapMutations, mapGetters } from 'vuex'
+import { mapMutations, mapGetters, mapActions, mapState } from 'vuex'
 import _ from 'lodash'
 import L from 'leaflet'
 
@@ -130,6 +134,8 @@ export default {
   },
 
   methods: {
+    ...mapActions('websocket', ['sendMessage']),
+
     ...mapMutations('erd', {
       setWaypointList: 'setWaypointList',
       setHighlightedWaypoint: 'setHighlightedWaypoint'
@@ -146,14 +152,18 @@ export default {
       this.storedWaypoints.splice(payload.index, 1)
     },
 
-    addWaypoint: function (coord: {
-      lat: { d: number; m: number; s: number }
-      lon: { d: number; m: number; s: number }
-    }) {
+    addWaypoint: function (
+      coord: {
+        lat: { d: number; m: number; s: number }
+        lon: { d: number; m: number; s: number }
+      },
+      isDrone: boolean
+    ) {
       this.storedWaypoints.push({
         name: this.name,
         lat: (coord.lat.d + coord.lat.m / 60 + coord.lat.s / 3600).toFixed(5),
-        lon: (coord.lon.d + coord.lon.m / 60 + coord.lon.s / 3600).toFixed(5)
+        lon: (coord.lon.d + coord.lon.m / 60 + coord.lon.s / 3600).toFixed(5),
+        drone: isDrone
       })
     },
 
@@ -173,13 +183,31 @@ export default {
   watch: {
     storedWaypoints: {
       handler: function (newList) {
-        const waypoints = newList.map((waypoint: { lat: any; lon: any; name: any }) => {
+        const waypoints = newList.map((waypoint: { lat: any; lon: any; name: any; drone: any }) => {
           return {
             latLng: L.latLng(waypoint.lat, waypoint.lon),
-            name: waypoint.name
+            name: waypoint.name,
+            drone: waypoint.drone
           }
         })
         this.setWaypointList(waypoints)
+        this.sendMessage({ type: 'save_basic_waypoint_list', data: newList })
+      },
+      deep: true
+    },
+
+    message: {
+      handler: function (msg) {
+        if (msg.type == 'get_basic_waypoint_list') {
+          // Get waypoints from server on page load
+          this.storedWaypoints = msg.data
+          const waypoints = msg.data.map((waypoint: { lat: any; lon: any; name: any }) => {
+            const lat = waypoint.lat
+            const lon = waypoint.lon
+            return { latLng: L.latLng(lat, lon), name: waypoint.name }
+          })
+          this.setWaypointList(waypoints)
+        }
       },
       deep: true
     },
@@ -209,9 +237,15 @@ export default {
 
     // Set odometer format
     this.odom_format_in = this.odom_format
+
+    window.setTimeout(() => {
+      // Timeout so websocket will be initialized
+      this.sendMessage({ type: 'get_basic_waypoint_list', data: null })
+    }, 250)
   },
 
   computed: {
+    ...mapState('websocket', ['message']),
     ...mapGetters('erd', {
       highlightedWaypoint: 'highlightedWaypoint',
       clickPoint: 'clickPoint'
@@ -272,7 +306,7 @@ export default {
 
 .waypoints {
   height: 30vh;
-  overflow-y: auto;;
+  overflow-y: auto;
 }
 
 .waypoint-headers {

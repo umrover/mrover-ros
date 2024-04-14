@@ -89,10 +89,23 @@
       - ros-{{ ros_distro }}-rosbash
       - libbullet-dev
       - libglfw3-dev
-      - xorg-dev
       - libx11-xcb-dev
       - libnl-3-dev
       - libnl-route-3-dev
+      - libtbb-dev
+      - libopencv-dev
+      - libgstreamer1.0-dev
+      - libgstreamer-plugins-base1.0-dev
+      - vainfo
+
+- name: Install Local APT Packages
+  become: True
+  apt:
+    state: present
+    deb: "{{ catkin_workspace }}/src/mrover/pkg/{{ item }}"
+  with_items:
+    - libmanif-dev.deb
+    - libdawn-dev.deb
 
 - name: Initialize rosdep
   become: True
@@ -178,6 +191,14 @@
     link: /usr/bin/lld
     priority: 160
 
+- name: Set clang-tidy 16 as Default
+  become: True
+  alternatives:
+    name: clang-tidy
+    path: /usr/bin/clang-tidy-16
+    link: /usr/bin/clang-tidy
+    priority: 160
+
 - name: Setup Python Virtual Environment
   pip:
     name:
@@ -185,3 +206,8 @@
       - "{{ catkin_workspace }}/src/mrover[dev]"
     virtualenv: "{{ catkin_workspace }}/src/mrover/venv"
     virtualenv_command: /usr/bin/python3.10 -m venv
+
+- name: Install Chromium
+  become: True
+  snap:
+    name: chromium

@@ -1,5 +1,8 @@
 <template>
-  <div class="shadow my-1 p-3 rounded waypoint-item">
+  <div
+    class="shadow my-1 p-3 rounded waypoint-item"
+    v-bind:class="{ 'drone-waypoint': waypoint.drone }"
+  >
     <div class="name">
       <p>{{ waypoint.name }}</p>
     </div>
@@ -43,9 +46,11 @@ export default defineComponent({
 </script>
 
 <style scoped>
-
 button {
   margin: 0px 2px 0px 2px;
 }
 
+.drone-waypoint {
+  background-color: limegreen;
+}
 </style>
