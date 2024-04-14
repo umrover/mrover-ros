@@ -186,6 +186,13 @@ namespace mrover {
         std::array<float, 6> temps{};
     };
 
+    struct DirtData {
+        float temperature;
+        float humidity;
+    }
+
+    using OutBoundSASensorMessage = std::variant<DirtData>;
+
     using InBoundScienceMessage = std::variant<
             EnableScienceDeviceCommand, HeaterAutoShutOffCommand, ConfigThermistorAutoShutOffCommand>;
 
