@@ -1,4 +1,5 @@
 #include "lander_align.hpp"
+#include "lie.hpp"
 #include <Eigen/src/Core/Matrix.h>
 #include <Eigen/src/Geometry/Quaternion.h>
 #include <cmath>
@@ -49,8 +50,13 @@ namespace mrover {
 		mCloud = ros::topic::waitForMessage<sensor_msgs::PointCloud2>("/camera/left/points", mNh);
 		filterNormals(mCloud);
 		ransac(0.1, 10, 100);
-        createSpline(4,0.5);    
-		calcMotionToo();
+        if(!createSpline(7,0.7)){
+            mActionServer->setPreempted();
+            return;
+        }    
+        publishSpline();
+		//calcMotionToo();
+        mPathPoints.clear();
     }
 
     //Returns angle (yaw) around the z axis
@@ -105,7 +111,7 @@ namespace mrover {
                 Eigen::Matrix3d rotation;
                 rotation << std::cos(roverHeading),  std::sin(roverHeading), 0,
                             -std::sin(roverHeading), std::cos(roverHeading), 0,
-                            0,                       0,                      1;
+                            0,                         0,                      1;
                 
                 Eigen::Vector3d errState = rotation * (currState - tarState); // maybe check error angle incase anything goes silly
                 ROS_INFO_STREAM("err state " << errState.coeff(0,0) << ", " << errState.coeff(1,0) << ", " << errState.coeff(2,0));
@@ -135,8 +141,64 @@ namespace mrover {
                 }
                 mTwistPub.publish(twist);
             }        
-            
         }
+
+        // Final Turn Adjustment
+        {
+            //Locations
+            Eigen::Vector3d rover_dir;
+
+            //Final msg
+            geometry_msgs::Twist twist;
+
+            //Threhsolds
+            float const angular_thresh = 0.001;
+
+
+            ros::Rate rate(20); // ROS Rate at 20Hzn::Matrix3d roverToPlaneNorm;
+            
+            while (ros::ok()) {
+                // If the client has cancelled the server stop moving
+                if(mActionServer->isPreemptRequested()){
+                    mActionServer->setPreempted();
+                    twist.angular.z = 0;
+                    twist.linear.x = 0;
+                    mTwistPub.publish(twist);
+                    break;
+                }
+                
+                SE3d roverInWorld = SE3Conversions::fromTfTree(mTfBuffer, "base_link", "map");
+                Eigen::Vector3d roverPosInWorld{(roverInWorld.translation().x()), (roverInWorld.translation().y()), 0.0};
+
+                Eigen::Vector3d roverToTargetForward = -mNormalInWorldVector.value();
+                roverToTargetForward.normalize();
+
+                Eigen::Vector3d up = Eigen::Vector3d::UnitZ();
+                Eigen::Vector3d left = up.cross(roverToTargetForward);
+
+                Eigen::Matrix3d roverToTargetMat;
+                roverToTargetMat.col(0) = roverToTargetForward;
+                roverToTargetMat.col(1) = up;
+                roverToTargetMat.col(2) = left;
+
+                //SO3 Matrices for lie algebra
+                SO3d roverToTargetSO3 = SE3Conversions::fromColumns(roverToTargetForward, left, up);
+                SO3d roverSO3 = roverInWorld.asSO3();
+
+                manif::SO3Tangentd SO3tan = roverToTargetSO3 - roverSO3; // 3 x 1 matrix of angular velocities (x,y,z)
+
+                double angle_rate = mAngleP * SO3tan.z();
+                angle_rate = (std::abs(angle_rate) > mAngleFloor) ? angle_rate : copysign(mAngleFloor, angle_rate);
+                twist.angular.z = angle_rate;
+                twist.linear.x = 0;
+
+                if (std::abs(SO3tan.z()) < angular_thresh) {
+                    break;
+                }
+            }
+            mTwistPub.publish(twist);
+        }
+        
         twist.angular.z = 0;
         twist.linear.x = 0;
         mActionServer->setPreempted();
@@ -456,7 +518,7 @@ namespace mrover {
     }
     
 
-    void LanderAlignNodelet::createSpline(int density, double offset){
+    auto LanderAlignNodelet::createSpline(int density, double offset) -> bool{
         //Constants
         const double kSplineStart = 7.0/8;
         const double dOmega = 0;
@@ -467,16 +529,20 @@ namespace mrover {
 
         //Calcuulate the spline length
         ros::Duration(0.5).sleep();
-        SE3d planeInRover = SE3Conversions::fromTfTree(mTfBuffer, "plane", "base_link");
-        double yDistanceFromRoverToPlane = planeInRover.translation().x();
-        double splineLength = kSplineStart * yDistanceFromRoverToPlane;
+        SE3d planeInRover = SE3Conversions::fromTfTree(mTfBuffer, "plane", mMapFrameId);
+        double xDistanceFromRoverToPlane = planeInRover.translation().x();
+        double splineLength = kSplineStart * xDistanceFromRoverToPlane;
+
+        if(xDistanceFromRoverToPlane <= offset/kSplineStart){
+            return false;
+        }
         
         // Append all of the points to each other
         Eigen::Vector3d baseSplinePoint = mPlaneLocationInWorldVector.value() + splineLength * mNormalInWorldVector.value();
         Eigen::Vector3d densityVector = mNormalInWorldVector.value() / density;
         Eigen::Vector3d splinePoint = Eigen::Vector3d::Zero();
         
-        while(splinePoint.norm() < (splineLength- offset)){
+        while(splinePoint.norm() < (splineLength - offset)){
             Eigen::Vector3d splinePointInWorld = baseSplinePoint - splinePoint;
             // Create the new point to be added to the vector
             Vector5d newPoint;
@@ -488,6 +554,21 @@ namespace mrover {
                         
             mPathPoints.emplace_back(newPoint);
             splinePoint = splinePoint + densityVector;
+        }
+
+        return true;
+    }
+
+    void LanderAlignNodelet::publishSpline(){
+        Eigen::Matrix3d rot;
+        rot <<  1, 0, 0,
+                0, 1, 0,
+                0, 0, 1;
+        int index = 0;
+        for(auto const & point : mPathPoints){
+            SE3d mPlaneLocationInZEDSE3d = {{point.coeff(0,0), point.coeff(0,1), 0}, SO3d{Eigen::Quaterniond{rot}.normalized()}};
+            SE3Conversions::pushToTfTree(mTfBroadcaster, std::format("point_{}", index), mMapFrameId, mPlaneLocationInZEDSE3d);
+            index++;
         }
     }
 } // namespace mrover

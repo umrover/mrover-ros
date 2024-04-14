@@ -98,7 +98,9 @@ namespace mrover {
 
         static auto calcAngleWithWorldX(Eigen::Vector3d xHeading) -> double;
 
-        void createSpline(int density, double offset);
+        auto createSpline(int density, double offset) -> bool;
+
+        void publishSpline();
     
     public:
         void ActionServerCallBack(LanderAlignGoalConstPtr const goal);
