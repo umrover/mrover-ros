@@ -6,7 +6,7 @@ teleop:
     joint_a:
       multiplier: -1
       slow_mode_multiplier: 0.5
-      invert: False
+      invert: True
       xbox_index: 0
     joint_b:
       multiplier: 1
@@ -38,7 +38,7 @@ teleop:
     gripper:
       multiplier: 1
       slow_mode_multiplier: 1
-      invert: False
+      invert: True
       xbox_index: 7
 
   sa_controls:
