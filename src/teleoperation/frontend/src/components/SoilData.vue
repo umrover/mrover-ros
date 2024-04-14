@@ -17,14 +17,18 @@
                 </tbody>
             </table>
         </div>
+        <div>
+            <p v-if="predictedTemp !== null"> Predicted Temperature: {{ predictedTemp }}</p>
+        </div>
         <Checkbox :name="'Read Temp Data'" @toggle="readData = $event"></Checkbox>
     </div>
 </template>
   
 <script lang="ts">
 
-import { mapState } from 'vuex'
+import { mapState, mapActions } from 'vuex'
 import Checkbox from './Checkbox.vue';
+import { prependOnceListener } from 'process';
 
 export default {
     components: {
@@ -35,8 +39,10 @@ export default {
         return {
             temp: 0,
             humidity: 0,
-
-            readData: false
+            tempArray: [] as number[],
+            readData: false,
+            exponents: [],
+            predictedTemp: null
         }
     },
 
@@ -50,18 +56,48 @@ export default {
                 this.temp = msg.temp_data;
                 if(this.readData) {
                     // TODO: add temp to tempArray
+                    this.tempArray.push(this.temp)
+                }
+                else{
+                    this.predictedTemp = this.predictTemp(this.temp)
                 }
             }
             else if (msg.type == 'relative_humidity') {
                 this.humidity = msg.humidity_data;
             }
+            else if (msg.type == 'polyfit') {
+                this.exponents = msg.exponents
+            }
+        },
+        readData(){
+            if(!this.readData){
+                
+                this.publishPolyfitMessage(this.tempArray)
+            }
+            else{
+                this.exponents = []
+                this.tempArray = []
+            }
+            this.readData = !this.readData
         }
+
+
     },
 
     methods: {
+        ...mapActions('websocket', ['sendMessage']),
         // TODO: add a function that calculates the polyfit
 
+        publishPolyfitMessage: function(temperatures: any){
+            this.sendMessage({
+                type: "polyfit",
+                temperatures: temperatures
+            })
+        },
         // TODO: add a function that predicts current temp based off polyfit
+        predictTemp: function(temperature: any){
+            Math.exp(this.exponents[0])*Math.exp(this.exponents * temperature)
+        }
     }
 }
 </script>

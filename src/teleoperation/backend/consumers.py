@@ -7,6 +7,7 @@ from math import copysign
 from math import pi
 from tf.transformations import euler_from_quaternion
 import threading
+import numpy as np
 
 from channels.generic.websocket import JsonWebsocketConsumer
 import rospy
@@ -78,6 +79,7 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.cache_throttle_cmd_pub = rospy.Publisher("cache_throttle_cmd", Throttle, queue_size=1)
             self.cache_velocity_cmd_pub = rospy.Publisher("cache_velocity_cmd", Velocity, queue_size=1)
             self.cache_position_cmd_pub = rospy.Publisher("cache_position_cmd", Position, queue_size=1)
+            self.polyfit_pub = rospy.Publisher("polyfit_cmd", Position, queue_size=1)
 
             # Subscribers
             self.pdb_sub = rospy.Subscriber("/pdb_data", PDLB, self.pdb_callback)
@@ -212,6 +214,8 @@ class GUIConsumer(JsonWebsocketConsumer):
                 self.get_basic_waypoint_list(message)
             elif message["type"] == "download_csv":
                 self.download_csv(message)
+            elif message["type"] == "polyfit":
+                self.calculate_polyfit(message)
         except Exception as e:
             rospy.logerr(e)
 
@@ -841,3 +845,12 @@ class GUIConsumer(JsonWebsocketConsumer):
         with open(os.path.join(f"/home/{username}/Downloads/spectral_data.csv"), "w") as f:
             csv_writer = csv.writer(f)
             csv_writer.writerows(spectral_data)
+
+    def calculate_polyfit(self, msg):
+        x = range(len(msg.temperatures))
+        y_log = np.log(msg.temperatures)
+        exponents = np.polyfit(x,y_log,1)
+        self.send(
+            text_data=json.dumps({"type": "polyfit", "exponents": exponents})
+        )
+        
