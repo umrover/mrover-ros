@@ -11,7 +11,7 @@
             <p>ID: {{ waypoint.id }}  Type: {{ waypoint.type }}</p>
             <div class="row">
               <div class="col input-group">
-                <input class="form-control" id="deg1" v-model.number="input.lat.d" />
+                <input class="form-control" id="deg1" v-model.number="waypoint.gps.lat.d" />
                 <span for="deg1" class="input-group-text">º</span>
               </div>
               <!-- <div v-if="min_enabled" class="col input-group">
@@ -26,7 +26,7 @@
             </div>
             <div class="row">
               <div class="col input-group">
-                <input class="form-control" id="deg2" v-model.number="input.lon.d" />
+                <input class="form-control" id="deg2" v-model.number="waypoint.gps.lon.d" />
                 <span for="deg2" class="input-group-text">º</span>
               </div>
               <!-- <div v-if="min_enabled" class="col input-group">
@@ -76,6 +76,7 @@ import WaypointItem from './AutonWaypointItem.vue'
 import { mapState, mapActions, mapMutations, mapGetters } from 'vuex'
 import _ from 'lodash'
 import L from 'leaflet'
+import { reactive } from 'vue'
 
 let stuck_interval: number, auton_publish_interval: number
 
@@ -100,46 +101,118 @@ export default {
         { 
           name: 'No Search',
           id: -1,
-          type: 0 
+          type: 0, 
+          gps: {
+            lat: {
+            d: 0,
+            m: 0,
+            s: 0
+            },
+            lon: {
+              d: 0,
+              m: 0,
+              s: 0
+            },
+          },
         },
         {
           name: 'Post 1',
           id: 1,
-          type: 1
+          type: 1,
+          gps: {
+            lat: {
+            d: 0,
+            m: 0,
+            s: 0
+            },
+            lon: {
+              d: 0,
+              m: 0,
+              s: 0
+            },
+          },
         },
         {
           name: 'Post 2',
           id: 2,
-          type: 1
+          type: 1,
+          gps: {
+            lat: {
+            d: 0,
+            m: 0,
+            s: 0
+            },
+            lon: {
+              d: 0,
+              m: 0,
+              s: 0
+            },
+          },
         },
         {
           name: 'Post 3',
           id: 3,
-          type: 1
+          type: 1,
+          gps: {
+            lat: {
+            d: 0,
+            m: 0,
+            s: 0
+            },
+            lon: {
+              d: 0,
+              m: 0,
+              s: 0
+            },
+          },
         },
         {
           name: 'Mallet',
           id: -1,
-          type: 2
+          type: 2,
+          gps: {
+            lat: {
+            d: 0,
+            m: 0,
+            s: 0
+            },
+            lon: {
+              d: 0,
+              m: 0,
+              s: 0
+            },
+          },
         },
         {
           name: 'Water Bottle',
           id: -1,
-          type: 3
+          type: 3,
+          gps: {
+            lat: {
+            d: 0,
+            m: 0,
+            s: 0
+            },
+            lon: {
+              d: 0,
+              m: 0,
+              s: 0
+            },
+          },
         }],
       odom_format_in: 'D',
-      input: {
-        lat: {
-          d: 0,
-          m: 0,
-          s: 0
-        },
-        lon: {
-          d: 0,
-          m: 0,
-          s: 0
-        }
-      },
+      // input: {
+      //   lat: {
+      //     d: 0,
+      //     m: 0,
+      //     s: 0
+      //   },
+      //   lon: {
+      //     d: 0,
+      //     m: 0,
+      //     s: 0
+      //   }
+      // },
 
       teleopEnabledCheck: false,
 
@@ -149,7 +222,7 @@ export default {
         total_wps: 0
       },
 
-      route: [],
+      route: reactive([]),
 
       autonButtonColor: 'btn-danger',
 
@@ -194,7 +267,8 @@ export default {
   watch: {
     route: {
       handler: function (newRoute) {
-        const waypoints = newRoute.map((waypoint: { lat: any; lon: any; name: any }) => {
+          console.log(newRoute)
+          const waypoints = newRoute.map((waypoint: { lat: any; lon: any; name: any }) => {
           const lat = waypoint.lat
           const lon = waypoint.lon
           return { latLng: L.latLng(lat, lon), name: waypoint.name }
@@ -217,27 +291,14 @@ export default {
         this.autonButtonColor = this.autonEnabled ? 'btn-success' : 'btn-danger'
       } else if (msg.type == 'get_auton_waypoint_list') {
         // Get waypoints from server on page load
-        this.waypoints = msg.data
-        const waypoints = msg.data.map((waypoint: { lat: any; lon: any; name: any }) => {
-          const lat = waypoint.lat
-          const lon = waypoint.lon
-          return { latLng: L.latLng(lat, lon), name: waypoint.name }
-        })
-        this.setWaypointList(waypoints)
+        // this.waypoints = msg.data
+        // const waypoints = msg.data.map((waypoint: { lat: any; lon: any; name: any }) => {
+        //   const lat = waypoint.lat
+        //   const lon = waypoint.lon
+        //   return { latLng: L.latLng(lat, lon), name: waypoint.name }
+        // })
+        // this.setWaypointList(waypoints)
       }
-    },
-
-    waypoints: {
-      handler: function (newList) {
-        const waypoints = newList.map((waypoint: { lat: any; lon: any; name: any }) => {
-          const lat = waypoint.lat
-          const lon = waypoint.lon
-          return { latLng: L.latLng(lat, lon), name: waypoint.name }
-        })
-        this.setWaypointList(waypoints)
-        this.sendMessage({ type: 'save_auton_waypoint_list', data: newList })
-      },
-      deep: true
     },
 
     odom_format_in: function (newOdomFormat) {
@@ -267,7 +328,9 @@ export default {
 
   created: function () {
     // Make sure local odom format matches vuex odom format
-    this.odom_format_in = this.odom_format
+    // this.odom_format_in = this.odom_format
+
+    console.log(this.waypoints)
 
     auton_publish_interval = window.setInterval(() => {
       if (this.waitingForNavResponse) {
@@ -329,21 +392,15 @@ export default {
         this.waypoints.splice(waypoint.index, 1)
       } else if (waypoint.in_route) {
         this.route.splice(waypoint.index, 1)
-      }
-    },
-
-    findWaypoint: function (waypoint: { index: any }) {
-      if (waypoint.index === this.highlightedWaypoint) {
-        this.setHighlightedWaypoint(-1)
-      } else {
-        this.setHighlightedWaypoint(waypoint.index)
+        waypoint.in_route = false
       }
     },
 
     // Add item from all waypoints div to current waypoints div
     addItem: function (waypoint: { in_route: boolean; index: number }) {
       if (!waypoint.in_route) {
-        this.route.push(this.waypoints[waypoint.index])
+        this.route.push(waypoint)
+        waypoint.in_route = true
       }
     },
 
