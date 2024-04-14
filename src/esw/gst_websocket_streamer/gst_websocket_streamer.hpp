@@ -8,8 +8,9 @@ namespace mrover {
 
         ros::NodeHandle mNh, mPnh;
 
-        std::string mCaptureDevice;
+        std::string mDevice;
         std::string mImageTopic;
+        std::string mUsbIdentifier;
         std::uint64_t mBitrate{};
         std::uint32_t mImageWidth{}, mImageHeight{}, mImageFramerate{};
 

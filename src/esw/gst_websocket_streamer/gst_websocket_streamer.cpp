@@ -39,7 +39,7 @@ namespace mrover {
         mMainLoop = gstCheck(g_main_loop_new(nullptr, FALSE));
 
         std::string launch;
-        if (mCaptureDevice.empty()) {
+        if (mDevice.empty()) {
             if constexpr (IS_JETSON) {
                 // ReSharper disable once CppDFAUnreachableCode
                 launch = std::format(
@@ -85,7 +85,7 @@ namespace mrover {
                         "! video/x-raw(memory:NVMM),format=NV12 "
                         "! nvv4l2h265enc name=encoder bitrate={} iframeinterval=300 vbv-size=33333 insert-sps-pps=true control-rate=constant_bitrate profile=Main num-B-Frames=0 ratecontrol-enable=true preset-level=UltraFastPreset EnableTwopassCBR=false maxperf-enable=true "
                         "! appsink name=streamSink sync=false",
-                        mCaptureDevice, mImageWidth, mImageHeight, mImageFramerate, mBitrate);
+                        mDevice, mImageWidth, mImageHeight, mImageFramerate, mBitrate);
             } else {
                 // ReSharper disable once CppDFAUnreachableCode
                 launch = std::format(
@@ -94,14 +94,14 @@ namespace mrover {
                         "! videoconvert "
                         "! nvh265enc name=encoder "
                         "! appsink name=streamSink sync=false",
-                        mCaptureDevice, mImageWidth, mImageHeight);
+                        mDevice, mImageWidth, mImageHeight);
             }
         }
 
         ROS_INFO_STREAM(std::format("GStreamer launch: {}", launch));
         mPipeline = gstCheck(gst_parse_launch(launch.c_str(), nullptr));
 
-        if (mCaptureDevice.empty()) mImageSource = gstCheck(gst_bin_get_by_name(GST_BIN(mPipeline), "imageSource"));
+        if (mDevice.empty()) mImageSource = gstCheck(gst_bin_get_by_name(GST_BIN(mPipeline), "imageSource"));
         mStreamSink = gstCheck(gst_bin_get_by_name(GST_BIN(mPipeline), "streamSink"));
 
         if (gst_element_set_state(mPipeline, GST_STATE_PAUSED) == GST_STATE_CHANGE_FAILURE)
@@ -150,7 +150,8 @@ namespace mrover {
             mNh = getMTNodeHandle();
             mPnh = getMTPrivateNodeHandle();
 
-            mCaptureDevice = mPnh.param<std::string>("device", "");
+            mDevice = mPnh.param<std::string>("device", "");
+            mUsbIdentifier = mPnh.param<std::string>("usb_id", "1");
             mImageTopic = mPnh.param<std::string>("image_topic", "image");
             mImageWidth = mPnh.param<int>("width", 640);
             mImageHeight = mPnh.param<int>("height", 480);
@@ -160,6 +161,57 @@ namespace mrover {
             mBitrate = mPnh.param<int>("bitrate", 2000000);
 
             gst_init(nullptr, nullptr);
+
+            libusb_context* context{};
+            if (libusb_init(&context) != 0) throw std::runtime_error{"Failed to initialize libusb"};
+
+            libusb_device** list{};
+            ssize_t count = libusb_get_device_list(context, &list);
+            if (count < 0) throw std::runtime_error{"Failed to get device list"};
+
+            for (ssize_t i = 0; i < count; ++i) {
+                libusb_device* device = list[i];
+                libusb_device_descriptor descriptor{};
+                if (libusb_get_device_descriptor(device, &descriptor) != 0) continue;
+
+                std::uint8_t bus = libusb_get_bus_number(device);
+                std::uint8_t address = libusb_get_device_address(device);
+                std::uint8_t port = libusb_get_port_number(device);
+
+                // get associated video port
+                // libusb_get_port_numbers(device, port_numbers, sizeof(port_numbers));
+
+                ROS_INFO_STREAM(std::format("USB device: bus={}, address={}, port={}, vendor={}, product={}",
+                                            bus, address, port, descriptor.idVendor, descriptor.idProduct));
+            }
+
+            if (!mUsbIdentifier.empty()) {
+                udev* udevContext = udev_new();
+                if (!udevContext) throw std::runtime_error{"Failed to initialize udev"};
+
+                udev_enumerate* enumerate = udev_enumerate_new(udevContext);
+                if (!enumerate) throw std::runtime_error{"Failed to create udev enumeration"};
+
+                udev_enumerate_add_match_subsystem(enumerate, "video4linux");
+                udev_enumerate_scan_devices(enumerate);
+
+                udev_list_entry* devices = udev_enumerate_get_list_entry(enumerate);
+                if (!devices) throw std::runtime_error{"Failed to get udev device list"};
+
+                udev_list_entry* entry;
+                udev_list_entry_foreach(entry, devices) {
+                    std::string deviceSysPath = udev_list_entry_get_name(entry);
+                    udev_device* device = udev_device_new_from_syspath(udevContext, deviceSysPath.c_str());
+                    if (!device) continue;
+
+                    std::string devicePath = udev_device_get_devnode(device);
+                    if (devicePath.empty()) continue;
+
+                    mDevice = devicePath;
+                    ROS_INFO_STREAM(std::format("Found USB device: {}", mDevice));
+                    break;
+                }
+            }
 
             initPipeline();
 
@@ -193,7 +245,7 @@ namespace mrover {
                         ROS_INFO("Stopped GStreamer pipeline");
                     });
 
-            if (mCaptureDevice.empty()) {
+            if (mDevice.empty()) {
                 mImageSubscriber = mNh.subscribe(mImageTopic, 1, &GstWebsocketStreamerNodelet::imageCallback, this);
             }
 
