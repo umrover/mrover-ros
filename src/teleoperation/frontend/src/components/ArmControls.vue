@@ -174,7 +174,7 @@ export default defineComponent({
     interval = window.setInterval(() => {
       if (this.send_positions) {
         this.publishJoystickMessage([], [], this.arm_mode, this.positions)
-      } else {
+      } else if (this.arm_mode !== "position") {
         const gamepads = navigator.getGamepads()
         for (let i = 0; i < 4; i++) {
           const gamepad = gamepads[i]
