@@ -143,8 +143,8 @@ brushless_motors:
       max_backward_pos: 0.0
     joint_c:
       velocity_multiplier: -1.0
-      min_velocity: -3.0 # gear ratio: 484:1
-      max_velocity: 3.0
+      min_velocity: -0.6 # gear ratio: 484:1
+      max_velocity: 0.6
       min_position: 0.0
       max_position: 3.8 # 220 degrees of motion
     joint_de_0:
