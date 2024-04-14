@@ -140,6 +140,11 @@ export default defineComponent({
         this.moteusDrive.state = msg.state
         this.moteusDrive.error = msg.error
         this.moteusDrive.limit_hit = msg.limit_hit
+      } else if (msg.type == 'nav_sat_fix') {
+        this.odom.latitude_deg = msg.latitude
+        this.odom.longitude_deg = msg.longitude
+        this.odom.altitude = msg.altitude
+        this.odom.status = msg.status
       } else if (msg.type == 'center_map') {
         this.odom.latitude_deg = msg.latitude
         this.odom.longitude_deg = msg.longitude

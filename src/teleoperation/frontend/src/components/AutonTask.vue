@@ -157,6 +157,8 @@ export default defineComponent({
         this.odom.latitude_deg = msg.latitude
         this.odom.longitude_deg = msg.longitude
         this.odom.altitude = msg.altitude
+        this.odom.status = msg.status
+        console.log(this.odom.status)
       } else if (msg.type == 'auton_tfclient') {
         this.odom.bearing_deg = quaternionToMapAngle(msg.rotation)
       } else if (msg.type == "center_map") {

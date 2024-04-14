@@ -37,7 +37,7 @@
 
 <script lang="ts">
 import { convertDMS } from '../utils.js'
-import { mapGetters } from 'vuex'
+import { mapGetters, mapState } from 'vuex'
 import IMUCalibration from './IMUCalibration.vue'
 import FlightAttitudeIndicator from './FlightAttitudeIndicator.vue'
 export default {
@@ -60,6 +60,8 @@ export default {
     }
   },
   computed: {
+    ...mapState('websocket', ['message']),
+
     ...mapGetters('map', {
       odom_format: 'odomFormat'
     }),

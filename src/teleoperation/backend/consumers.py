@@ -609,7 +609,7 @@ class GUIConsumer(JsonWebsocketConsumer):
 
     def gps_fix_callback(self, msg):
         fixed = True
-        if msg.status == -1:
+        if msg.status.status == -1:
             fixed = False
         self.send(
             text_data=json.dumps(    
@@ -825,7 +825,8 @@ class GUIConsumer(JsonWebsocketConsumer):
         latitude = msg.latitude
         longitude = msg.longitude
         fixed = True
-        if msg.status == -1:
+        rospy.logerr(msg.status.status)
+        if msg.status.status == -1:
             fixed = False
         self.send(text_data=json.dumps({"type": "drone_waypoint", "latitude": latitude, "longitude": longitude, "status": fixed}))
 
