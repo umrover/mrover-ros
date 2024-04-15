@@ -21,4 +21,6 @@
 
 #include <libudev.h>
 
+#include <opencv2/imgproc.hpp>
+
 #include <websocket_server.hpp>

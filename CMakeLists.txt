@@ -200,7 +200,7 @@ endif ()
 
 if (Gst_FOUND AND GstApp_FOUND AND LibUsb_FOUND AND LibUdev_FOUND)
     mrover_add_nodelet(gst_websocket_streamer src/esw/gst_websocket_streamer/*.c* src/esw/gst_websocket_streamer src/esw/gst_websocket_streamer/pch.hpp)
-    mrover_nodelet_link_libraries(gst_websocket_streamer PRIVATE websocket_server ${Gst_LIBRARIES} ${GstApp_LIBRARIES} ${LibUsb_LIBRARIES} ${LibUdev_LIBRARIES})
+    mrover_nodelet_link_libraries(gst_websocket_streamer PRIVATE websocket_server ${Gst_LIBRARIES} ${GstApp_LIBRARIES} ${LibUsb_LIBRARIES} ${LibUdev_LIBRARIES} opencv_core opencv_imgproc)
     mrover_nodelet_include_directories(gst_websocket_streamer ${Gst_INCLUDE_DIRS} ${GstApp_INCLUDE_DIRS} ${LibUsb_INCLUDE_DIRS} ${LibUdev_INCLUDE_DIRS})
 endif ()
 
