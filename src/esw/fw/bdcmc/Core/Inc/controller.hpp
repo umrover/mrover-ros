@@ -8,6 +8,7 @@
 
 #include <hardware.hpp>
 #include <messaging.hpp>
+#include <motion_profile.hpp>
 #include <pidf.hpp>
 #include <units/units.hpp>
 
@@ -28,11 +29,16 @@ namespace mrover {
         };
 
         using Mode = std::variant<std::monostate, PositionMode, VelocityMode>;
+        using MotionProfile = TrapezoidalMotionProfile<Radians, Seconds>;
+
+        // TODO: maybe pull this from htim directly, I was too lazy to figure that out
+        static constexpr double SECONDS_PER_PROFILE_TIMER_TICK = 1 / (140'000'000.0 / 8.0);
 
         /* ==================== Hardware ==================== */
         FDCAN<InBoundMessage> m_fdcan;
         HBridge m_motor_driver;
         TIM_HandleTypeDef* m_watchdog_timer{};
+        TIM_HandleTypeDef* m_profile_timer{};
         bool m_watchdog_enabled{};
         TIM_HandleTypeDef* m_encoder_timer{};
         TIM_HandleTypeDef* m_encoder_elapsed_timer{};
@@ -58,6 +64,8 @@ namespace mrover {
         std::optional<RadiansPerSecond> m_velocity;
         BDCMCErrorInfo m_error = BDCMCErrorInfo::DEFAULT_START_UP_NOT_CONFIGURED;
         std::size_t m_missed_absolute_encoder_reads{0};
+
+        std::optional<MotionProfile> m_profile;
 
         struct StateAfterConfig {
             Dimensionless gear_ratio;
@@ -280,6 +288,57 @@ namespace mrover {
             m_error = BDCMCErrorInfo::NO_ERROR;
         }
 
+        auto process_command(PositionCommandProfiled const& message, VelocityMode& mode) -> void {
+            if (!m_state_after_config) {
+                m_error = BDCMCErrorInfo::RECEIVING_COMMANDS_WHEN_NOT_CONFIGURED;
+                return;
+            }
+            if (!m_state_after_calib) {
+                m_error = BDCMCErrorInfo::RECEIVING_POSITION_COMMANDS_WHEN_NOT_CALIBRATED;
+                return;
+            }
+
+            if (!m_uncalib_position) {
+                m_error = BDCMCErrorInfo::RECEIVING_PID_COMMANDS_WHEN_NO_READER_EXISTS;
+                return;
+            }
+
+            if (!m_velocity) {
+                m_error = BDCMCErrorInfo::RECEIVING_PID_COMMANDS_WHEN_NO_READER_EXISTS;
+                return;
+            }
+
+            Radians current_position = m_uncalib_position.value() - m_state_after_calib->offset_position;
+
+            Seconds time_elapsed{0};
+
+            if (m_profile) {
+                time_elapsed = Seconds{m_profile_timer->Instance->CNT * SECONDS_PER_PROFILE_TIMER_TICK};
+            } else {
+                // TODO: grab max velocity from somewhere
+                //                m_profile = MotionProfile{current_position, message.position, RadiansPerSecond{0.0}, message.max_acceleration};
+                m_profile.emplace(current_position, message.position, RadiansPerSecond{0.0}, message.max_acceleration);
+                m_profile_timer->Instance->CNT = 0;
+            }
+
+            mode.pidf.with_p(message.p);
+            mode.pidf.with_d(message.d);
+            mode.pidf.with_ff(message.ff);
+            mode.pidf.with_output_bound(-1.0, 1.0);
+
+            RadiansPerSecond current_velocity = m_velocity.value();
+            RadiansPerSecond target_velocity = m_profile->velocity();
+
+            m_desired_output = mode.pidf.calculate(current_velocity, target_velocity, time_elapsed);
+            m_error = BDCMCErrorInfo::NO_ERROR;
+
+            m_fdcan.broadcast(OutBoundMessage{DebugState{
+                    .f1 = m_profile.value().t().get(),
+                    .f2 = target_velocity.get(),
+                    .f3 = current_position.get(),
+                    .f4 = message.position.get()}});
+        }
+
         struct detail {
             template<typename Command, typename V>
             struct command_to_mode;
@@ -307,7 +366,7 @@ namespace mrover {
         Controller(TIM_HandleTypeDef* hbridge_output, Pin hbridge_forward_pin, Pin hbridge_backward_pin,
                    FDCAN<InBoundMessage> const& fdcan, TIM_HandleTypeDef* watchdog_timer,
                    TIM_HandleTypeDef* encoder_tick_timer,
-                   TIM_HandleTypeDef* encoder_elapsed_timer, TIM_HandleTypeDef* throttle_timer, TIM_HandleTypeDef* pid_timer,
+                   TIM_HandleTypeDef* encoder_elapsed_timer, TIM_HandleTypeDef* throttle_timer, TIM_HandleTypeDef* pid_timer, TIM_HandleTypeDef* profile_timer,
                    I2C_HandleTypeDef* absolute_encoder_i2c,
                    std::array<LimitSwitch, 4> const& limit_switches)
             : m_fdcan{fdcan},
@@ -317,6 +376,7 @@ namespace mrover {
               m_encoder_elapsed_timer{encoder_elapsed_timer},
               m_throttle_timer{throttle_timer},
               m_pidf_timer{pid_timer},
+              m_profile_timer{profile_timer},
               m_absolute_encoder_i2c{absolute_encoder_i2c},
               m_limit_switches{limit_switches} {
         }

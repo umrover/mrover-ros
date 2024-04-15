@@ -21,7 +21,8 @@ namespace mrover {
     concept IsSerializable = std::is_trivially_copyable_v<T>;
 
     template<typename T>
-    concept IsFdcanSerializable = IsSerializable<T> && sizeof(T) <= FDCAN_MAX_FRAME_SIZE;
+    concept IsFdcanSerializable = IsSerializable<T> && sizeof(T) <=
+    FDCAN_MAX_FRAME_SIZE;
 
     static auto check(bool cond, std::invocable auto handler) -> void {
         if (cond) return;

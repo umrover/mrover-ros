@@ -23,6 +23,7 @@ extern I2C_HandleTypeDef hi2c1;
 
 extern TIM_HandleTypeDef htim2;
 extern TIM_HandleTypeDef htim3;
+extern TIM_HandleTypeDef htim4;
 extern TIM_HandleTypeDef htim6;
 extern TIM_HandleTypeDef htim7;
 extern TIM_HandleTypeDef htim8;
@@ -30,15 +31,15 @@ extern TIM_HandleTypeDef htim15;
 extern TIM_HandleTypeDef htim16;
 extern TIM_HandleTypeDef htim17;
 
-#define QUADRATURE_TICK_TIMER_1 &htim3      // Special encoder timer which externally reads quadrature encoder ticks
-// #define QUADRATURE_TIMER_2 &htim4
-#define QUADRATURE_ELAPSED_TIMER_1 &htim17  // Measures time since the lsat quadrature tick reading
-#define ABSOLUTE_ENCODER_TIMER &htim2       // 20 Hz repeating timer to kick off I2C transactions with the absolute encoder
-#define THROTTLE_LIMIT_TIMER &htim6         // Measures time since the last throttle command
-#define SEND_TIMER &htim7                   // 20 Hz FDCAN repeating timer
-#define PIDF_TIMER &htim8                   // Measures time since the last PIDF update, used for the "D" term
-#define PWM_TIMER_1 &htim15                 // H-Bridge PWM
-#define FDCAN_WATCHDOG_TIMER &htim16        // FDCAN watchdog timer that needs to be reset every time a message is received
+#define QUADRATURE_TICK_TIMER_1 &htim3 // Special encoder timer which externally reads quadrature encoder ticks
+#define MOTION_PROFILE_TIMER &htim4        // Mesasures time since last motion profile update
+#define QUADRATURE_ELAPSED_TIMER_1 &htim17 // Measures time since the lsat quadrature tick reading
+#define ABSOLUTE_ENCODER_TIMER &htim2      // 20 Hz repeating timer to kick off I2C transactions with the absolute encoder
+#define THROTTLE_LIMIT_TIMER &htim6        // Measures time since the last throttle command
+#define SEND_TIMER &htim7                  // 20 Hz FDCAN repeating timer
+#define PIDF_TIMER &htim8                  // Measures time since the last PIDF update, used for the "D" term
+#define PWM_TIMER_1 &htim15                // H-Bridge PWM
+#define FDCAN_WATCHDOG_TIMER &htim16       // FDCAN watchdog timer that needs to be reset every time a message is received
 
 namespace mrover {
 
@@ -57,6 +58,7 @@ namespace mrover {
                 QUADRATURE_ELAPSED_TIMER_1,
                 THROTTLE_LIMIT_TIMER,
                 PIDF_TIMER,
+                MOTION_PROFILE_TIMER,
                 ABSOLUTE_I2C,
                 {
                         LimitSwitch{Pin{LIMIT_0_0_GPIO_Port, LIMIT_0_0_Pin}},
