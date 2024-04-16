@@ -1,7 +1,7 @@
 <template>
   <div class="shadow my-1 p-3 rounded waypoint-item">
     <div class="identification">
-      <p>{{ waypoint.name }} | ID: {{ waypoint.id }} | Type: {{ WAYPOINT_TYPES[waypoint.type] }}</p>
+      <p>{{ waypoint.name }} | ID: {{ waypoint.id }}</p>
     </div>
     <div class="row">
       <div class="col text-center">
@@ -14,13 +14,13 @@
       </div>
     </div>
     <div class="location">
-      <p>{{ output.lat.d }}º</p>
-      <p v-if="min_enabled">{{ output.lat.m }}'</p>
-      <p v-if="sec_enabled">{{ output.lat.s }}"</p>
+      <p>{{ waypoint.gps.lat.d }}º</p>
+      <p v-if="min_enabled">{{ waypoint.gps.lat.m }}'</p>
+      <p v-if="sec_enabled">{{ waypoint.gps.lat.s }}"</p>
       N <b>|</b>
-      <p>{{ output.lon.d }}º</p>
-      <p v-if="min_enabled">{{ output.lon.m }}'</p>
-      <p v-if="sec_enabled">{{ output.lon.s }}"</p>
+      <p>{{ waypoint.gps.lon.d }}º</p>
+      <p v-if="min_enabled">{{ waypoint.gps.lon.m }}'</p>
+      <p v-if="sec_enabled">{{ waypoint.gps.lon.s }}"</p>
       W
     </div>
   </div>
@@ -30,20 +30,7 @@
 import { mapGetters } from 'vuex'
 import { convertDMS } from '../utils'
 
-const WAYPOINT_TYPES = {
-  0: 'No Search',
-  1: 'Post',
-  2: 'Mallet',
-  3: 'Water Bottle'
-}
-
 export default {
-  data() {
-    return {
-      WAYPOINT_TYPES: WAYPOINT_TYPES
-    }
-  },
-
   props: {
     waypoint: {
       type: Object,

@@ -14,14 +14,6 @@
                 <input class="form-control" id="deg1" v-model.number="waypoint.gps.lat.d" />
                 <span for="deg1" class="input-group-text">º</span>
               </div>
-              <!-- <div v-if="min_enabled" class="col input-group">
-                <input class="form-control" id="min1" v-model.number="input.lat.m" />
-                <span for="min1" class="input-group-text">'</span>
-              </div>
-              <div v-if="sec_enabled" class="col input-group">
-                <input class="form-control" id="sec1" v-model.number="input.lat.s" />
-                <span for="sec1" class="input-group-text">"</span>
-              </div> -->
               N
             </div>
             <div class="row">
@@ -29,23 +21,11 @@
                 <input class="form-control" id="deg2" v-model.number="waypoint.gps.lon.d" />
                 <span for="deg2" class="input-group-text">º</span>
               </div>
-              <!-- <div v-if="min_enabled" class="col input-group">
-                <input class="form-control" id="min2" v-model.number="input.lon.m" />
-                <span for="min2" class="input-group-text">'</span>
-              </div>
-              <div v-if="sec_enabled" class="col input-group">
-                <input class="form-control" id="sec2" v-model.number="input.lon.s" />
-                <span for="sec2" class="input-group-text">"</span>
-              </div> -->
-              E
+              W
             </div>
             <button class="btn btn-primary custom-btn" @click="addItem(waypoint)">Add Waypoint</button>
           </div>     
         </div>
-        <!-- <div class="waypoints">
-          <WaypointItem v-for="(waypoint, i) in storedWaypoints" :key="i" :waypoint="waypoint" :in_route="false"
-            :index="i" @delete="deleteItem($event)"  @add="addItem($event)" />
-        </div> -->
       </div>
     </div>
     <div class="col-wrap" style="left: 50%">
@@ -201,18 +181,6 @@ export default {
           },
         }],
       odom_format_in: 'D',
-      // input: {
-      //   lat: {
-      //     d: 0,
-      //     m: 0,
-      //     s: 0
-      //   },
-      //   lon: {
-      //     d: 0,
-      //     m: 0,
-      //     s: 0
-      //   }
-      // },
 
       teleopEnabledCheck: false,
 
@@ -268,11 +236,12 @@ export default {
     route: {
       handler: function (newRoute) {
           console.log(newRoute)
-          const waypoints = newRoute.map((waypoint: { lat: any; lon: any; name: any }) => {
-          const lat = waypoint.lat
-          const lon = waypoint.lon
+          const waypoints = newRoute.map((waypoint: { gps: { lat: any; lon: any;}, name: any }) => {
+          const lat = waypoint.gps.lat.d
+          const lon = waypoint.gps.lon.d
           return { latLng: L.latLng(lat, lon), name: waypoint.name }
         })
+        console.log("waypoints: ", waypoints)
         this.setRoute(waypoints)
       },
       deep: true
@@ -330,8 +299,6 @@ export default {
     // Make sure local odom format matches vuex odom format
     // this.odom_format_in = this.odom_format
 
-    console.log(this.waypoints)
-
     auton_publish_interval = window.setInterval(() => {
       if (this.waitingForNavResponse) {
         this.sendAutonCommand()
@@ -349,7 +316,6 @@ export default {
     ...mapMutations('autonomy', {
       setRoute: 'setRoute',
       setWaypointList: 'setWaypointList',
-      setHighlightedWaypoint: 'setHighlightedWaypoint',
       setAutonMode: 'setAutonMode',
       setTeleopMode: 'setTeleopMode'
     }),
@@ -372,8 +338,8 @@ export default {
               return {
                 latitude_degrees: lat,
                 longitude_degrees: lon,
-                tag_id: parseInt(waypoint.id),
-                type: parseInt(waypoint.type)
+                tag_id: waypoint.id,
+                type: waypoint.type
               }
             }
           )
@@ -384,20 +350,13 @@ export default {
       }
     },
 
-    deleteItem: function (waypoint: { index: any; in_route: boolean }) {
-      if (this.highlightedWaypoint == waypoint.index) {
-        this.setHighlightedWaypoint(-1)
-      }
-      if (!waypoint.in_route) {
-        this.waypoints.splice(waypoint.index, 1)
-      } else if (waypoint.in_route) {
-        this.route.splice(waypoint.index, 1)
-        waypoint.in_route = false
-      }
+    deleteItem: function (waypoint: { index: any; }) {
+      console.log("index: ", waypoint.index)
+      this.route.splice(waypoint.index, 1)
     },
 
     // Add item from all waypoints div to current waypoints div
-    addItem: function (waypoint: { in_route: boolean; index: number }) {
+    addItem: function (waypoint) {
       if (!waypoint.in_route) {
         this.route.push(waypoint)
         waypoint.in_route = true
