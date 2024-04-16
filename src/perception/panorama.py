@@ -6,6 +6,9 @@ from sensor_msgs.msg import PointCloud2, PointField, Image
 from std_msgs.msg import Header
 from mrover.msg import MotorsStatus, Position
 import sensor_msgs.point_cloud2 as pc2
+import tf2_ros
+from util.SE3 import SE3
+
 
 import rospy
 import sys
@@ -46,6 +49,8 @@ class Panorama:
     def __init__(self, name):
         self._action_name = name
         self._as = actionlib.SimpleActionServer(self._action_name, CapturePanoramaAction, execute_cb=self.capture_panorama, auto_start=False)
+        self.tf_buffer = None
+        self.listener = None
         self.img_list = []
         self.current_img = None
         self.current_pc = None
@@ -136,10 +141,10 @@ class Panorama:
                 new_cloud_arr[field_name] = cloud_arr[field_name]
         return new_cloud_arr
 
-    def rotate_pc(self, angle, pc):
-        # rotate the provided point cloud's x, y points by the specified angle (rad)
-        pc[:, 0] = pc[:, 0] * np.cos(angle) - pc[:, 1] * np.sin(angle)
-        pc[:, 1] = pc[:, 0] * np.sin(angle) + pc[:, 1] * np.cos(angle)
+    def rotate_pc(self, trans_mat : np.ndarray, pc : np.ndarray):
+        # rotate the provided point cloud's x, y points by the se3_pose
+        points = np.hstack((pc[:,0:3], np.ones((pc.shape[0],1))))
+        pc[:,0:3] = np.matmul(trans_mat, pc[:,0:3])
         return pc
 
     def pc_callback(self, msg: PointCloud2):
@@ -154,10 +159,14 @@ class Panorama:
 
     def capture_panorama(self, goal: CapturePanoramaGoal):
         # self.position_subscriber = rospy.Subscriber("/mast_status", MotorsStatus, self.position_callback, callback_args = Position, queue_size=1)
-        self.pc_subscriber = rospy.Subscriber("/mast_camera/left/points", PointCloud2, self.pc_callback, queue_size=1)
-        self.img_subscriber = rospy.Subscriber("/mast_camera/left/image", Image, self.image_callback, queue_size=1)
+        self.pc_subscriber = rospy.Subscriber("/camera/left/points", PointCloud2, self.pc_callback, queue_size=1)
+        self.img_subscriber = rospy.Subscriber("/camera/left/image", Image, self.image_callback, queue_size=1)
         self.mast_pose = rospy.Publisher("/mast_gimbal_position_cmd", Position, queue_size=1)
         self.pc_publisher = rospy.Publisher("/stitched_pc", PointCloud2)
+        self.tf_buffer = tf2_ros.Buffer()
+        self.listener = tf2_ros.TransformListener(self.tf_buffer)
+        time.sleep(1)
+        zed_in_base = SE3.transform_matrix(SE3.from_tf_time(self.tf_buffer, "odom", "zed_base_link")[0])
         # TODO: Don't hardcode or parametrize this?
         angle_inc = 0.2 # in radians
         current_angle = 0.0
@@ -170,13 +179,20 @@ class Panorama:
                 break
             if self.current_img is None:
                 continue
-            current_angle += angle_inc
-            self.mast_pose.publish(Position(["mast_gimbal_z"], [current_angle]))
+            try:
+                zed_in_base_current = SE3.transform_matrix(SE3.from_tf_time(self.tf_buffer, "odom", "zed_base_link")[0])
+                tf_diff = zed_in_base_current.T * zed_in_base
+                rotated_pc = self.rotate_pc(tf_diff, self.arr_pc)
+            except:
+                continue
+            
             time.sleep(0.5)
 
             self.img_list.append(np.copy(self.current_img))
-            rotated_pc = self.rotate_pc(current_angle, self.arr_pc)
             stitched_pc = np.vstack((stitched_pc, rotated_pc))
+
+            current_angle += angle_inc
+            self.mast_pose.publish(Position(["mast_gimbal_z"], [current_angle]))
             # self._as.publish_feedback(CapturePanoramaActionFeedback(current_angle / goal.angle))
 
         rospy.loginfo("Creating Panorama using %s images...", str(len(self.img_list)))
