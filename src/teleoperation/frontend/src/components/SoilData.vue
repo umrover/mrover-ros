@@ -40,7 +40,9 @@ export default {
             temp: 0,
             humidity: 0,
             tempArray: [] as number[],
+            timestamps: [] as number[],
             readData: false,
+            prevstate: false,
             exponents: [],
             predictedTemp: null
         }
@@ -57,9 +59,12 @@ export default {
                 if(this.readData) {
                     // TODO: add temp to tempArray
                     this.tempArray.push(this.temp)
+                    this.timestamps.push(Date.now())
                 }
                 else{
-                    this.predictedTemp = this.predictTemp(this.temp)
+                    console.log(this.exponents)
+                    this.predictedTemp = this.predictTemp(Date.now())
+                    console.log(this.predictedTemp)
                 }
             }
             else if (msg.type == 'relative_humidity') {
@@ -71,14 +76,14 @@ export default {
         },
         readData(){
             if(!this.readData){
-                
-                this.publishPolyfitMessage(this.tempArray)
+                this.publishPolyfitMessage(this.tempArray, this.timestamps)
             }
-            else{
+            else if(this.readData && this.readData != this.prevstate){
                 this.exponents = []
                 this.tempArray = []
+                this.timestamps = []
             }
-            this.readData = !this.readData
+            this.prevstate = this.readData
         }
 
 
@@ -88,15 +93,18 @@ export default {
         ...mapActions('websocket', ['sendMessage']),
         // TODO: add a function that calculates the polyfit
 
-        publishPolyfitMessage: function(temperatures: any){
+        publishPolyfitMessage: function(temperatures: any, timestamps: any){
             this.sendMessage({
                 type: "polyfit",
-                temperatures: temperatures
+                temperatures: temperatures,
+                timestamps: timestamps
             })
         },
         // TODO: add a function that predicts current temp based off polyfit
-        predictTemp: function(temperature: any){
-            Math.exp(this.exponents[0])*Math.exp(this.exponents * temperature)
+        predictTemp: function(timestamp: any){
+            const val = this.exponents[0] * timestamp + this.exponents[1]
+            console.log(val)
+            return Math.exp(val)
         }
     }
 }

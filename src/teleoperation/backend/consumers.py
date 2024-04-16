@@ -847,9 +847,11 @@ class GUIConsumer(JsonWebsocketConsumer):
             csv_writer.writerows(spectral_data)
 
     def calculate_polyfit(self, msg):
-        x = range(len(msg.temperatures))
-        y_log = np.log(msg.temperatures)
+        temperatures = msg["temperatures"]
+        x = msg["timestamps"]
+        y_log = np.log(temperatures)
         exponents = np.polyfit(x,y_log,1)
+        exponents = list(exponents)
         self.send(
             text_data=json.dumps({"type": "polyfit", "exponents": exponents})
         )
