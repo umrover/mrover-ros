@@ -529,7 +529,7 @@ namespace mrover {
 
         //Calcuulate the spline length
         ros::Duration(0.5).sleep();
-        SE3d planeInRover = SE3Conversions::fromTfTree(mTfBuffer, "plane", mMapFrameId);
+        SE3d planeInRover = SE3Conversions::fromTfTree(mTfBuffer, "plane", mCameraFrameId);
         double xDistanceFromRoverToPlane = planeInRover.translation().x();
         double splineLength = kSplineStart * xDistanceFromRoverToPlane;
 
