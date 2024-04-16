@@ -26,12 +26,12 @@ namespace mrover {
             mConfigCommand.limit_switch_info.limit_readj_pos.at(i) = Radians{static_cast<double>(brushedMotorData[std::format("limit_{}_readjust_position", i)])};
         }
 
+        mConfigCommand.is_inverted = xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, "is_inverted", false);
+
         mConfigCommand.enc_info.quad_present = xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, "quad_present", false);
-        mConfigCommand.enc_info.quad_is_forward_polarity = xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, "quad_is_fwd_polarity", false);
         mConfigCommand.enc_info.quad_ratio = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "quad_ratio", 1.0);
 
         mConfigCommand.enc_info.abs_present = xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, "abs_present", false);
-        mConfigCommand.enc_info.abs_is_forward_polarity = xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, "abs_is_fwd_polarity", false);
         mConfigCommand.enc_info.abs_ratio = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "abs_ratio", 1.0);
         mConfigCommand.enc_info.abs_offset = Radians{xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "abs_offset", 0.0)};
 
