@@ -301,8 +301,8 @@ brushed_motors:
     sa_y:
       gear_ratio: 75.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
       rad_to_meters_ratio: 1.0 #TODO 5.0 = 5 motor radians -> 1 meter
-      limit_0_present: false
-      limit_1_present: false
+      limit_0_present: true
+      limit_1_present: true
       limit_0_enabled: true
       limit_1_enabled: true
       limit_0_is_active_high: false
