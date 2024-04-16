@@ -51,7 +51,7 @@ teleop:
       slow_mode_multiplier: 0.5
       xbox_index: 0
     sa_z:
-      multiplier: -1
+      multiplier: 1
       slow_mode_multiplier: 0.5
       xbox_index: 4
     sampler:

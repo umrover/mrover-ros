@@ -409,8 +409,8 @@ class GUIConsumer(JsonWebsocketConsumer):
                 fast_mode_activated = msg["buttons"][self.xbox_mappings["a"]] or msg["buttons"][self.xbox_mappings["b"]]
                 if not fast_mode_activated:
                     for i, name in enumerate(SA_NAMES):
-                        # When going up (vel > 0) with SA joint 2, we DON'T want slow mode.
-                        if not (name == "sa_y" and throttle_cmd.throttles[i] > 0):
+                        # When going up (vel < 0) with SA joint 2, we DON'T want slow mode.
+                        if not (name == "sa_z" and throttle_cmd.throttles[i] < 0):
                             throttle_cmd.throttles[i] *= self.sa_config[name]["slow_mode_multiplier"]
             publishers[2].publish(throttle_cmd)
 
