@@ -520,7 +520,7 @@ motors_group:
     - "mast_gimbal_z"
   cache:
     - "cache_motor"
-  sa_hw:
+  sa:
     - "sa_x"
     - "sa_y"
     - "sa_z"
