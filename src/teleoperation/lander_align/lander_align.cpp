@@ -55,7 +55,7 @@ namespace mrover {
             return;
         }    
         publishSpline();
-		//calcMotionToo();
+		calcMotionToo();
         mPathPoints.clear();
     }
 
@@ -539,13 +539,13 @@ namespace mrover {
         
         // Append all of the points to each other
         // Eigen::Vector3d baseSplinePoint = mPlaneLocationInWorldVector.value() + splineLength * mNormalInWorldVector.value();
-        Eigen::Vector3d baseSplinePoint = mPlaneLocationInWorldVector.value() - splineLength * mNormalInWorldVector.value();
+        Eigen::Vector3d baseSplinePoint = mPlaneLocationInWorldVector.value() + splineLength * mNormalInWorldVector.value();
         Eigen::Vector3d densityVector = mNormalInWorldVector.value() / density;
         Eigen::Vector3d splinePoint = Eigen::Vector3d::Zero();
         
         while(splinePoint.norm() < (splineLength - offset)){
             // Eigen::Vector3d splinePointInWorld = baseSplinePoint - splinePoint;
-            Eigen::Vector3d splinePointInWorld = baseSplinePoint + splinePoint;
+            Eigen::Vector3d splinePointInWorld = baseSplinePoint - splinePoint;
             // Create the new point to be added to the vector
             Vector5d newPoint;
             newPoint << splinePointInWorld.x(),
@@ -568,7 +568,7 @@ namespace mrover {
                 0, 0, 1;
         int index = 0;
         for(auto const & point : mPathPoints){
-            SE3d mPlaneLocationInZEDSE3d = {{point.coeff(0,0), point.coeff(0,1), 0}, SO3d{Eigen::Quaterniond{rot}.normalized()}};
+            SE3d mPlaneLocationInZEDSE3d = {{point.coeff(0,0), point.coeff(1,0), 0}, SO3d{Eigen::Quaterniond{rot}.normalized()}};
             SE3Conversions::pushToTfTree(mTfBroadcaster, std::format("point_{}", index), mMapFrameId, mPlaneLocationInZEDSE3d);
             index++;
         }
