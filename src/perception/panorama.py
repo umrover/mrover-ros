@@ -143,16 +143,17 @@ class Panorama:
 
     def rotate_pc(self, trans_mat : np.ndarray, pc : np.ndarray):
         # rotate the provided point cloud's x, y points by the se3_pose
-        points = np.hstack((pc[:,0:3], np.ones((pc.shape[0],1))))
-        pc[:,0:3] = np.matmul(trans_mat, pc[:,0:3])
-        return pc
+        points: np.ndarray[np.Any, np.dtype[np.floating[np._64Bit]]] = np.hstack((pc[:,0:3], np.ones((pc.shape[0],1))))
+        rotated_points = np.matmul(trans_mat, points.T).T
+        pc[:,0:3] = np.delete(rotated_points, 3, 1)
+        return pc[~np.isnan(points).any(axis = 1)]
 
     def pc_callback(self, msg: PointCloud2):
         self.current_pc = msg
 
         # extract xyzrgb fields
         # TODO: dtype hard-coded to float32
-        self.arr_pc = np.frombuffer(bytearray(msg.data), dtype=np.float32).reshape(msg.height * msg.width, int(msg.point_step / 4))[0::5,:]
+        self.arr_pc = np.frombuffer(bytearray(msg.data), dtype=np.float32).reshape(msg.height * msg.width, int(msg.point_step / 4))[0::20,:]
 
     def image_callback(self, msg: Image):
         self.current_img = cv2.cvtColor(np.frombuffer(msg.data, dtype=np.uint8).reshape(msg.height, msg.width, 4), cv2.COLOR_RGBA2RGB)
@@ -197,9 +198,9 @@ class Panorama:
 
         rospy.loginfo("Creating Panorama using %s images...", str(len(self.img_list)))
         stitcher = cv.Stitcher.create()
-        status, pano = stitcher.stitch(self.img_list)
-        desktop_path = "/home/alison/catkin_ws/src/mrover/data/pano.png"
-        cv2.imwrite(desktop_path, pano)
+        # status, pano = stitcher.stitch(self.img_list)
+        # desktop_path = "/home/alison/catkin_ws/src/mrover/data/pano.png"
+        # cv2.imwrite(filename=desktop_path, pano)
 
         # construct pc from stitched
         pc_msg = PointCloud2()
