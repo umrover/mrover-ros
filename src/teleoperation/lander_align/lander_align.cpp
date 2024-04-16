@@ -50,7 +50,7 @@ namespace mrover {
 		mCloud = ros::topic::waitForMessage<sensor_msgs::PointCloud2>("/camera/left/points", mNh);
 		filterNormals(mCloud);
 		ransac(0.1, 10, 100);
-        if(!createSpline(7,0.7)){
+        if(!createSpline(7, 0.75)){
             mActionServer->setPreempted();
             return;
         }    
@@ -82,8 +82,8 @@ namespace mrover {
 
         for (const Vector5d& point : mPathPoints) {
             double K1 = .3;
-            double K2 = 1;
-            double K3 = 1.5;  
+            double K2 = 1.4;
+            double K3 = 1;  
 
             // Grab the current target state from the spline
             Eigen::Vector3d tarState{point.coeff(0, 0), point.coeff(1, 0), point.coeff(2, 0)};
@@ -121,7 +121,7 @@ namespace mrover {
                 ROS_INFO_STREAM("Term 1: " << (K2*point.coeff(3, 0)*errState.y())*pow(cos(errState.z()), 2));
                 ROS_INFO_STREAM("Term 2: " << (K3*abs(point.coeff(3, 0))*tan(errState.z()))*pow(cos(errState.z()), 2));
                 
-                ros::Rate r(10);
+                ros::Rate r(30);
                 r.sleep();
                 double v = (point.coeff(3, 0) - K1 * abs(point.coeff(3, 0) * (errState.x() + errState.y() * tan(errState.z()))))/(cos(errState.z()));
                 double omega = point.coeff(4, 0) - ((K2*point.coeff(3, 0)*errState.y() + K3*abs(point.coeff(3, 0))*tan(errState.z()))*pow(cos(errState.z()), 2));
@@ -195,8 +195,8 @@ namespace mrover {
                 if (std::abs(SO3tan.z()) < angular_thresh) {
                     break;
                 }
+                mTwistPub.publish(twist);
             }
-            mTwistPub.publish(twist);
         }
         
         twist.angular.z = 0;
