@@ -10,11 +10,6 @@ namespace mrover {
         mNh.getParam(std::format("brushed_motors/controllers/{}", mControllerName), brushedMotorData);
         assert(brushedMotorData.getType() == XmlRpc::XmlRpcValue::TypeStruct);
 
-        mVelocityMultiplier = Ratio{xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "velocity_multiplier", 1.0)};
-        if (abs(mVelocityMultiplier) < Ratio{1e-5}) {
-            throw std::runtime_error{"Velocity output must be nonzero"};
-        }
-
         mConfigCommand.gear_ratio = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "gear_ratio");
 
         for (std::size_t i = 0; i < 4; ++i) {
@@ -77,10 +72,6 @@ namespace mrover {
 
         assert(throttle >= -1_percent && throttle <= 1_percent);
 
-        if (mVelocityMultiplier < Ratio{0}) {
-            throttle *= -1.0;
-        }
-
         mDevice.publish_message(InBoundMessage{ThrottleCommand{.throttle = throttle}});
     }
 
@@ -107,8 +98,6 @@ namespace mrover {
         }
 
         assert(velocity >= mConfigCommand.min_velocity && velocity <= mConfigCommand.max_velocity);
-
-        velocity = velocity * mVelocityMultiplier;
 
         mDevice.publish_message(InBoundMessage{VelocityCommand{
                 .velocity = velocity,
@@ -138,7 +127,7 @@ namespace mrover {
 
     auto BrushedController::processMessage(ControllerDataState const& state) -> void {
         mCurrentPosition = state.position;
-        mCurrentVelocity = state.velocity / mVelocityMultiplier;
+        mCurrentVelocity = state.velocity;
         ConfigCalibErrorInfo configCalibErrInfo = state.config_calib_error_data;
         mIsConfigured = configCalibErrInfo.configured;
         mIsCalibrated = configCalibErrInfo.calibrated;

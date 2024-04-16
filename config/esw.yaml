@@ -96,27 +96,21 @@ can:
 brushless_motors:
   controllers:
     front_left:
-      velocity_multiplier: -1.0
       min_velocity: -70.0
       max_velocity: 70.0
     front_right:
-      velocity_multiplier: 1.0
       min_velocity: -70.0
       max_velocity: 70.0
     middle_left:
-      velocity_multiplier: -1.0
       min_velocity: -70.0
       max_velocity: 70.0
     middle_right:
-      velocity_multiplier: 1.0
       min_velocity: -70.0
       max_velocity: 70.0
     back_left:
-      velocity_multiplier: -1.0
       min_velocity: -70.0
       max_velocity: 70.0
     back_right:
-      velocity_multiplier: 1.0
       min_velocity: -70.0
       max_velocity: 70.0
     joint_a:
@@ -219,7 +213,7 @@ brushed_motors:
     #   max_backward_pos: 0.0
     #   calibration_throttle: 5.0
     joint_b:
-      velocity_multiplier: -1.0
+      is_inverted: False
       gear_ratio: 1.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
       limit_0_present: true
       limit_0_enabled: true
