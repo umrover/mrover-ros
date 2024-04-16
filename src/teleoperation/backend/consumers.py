@@ -275,7 +275,7 @@ class GUIConsumer(JsonWebsocketConsumer):
 
         if msg["arm_mode"] == "ik":
             ee_in_map = SE3.from_tf_tree(self.tf_buffer, "base_link", "arm_e_link")
-            
+
             ee_in_map.position[0] += (
                 self.ik_names["x"] * self.filter_xbox_axis(msg["axes"][self.xbox_mappings["left_js_x"]]),
             )
@@ -283,7 +283,7 @@ class GUIConsumer(JsonWebsocketConsumer):
                 self.ik_names["y"] * self.filter_xbox_axis(msg["axes"][self.xbox_mappings["left_js_y"]]),
             )
             ee_in_map.position[2] += self.ik_names["z"] * (left_trigger - right_trigger)
-            
+
             arm_ik_cmd = IK(target=PoseStamped(
                     header=Header(stamp=rospy.Time.now(), frame_id="base_link"),
                     pose=Pose(
