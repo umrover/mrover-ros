@@ -64,14 +64,14 @@ export default defineComponent({
 
   mounted: function () {
     this.startStream(this.id)
-    this.$nextTick(() => {
-      const canvas: HTMLCanvasElement = document.getElementById(
-        'stream-' + this.id
-      ) as HTMLCanvasElement
-      const context = canvas.getContext('2d') ?? new CanvasRenderingContext2D()
-      context.fillStyle = 'black'
-      context.fillRect(0, 0, canvas.width, canvas.height)
-    })
+    // this.$nextTick(() => {
+    //   const canvas: HTMLCanvasElement = document.getElementById(
+    //     'stream-' + this.id
+    //   ) as HTMLCanvasElement
+    //   const context = canvas.getContext('2d') ?? new CanvasRenderingContext2D()
+    //   context.fillStyle = 'black'
+    //   context.fillRect(0, 0, canvas.width, canvas.height)
+    // })
   },
 
   methods: {
