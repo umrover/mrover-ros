@@ -16,19 +16,19 @@ namespace mrover {
         Position positions;
         positions.names = {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll"};
         positions.positions.resize(positions.names.size());
-        SE3d target_frame_to_arm_b_static;
+        SE3d targetFrameToArmBaseLink;
         try {
-            target_frame_to_arm_b_static = SE3Conversions::fromTfTree(mTfBuffer, ik_target.target.header.frame_id, "arm_base_link");
-        } catch (...) {
-            ROS_WARN_THROTTLE(1, "Failed to resolve information about target frame");
+            targetFrameToArmBaseLink = SE3Conversions::fromTfTree(mTfBuffer, ik_target.target.header.frame_id, "arm_base_link");
+        } catch (tf2::TransformException const& exception) {
+            ROS_WARN_STREAM_THROTTLE(1, std::format("Failed to get transform from {} to arm_base_link: {}", ik_target.target.header.frame_id, exception.what()));
             return;
         }
-        Eigen::Vector4d target{ik_target.target.pose.position.x, ik_target.target.pose.position.y, ik_target.target.pose.position.z, 1};
-        Eigen::Vector4d target_in_arm_b_static = target_frame_to_arm_b_static.transform() * target;
-        double x = target_in_arm_b_static.x() - END_EFFECTOR_LENGTH; // shift back by the length of the end effector
-        double z = target_in_arm_b_static.z();
-        double y = target_in_arm_b_static.y();
-        SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_target", "arm_base_link", target_frame_to_arm_b_static);
+        SE3d endEffectorInTarget{{ik_target.target.pose.position.x, ik_target.target.pose.position.y, ik_target.target.pose.position.z}, SO3d::Identity()};
+        SE3d endEffectorInArmBaseLink = targetFrameToArmBaseLink * endEffectorInTarget;
+        double x = endEffectorInArmBaseLink.translation().x() - END_EFFECTOR_LENGTH; // shift back by the length of the end effector
+        double y = endEffectorInArmBaseLink.translation().y();
+        double z = endEffectorInArmBaseLink.translation().z();
+        SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_target", "arm_base_link", targetFrameToArmBaseLink);
 
         double gamma = 0;
         double x3 = x - LINK_DE * std::cos(gamma);

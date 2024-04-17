@@ -1,17 +1,17 @@
 import csv
-from datetime import datetime
 import json
 import os
-import pytz
-from math import copysign
-from math import pi
-from tf.transformations import euler_from_quaternion
 import threading
+from datetime import datetime
+from math import copysign, pi
 
+import pytz
 from channels.generic.websocket import JsonWebsocketConsumer
+
 import rospy
 import tf2_ros
-import cv2
+from backend.models import AutonWaypoint, BasicWaypoint
+from geometry_msgs.msg import Twist, Pose, PoseStamped, Point, Quaternion
 
 # from cv_bridge import CvBridge
 from mrover.msg import (
@@ -33,15 +33,11 @@ from mrover.msg import (
     HeaterData,
 )
 from mrover.srv import EnableAuton, AdjustMotor, ChangeCameras, CapturePanorama
-from sensor_msgs.msg import JointState, NavSatFix, Temperature, RelativeHumidity, Image
+from sensor_msgs.msg import JointState, NavSatFix, Temperature, RelativeHumidity
 from std_msgs.msg import String, Header
 from std_srvs.srv import SetBool, Trigger
-from geometry_msgs.msg import Twist, Pose, PoseStamped, Point, Quaternion
-
+from tf.transformations import euler_from_quaternion
 from util.SE3 import SE3
-
-from backend.models import AutonWaypoint, BasicWaypoint
-
 
 DEFAULT_ARM_DEADZONE = 0.15
 
@@ -215,16 +211,18 @@ class GUIConsumer(JsonWebsocketConsumer):
         except Exception as e:
             rospy.logerr(e)
 
+    @staticmethod
     def filter_xbox_axis(
-        self,
-        value: int,
+        value: float,
         deadzone_threshold: float = DEFAULT_ARM_DEADZONE,
         quad_control: bool = False,
     ) -> float:
-        deadzoned_val = deadzone(value, deadzone_threshold)
-        return quadratic(deadzoned_val) if quad_control else deadzoned_val
+        value = deadzone(value, deadzone_threshold)
+        if quad_control:
+            value = quadratic(value)
+        return value
 
-    def filter_xbox_button(self, button_array: "List[int]", pos_button: str, neg_button: str) -> float:
+    def filter_xbox_button(self, button_array: list[float], pos_button: str, neg_button: str) -> float:
         """
         Applies various filtering functions to an axis for controlling the arm
         :return: Return -1, 0, or 1 depending on what buttons are being pressed
@@ -253,25 +251,13 @@ class GUIConsumer(JsonWebsocketConsumer):
                 / 2
             )
 
-    def publish_ik(self, axes):
-        # left_trigger = self.filter_xbox_axis(axes[self.xbox_mappings["left_trigger"]])
-        # right_trigger = self.filter_xbox_axis(axes[self.xbox_mappings["right_trigger"]])
-        ee_in_map = SE3.from_tf_tree(self.tf_buffer, "base_link", "arm_e_link")
+    def publish_ik(self, axes: list[float], buttons: list[float]) -> None:
+        ee_in_map = SE3.from_tf_tree(self.tf_buffer, "base_link", "arm_d_link")
 
-        ee_in_map.position[0] += (self.ik_names["x"] * self.filter_xbox_axis(axes[self.xbox_mappings["left_js_x"]]),)
-        ee_in_map.position[1] += (self.ik_names["y"] * self.filter_xbox_axis(axes[self.xbox_mappings["left_js_y"]]),)
+        ee_in_map.position[0] += self.ik_names["x"] * self.filter_xbox_axis(axes[self.xbox_mappings["left_js_x"]])
+        ee_in_map.position[1] += self.ik_names["y"] * self.filter_xbox_axis(axes[self.xbox_mappings["left_js_y"]])
+        ee_in_map.position[2] += self.ik_names["z"] * self.filter_xbox_button(buttons, "right_trigger", "left_trigger")
 
-        # ee_in_map.position[2] += self.ik_names["z"] * (left_trigger - right_trigger)
-
-        arm_ik_cmd = IK(
-            target=PoseStamped(
-                header=Header(stamp=rospy.Time.now(), frame_id="base_link"),
-                pose=Pose(
-                    position=Point(*ee_in_map.position),
-                    orientation=Quaternion(*ee_in_map.rotation.quaternion),
-                ),
-            )
-        )
         self.send(
             text_data=json.dumps(
                 {
@@ -283,7 +269,18 @@ class GUIConsumer(JsonWebsocketConsumer):
                 }
             )
         )
-        self.arm_ik_pub.publish(arm_ik_cmd)
+
+        self.arm_ik_pub.publish(
+            IK(
+                target=PoseStamped(
+                    header=Header(stamp=rospy.Time.now(), frame_id="base_link"),
+                    pose=Pose(
+                        position=Point(*ee_in_map.position),
+                        orientation=Quaternion(*ee_in_map.rotation.quaternion),
+                    ),
+                )
+            )
+        )
 
     def publish_position(self, type, names, positions):
         position_cmd = Position(
@@ -381,7 +378,7 @@ class GUIConsumer(JsonWebsocketConsumer):
             names = ["cache"]
 
         if msg["arm_mode"] == "ik":
-            self.publish_ik(axes=msg["axes"])
+            self.publish_ik(msg["axes"], msg["buttons"])
 
         elif msg["arm_mode"] == "position":
             self.publish_position(type=msg["type"], names=names, positions=msg["positions"])
