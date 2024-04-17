@@ -5,26 +5,28 @@
         <div class="waypoint-header">
           <h4>All Waypoints</h4>
         </div>
-        <div class="card w-75 col mb-3" v-for="waypoint in waypoints">
-          <div class="card-body">
-            <h5>{{ waypoint.name }}</h5>
-            <p>ID: {{ waypoint.id }}  Type: {{ waypoint.type }}</p>
-            <div class="row">
-              <div class="col input-group">
-                <input class="form-control" id="deg1" v-model.number="waypoint.gps.lat.d" />
-                <span for="deg1" class="input-group-text">º</span>
+        <div class="box route">
+          <div class="shadow p-3 card w-75 col mb-3" v-for="waypoint in waypoints">
+            <div class="card-body">
+              <h5>{{ waypoint.name }}</h5>
+              <p>ID: {{ waypoint.id }}  Type: {{ waypoint.type }}</p>
+              <div class="row">
+                <div class="col input-group">
+                  <input class="form-control" id="deg1" v-model.number="waypoint.gps.lat.d" />
+                  <span for="deg1" class="input-group-text">º</span>
+                </div>
+                N
               </div>
-              N
-            </div>
-            <div class="row">
-              <div class="col input-group">
-                <input class="form-control" id="deg2" v-model.number="waypoint.gps.lon.d" />
-                <span for="deg2" class="input-group-text">º</span>
+              <div class="row">
+                <div class="col input-group">
+                  <input class="form-control" id="deg2" v-model.number="waypoint.gps.lon.d" />
+                  <span for="deg2" class="input-group-text">º</span>
+                </div>
+                W
               </div>
-              W
-            </div>
-            <button class="btn btn-primary custom-btn" @click="addItem(waypoint)">Add Waypoint</button>
-          </div>     
+              <button class="btn btn-primary custom-btn" @click="addItem(waypoint)">Add Waypoint</button>
+            </div>     
+          </div>
         </div>
       </div>
     </div>
