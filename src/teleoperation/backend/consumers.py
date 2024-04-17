@@ -252,8 +252,8 @@ class GUIConsumer(JsonWebsocketConsumer):
             )
         
     def publish_ik(self, axes):
-        left_trigger = self.filter_xbox_axis(axes[self.xbox_mappings["left_trigger"]])
-        right_trigger = self.filter_xbox_axis(axes[self.xbox_mappings["right_trigger"]])
+        # left_trigger = self.filter_xbox_axis(axes[self.xbox_mappings["left_trigger"]])
+        # right_trigger = self.filter_xbox_axis(axes[self.xbox_mappings["right_trigger"]])
         ee_in_map = SE3.from_tf_tree(self.tf_buffer, "base_link", "arm_e_link")
 
         ee_in_map.position[0] += (
@@ -263,7 +263,7 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.ik_names["y"] * self.filter_xbox_axis(axes[self.xbox_mappings["left_js_y"]]),
         )
         
-        ee_in_map.position[2] += self.ik_names["z"] * (left_trigger - right_trigger)
+        # ee_in_map.position[2] += self.ik_names["z"] * (left_trigger - right_trigger)
 
         arm_ik_cmd = IK(target=PoseStamped(
                 header=Header(stamp=rospy.Time.now(), frame_id="base_link"),
