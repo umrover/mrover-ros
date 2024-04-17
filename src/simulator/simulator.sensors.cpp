@@ -245,7 +245,7 @@ namespace mrover {
 
             ControllerState armControllerState;
             sensor_msgs::JointState armJointState;
-            std::vector<double> zeros = {0,0,0,0,0,0};
+            std::vector<double> zeros = {0, 0, 0, 0, 0, 0};
             armJointState.header.stamp = ros::Time::now();
             for (auto& linkName: {"arm_a_link", "arm_b_link", "arm_c_link", "arm_d_link", "arm_e_link"}) {
                 armControllerState.name.emplace_back(armMsgToUrdf.backward(linkName).value());

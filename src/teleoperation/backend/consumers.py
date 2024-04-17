@@ -95,7 +95,9 @@ class GUIConsumer(JsonWebsocketConsumer):
 
             # Subscribers
             self.pdb_sub = rospy.Subscriber("/pdb_data", PDLB, self.pdb_callback)
-            self.arm_moteus_sub = rospy.Subscriber("/arm_controller_data", ControllerState, self.arm_controller_callback)
+            self.arm_moteus_sub = rospy.Subscriber(
+                "/arm_controller_data", ControllerState, self.arm_controller_callback
+            )
             self.arm_joint_sub = rospy.Subscriber("/arm_joint_data", JointState, self.arm_joint_callback)
             self.drive_moteus_sub = rospy.Subscriber(
                 "/drive_controller_data", ControllerState, self.drive_controller_callback
@@ -250,36 +252,37 @@ class GUIConsumer(JsonWebsocketConsumer):
                 * (self.brushed_motors[joint_name]["max_velocity"] - self.brushed_motors[joint_name]["min_velocity"])
                 / 2
             )
-        
+
     def publish_ik(self, axes):
         # left_trigger = self.filter_xbox_axis(axes[self.xbox_mappings["left_trigger"]])
         # right_trigger = self.filter_xbox_axis(axes[self.xbox_mappings["right_trigger"]])
         ee_in_map = SE3.from_tf_tree(self.tf_buffer, "base_link", "arm_e_link")
 
-        ee_in_map.position[0] += (
-            self.ik_names["x"] * self.filter_xbox_axis(axes[self.xbox_mappings["left_js_x"]]),
-        )
-        ee_in_map.position[1] += (
-            self.ik_names["y"] * self.filter_xbox_axis(axes[self.xbox_mappings["left_js_y"]]),
-        )
-        
+        ee_in_map.position[0] += (self.ik_names["x"] * self.filter_xbox_axis(axes[self.xbox_mappings["left_js_x"]]),)
+        ee_in_map.position[1] += (self.ik_names["y"] * self.filter_xbox_axis(axes[self.xbox_mappings["left_js_y"]]),)
+
         # ee_in_map.position[2] += self.ik_names["z"] * (left_trigger - right_trigger)
 
-        arm_ik_cmd = IK(target=PoseStamped(
+        arm_ik_cmd = IK(
+            target=PoseStamped(
                 header=Header(stamp=rospy.Time.now(), frame_id="base_link"),
                 pose=Pose(
                     position=Point(*ee_in_map.position),
                     orientation=Quaternion(*ee_in_map.rotation.quaternion),
-                )
+                ),
             )
         )
-        self.send(text_data=json.dumps({
-            "type": "ik",
-            "target": {
-                "position": ee_in_map.position.tolist(),
-                "quaternion": ee_in_map.rotation.quaternion.tolist()
-            }
-        }))
+        self.send(
+            text_data=json.dumps(
+                {
+                    "type": "ik",
+                    "target": {
+                        "position": ee_in_map.position.tolist(),
+                        "quaternion": ee_in_map.rotation.quaternion.tolist(),
+                    },
+                }
+            )
+        )
         self.arm_ik_pub.publish(arm_ik_cmd)
 
     def publish_position(self, type, names, positions):
@@ -301,21 +304,14 @@ class GUIConsumer(JsonWebsocketConsumer):
         velocity_cmd.names = names
         if type == "cache_values":
             velocity_cmd.velocities = [
-                self.sa_config["cache"]["multiplier"]
-                * self.filter_xbox_button(buttons, "right_bumper", "left_bumper")
+                self.sa_config["cache"]["multiplier"] * self.filter_xbox_button(buttons, "right_bumper", "left_bumper")
             ]
             self.cache_velocity_cmd_pub.publish(velocity_cmd)
         elif type == "sa_arm_values":
             velocity_cmd.velocities = [
-                self.to_velocity(
-                    self.filter_xbox_axis(axes[self.sa_config["sa_x"]["xbox_index"]]), "sa_x", False
-                ),
-                self.to_velocity(
-                    self.filter_xbox_axis(axes[self.sa_config["sa_y"]["xbox_index"]]), "sa_y", False
-                ),
-                self.to_velocity(
-                    self.filter_xbox_axis(axes[self.sa_config["sa_z"]["xbox_index"]]), "sa_z", True
-                ),
+                self.to_velocity(self.filter_xbox_axis(axes[self.sa_config["sa_x"]["xbox_index"]]), "sa_x", False),
+                self.to_velocity(self.filter_xbox_axis(axes[self.sa_config["sa_y"]["xbox_index"]]), "sa_y", False),
+                self.to_velocity(self.filter_xbox_axis(axes[self.sa_config["sa_z"]["xbox_index"]]), "sa_z", True),
                 self.sa_config["sampler"]["multiplier"] * (right_trigger - left_trigger),
                 self.sa_config["sensor_actuator"]["multiplier"]
                 * self.filter_xbox_button(buttons, "right_bumper", "left_bumper"),
@@ -323,15 +319,11 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.sa_velocity_cmd_pub.publish(velocity_cmd)
         elif type == "arm_values":
             velocity_cmd.velocities = [
-                self.to_velocity(
-                    self.filter_xbox_axis(axes[self.ra_config["joint_a"]["xbox_index"]]), "joint_a"
-                ),
+                self.to_velocity(self.filter_xbox_axis(axes[self.ra_config["joint_a"]["xbox_index"]]), "joint_a"),
                 self.to_velocity(
                     self.filter_xbox_axis(axes[self.ra_config["joint_b"]["xbox_index"]]), "joint_b", False
                 ),
-                self.to_velocity(
-                    self.filter_xbox_axis(axes[self.ra_config["joint_c"]["xbox_index"]]), "joint_c"
-                ),
+                self.to_velocity(self.filter_xbox_axis(axes[self.ra_config["joint_c"]["xbox_index"]]), "joint_c"),
                 self.to_velocity(
                     self.filter_xbox_axis(axes[self.ra_config["joint_de_pitch"]["xbox_index"]]), "joint_de_0"
                 ),
@@ -350,8 +342,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         throttle_cmd.names = names
         if type == "cache_values":
             throttle_cmd.throttles = [
-                self.sa_config["cache"]["multiplier"]
-                * self.filter_xbox_button(buttons, "right_bumper", "left_bumper")
+                self.sa_config["cache"]["multiplier"] * self.filter_xbox_button(buttons, "right_bumper", "left_bumper")
             ]
             self.cache_throttle_cmd_pub.publish(throttle_cmd)
         elif type == "arm_values":
@@ -381,7 +372,7 @@ class GUIConsumer(JsonWebsocketConsumer):
                 * self.filter_xbox_button(buttons, "right_bumper", "left_bumper"),
             ]
             self.sa_throttle_cmd_pub.publish(throttle_cmd)
-        
+
     def handle_controls_message(self, msg):
         names = ["joint_b", "joint_c", "joint_de_pitch", "joint_de_roll"]
         if msg["type"] == "sa_arm_values":
@@ -798,12 +789,9 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.send(text_data=json.dumps({"type": "flight_attitude", "pitch": pitch, "roll": roll}))
 
             rate.sleep()
-    
+
     def arm_joint_callback(self, msg):
-        self.send(text_data=json.dumps({
-            "type": "fk",
-            "positions": msg.position
-        }))
+        self.send(text_data=json.dumps({"type": "fk", "positions": msg.position}))
 
     def science_spectral_callback(self, msg):
         self.send(
