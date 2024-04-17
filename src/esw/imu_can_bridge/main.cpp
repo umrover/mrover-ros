@@ -18,10 +18,7 @@ int main(int argc, char** argv) {
 }
 
 void processCANData(const mrover::CAN::ConstPtr& msg) {
-
     assert(msg->source == "imu_arduino");
     assert(msg->destination == "jetson");
-
-    // msg->data.data());
-
+    ROS_INFO("%f cool stuff",msg->data[0]);
 }

@@ -186,10 +186,13 @@ namespace mrover {
         std::array<float, 6> temps{};
     };
 
-    struct DirtData {
+    struct DirtData : Temperature {
         float temperature;
+    };
+
+    struct DirtData : Humidity {
         float humidity;
-    }
+    };
 
     using OutBoundSASensorMessage = std::variant<DirtData>;
 

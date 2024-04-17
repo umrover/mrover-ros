@@ -86,12 +86,18 @@ can:
     - name: "cache"
       bus: 2
       id: 0x34
+    - name: "dirt_sensor_arduino"
+      bus: 1
+      id: 0x35
     - name: "pdlb"
       bus: 3
       id: 0x50
     - name: "science"
       bus: 2
       id: 0x51
+    - name: "imu_arduino"
+      bus: 0
+      id: 0x60
 
 brushless_motors:
   controllers:
