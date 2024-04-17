@@ -43,6 +43,7 @@
         <button class="btn btn-primary btn-lg custom-btn" @click="takePanorama()">
           Take Panorama
         </button>
+        <p>{{ percent }}</p>
       </div>
     </div>
     <CameraDisplay :streamOrder="streamOrder" :mission="mission" :names="names" :qualities="qualities"></CameraDisplay>
@@ -85,7 +86,8 @@ export default {
       qualities: reactive(new Array(9).fill(-1)),
       streamOrder: reactive([]),
 
-      num_available: -1
+      num_available: -1,
+      percent: 0
     }
   },
 
@@ -93,6 +95,9 @@ export default {
     message(msg) {
       if (msg.type == 'max_streams') {
         this.streamOrder = new Array(msg.streams).fill(-1)
+      }
+      else if (msg.type == 'pano_feedback') {
+        this.percent = msg.percent;
       }
     },
     capacity: function (newCap, oldCap) {

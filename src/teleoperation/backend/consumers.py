@@ -13,7 +13,7 @@ import rospy
 import tf2_ros
 import cv2
 
-# from cv_bridge import CvBridge
+from cv_bridge import CvBridge
 from mrover.msg import (
     PDLB,
     ControllerState,
@@ -31,10 +31,14 @@ from mrover.msg import (
     Spectral,
     ScienceThermistors,
     HeaterData,
+    CapturePanoramaAction,
+    CapturePanoramaFeedback,
+    CapturePanoramaGoal
 )
-from mrover.srv import EnableAuton, AdjustMotor, ChangeCameras, CapturePanorama
-from sensor_msgs.msg import NavSatFix, Temperature, RelativeHumidity, Image
-from std_msgs.msg import String
+import actionlib
+from mrover.srv import EnableAuton, AdjustMotor, ChangeCameras
+from sensor_msgs.msg import NavSatFix, Temperature, RelativeHumidity
+from std_msgs.msg import String, Bool
 from std_srvs.srv import SetBool, Trigger
 from geometry_msgs.msg import Twist, Pose, Point, Quaternion
 
@@ -64,6 +68,20 @@ class GUIConsumer(JsonWebsocketConsumer):
     def connect(self):
         self.accept()
         try:
+            # ROS Parameters
+            self.mappings = rospy.get_param("teleop/joystick_mappings")
+            self.drive_config = rospy.get_param("teleop/drive_controls")
+            self.max_wheel_speed = rospy.get_param("rover/max_speed")
+            self.wheel_radius = rospy.get_param("wheel/radius")
+            self.max_angular_speed = self.max_wheel_speed / self.wheel_radius
+            self.ra_config = rospy.get_param("teleop/ra_controls")
+            self.ik_names = rospy.get_param("teleop/ik_multipliers")
+            self.RA_NAMES = rospy.get_param("teleop/ra_names")
+            self.brushless_motors = rospy.get_param("brushless_motors/controllers")
+            self.brushed_motors = rospy.get_param("brushed_motors/controllers")
+            self.xbox_mappings = rospy.get_param("teleop/xbox_mappings")
+            self.sa_config = rospy.get_param("teleop/sa_controls")
+
             # Publishers
             self.twist_pub = rospy.Publisher("/cmd_vel", Twist, queue_size=1)
             self.led_pub = rospy.Publisher("/auton_led_cmd", String, queue_size=1)
@@ -105,6 +123,9 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.science_spectral = rospy.Subscriber("/science_spectral", Spectral, self.science_spectral_callback)
             self.cmd_vel = rospy.Subscriber("/cmd_vel", Twist, self.cmd_vel_callback)
 
+            # Action clients
+            self.pano_client = actionlib.SimpleActionClient("panorama", CapturePanoramaAction)
+
             # Services
             self.laser_service = rospy.ServiceProxy("enable_arm_laser", SetBool)
             self.enable_auton = rospy.ServiceProxy("enable_auton", EnableAuton)
@@ -113,22 +134,7 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.cache_enable_limit = rospy.ServiceProxy("cache_enable_limit_switches", SetBool)
             self.calibrate_service = rospy.ServiceProxy("arm_calibrate", Trigger)
             self.change_cameras_srv = rospy.ServiceProxy("change_cameras", ChangeCameras)
-            self.capture_panorama_srv = rospy.ServiceProxy("capture_panorama", CapturePanorama)
             self.heater_auto_shutoff_srv = rospy.ServiceProxy("science_change_heater_auto_shutoff_state", SetBool)
-
-            # ROS Parameters
-            self.mappings = rospy.get_param("teleop/joystick_mappings")
-            self.drive_config = rospy.get_param("teleop/drive_controls")
-            self.max_wheel_speed = rospy.get_param("rover/max_speed")
-            self.wheel_radius = rospy.get_param("wheel/radius")
-            self.max_angular_speed = self.max_wheel_speed / self.wheel_radius
-            self.ra_config = rospy.get_param("teleop/ra_controls")
-            self.ik_names = rospy.get_param("teleop/ik_multipliers")
-            self.RA_NAMES = rospy.get_param("teleop/ra_names")
-            self.brushless_motors = rospy.get_param("brushless_motors/controllers")
-            self.brushed_motors = rospy.get_param("brushed_motors/controllers")
-            self.xbox_mappings = rospy.get_param("teleop/xbox_mappings")
-            self.sa_config = rospy.get_param("teleop/sa_controls")
 
             self.tf_buffer = tf2_ros.Buffer()
             self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
@@ -686,37 +692,35 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.send(text_data=json.dumps({"type": "max_streams", "streams": streams}))
 
     def capture_panorama(self) -> None:
-        try:
-            response = self.capture_panorama_srv()
-            image = response.panorama
+        rospy.logerr("Capturing panorama")
+        goal = CapturePanoramaGoal()
+        goal.angle = 180
+        def feedback_cb(feedback: CapturePanoramaGoal) -> None:
+            self.send(text_data=json.dumps({"type": "pano_feedback", "percent": feedback.percent_done}))
+        self.pano_client.send_goal(goal, feedback_cb=feedback_cb)
+        finished = self.pano_client.wait_for_result(timeout=rospy.Duration(30)) # timeouts after 30 seconds
+        if finished:
+            image = self.pano_client.get_result().panorama
             # self.image_callback(image)
-        except rospy.ServiceException as e:
-            print(f"Service call failed: {e}")
+        else:
+            rospy.logerr("CapturePanorama took too long!")
 
-    # def capture_photo(self):
-    #     try:
-    #         response = self.capture_photo_srv()
-    #         image = response.photo
-    #         self.image_callback(image)
-    #     except rospy.ServiceException as e:
-    #         print(f"Service call failed: {e}")
+    def image_callback(self, msg):
+        bridge = CvBridge()
+        try:
+            # Convert the image to OpenCV standard format
+            cv_image = bridge.imgmsg_to_cv2(msg, desired_encoding="passthrough")
+        except Exception as e:
+            rospy.logerr("Could not convert image message to OpenCV image: " + str(e))
+            return
 
-    # def image_callback(self, msg):
-    #     bridge = CvBridge()
-    #     try:
-    #         # Convert the image to OpenCV standard format
-    #         cv_image = bridge.imgmsg_to_cv2(msg, desired_encoding="passthrough")
-    #     except Exception as e:
-    #         rospy.logerr("Could not convert image message to OpenCV image: " + str(e))
-    #         return
-
-    #     # Save the image to a file (you could change 'png' to 'jpg' or other formats)
-    #     image_filename = "panorama.png"
-    #     try:
-    #         cv2.imwrite(image_filename, cv_image)
-    #         rospy.loginfo("Saved image to {}".format(image_filename))
-    #     except Exception as e:
-    #         rospy.logerr("Could not save image: " + str(e))
+        # Save the image to a file (you could change 'png' to 'jpg' or other formats)
+        image_filename = "panorama.png"
+        try:
+            cv2.imwrite(image_filename, cv_image)
+            rospy.loginfo("Saved image to {}".format(image_filename))
+        except Exception as e:
+            rospy.logerr("Could not save image: " + str(e))
 
     def heater_enable_service(self, msg):
         try:
