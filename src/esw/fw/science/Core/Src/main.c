@@ -58,23 +58,11 @@ const osThreadAttr_t defaultTask_attributes = {
 };
 /* USER CODE BEGIN PV */
 
-osSemaphoreId_t spectral_read_status;
-osSemaphoreId_t spectral_write_status;
-
-uint8_t spectral_status_buffer[1];
-
 osThreadId_t SpectralTaskHandle;
 const osThreadAttr_t SpectralTask_attributes = {
   .name = "SpectralTask",
   .priority = (osPriority_t) osPriorityNormal,
-  .stack_size = 128 * 4
-};
-
-osThreadId_t SpectralPollingTaskHandle;
-const osThreadAttr_t SpectralPollingTask_attributes = {
-  .name = "SpectralPollingTask",
-  .priority = (osPriority_t) osPriorityNormal,
-  .stack_size = 128 * 4
+  .stack_size = 128 * 8
 };
 
 osThreadId_t ThermistorAndAutoShutoffTaskHandle;
@@ -83,13 +71,6 @@ const osThreadAttr_t ThermistorAndAutoShutoffTask_attributes = {
   .priority = (osPriority_t) osPriorityNormal,
   .stack_size = 128 * 4
 };
-
-//osThreadId_t HeaterUpdatesTaskHandle;
-//const osThreadAttr_t HeaterUpdatesTask_attributes = {
-//  .name = "HeaterUpdatesTask",
-//  .priority = (osPriority_t) osPriorityNormal,
-//  .stack_size = 128 * 4
-//};
 
 /* USER CODE END PV */
 
@@ -103,10 +84,8 @@ static void MX_ADC1_Init(void);
 void StartDefaultTask(void *argument);
 
 /* USER CODE BEGIN PFP */
-void SpectralPollingTask(void *argument);
 void SpectralTask(void *argument);
 void ThermistorAndAutoShutoffTask(void *argument);
-//void HeaterUpdatesTask(void *argument);
 
 /* USER CODE END PFP */
 
@@ -131,7 +110,27 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
+  // Use to ignore boot pin on startup
+  if ((FLASH->OPTR & FLASH_OPTR_nSWBOOT0_Msk) != 0x0 || ((FLASH->OPTR & FLASH_OPTR_nBOOT0_Msk) == 0x0))
+  {
+  	while ((FLASH->SR & FLASH_SR_BSY_Msk) != 0x0) { ; }
+  	FLASH->KEYR = 0x45670123;
+  	while ((FLASH->SR & FLASH_SR_BSY_Msk) != 0x0) { ; }
+  	FLASH->KEYR = 0xCDEF89AB;
 
+  	while ((FLASH->SR & FLASH_SR_BSY_Msk) != 0x0) { ; }
+  	FLASH->OPTKEYR = 0x08192A3B;
+  	while ((FLASH->SR & FLASH_SR_BSY_Msk) != 0x0) { ; }
+  	FLASH->OPTKEYR = 0x4C5D6E7F;
+
+  	while ((FLASH->SR & FLASH_SR_BSY_Msk) != 0x0) { ; }
+  	FLASH->OPTR = (FLASH->OPTR & ~(FLASH_OPTR_nSWBOOT0_Msk)) | FLASH_OPTR_nBOOT0_Msk;
+
+  	while ((FLASH->SR & FLASH_SR_BSY_Msk) != 0x0) { ; }
+  	FLASH->CR = FLASH->CR | FLASH_CR_OPTSTRT;
+
+  	while ((FLASH->SR & FLASH_SR_BSY_Msk) != 0x0) { ; }
+  }
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -161,55 +160,6 @@ int main(void)
 
   init();
 
-  //-------------------------------------------------
-  // TODO: remove all this code once done debugging (CAN isn't working)
-  enum ScienceDevice {
-      HEATER_B0,
-      HEATER_N0,
-      HEATER_B1,
-      HEATER_N1,
-      HEATER_B2,
-      HEATER_N2,
-      WHITE_LED_0,
-      WHITE_LED_1,
-      WHITE_LED_2,
-      UV_LED_0,
-      UV_LED_1,
-      UV_LED_2
-  };
-  int enable = 1;
-  int disable = 0;
-
-  receive_message_debug(WHITE_LED_0, enable);
-  receive_message_debug(WHITE_LED_0, disable);
-  receive_message_debug(WHITE_LED_1, enable);
-  receive_message_debug(WHITE_LED_1, disable);
-  receive_message_debug(WHITE_LED_2, enable);
-  receive_message_debug(WHITE_LED_2, disable);
-
-  receive_message_debug(UV_LED_0, enable);
-  receive_message_debug(UV_LED_0, disable);
-  receive_message_debug(UV_LED_1, enable);
-  receive_message_debug(UV_LED_1, disable);
-  receive_message_debug(UV_LED_2, enable);
-  receive_message_debug(UV_LED_2, disable);
-
-  receive_message_debug(HEATER_N0, enable);
-  receive_message_debug(HEATER_N0, disable);
-  receive_message_debug(HEATER_N1, enable);
-  receive_message_debug(HEATER_N1, disable);
-  receive_message_debug(HEATER_N2, enable);
-  receive_message_debug(HEATER_N2, disable);
-
-  receive_message_debug(HEATER_B0, enable);
-  receive_message_debug(HEATER_B0, disable);
-  receive_message_debug(HEATER_B1, enable);
-  receive_message_debug(HEATER_B1, disable);
-  receive_message_debug(HEATER_B2, enable);
-  receive_message_debug(HEATER_B2, disable);
-
-  //-------------------------------------------------
-
   /* USER CODE END 2 */
 
   /* Init scheduler */
@@ -233,14 +183,12 @@ int main(void)
 
   /* Create the thread(s) */
   /* creation of defaultTask */
-  defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
+//  defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
 
   // TODO - Using spectral causes a hardfault!!!
-//  SpectralTaskHandle = osThreadNew(SpectralTask, NULL, &SpectralTask_attributes);
-//  SpectralPollingTaskHandle = osThreadNew(SpectralPollingTask, NULL, &SpectralPollingTask_attributes);
-//  HeaterUpdatesTaskHandle = osThreadNew(HeaterUpdatesTask, NULL, &HeaterUpdatesTask_attributes);
+  SpectralTaskHandle = osThreadNew(SpectralTask, NULL, &SpectralTask_attributes);
   ThermistorAndAutoShutoffTaskHandle = osThreadNew(ThermistorAndAutoShutoffTask, NULL, &ThermistorAndAutoShutoffTask_attributes);
 
   /* add threads, ... */
@@ -364,9 +312,9 @@ static void MX_ADC1_Init(void)
 
   /** Configure Regular Channel
   */
-  sConfig.Channel = ADC_CHANNEL_11;
+  sConfig.Channel = ADC_CHANNEL_4;
   sConfig.Rank = ADC_REGULAR_RANK_1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_2CYCLES_5;
+  sConfig.SamplingTime = ADC_SAMPLETIME_92CYCLES_5;
   sConfig.SingleDiff = ADC_SINGLE_ENDED;
   sConfig.OffsetNumber = ADC_OFFSET_NONE;
   sConfig.Offset = 0;
@@ -377,7 +325,7 @@ static void MX_ADC1_Init(void)
 
   /** Configure Regular Channel
   */
-  sConfig.Channel = ADC_CHANNEL_4;
+  sConfig.Channel = ADC_CHANNEL_10;
   sConfig.Rank = ADC_REGULAR_RANK_2;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
@@ -386,7 +334,7 @@ static void MX_ADC1_Init(void)
 
   /** Configure Regular Channel
   */
-  sConfig.Channel = ADC_CHANNEL_10;
+  sConfig.Channel = ADC_CHANNEL_11;
   sConfig.Rank = ADC_REGULAR_RANK_3;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
@@ -456,7 +404,7 @@ static void MX_FDCAN1_Init(void)
   hfdcan1.Init.DataTimeSeg1 = 14;
   hfdcan1.Init.DataTimeSeg2 = 13;
   hfdcan1.Init.StdFiltersNbr = 0;
-  hfdcan1.Init.ExtFiltersNbr = 0;
+  hfdcan1.Init.ExtFiltersNbr = 1;
   hfdcan1.Init.TxFifoQueueMode = FDCAN_TX_FIFO_OPERATION;
   if (HAL_FDCAN_Init(&hfdcan1) != HAL_OK)
   {
@@ -592,48 +540,24 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 
-void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs) {
-  if((RxFifo0ITs & FDCAN_IT_RX_FIFO0_NEW_MESSAGE) != RESET)
-  {
-    receive_message();
-  }
-}
-
-
 void SpectralTask(void *argument) {
 	uint32_t tick = osKernelGetTickCount();
 
-	// Initialize spectral semaphores
-	spectral_write_status = osSemaphoreNew(1U, 0U, NULL);
-	spectral_read_status = osSemaphoreNew(1U, 0U, NULL);
-
 	for(;;) {
-		tick += osKernelGetTickFreq(); // 1 Hz
+		tick = osKernelGetTickCount() + osKernelGetTickFreq(); // 1 Hz
 
 		// finish
+//		poll_spectral_status();
 		update_and_send_spectral();
 		osDelayUntil(tick);
 	}
 }
-
-void SpectralPollingTask(void *argument) {
-	uint32_t tick = osKernelGetTickCount();
-
-	for(;;) {
-		tick += 10 * osKernelGetTickFreq(); // 10 Hz
-
-		poll_spectral_status();
-
-		osDelayUntil(tick);
-	}
-}
-
 void ThermistorAndAutoShutoffTask(void *argument) {
 	uint32_t tick = osKernelGetTickCount();
 	for(;;) {
-		tick += osKernelGetTickFreq(); // 1 Hz
+		tick = osKernelGetTickCount() + osKernelGetTickFreq(); // 1 Hz
 
-//		update_and_send_heater();
+		update_and_send_heater();
 		update_and_send_thermistor_and_auto_shutoff_if_applicable();
 		osDelayUntil(tick);
 	}
@@ -655,7 +579,7 @@ void StartDefaultTask(void *argument)
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
+    osDelay(1000);
   }
   /* USER CODE END 5 */
 }
