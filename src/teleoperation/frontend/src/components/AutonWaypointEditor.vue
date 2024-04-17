@@ -40,8 +40,8 @@
         </div>
       <h4 class="waypoint-headers my-3">Current Course</h4>
       <div class="box route">
-        <WaypointItem v-for="(waypoint, i) in route" :id="id" :key="i" :waypoint="waypoint" :in_route="true" :index="i"
-          :name="name" @delete="deleteItem($event)" />
+        <WaypointItem v-for="(waypoint) in route" :id="id" :key="i" :waypoint="waypoint" :in_route="true"
+          :name="name" @delete="deleteItem(waypoint)" />
       </div>
     </div>
   </div>
@@ -350,13 +350,18 @@ export default {
       }
     },
 
-    deleteItem: function (waypoint: { index: any; }) {
-      console.log("index: ", waypoint.index)
-      this.route.splice(waypoint.index, 1)
+    deleteItem: function (waypoint) {
+      waypoint.in_route = false
+      console.log(waypoint.name) 
+      let index = this.route.indexOf(waypoint)
+      console.log("index: ", index)
+      this.route.splice(index, 1)
     },
 
     // Add item from all waypoints div to current waypoints div
     addItem: function (waypoint) {
+      console.log("We're adding")
+      console.log("addItem index: ", waypoint.index)
       if (!waypoint.in_route) {
         this.route.push(waypoint)
         waypoint.in_route = true

@@ -7,7 +7,7 @@
       <div class="col text-center">
         <button
           class="btn btn-danger"
-          @click="$emit('delete', { index: index })"
+          @click="$emit('delete', { name: waypoint.name })"
         >
           Delete
         </button>
@@ -36,11 +36,6 @@ export default {
       type: Object,
       required: true
     },
-
-    index: {
-      type: Number,
-      required: true
-    }
   },
 
   computed: {
