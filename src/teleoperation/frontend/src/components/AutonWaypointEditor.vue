@@ -40,8 +40,7 @@
         </div>
       <h4 class="waypoint-headers my-3">Current Course</h4>
       <div class="box route">
-        <WaypointItem v-for="(waypoint) in route" :id="id" :key="i" :waypoint="waypoint" :in_route="true"
-          :name="name" @delete="deleteItem(waypoint)" />
+        <WaypointItem v-for="(waypoint) in route" :waypoint="waypoint" @delete="deleteItem(waypoint)" />
       </div>
     </div>
   </div>
@@ -235,13 +234,11 @@ export default {
   watch: {
     route: {
       handler: function (newRoute) {
-          console.log(newRoute)
           const waypoints = newRoute.map((waypoint: { gps: { lat: any; lon: any;}, name: any }) => {
           const lat = waypoint.gps.lat.d
           const lon = waypoint.gps.lon.d
           return { latLng: L.latLng(lat, lon), name: waypoint.name }
         })
-        console.log("waypoints: ", waypoints)
         this.setRoute(waypoints)
       },
       deep: true
@@ -352,16 +349,12 @@ export default {
 
     deleteItem: function (waypoint) {
       waypoint.in_route = false
-      console.log(waypoint.name) 
       let index = this.route.indexOf(waypoint)
-      console.log("index: ", index)
       this.route.splice(index, 1)
     },
 
     // Add item from all waypoints div to current waypoints div
     addItem: function (waypoint) {
-      console.log("We're adding")
-      console.log("addItem index: ", waypoint.index)
       if (!waypoint.in_route) {
         this.route.push(waypoint)
         waypoint.in_route = true

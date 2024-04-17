@@ -7,7 +7,7 @@
       <div class="col text-center">
         <button
           class="btn btn-danger"
-          @click="$emit('delete', { name: waypoint.name })"
+          @click="$emit('delete', { waypoint })"
         >
           Delete
         </button>
