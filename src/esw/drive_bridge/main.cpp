@@ -62,7 +62,8 @@ void moveDrive(geometry_msgs::Twist::ConstPtr const& msg) {
     {
         Velocity leftVelocity;
         leftVelocity.names = {"front_left", "middle_left", "back_left"};
-        leftVelocity.velocities = {left.get(), left.get(), left.get()};
+        // TODO(quintin): Invert in firmware
+        leftVelocity.velocities = {-left.get(), -left.get(), -left.get()};
         leftVelocityPub.publish(leftVelocity);
     }
     {

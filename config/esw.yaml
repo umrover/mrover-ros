@@ -24,22 +24,22 @@ can:
       bus: 3
       id: 0x10
     - name: "front_left"
-      bus: 0
+      bus: 2
       id: 0x12
     - name: "front_right"
-      bus: 0
+      bus: 2
       id: 0x11
     - name: "middle_left"
-      bus: 0
+      bus: 2
       id: 0x14
     - name: "middle_right"
-      bus: 0
+      bus: 2
       id: 0x13
     - name: "back_left"
-      bus: 0
+      bus: 2
       id: 0x16
     - name: "back_right"
-      bus: 0
+      bus: 2
       id: 0x15
     - name: "joint_a"
       bus: 1
@@ -96,23 +96,23 @@ can:
 brushless_motors:
   controllers:
     front_left:
-      min_velocity: -70.0
-      max_velocity: 70.0
+      min_velocity: -11.0
+      max_velocity: 11.0
     front_right:
-      min_velocity: -70.0
-      max_velocity: 70.0
+      min_velocity: -11.0
+      max_velocity: 11.0
     middle_left:
-      min_velocity: -70.0
-      max_velocity: 70.0
+      min_velocity: -11.0
+      max_velocity: 11.0
     middle_right:
-      min_velocity: -70.0
-      max_velocity: 70.0
+      min_velocity: -11.0
+      max_velocity: 11.0
     back_left:
-      min_velocity: -70.0
-      max_velocity: 70.0
+      min_velocity: -11.0
+      max_velocity: 11.0
     back_right:
-      min_velocity: -70.0
-      max_velocity: 70.0
+      min_velocity: -11.0
+      max_velocity: 11.0
     joint_a:
       # 1236.8475 rad/meter, or 196.850393476 rev/meter, and we want a max vel of 40 meter/s. 
       # gear ratio is currently at 0.005080 revolutions = 1 meter
@@ -217,7 +217,7 @@ brushed_motors:
       limit_0_present: true
       limit_0_enabled: true
       limit_0_is_active_high: false
-      limit_0_limits_fwd: true
+      limit_0_limits_fwd: false
       limit_0_used_for_readjustment: false
       abs_present: true
       abs_is_fwd_polarity: true
