@@ -140,18 +140,6 @@ export default {
       this.names[this.cameraIdx] = this.cameraName
     },
 
-    changeQuality({ index, value }) {
-      this.qualities[index] = value
-      this.sendCameras(index)
-    },
-
-    swapStream({ prev, newest }) {
-      var temp = this.streamOrder[prev]
-      // Vue.set(this.streamOrder, prev, this.streamOrder[newest]);
-      this.streamOrder[prev] = this.streamOrder[newest]
-      this.streamOrder[newest] = temp
-    },
-
     changeStream(index: number) {
       const found = this.streamOrder.includes(index)
       if (found) {
@@ -160,11 +148,6 @@ export default {
         this.qualities[index] = -1 //close the stream when sending it to comms
       } else this.streamOrder[this.streamOrder.indexOf(-1)] = index
       this.sendCameras(index)
-    },
-
-    getStreamNum(index: number) {
-      //TODO: check this out
-      return this.streamOrder.indexOf(index)
     },
 
     takePanorama() {
