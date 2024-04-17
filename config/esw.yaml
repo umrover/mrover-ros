@@ -167,7 +167,7 @@ brushless_motors:
       limit_1_used_for_readjustment: true
       limit_0_readjust_position: 0.0 # radians TODO
       limit_1_readjust_position: 0.0 # radians TODO
-      max_torque: 0.5
+      max_torque: 30.0
 
 brushed_motors:
   controllers:
