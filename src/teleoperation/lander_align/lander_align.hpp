@@ -30,6 +30,8 @@ namespace mrover {
         ros::NodeHandle mNh, mPnh;
 
 		//RANSAC VARS
+        double mDistanceThreshold{};
+
         double mBestOffset{};
 
         double mPlaneOffsetScalar{};

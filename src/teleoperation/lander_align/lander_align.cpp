@@ -24,8 +24,8 @@ namespace mrover {
         mPnh = getMTPrivateNodeHandle();
 
 		//Get the values from ros 
-        mZThreshold = .5;
-        mXThreshold = .1;
+        mZThreshold = 1;//.5;
+        mXThreshold = 0;//.1;
         mPlaneOffsetScalar = 2.5;
         mDebugVectorPub = mNh.advertise<geometry_msgs::Vector3>("/lander_align/Pose", 1);
         mTwistPub = mNh.advertise<geometry_msgs::Twist>("/cmd_vel", 1);
@@ -38,6 +38,9 @@ namespace mrover {
         mNh.param<std::string>("camera_frame", mCameraFrameId, "zed_left_camera_frame");
         mNh.param<std::string>("world_frame", mMapFrameId, "map");
 
+        // ROS Params for ransac
+        mNh.param<double>("ransac/distance_threshold", mDistanceThreshold, 0.1);
+
         mPlaneLocationInWorldVector = std::make_optional<Eigen::Vector3d>(0, 0, 0);
         mNormalInWorldVector = std::make_optional<Eigen::Vector3d>(0, 0, 0);
         mLoopState = RTRSTATE::turn1;
@@ -49,13 +52,13 @@ namespace mrover {
         //If we haven't yet defined the point cloud we are working with
 		mCloud = ros::topic::waitForMessage<sensor_msgs::PointCloud2>("/camera/left/points", mNh);
 		filterNormals(mCloud);
-		ransac(0.1, 10, 100);
+		ransac(mDistanceThreshold, 10, 100);
         if(!createSpline(7, 0.75)){
             mActionServer->setPreempted();
             return;
         }    
         publishSpline();
-		calcMotionToo();
+		//calcMotionToo();
         mPathPoints.clear();
     }
 
@@ -218,6 +221,9 @@ namespace mrover {
         for (auto point = cloudData; point < cloudData + (cloud->height * cloud->width); point += pointDistribution(generator)) {
             // Make sure all of the values are defined
             bool isPointInvalid = (!std::isfinite(point->x) || !std::isfinite(point->y) || !std::isfinite(point->z));
+            if(!isPointInvalid){
+                std::cout << "lol";
+            }
             if (!isPointInvalid && abs(point->normal_z) < mZThreshold && abs(point->normal_x) > mXThreshold) {
                 mFilteredPoints.push_back(point);
             }
