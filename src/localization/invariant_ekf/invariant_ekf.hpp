@@ -7,6 +7,7 @@ using Matrix39d = Eigen::Matrix<double, 3, 9>;
 using Matrix93d = Eigen::Matrix<double, 9, 3>;
 
 constexpr double g = 9.81;
+static const R3 accel_g(0, 0, g);
 
 class InvariantEKF {
 public:

@@ -1,7 +1,4 @@
 #include "invariant_ekf.hpp"
-#include <geometry_msgs/Twist.h>
-#include <sensor_msgs/NavSatFix.h>
-#include <ublox_msgs/NavPVT.h>
 
 using TimePoint = std::chrono::time_point<std::chrono::system_clock>;
 using Duration = std::chrono::duration<double>;
@@ -15,7 +12,7 @@ private:
     tf2_ros::Buffer mTfBuffer;
     tf2_ros::TransformListener mTfListener{mTfBuffer};
     InvariantEKF mEKF;
-    TimePoint mLastImuTime, mLastGpsTime, mLastMagTime;
+    TimePoint mLastImuTime;
 
     InvariantEKF init_EKF();
 
@@ -37,7 +34,6 @@ public:
     int main();
 
     InvariantEKFNode();
-
     InvariantEKFNode(const InvariantEKFNode&) = delete;
     InvariantEKFNode& operator=(const InvariantEKFNode&) = delete;
 

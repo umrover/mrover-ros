@@ -1,5 +1,4 @@
 #include "ekf_node.hpp"
-#include <geometry_msgs/Twist.h>
 
 InvariantEKF InvariantEKFNode::init_EKF() {
     // set initial position to zero and initial covariance to very high number
@@ -39,9 +38,7 @@ InvariantEKF InvariantEKFNode::init_EKF() {
 
 InvariantEKFNode::InvariantEKFNode() : mEKF(init_EKF()) {
     mLastImuTime = std::chrono::system_clock::now();
-    mLastMagTime = std::chrono::system_clock::now();
-    mLastGpsTime = std::chrono::system_clock::now();
-
+    
     // set up subscribers and publishers
     mImuSub = mNh.subscribe("imu/data", 1, &InvariantEKFNode::imu_mag_callback, this);
     mGpsSub = mNh.subscribe("linearized_pose", 1, &InvariantEKFNode::gps_callback, this);
