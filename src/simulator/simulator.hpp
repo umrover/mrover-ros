@@ -422,7 +422,7 @@ namespace mrover {
         template<typename F, typename N, typename V>
         auto forEachWithMotor(N const& names, V const& values, F&& function) -> void {
             if (auto it = mUrdfs.find("rover"); it != mUrdfs.end()) {
-                URDF & rover = it->second;
+                URDF& rover = it->second;
 
                 for (auto const& combined: boost::combine(names, values)) {
                     std::string const& name = boost::get<0>(combined);

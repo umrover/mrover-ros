@@ -14,7 +14,7 @@ namespace mrover {
         IK message;
         ros::Timer timer;
 
-        const Point* mPoints{};
+        Point const* mPoints{};
         std::size_t mNumPoints{};
         std::size_t mPointCloudWidth{};
         std::size_t mPointCloudHeight{};
@@ -22,7 +22,7 @@ namespace mrover {
         tf2_ros::Buffer mTfBuffer{};
         tf2_ros::TransformListener mTfListener{mTfBuffer};
         tf2_ros::TransformBroadcaster mTfBroadcaster;
-        
+
     public:
         ClickIkNodelet() = default;
 
@@ -35,7 +35,7 @@ namespace mrover {
 
         void startClickIk();
         void cancelClickIk();
-        
+
         //Taken line for line from percep object detection code
         auto spiralSearchInImg(size_t xCenter, size_t yCenter) -> std::optional<Point>;
     };

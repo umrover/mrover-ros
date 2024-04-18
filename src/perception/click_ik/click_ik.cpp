@@ -17,7 +17,7 @@ namespace mrover {
         }
 
         geometry_msgs::Pose pose;
-        
+
         double offset = 0.1; // make sure we don't collide by moving back a little from the target
         pose.position.x = target_point.value().x - offset;
         pose.position.y = target_point.value().y;

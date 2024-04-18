@@ -109,7 +109,7 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.cmd_vel = rospy.Subscriber("/cmd_vel", Twist, self.cmd_vel_callback)
 
             # Action clients
-            self.click_ik_client = actionlib.SimpleActionClient('do_click_ik', ClickIkAction)
+            self.click_ik_client = actionlib.SimpleActionClient("do_click_ik", ClickIkAction)
 
             # Services
             self.laser_service = rospy.ServiceProxy("enable_arm_laser", SetBool)
@@ -805,13 +805,15 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.send(text_data=json.dumps({"type": "flight_attitude", "pitch": pitch, "roll": roll}))
 
             rate.sleep()
-    
+
     def start_click_ik(self, msg) -> None:
         goal = ClickIkGoal()
         goal.pointInImageX = msg["data"]["x"]
         goal.pointInImageY = msg["data"]["y"]
+
         def feedback_cb(feedback: ClickIkFeedback) -> None:
             self.send(text_data=json.dumps({"type": "click_ik_feedback", "distance": feedback.distance}))
+
         self.click_ik_client.send_goal(goal, feedback_cb=feedback_cb)
 
     def cancel_click_ik(self, msg) -> None:
