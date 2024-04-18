@@ -1,0 +1,2 @@
+ransac:
+  distance_threshold: 0.1
