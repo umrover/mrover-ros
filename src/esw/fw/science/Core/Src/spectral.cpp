@@ -41,11 +41,13 @@ namespace mrover {
 			else {
 				m_error = true;
 				m_initialized = false;
+//				return;
 			}
 
 			osDelay(5); // Non blocking delay
     	}
 
+    	//throw mrover::I2CRuntimeError("SPECTRAL");
     	m_error = true;
     	m_initialized = false;
     }
@@ -63,6 +65,8 @@ namespace mrover {
 		// DATA_RDY is 0 and RSVD is 0
 		virtual_write(CONTROL_SETUP_REG, control_data);
 		osDelay(50);
+//		virtual_write(CONTROL_SETUP_REG, control_data);
+//		osDelay(50);
 
 		// Integration time = 2.8ms & 0xFF
 		uint8_t int_time_multiplier = 0xFF; //0xFF;
@@ -111,12 +115,19 @@ namespace mrover {
 
     void Spectral::virtual_write(uint8_t virtual_reg, uint8_t data) {
 		poll_status_reg(I2C_OP::WRITE);
-		uint8_t buf[2] = {I2C_AS72XX_WRITE_REG, (virtual_reg | 0x80)};
-		m_i2c_bus->blocking_transmit<typeof(buf)>(SPECTRAL_7b_ADDRESS, buf);
-		
+		uint8_t buf[2];
+		buf[0] = I2C_AS72XX_WRITE_REG;
+		buf[1] = (virtual_reg | 0x80);
+//		m_i2c_bus->blocking_transmit(SPECTRAL_7b_ADDRESS, buf[0]);
+		// How to send multiple bytes?
+    	HAL_I2C_Master_Transmit(&hi2c1, SPECTRAL_7b_ADDRESS << 1, buf, sizeof(buf), 100);
+
 		poll_status_reg(I2C_OP::WRITE);
 		buf[1] = data;
-		m_i2c_bus->blocking_transmit<typeof(buf)>(SPECTRAL_7b_ADDRESS, buf);
+//		m_i2c_bus->blocking_transmit(SPECTRAL_7b_ADDRESS, buf[0]);
+
+		HAL_I2C_Master_Transmit(&hi2c1, SPECTRAL_7b_ADDRESS << 1, buf, sizeof(buf), 100);
+
     }
 
     uint8_t Spectral::virtual_read(uint8_t virtual_reg) {
@@ -144,9 +155,14 @@ namespace mrover {
     	if (m_error) {
     		return 0;
     	}
-		uint8_t buf[2] = {I2C_AS72XX_WRITE_REG, virtual_reg};
+		uint8_t buf[2];
+		buf[0] = I2C_AS72XX_WRITE_REG;
+		buf[1] = virtual_reg;
+		HAL_I2C_Master_Transmit(&hi2c1, SPECTRAL_7b_ADDRESS << 1, buf, sizeof(buf), 100);
+		// UNABLE TO USE this format because TSend is 1 byte, need to double up
+		// TODO resolve this somehow...
+//		m_i2c_bus->blocking_transmit(SPECTRAL_7b_ADDRESS, buf[0]);
 
-		m_i2c_bus->blocking_transmit<typeof(buf)>(SPECTRAL_7b_ADDRESS, buf);
 
 		poll_status_reg(I2C_OP::READ);
 
@@ -155,6 +171,8 @@ namespace mrover {
 		}
 
 		auto result = m_i2c_bus->blocking_transact(SPECTRAL_7b_ADDRESS, I2C_AS72XX_READ_REG);
+//		m_i2c_bus->blocking_transmit(SPECTRAL_7b_ADDRESS, I2C_AS72XX_READ_REG);
+//		auto result = m_i2c_bus->blocking_receive(SPECTRAL_7b_ADDRESS);
 		if(!result.has_value()){
 			m_error = true;
 			return 0;

@@ -9,11 +9,9 @@ using namespace mrover;
 
 void moveDrive(geometry_msgs::Twist::ConstPtr const& msg);
 
-std::unique_ptr<MotorsGroup> driveManager;
-std::vector<std::string> driveNames{"front_left", "front_right", "middle_left", "middle_right", "back_left", "back_right"};
+ros::Publisher leftVelocityPub, rightVelocityPub;
 
 Meters WHEEL_DISTANCE_INNER;
-Meters WHEEL_DISTANCE_OUTER;
 compound_unit<Radians, inverse<Meters>> WHEEL_LINEAR_TO_ANGULAR;
 RadiansPerSecond MAX_MOTOR_SPEED;
 
@@ -24,9 +22,7 @@ auto main(int argc, char** argv) -> int {
 
     // Load rover dimensions and other parameters from the ROS parameter server
     auto roverWidth = requireParamAsUnit<Meters>(nh, "rover/width");
-    auto roverLength = requireParamAsUnit<Meters>(nh, "rover/length");
     WHEEL_DISTANCE_INNER = roverWidth / 2;
-    WHEEL_DISTANCE_OUTER = sqrt(((roverWidth / 2) * (roverWidth / 2)) + ((roverLength / 2) * (roverLength / 2)));
 
     auto ratioMotorToWheel = requireParamAsUnit<Dimensionless>(nh, "wheel/gear_ratio");
     auto wheelRadius = requireParamAsUnit<Meters>(nh, "wheel/radius");
@@ -38,10 +34,14 @@ auto main(int argc, char** argv) -> int {
 
     MAX_MOTOR_SPEED = maxLinearSpeed * WHEEL_LINEAR_TO_ANGULAR;
 
-    driveManager = std::make_unique<MotorsGroup>(nh, "drive");
+    auto leftGroup = std::make_unique<MotorsGroup>(nh, "drive_left");
+    auto rightGroup = std::make_unique<MotorsGroup>(nh, "drive_right");
+
+    leftVelocityPub = nh.advertise<Velocity>("drive_left_velocity_cmd", 1);
+    rightVelocityPub = nh.advertise<Velocity>("drive_right_velocity_cmd", 1);
 
     // Subscribe to the ROS topic for drive commands
-    ros::Subscriber moveDriveSubscriber = nh.subscribe<geometry_msgs::Twist>("cmd_vel", 1, moveDrive);
+    auto twistSubscriber = nh.subscribe<geometry_msgs::Twist>("cmd_vel", 1, moveDrive);
 
     // Enter the ROS event loop
     ros::spin();
@@ -59,16 +59,17 @@ void moveDrive(geometry_msgs::Twist::ConstPtr const& msg) {
     RadiansPerSecond left = (forward - delta) * WHEEL_LINEAR_TO_ANGULAR;
     RadiansPerSecond right = (forward + delta) * WHEEL_LINEAR_TO_ANGULAR;
 
-    std::unordered_map<std::string, RadiansPerSecond> driveCommandVelocities{
-            {"front_left", left},
-            {"front_right", right},
-            {"middle_left", left},
-            {"middle_right", right},
-            {"back_left", left},
-            {"back_right", right},
-    };
-
-    for (auto [name, angularVelocity]: driveCommandVelocities) {
-        driveManager->getController(name).setDesiredVelocity(angularVelocity);
+    {
+        Velocity leftVelocity;
+        leftVelocity.names = {"front_left", "middle_left", "back_left"};
+        // TODO(quintin): Invert in firmware
+        leftVelocity.velocities = {-left.get(), -left.get(), -left.get()};
+        leftVelocityPub.publish(leftVelocity);
+    }
+    {
+        Velocity rightVelocity;
+        rightVelocity.names = {"front_right", "middle_right", "back_right"};
+        rightVelocity.velocities = {right.get(), right.get(), right.get()};
+        rightVelocityPub.publish(rightVelocity);
     }
 }

@@ -5,22 +5,32 @@
 #include <ros/ros.h>
 #include <sensor_msgs/JointState.h>
 
-#include <controller.hpp>
+#include <brushed.hpp>
+#include <brushless.hpp>
 
 #include <mrover/ControllerState.h>
 #include <mrover/Position.h>
 #include <mrover/Throttle.h>
 #include <mrover/Velocity.h>
+#include <mrover/MotorsAdjust.h>
 
 namespace mrover {
+
+    using Controller = std::variant<BrushedController, BrushlessController<Revolutions>, BrushlessController<Meters>>;
 
     class MotorsGroup {
     public:
         MotorsGroup() = default;
 
+        MotorsGroup(MotorsGroup const&) = delete;
+        MotorsGroup(MotorsGroup&&) = delete;
+
+        auto operator=(MotorsGroup const&) -> MotorsGroup& = delete;
+        auto operator=(MotorsGroup&&) -> MotorsGroup& = delete;
+
         MotorsGroup(ros::NodeHandle const& nh, std::string groupName);
 
-        auto getController(std::string const& name) const -> Controller&;
+        auto getController(std::string const& name) -> Controller&;
 
         auto moveMotorsThrottle(Throttle::ConstPtr const& msg) -> void;
 
@@ -38,6 +48,7 @@ namespace mrover {
         ros::Subscriber mMoveThrottleSub;
         ros::Subscriber mMoveVelocitySub;
         ros::Subscriber mMovePositionSub;
+
         ros::Publisher mJointDataPub;
         ros::Publisher mControllerDataPub;
 
@@ -46,9 +57,10 @@ namespace mrover {
         std::unordered_map<std::string, ros::Publisher> mPositionPubsByName;
         std::unordered_map<std::string, ros::Subscriber> mJointDataSubsByName;
         std::unordered_map<std::string, ros::Subscriber> mControllerDataSubsByName;
+        
         std::unordered_map<std::string, size_t> mIndexByName;
 
-        std::unordered_map<std::string, std::unique_ptr<Controller>> mControllers;
+        std::map<std::string, Controller> mControllers;
         std::string mGroupName;
         std::vector<std::string> mControllerNames;
 
