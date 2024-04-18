@@ -19,7 +19,7 @@ namespace mrover {
         mLeftGpsPub = mNh.advertise<sensor_msgs::NavSatFix>("/left_gps_driver/fix", 1);
         mRightGpsPub = mNh.advertise<sensor_msgs::NavSatFix>("/right_gps_driver/fix", 1);
         mImuPub = mNh.advertise<ImuAndMag>("/imu/data", 1);
-        mVelPub = mNh.advertise<geometry_msgs::Twist>("/gps/vel", 1);
+        mVelPub = mNh.advertise<geometry_msgs::Twist>("/left_gps_driver/vel", 1);
 
         mGpsTask = PeriodicTask{mPnh.param<float>("gps_rate", 10)};
         mImuTask = PeriodicTask{mPnh.param<float>("imu_rate", 100)};
