@@ -15,7 +15,7 @@ namespace mrover {
     Dimensionless static constexpr PITCH_ROLL_TO_01_SCALE{40};
 
     // How often we send an adjust command to the DE motors
-    // This updates the quadrature motor source on the Moteus based on the absolute encoder readings
+    // This corrects the HALL-effect motor source on the Moteus based on the absolute encoder readings
     double static constexpr DE_OFFSET_TIMER_PERIOD = 1;
 
     ArmTranslator::ArmTranslator(ros::NodeHandle& nh) {
@@ -136,6 +136,8 @@ namespace mrover {
 
         std::optional<std::size_t> jointDe0Index = findJointByName(msg->name, "joint_de_0"), jointDe1Index = findJointByName(msg->name, "joint_de_1");
         if (jointDe0Index && jointDe1Index) {
+            // The Moteus reports auxiliary motor positions in the range [0, tau) instead of [-pi, pi)
+            // Wrap to better align with IK conventions
             auto pitchWrapped = wrapAngle(static_cast<float>(msg->position.at(jointDe0Index.value())));
             auto rollWrapped = wrapAngle(static_cast<float>(msg->position.at(jointDe1Index.value())));
             mJointDePitchRoll = {pitchWrapped, rollWrapped};
