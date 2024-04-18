@@ -84,8 +84,8 @@ namespace mrover {
                 }
                 // TODO(quintin): This is kind of hacky
                 if (name.contains("tag"sv) || name.contains("hammer"sv) || name.contains("bottle"sv)) {
-                    SE3d modelInMap = btTransformToSe3(urdf.physics->getBaseWorldTransform());
-                    SE3Conversions::pushToTfTree(mTfBroadcaster, std::format("{}_truth", name), "map", modelInMap);
+                    //SE3d modelInMap = btTransformToSe3(urdf.physics->getBaseWorldTransform());
+                    //SE3Conversions::pushToTfTree(mTfBroadcaster, std::format("{}_truth", name), "map", modelInMap);
                 }
 
                 for (urdf::JointSharedPtr const& child_joint: link->child_joints) {

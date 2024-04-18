@@ -55,7 +55,9 @@ class WaypointState(State):
                     context.course.increment_waypoint()
                 else:
                     # We finished a waypoint associated with a post or mallet, but we have not seen it yet.
-                    return search.SearchState()
+                    search_state = search.SearchState()
+                    search_state.new_traj(context)
+                    return search_state
 
             if context.rover.stuck:
                 context.rover.previous_state = self

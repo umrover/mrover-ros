@@ -96,33 +96,14 @@ class SearchState(State):
     OBJECT_DISTANCE_BETWEEN_SPIRALS = get_rosparam("object_search/distance_between_spirals", 3)
 
     def on_enter(self, context) -> None:
-        search_center = context.course.current_waypoint()
-
-        if not self.is_recovering:
-            if search_center.type.val == WaypointType.POST:
-                self.traj = SearchTrajectory.spiral_traj(
-                    context.rover.get_pose().position[0:2],
-                    self.SPIRAL_COVERAGE_RADIUS,
-                    self.DISTANCE_BETWEEN_SPIRALS,
-                    self.SEGMENTS_PER_ROTATION,
-                    search_center.tag_id,
-                )
-            else:  # water bottle or mallet
-                self.traj = SearchTrajectory.spiral_traj(
-                    context.rover.get_pose().position[0:2],
-                    self.OBJECT_SPIRAL_COVERAGE_RADIUS,
-                    self.OBJECT_DISTANCE_BETWEEN_SPIRALS,
-                    self.SEGMENTS_PER_ROTATION,
-                    search_center.tag_id,
-                )
-            self.prev_target = None
+        pass
 
     def on_exit(self, context) -> None:
         pass
 
     def on_loop(self, context) -> State:
         # continue executing the path from wherever it left off
-        target_pos = self.traj.get_cur_pt()
+        target_pos = SearchState.traj.get_cur_pt()
         cmd_vel, arrived = context.rover.driver.get_drive_command(
             target_pos,
             context.rover.get_pose(),
@@ -133,7 +114,7 @@ class SearchState(State):
         if arrived:
             self.prev_target = target_pos
             # if we finish the spiral without seeing the fiducial, move on with course
-            if self.traj.increment_point():
+            if SearchState.traj.increment_point():
                 return waypoint.WaypointState()
 
         if context.rover.stuck:
@@ -144,7 +125,7 @@ class SearchState(State):
             self.is_recovering = False
 
         context.search_point_publisher.publish(
-            GPSPointList([convert_cartesian_to_gps(pt) for pt in self.traj.coordinates])
+            GPSPointList([convert_cartesian_to_gps(pt) for pt in SearchState.traj.coordinates])
         )
         context.rover.send_drive_command(cmd_vel)
 
@@ -154,3 +135,26 @@ class SearchState(State):
             return approach_state
 
         return self
+
+    def new_traj(self, context) -> None:
+        search_center = context.course.current_waypoint()
+
+        if not self.is_recovering:
+            if search_center.type.val == WaypointType.POST:
+                SearchState.traj = SearchTrajectory.spiral_traj(
+                    context.rover.get_pose().position[0:2],
+                    self.SPIRAL_COVERAGE_RADIUS,
+                    self.DISTANCE_BETWEEN_SPIRALS,
+                    self.SEGMENTS_PER_ROTATION,
+                    search_center.tag_id,
+                )
+            else:  # water bottle or mallet
+                SearchState.traj = SearchTrajectory.spiral_traj(
+                    context.rover.get_pose().position[0:2],
+                    self.OBJECT_SPIRAL_COVERAGE_RADIUS,
+                    self.OBJECT_DISTANCE_BETWEEN_SPIRALS,
+                    self.SEGMENTS_PER_ROTATION,
+                    search_center.tag_id,
+                )
+            self.prev_target = None
+
