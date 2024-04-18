@@ -2,7 +2,7 @@
     <arg name="sim" default="false" />
     <arg name="use_ekf" default="true" />
     <arg name="ekf_start_delay" default="0" />
-    <arg name="use_both_gps" default="true" />
+    <arg name="use_both_gps" default="false" />
 
     <rosparam command="load" file="$(find mrover)/config/localization.yaml" />
     <rosparam command="load" file="$(find mrover)/config/esw.yaml" />
