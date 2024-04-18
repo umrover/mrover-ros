@@ -24,8 +24,8 @@ namespace mrover {
         mPnh = getMTPrivateNodeHandle();
 
 		//Get the values from ros 
-        mZThreshold = 1;//.5;
-        mXThreshold = 0;//.1;
+        mZThreshold = .5;
+        mXThreshold = .1;
         mPlaneOffsetScalar = 2.5;
         mDebugVectorPub = mNh.advertise<geometry_msgs::Vector3>("/lander_align/Pose", 1);
         mTwistPub = mNh.advertise<geometry_msgs::Twist>("/cmd_vel", 1);
@@ -221,13 +221,11 @@ namespace mrover {
         for (auto point = cloudData; point < cloudData + (cloud->height * cloud->width); point += pointDistribution(generator)) {
             // Make sure all of the values are defined
             bool isPointInvalid = (!std::isfinite(point->x) || !std::isfinite(point->y) || !std::isfinite(point->z));
-            if(!isPointInvalid){
-                std::cout << "lol";
-            }
             if (!isPointInvalid && abs(point->normal_z) < mZThreshold && abs(point->normal_x) > mXThreshold) {
-                mFilteredPoints.push_back(point);
+                    mFilteredPoints.push_back(point);
             }
         }
+        ROS_INFO_STREAM("Filtered Points: " << mFilteredPoints.size());
     }
 
     void LanderAlignNodelet::uploadPC(int numInliers, double distanceThreshold) {
