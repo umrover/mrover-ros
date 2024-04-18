@@ -11,7 +11,8 @@ namespace mrover {
     constexpr static std::size_t I2C_MAX_FRAME_SIZE = 32;
 
     template<typename T>
-    concept IsI2CSerializable = IsSerializable<T> && sizeof(T) <= I2C_MAX_FRAME_SIZE;
+    concept IsI2CSerializable = IsSerializable<T> &&
+                                sizeof(T) <= I2C_MAX_FRAME_SIZE;
 
     template<IsI2CSerializable TSend, IsI2CSerializable TReceive>
     class SMBus {
@@ -20,8 +21,7 @@ namespace mrover {
     public:
         SMBus() = default;
 
-        explicit SMBus(I2C_HandleTypeDef* hi2c)
-            : m_i2c{hi2c} {}
+        explicit SMBus(I2C_HandleTypeDef* hi2c) : m_i2c{hi2c} {}
 
         void reboot() const {
             HAL_I2C_DeInit(m_i2c);
@@ -29,8 +29,10 @@ namespace mrover {
             HAL_I2C_Init(m_i2c);
         }
 
-        auto blocking_transmit(std::uint16_t address, TSend const& send) -> void {
-            HAL_I2C_Master_Transmit(m_i2c, address << 1, address_of<std::uint8_t>(send), sizeof(send), I2C_TIMEOUT);
+        template<IsI2CSerializable ImmediateTSend = TSend>
+        auto blocking_transmit(std::uint16_t address, ImmediateTSend send) -> void {
+            HAL_I2C_Master_Transmit(m_i2c, address << 1, send,
+                                    sizeof(send), I2C_TIMEOUT);
         }
 
         auto blocking_receive(std::uint16_t address) -> std::optional<TReceive> {
@@ -48,8 +50,11 @@ namespace mrover {
                 return std::nullopt;
             }
 
-            //reads from address sent above
-            if (TReceive receive{}; HAL_I2C_Master_Receive(m_i2c, address << 1 | 0b1, address_of<std::uint8_t>(receive), sizeof(receive), I2C_TIMEOUT) != HAL_OK) {
+            // reads from address sent above
+            if (TReceive receive{};
+                HAL_I2C_Master_Receive(m_i2c, address << 1 | 0b1,
+                                       address_of<TReceive>(receive), sizeof(receive),
+                                       I2C_TIMEOUT) != HAL_OK) {
                 reboot();
                 return std::nullopt;
             } else {
@@ -57,19 +62,26 @@ namespace mrover {
             }
         }
 
-        auto async_transmit(std::uint16_t const address, TSend const& send) -> void {
+        auto async_transmit(std::uint16_t const address, TSend send) -> void {
             // TODO: make sure actually sends to absolute encoder
-            check(HAL_I2C_Master_Transmit_DMA(m_i2c, address << 1, address_of<std::uint8_t>(send), sizeof(send)) == HAL_OK, Error_Handler);
+            check(HAL_I2C_Master_Transmit_DMA(m_i2c, address << 1,
+                                              address_of<uint8_t>(send),
+                                              sizeof(send)) == HAL_OK,
+                  Error_Handler);
             while (HAL_I2C_GetState(m_i2c) != HAL_I2C_STATE_READY) {
             }
         }
 
         auto async_receive(std::uint16_t const address) -> void {
             m_receive_buffer = TReceive{};
-            check(HAL_I2C_Master_Receive_DMA(m_i2c, address << 1 | 1, address_of<std::uint8_t>(m_receive_buffer), sizeof(m_receive_buffer)) == HAL_OK, Error_Handler);
+            check(HAL_I2C_Master_Receive_DMA(m_i2c, address << 1 | 1,
+                                             address_of<uint8_t>(m_receive_buffer),
+                                             sizeof(m_receive_buffer)) == HAL_OK,
+                  Error_Handler);
         }
 
-        // breaks science code: error: 'const class std::any' has no member named 'type'
+        // breaks science code: error: 'const class std::any' has no member named
+        // 'type'
         auto get_buffer() const -> std::optional<TReceive> {
             return m_receive_buffer;
         }
@@ -78,4 +90,5 @@ namespace mrover {
         I2C_HandleTypeDef* m_i2c{};
         TReceive m_receive_buffer{};
     };
+
 } // namespace mrover
