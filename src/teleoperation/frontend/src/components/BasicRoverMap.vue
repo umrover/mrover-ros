@@ -8,7 +8,7 @@
           <l-marker ref="drone" :lat-lng="droneLatLng" :icon="droneIcon" />
   
           <div v-for="(waypoint, index) in waypointList" :key="index">
-              <l-marker :lat-lng="waypoint.latLng" :icon="getWaypointIcon(waypoint.drone)">
+              <l-marker :lat-lng="waypoint.latLng" :icon="getWaypointIcon(waypoint, index)">
                   <l-tooltip :options="{ permanent: 'true', direction: 'top' }">
                       {{ waypoint.name }}, {{ index }}
                   </l-tooltip>
@@ -89,7 +89,8 @@
               dronePath: [],
               findRover: false,
               drone_latitude_deg:42.293195,
-              drone_longitude_deg:-83.7096706
+              drone_longitude_deg:-83.7096706,
+              circle: null, //search radius
           }
       },
   
@@ -141,10 +142,10 @@
                   lon: e.latlng.lng
               })
           },
-          getWaypointIcon: function (isDrone: boolean) {
-              if (this.index === this.highlightedWaypoint) {
+          getWaypointIcon: function (waypoint: any, index: number) {
+              if (index === this.highlightedWaypoint) {
                   return this.highlightedWaypointIcon
-              } else if (isDrone) {
+              } else if (waypoint.drone) {
                   return this.droneWaypointIcon
               } else {
                   return this.waypointIcon
@@ -162,12 +163,12 @@
 
           ...mapGetters('erd', {
               waypointList: 'waypointList',
-              highlightedWaypoint: 'highlightedWaypoint'
+              highlightedWaypoint: 'highlightedWaypoint',
+              searchWaypoint: 'searchWaypoint'
           }),
   
           // Convert to latLng object for Leaflet to use
           odomLatLng: function () {
-              console.log(this.odom.latitude_deg, this.odom.longitude_deg)
               return L.latLng(this.odom.latitude_deg, this.odom.longitude_deg)
           },
 
@@ -246,6 +247,13 @@
               // Deep will watch for changes in children of an object
               deep: true
           },
+
+          searchWaypoint(newIndex) {
+            let waypoint = this.waypointList[newIndex];
+            if(!this.circle) this.circle = L.circle(waypoint.latLng, {radius: 200}).addTo(this.map);
+            else this.circle.setLatLng(waypoint.latLng)
+            this.circle.setStyle({fillColor: 'purple', stroke: false})
+          }
       }
   }
   </script>
