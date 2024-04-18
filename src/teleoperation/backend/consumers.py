@@ -28,12 +28,14 @@ from mrover.msg import (
     Velocity,
     Position,
     IK,
-    ClickIkAction,
-    ClickIkGoal,
     Spectral,
     ScienceThermistors,
     HeaterData,
+    ClickIkAction,
+    ClickIkGoal,
+    ClickIkFeedback,
 )
+import actionlib
 from mrover.srv import EnableAuton, AdjustMotor, ChangeCameras, CapturePanorama
 from sensor_msgs.msg import NavSatFix, Temperature, RelativeHumidity, Image
 from std_msgs.msg import String
@@ -97,9 +99,6 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.sa_humidity_data = rospy.Subscriber(
                 "/sa_humidity_data", RelativeHumidity, self.sa_humidity_data_callback
             )
-            
-            # Action clients
-            self.click_ik_client = actionlib.SimpleActionClient('do_click_ik', ClickIkAction)
             self.ish_thermistor_data = rospy.Subscriber(
                 "/science_thermistors", ScienceThermistors, self.ish_thermistor_data_callback
             )
@@ -108,6 +107,9 @@ class GUIConsumer(JsonWebsocketConsumer):
             )
             self.science_spectral = rospy.Subscriber("/science_spectral", Spectral, self.science_spectral_callback)
             self.cmd_vel = rospy.Subscriber("/cmd_vel", Twist, self.cmd_vel_callback)
+
+            # Action clients
+            self.click_ik_client = actionlib.SimpleActionClient('do_click_ik', ClickIkAction)
 
             # Services
             self.laser_service = rospy.ServiceProxy("enable_arm_laser", SetBool)
@@ -693,14 +695,6 @@ class GUIConsumer(JsonWebsocketConsumer):
         except rospy.ServiceException as e:
             print(f"Service call failed: {e}")
 
-    # def capture_photo(self):
-    #     try:
-    #         response = self.capture_photo_srv()
-    #         image = response.photo
-    #         self.image_callback(image)
-    #     except rospy.ServiceException as e:
-    #         print(f"Service call failed: {e}")
-
     # def image_callback(self, msg):
     #     bridge = CvBridge()
     #     try:
@@ -816,7 +810,9 @@ class GUIConsumer(JsonWebsocketConsumer):
         goal = ClickIkGoal()
         goal.pointInImageX = msg["data"]["x"]
         goal.pointInImageY = msg["data"]["y"]
-        self.click_ik_client.send_goal(goal)
+        def feedback_cb(feedback: ClickIkFeedback) -> None:
+            self.send(text_data=json.dumps({"type": "click_ik_feedback", "distance": feedback.distance}))
+        self.click_ik_client.send_goal(goal, feedback_cb=feedback_cb)
 
     def cancel_click_ik(self, msg) -> None:
         self.click_ik_client.cancel_all_goals()

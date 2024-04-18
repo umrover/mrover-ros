@@ -39,12 +39,6 @@
     </div>
     <div class="col">
       <h3>All Cameras</h3>
-      <div class="info">
-      <template v-for="i in camsEnabled.length" :key="i">
-        <CameraInfo v-if="camsEnabled[i - 1]" :id="i - 1" :name="names[i - 1]" :stream="getStreamNum(i - 1)"
-          @newQuality="changeQuality($event)" @swapStream="swapStream($event)"></CameraInfo>
-      </template>
-      </div>
       <div class="d-flex justify-content-end" v-if="isSA">
         <button class="btn btn-primary btn-lg custom-btn" @click="takePanorama()">
           Take Panorama
