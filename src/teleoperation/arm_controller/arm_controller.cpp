@@ -28,7 +28,7 @@ namespace mrover {
         double x = endEffectorInArmBaseLink.translation().x() - END_EFFECTOR_LENGTH; // shift back by the length of the end effector
         double y = endEffectorInArmBaseLink.translation().y();
         double z = endEffectorInArmBaseLink.translation().z();
-        SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_target", "arm_base_link", targetFrameToArmBaseLink);
+        SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_target", "arm_base_link", endEffectorInArmBaseLink);
 
         double gamma = 0;
         double x3 = x - LINK_DE * std::cos(gamma);
