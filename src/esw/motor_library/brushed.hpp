@@ -15,32 +15,35 @@ namespace mrover {
         double p{}, i{}, d{}, ff{};
     };
 
-    class BrushedController : public Controller {
+    // For now only revolute joints are supported => hardcode to Radians
+    class BrushedController final : public ControllerBase<Radians, BrushedController> {
     public:
-        void setDesiredThrottle(Percent throttle) override; // from -1.0 to 1.0
-        void setDesiredVelocity(RadiansPerSecond velocity) override;
-        void setDesiredPosition(Radians position) override;
-        void adjust(Radians position) override;
+        BrushedController(ros::NodeHandle const& nh, std::string masterName, std::string controllerName);
 
-        void processCANMessage(CAN::ConstPtr const& msg) override;
+        auto setDesiredThrottle(Percent throttle) -> void; // from -1.0 to 1.0
 
-        void processMessage(ControllerDataState const& state);
+        auto setDesiredPosition(Radians position) -> void;
 
-        void processMessage(DebugState const&) {}
+        auto setDesiredVelocity(RadiansPerSecond velocity) -> void;
 
-        void sendConfiguration();
+        auto adjust(Radians position) -> void;
 
-        double getEffort() override;
+        auto processCANMessage(CAN::ConstPtr const& msg) -> void;
 
-        BrushedController(ros::NodeHandle const& nh, std::string name, std::string controllerName);
-        ~BrushedController() override = default;
+        auto processMessage(ControllerDataState const& state) -> void;
 
-        bool calibrateServiceCallback(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
+        auto processMessage(DebugState const&) -> void {}
+
+        auto sendConfiguration() -> void;
+
+        auto getEffort() -> double;
+
+        auto calibrateServiceCallback(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res) -> bool;
 
     private:
-        static std::string errorToString(BDCMCErrorInfo errorCode);
+        static auto errorToString(BDCMCErrorInfo errorCode) -> std::string;
 
-        bool mIsConfigured = false;
+        bool mIsConfigured{false};
         ConfigCommand mConfigCommand;
 
         Gains mPositionGains;

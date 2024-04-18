@@ -5,7 +5,7 @@
     </div>
     <div class="row">
       <div class="col text-center">
-        <button class="btn btn-danger" @click="$emit('add', { in_route: in_route, index: index })">
+        <button v-if="!in_route" class="btn btn-danger" @click="$emit('add', { in_route: in_route, index: index })">
           Add
         </button>
         <button

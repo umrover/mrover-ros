@@ -13,7 +13,7 @@ enum class LEDMode {
     Blue = 4
 };
 
-static constexpr std::string DONE_STATE = "DoneState";
+static constexpr std::string_view DONE_STATE = "DoneState";
 
 ros::Publisher led_publisher;
 

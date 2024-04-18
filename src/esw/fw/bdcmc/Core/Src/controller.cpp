@@ -18,11 +18,10 @@ extern I2C_HandleTypeDef hi2c1;
  * Specifically the ARR value. You can use the following equation: ARR = (MCU Clock Speed) / (Update Rate) / (Prescaler + 1) - 1
  * For the STM32G4 we have a 140 MHz clock speed configured.
  *
- * You must also set auto reload to true so the interurpt gets called on a cycle.
+ * You must also set auto reload to true so the interrupt gets called on a cycle.
  */
 
 extern TIM_HandleTypeDef htim2;
-extern TIM_HandleTypeDef htim4;
 extern TIM_HandleTypeDef htim3;
 extern TIM_HandleTypeDef htim6;
 extern TIM_HandleTypeDef htim7;
@@ -42,12 +41,6 @@ extern TIM_HandleTypeDef htim17;
 #define FDCAN_WATCHDOG_TIMER &htim16        // FDCAN watchdog timer that needs to be reset every time a message is received
 
 namespace mrover {
-
-    // NOTE: Change This For Each Motor Controller
-    constexpr static std::uint8_t DEVICE_ID = 0x21; // currently set for joint_b
-
-    // Usually this is the Jetson
-    constexpr static std::uint8_t DESTINATION_DEVICE_ID = 0x10;
 
     FDCAN<InBoundMessage> fdcan_bus;
     Controller controller;

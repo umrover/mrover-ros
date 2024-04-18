@@ -14,7 +14,6 @@ import tf2_ros
 import cv2
 
 # from cv_bridge import CvBridge
-from geometry_msgs.msg import Twist
 from mrover.msg import (
     PDLB,
     ControllerState,
@@ -35,17 +34,15 @@ from mrover.msg import (
     ScienceThermistors,
     HeaterData,
 )
-
-from mrover.srv import EnableAuton, AdjustMotor, ChangeCameras, CapturePanorama  # , CapturePhoto
+from mrover.srv import EnableAuton, AdjustMotor, ChangeCameras, CapturePanorama
 from sensor_msgs.msg import NavSatFix, Temperature, RelativeHumidity, Image
-from std_msgs.msg import String, Bool
+from std_msgs.msg import String
 from std_srvs.srv import SetBool, Trigger
 from geometry_msgs.msg import Twist, Pose, Point, Quaternion
 import actionlib
 from util.SE3 import SE3
 
 from backend.models import AutonWaypoint, BasicWaypoint
-
 
 DEFAULT_ARM_DEADZONE = 0.15
 
@@ -110,6 +107,7 @@ class GUIConsumer(JsonWebsocketConsumer):
                 "/science_heater_state", HeaterData, self.ish_heater_state_callback
             )
             self.science_spectral = rospy.Subscriber("/science_spectral", Spectral, self.science_spectral_callback)
+            self.cmd_vel = rospy.Subscriber("/cmd_vel", Twist, self.cmd_vel_callback)
 
             # Services
             self.laser_service = rospy.ServiceProxy("enable_arm_laser", SetBool)
@@ -121,7 +119,6 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.change_cameras_srv = rospy.ServiceProxy("change_cameras", ChangeCameras)
             self.capture_panorama_srv = rospy.ServiceProxy("capture_panorama", CapturePanorama)
             self.heater_auto_shutoff_srv = rospy.ServiceProxy("science_change_heater_auto_shutoff_state", SetBool)
-            # self.capture_photo_srv = rospy.ServiceProxy("capture_photo", CapturePhoto)
 
             # ROS Parameters
             self.mappings = rospy.get_param("teleop/joystick_mappings")
@@ -269,9 +266,9 @@ class GUIConsumer(JsonWebsocketConsumer):
         SA_NAMES = ["sa_x", "sa_y", "sa_z", "sampler", "sensor_actuator"]
         RA_NAMES = self.RA_NAMES
         ra_slow_mode = False
-        raw_left_trigger = msg["axes"][self.xbox_mappings["left_trigger"]]
+        raw_left_trigger = msg["buttons"][self.xbox_mappings["left_trigger"]]
         left_trigger = raw_left_trigger if raw_left_trigger > 0 else 0
-        raw_right_trigger = msg["axes"][self.xbox_mappings["right_trigger"]]
+        raw_right_trigger = msg["buttons"][self.xbox_mappings["right_trigger"]]
         right_trigger = raw_right_trigger if raw_right_trigger > 0 else 0
         arm_pubs = [self.arm_position_cmd_pub, self.arm_velocity_cmd_pub, self.arm_throttle_cmd_pub, self.arm_ik_pub]
         sa_pubs = [self.sa_position_cmd_pub, self.sa_velocity_cmd_pub, self.sa_throttle_cmd_pub]
@@ -378,8 +375,6 @@ class GUIConsumer(JsonWebsocketConsumer):
                     * self.filter_xbox_button(msg["buttons"], "right_bumper", "left_bumper")
                 ]
             elif msg["type"] == "arm_values":
-                # print(msg["buttons"])
-
                 # d_pad_x = msg["axes"][self.xbox_mappings["d_pad_x"]]
                 # if d_pad_x > 0.5:
                 #     ra_slow_mode = True
@@ -390,10 +385,10 @@ class GUIConsumer(JsonWebsocketConsumer):
                     self.filter_xbox_axis(msg["axes"][self.ra_config["joint_a"]["xbox_index"]]),
                     self.filter_xbox_axis(msg["axes"][self.ra_config["joint_b"]["xbox_index"]]),
                     self.filter_xbox_axis(msg["axes"][self.ra_config["joint_c"]["xbox_index"]]),
-                    self.filter_xbox_axis(msg["axes"][self.ra_config["joint_de_pitch"]["xbox_index_right"]] - msg["axes"][self.ra_config["joint_de_pitch"]["xbox_index_left"]]),
-                    self.filter_xbox_axis(msg["buttons"][self.ra_config["joint_de_roll"]["xbox_index_right"]] - msg["buttons"][self.ra_config["joint_de_roll"]["xbox_index_left"]]),
+                    self.filter_xbox_button(msg["buttons"], "right_trigger", "left_trigger"),
+                    self.filter_xbox_button(msg["buttons"], "left_bumper", "right_bumper"),
                     self.ra_config["allen_key"]["multiplier"] * self.filter_xbox_button(msg["buttons"], "y", "a"),
-                    self.ra_config["gripper"]["multiplier"] * self.filter_xbox_button(msg["buttons"], "b", "x"),
+                    self.ra_config["gripper"]["multiplier"] * self.filter_xbox_button(msg["buttons"], "x", "b"),
                 ]
 
                 for i, name in enumerate(self.RA_NAMES):
@@ -414,8 +409,8 @@ class GUIConsumer(JsonWebsocketConsumer):
                 fast_mode_activated = msg["buttons"][self.xbox_mappings["a"]] or msg["buttons"][self.xbox_mappings["b"]]
                 if not fast_mode_activated:
                     for i, name in enumerate(SA_NAMES):
-                        # When going up (vel > 0) with SA joint 2, we DON'T want slow mode.
-                        if not (name == "sa_y" and throttle_cmd.throttles[i] > 0):
+                        # When going up (vel < 0) with SA joint 2, we DON'T want slow mode.
+                        if not (name == "sa_z" and throttle_cmd.throttles[i] < 0):
                             throttle_cmd.throttles[i] *= self.sa_config[name]["slow_mode_multiplier"]
             publishers[2].publish(throttle_cmd)
 
@@ -607,6 +602,9 @@ class GUIConsumer(JsonWebsocketConsumer):
                 }
             )
         )
+
+    def cmd_vel_callback(self, msg):
+        self.send(text_data=json.dumps({"type": "cmd_vel", "linear_x": msg.linear.x, "angular_z": msg.angular.z}))
 
     def gps_fix_callback(self, msg):
         self.send(

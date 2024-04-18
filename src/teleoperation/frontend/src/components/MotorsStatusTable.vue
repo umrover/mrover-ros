@@ -1,5 +1,5 @@
 <template>
-  <div class="wrap">
+  <div class="wrap mx-2">
     <div v-if="vertical">
       <div>
         <h3>Motor Data</h3>
