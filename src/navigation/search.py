@@ -82,7 +82,7 @@ class SearchTrajectory(Trajectory):
 
 
 class SearchState(State):
-    traj: SearchTrajectory
+    traj: SearchTrajectory = None
     prev_target: Optional[np.ndarray] = None
     is_recovering: bool = False
 
@@ -96,7 +96,8 @@ class SearchState(State):
     OBJECT_DISTANCE_BETWEEN_SPIRALS = get_rosparam("object_search/distance_between_spirals", 3)
 
     def on_enter(self, context) -> None:
-        pass
+        if SearchState.traj is None:
+            self.new_traj(context)
 
     def on_exit(self, context) -> None:
         pass
@@ -142,7 +143,7 @@ class SearchState(State):
         if not self.is_recovering:
             if search_center.type.val == WaypointType.POST:
                 SearchState.traj = SearchTrajectory.spiral_traj(
-                    context.rover.get_pose().position[0:2],
+                    context.course.current_waypoint_pose().position[0:2],
                     self.SPIRAL_COVERAGE_RADIUS,
                     self.DISTANCE_BETWEEN_SPIRALS,
                     self.SEGMENTS_PER_ROTATION,
@@ -150,7 +151,7 @@ class SearchState(State):
                 )
             else:  # water bottle or mallet
                 SearchState.traj = SearchTrajectory.spiral_traj(
-                    context.rover.get_pose().position[0:2],
+                    context.course.current_waypoint_pose().position[0:2],
                     self.OBJECT_SPIRAL_COVERAGE_RADIUS,
                     self.OBJECT_DISTANCE_BETWEEN_SPIRALS,
                     self.SEGMENTS_PER_ROTATION,
