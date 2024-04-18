@@ -10,7 +10,7 @@ namespace mrover {
     /**
      * @brief Runs on the GPU, interleaving the XYZ and BGRA buffers into a single buffer of #Point structs.
      */
-    __global__ void fillPointCloudMessageKernel(sl::float4* xyzGpuPtr, sl::uchar4* bgraGpuPtr, Point* pcGpuPtr, size_t size) {
+    __global__ void fillPointCloudMessageKernel(sl::float4* xyzGpuPtr, sl::uchar4* bgraGpuPtr, sl::float4* normalsGpuPtr, Point* pcGpuPtr, size_t size) {
         // This function is invoked once per element at index #i in the point cloud
         size_t i = blockIdx.x * blockDim.x + threadIdx.x;
         if (i >= size) return;
@@ -22,6 +22,10 @@ namespace mrover {
         pcGpuPtr[i].g = bgraGpuPtr[i].g;
         pcGpuPtr[i].r = bgraGpuPtr[i].b;
         pcGpuPtr[i].a = bgraGpuPtr[i].a;
+        pcGpuPtr[i].normal_x = normalsGpuPtr[i].x;
+        pcGpuPtr[i].normal_y = normalsGpuPtr[i].y;
+        pcGpuPtr[i].normal_z = normalsGpuPtr[i].z;
+        // ROS_WARN(xyzGpuPtr[i].x);
     }
 
     /**
@@ -32,7 +36,7 @@ namespace mrover {
      * @param pcGpu     Point cloud buffer on the GPU (@see Point)
      * @param msg       Point cloud message with buffer on the CPU
      */
-    void fillPointCloudMessageFromGpu(sl::Mat& xyzGpu, sl::Mat& bgraGpu, PointCloudGpu& pcGpu, sensor_msgs::PointCloud2Ptr const& msg) {
+    void fillPointCloudMessageFromGpu(sl::Mat& xyzGpu, sl::Mat& bgraGpu, sl::Mat& normalsGpu, PointCloudGpu& pcGpu, sensor_msgs::PointCloud2Ptr const& msg) {
         assert(bgraGpu.getWidth() >= xyzGpu.getWidth());
         assert(bgraGpu.getHeight() >= xyzGpu.getHeight());
         assert(bgraGpu.getChannels() == 4);
@@ -41,6 +45,7 @@ namespace mrover {
 
         auto* bgraGpuPtr = bgraGpu.getPtr<sl::uchar4>(sl::MEM::GPU);
         auto* xyzGpuPtr = xyzGpu.getPtr<sl::float4>(sl::MEM::GPU);
+        auto* normalsGpuPtr = normalsGpu.getPtr<sl::float4>(sl::MEM::GPU);
         msg->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
         msg->is_dense = true;
         msg->height = bgraGpu.getHeight();
@@ -52,7 +57,7 @@ namespace mrover {
         Point* pcGpuPtr = pcGpu.data().get();
         dim3 threadsPerBlock{BLOCK_SIZE};
         dim3 numBlocks{static_cast<uint>(std::ceil(static_cast<float>(size) / BLOCK_SIZE))};
-        fillPointCloudMessageKernel<<<numBlocks, threadsPerBlock>>>(xyzGpuPtr, bgraGpuPtr, pcGpuPtr, size);
+        fillPointCloudMessageKernel<<<numBlocks, threadsPerBlock>>>(xyzGpuPtr, bgraGpuPtr, normalsGpuPtr, pcGpuPtr, size);
         checkCudaError(cudaPeekAtLastError());
         checkCudaError(cudaMemcpy(msg->data.data(), pcGpuPtr, size * sizeof(Point), cudaMemcpyDeviceToHost));
     }
