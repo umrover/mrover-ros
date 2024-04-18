@@ -53,7 +53,7 @@ namespace mrover {
 
     ArmTranslator::ArmTranslator(ros::NodeHandle& nh) {
         for (std::string const& hwName: mArmHWNames) {
-            auto [_, was_inserted] = mAdjustClientsByArmHwNames.try_emplace(hwName, nh.serviceClient<AdjustMotor>(std::format("{}_adjust", hwName)));
+            [[maybe_unused]] auto [_, was_inserted] = mAdjustClientsByArmHwNames.try_emplace(hwName, nh.serviceClient<AdjustMotor>(std::format("{}_adjust", hwName)));
             assert(was_inserted);
         }
 
