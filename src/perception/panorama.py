@@ -143,17 +143,18 @@ class Panorama:
 
     def rotate_pc(self, trans_mat : np.ndarray, pc : np.ndarray):
         # rotate the provided point cloud's x, y points by the se3_pose
-        points: np.ndarray[np.Any, np.dtype[np.floating[np._64Bit]]] = np.hstack((pc[:,0:3], np.ones((pc.shape[0],1))))
+        points = np.hstack(tup=(pc[:,0:3], np.ones((pc.shape[0],1))))
         rotated_points = np.matmul(trans_mat, points.T).T
         pc[:,0:3] = np.delete(rotated_points, 3, 1)
-        return pc[~np.isnan(points).any(axis = 1)]
+        pc = pc[~np.isnan(points).any(axis = 1)]
+        return pc
 
     def pc_callback(self, msg: PointCloud2):
         self.current_pc = msg
 
         # extract xyzrgb fields
         # TODO: dtype hard-coded to float32
-        self.arr_pc = np.frombuffer(bytearray(msg.data), dtype=np.float32).reshape(msg.height * msg.width, int(msg.point_step / 4))[0::20,:]
+        self.arr_pc = np.frombuffer(bytearray(msg.data), dtype=np.float32).reshape(msg.height * msg.width, int(msg.point_step / 4))[0::50,:]
 
     def image_callback(self, msg: Image):
         self.current_img = cv2.cvtColor(np.frombuffer(msg.data, dtype=np.uint8).reshape(msg.height, msg.width, 4), cv2.COLOR_RGBA2RGB)
@@ -217,6 +218,7 @@ class Panorama:
         pc_msg.is_dense = self.current_pc.is_dense
         while not rospy.is_shutdown():
             self.pc_publisher.publish(pc_msg)
+            time.sleep(0.5)
 
         # return CapturePanoramaGoal(...)
             
