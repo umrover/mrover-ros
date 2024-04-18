@@ -49,7 +49,7 @@
 </template>
 
 <script lang="ts">
-import html2canvas from "html2canvas";
+// import html2canvas from "html2canvas";
 import ToggleButton from "./ToggleButton.vue";
 import { mapState, mapActions } from 'vuex'
 

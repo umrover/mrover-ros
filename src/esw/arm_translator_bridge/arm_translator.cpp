@@ -70,7 +70,7 @@ namespace mrover {
         mDeOffsetTimer = nh.createTimer(ros::Duration{1}, &ArmTranslator::updateDeOffsets, this);
     }
 
-    auto static const PITCH_ROLL_TO_0_1 = (Matrix2<Dimensionless>{} << 1, 1, 1, -1).finished();
+    auto static const PITCH_ROLL_TO_0_1 = (Matrix2<Dimensionless>{} << -1, -1, -1, 1).finished();
 
     auto findJointByName(std::vector<std::string> const& names, std::string const& name) -> std::optional<std::size_t> {
         auto it = std::ranges::find(names, name);
@@ -175,7 +175,7 @@ namespace mrover {
 
         std::optional<std::size_t> jointDe0Index = findJointByName(msg->name, "joint_de_0"), jointDe1Index = findJointByName(msg->name, "joint_de_1");
         if (jointDe0Index && jointDe1Index) {
-            auto pitchWrapped = -wrapAngle(static_cast<float>(msg->position.at(jointDe0Index.value())));
+            auto pitchWrapped = wrapAngle(static_cast<float>(msg->position.at(jointDe0Index.value())));
             auto rollWrapped = wrapAngle(static_cast<float>(msg->position.at(jointDe1Index.value())));
             mJointDePitchRoll = {pitchWrapped, rollWrapped};
             jointState.name[jointDe0Index.value()] = "joint_de_pitch";

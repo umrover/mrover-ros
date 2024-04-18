@@ -146,7 +146,6 @@ namespace mrover {
         }
 
     protected:
-        Ratio mVelocityMultiplier;
         ros::NodeHandle mNh;
         std::string mMasterName, mControllerName;
         CanDevice mDevice;

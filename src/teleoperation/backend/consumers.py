@@ -257,9 +257,9 @@ class GUIConsumer(JsonWebsocketConsumer):
         SA_NAMES = ["sa_x", "sa_y", "sa_z", "sampler", "sensor_actuator"]
         RA_NAMES = self.RA_NAMES
         ra_slow_mode = False
-        raw_left_trigger = msg["axes"][self.xbox_mappings["left_trigger"]]
+        raw_left_trigger = msg["buttons"][self.xbox_mappings["left_trigger"]]
         left_trigger = raw_left_trigger if raw_left_trigger > 0 else 0
-        raw_right_trigger = msg["axes"][self.xbox_mappings["right_trigger"]]
+        raw_right_trigger = msg["buttons"][self.xbox_mappings["right_trigger"]]
         right_trigger = raw_right_trigger if raw_right_trigger > 0 else 0
         arm_pubs = [self.arm_position_cmd_pub, self.arm_velocity_cmd_pub, self.arm_throttle_cmd_pub, self.arm_ik_pub]
         sa_pubs = [self.sa_position_cmd_pub, self.sa_velocity_cmd_pub, self.sa_throttle_cmd_pub]
@@ -376,19 +376,10 @@ class GUIConsumer(JsonWebsocketConsumer):
                     self.filter_xbox_axis(msg["axes"][self.ra_config["joint_a"]["xbox_index"]]),
                     self.filter_xbox_axis(msg["axes"][self.ra_config["joint_b"]["xbox_index"]]),
                     self.filter_xbox_axis(msg["axes"][self.ra_config["joint_c"]["xbox_index"]]),
-                    self.filter_xbox_axis(
-                        (
-                            msg["axes"][self.ra_config["joint_de_pitch"]["xbox_index_right"]]
-                            - msg["axes"][self.ra_config["joint_de_pitch"]["xbox_index_left"]]
-                        )
-                        / 2
-                    ),
-                    self.filter_xbox_axis(
-                        msg["buttons"][self.ra_config["joint_de_roll"]["xbox_index_left"]]
-                        - msg["buttons"][self.ra_config["joint_de_roll"]["xbox_index_right"]]
-                    ),
+                    self.filter_xbox_button(msg["buttons"], "right_trigger", "left_trigger"),
+                    self.filter_xbox_button(msg["buttons"], "left_bumper", "right_bumper"),
                     self.ra_config["allen_key"]["multiplier"] * self.filter_xbox_button(msg["buttons"], "y", "a"),
-                    self.ra_config["gripper"]["multiplier"] * self.filter_xbox_button(msg["buttons"], "b", "x"),
+                    self.ra_config["gripper"]["multiplier"] * self.filter_xbox_button(msg["buttons"], "x", "b"),
                 ]
 
                 for i, name in enumerate(self.RA_NAMES):
@@ -409,8 +400,8 @@ class GUIConsumer(JsonWebsocketConsumer):
                 fast_mode_activated = msg["buttons"][self.xbox_mappings["a"]] or msg["buttons"][self.xbox_mappings["b"]]
                 if not fast_mode_activated:
                     for i, name in enumerate(SA_NAMES):
-                        # When going up (vel > 0) with SA joint 2, we DON'T want slow mode.
-                        if not (name == "sa_y" and throttle_cmd.throttles[i] > 0):
+                        # When going up (vel < 0) with SA joint 2, we DON'T want slow mode.
+                        if not (name == "sa_z" and throttle_cmd.throttles[i] < 0):
                             throttle_cmd.throttles[i] *= self.sa_config[name]["slow_mode_multiplier"]
             publishers[2].publish(throttle_cmd)
 

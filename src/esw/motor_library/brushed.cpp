@@ -10,11 +10,6 @@ namespace mrover {
         mNh.getParam(std::format("brushed_motors/controllers/{}", mControllerName), brushedMotorData);
         assert(brushedMotorData.getType() == XmlRpc::XmlRpcValue::TypeStruct);
 
-        mVelocityMultiplier = Ratio{xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "velocity_multiplier", 1.0)};
-        if (abs(mVelocityMultiplier) < Ratio{1e-5}) {
-            throw std::runtime_error{"Velocity output must be nonzero"};
-        }
-
         mConfigCommand.gear_ratio = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "gear_ratio");
 
         for (std::size_t i = 0; i < 4; ++i) {
@@ -26,12 +21,12 @@ namespace mrover {
             mConfigCommand.limit_switch_info.limit_readj_pos.at(i) = Radians{static_cast<double>(brushedMotorData[std::format("limit_{}_readjust_position", i)])};
         }
 
+        mConfigCommand.is_inverted = xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, "is_inverted", false);
+
         mConfigCommand.enc_info.quad_present = xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, "quad_present", false);
-        mConfigCommand.enc_info.quad_is_forward_polarity = xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, "quad_is_fwd_polarity", false);
         mConfigCommand.enc_info.quad_ratio = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "quad_ratio", 1.0);
 
         mConfigCommand.enc_info.abs_present = xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, "abs_present", false);
-        mConfigCommand.enc_info.abs_is_forward_polarity = xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, "abs_is_fwd_polarity", false);
         mConfigCommand.enc_info.abs_ratio = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "abs_ratio", 1.0);
         mConfigCommand.enc_info.abs_offset = Radians{xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "abs_offset", 0.0)};
 
@@ -77,10 +72,6 @@ namespace mrover {
 
         assert(throttle >= -1_percent && throttle <= 1_percent);
 
-        if (mVelocityMultiplier < Ratio{0}) {
-            throttle *= -1.0;
-        }
-
         mDevice.publish_message(InBoundMessage{ThrottleCommand{.throttle = throttle}});
     }
 
@@ -107,8 +98,6 @@ namespace mrover {
         }
 
         assert(velocity >= mConfigCommand.min_velocity && velocity <= mConfigCommand.max_velocity);
-
-        velocity = velocity * mVelocityMultiplier;
 
         mDevice.publish_message(InBoundMessage{VelocityCommand{
                 .velocity = velocity,
@@ -138,7 +127,7 @@ namespace mrover {
 
     auto BrushedController::processMessage(ControllerDataState const& state) -> void {
         mCurrentPosition = state.position;
-        mCurrentVelocity = state.velocity / mVelocityMultiplier;
+        mCurrentVelocity = state.velocity;
         ConfigCalibErrorInfo configCalibErrInfo = state.config_calib_error_data;
         mIsConfigured = configCalibErrInfo.configured;
         mIsCalibrated = configCalibErrInfo.calibrated;
