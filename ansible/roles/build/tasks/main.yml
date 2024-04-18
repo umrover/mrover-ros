@@ -89,7 +89,6 @@
       - ros-{{ ros_distro }}-rosbash
       - libbullet-dev
       - libglfw3-dev
-      - spirv-tools
       - libx11-xcb-dev
       - libnl-3-dev
       - libnl-route-3-dev
