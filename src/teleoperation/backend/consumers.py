@@ -121,7 +121,8 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.drive_config = rospy.get_param("teleop/drive_controls")
             self.max_wheel_speed = rospy.get_param("rover/max_speed")
             self.wheel_radius = rospy.get_param("wheel/radius")
-            self.max_angular_speed = self.max_wheel_speed / self.wheel_radius
+            self.rover_width = rospy.get_param("rover/width")
+            self.max_angular_speed = self.max_wheel_speed / (self.rover_width / 2)
             self.ra_config = rospy.get_param("teleop/ra_controls")
             self.ik_names = rospy.get_param("teleop/ik_multipliers")
             self.RA_NAMES = rospy.get_param("teleop/ra_names")
@@ -426,10 +427,10 @@ class GUIConsumer(JsonWebsocketConsumer):
             signal *= scale
             return signal
 
-        linear = get_axes_input("forward_back", 0.05, True, self.max_wheel_speed * dampen)
+        linear = get_axes_input("forward_back", 0.02, True, self.max_wheel_speed * dampen)
         # Note(quintin): I prefer using solely the twist axis for turning...
         # angular_from_lateral = get_axes_input("left_right", 0.4, True)
-        angular = get_axes_input("twist", 0.1, True, self.max_angular_speed * dampen)
+        angular = get_axes_input("twist", 0.03, True, self.max_angular_speed * dampen)
 
         self.twist_pub.publish(
             Twist(
