@@ -100,7 +100,7 @@ import LimitSwitch from './LimitSwitch.vue'
 import Rover3D from './Rover3D.vue'
 
 // In seconds
-const updateRate = 0.01
+const updateRate = 0.05
 let interval: number | undefined
 
 export default defineComponent({

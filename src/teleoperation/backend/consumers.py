@@ -11,8 +11,7 @@ from channels.generic.websocket import JsonWebsocketConsumer
 import rospy
 import tf2_ros
 from backend.models import AutonWaypoint, BasicWaypoint
-from geometry_msgs.msg import Twist, Pose, PoseStamped, Point, Quaternion
-
+from geometry_msgs.msg import Twist, Pose, Point, Quaternion, Vector3, PoseStamped
 # from cv_bridge import CvBridge
 from mrover.msg import (
     PDLB,
@@ -33,7 +32,7 @@ from mrover.msg import (
     HeaterData,
 )
 from mrover.srv import EnableAuton, AdjustMotor, ChangeCameras, CapturePanorama
-from sensor_msgs.msg import JointState, NavSatFix, Temperature, RelativeHumidity
+from sensor_msgs.msg import NavSatFix, Temperature, RelativeHumidity
 from std_msgs.msg import String, Header
 from std_srvs.srv import SetBool, Trigger
 from tf.transformations import euler_from_quaternion
@@ -42,18 +41,22 @@ from util.SE3 import SE3
 DEFAULT_ARM_DEADZONE = 0.15
 
 
-# If below threshold, make output zero
-def deadzone(magnitude: float, threshold: float) -> float:
-    temp_mag = abs(magnitude)
-    if temp_mag <= threshold:
-        temp_mag = 0
-    else:
-        temp_mag = (temp_mag - threshold) / (1 - threshold)
-    return copysign(temp_mag, magnitude)
+def deadzone(signal: float, threshold: float) -> float:
+    """
+    Values lower than the threshold will be clipped to zero.
+    Those above will be remapped to [0, 1] linearly.
+    """
+    magnitude = abs(signal)
+    magnitude = 0 if magnitude < threshold else (magnitude - threshold) / (1 - threshold)
+    return copysign(magnitude, signal)
 
 
-def quadratic(val: float) -> float:
-    return copysign(val**2, val)
+def quadratic(signal: float) -> float:
+    """
+    Use to allow more control near low inputs values by squaring the magnitude.
+    For example using a joystick to control drive.
+    """
+    return copysign(signal**2, signal)
 
 
 class GUIConsumer(JsonWebsocketConsumer):
@@ -393,47 +396,42 @@ class GUIConsumer(JsonWebsocketConsumer):
         # Tiny deadzone so we can safely e-stop with dampen switch
         dampen = deadzone(msg["axes"][self.mappings["dampen"]], 0.01)
 
-        # Makes dampen [0,1] instead of [-1,1]
-        # negative sign required to drive forward by default instead of backward
-        # (-1*dampen) because the top of the dampen switch is -1.0
+        # Makes dampen [0,1] instead of [-1,1].
+        # Negative sign required to drive forward by default instead of backward.
+        # (-1*dampen) because the top of the dampen switch is -1.
         dampen = -1 * ((-1 * dampen) + 1) / 2
 
-        linear = deadzone(
-            msg["axes"][self.mappings["forward_back"]] * self.drive_config["forward_back"]["multiplier"], 0.05
+        def get_axes_input(
+            mapping_name: str, deadzone_threshold: float = 0.05, apply_quadratic: bool = False, scale: float = 1.0
+        ) -> float:
+            signal = msg["axes"][self.mappings[mapping_name]]
+            signal *= self.drive_config[mapping_name]["multiplier"]
+            signal = deadzone(signal, deadzone_threshold)
+            if apply_quadratic:
+                signal = quadratic(signal)
+            signal *= scale
+            return signal
+
+        linear = get_axes_input("forward_back", 0.05, True, self.max_wheel_speed * dampen)
+        # Note(quintin): I prefer using solely the twist axis for turning...
+        # angular_from_lateral = get_axes_input("left_right", 0.4, True)
+        angular = get_axes_input("twist", 0.1, True, self.max_angular_speed * dampen)
+
+        self.twist_pub.publish(
+            Twist(
+                linear=Vector3(x=linear),
+                angular=Vector3(z=angular),
+            )
         )
-
-        # Convert from [0,1] to [0, self_max_wheel_speed] and apply dampen
-        linear *= self.max_wheel_speed * dampen
-
-        # Deadzones for each axis
-        left_right = (
-            deadzone(msg["axes"][self.mappings["left_right"]] * self.drive_config["left_right"]["multiplier"], 0.4)
-            if self.drive_config["left_right"]["enabled"]
-            else 0
-        )
-        twist = quadratic(deadzone(msg["axes"][self.mappings["twist"]] * self.drive_config["twist"]["multiplier"], 0.1))
-
-        angular = twist + left_right
-
-        # Same as linear but for angular speed
-        angular *= self.max_angular_speed * dampen
-        # Clamp if both twist and left_right are used at the same time
-        if abs(angular) > self.max_angular_speed:
-            angular = copysign(self.max_angular_speed, angular)
-        twist_msg = Twist()
-        twist_msg.linear.x = linear
-        twist_msg.angular.z = angular
-
-        self.twist_pub.publish(twist_msg)
 
         self.send(
             text_data=json.dumps(
                 {
                     "type": "joystick",
-                    "left_right": left_right,
+                    "left_right": msg["axes"][self.mappings["left_right"]],
                     "forward_back": msg["axes"][self.mappings["forward_back"]],
-                    "twist": twist,
-                    "dampen": dampen,
+                    "twist": msg["axes"][self.mappings["twist"]],
+                    "dampen": msg["axes"][self.mappings["dampen"]],
                     "pan": msg["axes"][self.mappings["pan"]],
                     "tilt": msg["axes"][self.mappings["tilt"]],
                 }

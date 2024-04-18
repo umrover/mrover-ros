@@ -254,8 +254,8 @@ namespace mrover {
 
                 armJointState.name.emplace_back(armMsgToUrdf.backward(linkName).value());
                 armJointState.position.emplace_back(rover.physics->getJointPos(rover.linkNameToMeta.at(linkName).index));
-                armJointState.velocity = zeros;
-                armJointState.effort = zeros;
+                armJointState.velocity.emplace_back(rover.physics->getJointVel(rover.linkNameToMeta.at(linkName).index));
+                armJointState.effort.emplace_back(rover.physics->getJointTorque(rover.linkNameToMeta.at(linkName).index));
 
                 std::uint8_t limitSwitches = 0b000;
                 if (auto limits = rover.model.getLink(linkName)->parent_joint->limits) {

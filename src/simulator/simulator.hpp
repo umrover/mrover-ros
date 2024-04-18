@@ -356,6 +356,12 @@ namespace mrover {
 
         ~SimulatorNodelet() override;
 
+        SimulatorNodelet(SimulatorNodelet const&) = delete;
+        SimulatorNodelet(SimulatorNodelet&&) = delete;
+
+        auto operator=(SimulatorNodelet const&) -> SimulatorNodelet& = delete;
+        auto operator=(SimulatorNodelet&&) -> SimulatorNodelet& = delete;
+
         auto initWindow() -> void;
 
         auto initRender() -> void;
