@@ -12,6 +12,7 @@ import rospy
 import tf2_ros
 from backend.models import AutonWaypoint, BasicWaypoint
 from geometry_msgs.msg import Twist, Pose, Point, Quaternion, Vector3, PoseStamped
+
 # from cv_bridge import CvBridge
 from mrover.msg import (
     PDLB,
@@ -32,7 +33,7 @@ from mrover.msg import (
     HeaterData,
 )
 from mrover.srv import EnableAuton, AdjustMotor, ChangeCameras, CapturePanorama
-from sensor_msgs.msg import NavSatFix, Temperature, RelativeHumidity
+from sensor_msgs.msg import NavSatFix, Temperature, RelativeHumidity, JointState
 from std_msgs.msg import String, Header
 from std_srvs.srv import SetBool, Trigger
 from tf.transformations import euler_from_quaternion
