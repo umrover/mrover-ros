@@ -9,12 +9,13 @@ import serial
 import rospy
 import threading
 import rospy
-from pyubx2 import UBXReader, UBX_PROTOCOL, RTCM3_PROTOCOL
+from pyubx2 import UBXReader, UBX_PROTOCOL, RTCM3_PROTOCOL, POLL_LAYER_FLASH, UBXMessage
 from std_msgs.msg import Header
 from sensor_msgs.msg import NavSatFix
 from rtcm_msgs.msg import Message
 from mrover.msg import rtkStatus
 import datetime
+import pyudev
 
 
 class GPS_Driver:
@@ -29,8 +30,73 @@ class GPS_Driver:
     ser: serial.Serial
     reader: UBXReader
 
+    id_gps_done: threading.Event
+    ID_GPS_CONFIG_KEY: str
+    ID_GPS_BAUD: int
+    ID_GPS_TIMEOUT: float
+    ID_GPS_POLL_LAYER: int
+
+
+    def identify_gps(self, stream: serial.Serial, lock: threading.Lock, reader: UBXReader):
+        while self.id_gps_done.is_set() == False:
+            with lock:
+                if (stream.in_waiting):
+                    raw, msg = reader.read()
+                    if (msg.identity == "CFG-VALGET"):
+
+                        if (msg.CFG_MSGOUT_UBX_RXM_RLM_UART2 == 1):
+                            rospy.set_param("left_gps_driver/port", stream.port)
+                            rospy.loginfo("GPS set as LEFT GPS")
+                        else:
+                            rospy.set_param("right_gps_driver/port", stream.port)
+                            rospy.loginfo("GPS set as RIGHT GPS")
+
+                        self.id_gps_done.set()
+
+    def id_gps(self):
+        context = pyudev.Context()
+
+         # TODO: find enumeration parameters for gps units         
+        for device in context.list_devices(subsystem="", DEVTYPE="", ID_VENDOR_ID=""):
+
+            # create stream and reader
+            port = device.device_path
+            id_gps_stream = serial.Serial(port, self.ID_GPS_BAUD)
+            id_gps_reader = UBXReader(id_gps_stream, protfilter=(UBX_PROTOCOL | RTCM3_PROTOCOL))
+            
+            # start reading thread to parse response
+            id_gps_lock = threading.Lock()
+            id_gps_thread = threading.Thread(self.identify_gps, args=(id_gps_stream, id_gps_lock, id_gps_reader), daemon=True)
+            id_gps_thread.start()
+
+            # send poll request
+            success = False
+
+            while self.id_gps_done.is_set() == False:
+                position = 0
+                poll_layer = self.ID_GPS_POLL_LAYER
+                keys = [self.ID_GPS_CONFIG_KEY]
+                msg = UBXMessage.config_poll(poll_layer, position, keys)
+                id_gps_lock.acquire()
+                id_gps_stream.write(msg.serialize())
+                id_gps_lock.release()
+                success = self.id_gps_done.wait(5)
+
+            if success == False:
+                rospy.logerr("Failed to ID GPS: " + str(port))
+
+
     def __init__(self):
         rospy.init_node("gps_driver")
+        
+        self.id_gps_done = threading.Event()
+        self.ID_GPS_CONFIG_KEY = "CFG_MSGOUT_UBX_RXM_RLM_UART2"
+        self.ID_GPS_POLL_LAYER = POLL_LAYER_FLASH
+        self.ID_GPS_BAUD = 38400
+        self.ID_GPS_TIMEOUT = 0.1
+
+        self.id_gps()
+
         self.port = rospy.get_param("port")
         self.baud = rospy.get_param("baud")
         self.base_station_sub = rospy.Subscriber("/rtcm", Message, self.process_rtcm)
@@ -54,7 +120,7 @@ class GPS_Driver:
 
     # rospy subscriber automatically runs this callback in separate thread
     def process_rtcm(self, data) -> None:
-        rospy.loginfo("processing RTCM")
+        print("processing RTCM")
         with self.lock:
             self.ser.write(data.message)
 
