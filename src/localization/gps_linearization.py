@@ -16,6 +16,7 @@ import message_filters
 QUEUE_SIZE = 10
 SLOP = 0.5
 
+
 class GPSLinearization:
     """
     This node subscribes to GPS and IMU data, linearizes the GPS data
