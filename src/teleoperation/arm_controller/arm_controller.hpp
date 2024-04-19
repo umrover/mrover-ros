@@ -9,6 +9,7 @@ namespace mrover {
         [[maybe_unused]] ros::Subscriber mIkSubscriber;
         ros::NodeHandle mNh;
         ros::Publisher mPositionPublisher;
+        ros::Publisher mStatusPublisher;
         tf2_ros::TransformBroadcaster mTfBroadcaster;
         tf2_ros::Buffer mTfBuffer{};
         tf2_ros::TransformListener mTfListener{mTfBuffer};

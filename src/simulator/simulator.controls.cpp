@@ -154,11 +154,10 @@ namespace mrover {
     auto SimulatorNodelet::userControls(Clock::duration dt) -> void {
         if (mPublishIk) {
             IK ik;
-            ik.target.header.stamp = ros::Time::now();
-            ik.target.header.frame_id = "arm_base_link";
             ik.target.pose.position.x = mIkTarget.x();
             ik.target.pose.position.y = mIkTarget.y();
             ik.target.pose.position.z = mIkTarget.z();
+            ik.target.header.frame_id = "arm_base_link";
             mIkTargetPub.publish(ik);
         }
 

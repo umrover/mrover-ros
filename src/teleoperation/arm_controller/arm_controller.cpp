@@ -1,10 +1,18 @@
 #include "arm_controller.hpp"
+#include "lie.hpp"
+#include <Eigen/src/Core/Matrix.h>
+#include <ros/init.h>
+#include <unistd.h>
 
 namespace mrover {
-
     ArmController::ArmController() {
-        mIkSubscriber = mNh.subscribe("arm_ik", 1, &ArmController::ik_callback, this);
-        mPositionPublisher = mNh.advertise<Position>("arm_position_cmd", 1);
+        ros::NodeHandle nh;
+        // sleep(2);
+        double frequency{};
+        mNh.param<double>("/frequency", frequency, 100);
+        mIkSubscriber = nh.subscribe("arm_ik", 1, &ArmController::ik_callback, this);
+        mPositionPublisher = nh.advertise<Position>("arm_position_cmd", 1);
+        mStatusPublisher = nh.advertise<ArmStatus>("arm_status", 1);
     }
 
     auto yawSo3(double r) -> SO3d {
@@ -16,21 +24,23 @@ namespace mrover {
         Position positions;
         positions.names = {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll"};
         positions.positions.resize(positions.names.size());
-        SE3d target_frame_to_arm_b_static;
+        SE3d target_frame_to_arm_base_link;
         try {
-            target_frame_to_arm_b_static = SE3Conversions::fromTfTree(mTfBuffer, ik_target.target.header.frame_id, "arm_base_link");
+            target_frame_to_arm_base_link = SE3Conversions::fromTfTree(mTfBuffer, ik_target.target.header.frame_id, "arm_base_link");
         } catch (...) {
             ROS_WARN_THROTTLE(1, "Failed to resolve information about target frame");
             return;
         }
         Eigen::Vector4d target{ik_target.target.pose.position.x, ik_target.target.pose.position.y, ik_target.target.pose.position.z, 1};
-        Eigen::Vector4d target_in_arm_b_static = target_frame_to_arm_b_static.transform() * target;
-        double x = target_in_arm_b_static.x() - END_EFFECTOR_LENGTH; // shift back by the length of the end effector
-        double z = target_in_arm_b_static.z();
-        double y = target_in_arm_b_static.y();
-        SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_target", "arm_base_link", target_frame_to_arm_b_static);
+        Eigen::Vector4d target_in_arm_base_link = target_frame_to_arm_base_link.transform() * target;
+        double x = target_in_arm_base_link.x() - END_EFFECTOR_LENGTH; // shift back by the length of the end effector
+        double z = target_in_arm_base_link.z();
+        double y = target_in_arm_base_link.y();
+        SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_target", "arm_base_link", target_frame_to_arm_base_link);
 
+        // final angle of end effector
         double gamma = 0;
+
         double x3 = x - LINK_DE * std::cos(gamma);
         double z3 = z - LINK_DE * std::sin(gamma);
 
@@ -64,11 +74,20 @@ namespace mrover {
                 positions.positions[2] = static_cast<float>(q2);
                 positions.positions[3] = static_cast<float>(q3);
                 mPositionPublisher.publish(positions);
+                ArmStatus status;
+                status.status = true;
+                mStatusPublisher.publish(status);
             } else {
                 ROS_WARN_THROTTLE(1, "Can not reach target within arm limits!");
+                ArmStatus status;
+                status.status = false;
+                mStatusPublisher.publish(status);
             }
         } else {
             ROS_WARN_THROTTLE(1, "Can not solve for arm target!");
+            ArmStatus status;
+            status.status = false;
+            mStatusPublisher.publish(status);
         }
     }
 

@@ -6,16 +6,16 @@ Logs the service request to stdout
 
 from typing import Any
 import rospy
-from std_srvs.srv import SetBool, SetBoolResponse
+from mrover.srv import ChangeCameras, ChangeCamerasResponse
 
 # Change these values for the service name and type definition to test different values
-SERVICE_NAME = "science_enable_heater_b1"
-SERVICE_TYPE = SetBool
+SERVICE_NAME = "change_cameras"
+SERVICE_TYPE = ChangeCameras
 
 
 def print_service_request(service_request: Any):
     rospy.loginfo(service_request)
-    return SetBoolResponse(success=True)
+    return ChangeCamerasResponse(success=True)
 
 
 def main():

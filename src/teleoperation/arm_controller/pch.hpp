@@ -4,6 +4,7 @@
 #include <numbers>
 
 #include <Eigen/Core>
+#include <manif/SO3.h>
 
 #include <ros/init.h>
 #include <ros/node_handle.h>
@@ -11,5 +12,5 @@
 
 #include <mrover/IK.h>
 #include <mrover/Position.h>
-
-#include <lie/lie.hpp>
+#include <lie.hpp>
+#include <mrover/ArmStatus.h>

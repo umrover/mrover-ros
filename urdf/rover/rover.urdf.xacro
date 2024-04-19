@@ -201,18 +201,18 @@
     </collision>
   </link>
 
-  <link name="arm_base_link"/>
+  <link name ="arm_base_link"/>
 
   <joint name="base_link_to_arm_base_link" type="fixed">
-    <origin xyz="0.199228 0.200235 0.540196"/>
-    <parent link="base_link"/>
-    <child link="arm_base_link"/>
+    <origin xyz="0.199228 -0.200235 0.540196" />
+    <parent link="base_link" />
+    <child link="arm_base_link" />
   </joint>
 
   <joint name="base_link_to_chassis_link" type="fixed">
-    <origin xyz="0 0 0.439675"/>
-    <parent link="base_link"/>
-    <child link="chassis_link"/>
+    <origin xyz="0 0 0.439675" />
+    <parent link="base_link" />
+    <child link="chassis_link" />
   </joint>
 
   <xacro:arm_link name="a" m="1" x="0.1" y="0.1" z="0.1"/>
