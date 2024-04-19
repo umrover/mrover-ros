@@ -122,3 +122,23 @@ teleop:
     x: 1
     y: 1
     z: 1
+
+  cameras:
+    - name: "ZED"
+      port: 0
+    - name: "Long Range Camera"
+      port: 1
+    - name: "Mast Gimbal Camera"
+      port: 2
+    - name: "Suspension Camera"
+      port: 3
+    - name: "ISH Camera 1"
+      port: 4
+    - name: "ISH Camera 2"
+      port: 5
+    - name: "ISH Camera 3"
+      port: 6
+    - name: "SA Camera 1"
+      port: 7
+    - name: "SA Camera 2"
+      port: 8
