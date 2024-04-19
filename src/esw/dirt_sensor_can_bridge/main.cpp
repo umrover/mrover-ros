@@ -1,6 +1,8 @@
 #include "messaging.hpp"
 #include <mrover/CAN.h>
 #include <ros/ros.h>
+#include <sensor_msgs/Temperature.h>
+#include <sensor_msgs/RelativeHumidity.h>
 
 std::unique_ptr<ros::Publisher> temperatureDataPublisher;
 std::unique_ptr<ros::Publisher> humidityDataPublisher;
@@ -23,16 +25,13 @@ int main(int argc, char** argv) {
     return 0;
 }
 
-void processMessage(sensor_msgs::Temperature const& message) {
+void processMessage(mrover::DirtData const& message) {
     sensor_msgs::Temperature temperature;
-    temperature = message;
-    spectralDataPublisher->publish(temperature);
-}
-
-void processMessage(sensor_msgs::RelativeHumidity const& message) {
+    temperature.temperature = message.temperature;
     sensor_msgs::RelativeHumidity humidity;
-    humidity = message;
-    spectralDataPublisher->publish(humidity);
+    humidity.relative_humidity = message.humidity;
+    temperatureDataPublisher->publish(temperature);
+    humidityDataPublisher->publish(humidity);
 }
 
 void processCANData(const mrover::CAN::ConstPtr& msg) {
@@ -40,7 +39,7 @@ void processCANData(const mrover::CAN::ConstPtr& msg) {
     assert(msg->destination == "jetson");
     ROS_INFO("data: %f",msg->data);
 
-    mrover::OutBoundSASensorMessage const& message = *reinterpret_cast<mrover::OutBoundSASensorMessage const*>(msg->data);
+    mrover::OutBoundSASensorMessage const& message = *reinterpret_cast<mrover::OutBoundSASensorMessage const*>(msg->data.data());
 
     // This calls the correct process function based on the current value of the alternative
     std::visit([&](auto const& messageAlternative) { processMessage(messageAlternative); }, message);
