@@ -22,16 +22,8 @@ jobs:
           lfs: "true"
           # This makes sure that $GITHUB_WORKSPACE is the catkin workspace path
           path: "src/mrover"
-      - name: Ensure Python Requirements
-        run: . /home/mrover/catkin_ws/src/mrover/venv/bin/activate && pip install --no-cache-dir -e "$GITHUB_WORKSPACE/src/mrover[dev]"
       - name: Style Check
         run: . /home/mrover/catkin_ws/src/mrover/venv/bin/activate && cd $GITHUB_WORKSPACE/src/mrover/ && ./style.sh
-      - name: Update ROS APT
-        if: github.event.pull_request.draft == false
-        run: runuser -u mrover -- rosdep update
-      - name: Ensure ROS APT Requirements
-        if: github.event.pull_request.draft == false
-        run: runuser -u mrover -- rosdep install --from-paths "$GITHUB_WORKSPACE/src" --ignore-src -r -y --rosdistro noetic
       - name: Copy Catkin Profiles
         if: github.event.pull_request.draft == false
         run: rsync -r $GITHUB_WORKSPACE/src/mrover/ansible/roles/build/files/profiles $GITHUB_WORKSPACE/.catkin_tools
@@ -42,7 +34,7 @@ jobs:
         if: github.event.pull_request.draft == false && github.event.pull_request.base.ref != 'refs/heads/master'
         run: . /opt/ros/noetic/setup.sh && . /home/mrover/catkin_ws/src/mrover/venv/bin/activate && catkin build
       - name: Build With Clang Tidy
-        if : github.event_name == 'push' && github.event.pull_request.base.ref == 'refs/heads/master'
+        if: github.event_name == 'push' && github.event.pull_request.base.ref == 'refs/heads/master'
         run: . /opt/ros/noetic/setup.sh && . /home/mrover/catkin_ws/src/mrover/venv/bin/activate && catkin build -DCMAKE_CXX_CLANG_TIDY=clang-tidy-16
       - name: Test
         if: github.event.pull_request.draft == false
