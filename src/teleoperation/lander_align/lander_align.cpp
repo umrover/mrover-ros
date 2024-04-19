@@ -11,6 +11,7 @@
 #include <point.hpp>
 #include <ros/init.h>
 #include <ros/rate.h>
+#include <tf2/exceptions.h>
 #include <unistd.h>
 #include <vector>
 
@@ -53,12 +54,20 @@ namespace mrover {
 		mCloud = ros::topic::waitForMessage<sensor_msgs::PointCloud2>("/camera/left/points", mNh);
 		filterNormals(mCloud);
 		ransac(mDistanceThreshold, 10, 100);
-        if(!createSpline(7, 0.75)){
-            mActionServer->setPreempted();
-            return;
-        }    
-        publishSpline();
-		//calcMotionToo();
+
+        try{
+            if(mNormalInWorldVector.has_value()){
+                if(!createSpline(7, 0.75)){
+                    mActionServer->setPreempted();
+                    return;
+                }    
+                publishSpline();
+                //calcMotionToo();
+            }
+        }catch(const tf2::LookupException& e){
+            mActionServer->setAborted();
+        }
+        
         mPathPoints.clear();
     }
 
