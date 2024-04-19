@@ -2,18 +2,13 @@
 
 namespace mrover {
 
-    BrushedController::BrushedController(ros::NodeHandle const& nh, std::string name, std::string controllerName)
-        : Controller{nh, std::move(name), std::move(controllerName)} {
+    BrushedController::BrushedController(ros::NodeHandle const& nh, std::string masterName, std::string controllerName)
+        : ControllerBase{nh, std::move(masterName), std::move(controllerName)} {
 
         XmlRpc::XmlRpcValue brushedMotorData;
         assert(mNh.hasParam(std::format("brushed_motors/controllers/{}", mControllerName)));
         mNh.getParam(std::format("brushed_motors/controllers/{}", mControllerName), brushedMotorData);
         assert(brushedMotorData.getType() == XmlRpc::XmlRpcValue::TypeStruct);
-
-        mVelocityMultiplier = Dimensionless{xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "velocity_multiplier", 1.0)};
-        if (mVelocityMultiplier.get() == 0) {
-            throw std::runtime_error("Velocity multiplier can't be 0!");
-        }
 
         mConfigCommand.gear_ratio = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "gear_ratio");
 
@@ -26,12 +21,12 @@ namespace mrover {
             mConfigCommand.limit_switch_info.limit_readj_pos.at(i) = Radians{static_cast<double>(brushedMotorData[std::format("limit_{}_readjust_position", i)])};
         }
 
+        mConfigCommand.is_inverted = xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, "is_inverted", false);
+
         mConfigCommand.enc_info.quad_present = xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, "quad_present", false);
-        mConfigCommand.enc_info.quad_is_forward_polarity = xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, "quad_is_fwd_polarity", false);
         mConfigCommand.enc_info.quad_ratio = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "quad_ratio", 1.0);
 
         mConfigCommand.enc_info.abs_present = xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, "abs_present", false);
-        mConfigCommand.enc_info.abs_is_forward_polarity = xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, "abs_is_fwd_polarity", false);
         mConfigCommand.enc_info.abs_ratio = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "abs_ratio", 1.0);
         mConfigCommand.enc_info.abs_offset = Radians{xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "abs_offset", 0.0)};
 
@@ -62,7 +57,7 @@ namespace mrover {
         mVelocityGains.ff = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "velocity_ff", 0.0);
 
         for (int i = 0; i < 4; ++i) {
-            mhasLimit |= xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, std::format("limit_{}_enabled", i), false);
+            mHasLimit |= xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, std::format("limit_{}_enabled", i), false);
         }
         mCalibrationThrottle = Percent{xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "calibration_throttle", 0.0)};
         mErrorState = "Unknown";
@@ -104,8 +99,6 @@ namespace mrover {
 
         assert(velocity >= mConfigCommand.min_velocity && velocity <= mConfigCommand.max_velocity);
 
-        velocity = velocity * mVelocityMultiplier;
-
         mDevice.publish_message(InBoundMessage{VelocityCommand{
                 .velocity = velocity,
                 .p = static_cast<float>(mVelocityGains.p),
@@ -134,7 +127,7 @@ namespace mrover {
 
     auto BrushedController::processMessage(ControllerDataState const& state) -> void {
         mCurrentPosition = state.position;
-        mCurrentVelocity = state.velocity / mVelocityMultiplier;
+        mCurrentVelocity = state.velocity;
         ConfigCalibErrorInfo configCalibErrInfo = state.config_calib_error_data;
         mIsConfigured = configCalibErrInfo.configured;
         mIsCalibrated = configCalibErrInfo.calibrated;
@@ -152,7 +145,7 @@ namespace mrover {
 
     auto BrushedController::processCANMessage(CAN::ConstPtr const& msg) -> void {
         assert(msg->source == mControllerName);
-        assert(msg->destination == mName);
+        assert(msg->destination == mMasterName);
 
         OutBoundMessage const& message = *reinterpret_cast<OutBoundMessage const*>(msg->data.data());
 
@@ -184,14 +177,14 @@ namespace mrover {
     }
 
     auto BrushedController::calibrateServiceCallback([[maybe_unused]] std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res) -> bool {
-        if (!mhasLimit) {
+        if (!mHasLimit) {
             res.success = false;
-            res.message = mControllerName + " does not have limit switches, cannot calibrate";
+            res.message = std::format("{} does not have limit switches, cannot calibrate", mControllerName);
             return true;
         }
         if (mIsCalibrated) {
             res.success = false;
-            res.message = mControllerName + " already calibrated";
+            res.message = std::format("{} already calibrated", mControllerName);
             return true;
         }
         // sends throttle command until a limit switch is hit
