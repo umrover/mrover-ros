@@ -30,7 +30,6 @@
 #include <ros/serialization.h>
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/JointState.h>
-#include <sensor_msgs/NavSatFix.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <sensor_msgs/image_encodings.h>
 #include <sensor_msgs/point_cloud2_iterator.h>
@@ -82,5 +81,6 @@
 #include <mrover/ImuAndMag.h>
 #include <mrover/MotorsStatus.h>
 #include <mrover/Position.h>
+#include <mrover/RTKNavSatFix.h>
 #include <mrover/Throttle.h>
 #include <mrover/Velocity.h>

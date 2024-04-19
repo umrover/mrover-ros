@@ -1,15 +1,19 @@
 #!/usr/bin/env python3
-from typing import Optional, Tuple
-
+from typing import Optional
 import numpy as np
 import rospy
 from geometry_msgs.msg import PoseWithCovarianceStamped, PoseWithCovariance, Pose, Point, Quaternion
-from mrover.msg import ImuAndMag
+from mrover.msg import ImuAndMag, RTKNavSatFix
 from pymap3d.enu import geodetic2enu
-from sensor_msgs.msg import NavSatFix
 from std_msgs.msg import Header
 from util.SE3 import SE3
+from util.SO3 import SO3
 from util.np_utils import numpify
+import message_filters
+import threading
+from tf.transformations import *
+
+import time
 
 
 class GPSLinearization:
@@ -19,9 +23,11 @@ class GPSLinearization:
     orientation into a pose estimate for the rover and publishes it.
     """
 
-    last_gps_msg: Optional[NavSatFix]
-    last_imu_msg: Optional[ImuAndMag]
-    pose_publisher: rospy.Publisher
+    last_gps_pose: Optional[np.ndarray]
+    last_imu_orientation: Optional[np.ndarray]
+
+    # offset
+    rtk_offset: np.ndarray
 
     # reference coordinates
     ref_lat: float
@@ -30,9 +36,45 @@ class GPSLinearization:
 
     world_frame: str
 
+    # timeout detection
+    gps_timeout_interval: int
+    imu_timeout_interval: int
+
+    gps_has_timeout: bool
+    imu_has_timeout: bool
+
+    gps_timer: threading.Timer
+    imu_timer: threading.Timer
+
+    # subscribers and publishers
+    left_gps_sub: message_filters.Subscriber
+    right_gps_sub: message_filters.Subscriber
+    sync_gps_sub: message_filters.ApproximateTimeSynchronizer
+    imu_sub: rospy.Subscriber
+    pose_publisher: rospy.Publisher
+
     # covariance config
     use_dop_covariance: bool
     config_gps_covariance: np.ndarray
+
+    # timeout callbacks, if both gps and imu fail kill node
+    def gps_timeout(self):
+        rospy.loginfo("Synchronized GPS has timed out, using one or none")
+        self.gps_has_timeout = True
+
+        if self.imu_has_timeout == True:
+            rospy.signal_shutdown("Both IMU and GPS have timed out")
+
+        return
+
+    def imu_timeout(self):
+        rospy.loginfo("IMU has timed out")
+        self.imu_has_timeout = True
+
+        if self.gps_has_timeout == True:
+            rospy.signal_shutdown("Both IMU and GPS have timed out")
+
+        return
 
     def __init__(self):
         # read required parameters, if they don't exist an error will be thrown
@@ -41,32 +83,218 @@ class GPSLinearization:
         self.ref_alt = rospy.get_param("gps_linearization/reference_point_altitude")
         self.world_frame = rospy.get_param("world_frame")
         self.use_dop_covariance = rospy.get_param("global_ekf/use_gps_dop_covariance")
+
+        # config gps and imu convariance matrices
         self.config_gps_covariance = np.array(rospy.get_param("global_ekf/gps_covariance", None))
+        self.config_imu_covariance = np.array(rospy.get_param("global_ekf/imu_orientation_covariance", None))
 
-        self.last_gps_msg = None
-        self.last_imu_msg = None
+        # track last gps pose and last imu message
+        self.last_gps_pose = None
+        self.last_imu_orientation = None
 
-        rospy.Subscriber("gps/fix", NavSatFix, self.gps_callback)
-        rospy.Subscriber("imu/data", ImuAndMag, self.imu_callback)
+        # rtk offset
+        self.rtk_offset = np.array([0, 0, 0, 1])
+
+        # subscribe to topics
+        self.left_gps_sub = message_filters.Subscriber("/left_gps_driver/fix", RTKNavSatFix)
+        self.right_gps_sub = message_filters.Subscriber("/right_gps_driver/fix", RTKNavSatFix)
+        self.imu_sub = rospy.Subscriber("imu/data", ImuAndMag, self.imu_callback)
+
+        # sync subscribers, callbacks
+        self.sync_gps_sub = message_filters.ApproximateTimeSynchronizer(
+            [self.right_gps_sub, self.left_gps_sub], 10, 0.5
+        )
+        self.sync_gps_sub.registerCallback(self.gps_callback)
+        self.left_gps_sub.registerCallback(self.left_gps_callback)
+        self.right_gps_sub.registerCallback(self.right_gps_callback)
+
+        # publisher
         self.pose_publisher = rospy.Publisher("linearized_pose", PoseWithCovarianceStamped, queue_size=1)
 
-    def gps_callback(self, msg: NavSatFix):
+        # timers
+        self.gps_has_timeout = self.imu_has_timeout = False
+        self.gps_timeout_interval = self.imu_timeout_interval = 5
+        self.gps_timer = threading.Timer(self.gps_timeout_interval, self.gps_timeout)
+        self.imu_timer = threading.Timer(self.imu_timeout_interval, self.imu_timeout)
+
+    def right_gps_callback(self, right_gps_msg: RTKNavSatFix):
+        # use right gps only when combined gps fails
+        if self.gps_has_timeout == False:
+            return
+
+        if np.any(
+            np.isnan([right_gps_msg.coord.latitude, right_gps_msg.coord.longitude, right_gps_msg.coord.altitude])
+        ):
+            return
+
+        ref_coord = np.array([self.ref_lat, self.ref_lon, self.ref_alt])
+
+        right_cartesian = np.array(
+            geodetic2enu(
+                right_gps_msg.coord.latitude,
+                right_gps_msg.coord.longitude,
+                right_gps_msg.coord.altitude,
+                *ref_coord,
+                deg=True,
+            )
+        )
+
+        pose = SE3(right_cartesian, SO3(np.array([0, 0, 0, 1])))
+
+        if self.last_imu_orientation is not None:
+            imu_quat = self.last_imu_orientation
+            gps_quat = quaternion_multiply(self.rtk_offset, imu_quat)
+            pose = SE3(pose.position, SO3(gps_quat))
+
+        self.last_gps_pose = pose
+
+        covariance_matrix = np.zeros((6, 6))
+        covariance_matrix[:3, :3] = self.config_gps_covariance.reshape(3, 3)
+        covariance_matrix[3:, 3:] = self.config_imu_covariance.reshape(3, 3)
+
+        # publish to ekf
+        pose_msg = PoseWithCovarianceStamped(
+            header=Header(stamp=rospy.Time.now(), frame_id=self.world_frame),
+            pose=PoseWithCovariance(
+                pose=Pose(
+                    position=Point(*pose.position),
+                    orientation=Quaternion(*pose.rotation.quaternion),
+                ),
+                covariance=covariance_matrix.flatten().tolist(),
+            ),
+        )
+
+        # publish pose (right gps only)
+        self.pose_publisher.publish(pose_msg)
+
+    def left_gps_callback(self, left_gps_msg: RTKNavSatFix):
+        # use left gps only when combined gps fails
+        if self.gps_has_timeout == False:
+            return
+
+        if np.any(np.isnan([left_gps_msg.coord.latitude, left_gps_msg.coord.longitude, left_gps_msg.coord.altitude])):
+            return
+
+        ref_coord = np.array([self.ref_lat, self.ref_lon, self.ref_alt])
+
+        left_cartesian = np.array(
+            geodetic2enu(
+                left_gps_msg.coord.latitude,
+                left_gps_msg.coord.longitude,
+                left_gps_msg.coord.altitude,
+                *ref_coord,
+                deg=True,
+            )
+        )
+
+        pose = SE3(left_cartesian, SO3(np.array([0, 0, 0, 1])))
+
+        # use imu for orientation
+        if self.last_imu_orientation is not None:
+            imu_quat = self.last_imu_orientation
+            gps_quat = quaternion_multiply(self.rtk_offset, imu_quat)
+            pose = SE3(pose.position, SO3(gps_quat))
+
+        self.last_gps_pose = pose
+
+        covariance_matrix = np.zeros((6, 6))
+        covariance_matrix[:3, :3] = self.config_gps_covariance.reshape(3, 3)
+        covariance_matrix[3:, 3:] = self.config_imu_covariance.reshape(3, 3)
+
+        # publish to ekf
+        pose_msg = PoseWithCovarianceStamped(
+            header=Header(stamp=rospy.Time.now(), frame_id=self.world_frame),
+            pose=PoseWithCovariance(
+                pose=Pose(
+                    position=Point(*pose.position),
+                    orientation=Quaternion(*pose.rotation.quaternion),
+                ),
+                covariance=covariance_matrix.flatten().tolist(),
+            ),
+        )
+
+        # publish pose (left gps only)
+        self.pose_publisher.publish(pose_msg)
+
+    def gps_callback(self, right_gps_msg: RTKNavSatFix, left_gps_msg: RTKNavSatFix):
         """
         Callback function that receives GPS messages, assigns their covariance matrix,
         and then publishes the linearized pose.
 
         :param msg: The NavSatFix message containing GPS data that was just received
+        TODO: Handle invalid PVTs
         """
-        if np.any(np.isnan([msg.latitude, msg.longitude, msg.altitude])):
+
+        self.gps_has_timeout = False
+
+        # set gps timer
+        self.gps_timer.cancel()
+        self.gps_timer = threading.Timer(self.gps_timeout_interval, self.gps_timeout)
+        self.gps_timer.start()
+
+        if np.any(
+            np.isnan([right_gps_msg.coord.latitude, right_gps_msg.coord.longitude, right_gps_msg.coord.altitude])
+        ):
+            return
+        if np.any(np.isnan([left_gps_msg.coord.latitude, left_gps_msg.coord.longitude, left_gps_msg.coord.altitude])):
             return
 
-        if not self.use_dop_covariance:
-            msg.position_covariance = self.config_gps_covariance
+        ref_coord = np.array([self.ref_lat, self.ref_lon, self.ref_alt])
 
-        self.last_gps_msg = msg
+        right_cartesian = np.array(
+            geodetic2enu(
+                right_gps_msg.coord.latitude,
+                right_gps_msg.coord.longitude,
+                right_gps_msg.coord.altitude,
+                *ref_coord,
+                deg=True,
+            )
+        )
+        left_cartesian = np.array(
+            geodetic2enu(
+                left_gps_msg.coord.latitude,
+                left_gps_msg.coord.longitude,
+                left_gps_msg.coord.altitude,
+                *ref_coord,
+                deg=True,
+            )
+        )
 
-        if self.last_imu_msg is not None:
-            self.publish_pose()
+        pose = GPSLinearization.compute_gps_pose(right_cartesian=right_cartesian, left_cartesian=left_cartesian)
+
+        # if imu has not timed out, use imu roll and pitch, calculate offset if fix status is RTK_FIX
+        if self.imu_has_timeout == False and self.last_imu_orientation is not None:
+            imu_quat = self.last_imu_orientation
+            gps_quat = pose.rotation.quaternion
+
+            if right_gps_msg.fix_type == RTKNavSatFix.RTK_FIX and left_gps_msg.fix_type == RTKNavSatFix.RTK_FIX:
+                imu_yaw_quat = quaternion_from_euler(0, 0, euler_from_quaternion(imu_quat)[2], "sxyz")
+                gps_yaw_quat = quaternion_from_euler(0, 0, euler_from_quaternion(gps_quat)[2], "sxyz")
+                self.rtk_offset = quaternion_multiply(gps_yaw_quat, quaternion_conjugate(imu_yaw_quat))
+
+            gps_quat = quaternion_multiply(self.rtk_offset, imu_quat)
+            pose = SE3(pose.position, SO3(gps_quat))
+
+        self.last_gps_pose = pose
+
+        covariance_matrix = np.zeros((6, 6))
+        covariance_matrix[:3, :3] = self.config_gps_covariance.reshape(3, 3)
+        covariance_matrix[3:, 3:] = self.config_imu_covariance.reshape(3, 3)
+
+        # publish to ekf
+        pose_msg = PoseWithCovarianceStamped(
+            header=Header(stamp=rospy.Time.now(), frame_id=self.world_frame),
+            pose=PoseWithCovariance(
+                pose=Pose(
+                    position=Point(*pose.position),
+                    orientation=Quaternion(*pose.rotation.quaternion),
+                ),
+                covariance=covariance_matrix.flatten().tolist(),
+            ),
+        )
+
+        # publish pose (rtk)
+        self.pose_publisher.publish(pose_msg)
 
     def imu_callback(self, msg: ImuAndMag):
         """
@@ -74,71 +302,69 @@ class GPSLinearization:
 
         :param msg: The Imu message containing IMU data that was just received
         """
-        self.last_imu_msg = msg
 
-        if self.last_gps_msg is not None:
-            self.publish_pose()
+        self.imu_has_timeout = False
 
-    @staticmethod
-    def get_linearized_pose_in_world(
-        gps_msg: NavSatFix, imu_msg: ImuAndMag, ref_coord: np.ndarray
-    ) -> Tuple[SE3, np.ndarray]:
-        """
-        Linearizes the GPS geodetic coordinates into ENU cartesian coordinates,
-        then combines them with the IMU orientation into a pose estimate relative
-        to the world frame, with corresponding covariance matrix.
+        # set imu timer
+        self.imu_timer.cancel()
+        self.imu_timer = threading.Timer(self.imu_timeout_interval, self.imu_timeout)
+        self.imu_timer.start()
 
-        :param gps_msg: Message containing the rover's GPS coordinates and their corresponding
-                        covariance matrix.
-        :param imu_msg: Message containing the rover's orientation from IMU, with
-                        corresponding covariance matrix.
-        :param ref_coord: numpy array containing the geodetic coordinate which will be the origin
-                          of the tangent plane, [latitude, longitude, altitude]
-        :returns: The pose consisting of linearized GPS and IMU orientation, and the corresponding
-                  covariance matrix as a 6x6 numpy array where each row is [x, y, z, roll, pitch, yaw]
-        """
-        # linearize GPS coordinates into cartesian
-        cartesian = np.array(geodetic2enu(gps_msg.latitude, gps_msg.longitude, gps_msg.altitude, *ref_coord, deg=True))
+        if self.last_gps_pose is None:
+            return
 
-        # ignore Z
-        cartesian[2] = 0
+        # imu quaternion
+        imu_quat = numpify(msg.imu.orientation)
+        self.last_imu_orientation = imu_quat
 
-        imu_quat = numpify(imu_msg.imu.orientation)
+        imu_quat = quaternion_multiply(self.rtk_offset, imu_quat)
 
-        # normalize to avoid rounding errors
-        imu_quat = imu_quat / np.linalg.norm(imu_quat)
-        pose = SE3.from_pos_quat(position=cartesian, quaternion=imu_quat)
+        covariance_matrix = np.zeros((6, 6))
+        covariance_matrix[:3, :3] = self.config_gps_covariance.reshape(3, 3)
+        covariance_matrix[3:, 3:] = self.config_imu_covariance.reshape(3, 3)
 
-        covariance = np.zeros((6, 6))
-        covariance[:3, :3] = np.array([gps_msg.position_covariance]).reshape(3, 3)
-        covariance[3:, 3:] = np.array([imu_msg.imu.orientation_covariance]).reshape(3, 3)
-
-        return pose, covariance
-
-    def publish_pose(self):
-        """
-        Publishes the linearized pose of the rover relative to the map frame,
-        as a PoseWithCovarianceStamped message.
-        """
-        ref_coord = np.array([self.ref_lat, self.ref_lon, self.ref_alt])
-        linearized_pose, covariance = self.get_linearized_pose_in_world(self.last_gps_msg, self.last_imu_msg, ref_coord)
-
+        # publish to ekf
         pose_msg = PoseWithCovarianceStamped(
-            header=Header(stamp=rospy.Time.now(), frame_id=self.world_frame),
+            header=Header(stamp=msg.header.stamp, frame_id=self.world_frame),
             pose=PoseWithCovariance(
                 pose=Pose(
-                    position=Point(*linearized_pose.position),
-                    orientation=Quaternion(*linearized_pose.rotation.quaternion),
+                    position=Point(*self.last_gps_pose.position),
+                    orientation=Quaternion(*imu_quat),
                 ),
-                covariance=covariance.flatten().tolist(),
+                covariance=covariance_matrix.flatten().tolist(),
             ),
         )
+
+        # publish pose (imu with correction)
         self.pose_publisher.publish(pose_msg)
+
+    @staticmethod
+    def compute_gps_pose(right_cartesian, left_cartesian) -> np.ndarray:
+        vector_connecting = left_cartesian - right_cartesian
+        vector_connecting[2] = 0
+        magnitude = np.linalg.norm(vector_connecting)
+        vector_connecting = vector_connecting / magnitude
+
+        vector_perp = np.zeros(shape=(3, 1))
+        vector_perp[0] = vector_connecting[1]
+        vector_perp[1] = -vector_connecting[0]
+
+        rotation_matrix = np.hstack(
+            (vector_perp, np.reshape(vector_connecting, (3, 1)), np.array(object=[[0], [0], [1]]))
+        )
+
+        # temporary fix, assumes base_link is exactly in the middle of the two GPS antennas
+        # TODO: use static tf from base_link to left_antenna instead
+        rover_position = (left_cartesian + right_cartesian) / 2
+
+        pose = SE3(rover_position, SO3.from_matrix(rotation_matrix=rotation_matrix))
+
+        return pose
 
 
 def main():
     # start the node and spin to wait for messages to be received
-    rospy.init_node("gps_linearization")
+    rospy.init_node("gps_linearization", disable_signals=True)
     GPSLinearization()
     rospy.spin()
 

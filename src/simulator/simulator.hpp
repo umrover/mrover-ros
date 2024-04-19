@@ -210,7 +210,8 @@ namespace mrover {
         ros::Subscriber mTwistSub, mArmPositionsSub, mArmVelocitiesSub, mArmThrottlesSub;
 
         ros::Publisher mGroundTruthPub;
-        ros::Publisher mGpsPub;
+        ros::Publisher mLeftGpsPub;
+        ros::Publisher mRightGpsPub;
         ros::Publisher mImuPub;
         ros::Publisher mMotorStatusPub;
         ros::Publisher mDriveControllerStatePub;
@@ -230,6 +231,7 @@ namespace mrover {
 
         // TODO: make variances configurable
         std::default_random_engine mRNG;
+        std::uniform_int_distribution<> mRTkFixFreq{1, 5};
         std::normal_distribution<> mGPSDist{0, 0.02},
                 mAccelDist{0, 0.01},
                 mGyroDist{0, 0.01},
@@ -237,6 +239,10 @@ namespace mrover {
                 mRollDist{0, 0.01},
                 mPitchDist{0, 0.01},
                 mYawDist{0, 0.01};
+
+        // drift rate in rad/minute about each axis
+        R3 mOrientationDriftRate{0.0, 0.0, 1.0};
+        R3 mOrientationDrift = R3::Zero();
 
         PeriodicTask mGpsTask;
         PeriodicTask mImuTask;
