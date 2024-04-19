@@ -52,8 +52,8 @@ namespace mrover {
     };
 
     struct MoteusLimitSwitchInfo {
-        bool isFwdPressed{};
-        bool isBwdPressed{};
+        bool isForwardPressed{};
+        bool isBackwardPressed{};
     };
 
     template<IsUnit TOutputPosition>
@@ -118,10 +118,14 @@ namespace mrover {
             }
 
             moteus::Controller::Options options;
-            moteus::Query::Format queryFormat;
+            moteus::Query::Format queryFormat{};
             queryFormat.aux1_gpio = moteus::kInt8;
             queryFormat.aux2_gpio = moteus::kInt8;
-            if (this->isJointDe()) { // add joint de abs slots to CAN message
+            if (this->isJointDe()) {
+                // DE0 and DE1 have absolute encoders
+                // They are not used for their internal control loops
+                // Instead we request them at the ROS level and send adjust commands periodically
+                // Therefore we do not get them as part of normal messages and must request them explicitly
                 queryFormat.extra[0] = moteus::Query::ItemFormat{
                         .register_number = moteus::Register::kEncoder1Position,
                         .resolution = moteus::kFloat,
@@ -140,12 +144,13 @@ namespace mrover {
         }
 
         auto setDesiredPosition(OutputPosition position) -> void {
-            // only check for limit switches if at least one limit switch exists and is enabled
+            // Only check for limit switches if at least one limit switch exists and is enabled
             if ((limitSwitch0Enabled && limitSwitch0Present) || (limitSwitch1Enabled && limitSwitch0Present)) {
                 sendQuery();
 
-                MoteusLimitSwitchInfo limitSwitchInfo = getPressedLimitSwitchInfo();
-                if ((mCurrentPosition < position && limitSwitchInfo.isFwdPressed) || (mCurrentPosition > position && limitSwitchInfo.isBwdPressed)) {
+                if (auto [isFwdPressed, isBwdPressed] = getPressedLimitSwitchInfo();
+                    (mCurrentPosition < position && isFwdPressed) ||
+                    (mCurrentPosition > position && isBwdPressed)) {
                     setBrake();
                     return;
                 }
@@ -159,9 +164,6 @@ namespace mrover {
                     .maximum_torque = mMaxTorque,
                     .watchdog_timeout = mWatchdogTimeout,
             };
-            if (this->isJointDe()) {
-                ROS_INFO_STREAM(std::format("Setting position to {}", position.get()).c_str());
-            }
             moteus::CanFdFrame positionFrame = mMoteus->MakePosition(command);
             mDevice.publish_moteus_frame(positionFrame);
         }
@@ -170,27 +172,27 @@ namespace mrover {
             assert(msg->source == mControllerName);
             assert(msg->destination == mMasterName);
             auto result = moteus::Query::Parse(msg->data.data(), msg->data.size());
-            if (this->isJointDe()) {
-                ROS_INFO("controller: %s    %3d p/a/v/t=(%7.3f,%7.3f,%7.3f,%7.3f)  v/t/f=(%5.1f,%5.1f,%3d) GPIO: Aux1-%X , Aux2-%X",
-                         mControllerName.c_str(),
-                         result.mode,
-                         result.position,
-                         result.abs_position,
-                         result.velocity,
-                         result.torque,
-                         result.voltage,
-                         result.temperature,
-                         result.fault,
-                         result.aux1_gpio,
-                         result.aux2_gpio);
-            }
+            // if (this->isJointDe()) {
+            //     ROS_INFO("controller: %s    %3d p/a/v/t=(%7.3f,%7.3f,%7.3f,%7.3f)  v/t/f=(%5.1f,%5.1f,%3d) GPIO: Aux1-%X , Aux2-%X",
+            //              mControllerName.c_str(),
+            //              result.mode,
+            //              result.position,
+            //              result.abs_position,
+            //              result.velocity,
+            //              result.torque,
+            //              result.voltage,
+            //              result.temperature,
+            //              result.fault,
+            //              result.aux1_gpio,
+            //              result.aux2_gpio);
+            // }
 
             if (this->isJointDe()) {
-                mCurrentPosition = OutputPosition{result.extra[0].value}; // get value of absolute encoder if its joint_de0/1
+                mCurrentPosition = OutputPosition{result.extra[0].value}; // Get value of absolute encoder if its joint_de0/1
                 mCurrentVelocity = OutputVelocity{result.extra[1].value};
             } else {
-                mCurrentPosition = OutputPosition{result.position}; // moteus stores position in revolutions.
-                mCurrentVelocity = OutputVelocity{result.velocity}; // moteus stores position in revolutions.
+                mCurrentPosition = OutputPosition{result.position};
+                mCurrentVelocity = OutputVelocity{result.velocity};
             }
             mCurrentEffort = result.torque;
 
@@ -207,12 +209,13 @@ namespace mrover {
         }
 
         auto setDesiredVelocity(OutputVelocity velocity) -> void {
-            // only check for limit switches if at least one limit switch exists and is enabled
+            // Only check for limit switches if at least one limit switch exists and is enabled
             if ((limitSwitch0Enabled && limitSwitch0Present) || (limitSwitch1Enabled && limitSwitch0Present)) {
                 sendQuery();
 
-                MoteusLimitSwitchInfo limitSwitchInfo = getPressedLimitSwitchInfo();
-                if ((velocity > OutputVelocity{0} && limitSwitchInfo.isFwdPressed) || (velocity < OutputVelocity{0} && limitSwitchInfo.isBwdPressed)) {
+                if (auto [isFwdPressed, isBwdPressed] = getPressedLimitSwitchInfo();
+                    (velocity > OutputVelocity{0} && isFwdPressed) ||
+                    (velocity < OutputVelocity{0} && isBwdPressed)) {
                     setBrake();
                     return;
                 }
@@ -235,9 +238,7 @@ namespace mrover {
             }
         }
 
-        auto getEffort() -> double {
-            // TODO - need to properly set mMeasuredEFfort elsewhere.
-            // (Art Boyarov): return quiet_Nan, same as Brushed Controller
+        [[nodiscard]] auto getEffort() const -> double {
             return mCurrentEffort;
         }
 
@@ -252,46 +253,23 @@ namespace mrover {
         }
 
         auto getPressedLimitSwitchInfo() -> MoteusLimitSwitchInfo {
-            /*
-        Testing 2/9:
-        - Connected limit switch (common is input(black), NC to ground)
-        - Configured moteus to have all pins set as digital_input and pull_up
-        - When limit switch not pressed, aux2 = 0xD
-        - When limit switch pressed, aux1 = 0xF
-        - Note: has to be active high, so in this scenario we have to flip this bit round.
-        - This was connected to just one moteus board, not the one with a motor on it.
-
-        Stuff for Limit Switches (from Guthrie)
-        - Read from config about limit switch settings
-        - Either 1 or 0 not forward/backward
-
-        - Add a member variable in Brushless.hpp to store limit switch value.
-          pdate this limit switch variable every round in ProcessCANMessage.
-
-        - Note: we can get aux pin info even without sending a query command.
-          Tested with sending velocity commands.
-        */
-            // TODO - implement this
-            MoteusLimitSwitchInfo result{};
-            result.isFwdPressed = false;
-            result.isBwdPressed = false;
-
-            // Limit switches now wired to AUX2 (index 0 and 1)
             if (limitSwitch0Present && limitSwitch0Enabled) {
                 bool gpioState = 0b01 & mMoteusAux2Info;
-                mLimitHit.at(0) = gpioState == limitSwitch0ActiveHigh;
+                mLimitHit[0] = gpioState == limitSwitch0ActiveHigh;
             }
             if (limitSwitch1Present && limitSwitch1Enabled) {
                 bool gpioState = 0b10 & mMoteusAux2Info;
-                mLimitHit.at(1) = gpioState == limitSwitch1ActiveHigh;
+                mLimitHit[1] = gpioState == limitSwitch1ActiveHigh;
             }
 
-            result.isFwdPressed = (mLimitHit.at(0) && limitSwitch0LimitsFwd) || (mLimitHit.at(1) && limitSwitch1LimitsFwd);
-            result.isBwdPressed = (mLimitHit.at(0) && !limitSwitch0LimitsFwd) || (mLimitHit.at(1) && !limitSwitch1LimitsFwd);
+            MoteusLimitSwitchInfo result{
+                    .isForwardPressed = (mLimitHit[0] && limitSwitch0LimitsFwd) || (mLimitHit[1] && limitSwitch1LimitsFwd),
+                    .isBackwardPressed = (mLimitHit[0] && !limitSwitch0LimitsFwd) || (mLimitHit[1] && !limitSwitch1LimitsFwd),
+            };
 
-            if (result.isFwdPressed) {
+            if (result.isForwardPressed) {
                 adjust(limitSwitch0ReadjustPosition);
-            } else if (result.isBwdPressed) {
+            } else if (result.isBackwardPressed) {
                 adjust(limitSwitch1ReadjustPosition);
             }
 

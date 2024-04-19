@@ -37,7 +37,6 @@ namespace mrover {
               mMoveThrottleSub{mNh.subscribe<Throttle>(std::format("{}_throttle_cmd", mControllerName), 1, &ControllerBase::setDesiredThrottle, this)},
               mMoveVelocitySub{mNh.subscribe<Velocity>(std::format("{}_velocity_cmd", mControllerName), 1, &ControllerBase::setDesiredVelocity, this)},
               mMovePositionSub{mNh.subscribe<Position>(std::format("{}_position_cmd", mControllerName), 1, &ControllerBase::setDesiredPosition, this)},
-              // mAdjustEncoderSub{mNh.subscribe<MotorsAdjust>(std::format("{}_adjust_cmd", mControllerName), 1, &ControllerBase::adjustEncoder, this)},
               mJointDataPub{mNh.advertise<sensor_msgs::JointState>(std::format("{}_joint_data", mControllerName), 1)},
               mControllerDataPub{mNh.advertise<ControllerState>(std::format("{}_controller_data", mControllerName), 1)},
               mPublishDataTimer{mNh.createTimer(ros::Duration{0.1}, &ControllerBase::publishDataCallback, this)},
@@ -86,17 +85,6 @@ namespace mrover {
             using Position = typename detail::strip_conversion<OutputPosition>::type;
             OutputPosition position = Position{msg->positions.front()};
             static_cast<Derived*>(this)->setDesiredPosition(position);
-        }
-
-        auto adjustEncoder(MotorsAdjust::ConstPtr const& msg) -> void {
-            if (msg->names.size() != 1 || msg->names.at(0) != mControllerName || msg->values.size() != 1) {
-                ROS_ERROR("Adjust request at topic for %s ignored!", msg->names.at(0).c_str());
-                return;
-            }
-
-            using Position = typename detail::strip_conversion<OutputPosition>::type;
-            OutputPosition position = Position{msg->values.front()};
-            static_cast<Derived*>(this)->adjust(position);
         }
 
         [[nodiscard]] auto isJointDe() const -> bool {
