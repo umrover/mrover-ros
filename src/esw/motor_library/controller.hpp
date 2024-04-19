@@ -40,7 +40,7 @@ namespace mrover {
               mControllerDataPub{mNh.advertise<ControllerState>(std::format("{}_controller_data", mControllerName), 1)},
               mPublishDataTimer{mNh.createTimer(ros::Duration{0.1}, &ControllerBase::publishDataCallback, this)},
               mAdjustServer{mNh.advertiseService(std::format("{}_adjust", mControllerName), &ControllerBase::adjustServiceCallback, this)},
-              limitSwitchCheckTimer{nh.createTimer(ros::Duration(0.1), &ControllerBase::limitSwitchCheckCallback)} {
+              limitSwitchCheckTimer{nh.createTimer(ros::Duration(0.1), &ControllerBase::limitSwitchCheckCallback, this)} {
         }
 
         ControllerBase(ControllerBase const&) = delete;
@@ -72,6 +72,7 @@ namespace mrover {
             // ROS message will always be in SI units with no conversions
             using Velocity = typename detail::strip_conversion<OutputVelocity>::type;
             OutputVelocity velocity = Velocity{msg->velocities.front()};
+            velocity = std::clamp(velocity, mMinVelocity, mMaxVelocity);
             static_cast<Derived*>(this)->setDesiredVelocity(velocity);
         }
 
@@ -139,11 +140,11 @@ namespace mrover {
             auto withinLimitSwitchDistance = 0.1 * motorRange;
 
             if ((mCurrentPosition - mMinPosition < withinLimitSwitchDistance 
-                    && mCurrentVelocity < 0) ||
+                    && mCurrentVelocity < OutputVelocity{0}) ||
                 (mMaxPosition - mCurrentPosition < withinLimitSwitchDistance 
-                    && mCurrentVelocity > 0)) {
+                    && mCurrentVelocity > OutputVelocity{0})) {
                     if (!haveSetLowerSpeed){
-                        setDesiredVelocity(0.1*mCurrentVelocity);
+                        static_cast<Derived*>(this)->setDesiredVelocity(0.1*mCurrentVelocity);
                         haveSetLowerSpeed = true;
                     }
                 } 
@@ -176,10 +177,12 @@ namespace mrover {
         ros::Publisher mJointDataPub;
         ros::Publisher mControllerDataPub;
         ros::Timer mPublishDataTimer;
-        ros::Timer limitSwitchCheckTimer;
 
         ros::ServiceServer mAdjustServer;
-        bool haveSetLowerSpeed;
+        ros::Timer limitSwitchCheckTimer;
+        bool haveSetLowerSpeed{false};
+
+
     };
 
 } // namespace mrover
