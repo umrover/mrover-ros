@@ -23,6 +23,7 @@ namespace mrover {
         mMotorStatusPub = mNh.advertise<MotorsStatus>("/drive_status", 1);
         mDriveControllerStatePub = mNh.advertise<ControllerState>("/drive_controller_data", 1);
         mArmControllerStatePub = mNh.advertise<ControllerState>("/arm_controller_data", 1);
+        mArmJointStatePub = mNh.advertise<sensor_msgs::JointState>("/arm_joint_states", 1);
 
         mIkTargetPub = mNh.advertise<IK>("/arm_ik", 1);
 

@@ -4,21 +4,21 @@
             <h2>Select Site</h2>
         </div>
         <div class="form-check form-check-inline">
-            <input v-model="site" class="form-check-input" type="radio" name="flexRadioDefault" id="siteA" value="A">
-            <label class="form-check-label" for="siteA">
-                A
+            <input v-model="site" class="form-check-input" type="radio" name="flexRadioDefault" id="site0" value="0">
+            <label class="form-check-label" for="site0">
+                0
             </label>
         </div>
         <div class="form-check form-check-inline">
-            <input v-model="site" class="form-check-input" type="radio" name="flexRadioDefault" id="siteB" value="B">
-            <label class="form-check-label" for="siteB">
-                B
+            <input v-model="site" class="form-check-input" type="radio" name="flexRadioDefault" id="site1" value="1">
+            <label class="form-check-label" for="site1">
+                1
             </label>
         </div>
         <div class="form-check form-check-inline">
-            <input v-model="site" class="form-check-input" type="radio" name="flexRadioDefault" id="siteC" value="C">
-            <label class="form-check-label" for="siteC">
-                C
+            <input v-model="site" class="form-check-input" type="radio" name="flexRadioDefault" id="site2" value="2">
+            <label class="form-check-label" for="site2">
+                2
             </label>
         </div>
     </div>
@@ -29,7 +29,7 @@ export default {
     components: {},
     data() {
         return {
-            site: "A"
+            site: 0
         };
     },
 

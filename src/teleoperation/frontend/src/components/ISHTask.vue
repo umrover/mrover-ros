@@ -9,38 +9,45 @@
         <img src="/help.png" alt="Help" title="Help" width="48" height="48" />
       </div>
       <div class="helpscreen"></div>
-      <div class="helpimages" style="display: flex; align-items: center; justify-content: space-evenly">
-        <img src="/joystick.png" alt="Joystick" title="Joystick Controls"
-          style="width: auto; height: 70%; display: inline-block" />
+      <div
+        class="helpimages"
+        style="display: flex; align-items: center; justify-content: space-evenly"
+      >
+        <img
+          src="/joystick.png"
+          alt="Joystick"
+          title="Joystick Controls"
+          style="width: auto; height: 70%; display: inline-block"
+        />
       </div>
     </div>
     <div class="shadow p-3 rounded siteSelect">
-        <SelectSite @site="onSiteChange" />
+      <SelectSite @site="onSiteChange" />
+    </div>
+    <div class="shadow p-3 rounded cameras">
+      <Cameras :primary="primary" :isSA="false" :mission="'sa'" />
     </div>
     <div class="shadow p-3 rounded benedicts">
-        <AminoBenedict :site="site" :isAmino="false"/>
-      </div>
-    <div class="shadow p-3 rounded cameras">
-      <Cameras :primary="primary" :isSA="false"/>
+      <AminoBenedict :site="site" :isAmino="false" />
     </div>
     <div class="shadow p-3 rounded cache">
-        <Cache />
+      <Cache />
     </div>
     <div class="shadow p-3 rounded chlorophyll">
-        <Chlorophyll/>
-      </div>
+      <Chlorophyll />
+    </div>
     <div class="shadow p-3 rounded amino">
-        <AminoBenedict :site="site" :isAmino="true"/>
+      <AminoBenedict :site="site" :isAmino="true" />
     </div>
   </div>
 </template>
 
 <script lang="ts">
-  import SelectSite from "./SelectSite.vue";
+import SelectSite from './SelectSite.vue'
 //   import Raman from "./Raman.vue";
-import Cache from "./CacheControls.vue";
-import Chlorophyll from "./Chlorophyll.vue";
-import AminoBenedict from "./AminoBenedict.vue";
+import Cache from './CacheControls.vue'
+import Chlorophyll from './Chlorophyll.vue'
+import AminoBenedict from './AminoBenedict.vue'
 import Cameras from './Cameras.vue'
 //   import CommReadout from "./CommReadout.vue";
 //   import MCUReset from "./MCUReset.vue"
@@ -58,15 +65,14 @@ export default {
   },
   data() {
     return {
-      site: 'A' as string,
+      site: 0 as number,
       primary: false
     }
   },
 
-
   methods: {
     onSiteChange(value: string) {
-      this.site = value
+      this.site = parseInt(value)
     }
   }
 }
@@ -77,14 +83,13 @@ export default {
   display: grid;
   grid-gap: 10px;
   grid-template-columns: repeat(2, auto);
-  grid-template-rows: repeat(6, auto);
+  grid-template-rows: repeat(5, auto);
   grid-template-areas:
     'header header'
-    'cameras siteSelect'
-    'cameras benedicts'
-    'cameras chlorophyll'
-    'cache chlorophyll'
-    'cache amino';
+    'cache siteSelect'
+    'cache benedicts'
+    'chlorophyll amino'
+    'cameras cameras';
   font-family: sans-serif;
   height: auto;
 }
@@ -129,8 +134,8 @@ export default {
   cursor: pointer;
 }
 
-.help:hover~.helpscreen,
-.help:hover~.helpimages {
+.help:hover ~ .helpscreen,
+.help:hover ~ .helpimages {
   visibility: visible;
 }
 

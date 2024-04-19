@@ -11,7 +11,7 @@ void sleep(int ms);
 void set_arm_laser_enable(ros::ServiceClient& client, bool enable);
 void set_auton_led(ros::Publisher& publisher, bool red, bool green, bool blue, bool blinking);
 
-int main(int argc, char** argv) {
+auto main(int argc, char** argv) -> int {
     ros::init(argc, argv, "science_test_bridge");
     ros::NodeHandle nh;
 

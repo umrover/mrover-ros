@@ -286,6 +286,16 @@ namespace mrover {
                 armControllerState.limit_hit.push_back(limitSwitches);
             }
             mArmControllerStatePub.publish(armControllerState);
+
+            sensor_msgs::JointState jointState;
+            jointState.header.stamp = ros::Time::now();
+            for (auto& linkName: {"arm_a_link", "arm_b_link", "arm_c_link", "arm_d_link", "arm_e_link"}) {
+                jointState.name.push_back(armMsgToUrdf.backward(linkName).value());
+                jointState.position.push_back(rover.physics->getJointPos(rover.linkNameToMeta.at(linkName).index));
+                jointState.velocity.push_back(rover.physics->getJointVel(rover.linkNameToMeta.at(linkName).index));
+                jointState.effort.push_back(rover.physics->getJointTorque(rover.linkNameToMeta.at(linkName).index));
+            }
+            mArmJointStatePub.publish(jointState);
         }
     }
 

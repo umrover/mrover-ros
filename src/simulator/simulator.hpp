@@ -216,13 +216,14 @@ namespace mrover {
         ros::Publisher mMotorStatusPub;
         ros::Publisher mDriveControllerStatePub;
         ros::Publisher mArmControllerStatePub;
+        ros::Publisher mArmJointStatePub;
 
         tf2_ros::Buffer mTfBuffer;
         tf2_ros::TransformListener mTfListener{mTfBuffer};
         tf2_ros::TransformBroadcaster mTfBroadcaster;
 
         bool mPublishIk = true;
-        Eigen::Vector3f mIkTarget{0.125, 0.1, 0};
+        Eigen::Vector3f mIkTarget{0.382, 0.01, -0.217};
         ros::Publisher mIkTargetPub;
 
         R3 mGpsLinearizationReferencePoint{};
@@ -359,6 +360,12 @@ namespace mrover {
         SimulatorNodelet() = default;
 
         ~SimulatorNodelet() override;
+
+        SimulatorNodelet(SimulatorNodelet const&) = delete;
+        SimulatorNodelet(SimulatorNodelet&&) = delete;
+
+        auto operator=(SimulatorNodelet const&) -> SimulatorNodelet& = delete;
+        auto operator=(SimulatorNodelet&&) -> SimulatorNodelet& = delete;
 
         auto initWindow() -> void;
 
