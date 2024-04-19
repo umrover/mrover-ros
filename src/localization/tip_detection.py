@@ -40,20 +40,20 @@ class TipDetection:
             try:
                 # extract yaw
                 self.old = SE3.from_tf_tree(self.buffer, self.world_frame, self.rover_frame).rotation.rotation_matrix()
-                
+
                 # multiply yaw by the z vector [0, 0, 1] to get new transform
                 self.transform = np.dot(np.array([0, 0, 1]), self.old)
 
                 # compare this new transform with our threshold to see if it's tipping, if so increment hit_count
                 if self.transform[2] <= self.orientation_threshold:
                     self.hit_count += 1
-                
+
                 self.check_for_hit_count(self.hit_count)
 
             except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
                 print(e)
                 rate.sleep()
-            # reset the hit count time 
+            # reset the hit count time
             self.current_time = time.time()
             self.reset_hit_count_time(self.reset_hit_count_threshold, self.time_counter)
 
@@ -63,7 +63,7 @@ class TipDetection:
         if hit_count > self.hit_count_threshold:
             # publishing into tip_publisher that rover is tipping, True
             self.tip_publisher.publish(True)
-        else: # else publish False
+        else:  # else publish False
             self.tip_publisher.publish(False)
 
     # reset hit_count each reset_hit_count_threshold seconds
@@ -72,6 +72,7 @@ class TipDetection:
         if time.time() - self.time_counter > self.reset_hit_count_threshold:
             self.hit_count = 0
             self.time_counter = time.time()
+
 
 def main():
     rospy.init_node("tip_detection")
@@ -82,4 +83,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    
