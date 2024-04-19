@@ -123,7 +123,7 @@ export default defineComponent({
   },
 
   computed: {
-    ...mapState('websocket', ['message'])
+    ...mapState('websocket', ['message']),
   },
 
   watch: {
@@ -149,6 +149,7 @@ export default defineComponent({
         this.odom.latitude_deg = msg.latitude
         this.odom.longitude_deg = msg.longitude
       }
+
     }
   },
 
