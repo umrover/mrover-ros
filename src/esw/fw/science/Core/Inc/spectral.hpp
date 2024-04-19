@@ -26,9 +26,10 @@ namespace mrover {
         	READ,
 			WRITE
         };
+
         void poll_status_reg(I2C_OP rw);
 
-    	void update_channel_data(); // updates all of the channels
+    	void update_channel_data();
 
     	float get_channel_data(uint8_t channel);
 
@@ -39,7 +40,7 @@ namespace mrover {
         void init();
 
         void virtual_write(uint8_t virtual_reg, uint8_t data);
-        uint8_t virtual_read(uint8_t virtual_reg);// -> std::optional<uint16_t>;
+        uint8_t virtual_read(uint8_t virtual_reg);
 
         constexpr static std::uint16_t SPECTRAL_7b_ADDRESS = 0x49;
         constexpr static std::uint8_t I2C_AS72XX_SLAVE_STATUS_REG = 0x00;
@@ -59,9 +60,6 @@ namespace mrover {
         uint8_t m_i2c_mux_channel;
         constexpr static std::uint8_t CHANNEL_DATA_LENGTH = 6;
         std::array<float, CHANNEL_DATA_LENGTH> channel_data {};
-        // Sensor Raw Data Registers Start, 6 channels, 2 bytes each.
-        // See pg. 22 of datasheet for more info.
-//        constexpr static std::uint8_t CHANNEL_V_HIGH = 0x08;
         // Sensor Calibrated Data Registers Start (p. 23 on datasheet)
         constexpr static std::uint8_t CHANNEL_V_HIGH = 0x08;
         constexpr static std::uint8_t CHANNEL_V_CAL = 0x14;

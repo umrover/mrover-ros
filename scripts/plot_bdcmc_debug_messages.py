@@ -9,6 +9,8 @@ import numpy as np
 import pyqtgraph as pg
 from pyqtgraph.Qt import QtCore
 
+from math import pi
+
 if __name__ == "__main__":
     app = pg.mkQApp()
 
@@ -24,12 +26,12 @@ if __name__ == "__main__":
     # curve3 = plot.plot(pen='r')
 
     plot.enableAutoRange("xy", True)
-    plot.setYRange(0, 1 << 14)
+    plot.setYRange(-pi, pi)
 
     xs = np.zeros(40)
     ys = np.zeros((40, 4))
 
-    with can.interface.Bus(channel="vcan0", interface="socketcan", fd=True) as bus:
+    with can.interface.Bus(channel="can1", interface="socketcan", fd=True) as bus:
 
         def update():
             message = bus.recv()

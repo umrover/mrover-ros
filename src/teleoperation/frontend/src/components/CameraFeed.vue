@@ -53,8 +53,6 @@ export default defineComponent({
       // IK Mode
       IKCam: false,
 
-      // SA/ISH Mode
-      site: 'A',
       quality: 2
     }
   },
@@ -65,42 +63,20 @@ export default defineComponent({
   },
 
   mounted: function () {
-    // this.startStream(this.id)
-    this.$nextTick(() => {
-      const canvas: HTMLCanvasElement = document.getElementById(
-        'stream-' + this.id
-      ) as HTMLCanvasElement
-      const context = canvas.getContext('2d') ?? new CanvasRenderingContext2D()
-      context.fillStyle = 'black'
-      context.fillRect(0, 0, canvas.width, canvas.height)
-    })
+    this.startStream(this.id)
+    // this.$nextTick(() => {
+    //   const canvas: HTMLCanvasElement = document.getElementById(
+    //     'stream-' + this.id
+    //   ) as HTMLCanvasElement
+    //   const context = canvas.getContext('2d') ?? new CanvasRenderingContext2D()
+    //   context.fillStyle = 'black'
+    //   context.fillRect(0, 0, canvas.width, canvas.height)
+    // })
   },
 
   methods: {
     ...mapActions('websocket', ['sendMessage']),
-    downloadScreenshot: function () {
-      const currentdate = new Date()
-      const dateString =
-        currentdate.getMonth() +
-        1 +
-        '-' +
-        currentdate.getDate() +
-        '-' +
-        currentdate.getFullYear() +
-        ' @ ' +
-        currentdate.getHours() +
-        ':' +
-        currentdate.getMinutes() +
-        ':' +
-        currentdate.getSeconds()
-      var link = document.createElement('a')
-      console.log('dateString', dateString)
-      link.download = 'Site_' + this.site + ' ' + dateString + '.png'
-      let canvas = document.getElementById('stream-' + this.id) as HTMLCanvasElement
-      link.href = canvas.toDataURL()
-      link.click()
-      link.remove()
-    },
+
     handleClick: function (event: MouseEvent) {
       if (this.IKCam && this.mission === 'ik') {
         this.sendMessage({ type: 'start_click_ik', data: { x: event.offsetX, y: event.offsetY } })
@@ -114,9 +90,11 @@ export default defineComponent({
         resolution: parseInt(this.quality)
       })
     },
+    
     toggleIKMode: function () {
       this.IKCam = !this.IKCam
     },
+
     startStream(number: Number) {
       // This function is called as a retry when the websocket closes
       // If our component goes away (unmounts) we should stop trying to reconnect

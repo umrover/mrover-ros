@@ -1,1 +1,0 @@
-Spectral[3] spectrals

@@ -1,17 +1,17 @@
 import csv
-from datetime import datetime
 import json
 import os
-import pytz
-from math import copysign
-from math import pi
-from tf.transformations import euler_from_quaternion
 import threading
+from datetime import datetime
+from math import copysign, pi
 
+import pytz
 from channels.generic.websocket import JsonWebsocketConsumer
+
 import rospy
 import tf2_ros
-import cv2
+from backend.models import AutonWaypoint, BasicWaypoint
+from geometry_msgs.msg import Twist, Pose, Point, Quaternion, Vector3
 
 # from cv_bridge import CvBridge
 from mrover.msg import (
@@ -33,31 +33,31 @@ from mrover.msg import (
     HeaterData,
 )
 from mrover.srv import EnableAuton, AdjustMotor, ChangeCameras, CapturePanorama
-from sensor_msgs.msg import NavSatFix, Temperature, RelativeHumidity, Image
+from sensor_msgs.msg import NavSatFix, Temperature, RelativeHumidity
 from std_msgs.msg import String
 from std_srvs.srv import SetBool, Trigger
-from geometry_msgs.msg import Twist, Pose, Point, Quaternion
-
+from tf.transformations import euler_from_quaternion
 from util.SE3 import SE3
-
-from backend.models import AutonWaypoint, BasicWaypoint
-
 
 DEFAULT_ARM_DEADZONE = 0.15
 
 
-# If below threshold, make output zero
-def deadzone(magnitude: float, threshold: float) -> float:
-    temp_mag = abs(magnitude)
-    if temp_mag <= threshold:
-        temp_mag = 0
-    else:
-        temp_mag = (temp_mag - threshold) / (1 - threshold)
-    return copysign(temp_mag, magnitude)
+def deadzone(signal: float, threshold: float) -> float:
+    """
+    Values lower than the threshold will be clipped to zero.
+    Those above will be remapped to [0, 1] linearly.
+    """
+    magnitude = abs(signal)
+    magnitude = 0 if magnitude < threshold else (magnitude - threshold) / (1 - threshold)
+    return copysign(magnitude, signal)
 
 
-def quadratic(val: float) -> float:
-    return copysign(val**2, val)
+def quadratic(signal: float) -> float:
+    """
+    Use to allow more control near low inputs values by squaring the magnitude.
+    For example using a joystick to control drive.
+    """
+    return copysign(signal**2, signal)
 
 
 class GUIConsumer(JsonWebsocketConsumer):
@@ -121,7 +121,8 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.drive_config = rospy.get_param("teleop/drive_controls")
             self.max_wheel_speed = rospy.get_param("rover/max_speed")
             self.wheel_radius = rospy.get_param("wheel/radius")
-            self.max_angular_speed = self.max_wheel_speed / self.wheel_radius
+            self.rover_width = rospy.get_param("rover/width")
+            self.max_angular_speed = self.max_wheel_speed / (self.rover_width / 2)
             self.ra_config = rospy.get_param("teleop/ra_controls")
             self.ik_names = rospy.get_param("teleop/ik_multipliers")
             self.RA_NAMES = rospy.get_param("teleop/ra_names")
@@ -258,9 +259,9 @@ class GUIConsumer(JsonWebsocketConsumer):
         SA_NAMES = ["sa_x", "sa_y", "sa_z", "sampler", "sensor_actuator"]
         RA_NAMES = self.RA_NAMES
         ra_slow_mode = False
-        raw_left_trigger = msg["axes"][self.xbox_mappings["left_trigger"]]
+        raw_left_trigger = msg["buttons"][self.xbox_mappings["left_trigger"]]
         left_trigger = raw_left_trigger if raw_left_trigger > 0 else 0
-        raw_right_trigger = msg["axes"][self.xbox_mappings["right_trigger"]]
+        raw_right_trigger = msg["buttons"][self.xbox_mappings["right_trigger"]]
         right_trigger = raw_right_trigger if raw_right_trigger > 0 else 0
         arm_pubs = [self.arm_position_cmd_pub, self.arm_velocity_cmd_pub, self.arm_throttle_cmd_pub, self.arm_ik_pub]
         sa_pubs = [self.sa_position_cmd_pub, self.sa_velocity_cmd_pub, self.sa_throttle_cmd_pub]
@@ -367,8 +368,6 @@ class GUIConsumer(JsonWebsocketConsumer):
                     * self.filter_xbox_button(msg["buttons"], "right_bumper", "left_bumper")
                 ]
             elif msg["type"] == "arm_values":
-                # print(msg["buttons"])
-
                 # d_pad_x = msg["axes"][self.xbox_mappings["d_pad_x"]]
                 # if d_pad_x > 0.5:
                 #     ra_slow_mode = True
@@ -379,16 +378,10 @@ class GUIConsumer(JsonWebsocketConsumer):
                     self.filter_xbox_axis(msg["axes"][self.ra_config["joint_a"]["xbox_index"]]),
                     self.filter_xbox_axis(msg["axes"][self.ra_config["joint_b"]["xbox_index"]]),
                     self.filter_xbox_axis(msg["axes"][self.ra_config["joint_c"]["xbox_index"]]),
-                    self.filter_xbox_axis(
-                        msg["axes"][self.ra_config["joint_de_pitch"]["xbox_index_right"]]
-                        - msg["axes"][self.ra_config["joint_de_pitch"]["xbox_index_left"]]
-                    ),
-                    self.filter_xbox_axis(
-                        msg["buttons"][self.ra_config["joint_de_roll"]["xbox_index_right"]]
-                        - msg["buttons"][self.ra_config["joint_de_roll"]["xbox_index_left"]]
-                    ),
+                    self.filter_xbox_button(msg["buttons"], "right_trigger", "left_trigger"),
+                    self.filter_xbox_button(msg["buttons"], "left_bumper", "right_bumper"),
                     self.ra_config["allen_key"]["multiplier"] * self.filter_xbox_button(msg["buttons"], "y", "a"),
-                    self.ra_config["gripper"]["multiplier"] * self.filter_xbox_button(msg["buttons"], "b", "x"),
+                    self.ra_config["gripper"]["multiplier"] * self.filter_xbox_button(msg["buttons"], "x", "b"),
                 ]
 
                 for i, name in enumerate(self.RA_NAMES):
@@ -409,8 +402,8 @@ class GUIConsumer(JsonWebsocketConsumer):
                 fast_mode_activated = msg["buttons"][self.xbox_mappings["a"]] or msg["buttons"][self.xbox_mappings["b"]]
                 if not fast_mode_activated:
                     for i, name in enumerate(SA_NAMES):
-                        # When going up (vel > 0) with SA joint 2, we DON'T want slow mode.
-                        if not (name == "sa_y" and throttle_cmd.throttles[i] > 0):
+                        # When going up (vel < 0) with SA joint 2, we DON'T want slow mode.
+                        if not (name == "sa_z" and throttle_cmd.throttles[i] < 0):
                             throttle_cmd.throttles[i] *= self.sa_config[name]["slow_mode_multiplier"]
             publishers[2].publish(throttle_cmd)
 
@@ -418,47 +411,42 @@ class GUIConsumer(JsonWebsocketConsumer):
         # Tiny deadzone so we can safely e-stop with dampen switch
         dampen = deadzone(msg["axes"][self.mappings["dampen"]], 0.01)
 
-        # Makes dampen [0,1] instead of [-1,1]
-        # negative sign required to drive forward by default instead of backward
-        # (-1*dampen) because the top of the dampen switch is -1.0
+        # Makes dampen [0,1] instead of [-1,1].
+        # Negative sign required to drive forward by default instead of backward.
+        # (-1*dampen) because the top of the dampen switch is -1.
         dampen = -1 * ((-1 * dampen) + 1) / 2
 
-        linear = deadzone(
-            msg["axes"][self.mappings["forward_back"]] * self.drive_config["forward_back"]["multiplier"], 0.05
+        def get_axes_input(
+            mapping_name: str, deadzone_threshold: float = 0.05, apply_quadratic: bool = False, scale: float = 1.0
+        ) -> float:
+            signal = msg["axes"][self.mappings[mapping_name]]
+            signal *= self.drive_config[mapping_name]["multiplier"]
+            signal = deadzone(signal, deadzone_threshold)
+            if apply_quadratic:
+                signal = quadratic(signal)
+            signal *= scale
+            return signal
+
+        linear = get_axes_input("forward_back", 0.02, True, self.max_wheel_speed * dampen)
+        # Note(quintin): I prefer using solely the twist axis for turning...
+        # angular_from_lateral = get_axes_input("left_right", 0.4, True)
+        angular = get_axes_input("twist", 0.03, True, self.max_angular_speed * dampen)
+
+        self.twist_pub.publish(
+            Twist(
+                linear=Vector3(x=linear),
+                angular=Vector3(z=angular),
+            )
         )
-
-        # Convert from [0,1] to [0, self_max_wheel_speed] and apply dampen
-        linear *= self.max_wheel_speed * dampen
-
-        # Deadzones for each axis
-        left_right = (
-            deadzone(msg["axes"][self.mappings["left_right"]] * self.drive_config["left_right"]["multiplier"], 0.4)
-            if self.drive_config["left_right"]["enabled"]
-            else 0
-        )
-        twist = quadratic(deadzone(msg["axes"][self.mappings["twist"]] * self.drive_config["twist"]["multiplier"], 0.1))
-
-        angular = twist + left_right
-
-        # Same as linear but for angular speed
-        angular *= self.max_angular_speed * dampen
-        # Clamp if both twist and left_right are used at the same time
-        if abs(angular) > self.max_angular_speed:
-            angular = copysign(self.max_angular_speed, angular)
-        twist_msg = Twist()
-        twist_msg.linear.x = linear
-        twist_msg.angular.z = angular
-
-        self.twist_pub.publish(twist_msg)
 
         self.send(
             text_data=json.dumps(
                 {
                     "type": "joystick",
-                    "left_right": left_right,
+                    "left_right": msg["axes"][self.mappings["left_right"]],
                     "forward_back": msg["axes"][self.mappings["forward_back"]],
-                    "twist": twist,
-                    "dampen": dampen,
+                    "twist": msg["axes"][self.mappings["twist"]],
+                    "dampen": msg["axes"][self.mappings["dampen"]],
                     "pan": msg["axes"][self.mappings["pan"]],
                     "tilt": msg["axes"][self.mappings["tilt"]],
                 }

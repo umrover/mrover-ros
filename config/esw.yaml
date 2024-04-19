@@ -33,22 +33,22 @@ can:
       bus: 3
       id: 0x10
     - name: "front_left"
-      bus: 0
+      bus: 2
       id: 0x12
     - name: "front_right"
-      bus: 0
+      bus: 2
       id: 0x11
     - name: "middle_left"
-      bus: 0
+      bus: 2
       id: 0x14
     - name: "middle_right"
-      bus: 0
+      bus: 2
       id: 0x13
     - name: "back_left"
-      bus: 0
+      bus: 2
       id: 0x16
     - name: "back_right"
-      bus: 0
+      bus: 2
       id: 0x15
     - name: "joint_a"
       bus: 1
@@ -104,36 +104,37 @@ can:
 
 brushless_motors:
   controllers:
+    # TODO(quintin): These units are in terms of the rotor revolutions, not the output shaft.
+    #                At some point we should modify the moteus firmware to set the rotor to output ratio.
     front_left:
-      velocity_multiplier: -1.0
-      min_velocity: -70.0
-      max_velocity: 70.0
+      min_velocity: -20.0
+      max_velocity: 20.0
+      max_torque: 5.0
     front_right:
-      velocity_multiplier: 1.0
-      min_velocity: -70.0
-      max_velocity: 70.0
+      min_velocity: -20.0
+      max_velocity: 20.0
+      max_torque: 5.0
     middle_left:
-      velocity_multiplier: -1.0
-      min_velocity: -70.0
-      max_velocity: 70.0
+      min_velocity: -20.0
+      max_velocity: 20.0
+      max_torque: 5.0
     middle_right:
-      velocity_multiplier: 1.0
-      min_velocity: -70.0
-      max_velocity: 70.0
+      min_velocity: -20.0
+      max_velocity: 20.0
+      max_torque: 5.0
     back_left:
-      velocity_multiplier: -1.0
-      min_velocity: -70.0
-      max_velocity: 70.0
+      min_velocity: -20.0
+      max_velocity: 20.0
+      max_torque: 5.0
     back_right:
-      velocity_multiplier: 1.0
-      min_velocity: -70.0
-      max_velocity: 70.0
+      min_velocity: -20.0
+      max_velocity: 20.0
+      max_torque: 5.0
     joint_a:
-      velocity_multiplier: 1.0
-      min_velocity: -100.0
-      max_velocity: 100.0
-      is_linear: true
-      rad_to_meters_ratio: 1236.8475 # 5.0 = 5 motor radians -> 1 meter
+      # 1236.8475 rad/meter, or 196.850393476 rev/meter, and we want a max vel of 40 meter/s. 
+      # gear ratio is currently at 0.005080 revolutions = 1 meter
+      min_velocity: -0.10  # this means -0.10 meters per second.
+      max_velocity: 0.10
       limit_0_present: true
       limit_1_present: true
       limit_0_enabled: true
@@ -144,32 +145,34 @@ brushless_motors:
       limit_1_is_active_high: false
       limit_0_used_for_readjustment: true
       limit_1_used_for_readjustment: true
-      limit_0_readjust_position: 0.0 # radians TODO
-      limit_1_readjust_position: 494.739 # radians
+      limit_0_readjust_position: 0.4
+      limit_1_readjust_position: 0.0
       limit_max_forward_pos: true
       limit_max_backward_pos: true
       max_forward_pos: 0.4
       max_backward_pos: 0.0
+      max_torque: 20.0
     joint_c:
-      velocity_multiplier: -1.0
-      min_velocity: -3.0 # gear ratio: 484:1
-      max_velocity: 3.0
-      min_position: 0.0
-      max_position: 3.8 # 220 degrees of motion
+      min_velocity: -0.08 # in terms of output
+      max_velocity: 0.08 # max output shaft speed: 5 rpm (for now)
+      min_position: -0.125
+      max_position: 0.30 # 220 degrees of motion is the entire range
+      max_torque: 20.0
     joint_de_0:
-      velocity_multiplier: 1.0
-      min_velocity: -67.0
-      max_velocity: 67.0
+      min_velocity: -5.0
+      max_velocity: 5.0
+      min_position: -10000.0
+      max_position: 10000.0
+      max_torque: 20.0
     joint_de_1:
-      velocity_multiplier: 1.0
-      min_velocity: -67.0
-      max_velocity: 67.0
+      min_velocity: -5.0
+      max_velocity: 5.0
+      min_position: -10000.0
+      max_position: 10000.0
+      max_torque: 20.0
     sa_z:
-      velocity_multiplier: 1.0
-      min_velocity: -100.0
-      max_velocity: 100.0
-      is_linear: true
-      rad_to_meters_ratio: 157.48 #rad/m
+      min_velocity: -0.05
+      max_velocity: 0.05
       limit_0_present: false
       limit_1_present: false
       limit_0_enabled: true
@@ -182,10 +185,7 @@ brushless_motors:
       limit_1_used_for_readjustment: true
       limit_0_readjust_position: 0.0 # radians TODO
       limit_1_readjust_position: 0.0 # radians TODO
-      max_torque: 0.5
-joint_de:
-  pitch_offset: 0.0
-  roll_offset: 0.0
+      max_torque: 30.0
 
 brushed_motors:
   controllers:
@@ -230,16 +230,15 @@ brushed_motors:
     #   max_backward_pos: 0.0
     #   calibration_throttle: 5.0
     joint_b:
-      velocity_multiplier: 1.0
+      is_inverted: False
       gear_ratio: 1.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
       limit_0_present: true
       limit_0_enabled: true
       limit_0_is_active_high: false
       limit_0_limits_fwd: false
-      limit_0_used_for_readjustment: true
+      limit_0_used_for_readjustment: false
       abs_present: true
       abs_is_fwd_polarity: true
-      limit_0_readjust_position: -0.7853981633974483 # radians
       abs_ratio: 1.0 # encoder ratio compared to motor
       abs_offset: 0.0 # 0 for joint position corresponds to this radians reading by absolute encoder
       driver_voltage: 12.0 # used to calculate max pwm
@@ -251,7 +250,6 @@ brushed_motors:
       max_velocity: 1.0
       calibration_throttle: 0.5  # throttle during calibration
     allen_key:
-      velocity_multiplier: 1.0
       gear_ratio: 30.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
       limit_0_present: true
       limit_1_present: true
@@ -270,9 +268,8 @@ brushed_motors:
       quad_ratio: 1.0 # encoder ratio compared to motor
       driver_voltage: 12.0 # used to calculate max pwm
       motor_max_voltage: 12.0 # used to calculate max pwm
-      calibration_throttle: 0.5  # throttle during calibration
+      calibration_throttle: 0.9  # throttle during calibration, does not move unless close to max voltage
     gripper:
-      velocity_multiplier: 1.0
       gear_ratio: 47.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
       quad_present: false
       quad_is_fwd_polarity: true
@@ -283,19 +280,15 @@ brushed_motors:
       motor_max_voltage: 12.0 # used to calculate max pwm
       calibration_throttle: 0.5  # throttle during calibration
     mast_gimbal_y:
-      velocity_multiplier: 1.0
       gear_ratio: 1000.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
       driver_voltage: 12.0 # used to calculate max pwm
       motor_max_voltage: 12.0 # used to calculate max pwm
     mast_gimbal_z:
-      velocity_multiplier: 1.0
       gear_ratio: 1000.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
       driver_voltage: 12.0 # used to calculate max pwm
       motor_max_voltage: 12.0 # used to calculate max pwm
     sa_x:
-      velocity_multiplier: 1.0
       gear_ratio: 75.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
-      is_linear: true
       rad_to_meters_ratio: 1.0 #TODO 5.0 = 5 motor radians -> 1 meter
       limit_0_present: false
       limit_1_present: false
@@ -323,12 +316,10 @@ brushed_motors:
       max_velocity: 1.0
       calibration_throttle: 0.5  # throttle during calibration
     sa_y:
-      velocity_multiplier: -1.0
       gear_ratio: 75.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
-      is_linear: true
       rad_to_meters_ratio: 1.0 #TODO 5.0 = 5 motor radians -> 1 meter
-      limit_0_present: false
-      limit_1_present: false
+      limit_0_present: true
+      limit_1_present: true
       limit_0_enabled: true
       limit_1_enabled: true
       limit_0_is_active_high: false
@@ -349,7 +340,6 @@ brushed_motors:
       calibration_throttle: 0.5  # throttle during calibration
     sampler:
       gear_ratio: 75.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
-      is_linear: true
       rad_to_meters_ratio: 1.0 #TODO 5.0 = 5 motor radians -> 1 meter
       limit_0_present: false
       limit_1_present: false
@@ -370,7 +360,6 @@ brushed_motors:
       motor_max_voltage: 6.0 # used to calculate max pwm
       calibration_throttle: 0.5  # throttle during calibration
     sensor_actuator:
-      velocity_multiplier: 1.0
       gear_ratio: 1.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
       limit_0_present: false
       limit_1_present: false
@@ -387,7 +376,6 @@ brushed_motors:
       driver_voltage: 12.0 # used to calculate max pwm
       motor_max_voltage: 6.0 # used to calculate max pwm
     cache:
-      velocity_multiplier: 1.0
       gear_ratio: 1.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
       limit_0_present: false
       limit_1_present: false
@@ -529,7 +517,7 @@ cameras:
 rover:
   length: 0.86
   width: 0.86
-  max_speed: 2.0
+  max_speed: 1.25
 
 wheel:
   gear_ratio: 50.0
@@ -549,24 +537,25 @@ motors_group:
     - "mast_gimbal_z"
   cache:
     - "cache_motor"
-  sa_hw:
+  sa:
     - "sa_x"
     - "sa_y"
     - "sa_z"
     - "sampler"
     - "sensor_actuator"
-  drive:
+  drive_left:
     - "front_left"
-    - "front_right"
     - "middle_left"
-    - "middle_right"
     - "back_left"
+  drive_right:
+    - "front_right"
+    - "middle_right"
     - "back_right"
 
 motors:
   controllers:
     joint_a:
-      type: "brushless"
+      type: "brushless_linear"
     joint_b:
       type: "brushed"
     joint_c:

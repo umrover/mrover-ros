@@ -34,7 +34,7 @@ jobs:
         if: github.event.pull_request.draft == false && github.event.pull_request.base.ref != 'refs/heads/master'
         run: . /opt/ros/noetic/setup.sh && . /home/mrover/catkin_ws/src/mrover/venv/bin/activate && catkin build
       - name: Build With Clang Tidy
-        if : github.event_name == 'push' && github.event.pull_request.base.ref == 'refs/heads/master'
+        if: github.event_name == 'push' && github.event.pull_request.base.ref == 'refs/heads/master'
         run: . /opt/ros/noetic/setup.sh && . /home/mrover/catkin_ws/src/mrover/venv/bin/activate && catkin build -DCMAKE_CXX_CLANG_TIDY=clang-tidy-16
       - name: Test
         if: github.event.pull_request.draft == false

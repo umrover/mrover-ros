@@ -57,6 +57,7 @@ namespace mrover {
         std::optional<Radians> m_uncalib_position;
         std::optional<RadiansPerSecond> m_velocity;
         BDCMCErrorInfo m_error = BDCMCErrorInfo::DEFAULT_START_UP_NOT_CONFIGURED;
+        std::size_t m_missed_absolute_encoder_reads{0};
 
         struct StateAfterConfig {
             Dimensionless gear_ratio;
@@ -94,8 +95,8 @@ namespace mrover {
                 m_uncalib_position = position;
                 m_velocity = velocity;
             } else {
-                m_uncalib_position = std::nullopt;
-                m_velocity = std::nullopt;
+                m_uncalib_position.reset();
+                m_velocity.reset();
             }
         }
 
@@ -172,15 +173,14 @@ namespace mrover {
             StateAfterConfig config{.gear_ratio = message.gear_ratio};
 
             if (message.enc_info.quad_present) {
-                Ratio multiplier = (message.enc_info.quad_is_forward_polarity ? 1 : -1) * message.enc_info.quad_ratio;
-                if (!m_relative_encoder) m_relative_encoder.emplace(m_encoder_timer, multiplier, m_encoder_elapsed_timer);
+                if (!m_relative_encoder) m_relative_encoder.emplace(m_encoder_timer, message.enc_info.quad_ratio, m_encoder_elapsed_timer);
             }
             if (message.enc_info.abs_present) {
-                Ratio multiplier = (message.enc_info.abs_is_forward_polarity ? 1 : -1) * message.enc_info.abs_ratio;
-                if (!m_absolute_encoder) m_absolute_encoder.emplace(AbsoluteEncoderReader::AS5048B_Bus{m_absolute_encoder_i2c}, message.enc_info.abs_offset, multiplier, m_encoder_elapsed_timer);
+                if (!m_absolute_encoder) m_absolute_encoder.emplace(AbsoluteEncoderReader::AS5048B_Bus{m_absolute_encoder_i2c}, message.enc_info.abs_offset, message.enc_info.abs_ratio, m_encoder_elapsed_timer);
             }
 
             m_motor_driver.change_max_pwm(message.max_pwm);
+            m_motor_driver.change_inverted(message.is_inverted);
 
             config.min_position = message.min_position;
             config.max_position = message.max_position;
@@ -248,10 +248,10 @@ namespace mrover {
             m_desired_output = mode.pidf.calculate(input, target, cycle_time(m_pidf_timer, CLOCK_FREQ));
             m_error = BDCMCErrorInfo::NO_ERROR;
 
-            m_fdcan.broadcast(OutBoundMessage{DebugState{
-                    .f1 = m_velocity.value().get(),
-                    .f2 = message.velocity.get(),
-            }});
+            // m_fdcan.broadcast(OutBoundMessage{DebugState{
+            //         .f1 = m_velocity.value().get(),
+            //         .f2 = message.velocity.get(),
+            // }});
         }
 
         auto process_command(PositionCommand const& message, PositionMode& mode) -> void {
@@ -455,10 +455,17 @@ namespace mrover {
             update();
         }
 
+        // Max hits before we remove the calibration state
+        constexpr static std::size_t MAX_MISSED_ABSOLUTE_ENCODER_READS = 32;
+
         auto request_absolute_encoder_data() -> void {
             // Only read the encoder if we are configured
             if (m_absolute_encoder) {
                 m_absolute_encoder->request_raw_angle();
+                // TODO(quintin): No magic numbers
+                if (m_missed_absolute_encoder_reads++ > MAX_MISSED_ABSOLUTE_ENCODER_READS) {
+                    m_state_after_calib.reset();
+                }
             }
         }
 
@@ -468,6 +475,9 @@ namespace mrover {
             }
         }
 
+        /**
+         * Called after a successful I2C transaction
+         */
         auto update_absolute_encoder() -> void {
             if (!m_absolute_encoder) return;
 
@@ -475,18 +485,20 @@ namespace mrover {
                 auto const& [position, velocity] = reading.value();
                 if (!m_state_after_calib) m_state_after_calib.emplace();
 
+                m_missed_absolute_encoder_reads = 0;
+
                 // TODO(quintin): This is pretty stupid
                 m_state_after_calib->offset_position = -position;
 
-                m_fdcan.broadcast(OutBoundMessage{DebugState{
-                        .f1 = position.get(),
-                }});
+                // m_fdcan.broadcast(OutBoundMessage{DebugState{
+                //         .f1 = position.get(),
+                // }});
 
                 m_uncalib_position.emplace(); // Reset to zero
                 m_velocity = velocity;
             } else {
-                m_uncalib_position = std::nullopt;
-                m_velocity = std::nullopt;
+                m_uncalib_position.reset();
+                m_velocity.reset();
             }
         }
     };
