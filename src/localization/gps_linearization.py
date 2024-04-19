@@ -15,6 +15,7 @@ from tf.transformations import *
 
 import time
 
+
 class GPSLinearization:
     """
     This node subscribes to GPS and IMU data, linearizes the GPS data
@@ -44,18 +45,17 @@ class GPSLinearization:
 
     gps_timer: threading.Timer
     imu_timer: threading.Timer
-    
+
     # subscribers and publishers
-    left_gps_sub : message_filters.Subscriber
-    right_gps_sub : message_filters.Subscriber
+    left_gps_sub: message_filters.Subscriber
+    right_gps_sub: message_filters.Subscriber
     sync_gps_sub: message_filters.ApproximateTimeSynchronizer
     imu_sub: rospy.Subscriber
     pose_publisher: rospy.Publisher
-    
+
     # covariance config
     use_dop_covariance: bool
     config_gps_covariance: np.ndarray
-
 
     # timeout callbacks, if both gps and imu fail kill node
     def gps_timeout(self):
@@ -64,9 +64,9 @@ class GPSLinearization:
 
         if self.imu_has_timeout == True:
             rospy.signal_shutdown("Both IMU and GPS have timed out")
-            
+
         return
-    
+
     def imu_timeout(self):
         rospy.loginfo("IMU has timed out")
         self.imu_has_timeout = True
@@ -77,7 +77,6 @@ class GPSLinearization:
         return
 
     def __init__(self):
-
         # read required parameters, if they don't exist an error will be thrown
         self.ref_lat = rospy.get_param("gps_linearization/reference_point_latitude")
         self.ref_lon = rospy.get_param("gps_linearization/reference_point_longitude")
@@ -102,7 +101,9 @@ class GPSLinearization:
         self.imu_sub = rospy.Subscriber("imu/data", ImuAndMag, self.imu_callback)
 
         # sync subscribers, callbacks
-        self.sync_gps_sub = message_filters.ApproximateTimeSynchronizer([self.right_gps_sub, self.left_gps_sub], 10, 0.5)
+        self.sync_gps_sub = message_filters.ApproximateTimeSynchronizer(
+            [self.right_gps_sub, self.left_gps_sub], 10, 0.5
+        )
         self.sync_gps_sub.registerCallback(self.gps_callback)
         self.left_gps_sub.registerCallback(self.left_gps_callback)
         self.right_gps_sub.registerCallback(self.right_gps_callback)
@@ -115,24 +116,32 @@ class GPSLinearization:
         self.gps_timeout_interval = self.imu_timeout_interval = 5
         self.gps_timer = threading.Timer(self.gps_timeout_interval, self.gps_timeout)
         self.imu_timer = threading.Timer(self.imu_timeout_interval, self.imu_timeout)
-    
+
     def right_gps_callback(self, right_gps_msg: RTKNavSatFix):
         # use right gps only when combined gps fails
-        if (self.gps_has_timeout == False):
+        if self.gps_has_timeout == False:
             return
 
-        if np.any(np.isnan([right_gps_msg.coord.latitude, right_gps_msg.coord.longitude, right_gps_msg.coord.altitude])):
+        if np.any(
+            np.isnan([right_gps_msg.coord.latitude, right_gps_msg.coord.longitude, right_gps_msg.coord.altitude])
+        ):
             return
-        
+
         ref_coord = np.array([self.ref_lat, self.ref_lon, self.ref_alt])
 
         right_cartesian = np.array(
-            geodetic2enu(right_gps_msg.coord.latitude, right_gps_msg.coord.longitude, right_gps_msg.coord.altitude, *ref_coord, deg=True)
+            geodetic2enu(
+                right_gps_msg.coord.latitude,
+                right_gps_msg.coord.longitude,
+                right_gps_msg.coord.altitude,
+                *ref_coord,
+                deg=True,
+            )
         )
 
         pose = SE3(right_cartesian, SO3(np.array([0, 0, 0, 1])))
 
-        if (self.last_imu_orientation is not None):
+        if self.last_imu_orientation is not None:
             imu_quat = self.last_imu_orientation
             gps_quat = quaternion_multiply(self.rtk_offset, imu_quat)
             pose = SE3(pose.position, SO3(gps_quat))
@@ -158,25 +167,30 @@ class GPSLinearization:
         # publish pose (right gps only)
         self.pose_publisher.publish(pose_msg)
 
-
     def left_gps_callback(self, left_gps_msg: RTKNavSatFix):
         # use left gps only when combined gps fails
-        if (self.gps_has_timeout == False):
+        if self.gps_has_timeout == False:
             return
-        
+
         if np.any(np.isnan([left_gps_msg.coord.latitude, left_gps_msg.coord.longitude, left_gps_msg.coord.altitude])):
             return
-        
+
         ref_coord = np.array([self.ref_lat, self.ref_lon, self.ref_alt])
 
         left_cartesian = np.array(
-            geodetic2enu(left_gps_msg.coord.latitude, left_gps_msg.coord.longitude, left_gps_msg.coord.altitude, *ref_coord, deg=True)
+            geodetic2enu(
+                left_gps_msg.coord.latitude,
+                left_gps_msg.coord.longitude,
+                left_gps_msg.coord.altitude,
+                *ref_coord,
+                deg=True,
+            )
         )
 
         pose = SE3(left_cartesian, SO3(np.array([0, 0, 0, 1])))
 
         # use imu for orientation
-        if (self.last_imu_orientation is not None):
+        if self.last_imu_orientation is not None:
             imu_quat = self.last_imu_orientation
             gps_quat = quaternion_multiply(self.rtk_offset, imu_quat)
             pose = SE3(pose.position, SO3(gps_quat))
@@ -201,13 +215,8 @@ class GPSLinearization:
 
         # publish pose (left gps only)
         self.pose_publisher.publish(pose_msg)
-    
-    
-    def gps_callback(
-        self,
-        right_gps_msg: RTKNavSatFix,
-        left_gps_msg: RTKNavSatFix
-    ):
+
+    def gps_callback(self, right_gps_msg: RTKNavSatFix, left_gps_msg: RTKNavSatFix):
         """
         Callback function that receives GPS messages, assigns their covariance matrix,
         and then publishes the linearized pose.
@@ -222,8 +231,10 @@ class GPSLinearization:
         self.gps_timer.cancel()
         self.gps_timer = threading.Timer(self.gps_timeout_interval, self.gps_timeout)
         self.gps_timer.start()
-        
-        if np.any(np.isnan([right_gps_msg.coord.latitude, right_gps_msg.coord.longitude, right_gps_msg.coord.altitude])):
+
+        if np.any(
+            np.isnan([right_gps_msg.coord.latitude, right_gps_msg.coord.longitude, right_gps_msg.coord.altitude])
+        ):
             return
         if np.any(np.isnan([left_gps_msg.coord.latitude, left_gps_msg.coord.longitude, left_gps_msg.coord.altitude])):
             return
@@ -231,20 +242,32 @@ class GPSLinearization:
         ref_coord = np.array([self.ref_lat, self.ref_lon, self.ref_alt])
 
         right_cartesian = np.array(
-            geodetic2enu(right_gps_msg.coord.latitude, right_gps_msg.coord.longitude, right_gps_msg.coord.altitude, *ref_coord, deg=True)
+            geodetic2enu(
+                right_gps_msg.coord.latitude,
+                right_gps_msg.coord.longitude,
+                right_gps_msg.coord.altitude,
+                *ref_coord,
+                deg=True,
+            )
         )
         left_cartesian = np.array(
-            geodetic2enu(left_gps_msg.coord.latitude, left_gps_msg.coord.longitude, left_gps_msg.coord.altitude, *ref_coord, deg=True)
+            geodetic2enu(
+                left_gps_msg.coord.latitude,
+                left_gps_msg.coord.longitude,
+                left_gps_msg.coord.altitude,
+                *ref_coord,
+                deg=True,
+            )
         )
 
         pose = GPSLinearization.compute_gps_pose(right_cartesian=right_cartesian, left_cartesian=left_cartesian)
 
         # if imu has not timed out, use imu roll and pitch, calculate offset if fix status is RTK_FIX
-        if (self.imu_has_timeout == False and self.last_imu_orientation is not None):
+        if self.imu_has_timeout == False and self.last_imu_orientation is not None:
             imu_quat = self.last_imu_orientation
             gps_quat = pose.rotation.quaternion
 
-            if (right_gps_msg.fix_type == RTKNavSatFix.RTK_FIX and left_gps_msg.fix_type == RTKNavSatFix.RTK_FIX):
+            if right_gps_msg.fix_type == RTKNavSatFix.RTK_FIX and left_gps_msg.fix_type == RTKNavSatFix.RTK_FIX:
                 imu_yaw_quat = quaternion_from_euler(0, 0, euler_from_quaternion(imu_quat)[2], "sxyz")
                 gps_yaw_quat = quaternion_from_euler(0, 0, euler_from_quaternion(gps_quat)[2], "sxyz")
                 self.rtk_offset = quaternion_multiply(gps_yaw_quat, quaternion_conjugate(imu_yaw_quat))
@@ -269,7 +292,7 @@ class GPSLinearization:
                 covariance=covariance_matrix.flatten().tolist(),
             ),
         )
-        
+
         # publish pose (rtk)
         self.pose_publisher.publish(pose_msg)
 
@@ -279,9 +302,9 @@ class GPSLinearization:
 
         :param msg: The Imu message containing IMU data that was just received
         """
-        
+
         self.imu_has_timeout = False
-        
+
         # set imu timer
         self.imu_timer.cancel()
         self.imu_timer = threading.Timer(self.imu_timeout_interval, self.imu_timeout)
@@ -289,11 +312,11 @@ class GPSLinearization:
 
         if self.last_gps_pose is None:
             return
-        
+
         # imu quaternion
         imu_quat = numpify(msg.imu.orientation)
         self.last_imu_orientation = imu_quat
-        
+
         imu_quat = quaternion_multiply(self.rtk_offset, imu_quat)
 
         covariance_matrix = np.zeros((6, 6))

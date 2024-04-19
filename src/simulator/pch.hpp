@@ -81,6 +81,6 @@
 #include <mrover/ImuAndMag.h>
 #include <mrover/MotorsStatus.h>
 #include <mrover/Position.h>
+#include <mrover/RTKNavSatFix.h>
 #include <mrover/Throttle.h>
 #include <mrover/Velocity.h>
-#include <mrover/RTKNavSatFix.h>

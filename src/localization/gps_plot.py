@@ -23,21 +23,21 @@ gps_heading = gps_df["gps_heading"]
 
 fig, (ax1, ax2, ax3) = plt.subplots(3, 1)
 
-ax1.plot(l_time, linearized_roll, 'r-', label="linearized")
-ax1.plot(i_time, imu_roll, 'b-', label="imu")
-ax1.plot(g_time, gps_roll, 'g-', label="gps")
+ax1.plot(l_time, linearized_roll, "r-", label="linearized")
+ax1.plot(i_time, imu_roll, "b-", label="imu")
+ax1.plot(g_time, gps_roll, "g-", label="gps")
 ax1.legend(loc="best")
 ax1.set_title("Roll")
 
-ax2.plot(l_time, linearized_pitch, 'r-', label="linearized")
-ax2.plot(i_time, imu_pitch, 'b-', label="imu")
-ax2.plot(g_time, gps_pitch, 'g-', label="gps")
+ax2.plot(l_time, linearized_pitch, "r-", label="linearized")
+ax2.plot(i_time, imu_pitch, "b-", label="imu")
+ax2.plot(g_time, gps_pitch, "g-", label="gps")
 ax2.legend(loc="best")
 ax2.set_title("Pitch")
 
-ax3.plot(l_time, linearized_heading, 'r-', label="linearized")
-ax3.plot(i_time, imu_heading, 'b-', label="imu")
-ax3.plot(g_time, gps_heading, 'g-', label="gps")
+ax3.plot(l_time, linearized_heading, "r-", label="linearized")
+ax3.plot(i_time, imu_heading, "b-", label="imu")
+ax3.plot(g_time, gps_heading, "g-", label="gps")
 ax3.legend(loc="best")
 ax3.set_title("Heading")
 

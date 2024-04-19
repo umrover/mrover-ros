@@ -181,7 +181,7 @@ namespace mrover {
                 R3 leftGpsNoise{mGPSDist(mRNG), mGPSDist(mRNG), mGPSDist(mRNG)},
                         rightGpsNoise{mGPSDist(mRNG), mGPSDist(mRNG), mGPSDist(mRNG)};
                 leftGpsInMap += leftGpsNoise;
-                rightGpsInMap += rightGpsNoise; 
+                rightGpsInMap += rightGpsNoise;
 
                 RTKNavSatFix leftGpsMsg;
                 RTKNavSatFix rightGpsMsg;
@@ -192,12 +192,10 @@ namespace mrover {
                 if (mRTkFixFreq(mRNG) == 1) {
                     leftGpsMsg.fix_type = RTKNavSatFix::RTK_FIX;
                     rightGpsMsg.fix_type = RTKNavSatFix::RTK_FIX;
-                }
-                else if (mRTkFixFreq(mRNG) == 2 || mRTkFixFreq(mRNG) == 3) {
+                } else if (mRTkFixFreq(mRNG) == 2 || mRTkFixFreq(mRNG) == 3) {
                     leftGpsMsg.fix_type = RTKNavSatFix::FLOATING_FIX;
                     rightGpsMsg.fix_type = RTKNavSatFix::FLOATING_FIX;
-                }
-                else {
+                } else {
                     leftGpsMsg.fix_type = RTKNavSatFix::NO_FIX;
                     rightGpsMsg.fix_type = RTKNavSatFix::NO_FIX;
                 }
