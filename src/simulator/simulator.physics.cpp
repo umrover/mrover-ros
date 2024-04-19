@@ -2,6 +2,15 @@
 
 namespace mrover {
 
+    // Determines the timestep for the physics update.
+    // Need a relatively high frequency to achive a stable simulation.
+    constexpr unsigned int PHYSICS_UPDATE_HZ = 120;
+    // Set to a very high value, so that if the computer can not keep up the above in realtime, it slows down instead of dropping frames.
+    // In a video game we do not want this behavior but this is robotics so we have to be deterministic.
+    // See: https://stackoverflow.com/questions/12778229/what-does-step-mean-in-stepsimulation-and-what-do-its-parameters-mean-in-bulle
+    // Important formula that needs to hold true to avoid dropping: timeStep < maxSubSteps * fixedTimeStep
+    constexpr int MAX_SUB_STEPS = 1024;
+
     auto btTransformToSe3(btTransform const& transform) -> SE3d {
         btVector3 const& p = transform.getOrigin();
         btQuaternion const& q = transform.getRotation();
@@ -21,8 +30,8 @@ namespace mrover {
 
         mBroadphase = std::make_unique<btDbvtBroadphase>(mOverlappingPairCache.get());
 
-        // mSolver = std::make_unique<btMultiBodyMLCPConstraintSolver>(new btDantzigSolver{});
-        mSolver = std::make_unique<btMultiBodyConstraintSolver>();
+        mSolver = std::make_unique<btMultiBodyMLCPConstraintSolver>(new btDantzigSolver{});
+        // mSolver = std::make_unique<btMultiBodyConstraintSolver>();
 
         mDynamicsWorld = std::make_unique<btMultiBodyDynamicsWorld>(mDispatcher.get(), mBroadphase.get(), mSolver.get(), mCollisionConfig.get());
         // mDynamicsWorld->getSolverInfo().m_minimumSolverBatchSize = 1;
@@ -44,24 +53,21 @@ namespace mrover {
         }
 
         // TODO(quintin): clean this up
-        int maxSubSteps = 0;
         float updateDuration = std::clamp(std::chrono::duration_cast<std::chrono::duration<float>>(dt).count(), 0.0f, 0.1f);
-        [[maybe_unused]] int simStepCount = mDynamicsWorld->stepSimulation(updateDuration, maxSubSteps, 1 / 120.0f);
+        [[maybe_unused]] int simStepCount = mDynamicsWorld->stepSimulation(updateDuration, MAX_SUB_STEPS, 1 / 120.0f);
 
         // // TODO(quintin): Figure out why this fails
-        // if (auto* mlcpSolver = dynamic_cast<btMLCPSolver*>(mDynamicsWorld->getConstraintSolver())) {
-        //     // if (int fallbackCount = mlcpSolver->getNumFallbacks()) {
-        //     //     NODELET_WARN_STREAM_THROTTLE(1, std::format("MLCP solver failed {} times", fallbackCount));
-        //     // }
-        //     mlcpSolver->setNumFallbacks(0);
-        // }
+        if (auto* mlcpSolver = dynamic_cast<btMLCPSolver*>(mDynamicsWorld->getConstraintSolver())) {
+            if (int fallbackCount = mlcpSolver->getNumFallbacks()) {
+                NODELET_WARN_STREAM_THROTTLE(1, std::format("MLCP solver failed {} times", fallbackCount));
+            }
+            mlcpSolver->setNumFallbacks(0);
+        }
 
-        // if (simStepCount) {
-        //     if (simStepCount > maxSubSteps) {
-        //         int droppedSteps = simStepCount - maxSubSteps;
-        //         NODELET_WARN_STREAM(std::format("Dropped {} simulation steps out of {}", droppedSteps, simStepCount));
-        //     }
-        // }
+        if (!mHeadless && simStepCount && simStepCount > MAX_SUB_STEPS) {
+            int droppedSteps = simStepCount - MAX_SUB_STEPS;
+            NODELET_ERROR_STREAM(std::format("Dropped {} simulation steps out of {}! This should never happen unless you have a literal potatoe of a computer", droppedSteps, simStepCount));
+        }
 
         linksToTfUpdate();
 
