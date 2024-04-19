@@ -612,8 +612,14 @@ class GUIConsumer(JsonWebsocketConsumer):
         if msg.status.status == -1:
             fixed = False
         self.send(
-            text_data=json.dumps(    
-                {"type": "nav_sat_fix", "latitude": msg.latitude, "longitude": msg.longitude, "altitude": msg.altitude, "status": fixed}
+            text_data=json.dumps(
+                {
+                    "type": "nav_sat_fix",
+                    "latitude": msg.latitude,
+                    "longitude": msg.longitude,
+                    "altitude": msg.altitude,
+                    "status": fixed,
+                }
             )
         )
 
@@ -828,7 +834,11 @@ class GUIConsumer(JsonWebsocketConsumer):
         rospy.logerr(msg.status.status)
         if msg.status.status == -1:
             fixed = False
-        self.send(text_data=json.dumps({"type": "drone_waypoint", "latitude": latitude, "longitude": longitude, "status": fixed}))
+        self.send(
+            text_data=json.dumps(
+                {"type": "drone_waypoint", "latitude": latitude, "longitude": longitude, "status": fixed}
+            )
+        )
 
     def download_csv(self, msg):
         username = os.getenv("USERNAME", "-1")
