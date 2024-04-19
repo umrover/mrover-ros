@@ -89,14 +89,8 @@ void HAL_PostInit();
 #define MOTOR_0_DIR_GPIO_Port GPIOB
 #define MOTOR_1_DIR_Pin GPIO_PIN_6
 #define MOTOR_1_DIR_GPIO_Port GPIOC
-#define MOTOR_1_PWM_Pin GPIO_PIN_8
-#define MOTOR_1_PWM_GPIO_Port GPIOA
 #define CAN_STANDBY_Pin GPIO_PIN_15
 #define CAN_STANDBY_GPIO_Port GPIOA
-#define QUAD_0_A_Pin GPIO_PIN_6
-#define QUAD_0_A_GPIO_Port GPIOB
-#define QUAD_0_B_Pin GPIO_PIN_7
-#define QUAD_0_B_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 

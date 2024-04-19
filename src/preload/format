@@ -1,9 +1,10 @@
 #pragma once
 
+#ifdef __APPLE__
+
 // macOS does not have std::format yet
 // So we define it and redirect it to fmt::format
 
-#ifdef __APPLE__
 #include <fmt/core.h>
 
 namespace std {
@@ -12,6 +13,9 @@ namespace std {
         return fmt::format(fmt, std::forward<T>(args)...);
     }
 } // namespace std
+
 #else
+
 #include_next <format>
+
 #endif

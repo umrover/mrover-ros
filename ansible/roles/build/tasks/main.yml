@@ -96,6 +96,7 @@
       - libopencv-dev
       - libgstreamer1.0-dev
       - libgstreamer-plugins-base1.0-dev
+      - vainfo
 
 - name: Install Local APT Packages
   become: True
@@ -205,3 +206,8 @@
       - "{{ catkin_workspace }}/src/mrover[dev]"
     virtualenv: "{{ catkin_workspace }}/src/mrover/venv"
     virtualenv_command: /usr/bin/python3.10 -m venv
+
+- name: Install Chromium
+  become: True
+  snap:
+    name: chromium

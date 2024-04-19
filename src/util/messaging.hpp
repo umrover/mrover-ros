@@ -24,9 +24,9 @@ namespace mrover {
     struct ConfigEncoderInfo {
         [[maybe_unused]] std::uint8_t _ignore : 4 {}; // 8 bits - (4 meaningful bits) = 4 ignored bits
         std::uint8_t quad_present : 1 {};
-        std::uint8_t quad_is_forward_polarity : 1 {};
+        std::uint8_t _quad_is_forward_polarity : 1 {};
         std::uint8_t abs_present : 1 {};
-        std::uint8_t abs_is_forward_polarity : 1 {};
+        std::uint8_t _abs_is_forward_polarity : 1 {};
         Ratio quad_ratio;
         Ratio abs_ratio;
         Radians abs_offset;
@@ -65,6 +65,8 @@ namespace mrover {
         ConfigLimitSwitchInfo limit_switch_info;
         ConfigEncoderInfo enc_info;
         Percent max_pwm;
+        [[maybe_unused]] std::uint8_t _ignore : 7 {};
+        std::uint8_t is_inverted : 1 {};
         Radians min_position, max_position;
         RadiansPerSecond min_velocity, max_velocity;
     };
@@ -158,6 +160,10 @@ namespace mrover {
         bool enable_auto_shutoff{};
     };
 
+    struct ConfigThermistorAutoShutOffCommand : BaseCommand {
+        float shutoff_temp{};
+    };
+
     struct HeaterStateInfo {
         [[maybe_unused]] std::uint8_t _ignore : 2 {};
         std::uint8_t on : 6 {};
@@ -183,7 +189,7 @@ namespace mrover {
     };
 
     using InBoundScienceMessage = std::variant<
-            EnableScienceDeviceCommand, HeaterAutoShutOffCommand>;
+            EnableScienceDeviceCommand, HeaterAutoShutOffCommand, ConfigThermistorAutoShutOffCommand>;
 
     using OutBoundScienceMessage = std::variant<
             HeaterStateData, SpectralData, ThermistorData>;

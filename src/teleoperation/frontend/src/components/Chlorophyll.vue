@@ -19,12 +19,12 @@
         <thead>
           <tr class="table-primary">
             <th>Wavelength</th>
-            <th>610nm</th>
-            <th>680nm</th>
-            <th>730nm</th>
-            <th>760nm</th>
-            <th>810nm</th>
-            <th>860nm</th>
+            <th>450nm - V</th>
+            <th>500nm - B</th>
+            <th>550nm - G</th>
+            <th>570nm - Y</th>
+            <th>600nm - O</th>
+            <th>650nm - R</th>
           </tr>
         </thead>
         <tbody>
@@ -49,7 +49,7 @@
 </template>
 
 <script lang="ts">
-import html2canvas from "html2canvas";
+// import html2canvas from "html2canvas";
 import ToggleButton from "./ToggleButton.vue";
 import { mapState, mapActions } from 'vuex'
 
@@ -90,11 +90,13 @@ export default {
 
     toggle_whiteLEDS: function () {
       this.whiteLEDs_active = !this.whiteLEDs_active;
+      if(this.uvLEDs_active && this.whiteLEDs_active) this.toggle_uvLEDS(); 
       this.sendMessage({ type: 'enable_white_leds', data: this.whiteLEDs_active })
     },
 
     toggle_uvLEDS: function () {
       this.uvLEDs_active = !this.uvLEDs_active;
+      if(this.uvLEDs_active && this.whiteLEDs_active) this.toggle_whiteLEDS(); 
       this.sendMessage({ type: 'enable_uv_leds', data: this.uvLEDs_active })
     },
 

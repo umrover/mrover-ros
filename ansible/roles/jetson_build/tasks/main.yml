@@ -23,17 +23,17 @@
     state: latest
     name:
       - zstd # Required to unpack ZED installer
-      - cuda
+      - cuda-12-3
       - nvidia-jetpack
 
 - name: ZED SDK Download
   get_url:
-    url: https://download.stereolabs.com/zedsdk/4.0/l4t35.4/jetsons
-    dest: /tmp/ZED_SDK_Tegra_L4T35.4_v4.0.7.zstd.run
+    url: https://download.stereolabs.com/zedsdk/4.1/l4t35.4/jetsons
+    dest: /tmp/ZED_SDK_Tegra_L4T35.4_v4.1.zstd.run
     mode: 0755
 
 - name: ZED SDK Install
   # Silent mode prevents any user input prompting
-  command: /tmp/Downloads/ZED_SDK_Tegra_L4T35.4_v4.0.7.zstd.run -- silent
+  command: /tmp/Downloads/ZED_SDK_Tegra_L4T35.4_v4.1.zstd.run -- silent
   args:
     creates: /usr/local/zed

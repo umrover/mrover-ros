@@ -5,16 +5,18 @@
 
 #include "heater.hpp"
 
+
+
+
 namespace mrover {
 
-    constexpr static float MAX_HEATER_TEMP = 50.0f;
     constexpr static int MAX_HEATER_WATCHDOG_TICK = 1000;
 
     Heater::Heater(DiagTempSensor const& diag_temp_sensor, Pin const& heater_pin)
     	: m_diag_temp_sensor(std::move(diag_temp_sensor)),
 		  m_heater_pin(std::move(heater_pin)),
 		  m_state(false),
-		  m_auto_shutoff_enabled(true),
+		  m_auto_shutoff_enabled(true),  // TODO - may want to make true if thermistors work
 		  m_last_time_received_message(0)
 	   {}
 
@@ -27,7 +29,7 @@ namespace mrover {
     }
 
     void Heater::enable_if_possible(bool enable) {
-    	if (enable && m_auto_shutoff_enabled && get_temp() >= MAX_HEATER_TEMP) {
+    	if (enable && m_auto_shutoff_enabled && get_temp() >= m_max_heater_temp) {
     		// The only time you don't service the request is if auto_shutoff is enabled
     		// and they want to turn it on when past the heater temp
 			m_state = false;
@@ -43,7 +45,7 @@ namespace mrover {
 
     void Heater::update_temp_and_auto_shutoff_if_applicable() {
     	m_diag_temp_sensor.update_science_temp();
-    	if (m_state && m_auto_shutoff_enabled && (get_temp() >= MAX_HEATER_TEMP)) {
+    	if (m_state && m_auto_shutoff_enabled && (get_temp() >= m_max_heater_temp)) {
 			m_state = false;
 			m_heater_pin.write(GPIO_PIN_RESET);
 		}
@@ -57,6 +59,10 @@ namespace mrover {
 				m_heater_pin.write(GPIO_PIN_RESET);
 			}
     	}
+    }
+
+    void Heater::change_shutoff_temp(float shutoff_temp) {
+    	m_max_heater_temp = shutoff_temp;
     }
 
     void Heater::feed_watchdog() {

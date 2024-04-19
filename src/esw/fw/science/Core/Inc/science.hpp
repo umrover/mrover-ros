@@ -76,6 +76,12 @@ namespace mrover {
         	}
         }
 
+		void feed(ConfigThermistorAutoShutOffCommand const& message) {
+			for (int i = 0; i < 6; ++i) {
+				m_heaters.at(i).change_shutoff_temp(message.shutoff_temp);
+			}
+		}
+
     public:
         Science() = default;
 
@@ -104,7 +110,6 @@ namespace mrover {
         }
 
         void reboot_i2c() {
-        	//m_spectral_sensors.at(0).reboot();
         	m_i2c_bus->reboot();
         }
 
@@ -117,9 +122,7 @@ namespace mrover {
 				spectral_data.error =
 						m_spectral_sensors.at(i).is_error();
 				if (spectral_data.error) {
-
-//					reboot_i2c(); // This causes a crash
-
+//					reboot_i2c(); // Does this still cause crashes? yes
 				}
         		for (int j = 0; j < 6; ++j) {
 					spectral_data.data.at(j) =

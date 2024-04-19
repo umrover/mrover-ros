@@ -14,10 +14,10 @@ namespace mrover {
     		current_channel = go_to_channel;
     	}
     	else{
+			// Reset mux. Disables all downstream I2C Channels
     		m_reset_pin.write(GPIO_PIN_RESET);
     		osDelay(50);
     		m_reset_pin.write(GPIO_PIN_SET);
-    		// Error handling
     	}
     }
 } // namespace mrover

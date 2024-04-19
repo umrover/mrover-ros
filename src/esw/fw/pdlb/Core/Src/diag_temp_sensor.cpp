@@ -5,6 +5,8 @@
 
 #include <diag_temp_sensor.hpp>
 
+// TMP6431DECR
+
 namespace mrover {
 
     constexpr static float DIAG_TEMP_COEFFICIENT = 0.0064f;
@@ -23,6 +25,7 @@ namespace mrover {
     void DiagTempSensor::update_temp() {
     	uint16_t adc_val = m_adc_sensor->get_raw_channel_value(m_channel);
     	float measured_volts = (adc_val * 3.3f) / 4096.0f;
+
     	m_temp = (THRM_A4 * powf(measured_volts,4)) + (THRM_A3 * powf(measured_volts,3)) + (THRM_A2 * powf(measured_volts,2)) + (THRM_A1 *  measured_volts) + THRM_A0;
     }
 
