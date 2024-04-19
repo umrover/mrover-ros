@@ -40,11 +40,16 @@ namespace mrover {
         mConfigCommand.limit_switch_info.limit_max_forward_position = xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, "limit_max_forward_pos", false);
         mConfigCommand.limit_switch_info.limit_max_backward_position = xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, "limit_max_backward_pos", false);
 
-        mConfigCommand.min_position = Radians{xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "min_position", -std::numeric_limits<double>::infinity())};
-        mConfigCommand.max_position = Radians{xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "max_position", std::numeric_limits<double>::infinity())};
+        mMinPosition = Radians{xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "min_position", -std::numeric_limits<double>::infinity())};
+        mMaxPosition = Radians{xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "max_position", std::numeric_limits<double>::infinity())};
 
-        mConfigCommand.min_velocity = RadiansPerSecond{xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "min_velocity", -std::numeric_limits<double>::infinity())};
-        mConfigCommand.max_velocity = RadiansPerSecond{xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "max_velocity", std::numeric_limits<double>::infinity())};
+        mConfigCommand.min_position = mMinPosition;
+        mConfigCommand.max_position = mMaxPosition;
+
+        mMinVelocity = RadiansPerSecond{xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "min_velocity", -std::numeric_limits<double>::infinity())};
+        mMaxVelocity = RadiansPerSecond{xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "max_velocity", std::numeric_limits<double>::infinity())};
+        mConfigCommand.min_velocity = mMinVelocity;
+        mConfigCommand.max_velocity = mMaxVelocity;
 
         mPositionGains.p = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "position_p", 0.0);
         mPositionGains.i = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "position_i", 0.0);
@@ -80,8 +85,8 @@ namespace mrover {
             sendConfiguration();
             return;
         }
-
-        assert(position >= mConfigCommand.min_position && position <= mConfigCommand.max_position);
+        // TODO: Ask if perhaps changing this to a clamp.
+        assert(position >= mMinPosition && position <= mMaxPosition);
 
         mDevice.publish_message(InBoundMessage{PositionCommand{
                 .position = position,
@@ -97,7 +102,7 @@ namespace mrover {
             return;
         }
 
-        assert(velocity >= mConfigCommand.min_velocity && velocity <= mConfigCommand.max_velocity);
+        assert(velocity >= mMinVelocity && velocity <= mMaxVelocity);
 
         mDevice.publish_message(InBoundMessage{VelocityCommand{
                 .velocity = velocity,
@@ -120,7 +125,7 @@ namespace mrover {
             return;
         }
 
-        assert(position >= mConfigCommand.min_position && position <= mConfigCommand.max_position);
+        assert(position >= mMinPosition && position <= mMaxPosition);
 
         mDevice.publish_message(InBoundMessage{AdjustCommand{.position = position}});
     }
@@ -155,7 +160,7 @@ namespace mrover {
 
     auto BrushedController::getEffort() -> double {
         return std::numeric_limits<double>::quiet_NaN();
-    }
+    } 
 
     auto BrushedController::errorToString(BDCMCErrorInfo errorCode) -> std::string {
         switch (errorCode) {

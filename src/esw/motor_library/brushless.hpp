@@ -73,6 +73,10 @@ namespace mrover {
         using Base::mMasterName;
         using Base::mNh;
         using Base::mState;
+        using Base::mMinPosition;
+        using Base::mMaxPosition;
+        using Base::mMinVelocity;
+        using Base::mMaxVelocity;
 
     public:
         BrushlessController(ros::NodeHandle const& nh, std::string masterName, std::string controllerName)
@@ -156,7 +160,6 @@ namespace mrover {
                 }
             }
 
-            position = std::clamp(position, mMinPosition, mMaxPosition);
 
             moteus::PositionMode::Command command{
                     .position = position.get(),
@@ -311,8 +314,6 @@ namespace mrover {
 
         std::int8_t mMoteusAux1Info{}, mMoteusAux2Info{};
 
-        OutputPosition mMinPosition, mMaxPosition;
-        OutputVelocity mMinVelocity, mMaxVelocity;
         double mCurrentEffort{std::numeric_limits<double>::quiet_NaN()};
 
         [[nodiscard]] auto mapThrottleToVelocity(Percent throttle) const -> OutputVelocity {

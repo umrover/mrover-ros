@@ -17,6 +17,12 @@ namespace mrover {
 
     // For now only revolute joints are supported => hardcode to Radians
     class BrushedController final : public ControllerBase<Radians, BrushedController> {
+        using Base = ControllerBase<Radians, BrushedController>;
+        using Base::mMinPosition;
+        using Base::mMaxPosition;
+        using Base::mMinVelocity;
+        using Base::mMaxVelocity;
+
     public:
         BrushedController(ros::NodeHandle const& nh, std::string masterName, std::string controllerName);
 

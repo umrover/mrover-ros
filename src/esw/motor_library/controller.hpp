@@ -1,5 +1,4 @@
 #pragma once
-
 #include <string>
 
 #include <ros/ros.h>
@@ -40,7 +39,8 @@ namespace mrover {
               mJointDataPub{mNh.advertise<sensor_msgs::JointState>(std::format("{}_joint_data", mControllerName), 1)},
               mControllerDataPub{mNh.advertise<ControllerState>(std::format("{}_controller_data", mControllerName), 1)},
               mPublishDataTimer{mNh.createTimer(ros::Duration{0.1}, &ControllerBase::publishDataCallback, this)},
-              mAdjustServer{mNh.advertiseService(std::format("{}_adjust", mControllerName), &ControllerBase::adjustServiceCallback, this)} {
+              mAdjustServer{mNh.advertiseService(std::format("{}_adjust", mControllerName), &ControllerBase::adjustServiceCallback, this)},
+              limitSwitchCheckTimer{nh.createTimer(ros::Duration(0.1), &ControllerBase::limitSwitchCheckCallback)} {
         }
 
         ControllerBase(ControllerBase const&) = delete;
@@ -84,6 +84,7 @@ namespace mrover {
             // ROS message will always be in SI units with no conversions
             using Position = typename detail::strip_conversion<OutputPosition>::type;
             OutputPosition position = Position{msg->positions.front()};
+            position = std::clamp(position, mMinPosition, mMaxPosition);
             static_cast<Derived*>(this)->setDesiredPosition(position);
         }
 
@@ -133,6 +134,25 @@ namespace mrover {
             return true;
         }
 
+        void limitSwitchCheckCallback(ros::TimerEvent const&) {
+            auto motorRange = abs(mMinPosition - mMaxPosition);
+            auto withinLimitSwitchDistance = 0.1 * motorRange;
+
+            if ((mCurrentPosition - mMinPosition < withinLimitSwitchDistance 
+                    && mCurrentVelocity < 0) ||
+                (mMaxPosition - mCurrentPosition < withinLimitSwitchDistance 
+                    && mCurrentVelocity > 0)) {
+                    if (!haveSetLowerSpeed){
+                        setDesiredVelocity(0.1*mCurrentVelocity);
+                        haveSetLowerSpeed = true;
+                    }
+                } 
+            else {
+                haveSetLowerSpeed = false;
+            }
+            
+        }
+
     protected:
         ros::NodeHandle mNh;
         std::string mMasterName, mControllerName;
@@ -146,6 +166,8 @@ namespace mrover {
         std::string mErrorState;
         std::string mState;
         std::array<bool, 4> mLimitHit{};
+        OutputPosition mMinPosition{}, mMaxPosition{};
+        OutputVelocity mMinVelocity{}, mMaxVelocity{};
 
         ros::Subscriber mMoveThrottleSub;
         ros::Subscriber mMoveVelocitySub;
@@ -154,8 +176,10 @@ namespace mrover {
         ros::Publisher mJointDataPub;
         ros::Publisher mControllerDataPub;
         ros::Timer mPublishDataTimer;
+        ros::Timer limitSwitchCheckTimer;
 
         ros::ServiceServer mAdjustServer;
+        bool haveSetLowerSpeed;
     };
 
 } // namespace mrover
