@@ -13,7 +13,6 @@ auto armLaserCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Respon
 }
 
 auto main(int argc, char** argv) -> int {
-    // Initialize the ROS node
     ros::init(argc, argv, "arm_hw_bridge");
     ros::NodeHandle nh;
 
@@ -23,7 +22,6 @@ auto main(int argc, char** argv) -> int {
 
     ros::ServiceServer armLaserService = nh.advertiseService("enable_arm_laser", armLaserCallback);
 
-    // Enter the ROS event loop
     ros::spin();
 
     return EXIT_SUCCESS;

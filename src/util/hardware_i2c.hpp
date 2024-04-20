@@ -39,8 +39,8 @@ namespace mrover {
             // TODO(quintin): Error handling? Shouldn't this return an optional
             if (TReceive receive{}; HAL_I2C_Master_Receive(m_i2c, address << 1 | 1, address_of<std::uint8_t>(receive), sizeof(receive), I2C_TIMEOUT) != HAL_OK) {
                 return std::nullopt;
-            } else{
-            	return receive;
+            } else {
+                return receive;
             }
         }
 

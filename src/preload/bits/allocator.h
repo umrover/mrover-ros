@@ -6,7 +6,7 @@
 // C++ should have never broke this backwards compatibility!
 // How silly!
 
-#if defined(__linux__) && defined(__GNUC__)
+#if defined(__linux__) && defined(__GNUC__) && (__GNUC__ == 13)
 
 // Allocators -*- C++ -*-
 
@@ -284,5 +284,9 @@ namespace std _GLIBCXX_VISIBILITY(default) {
 } // namespace std _GLIBCXX_VISIBILITY(default)
 
 #endif
+
+#else
+
+#include_next <bits/allocator.h>
 
 #endif
