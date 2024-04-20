@@ -74,14 +74,23 @@ teleop:
     left_js_y: 1
     right_js_x: 2
     right_js_y: 3
-    left_trigger: 6
-    right_trigger: 7
     a: 0
     b: 1
     x: 2
     y: 3
     left_bumper: 4
     right_bumper: 5
+    left_trigger: 6
+    right_trigger: 7
+    back: 8
+    forward: 9
+    left_stick_click: 10
+    right_stick_click: 11
+    dpad_up: 12
+    dpad_down: 13
+    dpad_left: 14
+    dpad_right: 15
+    home: 16
 
   joystick_mappings:
     left_right: 0

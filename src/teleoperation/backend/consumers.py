@@ -13,8 +13,12 @@ import tf2_ros
 from backend.models import AutonWaypoint, BasicWaypoint
 from geometry_msgs.msg import Twist, Pose, Point, Quaternion, Vector3, PoseStamped
 
+import actionlib
+
 # from cv_bridge import CvBridge
 from mrover.msg import (
+    ArmActionAction,
+    ArmActionGoal,
     PDLB,
     ControllerState,
     GPSWaypoint,
@@ -381,17 +385,26 @@ class GUIConsumer(JsonWebsocketConsumer):
         elif msg["type"] == "cache_values":
             names = ["cache"]
 
-        if msg["arm_mode"] == "ik":
-            self.publish_ik(msg["axes"], msg["buttons"])
+        if msg["buttons"][self.xbox_mappings["home"]] > 0.5:
+            client = actionlib.SimpleActionClient("arm_action", ArmActionAction)
+            client.wait_for_server()
 
-        elif msg["arm_mode"] == "position":
-            self.publish_position(type=msg["type"], names=names, positions=msg["positions"])
+            goal = ArmActionGoal(name="de_home")
+            client.send_goal(goal)
 
-        elif msg["arm_mode"] == "velocity":
-            self.publish_velocity(type=msg["type"], names=names, axes=msg["axes"], buttons=msg["buttons"])
+            client.wait_for_result()
+        else:
+            if msg["arm_mode"] == "ik":
+                self.publish_ik(msg["axes"], msg["buttons"])
 
-        elif msg["arm_mode"] == "throttle":
-            self.publish_throttle(type=msg["type"], names=names, axes=msg["axes"], buttons=msg["buttons"])
+            elif msg["arm_mode"] == "position":
+                self.publish_position(type=msg["type"], names=names, positions=msg["positions"])
+
+            elif msg["arm_mode"] == "velocity":
+                self.publish_velocity(type=msg["type"], names=names, axes=msg["axes"], buttons=msg["buttons"])
+
+            elif msg["arm_mode"] == "throttle":
+                self.publish_throttle(type=msg["type"], names=names, axes=msg["axes"], buttons=msg["buttons"])
 
     def handle_joystick_message(self, msg):
         # Tiny deadzone so we can safely e-stop with dampen switch
