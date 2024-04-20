@@ -4,6 +4,7 @@
 
 #include "glfw_pointer.hpp"
 #include "wgpu_objects.hpp"
+#include <ros/publisher.h>
 
 using namespace std::literals;
 

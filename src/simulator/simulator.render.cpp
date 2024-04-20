@@ -208,6 +208,19 @@ namespace mrover {
         mWindow = GlfwPointer<GLFWwindow, glfwCreateWindow, glfwDestroyWindow>{w, h, WINDOW_NAME, nullptr, nullptr};
         NODELET_INFO_STREAM(std::format("Created window of size: {}x{}", w, h));
 
+        if (cv::Mat logo = imread(std::filesystem::path{std::source_location::current().file_name()}.parent_path() / "mrover_logo.png", cv::IMREAD_UNCHANGED);
+            logo.type() == CV_8UC4) {
+            cvtColor(logo, logo, cv::COLOR_BGRA2RGBA);
+            GLFWimage logoImage{
+                    .width = logo.cols,
+                    .height = logo.rows,
+                    .pixels = logo.data,
+            };
+            glfwSetWindowIcon(mWindow.get(), 1, &logoImage);
+        } else {
+            ROS_WARN_STREAM("Failed to load logo image");
+        }
+
         if (glfwRawMouseMotionSupported()) glfwSetInputMode(mWindow.get(), GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
 
         glfwSetWindowUserPointer(mWindow.get(), this);

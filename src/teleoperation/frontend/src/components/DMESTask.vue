@@ -83,7 +83,7 @@ export default defineComponent({
     MotorsStatusTable,
     OdometryReading,
     DriveControls,
-    MastGimbalControls
+    MastGimbalControls,
   },
 
   props: {
