@@ -1,0 +1,3 @@
+SUBSYSTEM=="tty", ATTRS{idVendor}=="1546", ATTRS{idProduct}=="01a9", SYMLINK+="gps_%n"
+SUBSYSTEM=="tty", ATTRS{idVendor}=="2341", ATTRS{idProduct}=="0058", SYMLINK+="imu"
+SUBSYSTEM=="video4linux", KERNEL=="video*", ATTRS{idVendor}=="1bcf", ATTRS{idProduct}=="0b12", ATTR{index}=="0", GROUP="video", SYMLINK+="arducam" 

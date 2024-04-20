@@ -42,7 +42,7 @@ namespace mrover {
             mCamInfoPub = mNh.advertise<sensor_msgs::CameraInfo>(cameraInfoTopicName, 1);
 
             std::string captureFormat = std::format("video/x-raw,format=YUY2,width={},height={},framerate={}/1", width, height, framerate);
-            std::string convertFormat = "video/x-raw,format=BGRA";
+            std::string convertFormat = "video/x-raw,format=I420";
             std::string gstString = std::format("v4l2src device={} ! {} ! videoconvert ! {} ! appsink", device, captureFormat, convertFormat);
             NODELET_INFO_STREAM(std::format("GStreamer string: {}", gstString));
             cv::VideoCapture capture{gstString, cv::CAP_GSTREAMER};
@@ -57,7 +57,9 @@ namespace mrover {
 
                 if (mImgPub.getNumSubscribers()) {
                     auto imageMessage = boost::make_shared<sensor_msgs::Image>();
-                    fillImageMessage(frame, imageMessage);
+                    cv::Mat bgra;
+                    cv::cvtColor(frame, bgra, cv::COLOR_YUV2BGRA_I420);
+                    fillImageMessage(bgra, imageMessage);
                     imageMessage->header.frame_id = "long_range_cam_frame";
                     imageMessage->header.stamp = ros::Time::now();
                     mImgPub.publish(imageMessage);
