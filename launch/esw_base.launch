@@ -2,22 +2,22 @@
       <rosparam command="load" file="$(find mrover)/config/esw.yaml" />
 
       <!-- Bridges between ROS and SocketCAN -->
-      <node name="can_driver_0" pkg="mrover" type="can_driver"
+      <!-- <node name="can_driver_0" pkg="mrover" type="can_driver"
             respawn="true" respawn_delay="2"
             output="screen">
             <param name="interface" value="can0" />
-      </node>
+      </node> -->
       <!-- <node name="can_driver_1" pkg="mrover" type="can_driver"
             respawn="true" respawn_delay="2"
             output="screen">
             <param name="interface" value="can1" />
-      </node>
+      </node> -->
       <node name="can_driver_2" pkg="mrover" type="can_driver"
             respawn="true" respawn_delay="2"
             output="screen">
             <param name="interface" value="can2" />
       </node>
-      <node name="can_driver_3" pkg="mrover" type="can_driver"
+      <!-- <node name="can_driver_3" pkg="mrover" type="can_driver"
             respawn="true" respawn_delay="2"
             output="screen">
             <param name="interface" value="can3" />

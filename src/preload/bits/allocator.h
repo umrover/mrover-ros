@@ -8,6 +8,8 @@
 
 #if defined(__linux__) && defined(__GNUC__)
 
+#if (__GNUC__ == 13)
+
 // Allocators -*- C++ -*-
 
 // Copyright (C) 2001-2023 Free Software Foundation, Inc.
@@ -282,6 +284,12 @@ namespace std _GLIBCXX_VISIBILITY(default) {
 
     _GLIBCXX_END_NAMESPACE_VERSION
 } // namespace std _GLIBCXX_VISIBILITY(default)
+
+#endif
+
+#else
+
+#include_next <bits/allocator.h>
 
 #endif
 
