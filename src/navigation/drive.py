@@ -129,6 +129,7 @@ class DriveController:
         path_end: np.ndarray,
         rover_pos: np.ndarray,
         lookahead_dist: float,
+        future_point: Optional[np.ndarray] = None,
     ) -> np.ndarray:
         """
         Returns a point that the rover should target on the path from the previous target position to the current target position
@@ -150,6 +151,12 @@ class DriveController:
         lookahead_pt = proj_vec + lookahead_vec
         # if the lookahead point is further away than the target, just return the target
         if np.linalg.norm(lookahead_pt) > np.linalg.norm(path_vec):
+            if future_point is not None:
+                if (lookahead_dist - np.linalg.norm(path_end - proj_vec)) > np.linalg.norm(future_point - path_end):
+                    return future_point
+                future_lookahead_pt = path_end + ((lookahead_dist - np.linalg.norm(path_end - proj_vec)) * normalized(future_point - path_end))
+                print(path_start, path_end, future_point, future_lookahead_pt)
+                return future_lookahead_pt
             return path_end
         else:
             return path_start + lookahead_pt
@@ -194,7 +201,7 @@ class DriveController:
             return Twist(), True
 
         if path_start is not None:
-            target_pos = self.get_lookahead_pt(path_start, target_pos, rover_pos, LOOKAHEAD_DISTANCE)
+            target_pos = self.get_lookahead_pt(path_start, target_pos, rover_pos, LOOKAHEAD_DISTANCE, future_point)
 
         # If look ahead point is ahead of the path end, create a vector to the future point and start the look ahead again.
 
@@ -203,9 +210,6 @@ class DriveController:
         # if the target is farther than completion distance away from the last one, reset the controller
         if self._last_target is not None and np.linalg.norm(target_pos - self._last_target) > completion_thresh:
             self.reset()
-            if future_point is not None:
-                target_pos = self.get_lookahead_pt(self._last_target, future_point, rover_pos, LOOKAHEAD_DISTANCE)
-                target_dir = target_pos - rover_pos
 
         # compute errors
         linear_error = float(np.linalg.norm(target_dir))

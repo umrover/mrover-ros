@@ -13,7 +13,7 @@ drive:
     min_turning_effort: -0.5
     turning_p: 3.0
     driving_p: 10.0
-  lookahead_distance: 100.0
+  lookahead_distance: 3.0
 
 search:
   stop_thresh: 0.5
