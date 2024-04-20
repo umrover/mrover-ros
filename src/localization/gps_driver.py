@@ -57,7 +57,7 @@ class GPS_Driver:
         context = pyudev.Context()
 
          # TODO: find enumeration parameters for gps units         
-        for device in context.list_devices(subsystem="", DEVTYPE="", ID_VENDOR_ID=""):
+        for device in context.list_devices(sys_name="/dev/gps_*"):
 
             # create stream and reader
             port = device.device_path
