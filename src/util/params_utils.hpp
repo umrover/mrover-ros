@@ -12,6 +12,8 @@
 
 #include "units/units.hpp"
 
+#include "units/units.hpp"
+
 namespace mrover {
 
     // Define a function template for type conversion with a default value

@@ -216,6 +216,7 @@ namespace mrover {
         ros::Publisher mMotorStatusPub;
         ros::Publisher mDriveControllerStatePub;
         ros::Publisher mArmControllerStatePub;
+        ros::Publisher mArmJointStatePub;
 
         tf2_ros::Buffer mTfBuffer;
         tf2_ros::TransformListener mTfListener{mTfBuffer};
@@ -358,6 +359,12 @@ namespace mrover {
         SimulatorNodelet() = default;
 
         ~SimulatorNodelet() override;
+
+        SimulatorNodelet(SimulatorNodelet const&) = delete;
+        SimulatorNodelet(SimulatorNodelet&&) = delete;
+
+        auto operator=(SimulatorNodelet const&) -> SimulatorNodelet& = delete;
+        auto operator=(SimulatorNodelet&&) -> SimulatorNodelet& = delete;
 
         auto initWindow() -> void;
 
