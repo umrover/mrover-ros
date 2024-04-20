@@ -85,6 +85,9 @@ class GPS_Driver:
             if success == False:
                 rospy.logerr("Failed to ID GPS: " + str(port))
 
+            # join reading thread to main thread and reset event
+            id_gps_thread.join()
+            self.id_gps_done.clear()
 
     def __init__(self):
         rospy.init_node("gps_driver")
