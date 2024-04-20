@@ -6,34 +6,24 @@ teleop:
     joint_a:
       multiplier: -1
       slow_mode_multiplier: 0.5
-      invert: True
-      xbox_index: 0
     joint_b:
       multiplier: 1
       slow_mode_multiplier: 1
-      invert: False
-      xbox_index: 1
     joint_c:
-      multiplier: -1
+      multiplier: 1
       slow_mode_multiplier: 0.6
-      invert: False
-      xbox_index: 3
     joint_de_pitch:
-      multiplier: 0.5
+      multiplier: -1
       slow_mode_multiplier: 1
-      invert: True
     joint_de_roll:
-      multiplier: -0.5
+      multiplier: 1
       slow_mode_multiplier: 1
-      invert: True
     allen_key:
       multiplier: 1
       slow_mode_multiplier: 1
-      invert: False
     gripper:
       multiplier: 1
       slow_mode_multiplier: 1
-      invert: True
 
   sa_controls:
     sa_x:
@@ -70,10 +60,10 @@ teleop:
       multiplier: 0.7
 
   xbox_mappings:
-    left_js_x: 0
-    left_js_y: 1
-    right_js_x: 2
-    right_js_y: 3
+    left_x: 0
+    left_y: 1
+    right_x: 2
+    right_y: 3
     a: 0
     b: 1
     x: 2
