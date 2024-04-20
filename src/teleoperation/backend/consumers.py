@@ -389,9 +389,9 @@ class GUIConsumer(JsonWebsocketConsumer):
                         throttle_cmd.throttles[i] *= -1
             elif msg["type"] == "sa_arm_values":
                 throttle_cmd.throttles = [
-                    self.filter_xbox_axis(msg["axes"][self.sa_config["sa_x"]["xbox_index"]]),
-                    self.filter_xbox_axis(msg["axes"][self.sa_config["sa_y"]["xbox_index"]]),
-                    self.filter_xbox_axis(msg["axes"][self.sa_config["sa_z"]["xbox_index"]]),
+                    self.filter_xbox_axis(msg["axes"][self.sa_config["sa_x"]["xbox_index"]])*self.sa_config["sa_x"]["multiplier"],
+                    self.filter_xbox_axis(msg["axes"][self.sa_config["sa_y"]["xbox_index"]])*self.sa_config["sa_y"]["multiplier"],
+                    self.filter_xbox_axis(msg["axes"][self.sa_config["sa_z"]["xbox_index"]])*self.sa_config["sa_z"]["multiplier"],
                     self.sa_config["sampler"]["multiplier"] * (right_trigger - left_trigger),
                     self.sa_config["sensor_actuator"]["multiplier"]
                     * self.filter_xbox_button(msg["buttons"], "right_bumper", "left_bumper"),
