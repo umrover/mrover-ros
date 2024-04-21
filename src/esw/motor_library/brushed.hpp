@@ -22,6 +22,8 @@ namespace mrover {
         using Base::mMaxPosition;
         using Base::mMinVelocity;
         using Base::mMaxVelocity;
+        using Base::mSlowDownVelocity;
+        using Base::mSlowDownRange;
 
     public:
         BrushedController(ros::NodeHandle const& nh, std::string masterName, std::string controllerName);

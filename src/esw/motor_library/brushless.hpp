@@ -77,6 +77,8 @@ namespace mrover {
         using Base::mMaxPosition;
         using Base::mMinVelocity;
         using Base::mMaxVelocity;
+        using Base::mSlowDownVelocity;
+        using Base::mSlowDownRange;
 
     public:
         BrushlessController(ros::NodeHandle const& nh, std::string masterName, std::string controllerName)
@@ -141,6 +143,9 @@ namespace mrover {
             }
             options.query_format = queryFormat;
             mMoteus.emplace(options);
+
+            mSlowDownRange = Percent{xmlRpcValueToTypeOrDefault<double>(brushlessMotorData, "slowdown_range", std::numeric_limits<double>::quiet_NaN())};
+            mSlowDownVelocity = OutputVelocity{xmlRpcValueToTypeOrDefault<double>(brushlessMotorData, "slowdown_velocity", std::numeric_limits<double>::quiet_NaN())};
         }
 
         auto setDesiredThrottle(Percent throttle) -> void {

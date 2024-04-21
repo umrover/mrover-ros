@@ -1,4 +1,5 @@
 #pragma once
+#include <cmath>
 #include <string>
 
 #include <ros/ros.h>
@@ -136,22 +137,27 @@ namespace mrover {
         }
 
         void limitSwitchCheckCallback(ros::TimerEvent const&) {
-            auto motorRange = abs(mMinPosition - mMaxPosition);
-            auto withinLimitSwitchDistance = 0.1 * motorRange;
+            // TODO/Ideas:
+            // - Specify point of slowdown and slower speed in config DONE
+            // - What if speed is updated during slow speed section.
+            // - Consider if we have limit switch 0 or 1. Consider what limit
+            //   switches to use.
+            // - Opportunity for code refactoring. More parameters can be moved
+            //   from brushless and brushed to Controller. Can move yaml
+            //   parsing to Controller.
 
-            if ((mCurrentPosition - mMinPosition < withinLimitSwitchDistance 
-                    && mCurrentVelocity < OutputVelocity{0}) ||
-                (mMaxPosition - mCurrentPosition < withinLimitSwitchDistance 
-                    && mCurrentVelocity > OutputVelocity{0})) {
-                    if (!haveSetLowerSpeed){
-                        static_cast<Derived*>(this)->setDesiredVelocity(0.1*mCurrentVelocity);
-                        haveSetLowerSpeed = true;
-                    }
-                } 
-            else {
-                haveSetLowerSpeed = false;
+            if (!std::isnan(mSlowDownRange.get())) {
+                auto motorRange = abs(mMinPosition - mMaxPosition);
+                auto withinLimitSwitchDistance = 0.1 * motorRange;
+
+                if ((mCurrentPosition - mMinPosition < withinLimitSwitchDistance && mCurrentVelocity < OutputVelocity{0}) ||
+                    (mMaxPosition - mCurrentPosition < withinLimitSwitchDistance && mCurrentVelocity > OutputVelocity{0})) {
+
+                    static_cast<Derived*>(this)->setDesiredVelocity(
+                            (mCurrentVelocity < 0) ? -1 * mSlowDownVelocity
+                                                   : mSlowDownVelocity);
+                }
             }
-            
         }
 
     protected:
@@ -169,6 +175,8 @@ namespace mrover {
         std::array<bool, 4> mLimitHit{};
         OutputPosition mMinPosition{}, mMaxPosition{};
         OutputVelocity mMinVelocity{}, mMaxVelocity{};
+        OutputVelocity mSlowDownVelocity{};
+        Percent mSlowDownRange{};
 
         ros::Subscriber mMoveThrottleSub;
         ros::Subscriber mMoveVelocitySub;
@@ -181,8 +189,6 @@ namespace mrover {
         ros::ServiceServer mAdjustServer;
         ros::Timer limitSwitchCheckTimer;
         bool haveSetLowerSpeed{false};
-
-
     };
 
 } // namespace mrover

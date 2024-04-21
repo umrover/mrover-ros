@@ -1,4 +1,6 @@
 #include "brushed.hpp"
+#include <limits>
+#include <units/units.hpp>
 
 namespace mrover {
 
@@ -67,6 +69,9 @@ namespace mrover {
         mCalibrationThrottle = Percent{xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "calibration_throttle", 0.0)};
         mErrorState = "Unknown";
         mState = "Unknown";
+
+        mSlowDownRange = Percent{xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "slowdown_range", std::numeric_limits<double>::quiet_NaN())};
+        mSlowDownVelocity = OutputVelocity{xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "slowdown_velocity", std::numeric_limits<double>::quiet_NaN())};
     }
 
     auto BrushedController::setDesiredThrottle(Percent throttle) -> void {

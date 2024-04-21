@@ -132,6 +132,8 @@ brushless_motors:
       limit_1_readjust_position: 0.0
       limit_max_forward_pos: true
       limit_max_backward_pos: true
+      slowdown_range: 0.1 # % of range before slowdown.
+      slowdown_speed: 0.02 # Speed to slow down to within range. TODO: Adjust range.
       max_forward_pos: 0.4
       max_backward_pos: 0.0
       max_torque: 20.0
@@ -168,6 +170,8 @@ brushless_motors:
       limit_1_used_for_readjustment: true
       limit_0_readjust_position: 0.0 # radians TODO
       limit_1_readjust_position: 0.0 # radians TODO
+      slowdown_range: 0.1 # % of range before slowdown.
+      slowdown_speed: 0.2 # Speed to slow down to within range.
       max_torque: 30.0
 
 brushed_motors:
@@ -231,6 +235,8 @@ brushed_motors:
       max_position: 0.0
       min_velocity: -1.0
       max_velocity: 1.0
+      slowdown_range: 0.1 # % of range before slowdown.
+      slowdown_speed: 0.2 # Speed to slow down to within range.
       calibration_throttle: 0.5  # throttle during calibration
     allen_key:
       gear_ratio: 30.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
@@ -244,6 +250,8 @@ brushed_motors:
       limit_1_limits_fwd: true
       limit_0_used_for_readjustment: true
       limit_1_used_for_readjustment: true
+      slowdown_range: 0.1 # % of range before slowdown.
+      slowdown_speed: 0.2 # Speed to slow down to within range.
       quad_present: true
       quad_is_fwd_polarity: true
       limit_0_readjust_position: 0.0 # radians
@@ -288,6 +296,8 @@ brushed_motors:
       limit_0_used_for_readjustment: true
       limit_1_used_for_readjustment: true
       limit_2_used_for_readjustment: false
+      slowdown_range: 0.1 # % of range before slowdown.
+      slowdown_speed: 0.2 # Speed to slow down to within range.
       quad_present: true
       quad_is_fwd_polarity: true
       limit_0_readjust_position: 0.0 # radians
@@ -311,6 +321,8 @@ brushed_motors:
       limit_1_limits_fwd: false
       limit_0_used_for_readjustment: true
       limit_1_used_for_readjustment: true
+      slowdown_range: 0.01 # % of range before slowdown.
+      slowdown_speed: 0.2 # Speed to slow down to within range.
       quad_present: true
       quad_is_fwd_polarity: true
       limit_0_readjust_position: 0.0 # radians
@@ -334,6 +346,8 @@ brushed_motors:
       limit_1_limits_fwd: false
       limit_0_used_for_readjustment: true
       limit_1_used_for_readjustment: true
+      slowdown_range: 0.1 # % of range before slowdown.
+      slowdown_speed: 0.2 # Speed to slow down to within range.
       quad_present: true
       quad_is_fwd_polarity: true
       limit_0_readjust_position: 0.0 # radians
@@ -356,6 +370,8 @@ brushed_motors:
       limit_1_used_for_readjustment: true
       limit_0_readjust_position: 0.0 # radians
       limit_1_readjust_position: 0.0 # radians
+      slowdown_range: 0.1 # % of range before slowdown.
+      slowdown_speed: 0.2 # Speed to slow down to within range.
       driver_voltage: 12.0 # used to calculate max pwm
       motor_max_voltage: 6.0 # used to calculate max pwm
     cache:
@@ -372,6 +388,8 @@ brushed_motors:
       limit_1_used_for_readjustment: true
       limit_0_readjust_position: 0.0 # radians
       limit_1_readjust_position: 0.0 # radians
+      slowdown_range: 0.1 # % of range before slowdown.
+      slowdown_speed: 0.2 # Speed to slow down to within range.
       driver_voltage: 12.0 # used to calculate max pwm
       motor_max_voltage: 6.0 # used to calculate max pwm
 
