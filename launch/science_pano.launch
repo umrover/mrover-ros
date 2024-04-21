@@ -8,8 +8,8 @@
     <node pkg="nodelet" type="nodelet" name="perception_nodelet_manager" required="true"
           args="manager" output="screen" />
 
-    <!-- <node name="panorama" pkg="mrover" type="panorama.py" output="screen"/> -->
+      <node name="panorama" pkg="mrover" type="panorama.py" output="screen"/>
 
     <node pkg="tf" type="static_transform_publisher" name="base_link_publisher"
-          args="1 0 0 0 0 0 base_link zed_base_link 100" />
+          args="0 0 0 0 0 0 base_link zed_base_link 100" />
 </launch>
