@@ -20,10 +20,10 @@
         <p style="margin-top: 6px">Joystick Values</p>
         <JoystickValues />
       </div>
-      <div class="d-flex justify-content-end">
-        <CameraFeed :mission="'ZED'" :id="0" :name="'ZED'"></CameraFeed>
-      </div>
       <OdometryReading :odom="odom" />
+    </div>
+    <div class="shadow p-3 rounded feed">
+        <CameraFeed :mission="'ZED'" :id="0" :name="'ZED'"></CameraFeed>
     </div>
     <div class="shadow p-3 rounded map">
       <AutonRoverMap :odom="odom" />
@@ -190,15 +190,15 @@ export default defineComponent({
 .wrapper {
   display: grid;
   grid-gap: 10px;
-  grid-template-columns: 60% 40%;
+  grid-template-columns: auto 30% 30%;
   grid-template-rows: repeat(6, auto);
   grid-template-areas:
-    'header header'
-    'map waypoints'
-    'data waypoints'
-    'data conditions'
-    'moteus moteus'
-    'cameras cameras';
+    'header header header'
+    'feed map waypoints'
+    'data data waypoints'
+    'data data conditions'
+    'moteus moteus moteus'
+    'cameras cameras cameras';
 
   font-family: sans-serif;
   height: auto;
@@ -307,5 +307,9 @@ h2 {
 
 .data {
   grid-area: data;
+}
+
+.feed {
+  grid-area: feed;
 }
 </style>
