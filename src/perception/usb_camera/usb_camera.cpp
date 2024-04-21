@@ -41,8 +41,8 @@ namespace mrover {
             mImgPub = mNh.advertise<sensor_msgs::Image>(imageTopicName, 1);
             mCamInfoPub = mNh.advertise<sensor_msgs::CameraInfo>(cameraInfoTopicName, 1);
 
-            std::string videoString = std::format("video/x-raw,format=I420,width={},height={},framerate={}/1", width, height, framerate);
-            std::string gstString = std::format("v4l2src device={} ! videoconvert ! {} ! appsink", device, videoString);
+            std::string captureFormat = std::format("video/x-raw,format=YUY2,width={},height={},framerate={}/1", width, height, framerate);
+            std::string gstString = std::format("v4l2src device={} ! {} ! appsink", device, captureFormat);
             NODELET_INFO_STREAM(std::format("GStreamer string: {}", gstString));
             cv::VideoCapture capture{gstString, cv::CAP_GSTREAMER};
             if (!capture.isOpened()) throw std::runtime_error{"USB camera failed to open"};
@@ -57,7 +57,7 @@ namespace mrover {
                 if (mImgPub.getNumSubscribers()) {
                     auto imageMessage = boost::make_shared<sensor_msgs::Image>();
                     cv::Mat bgra;
-                    cv::cvtColor(frame, bgra, cv::COLOR_YUV2BGRA_I420);
+                    cvtColor(frame, bgra, cv::COLOR_YUV2BGRA_YUY2);
                     fillImageMessage(bgra, imageMessage);
                     imageMessage->header.frame_id = "long_range_cam_frame";
                     imageMessage->header.stamp = ros::Time::now();

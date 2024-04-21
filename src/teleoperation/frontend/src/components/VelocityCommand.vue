@@ -7,6 +7,7 @@
 </template>
 
 <script lang="ts">
+import { mapState } from 'vuex'
 export default {
   data() {
     return {
@@ -15,17 +16,17 @@ export default {
     }
   },
 
-  created: function () {
-    //   (this.cmd_vel_sub = new ROSLIB.Topic({
-    //     ros: this.$ros,
-    //     name: "cmd_vel",
-    //     messageType: "geometry_msgs/Twist",
-    //   })),
-    //     this.cmd_vel_sub.subscribe((msg) => {
-    //       // Only use linear x and angular z
-    //       this.linear_x = msg.linear.x;
-    //       this.angular_z = msg.angular.z;
-    //     });
+  computed: {
+    ...mapState('websocket', ['message'])
+  },
+
+  watch: {
+    message(msg) {
+      if(msg.type == 'cmd_vel') {
+        this.linear_x = msg.linear_x;
+        this.angular_z = msg.angular_z;
+      }
+    }
   }
 }
 </script>

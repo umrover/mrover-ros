@@ -97,7 +97,7 @@ import CalibrationCheckbox from './CalibrationCheckbox.vue'
 import MotorAdjust from './MotorAdjust.vue'
 import LimitSwitch from './LimitSwitch.vue'
 // In seconds
-const updateRate = 0.01
+const updateRate = 0.05
 let interval: number | undefined
 
 export default defineComponent({
@@ -190,7 +190,7 @@ export default defineComponent({
                 return button.value
               })
 
-              this.publishJoystickMessage(gamepad.axes, buttons, this.arm_mode, this.positions)
+              this.publishJoystickMessage(gamepad.axes, buttons, this.arm_mode, [])
             }
           }
         }

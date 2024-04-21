@@ -1,3 +1,9 @@
+# The simulator will only be built if Dawn (low-level graphics API) is found:
+# 1) Installed system-wide with the .deb package in the pkg/ folder. This is ONLY for Ubuntu 20
+#    If this is the case then "find_package" will set "dawn_FOUND" to true
+# 2) Built from source with the build_dawn.sh script. This is for all other systems (non-Ubuntu, macOS, etc.)
+#    If this is the case libwebgpu_dawn.* will be found in deps/dawn/out/Release and "dawn_FOUND" will be set to true
+
 find_package(dawn QUIET)
 if (dawn_FOUND)
     message(STATUS "Using Dawn system install")
@@ -26,34 +32,29 @@ option(MROVER_BUILD_SIM "Build the simulator" ${dawn_FOUND})
 if (MROVER_BUILD_SIM)
     # Apparently Assimp has different names on different systems
     # find_package is case-sensitive so try both
-    find_package(Assimp QUIET)
-    find_package(assimp QUIET)
-    if (NOT Assimp_FOUND AND NOT assimp_FOUND)
+    find_package(Assimp NAMES Assimp assimp QUIET)
+    if (NOT Assimp_FOUND)
         message(FATAL_ERROR "Assimp not found")
     endif ()
 
     find_package(Bullet REQUIRED)
     find_package(glfw3 REQUIRED)
 
-    add_subdirectory(deps/glfw3webgpu SYSTEM)
-    add_subdirectory(deps/imgui SYSTEM)
-    add_subdirectory(deps/webgpuhpp SYSTEM)
-
-    set_target_properties(glfw3webgpu PROPERTIES CXX_CLANG_TIDY "")
-    set_target_properties(imgui PROPERTIES CXX_CLANG_TIDY "")
-    set_target_properties(webgpu_hpp PROPERTIES CXX_CLANG_TIDY "")
+    add_subdirectory(deps/glfw3webgpu SYSTEM EXCLUDE_FROM_ALL)
+    add_subdirectory(deps/imgui SYSTEM EXCLUDE_FROM_ALL)
+    add_subdirectory(deps/webgpuhpp SYSTEM EXCLUDE_FROM_ALL)
 endif ()
 
 find_package(OpenCV REQUIRED)
 find_package(ZED QUIET)
 find_package(Eigen3 REQUIRED)
 
+# Same idea as dawn, ideally installed via a package, but if not then build from source
 find_package(manif QUIET)
 if (NOT manif_FOUND)
     if (EXISTS ${CMAKE_CURRENT_LIST_DIR}/../deps/manif/include/manif)
         add_subdirectory(deps/manif SYSTEM)
         add_library(MANIF::manif ALIAS manif)
-        set_target_properties(manif PROPERTIES CXX_CLANG_TIDY "")
 
         set(manif_FOUND TRUE)
     else ()
@@ -61,7 +62,10 @@ if (NOT manif_FOUND)
     endif ()
 endif ()
 
+# These are old packages so they do not support "find_package" and must be found with pkg-config
+# Thankfully CMake has a built-in module for this
 find_package(PkgConfig REQUIRED)
 pkg_search_module(NetLink libnl-3.0 QUIET)
 pkg_search_module(NetLinkRoute libnl-route-3.0 QUIET)
-pkg_search_module(gstreamer QUIET)
+pkg_search_module(Gst gstreamer-1.0 QUIET)
+pkg_search_module(GstApp gstreamer-app-1.0 QUIET)

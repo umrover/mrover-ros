@@ -5,10 +5,10 @@ catkin_make_args: [ ]
 cmake_args:
   - -DCMAKE_BUILD_TYPE=Release
   - -DCMAKE_C_COMPILER=clang-16
-  - -DCMAKE_CXX_FLAGS=-pipe
+  - -DCMAKE_CXX_FLAGS=-pipe -fgnuc-version=13.1.0
   - -DCMAKE_CXX_COMPILER=clang++-16
-  - -DCMAKE_CUDA_HOST_COMPILER=clang++-16
-  - -DMROVER_CI=ON
+  - -DCMAKE_CUDA_HOST_COMPILER=g++-9
+  - -DMROVER_IS_CI=ON
   - -Wno-dev
 devel_layout: linked
 devel_space: devel

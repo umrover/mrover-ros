@@ -8,18 +8,10 @@
 #include <hardware_i2c.hpp>
 #include <units/units.hpp>
 
+#include "common.hpp"
 #include "filtering.hpp"
 
 namespace mrover {
-
-    constexpr auto tau = 2 * std::numbers::pi_v<float>;
-
-    // Counts (ticks) per radian (NOT per rotation)
-    using CountsPerRad = compound_unit<Ticks, inverse<Radians>>;
-
-    constexpr auto RELATIVE_CPR = CountsPerRad{3355 / tau}; // Measured empirically
-    constexpr auto ABSOLUTE_CPR = CountsPerRad{(1 << 14) / tau};
-    auto const CLOCK_FREQ = Hertz{HAL_RCC_GetHCLKFreq()};
 
     struct EncoderReading {
         Radians position;

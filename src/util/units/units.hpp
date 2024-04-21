@@ -109,14 +109,14 @@ namespace mrover {
         constexpr Unit(U const& other)
             requires AreExponentsSame<Unit, U>
         {
-            rep = other.get();
+            rep = other.rep;
         }
 
         template<IsUnit U>
         constexpr auto operator=(U const& rhs) -> Unit&
             requires AreExponentsSame<Unit, U>
         {
-            rep = rhs.get();
+            rep = rhs.rep;
             return *this;
         }
     };
@@ -171,6 +171,13 @@ namespace mrover {
     //  Static Operations
     //
 
+    template<IsUnit U>
+    static auto constexpr make_no_conversion(IsArithmetic auto const& other) -> U {
+        U result;
+        result.rep = static_cast<typename U::rep_t>(other);
+        return result;
+    }
+
     namespace detail {
 
         template<IsUnit U, IsRatio Ratio>
@@ -214,6 +221,20 @@ namespace mrover {
             using type = typename compound<typename exp_add<U1, U2>::type, Us...>::type;
         };
 
+        template<IsUnit U>
+        struct strip_conversion {
+            using type = Unit<typename U::rep_t,
+                              std::ratio<1>,
+                              typename U::meter_exp_t,
+                              typename U::kilogram_exp_t,
+                              typename U::second_exp_t,
+                              typename U::radian_exp_t,
+                              typename U::ampere_exp_t,
+                              typename U::kelvin_exp_t,
+                              typename U::byte_exp_t,
+                              typename U::tick_exp_t>;
+        };
+
     } // namespace detail
 
     template<IsUnit U1, IsUnit U2>
@@ -234,59 +255,59 @@ namespace mrover {
 
     template<IsUnit U>
     constexpr auto operator*(IsArithmetic auto const& n, U const& u) {
-        return U{static_cast<typename U::rep_t>(n) * u.rep};
+        return make_no_conversion<U>(n * u.rep);
     }
 
     template<IsUnit U>
     constexpr auto operator*(U const& u, IsArithmetic auto const& n) {
-        return U{u.rep * static_cast<typename U::rep_t>(n)};
+        return make_no_conversion<U>(u.rep * n);
     }
 
     template<IsUnit U1, IsUnit U2>
     constexpr auto operator*(U1 const& u1, U2 const& u2) {
-        return multiply<U1, U2>{u1.rep * u2.rep};
+        return make_no_conversion<multiply<U1, U2>>(u1.rep * u2.rep);
     }
 
     template<IsUnit U>
     constexpr auto operator*=(U& u, IsArithmetic auto const& n) {
-        return u = u * static_cast<typename U::rep_t>(n);
+        return u = u * n;
     }
 
     template<IsUnit U>
     constexpr auto operator/(U const& u, IsArithmetic auto const& n) {
-        return U{u.rep / static_cast<typename U::rep_t>(n)};
+        return make_no_conversion<U>(u.rep / n);
     }
 
     template<IsUnit U>
     constexpr auto operator/(IsArithmetic auto const& n, U const& u) {
-        return inverse<U>{static_cast<typename U::rep_t>(n) / u.rep};
+        return make_no_conversion<inverse<U>>(n / u.rep);
     }
 
     template<IsUnit U1, IsUnit U2>
     constexpr auto operator/(U1 const& u1, U2 const& u2) {
-        return multiply<U1, inverse<U2>>{u1.rep / u2.rep};
+        return make_no_conversion<multiply<U1, inverse<U2>>>(u1.rep / u2.rep);
     }
 
     template<IsUnit U>
     constexpr auto operator/=(U& u, IsArithmetic auto const& n) {
-        return u = u / static_cast<typename U::rep_t>(n);
+        return u = u / n;
     }
 
     template<IsUnit U>
     constexpr auto operator-(U const& u) {
-        return U{-u.rep};
+        return make_no_conversion<U>(-u.rep);
     }
 
     template<IsUnit U1, IsUnit U2>
         requires AreExponentsSame<U1, U2>
     constexpr auto operator+(U1 const& u1, U2 const& u2) {
-        return U1{u1.rep + u2.rep};
+        return make_no_conversion<U1>(u1.rep + u2.rep);
     }
 
     template<IsUnit U1, IsUnit U2>
         requires AreExponentsSame<U1, U2>
     constexpr auto operator-(U1 const& u1, U2 const& u2) {
-        return U1{u1.rep - u2.rep};
+        return make_no_conversion<U1>(u1.rep - u2.rep);
     }
 
     constexpr auto operator+=(IsUnit auto& u1, IsUnit auto const& u2) {
@@ -303,12 +324,24 @@ namespace mrover {
 
     template<IsUnit U>
     constexpr auto sqrt(U const& u) {
-        return root<U>{std::sqrt(u.rep)};
+        return make_no_conversion<root<U>>(std::sqrt(u.rep));
     }
 
     template<IsUnit U>
     constexpr auto abs(U const& u) {
-        return U{std::fabs(u.rep)};
+        return make_no_conversion<U>(std::fabs(u.rep));
+    }
+
+    template<IsUnit U>
+    constexpr auto signum(U const& u) -> int {
+        bool is_zero = std::fabs(u.rep) < std::numeric_limits<typename U::rep_t>::epsilon();
+        return is_zero ? 0 : std::signbit(u.rep) ? -1
+                                                 : 1;
+    }
+
+    template<IsUnit U>
+    constexpr auto fmod(U const& u, typename U::rep_t n) {
+        return make_no_conversion<U>(std::fmod(u.rep, n));
     }
 
     //
