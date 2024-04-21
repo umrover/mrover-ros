@@ -3,7 +3,7 @@ import json
 import os
 import threading
 from datetime import datetime
-from math import copysign, pi
+from math import copysign, pi, isfinite
 
 import pytz
 from channels.generic.websocket import JsonWebsocketConsumer
@@ -800,7 +800,11 @@ class GUIConsumer(JsonWebsocketConsumer):
 
             rate.sleep()
 
-    def arm_joint_callback(self, msg):
+    def arm_joint_callback(self, msg: JointState) -> None:
+        # Set non-finite values to zero
+        for i in range(len(msg.position)):
+            if not isfinite(msg.position[i]):
+                msg.position[i] = 0
         self.send(text_data=json.dumps({"type": "fk", "positions": msg.position}))
 
     def science_spectral_callback(self, msg):
