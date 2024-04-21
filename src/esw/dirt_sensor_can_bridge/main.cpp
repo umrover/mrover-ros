@@ -37,7 +37,6 @@ void processMessage(mrover::DirtData const& message) {
 void processCANData(const mrover::CAN::ConstPtr& msg) {
     assert(msg->source == "dirt_sensor_arduino");
     assert(msg->destination == "jetson");
-    ROS_INFO("data: %f",msg->data);
 
     mrover::OutBoundSASensorMessage const& message = *reinterpret_cast<mrover::OutBoundSASensorMessage const*>(msg->data.data());
 
