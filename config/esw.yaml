@@ -1,5 +1,5 @@
 imu_driver:
-  port: "/dev/imu"
+  port: "/dev/tty.usbmodem101"
   baud: 115200
   frame_id: "imu_link"
 

@@ -30,4 +30,6 @@
         <node unless="$(arg sim)" name="gps_driver" pkg="mrover" type="gps_driver.py" output="screen" />
     </group>
 
+    <node name="tip_detection" pkg="mrover" type="tip_detection.py" output="screen" />
+
 </launch>

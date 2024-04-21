@@ -1,0 +1,4 @@
+int32 tagId
+float32 xTagCenterPixel
+float32 yTagCenterPixel
+float32 closenessMetric

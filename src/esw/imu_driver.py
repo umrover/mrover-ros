@@ -4,7 +4,7 @@ import rospy
 from sensor_msgs.msg import Temperature, Imu, MagneticField
 from geometry_msgs.msg import Quaternion, Vector3, PoseWithCovarianceStamped, PoseWithCovariance, Vector3Stamped, Pose
 from std_msgs.msg import Header
-from mrover.msg import CalibrationStatus, ImuAndMag
+from mrover.msg import ImuAndMag, CalibrationStatus
 from tf.transformations import quaternion_about_axis, quaternion_multiply, rotation_matrix, quaternion_from_matrix
 from typing import Tuple, List
 from copy import deepcopy
