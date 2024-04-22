@@ -8,3 +8,4 @@ gps_linearization:
   reference_point_longitude: -83.7096706
   reference_point_altitude: 234.1
   reference_heading: 90.0
+  use_both_gps: true
