@@ -3,19 +3,6 @@
     <canvas :id="'stream-' + id" v-on:click="handleClick"></canvas>
     <div v-if="mission != 'ZED'">
       <p>{{ name }} • ID: {{ id }}</p>
-      <div class="form-group col-md-4">
-          <label for="quality">Quality:</label>
-          <select
-            v-model="quality"
-            min="0"
-            max="4"
-            class="form-control"
-            id="quality"
-            @change="changeQuality()"
-          >
-            <option v-for="i in 5" :key="i">{{ i - 1 }}</option>
-          </select>
-        </div>
       <Checkbox v-if="mission === 'ik'" :name="'IK Camera'" v-on:toggle="toggleIKMode" />
     </div>
   </div>
@@ -52,8 +39,6 @@ export default defineComponent({
 
       // IK Mode
       IKCam: false,
-
-      quality: 2
     }
   },
 
@@ -81,14 +66,6 @@ export default defineComponent({
       if (this.IKCam && this.mission === 'ik') {
         this.sendMessage({ type: 'start_click_ik', data: { x: event.offsetX, y: event.offsetY } })
       }
-    },
-    changeQuality: function () {
-      this.sendMessage({
-        type: 'sendCameras',
-        primary: this.mission === 'sa',
-        device: this.id,
-        resolution: parseInt(this.quality)
-      })
     },
     
     toggleIKMode: function () {

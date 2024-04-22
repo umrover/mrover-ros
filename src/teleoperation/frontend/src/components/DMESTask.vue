@@ -22,7 +22,7 @@
     </div>
 
     <div class="shadow p-3 rounded cameras">
-      <Cameras :primary="true" :isSA="false" :mission="'ik'" />
+      <Cameras :isSA="false" :mission="'ik'" />
     </div>
     <div v-if="type === 'DM'" class="shadow p-3 rounded odom">
       <OdometryReading :odom="odom" />
