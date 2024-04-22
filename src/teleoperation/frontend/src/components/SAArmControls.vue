@@ -45,6 +45,8 @@
       <button class="btn btn-primary mx-auto my-2" @click="submit_positions">Submit</button>
     </div>
     <div class="controls-flex">
+      <button class="btn btn-primary" @click="zero">Zero Z</button>
+      <p>SA Z Position: {{ z_position }}</p>
       <MotorAdjust
         v-if="arm_mode == 'position'"
         :options="[
@@ -107,7 +109,8 @@ export default defineComponent({
         }
       },
       positions: [],
-      send_positions: false // Only send after submit is clicked for the first time
+      send_positions: false, // Only send after submit is clicked for the first time,
+      z_position: 0
     }
   },
 
@@ -151,6 +154,9 @@ export default defineComponent({
           alert('Toggling Arm Laser failed.')
         }
       }
+      else if (msg.type == 'sa_z') {
+        this.z_position = msg.sa_z
+      }
     },
     arm_mode(newMode) {
       if (newMode !== 'position') {
@@ -191,6 +197,10 @@ export default defineComponent({
       )
       this.send_positions = true
       this.publishJoystickMessage([], [], this.arm_mode, this.positions)
+    },
+
+    zero: function() {
+      this.sendMessage({type: "arm_adjust", name: "sa_z", value: 0})
     }
   }
 })
