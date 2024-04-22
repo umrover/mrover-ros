@@ -96,7 +96,6 @@ import ToggleButton from './ToggleButton.vue'
 import CalibrationCheckbox from './CalibrationCheckbox.vue'
 import MotorAdjust from './MotorAdjust.vue'
 import LimitSwitch from './LimitSwitch.vue'
-
 // In seconds
 const updateRate = 0.05
 let interval: number | undefined
@@ -137,6 +136,7 @@ export default defineComponent({
         }
       },
       positions: [],
+      send_positions: false // Only send after submit is clicked for the first time
     }
   },
 
@@ -152,11 +152,17 @@ export default defineComponent({
           alert('Toggling Arm Laser failed.')
         }
       }
+    },
+    arm_mode(newMode) {
+      if (newMode !== 'position') {
+        this.positions = []
+        this.send_positions = false
+      }
     }
   },
 
-  mounted: function() {
-    document.addEventListener('keydown', this.keyDown);
+  mounted: function () {
+    document.addEventListener('keydown', this.keyDown)
   },
 
   beforeUnmount: function () {
@@ -166,22 +172,26 @@ export default defineComponent({
 
   created: function () {
     interval = window.setInterval(() => {
-      const gamepads = navigator.getGamepads()
-      for (let i = 0; i < 4; i++) {
-        const gamepad = gamepads[i]
-        if (gamepad) {
-          // Microsoft and Xbox for old Xbox 360 controllers
-          // X-Box for new PowerA Xbox One controllers
-          if (
-            gamepad.id.includes('Microsoft') ||
-            gamepad.id.includes('Xbox') ||
-            gamepad.id.includes('X-Box')
-          ) {
-            let buttons = gamepad.buttons.map((button) => {
-              return button.value
-            })
+      if (this.send_positions) {
+        this.publishJoystickMessage([], [], this.arm_mode, this.positions)
+      } else if (this.arm_mode !== "position") {
+        const gamepads = navigator.getGamepads()
+        for (let i = 0; i < 4; i++) {
+          const gamepad = gamepads[i]
+          if (gamepad) {
+            // Microsoft and Xbox for old Xbox 360 controllers
+            // X-Box for new PowerA Xbox One controllers
+            if (
+              gamepad.id.includes('Microsoft') ||
+              gamepad.id.includes('Xbox') ||
+              gamepad.id.includes('X-Box')
+            ) {
+              let buttons = gamepad.buttons.map((button) => {
+                return button.value
+              })
 
-            this.publishJoystickMessage(gamepad.axes, buttons, this.arm_mode, this.positions)
+              this.publishJoystickMessage(gamepad.axes, buttons, this.arm_mode, [])
+            }
           }
         }
       }
@@ -221,13 +231,15 @@ export default defineComponent({
       this.positions = Object.values(this.temp_positions).map(
         (obj) => (Number(obj.value) * Math.PI) / 180
       )
+      this.send_positions = true
+      this.publishJoystickMessage([], [], this.arm_mode, this.positions)
     },
 
-    keyDown: function(event: { key: string }) {
+    keyDown: function (event: { key: string }) {
       if (event.key == ' ') {
-        this.arm_mode = 'arm_disabled';
+        this.arm_mode = 'arm_disabled'
       }
-    },
+    }
   }
 })
 </script>

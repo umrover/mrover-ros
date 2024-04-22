@@ -6,7 +6,7 @@
 // C++ should have never broke this backwards compatibility!
 // How silly!
 
-#if defined(__linux__) && defined(__GNUC__) && (__GNUC__ == 13)
+#if defined(__linux__) && defined(__GNUC__) && !defined(__CUDACC__)
 
 // Allocators -*- C++ -*-
 

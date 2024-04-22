@@ -33,7 +33,7 @@ from mrover.msg import (
     HeaterData,
 )
 from mrover.srv import EnableAuton, AdjustMotor, ChangeCameras, CapturePanorama
-from sensor_msgs.msg import NavSatFix, Temperature, RelativeHumidity
+from sensor_msgs.msg import NavSatFix, Temperature, RelativeHumidity, JointState
 from std_msgs.msg import String
 from std_srvs.srv import SetBool, Trigger
 from tf.transformations import euler_from_quaternion
@@ -84,6 +84,7 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.arm_moteus_sub = rospy.Subscriber(
                 "/arm_controller_data", ControllerState, self.arm_controller_callback
             )
+            self.sa_joint_sub = rospy.Subscriber("/sa_joint_data", JointState, self.sa_joint_callback)
             self.drive_moteus_sub = rospy.Subscriber(
                 "/drive_controller_data", ControllerState, self.drive_controller_callback
             )
@@ -466,6 +467,15 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.send(
             text_data=json.dumps(
                 {"type": "arm_moteus", "name": msg.name, "state": msg.state, "error": msg.error, "limit_hit": hits}
+            )
+        )
+
+    def sa_joint_callback(self, msg):
+        names = msg.name
+        z = msg.position[names.index("sa_z")]
+        self.send(
+            text_data=json.dumps(
+                {"type": "sa_z", "sa_z": z}
             )
         )
 
