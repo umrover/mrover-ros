@@ -38,12 +38,18 @@
       </div>
     </div>
     <div class="col">
-      <h3>All Cameras</h3>
-      <div class="d-flex justify-content-end" v-if="isSA">
-        <button class="btn btn-primary btn-lg custom-btn" @click="takePanorama()">
-          Take Panorama
-        </button>
-        <p>{{ percent }}</p>
+      <div class="row text-center align-items-center">
+        <div class="col">
+          <h3>All Cameras</h3>
+        </div>
+          <div class="col" v-if="isSA">
+            <button class="btn btn-primary" @click="takePanorama()">
+              Take Panorama
+            </button>
+          </div>
+          <div class="col" v-if="isSA">
+            <p class="my-auto percent">{{ (percent*100).toFixed(2) }}%</p>
+          </div>
       </div>
     </div>
     <CameraDisplay :streamOrder="streamOrder" :mission="mission" :names="names" :qualities="qualities"></CameraDisplay>
@@ -175,5 +181,9 @@ export default {
 .info {
   height: 200px;
   overflow-y: auto;
+}
+
+.percent {
+  font-size: large;
 }
 </style>

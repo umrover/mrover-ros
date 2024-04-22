@@ -700,8 +700,9 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.pano_client.send_goal(goal, feedback_cb=feedback_cb)
         finished = self.pano_client.wait_for_result(timeout=rospy.Duration(30)) # timeouts after 30 seconds
         if finished:
+            rospy.logerr("Finished!")
             image = self.pano_client.get_result().panorama
-            # self.image_callback(image)
+            self.image_callback(image)
         else:
             rospy.logerr("CapturePanorama took too long!")
 
@@ -715,10 +716,10 @@ class GUIConsumer(JsonWebsocketConsumer):
             return
 
         # Save the image to a file (you could change 'png' to 'jpg' or other formats)
-        image_filename = "panorama.png"
+        image_filename = "~/Downloads/panorama.png"
         try:
-            cv2.imwrite(image_filename, cv_image)
-            rospy.loginfo("Saved image to {}".format(image_filename))
+            cv2.imwrite(os.path.expanduser(image_filename), cv_image)
+            rospy.logerr("Saved image to {}".format(image_filename))
         except Exception as e:
             rospy.logerr("Could not save image: " + str(e))
 
