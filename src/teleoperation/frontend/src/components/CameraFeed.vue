@@ -67,7 +67,7 @@ export default defineComponent({
   },
 
   mounted: function () {
-    this.startStream(this.id)
+    // this.startStream(this.id)
     // this.$nextTick(() => {
     //   const canvas: HTMLCanvasElement = document.getElementById(
     //     'stream-' + this.id

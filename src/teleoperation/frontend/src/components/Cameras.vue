@@ -2,44 +2,14 @@
   <div class="wrap row">
     <div class="col">
       <h3>Cameras ({{ num_available }} available)</h3>
-      <!-- <div class="row justify-content-md-left"> -->
-        <!-- <div class="form-group col-md-4">
-          <label for="Camera Name">Camera name</label>
-          <input
-            v-model="cameraName"
-            type="message"
-            class="form-control"
-            id="CameraName"
-            placeholder="Enter Camera Name"
-          /> 
-          <small id="cameraDescrip" class="form-text text-muted"></small>
-        </div>
-        <div class="form-group col-md-4">
-          <label for="Camera ID">Camera ID</label>
-          <input
-            v-model="cameraIdx"
-            type="number"
-            min="0"
-            max="8"
-            class="form-control"
-            id="CameraIdx"
-            placeholder="Camera ID"
-          />
-        </div>
-        <button class="btn btn-primary custom-btn" @click="addCameraName()">Change Name</button>
-      </div> -->
-      <div class="cameraselection"> <!-- v-for="camera in cameras"> -->
+      <div class="cameraselection"> 
         <CameraSelection
           :cams-enabled="camsEnabled"
           :names="names"
           :capacity="capacity"
           :ports="ports"
+          @cam_index="setCamIndex($event)"
         />
-        <!-- @cam_index="setCamIndex($event)" (NOTE: actually goes into "CameraSelection")-->
-        <!-- <div class="contrainer-sm">
-          <h5> {{  cameras.name }}</h5>
-          <p> Port: {{ cameras.port }}</p>
-        </div> -->
       </div>
     </div>
     <div class="col">
@@ -50,7 +20,7 @@
         </button>
       </div>
     </div>
-    <CameraDisplay :streamOrder="streamOrder" :mission="mission" :names="names" :qualities="qualities"></CameraDisplay>
+    <CameraDisplay :streamOrder="streamOrder" :mission="mission" :names="names" :ports="ports" :qualities="qualities"></CameraDisplay>
   </div>
 </template>
 
@@ -83,8 +53,8 @@ export default {
   data() {
     return {
       camsEnabled: reactive(new Array(9).fill(false)),
-      names: reactive(Array.from({ length: 9 }, (_, i) => 'Camera: ' + i)),
-      ports: reactive(Array.from({ length: 9 }, (_, i) => 'Port: ' + i)),
+      names: reactive([]),
+      ports: reactive([]),
       cameraIdx: 0,
       cameraName: '',
       capacity: 4,
@@ -99,6 +69,10 @@ export default {
     message(msg) {
       if (msg.type == 'max_streams') {
         this.streamOrder = new Array(msg.streams).fill(-1)
+      }
+      if (msg.type == 'camera_info') {
+        this.names = msg.names
+        this.ports = msg.ports
       }
     },
     capacity: function (newCap, oldCap) {
@@ -119,7 +93,8 @@ export default {
 
   created: function () {
     window.setTimeout(() => {
-      this.sendMessage({ type: 'max_streams' })
+      this.sendMessage({ type: 'max_streams' }),
+      this.sendMessage({ type: 'camera_info' })
     }, 250)
   },
 

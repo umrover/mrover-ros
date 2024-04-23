@@ -190,6 +190,8 @@ class GUIConsumer(JsonWebsocketConsumer):
                 self.mast_gimbal(message)
             elif message["type"] == "max_streams":
                 self.send_res_streams()
+            elif message["type"] == "camera_info":
+                self.send_camera_info()
             elif message["type"] == "sendCameras":
                 self.change_cameras(message)
             elif message["type"] == "takePanorama":
@@ -673,6 +675,14 @@ class GUIConsumer(JsonWebsocketConsumer):
         streams = rospy.get_param("cameras/max_streams")
         self.send(text_data=json.dumps({"type": "max_resolution", "res": res}))
         self.send(text_data=json.dumps({"type": "max_streams", "streams": streams}))
+
+    def send_camera_info(self):
+        rospy.logerr(self.camera_info)
+        for x in self.camera_info:
+            rospy.logerr(x)
+        names = [ x['name'] for x in self.camera_info ]
+        ports = [ x['port'] for x in self.camera_info ]
+        self.send(text_data=json.dumps({"type": "camera_info", "names": names, "ports": ports}))
 
     def capture_panorama(self) -> None:
         try:
