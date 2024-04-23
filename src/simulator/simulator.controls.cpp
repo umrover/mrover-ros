@@ -127,7 +127,6 @@ namespace mrover {
             if (key == mToggleCameraLockKey) {
                 if (mCameraInRoverTarget) {
                     mCameraInRoverTarget = std::nullopt;
-
                     Eigen::Matrix3d rotationMatrix = mCameraInWorld.transform().block<3, 3>(0, 0);
 
                     Eigen::Vector3d left = rotationMatrix.col(1);

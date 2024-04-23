@@ -45,7 +45,7 @@ class TestDrive(unittest.TestCase):
         print(cmd)
         print(done)
         self.assertLess(cmd.angular.z, 0.0)
-        self.assertEqual(cmd.angular.z, -1.0)
+        self.assertEqual(cmd.angular.z, -0.7)
         self.assertEqual(cmd.linear.x, 0.0)
 
     def test_turn_left(self):
@@ -59,7 +59,7 @@ class TestDrive(unittest.TestCase):
         print(cmd)
         print(done)
         self.assertGreater(cmd.angular.z, 0.0)
-        self.assertEqual(cmd.angular.z, 1.0)
+        self.assertEqual(cmd.angular.z, 0.7)
         self.assertEqual(cmd.linear.x, 0.0)
 
     def test_straight_angle(self):

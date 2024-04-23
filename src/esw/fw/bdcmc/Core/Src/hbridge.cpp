@@ -5,9 +5,9 @@
 
 namespace mrover {
 
-    HBridge::HBridge(TIM_HandleTypeDef* timer, Pin forward_pin, Pin reverse_pin)
-        : m_forward_pins{forward_pin},
-          m_reverse_pins{reverse_pin},
+    HBridge::HBridge(TIM_HandleTypeDef* timer, Pin positive_pin, Pin negative_pin)
+        : m_positive_pin{positive_pin},
+          m_negative_pin{negative_pin},
           m_timer{timer},
           m_max_pwm{0_percent} {
 
@@ -16,18 +16,22 @@ namespace mrover {
         HAL_TIM_PWM_Start(m_timer, m_channel);
     }
 
-    void HBridge::write(Percent output) const {
+    auto HBridge::write(Percent output) const -> void {
         // Set direction pins/duty cycle
         set_direction_pins(output);
         set_duty_cycle(output, m_max_pwm);
     }
 
-    void HBridge::set_direction_pins(Percent duty_cycle) const {
-        m_forward_pins.write(duty_cycle < 0_percent ? GPIO_PIN_SET : GPIO_PIN_RESET);
-        m_reverse_pins.write(duty_cycle > 0_percent ? GPIO_PIN_SET : GPIO_PIN_RESET);
+    auto HBridge::set_direction_pins(Percent duty_cycle) const -> void {
+        // TODO(quintin): Guthrie says only one of these pins is actually used?
+        GPIO_PinState positive_state = duty_cycle > 0_percent ? GPIO_PIN_SET : GPIO_PIN_RESET;
+        GPIO_PinState negative_state = duty_cycle < 0_percent ? GPIO_PIN_SET : GPIO_PIN_RESET;
+        if (m_is_inverted) std::swap(positive_state, negative_state);
+        m_positive_pin.write(positive_state);
+        m_negative_pin.write(negative_state);
     }
 
-    void HBridge::set_duty_cycle(Percent duty_cycle, Percent max_duty_cycle) const {
+    auto HBridge::set_duty_cycle(Percent duty_cycle, Percent max_duty_cycle) const -> void {
         // Clamp absolute value of the duty cycle to the supported range
         duty_cycle = std::clamp(abs(duty_cycle), 0_percent, max_duty_cycle);
 
@@ -39,8 +43,12 @@ namespace mrover {
         // TODO(quintin) we should error if the registers are null pointers
     }
 
-    void HBridge::change_max_pwm(Percent max_pwm) {
+    auto HBridge::change_max_pwm(Percent max_pwm) -> void {
         m_max_pwm = max_pwm;
+    }
+
+    auto HBridge::change_inverted(bool inverted) -> void {
+        m_is_inverted = inverted;
     }
 
 } // namespace mrover

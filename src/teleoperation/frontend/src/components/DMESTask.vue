@@ -69,6 +69,7 @@ import MotorsStatusTable from './MotorsStatusTable.vue'
 import OdometryReading from './OdometryReading.vue'
 import DriveControls from './DriveControls.vue'
 import MastGimbalControls from './MastGimbalControls.vue'
+import type ArmMoteusStateTableVue from './ArmMoteusStateTable.vue'
 
 export default defineComponent({
   components: {
