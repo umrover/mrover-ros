@@ -37,7 +37,7 @@ export default defineComponent({
       required: true
     },
     mission: {
-      type: String, // {'sa', 'ik', 'auton'}
+      type: String, // // {'ish', 'ik', 'sa', 'auton', 'ZED'}
       required: true
     }
   },
@@ -85,7 +85,7 @@ export default defineComponent({
     changeQuality: function () {
       this.sendMessage({
         type: 'sendCameras',
-        primary: this.mission === 'sa',
+        primary: this.mission !== 'ish',
         device: this.id,
         resolution: parseInt(this.quality)
       })

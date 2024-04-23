@@ -42,12 +42,12 @@
         <div class="col">
           <h3>All Cameras</h3>
         </div>
-          <div class="col" v-if="isSA">
+          <div class="col" v-if="mission === 'ish'">
             <button class="btn btn-primary" @click="takePanorama()">
               Take Panorama
             </button>
           </div>
-          <div class="col" v-if="isSA">
+          <div class="col" v-if="mission === 'ish'">
             <p class="my-auto percent">{{ (percent*100).toFixed(2) }}%</p>
           </div>
       </div>
@@ -73,12 +73,8 @@ export default {
       type: Boolean,
       required: true
     },
-    isSA: {
-      type: Boolean,
-      required: true
-    },
     mission: {
-      type: String, // {'sa', 'ik', 'other'}
+      type: String, // {'ish', 'ik', 'sa', 'auton'}
       required: true
     }
   },
