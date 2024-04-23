@@ -57,7 +57,9 @@ teleop:
       enabled: true
       multiplier: 1
     twist:
-      multiplier: 0.7
+      multiplier: 0.6
+    tilt:
+      multiplier: 1
 
   xbox_mappings:
     left_x: 0

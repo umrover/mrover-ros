@@ -433,6 +433,8 @@ class GUIConsumer(JsonWebsocketConsumer):
         # angular_from_lateral = get_axes_input("left_right", 0.4, True)
         angular = get_axes_input("twist", 0.03, True, self.max_angular_speed * dampen)
 
+        linear += get_axes_input("tilt", 0.5,  scale=0.1)
+
         self.twist_pub.publish(
             Twist(
                 linear=Vector3(x=linear),
@@ -812,9 +814,7 @@ class GUIConsumer(JsonWebsocketConsumer):
 
     def arm_joint_callback(self, msg: JointState) -> None:
         # Set non-finite values to zero
-        for i in range(len(msg.position)):
-            if not isfinite(msg.position[i]):
-                msg.position[i] = 0
+        msg.position = [x if isfinite(x) else 0 for x in msg.position]
         self.send(text_data=json.dumps({"type": "fk", "positions": msg.position}))
 
     def science_spectral_callback(self, msg):
