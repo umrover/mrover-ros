@@ -19,6 +19,12 @@
       <div>
         <p>Altitude: {{ odom.altitude.toFixed(2) }}m</p>
       </div>
+      <div>
+        <p>Odom Status: {{ get_odom_status }}</p>
+      </div>
+      <div>
+        <p>Drone Status: {{ get_drone_status }}</p>
+      </div>
     </div>
     <div class="calibration imu">
       <IMUCalibration></IMUCalibration>
@@ -31,7 +37,7 @@
 
 <script lang="ts">
 import { convertDMS } from '../utils.js'
-import { mapGetters } from 'vuex'
+import { mapGetters, mapState } from 'vuex'
 import IMUCalibration from './IMUCalibration.vue'
 import FlightAttitudeIndicator from './FlightAttitudeIndicator.vue'
 export default {
@@ -46,7 +52,16 @@ export default {
     }
   },
 
+  data() {
+    return {
+      drone_latitude_deg:42.293195,
+      drone_longitude_deg:-83.7096706,
+      drone_status: false
+    }
+  },
   computed: {
+    ...mapState('websocket', ['message']),
+
     ...mapGetters('map', {
       odom_format: 'odomFormat'
     }),
@@ -64,9 +79,38 @@ export default {
     },
     alt_available: function () {
       return !isNan(this.odom.altitude)
+    },
+    get_odom_status: function () {
+      if(this.odom.status){
+        return "fixed"
+      }
+      else{
+        return "not fixed"
+      }
+    },
+    get_drone_status: function () {
+      if(this.drone_status){
+        return "fixed"
+      }
+      else{
+        return "not fixed"
+      }
     }
+  },
+  
+
+  watch:{
+      message(msg){
+        if (msg.type == 'drone_waypoint') {
+            this.drone_latitude_deg = msg.latitude
+            this.drone_longitude_deg = msg.longitude
+            this.drone_status = msg.status
+          }
+      }
   }
 }
+
+ 
 </script>
 
 <style scoped>

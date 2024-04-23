@@ -10,13 +10,9 @@
       <p>{{ waypoint.lat }}ºN, {{ waypoint.lon }}ºW</p>
     </div>
     <div class="text-center">
-      <button class="btn btn-danger" @click="$emit('delete', { index: index })">X</button>
-      <button
-        :class="['btn', index === highlightedWaypoint ? 'btn-success' : 'btn-danger']"
-        @click="$emit('find', { index: index })"
-      >
-        Find
-      </button>
+      <button class="btn btn-danger" @click="$emit('delete', { index: index })">Delete</button>
+      <button class="btn btn-danger" @click="$emit('find', { index: index })">Find</button>
+      <button class="btn btn-danger" @click="$emit('search', {index: index})">Search</button>
     </div>
   </div>
 </template>

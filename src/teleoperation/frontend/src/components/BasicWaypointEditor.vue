@@ -91,6 +91,7 @@
           :index="i"
           @delete="deleteItem($event)"
           @find="findWaypoint($event)"
+          @search="searchForWaypoint($event)"
         />
       </div>
     </div>
@@ -138,7 +139,8 @@ export default {
 
     ...mapMutations('erd', {
       setWaypointList: 'setWaypointList',
-      setHighlightedWaypoint: 'setHighlightedWaypoint'
+      setHighlightedWaypoint: 'setHighlightedWaypoint',
+      setSearchWaypoint: 'setSearchWaypoint'
     }),
 
     ...mapMutations('map', {
@@ -148,6 +150,9 @@ export default {
     deleteItem: function (payload: { index: any }) {
       if (this.highlightedWaypoint == payload.index) {
         this.setHighlightedWaypoint(-1)
+      }
+      if (this.searchWaypoint == payload.index) {
+        this.setSearchWaypoint(-1)
       }
       this.storedWaypoints.splice(payload.index, 1)
     },
@@ -167,11 +172,21 @@ export default {
       })
     },
 
-    findWaypoint: function (payload: { index: any }) {
+    findWaypoint: function (payload: { index: number }) {
+      console.log("find: ", payload.index)
       if (payload.index === this.highlightedWaypoint) {
         this.setHighlightedWaypoint(-1)
       } else {
         this.setHighlightedWaypoint(payload.index)
+      }
+    },
+
+    searchForWaypoint: function (payload: { index: number }) {
+      console.log("index: ", payload.index)
+      if (payload.index === this.searchWaypoint) {
+        this.setSearchWaypoint(-1)
+      } else {
+        this.setSearchWaypoint(payload.index)
       }
     },
 
@@ -233,6 +248,7 @@ export default {
   created: function () {
     // Reset waypoint editors
     this.setHighlightedWaypoint(-1)
+    this.setSearchWaypoint(-1)
     this.setWaypointList([])
 
     // Set odometer format
@@ -248,6 +264,7 @@ export default {
     ...mapState('websocket', ['message']),
     ...mapGetters('erd', {
       highlightedWaypoint: 'highlightedWaypoint',
+      searchWaypoint: 'searchWaypoint',
       clickPoint: 'clickPoint'
     }),
 

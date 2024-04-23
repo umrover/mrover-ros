@@ -100,6 +100,7 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.ish_thermistor_data = rospy.Subscriber(
                 "/science_thermistors", ScienceThermistors, self.ish_thermistor_data_callback
             )
+            self.drone_waypoint_sub = rospy.Subscriber("/drone_waypoint", NavSatFix, self.drone_waypoint_callback)
             self.ish_heater_state = rospy.Subscriber(
                 "/science_heater_state", HeaterData, self.ish_heater_state_callback
             )
@@ -605,9 +606,18 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.send(text_data=json.dumps({"type": "cmd_vel", "linear_x": msg.linear.x, "angular_z": msg.angular.z}))
 
     def gps_fix_callback(self, msg):
+        fixed = True
+        if msg.status.status == -1:
+            fixed = False
         self.send(
             text_data=json.dumps(
-                {"type": "nav_sat_fix", "latitude": msg.latitude, "longitude": msg.longitude, "altitude": msg.altitude}
+                {
+                    "type": "nav_sat_fix",
+                    "latitude": msg.latitude,
+                    "longitude": msg.longitude,
+                    "altitude": msg.altitude,
+                    "status": fixed,
+                }
             )
         )
 
@@ -813,6 +823,19 @@ class GUIConsumer(JsonWebsocketConsumer):
     def science_spectral_callback(self, msg):
         self.send(
             text_data=json.dumps({"type": "spectral_data", "site": msg.site, "data": msg.data, "error": msg.error})
+        )
+
+    def drone_waypoint_callback(self, msg):
+        latitude = msg.latitude
+        longitude = msg.longitude
+        fixed = True
+        rospy.logerr(msg.status.status)
+        if msg.status.status == -1:
+            fixed = False
+        self.send(
+            text_data=json.dumps(
+                {"type": "drone_waypoint", "latitude": latitude, "longitude": longitude, "status": fixed}
+            )
         )
 
     def download_csv(self, msg):
