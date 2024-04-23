@@ -476,11 +476,7 @@ class GUIConsumer(JsonWebsocketConsumer):
     def sa_joint_callback(self, msg):
         names = msg.name
         z = msg.position[names.index("sa_z")]
-        self.send(
-            text_data=json.dumps(
-                {"type": "sa_z", "sa_z": z}
-            )
-        )
+        self.send(text_data=json.dumps({"type": "sa_z", "sa_z": z}))
 
     def drive_controller_callback(self, msg):
         hits = []
@@ -687,11 +683,8 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.send(text_data=json.dumps({"type": "max_streams", "streams": streams}))
 
     def send_camera_info(self):
-        rospy.logerr(self.camera_info)
-        for x in self.camera_info:
-            rospy.logerr(x)
-        names = [ x['name'] for x in self.camera_info ]
-        ports = [ x['port'] for x in self.camera_info ]
+        names = [x["name"] for x in self.camera_info]
+        ports = [x["port"] for x in self.camera_info]
         self.send(text_data=json.dumps({"type": "camera_info", "names": names, "ports": ports}))
 
     def capture_panorama(self) -> None:
