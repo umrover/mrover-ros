@@ -78,13 +78,6 @@
           :topic_name="'sa_calibrate_sensor_actuator'"
         />
       </div>
-      <!-- <MotorAdjust
-        :options="[
-          { name: 'sa_joint_1', option: 'Joint 1' },
-          { name: 'sa_joint_2', option: 'Joint 2' },
-          { name: 'sa_joint_3', option: 'Joint 3' }
-        ]"
-      /> -->
     </div>
     <div v-show="false">
       <MastGimbalControls></MastGimbalControls>

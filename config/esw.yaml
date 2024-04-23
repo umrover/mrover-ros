@@ -122,10 +122,10 @@ brushless_motors:
       max_velocity: 20.0
       max_torque: 5.0
     joint_a:
-      # 1236.8475 rad/meter, or 196.850393476 rev/meter, and we want a max vel of 40 meter/s. 
+      # 1236.8475 rad/meter, or 196.850393476 rev/meter, and we want a max vel of 40 meter/s.
       # gear ratio is currently at 0.005080 revolutions = 1 meter
-      min_velocity: -0.10  # this means -0.10 meters per second.
-      max_velocity: 0.10
+      min_velocity: -0.05  # this means -0.10 meters per second.
+      max_velocity: 0.05
       limit_0_present: true
       limit_1_present: true
       limit_0_enabled: true
@@ -144,8 +144,8 @@ brushless_motors:
       max_backward_pos: 0.0
       max_torque: 20.0
     joint_c:
-      min_velocity: -0.08 # in terms of output
-      max_velocity: 0.08 # max output shaft speed: 5 rpm (for now)
+      min_velocity: -0.04 # in terms of output
+      max_velocity: 0.04 # max output shaft speed: 5 rpm (for now)
       min_position: -0.125
       max_position: 0.30 # 220 degrees of motion is the entire range
       max_torque: 20.0
