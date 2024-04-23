@@ -4,6 +4,7 @@ import os
 import threading
 from datetime import datetime
 from math import copysign, pi
+import cv2
 
 import pytz
 from channels.generic.websocket import JsonWebsocketConsumer
@@ -12,6 +13,8 @@ import rospy
 import tf2_ros
 from backend.models import AutonWaypoint, BasicWaypoint
 from geometry_msgs.msg import Twist, Pose, Point, Quaternion, Vector3
+
+import actionlib
 
 from cv_bridge import CvBridge
 from mrover.msg import (
@@ -35,7 +38,7 @@ from mrover.msg import (
     CapturePanoramaFeedback,
     CapturePanoramaGoal
 )
-from mrover.srv import EnableAuton, AdjustMotor, ChangeCameras, CapturePanorama
+from mrover.srv import EnableAuton, AdjustMotor, ChangeCameras
 from sensor_msgs.msg import NavSatFix, Temperature, RelativeHumidity
 from std_msgs.msg import String
 from std_srvs.srv import SetBool, Trigger
@@ -680,7 +683,7 @@ class GUIConsumer(JsonWebsocketConsumer):
     def capture_panorama(self) -> None:
         rospy.logerr("Capturing panorama")
         goal = CapturePanoramaGoal()
-        goal.angle = 180
+        goal.angle = pi/2
         def feedback_cb(feedback: CapturePanoramaGoal) -> None:
             self.send(text_data=json.dumps({"type": "pano_feedback", "percent": feedback.percent_done}))
         self.pano_client.send_goal(goal, feedback_cb=feedback_cb)

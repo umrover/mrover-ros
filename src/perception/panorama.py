@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 
-import cv2
 import numpy as np
-from sensor_msgs.msg import PointCloud2, PointField, Image
+from sensor_msgs.msg import PointCloud2, Image
 from std_msgs.msg import Header
-from mrover.msg import MotorsStatus, Position
+from mrover.msg import Position
 import sensor_msgs.point_cloud2 as pc2
 import tf2_ros
 from util.SE3 import SE3
@@ -14,12 +13,11 @@ import rospy
 import sys
 import actionlib
 
-import cv2 as cv
+import cv2
 import time
 
 from mrover.msg import CapturePanoramaAction, CapturePanoramaFeedback, CapturePanoramaResult, CapturePanoramaGoal
 from sensor_msgs.point_cloud2 import PointCloud2
-from sensor_msgs import point_cloud2
 
 class Panorama:
 
@@ -51,6 +49,7 @@ class Panorama:
         self.current_pc = msg
 
         # extract xyzrgb fields
+        # get every tenth point to make the pc sparser
         # TODO: dtype hard-coded to float32
         self.arr_pc = np.frombuffer(bytearray(msg.data), dtype=np.float32).reshape(msg.height * msg.width, int(msg.point_step / 4))[0::10,:]
 
@@ -59,108 +58,100 @@ class Panorama:
 
     def capture_panorama(self, goal: CapturePanoramaGoal):
         # self.position_subscriber = rospy.Subscriber("/mast_status", MotorsStatus, self.position_callback, callback_args = Position, queue_size=1)
-        self.pc_subscriber = rospy.Subscriber("/camera/left/points", PointCloud2, self.pc_callback, queue_size=1)
-        self.img_subscriber = rospy.Subscriber("/camera/left/image", Image, self.image_callback, queue_size=1)
+        self.pc_subscriber = rospy.Subscriber("/mast_camera/left/points", PointCloud2, self.pc_callback, queue_size=1)
+        self.img_subscriber = rospy.Subscriber("/mast_camera/left/image", Image, self.image_callback, queue_size=1)
         self.mast_pose = rospy.Publisher("/mast_gimbal_position_cmd", Position, queue_size=1)
         self.pc_publisher = rospy.Publisher("/stitched_pc", PointCloud2)
         self.tf_buffer = tf2_ros.Buffer()
         self.listener = tf2_ros.TransformListener(self.tf_buffer)
+
         time.sleep(1)
-        zed_in_base = SE3.transform_matrix(SE3.from_tf_time(self.tf_buffer, "odom", "zed_base_link")[0])
+
+        try:
+            for i in range(3):
+                zed_in_base = SE3.transform_matrix(SE3.from_tf_time(self.tf_buffer, "odom", "zed_base_link")[0])
+                break
+        except:
+            rospy.loginfo("Failed to get transform from map to zed_base_link")
         # TODO: Don't hardcode or parametrize this?
         angle_inc = 0.2 # in radians
         current_angle = 0.0
         stitched_pc = np.empty((0,8), dtype=np.float32)
         
         while (current_angle < goal.angle):
+
+            # allow gimbal to come to rest
+            time.sleep(0.5)
+            
             if self._as.is_preempt_requested():
                 rospy.loginfo('%s: Preempted and stopped by operator' % self._action_name)
                 self._as.set_preempted()
                 break
             if self.current_img is None:
-                continue
+                pass
             try:
                 zed_in_base_current = SE3.transform_matrix(SE3.from_tf_time(self.tf_buffer, "odom", "zed_base_link")[0])
                 tf_diff = np.linalg.inv(zed_in_base) @ zed_in_base_current
                 rotated_pc = self.rotate_pc(tf_diff, self.arr_pc)
-
-                # pc_msg = PointCloud2()
-                # pc_msg.width = rotated_pc.shape[0]
-                # flat_pc = rotated_pc.flatten()
-                # header = Header()
-                # header.frame_id = 'base_link'
-                # pc_msg.header = header
-                # pc_msg.fields = self.current_pc.fields
-                # pc_msg.is_bigendian = self.current_pc.is_bigendian
-                # pc_msg.data = flat_pc.tobytes()
-                # pc_msg.height = 1
-                # pc_msg.point_step = int(len(pc_msg.data) / pc_msg.width)
-                # pc_msg.is_dense = self.current_pc.is_dense
-                # self.pc_publisher.publish(pc_msg)
+                stitched_pc = np.vstack((stitched_pc, rotated_pc))
             except:
-                continue
-            time.sleep(0.5)
+                pass
 
             self.img_list.append(np.copy(self.current_img))
-            stitched_pc = np.vstack((stitched_pc, rotated_pc))
-
+            rospy.loginfo("rotating mast...")
             current_angle += angle_inc
             self.mast_pose.publish(Position(["mast_gimbal_z"], [current_angle]))
-            # self._as.publish_feedback(CapturePanoramaFeedback(current_angle / goal.angle))
+            self._as.publish_feedback(CapturePanoramaFeedback(current_angle / goal.angle))
 
         rospy.loginfo("Creating Panorama using %s images...", str(len(self.img_list)))
-        stitcher = cv.Stitcher.create()
-        # status, pano = stitcher.stitch(self.img_list)
-        # desktop_path = "/home/alison/catkin_ws/src/mrover/data/pano.png"
-        # cv2.imwrite(filename=desktop_path, pano)
+        stitcher = cv2.Stitcher.create()
+
+        # TODO Handle exceptions in stitching and write to relative path
+        status, pano = stitcher.stitch(self.img_list)
+
+        # construct image msg
+        try:
+            header = Header()
+            img_msg = Image()
+            img_msg.header = header
+            img_msg.height = pano.shape[0]
+            img_msg.width = pano.shape[1]
+            img_msg.encoding = "rgb8"
+            img_msg.data = pano.tobytes()
+            img_msg.step = len(pano[0]) * 3
+        except:
+            rospy.loginfo("Failed to create image message")
+            self._as.set_aborted()
+            return
+        
+        self._as.set_succeeded(CapturePanoramaResult(panorama=img_msg)) # TODO: replace with temp_img with stitched img
 
         # construct pc from stitched
-        pc_msg = PointCloud2()
-        pc_msg.width = stitched_pc.shape[0]
-        stitched_pc = stitched_pc.flatten()
-        header = Header()
-        header.frame_id = 'base_link'
-        pc_msg.header = header
-        pc_msg.fields = self.current_pc.fields
-        pc_msg.is_bigendian = self.current_pc.is_bigendian
-        pc_msg.data = stitched_pc.tobytes()
-        pc_msg.height = 1
-        pc_msg.point_step = int(len(pc_msg.data) / pc_msg.width)
-        pc_msg.is_dense = self.current_pc.is_dense
-        while not rospy.is_shutdown():
-            self.pc_publisher.publish(pc_msg)
-            time.sleep(0.5)
+        try:
+            pc_msg = PointCloud2()
+            pc_msg.width = stitched_pc.shape[0]
+            stitched_pc = stitched_pc.flatten()
+            header.frame_id = 'base_link'
+            pc_msg.header = header
+            pc_msg.fields = self.current_pc.fields
+            pc_msg.is_bigendian = self.current_pc.is_bigendian
+            pc_msg.data = stitched_pc.tobytes()
+            pc_msg.height = 1
+            pc_msg.point_step = int(len(pc_msg.data) / pc_msg.width)
+            pc_msg.is_dense = self.current_pc.is_dense
 
-        # return CapturePanoramaGoal(...)
-            
-        # def received_point_cloud(point: PointCloud2):
-        #     # Extract RGB field
-        #     pc = pointcloud2_to_array(point)
-        #     pc = split_rgb_field(pc)
-        #     shape = pc.shape + (3,)
-        #     rgb = np.zeros(shape)
-        #     rgb[..., 0] = pc["r"]
-        #     rgb[..., 1] = pc["g"]
-        #     rgb[..., 2] = pc["b"]
-        # def received_motor_position(status: MotorsStatus):
-        #     nonlocal latestPosition
-        #     # rospy.loginfo("Received motor position")
-        #     mast_throttle.publish(Position(["mast_gimbal_z"], [targetPosition]))
-        #     latestPosition = status.joint_states.position
-        #     # rospy.loginfo(status.joint_states.position)
-
-
-        # Wait until mast_status starts publishing
-        temp_img = None # TODO: delete. Used to publish for teleop debugging
-        self._as.set_succeeded(CapturePanoramaResult(panorama=temp_img)) # TODO: replace with temp_img with stitched img
+            while not rospy.is_shutdown():
+                self.pc_publisher.publish(pc_msg)
+                time.sleep(0.5)
+        except:
+            # If image succeeds but pc fails, should we set action as succeeded?
+            rospy.loginfo("Failed to create point cloud message")
+            return
 
 def main() -> int:
     rospy.init_node(name="panorama")
     pano = Panorama(rospy.get_name())
-    # panorama_service = rospy.Service("capture_panorama", CapturePanoramaAction, pano.capture_panorama)
     rospy.spin()
-    # return 0
-
 
 if __name__ == "__main__":
     sys.exit(main())
