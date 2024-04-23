@@ -2,8 +2,8 @@
   <div class="wrap row">
     <div class="col">
       <h3>Cameras ({{ num_available }} available)</h3>
-      <div class="row justify-content-md-left">
-        <div class="form-group col-md-4">
+      <!-- <div class="row justify-content-md-left"> -->
+        <!-- <div class="form-group col-md-4">
           <label for="Camera Name">Camera name</label>
           <input
             v-model="cameraName"
@@ -11,7 +11,7 @@
             class="form-control"
             id="CameraName"
             placeholder="Enter Camera Name"
-          />
+          /> 
           <small id="cameraDescrip" class="form-text text-muted"></small>
         </div>
         <div class="form-group col-md-4">
@@ -27,14 +27,19 @@
           />
         </div>
         <button class="btn btn-primary custom-btn" @click="addCameraName()">Change Name</button>
-      </div>
-      <div class="cameraselection">
+      </div> -->
+      <div class="cameraselection"> <!-- v-for="camera in cameras"> -->
         <CameraSelection
           :cams-enabled="camsEnabled"
           :names="names"
           :capacity="capacity"
-          @cam_index="setCamIndex($event)"
+          :ports="ports"
         />
+        <!-- @cam_index="setCamIndex($event)" (NOTE: actually goes into "CameraSelection")-->
+        <!-- <div class="contrainer-sm">
+          <h5> {{  cameras.name }}</h5>
+          <p> Port: {{ cameras.port }}</p>
+        </div> -->
       </div>
     </div>
     <div class="col">
@@ -73,12 +78,13 @@ export default {
     mission: {
       type: String, // {'sa', 'ik', 'other'}
       required: true
-    }
+    },
   },
   data() {
     return {
       camsEnabled: reactive(new Array(9).fill(false)),
       names: reactive(Array.from({ length: 9 }, (_, i) => 'Camera: ' + i)),
+      ports: reactive(Array.from({ length: 9 }, (_, i) => 'Port: ' + i)),
       cameraIdx: 0,
       cameraName: '',
       capacity: 4,

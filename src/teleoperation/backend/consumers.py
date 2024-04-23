@@ -130,6 +130,7 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.brushed_motors = rospy.get_param("brushed_motors/controllers")
             self.xbox_mappings = rospy.get_param("teleop/xbox_mappings")
             self.sa_config = rospy.get_param("teleop/sa_controls")
+            self.camera_info = rospy.get_param("teleop/cameras")
 
             self.tf_buffer = tf2_ros.Buffer()
             self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)

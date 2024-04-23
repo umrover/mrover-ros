@@ -28,6 +28,10 @@ export default {
     names: {
       type: Array,
       required: true
+    },
+    ports: {
+      type: Array,
+      required: true
     }
   },
   data() {
