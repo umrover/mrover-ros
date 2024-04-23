@@ -17,7 +17,7 @@ import actionlib
 import cv2 as cv
 import time
 
-from mrover.msg import CapturePanoramaAction, CapturePanoramaActionFeedback, CapturePanoramaActionResult, CapturePanoramaGoal
+from mrover.msg import CapturePanoramaAction, CapturePanoramaFeedback, CapturePanoramaResult, CapturePanoramaGoal
 from sensor_msgs.point_cloud2 import PointCloud2
 from sensor_msgs import point_cloud2
 
@@ -106,7 +106,7 @@ class Panorama:
 
             current_angle += angle_inc
             self.mast_pose.publish(Position(["mast_gimbal_z"], [current_angle]))
-            # self._as.publish_feedback(CapturePanoramaActionFeedback(current_angle / goal.angle))
+            # self._as.publish_feedback(CapturePanoramaFeedback(current_angle / goal.angle))
 
         rospy.loginfo("Creating Panorama using %s images...", str(len(self.img_list)))
         stitcher = cv.Stitcher.create()
@@ -151,6 +151,8 @@ class Panorama:
 
 
         # Wait until mast_status starts publishing
+        temp_img = None # TODO: delete. Used to publish for teleop debugging
+        self._as.set_succeeded(CapturePanoramaResult(panorama=temp_img)) # TODO: replace with temp_img with stitched img
 
 def main() -> int:
     rospy.init_node(name="panorama")
