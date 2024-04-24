@@ -46,7 +46,7 @@
     </div>
     <div class="controls-flex">
       <button class="btn btn-primary" @click="zero">Zero Z</button>
-      <p>SA Z Position: {{ z_position }}</p>
+      <p>SA Z Position: {{ z_position }} inches</p>
       <MotorAdjust
         v-if="arm_mode == 'position'"
         :options="[
@@ -69,6 +69,7 @@ import MotorAdjust from './MotorAdjust.vue'
 
 // In seconds
 const updateRate = 0.1
+const metersToInches = 39.3701
 let interval: number | undefined
 
 export default defineComponent({
@@ -155,7 +156,7 @@ export default defineComponent({
         }
       }
       else if (msg.type == 'sa_z') {
-        this.z_position = msg.sa_z
+        this.z_position = msg.sa_z * metersToInches
       }
     },
     arm_mode(newMode) {
