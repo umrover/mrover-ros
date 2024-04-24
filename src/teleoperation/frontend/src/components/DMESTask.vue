@@ -69,8 +69,9 @@ import MotorsStatusTable from './MotorsStatusTable.vue'
 import OdometryReading from './OdometryReading.vue'
 import DriveControls from './DriveControls.vue'
 import MastGimbalControls from './MastGimbalControls.vue'
-import type ArmMoteusStateTableVue from './ArmMoteusStateTable.vue'
 import { quaternionToMapAngle } from '../utils.js'
+
+let interval: number
 
 export default defineComponent({
   components: {
@@ -147,7 +148,7 @@ export default defineComponent({
         this.odom.longitude_deg = msg.longitude
         this.odom.altitude = msg.altitude
       } 
-      else if (msg.type == 'auton_tfclient') {
+      else if (msg.type == 'bearing') {
         this.odom.bearing_deg = quaternionToMapAngle(msg.rotation)
       } 
       else if (msg.type == 'center_map') {
@@ -173,6 +174,9 @@ export default defineComponent({
         this.cancelIK(event)
       }
     })
+    interval = setInterval(() => {
+      this.sendMessage({ type: 'bearing' })
+    }, 1000)
   }
 })
 </script>

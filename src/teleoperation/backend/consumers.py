@@ -187,8 +187,8 @@ class GUIConsumer(JsonWebsocketConsumer):
                 self.send_auton_command(message)
             elif message["type"] == "teleop_enabled":
                 self.send_teleop_enabled(message)
-            elif message["type"] == "auton_tfclient":
-                self.auton_bearing()
+            elif message["type"] == "bearing":
+                self.bearing()
             elif message["type"] == "mast_gimbal":
                 self.mast_gimbal(message)
             elif message["type"] == "max_streams":
@@ -655,12 +655,12 @@ class GUIConsumer(JsonWebsocketConsumer):
         temps = [x.temperature for x in msg.temps]
         self.send(text_data=json.dumps({"type": "thermistor", "temps": temps}))
 
-    def auton_bearing(self):
+    def bearing(self):
         base_link_in_map = SE3.from_tf_tree(self.tf_buffer, "map", "base_link")
         self.send(
             text_data=json.dumps(
                 {
-                    "type": "auton_tfclient",
+                    "type": "bearing",
                     "rotation": base_link_in_map.rotation.quaternion.tolist(),
                 }
             )

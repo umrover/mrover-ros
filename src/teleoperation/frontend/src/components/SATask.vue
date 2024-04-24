@@ -106,7 +106,9 @@ import MotorAdjust from './MotorAdjust.vue'
 import OdometryReading from './OdometryReading.vue'
 import SAArmControls from './SAArmControls.vue'
 import { disableAutonLED, quaternionToMapAngle } from '../utils.js'
-import { mapState } from 'vuex'
+import { mapState, mapActions } from 'vuex'
+
+let interval: number
 
 export default {
   components: {
@@ -175,10 +177,26 @@ export default {
         this.moteusState.error = msg.error
         this.moteusState.limit_hit = msg.limit_hit
       }
+      else if (msg.type == 'nav_sat_fix') {
+        this.odom.latitude_deg = msg.latitude
+        this.odom.longitude_deg = msg.longitude
+        this.odom.altitude = msg.altitude
+      } 
+      else if (msg.type == 'bearing') {
+        this.odom.bearing_deg = quaternionToMapAngle(msg.rotation)
+      } 
     }
   },
 
-  created: function () {}
+  methods: {
+    ...mapActions('websocket', ['sendMessage']),
+  },
+
+  created: function () {
+    interval = setInterval(() => {
+      this.sendMessage({ type: 'bearing' })
+    }, 1000)
+  }
 }
 </script>
 

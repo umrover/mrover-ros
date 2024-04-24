@@ -156,7 +156,7 @@ export default defineComponent({
         this.odom.latitude_deg = msg.latitude
         this.odom.longitude_deg = msg.longitude
         this.odom.altitude = msg.altitude
-      } else if (msg.type == 'auton_tfclient') {
+      } else if (msg.type == 'bearing') {
         this.odom.bearing_deg = quaternionToMapAngle(msg.rotation)
       } else if (msg.type == "center_map") {
         this.odom.latitude_deg = msg.latitude
@@ -179,7 +179,7 @@ export default defineComponent({
       this.sendMessage({ "type": "center_map" });
     }, 250)
       interval = setInterval(() => {
-      this.sendMessage({ type: 'auton_tfclient' })
+      this.sendMessage({ type: 'bearing' })
     }, 1000)
   },
 
