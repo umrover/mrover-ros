@@ -164,8 +164,8 @@ brushless_motors:
     sa_z:
       min_velocity: -0.03
       max_velocity: 0.03
-      min_position: -0.6007
-      max_position: 0.0
+      min_position: 0.0
+      max_position: 0.6007
       limit_0_present: true
       limit_1_present: true
       limit_0_enabled: true
@@ -176,8 +176,8 @@ brushless_motors:
       limit_1_is_active_high: false
       limit_0_used_for_readjustment: true
       limit_1_used_for_readjustment: true
-      limit_0_readjust_position: -0.6007 # meters 
-      limit_1_readjust_position: 0.0 # meters 
+      limit_0_readjust_position: 0.0 # meters 
+      limit_1_readjust_position: 0.6007 # meters 
       max_torque: 200.0
 
 brushed_motors:
@@ -304,7 +304,7 @@ brushed_motors:
       limit_0_readjust_position: 0.0 # meters
       limit_1_readjust_position: 0.2452 # meters
       quad_ratio: 48.0 # encoder ratio compared to motor
-      driver_voltage: 12.0 # used to calculate max pwm
+      driver_voltage: 10.0 # used to calculate max pwm
       motor_max_voltage: 6.0 # used to calculate max pwm
       min_velocity: -1.0
       max_velocity: 1.0
