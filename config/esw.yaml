@@ -4,7 +4,7 @@ imu_driver:
   frame_id: "imu_link"
 
 gps:
-  port: "/dev/gps"
+  port: "/dev/gps_1"
   baud: 115200
   useRMC: false # get covariance instead of velocity, see wiki for more info
   frame_id: "base_link"

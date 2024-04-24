@@ -1,0 +1,10 @@
+<launch>
+    <include file="$(find mrover)/launch/jetson_base.launch" />
+
+    <include file="$(find mrover)/launch/localization.launch">
+        <arg name="use_ekf" value="false" />
+      </include>
+
+    <include file="$(find mrover)/launch/esw_arm.launch" />
+    <include file="$(find mrover)/launch/zed.launch"/>
+</launch>
