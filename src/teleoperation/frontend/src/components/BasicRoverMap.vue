@@ -29,6 +29,7 @@
       <l-polyline :lat-lngs="odomPath" :color="'blue'" />
     </l-map>
     <label><input v-model="online" type="checkbox" />Online</label>
+    <label><input v-model="urc" type="checkbox" />URC</label>
   </div>
 </template>
 
@@ -48,15 +49,14 @@ import L from '../leaflet-rotatedmarker.js'
 const MAX_ODOM_COUNT = 1000
 const DRAW_FREQUENCY = 10
 const onlineUrl = 'http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}'
-const offlineUrl = 'map/{z}/{x}/{y}.png'
 const onlineTileOptions = {
   maxNativeZoom: 22,
   maxZoom: 100,
   subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
 }
 const offlineTileOptions = {
-  maxNativeZoom: 16,
-  maxZoom: 100
+  maxZoom: 20,
+  minZoom: 16
 }
 
 export default {
@@ -78,7 +78,7 @@ export default {
       attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
       online: true,
       onlineUrl: onlineUrl,
-      offlineUrl: offlineUrl,
+      offlineUrl: 'map/wc/{z}/{x}/{y}.jpg',
       onlineTileOptions: onlineTileOptions,
       offlineTileOptions: offlineTileOptions,
       roverMarker: null,
@@ -88,11 +88,12 @@ export default {
       odomCount: 0,
       locationIcon: null,
       odomPath: [],
-      findRover: false
+      findRover: false,
+      urc: false
     }
   },
 
-  created: function () {
+  mounted: function () {
     this.locationIcon = L.icon({
       iconUrl: '/location_marker_icon.png',
       iconSize: [64, 64],
@@ -207,6 +208,24 @@ export default {
       },
       // Deep will watch for changes in children of an object
       deep: true
+    },
+
+    online(newVal) {
+      if(newVal) { //online
+        this.map.setZoom(this.onlineTileOptions.maxNativeZoom);
+      }
+      else {
+        this.map.setZoom(this.offlineTileOptions.maxZoom);
+      }
+    },
+
+    urc(newVal) {
+      if(newVal) { //want offline MDRS map
+        this.offlineUrl = 'map/urc/{z}/{x}/{y}.jpg';
+      }
+      else { //want offline WC map
+        this.offlineUrl = 'map/wc/{z}/{x}/{y}.jpg';
+      }
     }
   }
 }
