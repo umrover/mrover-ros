@@ -43,7 +43,7 @@ can:
       id: 0x15
     - name: "joint_a"
       bus: 1
-      id: 0x20
+      id: 0x20  
     - name: "joint_b"
       bus: 1
       id: 0x21
@@ -64,10 +64,10 @@ can:
       id: 0x26
     - name: "mast_gimbal_y"
       bus: 3
-      id: 0x28
+      id: 0x27
     - name: "mast_gimbal_z"
       bus: 3
-      id: 0x27
+      id: 0x28
     - name: "sa_x"
       bus: 1
       id: 0x29
