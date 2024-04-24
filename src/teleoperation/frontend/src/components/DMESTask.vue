@@ -70,6 +70,7 @@ import OdometryReading from './OdometryReading.vue'
 import DriveControls from './DriveControls.vue'
 import MastGimbalControls from './MastGimbalControls.vue'
 import type ArmMoteusStateTableVue from './ArmMoteusStateTable.vue'
+import { quaternionToMapAngle } from '../utils.js'
 
 export default defineComponent({
   components: {
@@ -140,7 +141,16 @@ export default defineComponent({
         this.moteusDrive.state = msg.state
         this.moteusDrive.error = msg.error
         this.moteusDrive.limit_hit = msg.limit_hit
-      } else if (msg.type == 'center_map') {
+      }
+      else if (msg.type == 'nav_sat_fix') {
+        this.odom.latitude_deg = msg.latitude
+        this.odom.longitude_deg = msg.longitude
+        this.odom.altitude = msg.altitude
+      } 
+      else if (msg.type == 'auton_tfclient') {
+        this.odom.bearing_deg = quaternionToMapAngle(msg.rotation)
+      } 
+      else if (msg.type == 'center_map') {
         this.odom.latitude_deg = msg.latitude
         this.odom.longitude_deg = msg.longitude
       }
