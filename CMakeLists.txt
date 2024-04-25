@@ -98,7 +98,7 @@ if (ZED_FOUND)
     set(CMAKE_CUDA_STANDARD 17)
     set(CMAKE_CUDA_STANDARD_REQUIRED ON)
     set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
-    set(CMAKE_CUDA_FLAGS "--diag-suppress 108,68")
+    set(CMAKE_CUDA_FLAGS "--diag-suppress 20012")
     # Jetson Xavier NX/AGX has Volta 7.2 architecture
     # Perception Laptop (A4000, Quadro version of RTX 3080) has Ampere 8.6 architecture
     set(CMAKE_CUDA_ARCHITECTURES 72 86)
