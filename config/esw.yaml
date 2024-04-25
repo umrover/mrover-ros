@@ -600,7 +600,7 @@ motors:
 default_network_iface: "enp0s31f6"
 
 auton_led_driver:
-  port: "/dev/ttyACM0"
+  port: "/dev/led"
   baud: 115200
 
 science:
