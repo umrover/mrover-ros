@@ -1,7 +1,7 @@
 #pragma once
 
 constexpr static float DIAG_TEMP_COEFFICIENT = 0.0064f;
-constexpr static float DIAG_TEMP_25_DEGREE_RESISTANCE = 47000.0;
+constexpr static float DIAG_TEMP_25_DEGREE_RESISTANCE = 10000.0;
 constexpr static float THRM_A0 = -5.160732E+02;
 constexpr static float THRM_A1 = 6.831122E+02;
 constexpr static float THRM_A2 = -3.774928E+02;
@@ -27,10 +27,12 @@ class TempSensor {
       float temp = (THRM_A4 * powf(measured_voltage,4)) + (THRM_A3 * powf(measured_voltage,3)) + (THRM_A2 * powf(measured_voltage,2)) + (THRM_A1 *  measured_voltage) + THRM_A0;
       return temp;
     }
-  private:
+
     int getRawData() {
       return analogRead(TEMP_SENSOR_PIN);
     }
+  private:
+    
 
     float getVoltage() {
       int rawData = getRawData();
