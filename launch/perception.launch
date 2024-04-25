@@ -14,4 +14,7 @@
     <node if="$(arg run_object_detector)"
         pkg="nodelet" type="nodelet" name="object_detector" respawn="true"
         args="load mrover/ObjectDetectorNodelet perception_nodelet_manager" output="screen" />
+
+    <!-- <node pkg="nodelet" type="nodelet" name="costmap" respawn="true"
+          args="load mrover/CostMapNodelet perception_nodelet_manager" output="screen" /> -->
 </launch>

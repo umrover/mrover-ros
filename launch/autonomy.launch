@@ -13,9 +13,9 @@
 
   <include file="$(find mrover)/launch/navigation.launch" />
 
-  <include file="$(find mrover)/launch/localization.launch">
+  <!-- <include file="$(find mrover)/launch/localization.launch">
     <arg name="sim" value="$(arg sim)" />
     <arg name="use_ekf" value="$(arg use_ekf)" />
     <arg name="ekf_start_delay" value="$(arg ekf_start_delay)" />
-  </include>
+  </include> -->
 </launch>
