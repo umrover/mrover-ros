@@ -60,7 +60,7 @@ void moveDrive(geometry_msgs::Twist::ConstPtr const& msg) {
     RadiansPerSecond left_outer = (forward - delta_outer) * WHEEL_LINEAR_TO_ANGULAR;
     RadiansPerSecond right_outer = (forward + delta_outer) * WHEEL_LINEAR_TO_ANGULAR;
 
-    constexpr auto MAX_SPEED = RevolutionsPerSecond{15};
+    constexpr auto MAX_SPEED = RadiansPerSecond{15 * 2 * M_PI};
     RadiansPerSecond maximal = std::max(abs(left_outer), abs(right_outer));
     if (maximal > MAX_SPEED) {
         Dimensionless changeRatio = MAX_SPEED / maximal;
