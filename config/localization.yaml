@@ -4,8 +4,8 @@ rover_frame: "base_link"
 use_odom_frame: false
 
 gps_linearization:
-  reference_point_latitude: 42.30008806193693
-  reference_point_longitude: -83.6931540297569
+  reference_point_latitude: 42.293195
+  reference_point_longitude: -83.7096706
   reference_point_altitude: 234.1
   reference_heading: 90.0
   use_both_gps: false

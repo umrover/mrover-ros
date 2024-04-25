@@ -4,6 +4,7 @@
 #include <can_device.hpp>
 #include <motors_group.hpp>
 #include <params_utils.hpp>
+#include <units/units.hpp>
 
 /*
  *  Converts from a Twist (linear and angular velocity) to the individual wheel velocities
@@ -44,7 +45,7 @@ auto main(int argc, char** argv) -> int {
 
 void moveDrive(geometry_msgs::Twist::ConstPtr const& msg) {
     // See 13.3.1.4 in "Modern Robotics" for the math
-    // Link: https://hades.mech.northwestern.edu/images/7/7f/MR.pdf
+    // Link: https://hades.mech.northwestern.edu/images/7/7f/MR.pdf 
     auto forward = MetersPerSecond{msg->linear.x};
     auto turn = RadiansPerSecond{msg->angular.z};
     // TODO(quintin)    Don't ask me to explain perfectly why we need to cancel out a meters unit in the numerator
@@ -52,7 +53,12 @@ void moveDrive(geometry_msgs::Twist::ConstPtr const& msg) {
     auto delta = turn / Radians{1} * WHEEL_DISTANCE_INNER; // should be in m/s
     RadiansPerSecond left = (forward - delta) * WHEEL_LINEAR_TO_ANGULAR;
     RadiansPerSecond right = (forward + delta) * WHEEL_LINEAR_TO_ANGULAR;
-
+    RadiansPerSecond maximal = std::max(abs(right), abs(left));
+    if (maximal > RadiansPerSecond{10 * 2 * M_PI}) {
+        Dimensionless changeRatio = RadiansPerSecond{10 * 2 * M_PI} / maximal;
+        left = left * changeRatio;
+        right = right * changeRatio;
+    }
     {
         Velocity leftVelocity;
         leftVelocity.names = {"front_left", "middle_left", "back_left"};
