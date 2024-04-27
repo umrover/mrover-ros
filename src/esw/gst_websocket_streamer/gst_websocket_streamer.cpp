@@ -21,6 +21,7 @@ namespace mrover {
             GstMapInfo map;
             gst_buffer_map(buffer, &map, GST_MAP_READ);
 
+            // Prefix the encoded chunk with metadata for the decoder on the browser side
             std::vector<std::byte> chunk(sizeof(ChunkHeader) + map.size);
             std::memcpy(chunk.data(), &mChunkHeader, sizeof(ChunkHeader));
             std::memcpy(chunk.data() + sizeof(ChunkHeader), map.data, map.size);

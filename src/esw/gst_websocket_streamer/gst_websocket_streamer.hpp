@@ -6,9 +6,9 @@ namespace mrover {
 
     struct ChunkHeader {
         enum struct Resolution : std::uint8_t {
-            EGA,
-            HD,
-            FHD,
+            EGA, // 640x480
+            HD,  // 1280x720
+            FHD, // 1920x1080
         } resolution;
         enum struct Codec : std::uint8_t {
             H265,
@@ -21,7 +21,7 @@ namespace mrover {
         ros::NodeHandle mNh, mPnh;
 
         std::string mCaptureDevice;
-        bool mDecodeJpegFromDevice{};
+        bool mDecodeJpegFromDevice{}; // Uses less USB hub bandwidth, which is limited since we are using 2.0
         std::string mImageTopic;
         std::uint64_t mBitrate{};
         std::uint32_t mImageWidth{}, mImageHeight{}, mImageFramerate{};
