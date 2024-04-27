@@ -9,8 +9,8 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue'
-import { mapActions } from 'vuex'
+import {defineComponent} from 'vue'
+import {mapActions} from 'vuex'
 import Checkbox from './Checkbox.vue'
 
 export default defineComponent({
@@ -49,14 +49,6 @@ export default defineComponent({
 
   mounted: function () {
     this.startStream(this.id)
-    // this.$nextTick(() => {
-    //   const canvas: HTMLCanvasElement = document.getElementById(
-    //     'stream-' + this.id
-    //   ) as HTMLCanvasElement
-    //   const context = canvas.getContext('2d') ?? new CanvasRenderingContext2D()
-    //   context.fillStyle = 'black'
-    //   context.fillRect(0, 0, canvas.width, canvas.height)
-    // })
   },
 
   methods: {
@@ -64,7 +56,7 @@ export default defineComponent({
 
     handleClick: function (event: MouseEvent) {
       if (this.IKCam && this.mission === 'ik') {
-        this.sendMessage({ type: 'start_click_ik', data: { x: event.offsetX, y: event.offsetY } })
+        this.sendMessage({type: 'start_click_ik', data: {x: event.offsetX, y: event.offsetY}})
       }
     },
     
@@ -72,7 +64,7 @@ export default defineComponent({
       this.IKCam = !this.IKCam
     },
 
-    startStream(number: Number) {
+    startStream(number: Number, attempt: Number = 0) {
       // This function is called as a retry when the websocket closes
       // If our component goes away (unmounts) we should stop trying to reconnect
       // Otherwise it may preempt a new stream that already connected
@@ -80,11 +72,17 @@ export default defineComponent({
 
       // Corresponds to H.265
       // I can't figure out what the other values are for... obtained via guess and check
-      const STREAM_CODEC = 'hvc1.1.2.L90.90'
-      const STREAM_WIDTH = 1280
-      const STREAM_HEIGHT = 720
+      const STREAM_CODEC_MAP = {
+        0: 'hvc1.1.2.L90.90',
+        1: 'avc1.64001f',
+      }
+      const STREAM_RESOLUTION_MAP = {
+        0: [640, 480],
+        1: [1280, 720],
+        2: [1920, 1080],
+      }
       const STREAM_FPS = 30
-      const RECONNECT_TIMEOUT_MS = 3000
+      const RECONNECT_TIMEOUT_MS = 1000
 
       const vertexShaderSource = `
     attribute vec2 xy;
@@ -151,9 +149,9 @@ export default defineComponent({
       const vertexBuffer = gl.createBuffer()
       gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer)
       gl.bufferData(
-        gl.ARRAY_BUFFER,
-        new Float32Array([-1.0, -1.0, -1.0, +1.0, +1.0, +1.0, +1.0, -1.0]),
-        gl.STATIC_DRAW
+          gl.ARRAY_BUFFER,
+          new Float32Array([-1.0, -1.0, -1.0, +1.0, +1.0, +1.0, +1.0, -1.0]),
+          gl.STATIC_DRAW
       )
 
       const xyLocation = gl.getAttribLocation(shaderProgram, 'xy')
@@ -187,37 +185,52 @@ export default defineComponent({
           throw e
         }
       })
-      // TODO(quintin): Need to know the size ahead of time. Perhaps put in a packet
-      decoder.configure({
-        codec: STREAM_CODEC,
-        codedWidth: STREAM_WIDTH,
-        codedHeight: STREAM_HEIGHT
-      })
+      let isDecoderConfigured = false
 
       // TODO(quintin): Set IP too
-      this.ws = new WebSocket(`ws://10.1.0.10:808${1 + this.id}`)
+      const ip = attempt % 2 === 0 ? '10.1.0.10' : 'localhost'
+      console.log(`Attempting to connect to server for stream ${number} at ${ip}...`)
+      this.ws = new WebSocket(`ws://${ip}:808${1 + this.id}`)
+      const timeoutId = setTimeout(() => {
+        if (this.ws && this.ws.readyState !== WebSocket.OPEN) {
+          console.log(`Timed out waiting for stream ${number}`)
+          this.ws.close()
+        }
+      }, 2000)
       this.ws.binaryType = 'arraybuffer'
       this.ws.onopen = () => {
-        console.log(`Connected to server for stream ${number}`)
+        console.log(`Opened socket for stream ${number}`)
+        clearTimeout(timeoutId)
       }
       this.ws.onclose = () => {
-        console.log(`Disconnected from server for stream ${number}`)
+        console.log(`Closed socket for stream ${number}`)
         decoder.close()
         // This recursive-ness stops after the canvas element is removed
-        setTimeout(() => this.startStream(number), RECONNECT_TIMEOUT_MS)
+        setTimeout(() => this.startStream(number, attempt + 1), RECONNECT_TIMEOUT_MS * (attempt + 1))
       }
       this.ws.onerror = () => {
         if (this.ws) this.ws.close()
       }
       this.ws.onmessage = (event) => {
         // TODO(quintin): Should the values besides "data" be set better? Parsed from the packet?
-        decoder.decode(
-          new EncodedVideoChunk({
-            type: 'key',
-            timestamp: performance.now(),
-            duration: 1000 / STREAM_FPS,
-            data: event.data
+        const [resolutionId, codecId] = new Uint8Array(event.data.slice(0, 2))
+        const [streamWidth, streamHeight] = STREAM_RESOLUTION_MAP[resolutionId]
+        const codec = STREAM_CODEC_MAP[codecId]
+        if (!isDecoderConfigured) {
+          isDecoderConfigured = true
+          decoder.configure({
+            codec: codec,
+            width: streamWidth,
+            height: streamHeight
           })
+        }
+        decoder.decode(
+            new EncodedVideoChunk({
+              type: 'key',
+              timestamp: performance.now(),
+              duration: 1000 / STREAM_FPS,
+              data: event.data.slice(2, -1)
+            })
         )
       }
     }
@@ -233,8 +246,8 @@ export default defineComponent({
 }
 
 canvas {
-  width:640px;
-  height:480px;
+  width: 640px;
+  height: 480px;
 }
 </style>
 

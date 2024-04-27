@@ -86,6 +86,7 @@
         ]"
       />
     </div>
+    <Rover3D></Rover3D>
   </div>
 </template>
 
@@ -96,6 +97,8 @@ import ToggleButton from './ToggleButton.vue'
 import CalibrationCheckbox from './CalibrationCheckbox.vue'
 import MotorAdjust from './MotorAdjust.vue'
 import LimitSwitch from './LimitSwitch.vue'
+import Rover3D from './Rover3D.vue'
+
 // In seconds
 const updateRate = 0.05
 let interval: number | undefined
@@ -105,7 +108,8 @@ export default defineComponent({
     ToggleButton,
     CalibrationCheckbox,
     MotorAdjust,
-    LimitSwitch
+    LimitSwitch,
+    Rover3D
   },
   data() {
     return {

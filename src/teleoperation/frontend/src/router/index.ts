@@ -5,6 +5,7 @@ import AutonTask from '../components/AutonTask.vue'
 import ISHTask from '../components/ISHTask.vue'
 import SATask from '../components/SATask.vue'
 import Cameras from '../components/Cameras.vue'
+import Rover3D from '../components/Rover3D.vue'
 
 const routes = [
   {
@@ -51,8 +52,12 @@ const routes = [
       isSA: false,
       mission: 'other'
     }
-  }
-  
+  },
+  {
+    path: "/Control",
+    name: "Control",
+    component: Rover3D,
+  },
 ]
 const router = createRouter({
   history: createWebHistory(),
