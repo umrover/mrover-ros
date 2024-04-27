@@ -1,11 +1,5 @@
 #include "gst_websocket_streamer.hpp"
 
-#if defined(MROVER_IS_JETSON)
-constexpr bool IS_JETSON = true;
-#else
-constexpr bool IS_JETSON = false;
-#endif
-
 namespace mrover {
 
     template<typename T>
@@ -26,7 +20,12 @@ namespace mrover {
             GstBuffer* buffer = gst_sample_get_buffer(sample);
             GstMapInfo map;
             gst_buffer_map(buffer, &map, GST_MAP_READ);
-            mStreamServer->broadcast({reinterpret_cast<std::byte*>(map.data), map.size});
+
+            std::vector<std::byte> chunk(sizeof(ChunkHeader) + map.size);
+            std::memcpy(chunk.data(), &mChunkHeader, sizeof(ChunkHeader));
+            std::memcpy(chunk.data() + sizeof(ChunkHeader), map.data, map.size);
+
+            mStreamServer->broadcast(chunk);
 
             gst_buffer_unmap(buffer, &map);
             gst_sample_unref(sample);
@@ -38,65 +37,63 @@ namespace mrover {
 
         mMainLoop = gstCheck(g_main_loop_new(nullptr, FALSE));
 
+        // Source
         std::string launch;
         if (mCaptureDevice.empty()) {
-            if constexpr (IS_JETSON) {
-                // ReSharper disable once CppDFAUnreachableCode
-                launch = std::format(
-                        // App source is pushed to when we get a ROS BGRA image message
-                        // is-live prevents frames from being pushed when the pipeline is in READY
-                        "appsrc name=imageSource is-live=true "
-                        "! video/x-raw,format=BGRA,width={},height={},framerate=30/1 "
-                        "! videoconvert " // Convert BGRA => I420 (YUV) for the encoder, note we are still on the CPU
-                        "! video/x-raw,format=I420 "
-                        "! nvvidconv " // Upload to GPU memory for the encoder
-                        "! video/x-raw(memory:NVMM),format=I420 "
-                        "! nvv4l2h265enc name=encoder bitrate={} iframeinterval=300 vbv-size=33333 insert-sps-pps=true control-rate=constant_bitrate profile=Main num-B-Frames=0 ratecontrol-enable=true preset-level=UltraFastPreset EnableTwopassCBR=false maxperf-enable=true "
-                        // App sink is pulled from (getting H265 chunks) on another thread and sent to the stream server
-                        // sync=false is needed to avoid weirdness, going from playing => ready => playing will not work otherwise
-                        "! appsink name=streamSink sync=false",
-                        mImageWidth, mImageHeight, mBitrate);
-            } else {
-                // ReSharper disable once CppDFAUnreachableCode
-                launch = std::format(
-                        "appsrc name=imageSource is-live=true "
-                        "! video/x-raw,format=BGRA,width={},height={},framerate=30/1 "
-                        "! nvh265enc name=encoder "
-                        "! appsink name=streamSink sync=false",
-                        mImageWidth, mImageHeight);
-            }
+            // App source is pushed to when we get a ROS BGRA image message
+            // is-live prevents frames from being pushed when the pipeline is in READY
+            launch += "appsrc name=imageSource is-live=true ";
         } else {
-            if constexpr (IS_JETSON) {
-                // ReSharper disable once CppDFAUnreachableCode
-
-                // TODO(quintin): I had to apply this patch: https://forums.developer.nvidia.com/t/macrosilicon-usb/157777/4
-                //                nvv4l2camerasrc only supports UYUV by default, but our cameras are YUY2 (YUYV)
-
-                launch = std::format(
-                        // "nvv4l2camerasrc device={} "
-
-                        "v4l2src device={} "
-
-                        // "! video/x-raw(memory:NVMM),format=YUY2,width={},height={},framerate={}/1 "
-                        "! image/jpeg,width={},height={},framerate={}/1 "
-                        "! nvv4l2decoder mjpeg=1 "
-
-                        "! nvvidconv "
-                        "! video/x-raw(memory:NVMM),format=NV12 "
-                        "! nvv4l2h265enc name=encoder bitrate={} iframeinterval=300 vbv-size=33333 insert-sps-pps=true control-rate=constant_bitrate profile=Main num-B-Frames=0 ratecontrol-enable=true preset-level=UltraFastPreset EnableTwopassCBR=false maxperf-enable=true "
-                        "! appsink name=streamSink sync=false",
-                        mCaptureDevice, mImageWidth, mImageHeight, mImageFramerate, mBitrate);
-            } else {
-                // ReSharper disable once CppDFAUnreachableCode
-                launch = std::format(
-                        "v4l2src device={}  "
-                        "! video/x-raw,format=YUY2,width={},height={},framerate=30/1 "
-                        "! videoconvert "
-                        "! nvh265enc name=encoder "
-                        "! appsink name=streamSink sync=false",
-                        mCaptureDevice, mImageWidth, mImageHeight);
-            }
+            launch += std::format("v4l2src device={} ", mCaptureDevice);
         }
+        // Source format
+        std::string captureFormat = mCaptureDevice.empty() ? "video/x-raw,format=BGRA" : mDecodeJpegFromDevice ? "image/jpeg"
+                                                                                                               : "video/x-raw,format=YUY2";
+        launch += std::format("! {},width={},height={},framerate={}/1 ",
+                              captureFormat, mImageWidth, mImageHeight, mImageFramerate);
+        // Source decoder and H265 encoder
+        if (gst_element_factory_find("nvv4l2h265enc")) {
+            // Most likely on the Jetson
+            if (captureFormat.contains("jpeg")) {
+                // Mostly used with USB cameras, MPEG capture uses way less USB bandwidth
+                launch +=
+                        // TODO(quintin): I had to apply this patch: https://forums.developer.nvidia.com/t/macrosilicon-usb/157777/4
+                        //                nvv4l2camerasrc only supports UYUV by default, but our cameras are YUY2 (YUYV)
+                        // "nvv4l2camerasrc device={} "
+                        // "! video/x-raw(memory:NVMM),format=YUY2,width={},height={},framerate={}/1 "
+
+                        "! nvv4l2decoder mjpeg=1 " // Hardware-accelerated JPEG decoding, output is apparently some unknown proprietary format
+                        "! nvvidconv "             // Convert from proprietary format to NV12 so the encoder understands it
+                        "! video/x-raw(memory:NVMM),format=NV12 ";
+            } else {
+                launch += "! videoconvert " // Convert to I420 for the encoder, note we are still on the CPU
+                          "! video/x-raw,format=I420 "
+                          "! nvvidconv " // Upload to GPU memory for the encoder
+                          "! video/x-raw(memory:NVMM),format=I420 ";
+            }
+            launch += std::format("! nvv4l2h265enc name=encoder bitrate={} iframeinterval=300 vbv-size=33333 insert-sps-pps=true control-rate=constant_bitrate profile=Main num-B-Frames=0 ratecontrol-enable=true preset-level=UltraFastPreset EnableTwopassCBR=false maxperf-enable=true ",
+                                  mBitrate);
+            mChunkHeader.codec = ChunkHeader::Codec::H265;
+        } else if (gst_element_factory_find("nvh265enc")) {
+            // For desktop/laptops with the custom NVIDIA bad gstreamer plugins built (a massive pain to do!)
+            if (captureFormat.contains("jpeg"))
+                launch += "! jpegdec ";
+            else if (captureFormat.contains("YUY2"))
+                launch += "! videoconvert ";
+            launch += "! nvh265enc name=encoder ";
+            mChunkHeader.codec = ChunkHeader::Codec::H265;
+        } else {
+            // For desktop/laptops with no hardware encoder
+            if (captureFormat.contains("jpeg"))
+                launch += "! jpegdec ";
+            else
+                launch += "! videoconvert ";
+            launch += "! x264enc name=encoder ";
+            mChunkHeader.codec = ChunkHeader::Codec::H264;
+        }
+        // App sink is pulled from (getting H265 chunks) on another thread and sent to the stream server
+        // sync=false is needed to avoid weirdness, going from playing => ready => playing will not work otherwise
+        launch += "! appsink name=streamSink sync=false";
 
         ROS_INFO_STREAM(std::format("GStreamer launch: {}", launch));
         mPipeline = gstCheck(gst_parse_launch(launch.c_str(), nullptr));
@@ -145,12 +142,20 @@ namespace mrover {
         }
     }
 
+    auto widthAndHeightToResolution(std::uint32_t width, std::uint32_t height) -> ChunkHeader::Resolution {
+        if (width == 640 && height == 480) return ChunkHeader::Resolution::EGA;
+        if (width == 1280 && height == 720) return ChunkHeader::Resolution::HD;
+        if (width == 1920 && height == 1080) return ChunkHeader::Resolution::FHD;
+        throw std::runtime_error{"Unsupported resolution"};
+    }
+
     auto GstWebsocketStreamerNodelet::onInit() -> void {
         try {
             mNh = getMTNodeHandle();
             mPnh = getMTPrivateNodeHandle();
 
             mCaptureDevice = mPnh.param<std::string>("device", "");
+            mDecodeJpegFromDevice = mPnh.param<bool>("decode_jpeg_from_device", true);
             mImageTopic = mPnh.param<std::string>("image_topic", "image");
             mImageWidth = mPnh.param<int>("width", 640);
             mImageHeight = mPnh.param<int>("height", 480);
@@ -158,6 +163,8 @@ namespace mrover {
             auto address = mPnh.param<std::string>("address", "0.0.0.0");
             auto port = mPnh.param<int>("port", 8081);
             mBitrate = mPnh.param<int>("bitrate", 2000000);
+
+            mChunkHeader.resolution = widthAndHeightToResolution(mImageWidth, mImageHeight);
 
             gst_init(nullptr, nullptr);
 
@@ -198,7 +205,7 @@ namespace mrover {
             }
 
         } catch (std::exception const& e) {
-            ROS_ERROR_STREAM(std::format("Exception initializing NVIDIA GST H265 Encoder: {}", e.what()));
+            ROS_ERROR_STREAM(std::format("Exception initializing gstreamer websocket streamer: {}", e.what()));
             ros::requestShutdown();
         }
     }

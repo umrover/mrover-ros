@@ -4,26 +4,26 @@
     <div v-if="mission != 'ZED'">
       <p>{{ name }} • ID: {{ id }}</p>
       <div class="form-group col-md-4">
-          <label for="quality">Quality:</label>
-          <select
+        <label for="quality">Quality:</label>
+        <select
             v-model="quality"
             min="0"
             max="4"
             class="form-control"
             id="quality"
             @change="changeQuality()"
-          >
-            <option v-for="i in 5" :key="i">{{ i - 1 }}</option>
-          </select>
-        </div>
-      <Checkbox v-if="mission === 'ik'" :name="'IK Camera'" v-on:toggle="toggleIKMode" />
+        >
+          <option v-for="i in 5" :key="i">{{ i - 1 }}</option>
+        </select>
+      </div>
+      <Checkbox v-if="mission === 'ik'" :name="'IK Camera'" v-on:toggle="toggleIKMode"/>
     </div>
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue'
-import { mapActions } from 'vuex'
+import {defineComponent} from 'vue'
+import {mapActions} from 'vuex'
 import Checkbox from './Checkbox.vue'
 
 export default defineComponent({
@@ -79,7 +79,7 @@ export default defineComponent({
 
     handleClick: function (event: MouseEvent) {
       if (this.IKCam && this.mission === 'ik') {
-        this.sendMessage({ type: 'start_click_ik', data: { x: event.offsetX, y: event.offsetY } })
+        this.sendMessage({type: 'start_click_ik', data: {x: event.offsetX, y: event.offsetY}})
       }
     },
     changeQuality: function () {
@@ -90,7 +90,7 @@ export default defineComponent({
         resolution: parseInt(this.quality)
       })
     },
-    
+
     toggleIKMode: function () {
       this.IKCam = !this.IKCam
     },
@@ -103,9 +103,15 @@ export default defineComponent({
 
       // Corresponds to H.265
       // I can't figure out what the other values are for... obtained via guess and check
-      const STREAM_CODEC = 'hvc1.1.2.L90.90'
-      const STREAM_WIDTH = 1280
-      const STREAM_HEIGHT = 720
+      const STREAM_CODEC_MAP = {
+        0: 'hvc1.1.2.L90.90',
+        1: 'avc1.64001f',
+      }
+      const STREAM_RESOLUTION_MAP = {
+        0: [640, 480],
+        1: [1280, 720],
+        2: [1920, 1080],
+      }
       const STREAM_FPS = 30
       const RECONNECT_TIMEOUT_MS = 3000
 
@@ -174,9 +180,9 @@ export default defineComponent({
       const vertexBuffer = gl.createBuffer()
       gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer)
       gl.bufferData(
-        gl.ARRAY_BUFFER,
-        new Float32Array([-1.0, -1.0, -1.0, +1.0, +1.0, +1.0, +1.0, -1.0]),
-        gl.STATIC_DRAW
+          gl.ARRAY_BUFFER,
+          new Float32Array([-1.0, -1.0, -1.0, +1.0, +1.0, +1.0, +1.0, -1.0]),
+          gl.STATIC_DRAW
       )
 
       const xyLocation = gl.getAttribLocation(shaderProgram, 'xy')
@@ -210,15 +216,11 @@ export default defineComponent({
           throw e
         }
       })
-      // TODO(quintin): Need to know the size ahead of time. Perhaps put in a packet
-      decoder.configure({
-        codec: STREAM_CODEC,
-        codedWidth: STREAM_WIDTH,
-        codedHeight: STREAM_HEIGHT
-      })
+      let isDecoderConfigured = false
 
       // TODO(quintin): Set IP too
-      this.ws = new WebSocket(`ws://10.1.0.10:808${1 + this.id}`)
+      // this.ws = new WebSocket(`ws://10.1.0.10:808${1 + this.id}`)
+      this.ws = new WebSocket(`ws://localhost:808${1 + this.id}`)
       this.ws.binaryType = 'arraybuffer'
       this.ws.onopen = () => {
         console.log(`Connected to server for stream ${number}`)
@@ -234,13 +236,24 @@ export default defineComponent({
       }
       this.ws.onmessage = (event) => {
         // TODO(quintin): Should the values besides "data" be set better? Parsed from the packet?
-        decoder.decode(
-          new EncodedVideoChunk({
-            type: 'key',
-            timestamp: performance.now(),
-            duration: 1000 / STREAM_FPS,
-            data: event.data
+        const [resolutionId, codecId] = new Uint8Array(event.data.slice(0, 2))
+        const [streamWidth, streamHeight] = STREAM_RESOLUTION_MAP[resolutionId]
+        const codec = STREAM_CODEC_MAP[codecId]
+        if (!isDecoderConfigured) {
+          isDecoderConfigured = true
+          decoder.configure({
+            codec: codec,
+            width: streamWidth,
+            height: streamHeight
           })
+        }
+        decoder.decode(
+            new EncodedVideoChunk({
+              type: 'key',
+              timestamp: performance.now(),
+              duration: 1000 / STREAM_FPS,
+              data: event.data.slice(2, -1)
+            })
         )
       }
     }
@@ -256,8 +269,8 @@ export default defineComponent({
 }
 
 canvas {
-  width:640px;
-  height:480px;
+  width: 640px;
+  height: 480px;
 }
 </style>
 
