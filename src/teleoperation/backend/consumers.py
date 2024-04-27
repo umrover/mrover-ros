@@ -355,11 +355,14 @@ class GUIConsumer(JsonWebsocketConsumer):
             throttle_cmd.throttles = [
                 self.ra_config["joint_a"]["multiplier"] * self.filter_xbox_axis(axes[self.xbox_mappings["left_x"]]),
                 self.ra_config["joint_b"]["multiplier"] * self.filter_xbox_axis(axes[self.xbox_mappings["left_y"]]),
-                self.ra_config["joint_c"]["multiplier"] * quadratic(self.filter_xbox_axis(axes[self.xbox_mappings["right_y"]])),
-                self.ra_config["joint_de_pitch"]["multiplier"] * self.filter_xbox_axis(
+                self.ra_config["joint_c"]["multiplier"]
+                * quadratic(self.filter_xbox_axis(axes[self.xbox_mappings["right_y"]])),
+                self.ra_config["joint_de_pitch"]["multiplier"]
+                * self.filter_xbox_axis(
                     buttons[self.xbox_mappings["right_trigger"]] - buttons[self.xbox_mappings["left_trigger"]]
                 ),
-                self.ra_config["joint_de_roll"]["multiplier"] * self.filter_xbox_axis(
+                self.ra_config["joint_de_roll"]["multiplier"]
+                * self.filter_xbox_axis(
                     buttons[self.xbox_mappings["right_bumper"]] - buttons[self.xbox_mappings["left_bumper"]]
                 ),
                 self.ra_config["allen_key"]["multiplier"] * self.filter_xbox_button(buttons, "y", "a"),
@@ -433,7 +436,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         # angular_from_lateral = get_axes_input("left_right", 0.4, True)
         angular = get_axes_input("twist", 0.03, True, self.max_angular_speed * dampen)
 
-        linear += get_axes_input("tilt", 0.5,  scale=0.1)
+        linear += get_axes_input("tilt", 0.5, scale=0.1)
 
         self.twist_pub.publish(
             Twist(
@@ -475,11 +478,7 @@ class GUIConsumer(JsonWebsocketConsumer):
     def sa_joint_callback(self, msg):
         names = msg.name
         z = msg.position[names.index("sa_z")]
-        self.send(
-            text_data=json.dumps(
-                {"type": "sa_z", "sa_z": z}
-            )
-        )
+        self.send(text_data=json.dumps({"type": "sa_z", "sa_z": z}))
 
     def drive_controller_callback(self, msg):
         hits = []
