@@ -213,9 +213,9 @@ namespace mrover {
 
             mChunkHeader.resolution = widthAndHeightToResolution(mImageWidth, mImageHeight);
 
-            gst_init(nullptr, nullptr);
-
             if (!mDevicePath.empty()) mDeviceNode = findDeviceNode(mDevicePath);
+
+            gst_init(nullptr, nullptr);
 
             initPipeline();
 
