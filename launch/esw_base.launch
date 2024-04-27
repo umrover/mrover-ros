@@ -17,19 +17,11 @@
             output="screen">
             <param name="interface" value="can2" />
       </node>
-      <!-- <node name="can_driver_3" pkg="mrover" type="can_driver"
+      <node name="can_driver_3" pkg="mrover" type="can_driver"
             respawn="true" respawn_delay="2"
             output="screen">
             <param name="interface" value="can3" />
-      </node> -->
-
-      <!-- <node pkg="mrover" type="gst_websocket_streamer" name="gst_websocket_streamer_0"
-            output="screen">
-            <param name="image_topic" value="/camera/left/image" />
-            <param name="port" value="8081" />
-            <param name="width" value="1280" />
-            <param name="height" value="720" />
-      </node> -->
+      </node>
 
       <node pkg="mrover" type="gst_websocket_streamer" name="gst_websocket_streamer_0"
             output="screen">
@@ -47,15 +39,23 @@
             <param name="height" value="720" />
       </node>
 
-      <!-- <node pkg="mrover" type="gst_websocket_streamer" name="gst_websocket_streamer_2"
+      <node pkg="mrover" type="gst_websocket_streamer" name="gst_websocket_streamer_2"
             output="screen">
             <param name="device" value="/dev/video4" />
             <param name="port" value="8083" />
-            <param name="width" value="640" />
-            <param name="height" value="480" />
+            <param name="width" value="1280" />
+            <param name="height" value="720" />
+      </node>
+
+      <node pkg="mrover" type="gst_websocket_streamer" name="gst_websocket_streamer_zed"
+            output="screen">
+            <param name="image_topic" value="/camera/left/image" />
+            <param name="port" value="8084" />
+            <param name="width" value="1280" />
+            <param name="height" value="720" />
       </node>
       
-      <node pkg="mrover" type="gst_websocket_streamer" name="gst_websocket_streamer_3"
+      <!-- <node pkg="mrover" type="gst_websocket_streamer" name="gst_websocket_streamer_3"
             output="screen">
             <param name="device" value="/dev/video6" />
             <param name="port" value="8084" />

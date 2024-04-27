@@ -97,6 +97,7 @@
       - libgstreamer1.0-dev
       - libgstreamer-plugins-base1.0-dev
       - vainfo
+      - x264
 
 - name: Install Local APT Packages
   become: True

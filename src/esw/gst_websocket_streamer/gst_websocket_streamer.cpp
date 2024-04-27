@@ -1,11 +1,5 @@
 #include "gst_websocket_streamer.hpp"
 
-#if defined(MROVER_IS_JETSON)
-constexpr bool IS_JETSON = true;
-#else
-constexpr bool IS_JETSON = false;
-#endif
-
 namespace mrover {
 
     using namespace std::string_view_literals;
@@ -28,7 +22,13 @@ namespace mrover {
             GstBuffer* buffer = gst_sample_get_buffer(sample);
             GstMapInfo map;
             gst_buffer_map(buffer, &map, GST_MAP_READ);
-            mStreamServer->broadcast({reinterpret_cast<std::byte*>(map.data), map.size});
+
+            // Prefix the encoded chunk with metadata for the decoder on the browser side
+            std::vector<std::byte> chunk(sizeof(ChunkHeader) + map.size);
+            std::memcpy(chunk.data(), &mChunkHeader, sizeof(ChunkHeader));
+            std::memcpy(chunk.data() + sizeof(ChunkHeader), map.data, map.size);
+
+            mStreamServer->broadcast(chunk);
 
             gst_buffer_unmap(buffer, &map);
             gst_sample_unref(sample);
@@ -40,65 +40,63 @@ namespace mrover {
 
         mMainLoop = gstCheck(g_main_loop_new(nullptr, FALSE));
 
+        // Source
         std::string launch;
         if (mDeviceNode.empty()) {
-            if constexpr (IS_JETSON) {
-                // ReSharper disable once CppDFAUnreachableCode
-                launch = std::format(
-                        // App source is pushed to when we get a ROS BGRA image message
-                        // is-live prevents frames from being pushed when the pipeline is in READY
-                        "appsrc name=imageSource is-live=true "
-                        "! video/x-raw,format=BGRA,width={},height={},framerate=30/1 "
-                        "! videoconvert " // Convert BGRA => I420 (YUV) for the encoder, note we are still on the CPU
-                        "! video/x-raw,format=I420 "
-                        "! nvvidconv " // Upload to GPU memory for the encoder
-                        "! video/x-raw(memory:NVMM),format=I420 "
-                        "! nvv4l2h265enc name=encoder bitrate={} iframeinterval=300 vbv-size=33333 insert-sps-pps=true control-rate=constant_bitrate profile=Main num-B-Frames=0 ratecontrol-enable=true preset-level=UltraFastPreset EnableTwopassCBR=false maxperf-enable=true "
-                        // App sink is pulled from (getting H265 chunks) on another thread and sent to the stream server
-                        // sync=false is needed to avoid weirdness, going from playing => ready => playing will not work otherwise
-                        "! appsink name=streamSink sync=false",
-                        mImageWidth, mImageHeight, mBitrate);
-            } else {
-                // ReSharper disable once CppDFAUnreachableCode
-                launch = std::format(
-                        "appsrc name=imageSource is-live=true "
-                        "! video/x-raw,format=BGRA,width={},height={},framerate=30/1 "
-                        "! nvh265enc name=encoder "
-                        "! appsink name=streamSink sync=false",
-                        mImageWidth, mImageHeight);
-            }
+            // App source is pushed to when we get a ROS BGRA image message
+            // is-live prevents frames from being pushed when the pipeline is in READY
+            launch += "appsrc name=imageSource is-live=true ";
         } else {
-            if constexpr (IS_JETSON) {
-                // ReSharper disable once CppDFAUnreachableCode
-
-                // TODO(quintin): I had to apply this patch: https://forums.developer.nvidia.com/t/macrosilicon-usb/157777/4
-                //                nvv4l2camerasrc only supports UYUV by default, but our cameras are YUY2 (YUYV)
-
-                launch = std::format(
-                        // "nvv4l2camerasrc device={} "
-
-                        "v4l2src device={} "
-
-                        // "! video/x-raw(memory:NVMM),format=YUY2,width={},height={},framerate={}/1 "
-                        "! image/jpeg,width={},height={},framerate={}/1 "
-                        "! nvv4l2decoder mjpeg=1 "
-
-                        "! nvvidconv "
-                        "! video/x-raw(memory:NVMM),format=NV12 "
-                        "! nvv4l2h265enc name=encoder bitrate={} iframeinterval=300 vbv-size=33333 insert-sps-pps=true control-rate=constant_bitrate profile=Main num-B-Frames=0 ratecontrol-enable=true preset-level=UltraFastPreset EnableTwopassCBR=false maxperf-enable=true "
-                        "! appsink name=streamSink sync=false",
-                        mDeviceNode, mImageWidth, mImageHeight, mImageFramerate, mBitrate);
-            } else {
-                // ReSharper disable once CppDFAUnreachableCode
-                launch = std::format(
-                        "v4l2src device={}  "
-                        "! video/x-raw,format=YUY2,width={},height={},framerate=30/1 "
-                        "! videoconvert "
-                        "! nvh265enc name=encoder "
-                        "! appsink name=streamSink sync=false",
-                        mDeviceNode, mImageWidth, mImageHeight);
-            }
+            launch += std::format("v4l2src device={} ", mDeviceNode);
         }
+        // Source format
+        std::string captureFormat = mDeviceNode.empty() ? "video/x-raw,format=BGRA" : mDecodeJpegFromDevice ? "image/jpeg"
+                                                                                                            : "video/x-raw,format=YUY2";
+        launch += std::format("! {},width={},height={},framerate={}/1 ",
+                              captureFormat, mImageWidth, mImageHeight, mImageFramerate);
+        // Source decoder and H265 encoder
+        if (gst_element_factory_find("nvv4l2h265enc")) {
+            // Most likely on the Jetson
+            if (captureFormat.contains("jpeg")) {
+                // Mostly used with USB cameras, MPEG capture uses way less USB bandwidth
+                launch +=
+                        // TODO(quintin): I had to apply this patch: https://forums.developer.nvidia.com/t/macrosilicon-usb/157777/4
+                        //                nvv4l2camerasrc only supports UYUV by default, but our cameras are YUY2 (YUYV)
+                        // "nvv4l2camerasrc device={} "
+                        // "! video/x-raw(memory:NVMM),format=YUY2,width={},height={},framerate={}/1 "
+
+                        "! nvv4l2decoder mjpeg=1 " // Hardware-accelerated JPEG decoding, output is apparently some unknown proprietary format
+                        "! nvvidconv "             // Convert from proprietary format to NV12 so the encoder understands it
+                        "! video/x-raw(memory:NVMM),format=NV12 ";
+            } else {
+                launch += "! videoconvert " // Convert to I420 for the encoder, note we are still on the CPU
+                          "! video/x-raw,format=I420 "
+                          "! nvvidconv " // Upload to GPU memory for the encoder
+                          "! video/x-raw(memory:NVMM),format=I420 ";
+            }
+            launch += std::format("! nvv4l2h265enc name=encoder bitrate={} iframeinterval=300 vbv-size=33333 insert-sps-pps=true control-rate=constant_bitrate profile=Main num-B-Frames=0 ratecontrol-enable=true preset-level=UltraFastPreset EnableTwopassCBR=false maxperf-enable=true ",
+                                  mBitrate);
+            mChunkHeader.codec = ChunkHeader::Codec::H265;
+        } else if (gst_element_factory_find("nvh265enc")) {
+            // For desktop/laptops with the custom NVIDIA bad gstreamer plugins built (a massive pain to do!)
+            if (captureFormat.contains("jpeg"))
+                launch += "! jpegdec ";
+            else
+                launch += "! videoconvert ";
+            launch += "! nvh265enc name=encoder ";
+            mChunkHeader.codec = ChunkHeader::Codec::H265;
+        } else {
+            // For desktop/laptops with no hardware encoder
+            if (captureFormat.contains("jpeg"))
+                launch += "! jpegdec ";
+            else
+                launch += "! videoconvert ";
+            launch += std::format("! x264enc tune=zerolatency bitrate={} name=encoder ", mBitrate);
+            mChunkHeader.codec = ChunkHeader::Codec::H264;
+        }
+        // App sink is pulled from (getting H265 chunks) on another thread and sent to the stream server
+        // sync=false is needed to avoid weirdness, going from playing => ready => playing will not work otherwise
+        launch += "! appsink name=streamSink sync=false";
 
         ROS_INFO_STREAM(std::format("GStreamer launch: {}", launch));
         mPipeline = gstCheck(gst_parse_launch(launch.c_str(), nullptr));
@@ -155,6 +153,48 @@ namespace mrover {
         }
     }
 
+    auto widthAndHeightToResolution(std::uint32_t width, std::uint32_t height) -> ChunkHeader::Resolution {
+        if (width == 640 && height == 480) return ChunkHeader::Resolution::EGA;
+        if (width == 1280 && height == 720) return ChunkHeader::Resolution::HD;
+        if (width == 1920 && height == 1080) return ChunkHeader::Resolution::FHD;
+        throw std::runtime_error{"Unsupported resolution"};
+    }
+
+    auto findDeviceNode(std::string_view devicePath) -> std::string {
+        udev* udevContext = udev_new();
+        if (!udevContext) throw std::runtime_error{"Failed to initialize udev"};
+
+        udev_enumerate* enumerate = udev_enumerate_new(udevContext);
+        if (!enumerate) throw std::runtime_error{"Failed to create udev enumeration"};
+
+        udev_enumerate_add_match_subsystem(enumerate, "video4linux");
+        udev_enumerate_scan_devices(enumerate);
+
+        udev_list_entry* devices = udev_enumerate_get_list_entry(enumerate);
+        if (!devices) throw std::runtime_error{"Failed to get udev device list"};
+
+        udev_device* device{};
+        udev_list_entry* entry;
+        udev_list_entry_foreach(entry, devices) {
+            device = udev_device_new_from_syspath(udevContext, udev_list_entry_get_name(entry));
+
+            if (udev_device_get_devpath(device) != devicePath) continue;
+
+            if (!device) throw std::runtime_error{"Failed to get udev device"};
+
+            break;
+        }
+        if (!device) throw std::runtime_error{"Failed to find udev device"};
+
+        std::string deviceNode = udev_device_get_devnode(device);
+
+        udev_device_unref(device);
+        udev_enumerate_unref(enumerate);
+        udev_unref(udevContext);
+
+        return deviceNode;
+    }
+
     auto GstWebsocketStreamerNodelet::onInit() -> void {
         try {
             mNh = getMTNodeHandle();
@@ -162,6 +202,7 @@ namespace mrover {
 
             mDeviceNode = mPnh.param<std::string>("dev_node", "");
             mDevicePath = mPnh.param<std::string>("dev_path", "1");
+            mDecodeJpegFromDevice = mPnh.param<bool>("decode_jpeg_from_device", true);
             mImageTopic = mPnh.param<std::string>("image_topic", "image");
             mImageWidth = mPnh.param<int>("width", 640);
             mImageHeight = mPnh.param<int>("height", 480);
@@ -170,65 +211,11 @@ namespace mrover {
             auto port = mPnh.param<int>("port", 8081);
             mBitrate = mPnh.param<int>("bitrate", 2000000);
 
+            mChunkHeader.resolution = widthAndHeightToResolution(mImageWidth, mImageHeight);
+
             gst_init(nullptr, nullptr);
 
-            if (!mDevicePath.empty()) {
-                // libusb_context* context{};
-                // if (libusb_init(&context) != 0) throw std::runtime_error{"Failed to initialize libusb"};
-                //
-                // libusb_device** list{};
-                // ssize_t count = libusb_get_device_list(context, &list);
-                // if (count < 0) throw std::runtime_error{"Failed to get device list"};
-                //
-                // // Find the libusb device associated with our camera
-                //
-                // auto it = std::ranges::find_if(list, list + count, [this](libusb_device* device) {
-                //     libusb_device_descriptor descriptor{};
-                //     if (libusb_get_device_descriptor(device, &descriptor) != 0) return false;
-                //     return std::format("{}-{}", libusb_get_bus_number(device), libusb_get_port_number(device)) == mUsbIdentifier;
-                // });
-                // if (it == list + count) throw std::runtime_error{"Failed to find USB device"};
-                // libusb_device* targetUsbDevice = *it;
-
-                udev* udevContext = udev_new();
-                if (!udevContext) throw std::runtime_error{"Failed to initialize udev"};
-
-                udev_enumerate* enumerate = udev_enumerate_new(udevContext);
-                if (!enumerate) throw std::runtime_error{"Failed to create udev enumeration"};
-
-                udev_enumerate_add_match_subsystem(enumerate, "video4linux");
-                udev_enumerate_scan_devices(enumerate);
-
-                udev_list_entry* devices = udev_enumerate_get_list_entry(enumerate);
-                if (!devices) throw std::runtime_error{"Failed to get udev device list"};
-
-                udev_device* device{};
-                udev_list_entry* entry;
-                udev_list_entry_foreach(entry, devices) {
-                    device = udev_device_new_from_syspath(udevContext, udev_list_entry_get_name(entry));
-
-                    if (udev_device_get_devpath(device) != mDevicePath) continue;
-
-                    if (!device) throw std::runtime_error{"Failed to get udev device"};
-
-                    break;
-
-                    // for (udev_list_entry* listEntry = udev_device_get_properties_list_entry(device); listEntry != nullptr; listEntry = udev_list_entry_get_next(listEntry)) {
-                    //     char const* name = udev_list_entry_get_name(listEntry);
-                    //     char const* value = udev_list_entry_get_value(listEntry);
-                    //     ROS_INFO_STREAM(std::format("udev: {} = {}", name, value));
-                    // }
-
-                    // if (std::stoi(udev_device_get_sysattr_value(device, "busnum")) == libusb_get_bus_number(targetUsbDevice) &&
-                    //     std::stoi(udev_device_get_sysattr_value(device, "devnum")) == libusb_get_device_address(targetUsbDevice)) {
-                    //     targetUdevDevice = device;
-                    //     break;
-                    // }
-                }
-                if (!device) throw std::runtime_error{"Failed to find udev device"};
-
-                mDeviceNode = udev_device_get_devnode(device);
-            }
+            if (!mDevicePath.empty()) mDeviceNode = findDeviceNode(mDevicePath);
 
             initPipeline();
 
@@ -267,7 +254,7 @@ namespace mrover {
             }
 
         } catch (std::exception const& e) {
-            ROS_ERROR_STREAM(std::format("Exception initializing NVIDIA GST H265 Encoder: {}", e.what()));
+            ROS_ERROR_STREAM(std::format("Exception initializing gstreamer websocket streamer: {}", e.what()));
             ros::requestShutdown();
         }
     }

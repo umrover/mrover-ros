@@ -67,15 +67,19 @@ set(MROVER_ROS_DEPENDENCIES
         tf2
         tf2_ros
         tf2_geometry_msgs
+        actionlib_msgs
 )
 
 extract_filenames(msg/*.msg MROVER_MESSAGE_FILES)
 
 extract_filenames(srv/*.srv MROVER_SERVICE_FILES)
 
+extract_filenames(action/*.action MROVER_ACTION_FILES)
+
 set(MROVER_MESSAGE_DEPENDENCIES
         std_msgs
         sensor_msgs
+        actionlib_msgs
 )
 
 set(MROVER_PARAMETERS
@@ -98,7 +102,7 @@ if (ZED_FOUND)
     set(CMAKE_CUDA_STANDARD 17)
     set(CMAKE_CUDA_STANDARD_REQUIRED ON)
     set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
-    set(CMAKE_CUDA_FLAGS "--diag-suppress 108,68")
+    set(CMAKE_CUDA_FLAGS "--diag-suppress 20012")
     # Jetson Xavier NX/AGX has Volta 7.2 architecture
     # Perception Laptop (A4000, Quadro version of RTX 3080) has Ampere 8.6 architecture
     set(CMAKE_CUDA_ARCHITECTURES 72 86)
@@ -122,6 +126,8 @@ set(BUILD_SHARED_LIBS ON)
 add_message_files(FILES ${MROVER_MESSAGE_FILES})
 
 add_service_files(FILES ${MROVER_SERVICE_FILES})
+
+add_action_files(DIRECTORY action FILES ${MROVER_ACTION_FILES})
 
 generate_messages(DEPENDENCIES ${MROVER_MESSAGE_DEPENDENCIES})
 
