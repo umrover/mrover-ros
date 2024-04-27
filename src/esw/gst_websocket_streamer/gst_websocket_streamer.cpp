@@ -79,7 +79,7 @@ namespace mrover {
             // For desktop/laptops with the custom NVIDIA bad gstreamer plugins built (a massive pain to do!)
             if (captureFormat.contains("jpeg"))
                 launch += "! jpegdec ";
-            else if (captureFormat.contains("YUY2"))
+            else
                 launch += "! videoconvert ";
             launch += "! nvh265enc name=encoder ";
             mChunkHeader.codec = ChunkHeader::Codec::H265;

@@ -2,6 +2,11 @@
 
 #include "pch.hpp"
 
+// Uses gstreamer to encode and stream video over a websocket
+// The input can be a ROS BGRA image topic or a USB device
+// Hardware accelerated is used when possible (with the Jetson or NVIDIA GPUs)
+// Run "export GST_DEBUG=2" to debug gstreamer issues
+
 namespace mrover {
 
     struct ChunkHeader {
