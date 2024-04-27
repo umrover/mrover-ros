@@ -2,6 +2,8 @@
 
 namespace mrover {
 
+    using namespace std::string_view_literals;
+
     template<typename T>
     auto gstCheck(T* t) -> T* {
         if (!t) throw std::runtime_error{"Failed to create"};
@@ -40,16 +42,16 @@ namespace mrover {
 
         // Source
         std::string launch;
-        if (mCaptureDevice.empty()) {
+        if (mDeviceNode.empty()) {
             // App source is pushed to when we get a ROS BGRA image message
             // is-live prevents frames from being pushed when the pipeline is in READY
             launch += "appsrc name=imageSource is-live=true ";
         } else {
-            launch += std::format("v4l2src device={} ", mCaptureDevice);
+            launch += std::format("v4l2src device={} ", mDeviceNode);
         }
         // Source format
-        std::string captureFormat = mCaptureDevice.empty() ? "video/x-raw,format=BGRA" : mDecodeJpegFromDevice ? "image/jpeg"
-                                                                                                               : "video/x-raw,format=YUY2";
+        std::string captureFormat = mDeviceNode.empty() ? "video/x-raw,format=BGRA" : mDecodeJpegFromDevice ? "image/jpeg"
+                                                                                                            : "video/x-raw,format=YUY2";
         launch += std::format("! {},width={},height={},framerate={}/1 ",
                               captureFormat, mImageWidth, mImageHeight, mImageFramerate);
         // Source decoder and H265 encoder
@@ -99,7 +101,7 @@ namespace mrover {
         ROS_INFO_STREAM(std::format("GStreamer launch: {}", launch));
         mPipeline = gstCheck(gst_parse_launch(launch.c_str(), nullptr));
 
-        if (mCaptureDevice.empty()) mImageSource = gstCheck(gst_bin_get_by_name(GST_BIN(mPipeline), "imageSource"));
+        if (mDeviceNode.empty()) mImageSource = gstCheck(gst_bin_get_by_name(GST_BIN(mPipeline), "imageSource"));
         mStreamSink = gstCheck(gst_bin_get_by_name(GST_BIN(mPipeline), "streamSink"));
 
         if (gst_element_set_state(mPipeline, GST_STATE_PAUSED) == GST_STATE_CHANGE_FAILURE)
@@ -125,14 +127,22 @@ namespace mrover {
             if (mStreamServer->clientCount() == 0) return;
 
             if (msg->encoding != sensor_msgs::image_encodings::BGRA8) throw std::runtime_error{"Unsupported encoding"};
-            if (msg->width != mImageWidth || msg->height != mImageHeight) throw std::runtime_error{"Unsupported resolution"};
+
+            cv::Size receivedSize{static_cast<int>(msg->width), static_cast<int>(msg->height)};
+            cv::Mat bgraFrame{receivedSize, CV_8UC4, const_cast<std::uint8_t*>(msg->data.data()), msg->step};
+
+            if (cv::Size targetSize{static_cast<int>(mImageWidth), static_cast<int>(mImageHeight)};
+                receivedSize != targetSize) {
+                ROS_WARN_ONCE("Image size does not match pipeline app source size, will resize");
+                resize(bgraFrame, bgraFrame, targetSize);
+            }
 
             // "step" is the number of bytes (NOT pixels) in an image row
-            std::size_t size = msg->step * msg->height;
+            std::size_t size = bgraFrame.step * bgraFrame.rows;
             GstBuffer* buffer = gstCheck(gst_buffer_new_allocate(nullptr, size, nullptr));
             GstMapInfo info;
             gst_buffer_map(buffer, &info, GST_MAP_WRITE);
-            std::memcpy(info.data, msg->data.data(), size);
+            std::memcpy(info.data, bgraFrame.data, size);
             gst_buffer_unmap(buffer, &info);
 
             gst_app_src_push_buffer(GST_APP_SRC(mImageSource), buffer);
@@ -150,12 +160,48 @@ namespace mrover {
         throw std::runtime_error{"Unsupported resolution"};
     }
 
+    auto findDeviceNode(std::string_view devicePath) -> std::string {
+        udev* udevContext = udev_new();
+        if (!udevContext) throw std::runtime_error{"Failed to initialize udev"};
+
+        udev_enumerate* enumerate = udev_enumerate_new(udevContext);
+        if (!enumerate) throw std::runtime_error{"Failed to create udev enumeration"};
+
+        udev_enumerate_add_match_subsystem(enumerate, "video4linux");
+        udev_enumerate_scan_devices(enumerate);
+
+        udev_list_entry* devices = udev_enumerate_get_list_entry(enumerate);
+        if (!devices) throw std::runtime_error{"Failed to get udev device list"};
+
+        udev_device* device{};
+        udev_list_entry* entry;
+        udev_list_entry_foreach(entry, devices) {
+            device = udev_device_new_from_syspath(udevContext, udev_list_entry_get_name(entry));
+
+            if (udev_device_get_devpath(device) != devicePath) continue;
+
+            if (!device) throw std::runtime_error{"Failed to get udev device"};
+
+            break;
+        }
+        if (!device) throw std::runtime_error{"Failed to find udev device"};
+
+        std::string deviceNode = udev_device_get_devnode(device);
+
+        udev_device_unref(device);
+        udev_enumerate_unref(enumerate);
+        udev_unref(udevContext);
+
+        return deviceNode;
+    }
+
     auto GstWebsocketStreamerNodelet::onInit() -> void {
         try {
             mNh = getMTNodeHandle();
             mPnh = getMTPrivateNodeHandle();
 
-            mCaptureDevice = mPnh.param<std::string>("device", "");
+            mDeviceNode = mPnh.param<std::string>("dev_node", "");
+            mDevicePath = mPnh.param<std::string>("dev_path", "1");
             mDecodeJpegFromDevice = mPnh.param<bool>("decode_jpeg_from_device", true);
             mImageTopic = mPnh.param<std::string>("image_topic", "image");
             mImageWidth = mPnh.param<int>("width", 640);
@@ -166,6 +212,8 @@ namespace mrover {
             mBitrate = mPnh.param<int>("bitrate", 2000000);
 
             mChunkHeader.resolution = widthAndHeightToResolution(mImageWidth, mImageHeight);
+
+            if (!mDevicePath.empty()) mDeviceNode = findDeviceNode(mDevicePath);
 
             gst_init(nullptr, nullptr);
 
@@ -201,7 +249,7 @@ namespace mrover {
                         ROS_INFO("Stopped GStreamer pipeline");
                     });
 
-            if (mCaptureDevice.empty()) {
+            if (mDeviceNode.empty()) {
                 mImageSubscriber = mNh.subscribe(mImageTopic, 1, &GstWebsocketStreamerNodelet::imageCallback, this);
             }
 

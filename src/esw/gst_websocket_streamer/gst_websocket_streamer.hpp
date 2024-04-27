@@ -25,9 +25,19 @@ namespace mrover {
 
         ros::NodeHandle mNh, mPnh;
 
-        std::string mCaptureDevice;
+        // For example, /dev/video0
+        // These device paths are not garunteed to stay the same between reboots
+        // Prefer sys path for non-debugging purposes
+        std::string mDeviceNode;
         bool mDecodeJpegFromDevice{}; // Uses less USB hub bandwidth, which is limited since we are using 2.0
         std::string mImageTopic;
+        // To find the sys path:
+        // 1) Disconnect all cameras
+        // 2) Confirm there are no /dev/video* devices
+        // 2) Connect the camera you want to use
+        // 3) Run "ls /dev/video*" to verify the device is connected
+        // 4) Run "udevadm info -q path -n /dev/video0" to get the sys path
+        std::string mDevicePath;
         std::uint64_t mBitrate{};
         std::uint32_t mImageWidth{}, mImageHeight{}, mImageFramerate{};
 
