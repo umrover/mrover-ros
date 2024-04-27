@@ -201,7 +201,7 @@ namespace mrover {
             mPnh = getMTPrivateNodeHandle();
 
             mDeviceNode = mPnh.param<std::string>("dev_node", "");
-            mDevicePath = mPnh.param<std::string>("dev_path", "1");
+            mDevicePath = mPnh.param<std::string>("dev_path", "");
             mDecodeJpegFromDevice = mPnh.param<bool>("decode_jpeg_from_device", true);
             mImageTopic = mPnh.param<std::string>("image_topic", "image");
             mImageWidth = mPnh.param<int>("width", 640);
