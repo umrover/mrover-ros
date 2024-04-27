@@ -1,4 +1,5 @@
 #include "simulator.hpp"
+#include <sensor_msgs/JointState.h>
 
 namespace mrover {
 
@@ -243,10 +244,18 @@ namespace mrover {
             mDriveControllerStatePub.publish(driveControllerState);
 
             ControllerState armControllerState;
+            sensor_msgs::JointState armJointState;
+            std::vector<double> zeros = {0, 0, 0, 0, 0, 0};
+            armJointState.header.stamp = ros::Time::now();
             for (auto& linkName: {"arm_a_link", "arm_b_link", "arm_c_link", "arm_d_link", "arm_e_link"}) {
                 armControllerState.name.emplace_back(armMsgToUrdf.backward(linkName).value());
                 armControllerState.state.emplace_back("Armed");
                 armControllerState.error.emplace_back("None");
+
+                armJointState.name.emplace_back(armMsgToUrdf.backward(linkName).value());
+                armJointState.position.emplace_back(rover.physics->getJointPos(rover.linkNameToMeta.at(linkName).index));
+                armJointState.velocity.emplace_back(rover.physics->getJointVel(rover.linkNameToMeta.at(linkName).index));
+                armJointState.effort.emplace_back(rover.physics->getJointTorque(rover.linkNameToMeta.at(linkName).index));
 
                 std::uint8_t limitSwitches = 0b000;
                 if (auto limits = rover.model.getLink(linkName)->parent_joint->limits) {
@@ -258,6 +267,7 @@ namespace mrover {
                 armControllerState.limit_hit.push_back(limitSwitches);
             }
             mArmControllerStatePub.publish(armControllerState);
+            mArmJointStatePub.publish(armJointState);
         }
     }
 

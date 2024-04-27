@@ -4,66 +4,53 @@ teleop:
   ra_names: ["joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll", "allen_key", "gripper"]
   ra_controls:
     joint_a:
-      multiplier: 1
-      slow_mode_multiplier: 0.5
-      invert: False
-      xbox_index: "left_js_x"
+      multiplier: -1
+      xbox_index: "left_x"
     joint_b:
-      multiplier: -1
-      slow_mode_multiplier: 1
-      invert: True
-      xbox_index: "left_js_y"
+      multiplier: 1
+      xbox_index: "left_y"
     joint_c:
-      multiplier: -1
-      slow_mode_multiplier: 0.6
-      invert: True
-      xbox_index: "right_js_y"
+      multiplier: 1
+      xbox_index: "right_y"
     joint_de_pitch:
-      multiplier: 0.5
-      slow_mode_multiplier: 1
-      invert: False
-      xbox_index_left: "left_trigger"
-      xbox_index_right: "right_trigger"
+      multiplier: -1
+      xbox_index_pos: "right_trigger"
+      xbox_index_neg: "left_trigger"
     joint_de_roll:
-      multiplier: 0.5
-      slow_mode_multiplier: 1
-      invert: False
-      xbox_index_left: "left_trigger"
-      xbox_index_right: "right_trigger"
+      multiplier: 1
+      xbox_index_pos: "right_bumper"
+      xbox_index_neg: "left_bumper"
     allen_key:
       multiplier: 1
-      slow_mode_multiplier: 1
-      invert: False
-      # xbox_index: 7
+      xbox_index_pos: "y"
+      xbox_index_neg: "a"
     gripper:
       multiplier: 1
-      slow_mode_multiplier: 1
-      invert: False
-      # xbox_index: 7
+      xbox_index_pos: "b"
+      xbox_index_neg: "x"
 
   sa_controls:
     sa_x:
       multiplier: 1
-      slow_mode_multiplier: 0.5
-      xbox_index: "left_js_y"
+      xbox_index: "left_y"
     sa_y:
       multiplier: -1
-      slow_mode_multiplier: 0.5
-      xbox_index: "left_js_x"
+      xbox_index: "left_x"
     sa_z:
-      multiplier: -1
-      slow_mode_multiplier: 0.5
-      xbox_index: "left_trigger"
+      multiplier: 1
+      xbox_index: "right_y"
     sampler:
       multiplier: 1
-      slow_mode_multiplier: 1.0
-      xbox_index: "right_trigger"
+      xbox_index_pos: "right_trigger"
+      xbox_index_neg: "left_trigger"
     sensor_actuator:
       multiplier: 1
-      slow_mode_multiplier: 0.5
+      xbox_index_pos: "right_bumper"
+      xbox_index_neg: "left_bumper"
     cache:
       multiplier: 1
-      xbox_index: "left_trigger"
+      xbox_index_pos: "right_bumper"
+      xbox_index_neg: "left_bumper"
 
   drive_controls:
     forward_back:
@@ -73,27 +60,36 @@ teleop:
       enabled: true
       multiplier: 1
     twist:
-      multiplier: 0.7
+      multiplier: 0.6
+    tilt:
+      multiplier: 1
 
   xbox_mappings:
-    left_js_x: 0
-    left_js_y: 1
-    right_js_x: 2
-    right_js_y: 3
-    left_trigger: 4
-    right_trigger: 5
+    left_x: 0
+    left_y: 1
+    right_x: 2
+    right_y: 3
     a: 0
     b: 1
-    x: 3
-    y: 2
+    x: 2
+    y: 3
     left_bumper: 4
     right_bumper: 5
-    d_pad_x: 6
-    d_pad_y: 7
+    left_trigger: 6
+    right_trigger: 7
+    back: 8
+    forward: 9
+    left_stick_click: 10
+    right_stick_click: 11
+    dpad_up: 12
+    dpad_down: 13
+    dpad_left: 14
+    dpad_right: 15
+    home: 16
 
   joystick_mappings:
-    left_right: 1
-    forward_back: 0
+    left_right: 0
+    forward_back: 1
     twist: 2
     dampen: 3
     pan: 4
@@ -114,19 +110,7 @@ teleop:
     joint_d: 1.57
     joint_e: 1.57
 
-  # Mappings from site name to index in which values will be sent
-  # for each site, mostly for heaters and which syringe servos we want to use
-  site_mappings:
-    A: 0
-    B: 1
-    C: 2
-
-  echo_presets:
-    blah: ["/tf", "/tf_static", "/rosout"]
-    foo: ["/rosout", "/tf"]
-    bar: ["/tf_static", "/rosout", "/tf"]
-
   ik_multipliers:
-    x: 1
-    y: 1
-    z: 1
+    x: 0.1
+    y: 0.1
+    z: 0.1

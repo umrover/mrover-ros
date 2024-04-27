@@ -11,7 +11,6 @@
 
 #include <mrover/CAN.h>
 
-#define CANFD_FDF 0x04
 #include <moteus/moteus.h>
 
 namespace mrover {

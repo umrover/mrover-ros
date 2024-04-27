@@ -67,15 +67,19 @@ set(MROVER_ROS_DEPENDENCIES
         tf2
         tf2_ros
         tf2_geometry_msgs
+        actionlib_msgs
 )
 
 extract_filenames(msg/*.msg MROVER_MESSAGE_FILES)
 
 extract_filenames(srv/*.srv MROVER_SERVICE_FILES)
 
+extract_filenames(action/*.action MROVER_ACTION_FILES)
+
 set(MROVER_MESSAGE_DEPENDENCIES
         std_msgs
         sensor_msgs
+        actionlib_msgs
 )
 
 set(MROVER_PARAMETERS
@@ -98,7 +102,7 @@ if (ZED_FOUND)
     set(CMAKE_CUDA_STANDARD 17)
     set(CMAKE_CUDA_STANDARD_REQUIRED ON)
     set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
-    set(CMAKE_CUDA_FLAGS "--diag-suppress 108,68")
+    set(CMAKE_CUDA_FLAGS "--diag-suppress 20012")
     # Jetson Xavier NX/AGX has Volta 7.2 architecture
     # Perception Laptop (A4000, Quadro version of RTX 3080) has Ampere 8.6 architecture
     set(CMAKE_CUDA_ARCHITECTURES 72 86)
@@ -123,6 +127,8 @@ add_message_files(FILES ${MROVER_MESSAGE_FILES})
 
 add_service_files(FILES ${MROVER_SERVICE_FILES})
 
+add_action_files(DIRECTORY action FILES ${MROVER_ACTION_FILES})
+
 generate_messages(DEPENDENCIES ${MROVER_MESSAGE_DEPENDENCIES})
 
 generate_dynamic_reconfigure_options(${MROVER_PARAMETERS})
@@ -143,41 +149,39 @@ target_link_libraries(lie PUBLIC MANIF::manif)
 
 ## ESW
 
-if (NOT APPLE)
-    mrover_add_vendor_header_only_library(moteus deps/mjbots)
-    mrover_add_header_only_library(can_device src/esw/can_device)
-    mrover_add_library(motor_library src/esw/motor_library/*.cpp src/esw/motor_library)
-    target_link_libraries(motor_library PUBLIC can_device moteus)
+mrover_add_vendor_header_only_library(moteus deps/mjbots)
+mrover_add_header_only_library(can_device src/esw/can_device)
+mrover_add_library(motor_library src/esw/motor_library/*.cpp src/esw/motor_library)
+target_link_libraries(motor_library PUBLIC can_device moteus)
 
-    if (NetLink_FOUND AND NetLinkRoute_FOUND)
-        mrover_add_nodelet(can_driver src/esw/can_driver/*.cpp src/esw/can_driver src/esw/can_driver/pch.hpp)
-        mrover_nodelet_link_libraries(can_driver ${NetLink_LIBRARIES} ${NetLinkRoute_LIBRARIES})
-        mrover_nodelet_include_directories(can_driver ${NetLink_INCLUDE_DIRS} ${NetLinkRoute_INCLUDE_DIRS})
-    endif ()
-
-    macro(mrover_add_esw_bridge_node name sources)
-        mrover_add_node(${name} ${sources})
-        target_link_libraries(${name} PRIVATE can_device motor_library)
-    endmacro()
-
-    mrover_add_esw_bridge_node(arm_hw_bridge src/esw/arm_hw_bridge/*.cpp)
-    mrover_add_esw_bridge_node(arm_translator_bridge src/esw/arm_translator_bridge/*.cpp src/esw/arm_translator_bridge/*.hpp)
-    mrover_add_esw_bridge_node(cache_bridge src/esw/cache_bridge/*.cpp)
-    mrover_add_esw_bridge_node(drive_bridge src/esw/drive_bridge/*.cpp)
-    mrover_add_esw_bridge_node(led_hw_bridge src/esw/led_hw_bridge/*.cpp)
-    mrover_add_esw_bridge_node(led src/esw/led/*.cpp)
-    mrover_add_esw_bridge_node(mast_gimbal_bridge src/esw/mast_gimbal_bridge/*.cpp)
-    mrover_add_esw_bridge_node(pdb_bridge src/esw/pdb_bridge/*.cpp)
-    mrover_add_esw_bridge_node(sa_hw_bridge src/esw/sa_hw_bridge/*.cpp)
-    mrover_add_esw_bridge_node(sa_translator_bridge src/esw/sa_translator_bridge/*.cpp)
-    mrover_add_esw_bridge_node(science_bridge src/esw/science_bridge/*.cpp)
-    mrover_add_esw_bridge_node(brushless_test_bridge src/esw/brushless_test_bridge/*.cpp motor_library)
-    mrover_add_esw_bridge_node(brushed_test_bridge src/esw/brushed_test_bridge/*.cpp)
-    mrover_add_esw_bridge_node(test_arm_bridge src/esw/test_arm_bridge/*.cpp)
-    mrover_add_esw_bridge_node(pdb_test_bridge src/esw/pdb_test_bridge/*.cpp)
-    mrover_add_esw_bridge_node(arm_position_test_bridge src/esw/arm_position_test_bridge/*.cpp)
-    #    mrover_add_esw_bridge_node(sa_sensor src/esw/fw/dirt_sensor/dirt_sensor_ros/dirt_sensor_ros.ino)
+if (NetLink_FOUND AND NetLinkRoute_FOUND)
+    mrover_add_nodelet(can_driver src/esw/can_driver/*.cpp src/esw/can_driver src/esw/can_driver/pch.hpp)
+    mrover_nodelet_link_libraries(can_driver ${NetLink_LIBRARIES} ${NetLinkRoute_LIBRARIES})
+    mrover_nodelet_include_directories(can_driver ${NetLink_INCLUDE_DIRS} ${NetLinkRoute_INCLUDE_DIRS})
 endif ()
+
+macro(mrover_add_esw_bridge_node name sources)
+    mrover_add_node(${name} ${sources})
+    target_link_libraries(${name} PRIVATE can_device motor_library)
+endmacro()
+
+mrover_add_esw_bridge_node(arm_hw_bridge src/esw/arm_hw_bridge/*.cpp)
+mrover_add_esw_bridge_node(arm_translator_bridge src/esw/arm_translator_bridge/*.cpp src/esw/arm_translator_bridge/*.hpp)
+mrover_add_esw_bridge_node(cache_bridge src/esw/cache_bridge/*.cpp)
+mrover_add_esw_bridge_node(drive_bridge src/esw/drive_bridge/*.cpp)
+mrover_add_esw_bridge_node(led_hw_bridge src/esw/led_hw_bridge/*.cpp)
+mrover_add_esw_bridge_node(led src/esw/led/*.cpp)
+mrover_add_esw_bridge_node(mast_gimbal_bridge src/esw/mast_gimbal_bridge/*.cpp)
+mrover_add_esw_bridge_node(pdb_bridge src/esw/pdb_bridge/*.cpp)
+mrover_add_esw_bridge_node(sa_bridge src/esw/sa_bridge/*.cpp)
+mrover_add_esw_bridge_node(science_bridge src/esw/science_bridge/*.cpp)
+mrover_add_esw_bridge_node(brushless_test_bridge src/esw/brushless_test_bridge/*.cpp)
+mrover_add_esw_bridge_node(brushed_test_bridge src/esw/brushed_test_bridge/*.cpp)
+mrover_add_esw_bridge_node(science_test_bridge src/esw/science_test_bridge/*.cpp)
+mrover_add_esw_bridge_node(test_arm_bridge src/esw/test_arm_bridge/*.cpp)
+mrover_add_esw_bridge_node(pdb_test_bridge src/esw/pdb_test_bridge/*.cpp)
+# mrover_add_esw_bridge_node(arm_position_test_bridge src/esw/arm_position_test_bridge/*.cpp)
+# mrover_add_esw_bridge_node(sa_sensor src/esw/fw/dirt_sensor/dirt_sensor_ros/dirt_sensor_ros.ino)
 
 ## Perception
 
