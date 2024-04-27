@@ -88,7 +88,7 @@ namespace mrover {
                 launch += "! jpegdec ";
             else
                 launch += "! videoconvert ";
-            launch += "! x264enc name=encoder ";
+            launch += std::format("! x264enc tune=zerolatency bitrate={} name=encoder ", mBitrate);
             mChunkHeader.codec = ChunkHeader::Codec::H264;
         }
         // App sink is pulled from (getting H265 chunks) on another thread and sent to the stream server

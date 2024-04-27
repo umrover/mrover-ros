@@ -64,14 +64,6 @@ export default defineComponent({
 
   mounted: function () {
     this.startStream(this.id)
-    // this.$nextTick(() => {
-    //   const canvas: HTMLCanvasElement = document.getElementById(
-    //     'stream-' + this.id
-    //   ) as HTMLCanvasElement
-    //   const context = canvas.getContext('2d') ?? new CanvasRenderingContext2D()
-    //   context.fillStyle = 'black'
-    //   context.fillRect(0, 0, canvas.width, canvas.height)
-    // })
   },
 
   methods: {
@@ -95,7 +87,7 @@ export default defineComponent({
       this.IKCam = !this.IKCam
     },
 
-    startStream(number: Number) {
+    startStream(number: Number, attempt: Number = 0) {
       // This function is called as a retry when the websocket closes
       // If our component goes away (unmounts) we should stop trying to reconnect
       // Otherwise it may preempt a new stream that already connected
@@ -113,7 +105,7 @@ export default defineComponent({
         2: [1920, 1080],
       }
       const STREAM_FPS = 30
-      const RECONNECT_TIMEOUT_MS = 3000
+      const RECONNECT_TIMEOUT_MS = 1000
 
       const vertexShaderSource = `
     attribute vec2 xy;
@@ -219,17 +211,25 @@ export default defineComponent({
       let isDecoderConfigured = false
 
       // TODO(quintin): Set IP too
-      // this.ws = new WebSocket(`ws://10.1.0.10:808${1 + this.id}`)
-      this.ws = new WebSocket(`ws://localhost:808${1 + this.id}`)
+      const ip = attempt % 2 === 0 ? '10.1.0.10' : 'localhost'
+      console.log(`Attempting to connect to server for stream ${number} at ${ip}...`)
+      this.ws = new WebSocket(`ws://${ip}:808${1 + this.id}`)
+      const timeoutId = setTimeout(() => {
+        if (this.ws && this.ws.readyState !== WebSocket.OPEN) {
+          console.log(`Timed out waiting for stream ${number}`)
+          this.ws.close()
+        }
+      }, 2000)
       this.ws.binaryType = 'arraybuffer'
       this.ws.onopen = () => {
-        console.log(`Connected to server for stream ${number}`)
+        console.log(`Opened socket for stream ${number}`)
+        clearTimeout(timeoutId)
       }
       this.ws.onclose = () => {
-        console.log(`Disconnected from server for stream ${number}`)
+        console.log(`Closed socket for stream ${number}`)
         decoder.close()
         // This recursive-ness stops after the canvas element is removed
-        setTimeout(() => this.startStream(number), RECONNECT_TIMEOUT_MS)
+        setTimeout(() => this.startStream(number, attempt + 1), RECONNECT_TIMEOUT_MS * (attempt + 1))
       }
       this.ws.onerror = () => {
         if (this.ws) this.ws.close()
