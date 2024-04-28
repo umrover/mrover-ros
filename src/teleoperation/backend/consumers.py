@@ -436,7 +436,8 @@ class GUIConsumer(JsonWebsocketConsumer):
         # angular_from_lateral = get_axes_input("left_right", 0.4, True)
         angular = get_axes_input("twist", 0.03, True, self.max_angular_speed * dampen)
 
-        linear += get_axes_input("tilt", 0.5, scale=0.1)
+        linear -= get_axes_input("tilt", 0.5, scale=0.1)
+        angular -= get_axes_input("pan", 0.5, scale=0.1)
 
         self.twist_pub.publish(
             Twist(

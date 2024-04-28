@@ -9,7 +9,7 @@ left_gps_driver:
   frame_id: "base_link"
 
 basestation_gps_driver:
-  port: "/dev/ttyUSB1"
+  port: "/dev/gps"
   baud: 38400
   frame_id: "base_link"
 
@@ -600,7 +600,7 @@ motors:
 default_network_iface: "enp0s31f6"
 
 auton_led_driver:
-  port: "/dev/ttyACM0"
+  port: "/dev/led"
   baud: 115200
 
 science:
