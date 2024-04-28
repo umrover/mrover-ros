@@ -42,7 +42,7 @@ class LongRangeState(ApproachTargetBaseState):
         rover_direction = pose.rotation.direction_vector()
 
         bearing_to_tag = np.radians(tag.bearing)
-        # If you have not seen the tag in a while but are waiting until the expiration time is up, 
+        # If you have not seen the tag in a while but are waiting until the expiration time is up,
         # keep going towards where it was last seen (the direction you are heading), don't use an old bearing value
         if context.env.long_range_tags._LongRangeTagStore__data[tag_id].hit_count <= 0:
             bearing_to_tag = 0

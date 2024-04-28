@@ -168,7 +168,7 @@ class LongRangeTagStore:
                     time_difference = rospy.get_time() - cur_tag.time
                     if time_difference > LONG_RANGE_TAG_EXPIRATION_TIME_SECONDS:
                         del self.__data[cur_tag.tag.id]
-            # if we do see one of our tags in the new message, increment its hit count 
+            # if we do see one of our tags in the new message, increment its hit count
             else:
                 cur_tag.hit_count += INCREMENT_WEIGHT
                 if cur_tag.hit_count > self.max_hits:
@@ -195,7 +195,8 @@ class LongRangeTagStore:
         time_difference = rospy.get_time() - self.__data[tag_id].time
         if (
             # self.__data[tag_id].hit_count >= self.min_hits and
-            time_difference <= LONG_RANGE_TAG_EXPIRATION_TIME_SECONDS
+            time_difference
+            <= LONG_RANGE_TAG_EXPIRATION_TIME_SECONDS
         ):
             return self.__data[tag_id].tag
         else:
@@ -271,6 +272,7 @@ class Course:
             if self.ctx.env.current_target_pos() is not None:
                 return approach_post.ApproachPostState()
             # if we see the tag in the long range camera, go to LongRangeState
+            assert current_waypoint is not None
             if self.ctx.env.long_range_tags.get(current_waypoint.tag_id) is not None:
                 return long_range.LongRangeState()
         elif self.look_for_object():
