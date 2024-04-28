@@ -289,8 +289,6 @@ namespace mrover {
                 NODELET_WARN("Expected transform for immediate tag");
             } catch (tf::ConnectivityException const&) {
                 NODELET_WARN("Expected connection to odom frame. Is visual odometry running?");
-            } catch (tf::LookupException const&) {
-                NODELET_WARN("LOOK UP NOT FOUND");
             }
         }
     }

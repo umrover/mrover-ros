@@ -4,50 +4,38 @@ teleop:
   ra_names: ["joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll", "allen_key", "gripper"]
   ra_controls:
     joint_a:
-      multiplier: 1
+      multiplier: -1
       slow_mode_multiplier: 0.5
-      invert: False
-      xbox_index: 0
     joint_b:
-      multiplier: -1
+      multiplier: 1
       slow_mode_multiplier: 1
-      invert: True
-      xbox_index: 1
     joint_c:
-      multiplier: -1
+      multiplier: 1
       slow_mode_multiplier: 0.6
-      invert: True
-      xbox_index: 4
     joint_de_pitch:
-      multiplier: 0.5
+      multiplier: -1
       slow_mode_multiplier: 1
-      invert: False
-      xbox_index: 2
     joint_de_roll:
-      multiplier: 0.5
+      multiplier: 1
       slow_mode_multiplier: 1
-      invert: False
-      xbox_index: 5
     allen_key:
       multiplier: 1
       slow_mode_multiplier: 1
-      invert: False
     gripper:
       multiplier: 1
       slow_mode_multiplier: 1
-      invert: False
 
   sa_controls:
     sa_x:
       multiplier: 1
-      slow_mode_multiplier: 0.5
+      slow_mode_multiplier: 1.0 # 0.5
       xbox_index: 1
     sa_y:
       multiplier: -1
-      slow_mode_multiplier: 0.5
+      slow_mode_multiplier: 1.0 # 0.5
       xbox_index: 0
     sa_z:
-      multiplier: -1
+      multiplier: 1
       slow_mode_multiplier: 0.5
       xbox_index: 4
     sampler:
@@ -57,7 +45,9 @@ teleop:
     sensor_actuator:
       multiplier: 1
       slow_mode_multiplier: 0.5
-      xbox_index: 5
+    cache:
+      multiplier: 1
+      xbox_index: 4
 
   drive_controls:
     forward_back:
@@ -67,23 +57,34 @@ teleop:
       enabled: true
       multiplier: 1
     twist:
-      multiplier: 0.7
+      multiplier: 0.6
+    tilt:
+      multiplier: 1
+    pan:
+      multiplier: 1
 
   xbox_mappings:
-    left_js_x: 0
-    left_js_y: 1
-    left_trigger: 2
-    right_trigger: 5
-    right_js_x: 3
-    right_js_y: 4
-    right_bumper: 5
-    left_bumper: 4
-    d_pad_x: 6
-    d_pad_y: 7
+    left_x: 0
+    left_y: 1
+    right_x: 2
+    right_y: 3
     a: 0
     b: 1
     x: 2
     y: 3
+    left_bumper: 4
+    right_bumper: 5
+    left_trigger: 6
+    right_trigger: 7
+    back: 8
+    forward: 9
+    left_stick_click: 10
+    right_stick_click: 11
+    dpad_up: 12
+    dpad_down: 13
+    dpad_left: 14
+    dpad_right: 15
+    home: 16
 
   joystick_mappings:
     left_right: 0
@@ -121,6 +122,6 @@ teleop:
     bar: ["/tf_static", "/rosout", "/tf"]
 
   ik_multipliers:
-    x: 1
-    y: 1
-    z: 1
+    x: 0.1
+    y: 0.1
+    z: 0.1

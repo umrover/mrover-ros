@@ -22,7 +22,7 @@
     </div>
 
     <div class="shadow p-3 rounded cameras">
-      <Cameras :primary="true" />
+      <Cameras :isSA="false" :mission="'ik'" />
     </div>
     <div v-if="type === 'DM'" class="shadow p-3 rounded odom">
       <OdometryReading :odom="odom" />
@@ -69,7 +69,9 @@ import MotorsStatusTable from './MotorsStatusTable.vue'
 import OdometryReading from './OdometryReading.vue'
 import DriveControls from './DriveControls.vue'
 import MastGimbalControls from './MastGimbalControls.vue'
-import type ArmMoteusStateTableVue from './ArmMoteusStateTable.vue'
+import { quaternionToMapAngle } from '../utils.js'
+
+let interval: number
 
 export default defineComponent({
   components: {
@@ -84,7 +86,7 @@ export default defineComponent({
     OdometryReading,
     DriveControls,
     MastGimbalControls,
-},
+  },
 
   props: {
     type: {
@@ -107,7 +109,8 @@ export default defineComponent({
         name: [] as string[],
         error: [] as string[],
         state: [] as string[],
-        limit_hit: [] as boolean[] /* Each motor stores an array of 4 indicating which limit switches are hit */
+        limit_hit:
+          [] as boolean[] /* Each motor stores an array of 4 indicating which limit switches are hit */
       },
 
       motorData: {
@@ -139,8 +142,16 @@ export default defineComponent({
         this.moteusDrive.state = msg.state
         this.moteusDrive.error = msg.error
         this.moteusDrive.limit_hit = msg.limit_hit
+      }
+      else if (msg.type == 'nav_sat_fix') {
+        this.odom.latitude_deg = msg.latitude
+        this.odom.longitude_deg = msg.longitude
+        this.odom.altitude = msg.altitude
       } 
-      else if (msg.type == "center_map") {
+      else if (msg.type == 'bearing') {
+        this.odom.bearing_deg = quaternionToMapAngle(msg.rotation)
+      } 
+      else if (msg.type == 'center_map') {
         this.odom.latitude_deg = msg.latitude
         this.odom.longitude_deg = msg.longitude
       }
@@ -148,13 +159,24 @@ export default defineComponent({
   },
 
   methods: {
-    ...mapActions('websocket', ['sendMessage'])
+    ...mapActions('websocket', ['sendMessage']),
+    cancelIK: function () {
+      this.sendMessage({ type: 'cancel_click_ik' })
+    }
   },
 
   created: function () {
     window.setTimeout(() => {
-      this.sendMessage({ "type": "center_map" });
+      this.sendMessage({ type: 'center_map' })
     }, 250)
+    window.addEventListener('keydown', (event: KeyboardEvent) => {
+      if (event.key === ' ') {
+        this.cancelIK(event)
+      }
+    })
+    interval = setInterval(() => {
+      this.sendMessage({ type: 'bearing' })
+    }, 1000)
   }
 })
 </script>
@@ -169,9 +191,9 @@ export default defineComponent({
     'header header'
     'map waypoint-editor'
     'map odom'
-    'map cameras'
     'arm-controls drive-vel-data'
-    'moteus pdb';
+    'moteus pdb'
+    'cameras cameras';
   font-family: sans-serif;
   height: auto;
 }
@@ -183,9 +205,9 @@ export default defineComponent({
   grid-template-rows: repeat(4, auto);
   grid-template-areas:
     'header header'
-    'cameras arm-controls'
-    'drive-vel-data moteus'
-    'pdb pdb';
+    'drive-vel-data arm-controls'
+    'pdb moteus'
+    'cameras cameras';
   font-family: sans-serif;
   height: auto;
 }

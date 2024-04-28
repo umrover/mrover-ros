@@ -1,194 +1,95 @@
 <template>
   <div class="wrap">
     <div class="col-wrap" style="left: 0">
-      <div class="box">
-        <div class="row">
-          <div class="form-group col-md-6">
-            <label for="waypointname">Name:</label>
-            <input class="form-control" id="waypointname" v-model="name" />
-          </div>
-          <div class="form-group col-md-6">
-            <label for="waypointid">Tag ID:</label>
-            <input v-if="type == 1" class="form-control" id="waypointid" v-model="id" type="number" max="249" min="0"
-              step="1" />
-            <input v-else class="form-control" id="waypointid" type="number" placeholder="-1" step="1" disabled />
-          </div>
-        </div>
-
-        <select class="form-select my-3" v-model="type">
-          <option value="0" selected>No Search</option>
-          <option value="1" selected>Post</option>
-          <option value="2">Mallet</option>
-          <option value="3">Water Bottle</option>
-        </select>
-
-        <div class="form-check form-check-inline">
-          <input v-model="odom_format_in" class="form-check-input" type="radio" id="radioD" value="D" />
-          <label class="form-check-label" for="radioD">D</label>
-        </div>
-        <div class="form-check form-check-inline">
-          <input v-model="odom_format_in" class="form-check-input" type="radio" id="radioDM" value="DM" />
-          <label class="form-check-label" for="radioDM">DM</label>
-        </div>
-        <div class="form-check form-check-inline">
-          <input v-model="odom_format_in" class="form-check-input" type="radio" id="radioDMS" value="DMS" />
-          <label class="form-check-label" for="radioDMS">DMS</label>
-        </div>
-
-        <div class="row">
-          <div class="col input-group">
-            <input class="form-control" id="deg1" v-model.number="input.lat.d" />
-            <span for="deg1" class="input-group-text">º</span>
-          </div>
-          <div v-if="min_enabled" class="col input-group">
-            <input class="form-control" id="min1" v-model.number="input.lat.m" />
-            <span for="min1" class="input-group-text">'</span>
-          </div>
-          <div v-if="sec_enabled" class="col input-group">
-            <input class="form-control" id="sec1" v-model.number="input.lat.s" />
-            <span for="sec1" class="input-group-text">"</span>
-          </div>
-          N
-        </div>
-        <div class="row">
-          <div class="col input-group">
-            <input class="form-control" id="deg2" v-model.number="input.lon.d" />
-            <span for="deg2" class="input-group-text">º</span>
-          </div>
-          <div v-if="min_enabled" class="col input-group">
-            <input class="form-control" id="min2" v-model.number="input.lon.m" />
-            <span for="min2" class="input-group-text">'</span>
-          </div>
-          <div v-if="sec_enabled" class="col input-group">
-            <input class="form-control" id="sec2" v-model.number="input.lon.s" />
-            <span for="sec2" class="input-group-text">"</span>
-          </div>
-          E
-        </div>
-
-        <div class="add-drop">
-          <button class="btn btn-primary" @click="addWaypoint(input)">Add Waypoint</button>
-          <button class="btn btn-primary" @click="addWaypoint(formatted_odom)">
-            Drop Waypoint
-          </button>
-          <button class="btn btn-primary" @click="openModal">Competition Waypoint Entry</button>
-        </div>
+      <div class="waypoint-header">
+        <h4>All Waypoints</h4>
       </div>
-      <div class="box">
-        <div class="waypoint-header">
-          <h4>All Waypoints</h4>
-          <button class="btn btn-primary" @click="clearWaypoint">Clear Waypoints</button>
-        </div>
-        <div class="waypoints">
-          <!-- <draggable
-            v-model="storedWaypoints"
-            class="dragArea"
-            draggable=".item'"
-          > -->
-          <WaypointItem v-for="(waypoint, i) in storedWaypoints" :key="i" :waypoint="waypoint" :in_route="false"
-            :index="i" @delete="deleteItem($event)" @togglePost="togglePost($event)" @add="addItem($event)" />
-          <!-- </draggable> -->
-        </div>
+      <button class="btn btn-primary" @click="openModal()">Add Waypoint From Map</button>
+      <div class="waypoints">
+        <div class="shadow p-3 my-2" v-for="waypoint in waypoints" :key="waypoint">
+          <h5>{{ waypoint.name }}</h5>
+          <p>ID: {{ waypoint.id }}</p>
+          <div class="row">
+            <div class="col input-group">
+              <input class="form-control" id="deg1" v-model.number="waypoint.lat" />
+              <span for="deg1" class="input-group-text">º</span>
+            </div>
+            N
+          </div>
+          <div class="row">
+            <div class="col input-group">
+              <input class="form-control" id="deg2" v-model.number="waypoint.lon" />
+              <span for="deg2" class="input-group-text">º</span>
+            </div>
+            W
+          </div>
+          <button class="btn btn-primary" @click="addItem(waypoint)">Add Waypoint</button>
+        </div>    
       </div>
     </div>
     <div class="col-wrap" style="left: 50%">
-      <!-- <div class="auton-check"> -->
-      <AutonModeCheckbox ref="autonCheckbox" class="auton-checkbox" :name="autonButtonText" :color="autonButtonColor"
+      <div class="datagrid">
+        <AutonModeCheckbox ref="autonCheckbox" class="auton-checkbox" :name="autonButtonText" :color="autonButtonColor"
         @toggle="toggleAutonMode($event)" />
-      <div class="stats">
-        <VelocityCommand />
-      </div>
-      <Checkbox ref="teleopCheckbox" class="teleop-checkbox" :name="'Teleop Controls'"
-        @toggle="toggleTeleopMode($event)" />
-      <!-- </div> -->
-      <Checkbox class="stuck-checkbox" name="Stuck" @toggle="roverStuck = !roverStuck"></Checkbox>
-      <h4 class="waypoint-headers">Current Course</h4>
-      <div class="box route">
-        <!-- <draggable v-model="route" class="dragArea" draggable=".item'"> -->
-        <WaypointItem v-for="(waypoint, i) in route" :id="id" :key="i" :waypoint="waypoint" :in_route="true" :index="i"
-          :name="name" @delete="deleteItem($event)" @togglePost="togglePost($event)" @add="addItem($event)" />
-        <!-- </draggable> -->
-      </div>
-    </div>
-
-    <div v-if="showModal" @close="showModal = false">
-      <transition name="modal-fade">
-        <div class="modal-backdrop">
-          <div class="modal" role="dialog">
-            <header id="modalTitle" class="modal-header">
-              <h4>Enter your waypoints:</h4>
-              <button type="button" class="btn-close" @click="showModal = false">x</button>
-            </header>
-
-            <section id="modalDescription" class="modal-body">
-              <slot name="body">
-                <div class="modal-odom-format">
-                  <h5>Waypoint format:</h5>
-                  <div class="form-check form-check-inline">
-                    <input v-model="odom_format_in" class="form-check-input" type="radio" id="radioD" value="D" />
-                    <label class="form-check-label" for="radioD">D</label>
-                  </div>
-                  <div class="form-check form-check-inline">
-                    <input v-model="odom_format_in" class="form-check-input" type="radio" id="radioDM" value="DM" />
-                    <label class="form-check-label" for="radioDM">DM</label>
-                  </div>
-                  <div class="form-check form-check-inline">
-                    <input v-model="odom_format_in" class="form-check-input" type="radio" id="radioDMS" value="DMS" />
-                    <label class="form-check-label" for="radioDMS">DMS</label>
-                  </div>
-                </div>
-                <div v-for="(header, index) in compModalHeaders" :key="header" class="comp-modal-inputs">
-                  <h5>{{ header }}</h5>
-                  <input id="lat_deg" v-model.number="compModalLatDeg[index]" type="number" min="-90" max="90" />
-                  <label>º</label>
-                  <input v-if="min_enabled" id="lat_min" v-model.number="compModalLatMin[index]" type="number" min="0"
-                    max="60" />
-                  <label v-if="min_enabled">'</label>
-                  <input v-if="sec_enabled" id="lat_sec" v-model.number="compModalLatSec[index]" type="number" min="0"
-                    max="3600" />
-                  <label v-if="sec_enabled">"</label>
-                  <label>N &nbsp; &nbsp;</label>
-                  <input id="lon_deg" v-model.number="compModalLonDeg[index]" type="number" min="-180" max="180" />
-                  <label>º</label>
-                  <input v-if="min_enabled" id="lon_min" v-model.number="compModalLonMin[index]" type="number" min="0"
-                    max="60" />
-                  <label v-if="min_enabled">'</label>
-                  <input v-if="sec_enabled" id="lon_sec" v-model.number="compModalLonSec[index]" type="number" min="0"
-                    max="3600" />
-                  <label v-if="sec_enabled">"</label>
-                  <label>E</label>
-                </div>
-              </slot>
-            </section>
-
-            <footer class="modal-footer">
-              <button type="button" :disabled="!comp_modal_able_to_submit" @click="submitModal()">
-                Submit
-              </button>
-            </footer>
-          </div>
+        <div class="stats">
+          <VelocityCommand />
         </div>
-      </transition>
+        <Checkbox ref="teleopCheckbox" class="teleop-checkbox" :name="'Teleop Controls'"
+          @toggle="toggleTeleopMode($event)" />
+      </div>
+      <h4 class="waypoint-headers my-3">Current Course</h4>
+      <div class="route">
+        <WaypointItem v-for="waypoint in route" :key="waypoint" :waypoint="waypoint" @delete="deleteItem(waypoint)" />
+      </div>
     </div>
   </div>
+
+  <div class="modal fade" id="modalWypt" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+          <div class="modal-content">
+            <div class="modal-body">
+              <div class="row">
+                <div class="form-group col-md-6">
+                  <label for="waypointname">Name:</label>
+                  <input class="form-control" id="waypointname" v-model="modalWypt.name" />
+                </div>
+                <div class="form-group col-md-6">
+                  <label for="waypointid">Tag ID:</label>
+                  <input v-if="modalWypt.type == 1" class="form-control" id="waypointid" v-model="modalWypt.id" type="number" max="249" min="0"
+                    step="1" />
+                  <input v-else class="form-control" id="waypointid" type="number" placeholder="-1" step="1" disabled />
+                </div>
+                <select class="form-select my-3" v-model="modalWypt.type">
+                  <option value="0" selected>No Search</option>
+                  <option value="1">Post</option>
+                  <option value="2">Mallet</option>
+                  <option value="3">Water Bottle</option>
+                </select>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" @click="addMapWaypoint()">Add Waypoint</button>
+            </div>
+          </div>
+        </div>
+      </div>
 </template>
 
 <script lang="ts">
 import AutonModeCheckbox from './AutonModeCheckbox.vue'
 import Checkbox from './Checkbox.vue'
-import draggable from 'vuedraggable'
-import { convertDMS } from '../utils.js'
 import VelocityCommand from './VelocityCommand.vue'
 import WaypointItem from './AutonWaypointItem.vue'
 import { mapState, mapActions, mapMutations, mapGetters } from 'vuex'
 import _ from 'lodash'
 import L from 'leaflet'
+import { reactive } from 'vue'
+import { Modal } from 'bootstrap'
 
 let stuck_interval: number, auton_publish_interval: number
 
 export default {
   components: {
-    draggable,
     WaypointItem,
     AutonModeCheckbox,
     Checkbox,
@@ -204,40 +105,65 @@ export default {
 
   data() {
     return {
-      name: 'Waypoint',
-      id: '0',
-      type: 0,
-      odom_format_in: 'DM',
-      input: {
-        lat: {
-          d: 0,
-          m: 0,
-          s: 0
+      waypoints: [
+        { 
+          name: 'No Search 1',
+          id: -1,
+          type: 0, 
+          lat: 0,
+          lon: 0,
         },
-        lon: {
-          d: 0,
-          m: 0,
-          s: 0
-        }
-      },
-
-      showModal: false,
-      compModalHeaders: [
-        'Start',
-        'Waypoint 1',
-        'Waypoint 2',
-        'Post 1',
-        'Post 2',
-        'Post 3',
-        'Mallet',
-        'Water Bottle'
-      ],
-      compModalLatDeg: Array(8).fill(0),
-      compModalLatMin: Array(8).fill(0),
-      compModalLatSec: Array(8).fill(0),
-      compModalLonDeg: Array(8).fill(0),
-      compModalLonMin: Array(8).fill(0),
-      compModalLonSec: Array(8).fill(0),
+        { 
+          name: 'No Search 2',
+          id: -1,
+          type: 0, 
+          lat: 0,
+          lon: 0,
+        },
+        {
+          name: 'Post 1',
+          id: 1,
+          type: 1,
+          lat: 0,
+          lon: 0,
+        },
+        {
+          name: 'Post 2',
+          id: 2,
+          type: 1,
+          lat: 0,
+          lon: 0,
+        },
+        {
+          name: 'Post 3',
+          id: 3,
+          type: 1,
+          lat: 0,
+          lon: 0,
+        },
+        {
+          name: 'Mallet',
+          id: -1,
+          type: 2,
+          lat: 0,
+          lon: 0,
+        },
+        {
+          name: 'Water Bottle',
+          id: -1,
+          type: 3,
+          lat: 0,
+          lon: 0,
+        }],
+      
+      modal: null,
+      modalWypt: {
+          name: '',
+          id: -1,
+          type: 0,
+          lat: 0,
+          lon: 0,
+        },
 
       teleopEnabledCheck: false,
 
@@ -247,8 +173,7 @@ export default {
         total_wps: 0
       },
 
-      storedWaypoints: [],
-      route: [],
+      route: reactive([]),
 
       autonButtonColor: 'btn-danger',
 
@@ -268,33 +193,6 @@ export default {
       odom_format: 'odomFormat'
     }),
 
-    comp_modal_able_to_submit: function () {
-      // Ensure that all inputs in modal are valid before submitting
-      return (
-        this.compModalLatDeg.every((val: unknown) => Number.isFinite(val)) &&
-        this.compModalLatMin.every((val: unknown) => Number.isFinite(val)) &&
-        this.compModalLatSec.every((val: unknown) => Number.isFinite(val)) &&
-        this.compModalLonDeg.every((val: unknown) => Number.isFinite(val)) &&
-        this.compModalLonMin.every((val: unknown) => Number.isFinite(val)) &&
-        this.compModalLonSec.every((val: unknown) => Number.isFinite(val))
-      )
-    },
-
-    formatted_odom: function () {
-      return {
-        lat: convertDMS({ d: this.odom.latitude_deg, m: 0, s: 0 }, this.odom_format),
-        lon: convertDMS({ d: this.odom.longitude_deg, m: 0, s: 0 }, this.odom_format)
-      }
-    },
-
-    min_enabled: function () {
-      return this.odom_format != 'D'
-    },
-
-    sec_enabled: function () {
-      return this.odom_format == 'DMS'
-    },
-
     autonButtonText: function () {
       return this.autonButtonColor == 'btn-warning'
         ? 'Setting to ' + this.autonEnabled
@@ -303,9 +201,22 @@ export default {
   },
 
   watch: {
+    waypoints: {
+      handler: function (newList) {
+        const waypoints = newList.map((waypoint) => {
+          const lat = waypoint.lat
+          const lon = waypoint.lon
+          return { latLng: L.latLng(lat, lon), name: waypoint.name }
+        })
+        this.setWaypointList(waypoints)
+        this.sendMessage({ type: 'save_auton_waypoint_list', data: newList })
+      },
+      deep: true
+    },
+
     route: {
       handler: function (newRoute) {
-        const waypoints = newRoute.map((waypoint: { lat: any; lon: any; name: any }) => {
+          const waypoints = newRoute.map((waypoint) => {
           const lat = waypoint.lat
           const lon = waypoint.lon
           return { latLng: L.latLng(lat, lon), name: waypoint.name }
@@ -328,7 +239,7 @@ export default {
         this.autonButtonColor = this.autonEnabled ? 'btn-success' : 'btn-danger'
       } else if (msg.type == 'get_auton_waypoint_list') {
         // Get waypoints from server on page load
-        this.storedWaypoints = msg.data
+        if(msg.data.length > 0) this.waypoints = msg.data 
         const waypoints = msg.data.map((waypoint: { lat: any; lon: any; name: any }) => {
           const lat = waypoint.lat
           const lon = waypoint.lon
@@ -337,36 +248,10 @@ export default {
         this.setWaypointList(waypoints)
       }
     },
+  },
 
-    storedWaypoints: {
-      handler: function (newList) {
-        const waypoints = newList.map((waypoint: { lat: any; lon: any; name: any }) => {
-          const lat = waypoint.lat
-          const lon = waypoint.lon
-          return { latLng: L.latLng(lat, lon), name: waypoint.name }
-        })
-        this.setWaypointList(waypoints)
-        this.sendMessage({ type: 'save_auton_waypoint_list', data: newList })
-      },
-      deep: true
-    },
-
-    odom_format_in: function (newOdomFormat) {
-      this.setOdomFormat(newOdomFormat)
-      this.input.lat = convertDMS(this.input.lat, newOdomFormat)
-      this.input.lon = convertDMS(this.input.lon, newOdomFormat)
-    },
-
-    clickPoint: function (newClickPoint) {
-      this.input.lat.d = newClickPoint.lat
-      this.input.lon.d = newClickPoint.lon
-      this.input.lat.m = 0
-      this.input.lon.m = 0
-      this.input.lat.s = 0
-      this.input.lon.s = 0
-      this.input.lat = convertDMS(this.input.lat, this.odom_format_in)
-      this.input.lon = convertDMS(this.input.lon, this.odom_format_in)
-    }
+  mounted() {
+    this.modal = new Modal('#modalWypt', {})
   },
 
   beforeUnmount: function () {
@@ -378,7 +263,7 @@ export default {
 
   created: function () {
     // Make sure local odom format matches vuex odom format
-    this.odom_format_in = this.odom_format
+    // this.odom_format_in = this.odom_format
 
     auton_publish_interval = window.setInterval(() => {
       if (this.waitingForNavResponse) {
@@ -391,16 +276,12 @@ export default {
     }, 250)
   },
 
-  // mounted: function () {
-  // },
-
   methods: {
     ...mapActions('websocket', ['sendMessage']),
 
     ...mapMutations('autonomy', {
       setRoute: 'setRoute',
       setWaypointList: 'setWaypointList',
-      setHighlightedWaypoint: 'setHighlightedWaypoint',
       setAutonMode: 'setAutonMode',
       setTeleopMode: 'setTeleopMode'
     }),
@@ -416,15 +297,15 @@ export default {
           is_enabled: true,
           waypoints: _.map(
             this.route,
-            (waypoint: { lat: number; lon: number; id: string; type: string }) => {
+            (waypoint) => {
               const lat = waypoint.lat
               const lon = waypoint.lon
               // Return a GPSWaypoint.msg formatted object for each
               return {
                 latitude_degrees: lat,
                 longitude_degrees: lon,
-                tag_id: parseInt(waypoint.id),
-                type: parseInt(waypoint.type)
+                tag_id: waypoint.id,
+                type: waypoint.type
               }
             }
           )
@@ -435,136 +316,36 @@ export default {
       }
     },
 
-    openModal: function () {
-      this.showModal = true
-      // Reset compModal Arrays
-      this.compModalLatDeg = Array(8).fill(0)
-      this.compModalLatMin = Array(8).fill(0)
-      this.compModalLatSec = Array(8).fill(0)
-      this.compModalLonDeg = Array(8).fill(0)
-      this.compModalLonMin = Array(8).fill(0)
-      this.compModalLonSec = Array(8).fill(0)
-    },
-
-    submitModal: function () {
-      // TODO: Update this for 2024 Auton Mission Format
-      this.showModal = false
-      // Create lat/lon objects from comp modal arrays
-      const coordinates = this.compModalLatDeg.map((deg: any, i: string | number) => {
-        return {
-          lat: {
-            d: deg,
-            m: this.compModalLatMin[i],
-            s: this.compModalLatSec[i]
-          },
-          lon: {
-            d: this.compModalLonDeg[i],
-            m: this.compModalLonMin[i],
-            s: this.compModalLonSec[i]
-          }
-        }
-      })
-
-      let coord_num = 0
-      let tag_id = 0
-
-      // Start AR tag is always 0.
-      this.storedWaypoints.push({
-        name: 'Start',
-        id: tag_id,
-        lat: convertDMS(coordinates[coord_num].lat, 'D').d,
-        lon: convertDMS(coordinates[coord_num].lon, 'D').d,
-        type: 0,
-        post: false
-      })
-
-      ++coord_num
-      ++tag_id
-
-      // Add Waypoints, which we set as sentinel value -1.
-      for (; coord_num < 4; ++coord_num) {
-        this.storedWaypoints.push({
-          name: 'Waypoint ' + coord_num,
-          id: -1,
-          lat: convertDMS(coordinates[coord_num].lat, 'D').d,
-          lon: convertDMS(coordinates[coord_num].lon, 'D').d,
-          type: 0,
-          post: false
-        })
-      }
-
-      // Add AR Tag Posts with IDs 1-3
-      for (; coord_num < 7; ++coord_num) {
-        this.storedWaypoints.push({
-          name: 'AR Tag Post ' + tag_id,
-          id: tag_id,
-          lat: convertDMS(coordinates[coord_num].lat, 'D').d,
-          lon: convertDMS(coordinates[coord_num].lon, 'D').d,
-          type: 1,
-          post: true
-        })
-
-        ++tag_id
-      }
-    },
-
-    deleteItem: function (waypoint: { index: any; in_route: boolean }) {
-      if (this.highlightedWaypoint == waypoint.index) {
-        this.setHighlightedWaypoint(-1)
-      }
-      if (!waypoint.in_route) {
-        this.storedWaypoints.splice(waypoint.index, 1)
-      } else if (waypoint.in_route) {
-        this.route.splice(waypoint.index, 1)
-      }
-    },
-
-    findWaypoint: function (waypoint: { index: any }) {
-      if (waypoint.index === this.highlightedWaypoint) {
-        this.setHighlightedWaypoint(-1)
-      } else {
-        this.setHighlightedWaypoint(waypoint.index)
-      }
+    deleteItem: function (waypoint) {
+      waypoint.in_route = false
+      let index = this.route.indexOf(waypoint)
+      this.route.splice(index, 1)
     },
 
     // Add item from all waypoints div to current waypoints div
-    addItem: function (waypoint: { in_route: boolean; index: number }) {
+    addItem: function (waypoint) {
       if (!waypoint.in_route) {
-        this.route.push(this.storedWaypoints[waypoint.index])
-      } else if (waypoint.in_route) {
-        this.storedWaypoints.push(this.route[waypoint.index])
+        this.route.push(waypoint)
+        waypoint.in_route = true
       }
     },
 
-    togglePost: function (waypoint: { in_route: boolean; index: number }) {
-      if (!waypoint.in_route) {
-        this.storedWaypoints[waypoint.index].post = !this.storedWaypoints[waypoint.index].post
-      } else if (waypoint.in_route) {
-        this.route[waypoint.index].post = !this.route[waypoint.index].post
+    openModal: function() {
+      this.modal.show()
+    },
+
+    addMapWaypoint: function() {
+      this.modalWypt.lat = this.clickPoint.lat;
+      this.modalWypt.lon = this.clickPoint.lon;
+      this.waypoints.push(this.modalWypt);
+      this.modalWypt = {
+        name: '',
+        id: -1,
+        type: 0,
+        lat: 0,
+        lon: 0,
       }
-    },
-
-    addWaypoint: function (coord: { lat: any; lon: any }) {
-      if (this.type == 1 && !this.checkWaypointIDUnique(this.id)) {
-        alert('Waypoint ID must be unique')
-        return
-      }
-      this.storedWaypoints.push({
-        name: this.name,
-        id: this.type == 1 ? this.id : -1, // Check if type is post, if so, set id to -1
-        lat: convertDMS(coord.lat, 'D').d,
-        lon: convertDMS(coord.lon, 'D').d,
-        type: this.type,
-        post: false
-      })
-    },
-
-    checkWaypointIDUnique: function (id: any) {
-      return this.storedWaypoints.every((waypoint: { id: any }) => waypoint.id != id)
-    },
-
-    clearWaypoint: function () {
-      this.storedWaypoints = []
+      this.modal.hide()
     },
 
     toggleAutonMode: function (val: boolean) {
@@ -588,6 +369,7 @@ export default {
   position: relative;
   display: flex;
   flex-direction: row;
+  width: 100%;
   height: 100%;
   margin: auto;
 }
@@ -600,10 +382,6 @@ export default {
   width: 49.5%;
 }
 
-.dragArea {
-  height: 100%;
-}
-
 .datagrid {
   display: grid;
   grid-gap: 5%;
@@ -611,15 +389,13 @@ export default {
   grid-template-rows: auto auto;
   grid-template-areas:
     'auton-check stats'
-    'teleop-check stuck-check';
+    'teleop-check stats';
   font-family: sans-serif;
-  /* min-height: 16.3vh; */
 }
 
 .waypoint-header {
   display: inline-flex;
   align-items: center;
-  /* height: 100%; */
 }
 
 .waypoint-header button {
@@ -631,12 +407,12 @@ export default {
 }
 
 .waypoints {
-  height: 43vh;
+  height: 90%;
   overflow-y: auto;
 }
 
 .route {
-  height: 60vh;
+  height: 60%;
   overflow-y: scroll;
 }
 
@@ -645,46 +421,17 @@ export default {
 }
 
 /* Grid Area Definitions */
-.auton-check {
-  align-content: center;
-  grid-area: auton-check;
-}
-
 .teleop-checkbox {
   grid-area: teleop-check;
-  /* margin-top: -40px; */
-  width: 50%;
-  float: left;
-  clear: both;
+  width: 100%;
 }
 
 .stats {
-  /* margin-top: 10px; */
   grid-area: stats;
-  float: right;
-  width: 50%;
 }
-
-/* .teleop-stuck-btns {
-    width: 100%;
-    clear:both;
-  } */
-
-.stuck-checkbox {
-  /* align-content: center; */
-  grid-area: stuck-check;
-  /* padding-inline: 20px; */
-  width: 50%;
-  float: right;
-}
-
-/* .stuck-check .stuck-checkbox {
-    transform: scale(1.5);
-  } */
 
 .auton-checkbox {
-  float: left;
-  width: 50%;
+  grid-area: auton-check;
 }
 
 .odom {
@@ -698,94 +445,5 @@ export default {
 
 .add-drop button {
   margin: 10px;
-}
-
-/* Modal Classes */
-/* TODO: Make Modal a Component or set up a package for modals */
-.modal-backdrop {
-  position: fixed;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background-color: rgba(0, 0, 0, 0.3);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 100000;
-}
-
-.modal {
-  background: #ffffff;
-  box-shadow: 2px 2px 20px 1px;
-  overflow-x: auto;
-  display: flex;
-  flex-direction: column;
-  z-index: 10000;
-}
-
-.modal-header,
-.modal-footer {
-  padding: 5px;
-  display: flex;
-}
-
-.modal-header {
-  position: relative;
-  border-bottom: 1px solid #eeeeee;
-  justify-content: space-between;
-}
-
-.modal-footer {
-  border-top: 1px solid #eeeeee;
-  flex-direction: column;
-}
-
-.modal-body {
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  padding: 20px 10px;
-}
-
-.btn-close {
-  position: absolute;
-  top: 0;
-  right: 0;
-  border: none;
-  font-size: 20px;
-  padding: 10px;
-  cursor: pointer;
-  font-weight: bold;
-  color: #4aae9b;
-  background: transparent;
-}
-
-.btn-green {
-  color: white;
-  background: #4aae9b;
-  border: 1px solid #4aae9b;
-  border-radius: 2px;
-}
-
-.modal-fade-enter,
-.modal-fade-leave-to {
-  opacity: 0;
-}
-
-.modal-fade-enter-active,
-.modal-fade-leave-active {
-  transition: opacity 0.5s ease;
-}
-
-.modal-odom-format {
-  display: flex;
-  flex-direction: row;
-  justify-content: center;
-  align-items: center;
-}
-
-.comp-modal-inputs input {
-  width: 150px;
 }
 </style>

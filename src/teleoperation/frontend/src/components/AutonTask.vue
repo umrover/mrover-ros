@@ -16,14 +16,14 @@
     </div>
     <div :class="['shadow p-3 rounded data', ledColor]">
       <h2>Nav State: {{ navState }}</h2>
-      <!-- <div style="display: inline-block">
-        <CameraFeed></CameraFeed>
-      </div> -->
       <div style="display: inline-block; vertical-align: top">
         <p style="margin-top: 6px">Joystick Values</p>
         <JoystickValues />
       </div>
       <OdometryReading :odom="odom" />
+    </div>
+    <div class="shadow p-3 rounded feed">
+        <CameraFeed :mission="'ZED'" :id="0" :name="'ZED'"></CameraFeed>
     </div>
     <div class="shadow p-3 rounded map">
       <AutonRoverMap :odom="odom" />
@@ -47,7 +47,7 @@
       </div>
     </div>
     <div class="shadow p-3 rounded cameras">
-      <Cameras :primary="true" />
+      <Cameras :isSA="false" :mission="'auton'"/>
     </div>
     <div class="shadow p-3 rounded moteus">
       <DriveMoteusStateTable :moteus-state-data="moteusState" />
@@ -61,8 +61,8 @@ import { mapActions, mapState, mapGetters } from 'vuex'
 import DriveMoteusStateTable from './DriveMoteusStateTable.vue'
 import AutonRoverMap from './AutonRoverMap.vue'
 import AutonWaypointEditor from './AutonWaypointEditor.vue'
-import CameraFeed from './CameraFeed.vue'
 import Cameras from './Cameras.vue'
+import CameraFeed from './CameraFeed.vue'
 import MotorsStatusTable from './MotorsStatusTable.vue'
 import OdometryReading from './OdometryReading.vue'
 import JoystickValues from './JoystickValues.vue'
@@ -78,8 +78,8 @@ export default defineComponent({
     DriveMoteusStateTable,
     AutonRoverMap,
     AutonWaypointEditor,
-    CameraFeed,
     Cameras,
+    CameraFeed,
     MotorsStatusTable,
     OdometryReading,
     JoystickValues,
@@ -87,14 +87,12 @@ export default defineComponent({
     MastGimbalControls
   },
 
-  // add prop where map has the center property and autontask sends it once it gets it
-
   data() {
     return {
       // Default coordinates are at MDRS
       odom: {
-        latitude_deg: 42.293195,
-        longitude_deg: -83.7096706,
+        latitude_deg: 42.30008806193693,
+        longitude_deg: -83.6931540297569,
         bearing_deg: 0,
         altitude: 0
       },
@@ -158,7 +156,7 @@ export default defineComponent({
         this.odom.latitude_deg = msg.latitude
         this.odom.longitude_deg = msg.longitude
         this.odom.altitude = msg.altitude
-      } else if (msg.type == 'auton_tfclient') {
+      } else if (msg.type == 'bearing') {
         this.odom.bearing_deg = quaternionToMapAngle(msg.rotation)
       } else if (msg.type == "center_map") {
         this.odom.latitude_deg = msg.latitude
@@ -180,8 +178,8 @@ export default defineComponent({
     window.setTimeout(() => {
       this.sendMessage({ "type": "center_map" });
     }, 250)
-      interval = setInterval(() => {
-      this.sendMessage({ type: 'auton_tfclient' })
+    interval = setInterval(() => {
+      this.sendMessage({ type: 'bearing' })
     }, 1000)
   },
 
@@ -192,14 +190,15 @@ export default defineComponent({
 .wrapper {
   display: grid;
   grid-gap: 10px;
-  grid-template-columns: 40% 20% auto;
-  grid-template-rows: repeat(5, auto);
+  grid-template-columns: auto 30% 30%;
+  grid-template-rows: repeat(6, auto);
   grid-template-areas:
     'header header header'
-    'map map waypoints'
+    'feed map waypoints'
     'data data waypoints'
     'data data conditions'
-    'cameras moteus moteus';
+    'moteus moteus moteus'
+    'cameras cameras cameras';
 
   font-family: sans-serif;
   height: auto;
@@ -308,5 +307,9 @@ h2 {
 
 .data {
   grid-area: data;
+}
+
+.feed {
+  grid-area: feed;
 }
 </style>

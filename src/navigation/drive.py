@@ -10,6 +10,8 @@ from util.SE3 import SE3
 from util.np_utils import angle_to_rotate, normalized
 from util.ros_utils import get_rosparam
 
+import rospy
+
 default_constants = {
     "max_driving_effort": 1.0,
     "min_driving_effort": -1.0,
@@ -212,6 +214,8 @@ class DriveController:
 
         if drive_back:
             output[0].linear.x *= -1
+
+        rospy.logerr(f"output: {output}, target: {target_pos}, diff: {target_pos - rover_pos}")
 
         self._last_angular_error = angular_error
         self._last_target = target_pos

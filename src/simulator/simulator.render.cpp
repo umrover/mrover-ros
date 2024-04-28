@@ -59,7 +59,13 @@ namespace mrover {
         depthStencil.depthWriteEnabled = true;
         depthStencil.format = DEPTH_FORMAT;
         depthStencil.stencilFront.compare = wgpu::CompareFunction::Always;
+        depthStencil.stencilFront.failOp = wgpu::StencilOperation::Keep;
+        depthStencil.stencilFront.depthFailOp = wgpu::StencilOperation::Keep;
+        depthStencil.stencilFront.passOp = wgpu::StencilOperation::Keep;
         depthStencil.stencilBack.compare = wgpu::CompareFunction::Always;
+        depthStencil.stencilBack.failOp = wgpu::StencilOperation::Keep;
+        depthStencil.stencilBack.depthFailOp = wgpu::StencilOperation::Keep;
+        depthStencil.stencilBack.passOp = wgpu::StencilOperation::Keep;
         descriptor.depthStencil = &depthStencil;
 
 
@@ -201,6 +207,19 @@ namespace mrover {
         glfwWindowHint(GLFW_COCOA_RETINA_FRAMEBUFFER, GLFW_FALSE);
         mWindow = GlfwPointer<GLFWwindow, glfwCreateWindow, glfwDestroyWindow>{w, h, WINDOW_NAME, nullptr, nullptr};
         NODELET_INFO_STREAM(std::format("Created window of size: {}x{}", w, h));
+
+        if (cv::Mat logo = imread(std::filesystem::path{std::source_location::current().file_name()}.parent_path() / "mrover_logo.png", cv::IMREAD_UNCHANGED);
+            logo.type() == CV_8UC4) {
+            cvtColor(logo, logo, cv::COLOR_BGRA2RGBA);
+            GLFWimage logoImage{
+                    .width = logo.cols,
+                    .height = logo.rows,
+                    .pixels = logo.data,
+            };
+            glfwSetWindowIcon(mWindow.get(), 1, &logoImage);
+        } else {
+            ROS_WARN_STREAM("Failed to load logo image");
+        }
 
         if (glfwRawMouseMotionSupported()) glfwSetInputMode(mWindow.get(), GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
 
@@ -345,7 +364,12 @@ namespace mrover {
             IMGUI_CHECKVERSION();
             ImGui::CreateContext();
             ImGui_ImplGlfw_InitForOther(mWindow.get(), true);
-            ImGui_ImplWGPU_Init(mDevice, 1, COLOR_FORMAT, DEPTH_FORMAT);
+            ImGui_ImplWGPU_InitInfo initInfo;
+            initInfo.DepthStencilFormat = DEPTH_FORMAT;
+            initInfo.RenderTargetFormat = COLOR_FORMAT;
+            initInfo.Device = mDevice;
+            initInfo.NumFramesInFlight = 1;
+            ImGui_ImplWGPU_Init(&initInfo);
 
             int x, y, w, h;
             glfwGetMonitorWorkarea(glfwGetPrimaryMonitor(), &x, &y, &w, &h);
@@ -652,9 +676,11 @@ namespace mrover {
         colorAttachment.loadOp = wgpu::LoadOp::Clear;
         colorAttachment.storeOp = wgpu::StoreOp::Store;
         colorAttachment.clearValue = {mSkyColor.x(), mSkyColor.y(), mSkyColor.z(), mSkyColor.w()};
+        colorAttachment.depthSlice = wgpu::kDepthSliceUndefined;
         normalAttachment.loadOp = wgpu::LoadOp::Clear;
         normalAttachment.storeOp = wgpu::StoreOp::Store;
         normalAttachment.clearValue = {0, 0, 0, 0};
+        normalAttachment.depthSlice = wgpu::kDepthSliceUndefined;
 
         wgpu::RenderPassDepthStencilAttachment depthStencilAttachment;
         depthStencilAttachment.depthClearValue = 1.0f;

@@ -5,9 +5,10 @@
 #include <mrover/CAN.h>
 #include <mrover/HeaterData.h>
 #include <mrover/ScienceThermistors.h>
-#include <mrover/SpectralGroup.h>
+#include <mrover/Spectral.h>
 #include <ros/ros.h>
 #include <unordered_map>
+#include "params_utils.hpp"
 
 std::unique_ptr<mrover::CanDevice> scienceCanDevice;
 
@@ -28,11 +29,15 @@ auto enableScienceDeviceCallback(std_srvs::SetBool::Request& req, std_srvs::SetB
     scienceCanDevice->publish_message(mrover::InBoundScienceMessage{mrover::EnableScienceDeviceCommand{.science_device = scienceDevice, .enable = static_cast<bool>(req.data)}});
     res.success = true;
     res.message = "DONE";
+
+    ROS_INFO("Turning on device");
     return true;
 }
 
 void processMessage(mrover::HeaterStateData const& message) {
+    // ROS_ERROR("heater!");
     mrover::HeaterData heaterData;
+    // TODO - this crashes program!
     heaterData.state.resize(6);
     for (int i = 0; i < 6; ++i) {
         heaterData.state.at(i) = GET_BIT_AT_INDEX(message.heater_state_info.on, i);
@@ -42,17 +47,17 @@ void processMessage(mrover::HeaterStateData const& message) {
 }
 
 void processMessage(mrover::SpectralData const& message) {
-    mrover::SpectralGroup spectralData;
-    for (int i = 0; i < 3; ++i) {
-        for (int j = 0; j < 6; ++j) {
-            spectralData.spectrals.at(i).data.at(j) = message.spectrals.at(i).data.at(j);
-            spectralData.spectrals.at(i).error = message.spectrals.at(i).error;
-        }
+    mrover::Spectral spectralData;
+    spectralData.site = message.site;
+    spectralData.error = message.error;
+    for (int i = 0; i < 6; ++i) {
+        spectralData.data.at(i) = message.data.at(i);
     }
     spectralDataPublisher->publish(spectralData);
 }
 
 void processMessage(mrover::ThermistorData const& message) {
+    // ROS_ERROR("Thermistors!");
     mrover::ScienceThermistors scienceThermistors;
     scienceThermistors.temps.resize(6);
     for (int i = 0; i < 6; ++i) {
@@ -63,6 +68,8 @@ void processMessage(mrover::ThermistorData const& message) {
 
 void processCANData(mrover::CAN::ConstPtr const& msg) {
 
+    // TODO - fix in future
+    // ROS_ERROR("Source: %s Destination: %s", msg->source.c_str(), msg->destination.c_str());
     assert(msg->source == "science");
     assert(msg->destination == "jetson");
 
@@ -94,11 +101,20 @@ auto main(int argc, char** argv) -> int {
     };
 
     scienceCanDevice = std::make_unique<mrover::CanDevice>(nh, "jetson", "science");
+
+
+    float shutoff_temp = 50.0f;  // DEFAULT 
+    if (nh.hasParam("science/shutoff_temp")) {
+        nh.getParam("science/shutoff_temp", shutoff_temp);
+    }
+
+    scienceCanDevice->publish_message(mrover::InBoundScienceMessage{mrover::ConfigThermistorAutoShutOffCommand{.shutoff_temp = shutoff_temp}});
+
     std::vector<ros::ServiceServer> services;
     services.reserve(scienceDeviceByName.size() + 1);
 
     for (auto const& [deviceName, scienceDevice]: scienceDeviceByName) {
-        // Advertise services and set the callback using a la0mbda function
+        // Advertise services and set the callback using a lambda function
         services.emplace_back(nh.advertiseService<std_srvs::SetBool::Request, std_srvs::SetBool::Response>(
                 "science_enable_" + deviceName,
                 [scienceDevice](std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) {
@@ -109,10 +125,10 @@ auto main(int argc, char** argv) -> int {
     services.emplace_back(nh.advertiseService<std_srvs::SetBool::Request, std_srvs::SetBool::Response>("science_change_heater_auto_shutoff_state", changeHeaterAutoShutoffState));
 
     heaterDataPublisher = std::make_unique<ros::Publisher>(nh.advertise<mrover::HeaterData>("science_heater_state", 1));
-    spectralDataPublisher = std::make_unique<ros::Publisher>(nh.advertise<mrover::SpectralGroup>("science_spectral", 1));
+    spectralDataPublisher = std::make_unique<ros::Publisher>(nh.advertise<mrover::Spectral>("science_spectral", 1));
     thermistorDataPublisher = std::make_unique<ros::Publisher>(nh.advertise<mrover::ScienceThermistors>("science_thermistors", 1));
 
-    ros::Subscriber CANSubscriber = nh.subscribe<mrover::CAN>("can/pdlb/in", 1, processCANData);
+    ros::Subscriber CANSubscriber = nh.subscribe<mrover::CAN>("can/science/in", 1, processCANData);
 
     // Enter the ROS event loop
     ros::spin();

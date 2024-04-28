@@ -78,14 +78,15 @@ class SearchState(State):
             return recovery.RecoveryState()
         else:
             self.is_recovering = False
-    
+
         context.search_point_publisher.publish(
             GPSPointList([convert_cartesian_to_gps(pt) for pt in self.traj.coordinates])
         )
         context.rover.send_drive_command(cmd_vel)
 
         # returns either ApproachPostState, LongRangeState, ApproachObjectState, or None
-        if context.course.check_approach() is not None:
-            return context.course.check_approach()
+        approach_state = context.course.get_approach_target_state()
+        if approach_state is not None:
+            return approach_state
 
         return self

@@ -1,11 +1,13 @@
 #pragma once
 
+#include <array>
 #include <bit>
 #include <bitset>
 #include <concepts>
 #include <cstdint>
 #include <optional>
 #include <type_traits>
+#include <utility>
 
 #include <units/units.hpp>
 
@@ -138,7 +140,7 @@ namespace mrover {
         explicit FDCAN(std::uint8_t source, std::uint8_t destination, FDCAN_HandleTypeDef* fdcan)
             : m_fdcan{fdcan}, m_source{source}, m_destination{destination} {
 
-            // configure_filter();
+            configure_filter();
 
             check(HAL_FDCAN_ActivateNotification(m_fdcan, FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0) == HAL_OK, Error_Handler);
             check(HAL_FDCAN_Start(m_fdcan) == HAL_OK, Error_Handler);
@@ -149,11 +151,8 @@ namespace mrover {
          * We have limited queue space, so we want to filter out messages that are not intended for us.
          */
         auto configure_filter() const -> void {
-            std::bitset<16> source_bits{m_source};
-            std::bitset<16> destinationBits{m_destination};
-            std::bitset<16> filter = source_bits << 8 | destinationBits;
-
-            std::bitset<15> mask; // 15 lowestc bits set for source and destination, 16th (reply bit) and above should be ignored
+            std::bitset<8> filter{m_source};
+            std::bitset<8> mask; // Check lowest 8 bits to see if destination of message is our source
             mask.set();
 
             FDCAN_FilterTypeDef filter_config{
@@ -161,10 +160,11 @@ namespace mrover {
                     .FilterIndex = 0,
                     .FilterType = FDCAN_FILTER_MASK, // Classic filter: FilterID1 = filter, FilterID2 = mask
                     .FilterConfig = FDCAN_FILTER_TO_RXFIFO0,
-                    .FilterID1 = filter.to_ulong(), // Choose which bits to examine from the incoming ID
-                    .FilterID2 = mask.to_ulong(),   // Ensure that bits that survive the filter match the mask
+                    .FilterID1 = filter.to_ulong(), // Ensure that bits that survive the mask match the filter
+                    .FilterID2 = mask.to_ulong(),   // Mask out bits from the message ID
             };
             check(HAL_FDCAN_ConfigFilter(m_fdcan, &filter_config) == HAL_OK, Error_Handler);
+            check(HAL_FDCAN_ConfigGlobalFilter(m_fdcan, FDCAN_REJECT, FDCAN_REJECT, FDCAN_REJECT_REMOTE, FDCAN_REJECT_REMOTE) == HAL_OK, Error_Handler);
         }
 
         /**
@@ -244,5 +244,9 @@ namespace mrover {
         FDCAN_HandleTypeDef* m_fdcan{};
         std::uint8_t m_source{}, m_destination{};
     };
+
+    inline auto cycle_time(TIM_HandleTypeDef* timer, Hertz clock_freq) -> Seconds {
+        return 1 / clock_freq * std::exchange(__HAL_TIM_GetCounter(timer), 0);
+    }
 
 } // namespace mrover

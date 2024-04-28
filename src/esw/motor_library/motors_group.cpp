@@ -52,19 +52,27 @@ namespace mrover {
 
         for (std::string const& name: mControllerNames) {
             if (!controllersRoot.hasMember(name)) {
-                ROS_ERROR("There is a mismatch in the config - motor %s doesn't exist!", name.c_str());
+                ROS_ERROR_STREAM(std::format("There is a mismatch in the config - motor {} doesn't exist!", name));
                 throw;
             }
 
             auto type = xmlRpcValueToTypeOrDefault<std::string>(controllersRoot[name], "type");
-            assert(type == "brushed" || type == "brushless");
+            if (!(type == "brushed" || type == "brushless" || type == "brushless_linear")) {
+                ROS_ERROR_STREAM(std::format("Unknown motor type %s!", type));
+                throw;
+            }
 
             // TODO: avoid hard coding Jetson here - can move into constructor of MotorsGroup
             // and let the bridge nodes hardcode as jetson.
             if (type == "brushed") {
-                mControllers.emplace(name, std::make_unique<BrushedController>(mNh, "jetson", name));
+                mControllers.try_emplace(name, std::in_place_type<BrushedController>, mNh, "jetson", name);
             } else if (type == "brushless") {
-                mControllers.emplace(name, std::make_unique<BrushlessController>(mNh, "jetson", name));
+                mControllers.try_emplace(name, std::in_place_type<BrushlessController<Revolutions>>, mNh, "jetson", name);
+            } else if (type == "brushless_linear") {
+                mControllers.try_emplace(name, std::in_place_type<BrushlessController<Meters>>, mNh, "jetson", name);
+            } else {
+                ROS_ERROR_STREAM(std::format("Unknown motor type %s!", type));
+                throw;
             }
         }
 
@@ -76,8 +84,8 @@ namespace mrover {
         mJointDataPub = mNh.advertise<sensor_msgs::JointState>(std::format("{}_joint_data", mGroupName), 1);
     }
 
-    auto MotorsGroup::getController(std::string const& name) const -> Controller& {
-        return *mControllers.at(name);
+    auto MotorsGroup::getController(std::string const& name) -> Controller& {
+        return mControllers.at(name);
     }
 
     auto MotorsGroup::moveMotorsThrottle(Throttle::ConstPtr const& msg) -> void {
