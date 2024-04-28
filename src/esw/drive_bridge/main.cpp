@@ -43,7 +43,8 @@ auto main(int argc, char** argv) -> int {
 }
 
 void moveDrive(geometry_msgs::Twist::ConstPtr const& msg) {
-    // See 11.5.1 in "Controls Engineering in the FIRST Robotics Competition" for the math
+    // See 13.3.1.4 in "Modern Robotics" for the math
+    // Link: https://hades.mech.northwestern.edu/images/7/7f/MR.pdf
     auto forward = MetersPerSecond{msg->linear.x};
     auto turn = RadiansPerSecond{msg->angular.z};
     // TODO(quintin)    Don't ask me to explain perfectly why we need to cancel out a meters unit in the numerator

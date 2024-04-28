@@ -64,6 +64,7 @@
   <!-- Localization -->
   <depend>rviz_imu_plugin</depend>
   <depend>robot_localization</depend>
+  <depend>rtcm_msgs</depend>
 
   <!-- Navigation -->
 
