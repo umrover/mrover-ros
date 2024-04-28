@@ -178,7 +178,7 @@ brushless_motors:
       limit_1_used_for_readjustment: true
       limit_0_readjust_position: 0.0 # meters 
       limit_1_readjust_position: 0.6007 # meters 
-      max_torque: 200.0
+      max_torque: 500.0
 
 brushed_motors:
   controllers:
