@@ -13,8 +13,7 @@
         <MenuButton link="/ISHTask" name="ISH GUI" />
         <MenuButton link="/SATask" name="Sample Acquisition GUI" />
         <MenuButton link="/AutonTask" name="Autonomy Mission" />
-        <MenuButton link="/Control" name="Temp Controls GUI" />
-        <MenuButton link="/ROSDebug" name="ROS Debug Tools" />
+        <MenuButton link="/Cameras" name="Cameras" />
       </fieldset>
     </div>
   </div>
