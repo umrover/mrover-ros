@@ -4,6 +4,7 @@
       <div class="waypoint-header">
         <h4>All Waypoints</h4>
       </div>
+      <button class="btn btn-primary" @click="openModal()">Add Waypoint From Map</button>
       <div class="waypoints">
         <div class="shadow p-3 my-2" v-for="waypoint in waypoints" :key="waypoint">
           <h5>{{ waypoint.name }}</h5>
@@ -42,6 +43,36 @@
       </div>
     </div>
   </div>
+
+  <div class="modal fade" id="modalWypt" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+          <div class="modal-content">
+            <div class="modal-body">
+              <div class="row">
+                <div class="form-group col-md-6">
+                  <label for="waypointname">Name:</label>
+                  <input class="form-control" id="waypointname" v-model="modalWypt.name" />
+                </div>
+                <div class="form-group col-md-6">
+                  <label for="waypointid">Tag ID:</label>
+                  <input v-if="modalWypt.type == 1" class="form-control" id="waypointid" v-model="modalWypt.id" type="number" max="249" min="0"
+                    step="1" />
+                  <input v-else class="form-control" id="waypointid" type="number" placeholder="-1" step="1" disabled />
+                </div>
+                <select class="form-select my-3" v-model="modalWypt.type">
+                  <option value="0" selected>No Search</option>
+                  <option value="1">Post</option>
+                  <option value="2">Mallet</option>
+                  <option value="3">Water Bottle</option>
+                </select>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" @click="addMapWaypoint()">Add Waypoint</button>
+            </div>
+          </div>
+        </div>
+      </div>
 </template>
 
 <script lang="ts">
@@ -53,6 +84,7 @@ import { mapState, mapActions, mapMutations, mapGetters } from 'vuex'
 import _ from 'lodash'
 import L from 'leaflet'
 import { reactive } from 'vue'
+import { Modal } from 'bootstrap'
 
 let stuck_interval: number, auton_publish_interval: number
 
@@ -123,6 +155,15 @@ export default {
           lat: 0,
           lon: 0,
         }],
+      
+      modal: null,
+      modalWypt: {
+          name: '',
+          id: -1,
+          type: 0,
+          lat: 0,
+          lon: 0,
+        },
 
       teleopEnabledCheck: false,
 
@@ -145,6 +186,7 @@ export default {
     ...mapGetters('autonomy', {
       autonEnabled: 'autonEnabled',
       teleopEnabled: 'teleopEnabled',
+      clickPoint: 'clickPoint'
     }),
 
     ...mapGetters('map', {
@@ -197,7 +239,7 @@ export default {
         this.autonButtonColor = this.autonEnabled ? 'btn-success' : 'btn-danger'
       } else if (msg.type == 'get_auton_waypoint_list') {
         // Get waypoints from server on page load
-        this.waypoints = msg.data
+        if(msg.data.length > 0) this.waypoints = msg.data 
         const waypoints = msg.data.map((waypoint: { lat: any; lon: any; name: any }) => {
           const lat = waypoint.lat
           const lon = waypoint.lon
@@ -206,6 +248,10 @@ export default {
         this.setWaypointList(waypoints)
       }
     },
+  },
+
+  mounted() {
+    this.modal = new Modal('#modalWypt', {})
   },
 
   beforeUnmount: function () {
@@ -282,6 +328,24 @@ export default {
         this.route.push(waypoint)
         waypoint.in_route = true
       }
+    },
+
+    openModal: function() {
+      this.modal.show()
+    },
+
+    addMapWaypoint: function() {
+      this.modalWypt.lat = this.clickPoint.lat;
+      this.modalWypt.lon = this.clickPoint.lon;
+      this.waypoints.push(this.modalWypt);
+      this.modalWypt = {
+        name: '',
+        id: -1,
+        type: 0,
+        lat: 0,
+        lon: 0,
+      }
+      this.modal.hide()
     },
 
     toggleAutonMode: function (val: boolean) {

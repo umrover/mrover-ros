@@ -175,10 +175,10 @@ export default {
       })
     },
     // Event listener for setting store values to get data to waypoint Editor
-    getClickedLatLon: function (e: { latLng: { lat: any; lng: any } }) {
+    getClickedLatLon: function (e: { latlng: { lat: any; lng: any } }) {
       this.setClickPoint({
-        lat: e.latLng.lat,
-        lon: e.latLng.lng
+        lat: e.latlng.lat,
+        lon: e.latlng.lng
       })
     },
 
