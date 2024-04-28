@@ -1,7 +1,6 @@
 <template>
   <div class="wrap row">
     <div class="col">
-      <h3>Cameras ({{ num_available }} available)</h3>
       <div class="row justify-content-md-left">
         <div class="form-group col-md-4">
           <label for="Camera Name">Camera name</label>
@@ -40,12 +39,12 @@
     <div class="col">
       <h3>All Cameras</h3>
       <div class="d-flex justify-content-end" v-if="isSA">
-        <button class="btn btn-primary btn-lg custom-btn" @click="takePanorama()">
+        <button class="btn btn-primary btn-lg" @click="takePanorama()">
           Take Panorama
         </button>
       </div>
     </div>
-    <CameraDisplay :streamOrder="streamOrder" :mission="mission" :names="names" :qualities="qualities"></CameraDisplay>
+    <CameraDisplay :streamOrder="streamOrder" :mission="mission" :names="names"></CameraDisplay>
   </div>
 </template>
 
@@ -62,10 +61,6 @@ export default {
   },
 
   props: {
-    primary: {
-      type: Boolean,
-      required: true
-    },
     isSA: {
       type: Boolean,
       required: true
@@ -82,10 +77,7 @@ export default {
       cameraIdx: 0,
       cameraName: '',
       capacity: 4,
-      qualities: reactive(new Array(9).fill(-1)),
       streamOrder: reactive([]),
-
-      num_available: -1
     }
   },
 
@@ -123,33 +115,11 @@ export default {
     setCamIndex: function (index: number) {
       // every time a button is pressed, it changes cam status and adds/removes from stream
       this.camsEnabled[index] = !this.camsEnabled[index]
-      if (this.camsEnabled[index]) this.qualities[index] = 2 //if enabling camera, turn on medium quality
       this.changeStream(index)
-    },
-
-    sendCameras: function (index: number) {
-      this.sendMessage({
-        type: 'sendCameras',
-        primary: this.primary,
-        device: index,
-        resolution: this.qualities[index]
-      })
     },
 
     addCameraName: function () {
       this.names[this.cameraIdx] = this.cameraName
-    },
-
-    changeQuality({ index, value }) {
-      this.qualities[index] = value
-      this.sendCameras(index)
-    },
-
-    swapStream({ prev, newest }) {
-      var temp = this.streamOrder[prev]
-      // Vue.set(this.streamOrder, prev, this.streamOrder[newest]);
-      this.streamOrder[prev] = this.streamOrder[newest]
-      this.streamOrder[newest] = temp
     },
 
     changeStream(index: number) {
@@ -157,14 +127,7 @@ export default {
       if (found) {
         this.streamOrder.splice(this.streamOrder.indexOf(index), 1)
         this.streamOrder.push(-1)
-        this.qualities[index] = -1 //close the stream when sending it to comms
       } else this.streamOrder[this.streamOrder.indexOf(-1)] = index
-      this.sendCameras(index)
-    },
-
-    getStreamNum(index: number) {
-      //TODO: check this out
-      return this.streamOrder.indexOf(index)
     },
 
     takePanorama() {

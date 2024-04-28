@@ -8,7 +8,7 @@ auto main(int argc, char** argv) -> int {
     ros::NodeHandle nh;
 
     // Load motor controllers configuration from the ROS parameter server
-    [[maybe_unused]] auto mastGimbalManager = std::make_unique<mrover::MotorsGroup>(nh, "mast_gimbal");
+    mrover::MotorsGroup group{nh, "mast_gimbal"};
 
     // Enter the ROS event loop
     ros::spin();

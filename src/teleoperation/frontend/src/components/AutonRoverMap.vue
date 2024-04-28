@@ -14,7 +14,7 @@
       <!-- Waypoint Icons -->
       <l-marker v-for="(waypoint, index) in waypointList" :key="index" :lat-lng="waypoint.latLng" :icon="waypointIcon">
         <l-tooltip :options="{ permanent: 'true', direction: 'top' }">
-          {{ waypoint.name }}, {{ index }}
+          {{ waypoint.name }}
         </l-tooltip>
       </l-marker>
 

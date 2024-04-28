@@ -21,7 +21,6 @@ namespace mrover {
     }
 
     void Spectral::poll_status_reg(I2C_OP rw){
-    	m_i2c_mux->set_channel(m_i2c_mux_channel);
     	for(int i = 0; i < 100; ++i){
 			auto status = m_i2c_bus->blocking_transact(SPECTRAL_7b_ADDRESS, I2C_AS72XX_SLAVE_STATUS_REG);
 
@@ -42,11 +41,13 @@ namespace mrover {
 			else {
 				m_error = true;
 				m_initialized = false;
+//				return;
 			}
 
 			osDelay(5); // Non blocking delay
     	}
 
+    	//throw mrover::I2CRuntimeError("SPECTRAL");
     	m_error = true;
     	m_initialized = false;
     }
@@ -64,6 +65,8 @@ namespace mrover {
 		// DATA_RDY is 0 and RSVD is 0
 		virtual_write(CONTROL_SETUP_REG, control_data);
 		osDelay(50);
+//		virtual_write(CONTROL_SETUP_REG, control_data);
+//		osDelay(50);
 
 		// Integration time = 2.8ms & 0xFF
 		uint8_t int_time_multiplier = 0xFF; //0xFF;
@@ -79,7 +82,6 @@ namespace mrover {
     void Spectral::update_channel_data() {
     	if (!m_initialized) {
     		init();
-    		// If it is still not initialized, just return.
 			if (!m_initialized) {
 				return;
 			}
@@ -111,27 +113,32 @@ namespace mrover {
     	return channel_data.at(channel);
     }
 
-    void Spectral::virtual_write(uint8_t virtual_reg, uint8_t data){
+    void Spectral::virtual_write(uint8_t virtual_reg, uint8_t data) {
 		poll_status_reg(I2C_OP::WRITE);
 		uint8_t buf[2];
 		buf[0] = I2C_AS72XX_WRITE_REG;
 		buf[1] = (virtual_reg | 0x80);
+//		m_i2c_bus->blocking_transmit(SPECTRAL_7b_ADDRESS, buf[0]);
+		// How to send multiple bytes?
     	HAL_I2C_Master_Transmit(&hi2c1, SPECTRAL_7b_ADDRESS << 1, buf, sizeof(buf), 100);
 
 		poll_status_reg(I2C_OP::WRITE);
-		buf[0] = I2C_AS72XX_WRITE_REG;
 		buf[1] = data;
+//		m_i2c_bus->blocking_transmit(SPECTRAL_7b_ADDRESS, buf[0]);
 
 		HAL_I2C_Master_Transmit(&hi2c1, SPECTRAL_7b_ADDRESS << 1, buf, sizeof(buf), 100);
 
     }
 
-    uint8_t Spectral::virtual_read(uint8_t virtual_reg){// -> std::optional<uint16_t>{
-    	// Read status register may not work quite how it is described in the datasheet
-
+    uint8_t Spectral::virtual_read(uint8_t virtual_reg) {
+		// *IMPORTANT*
+		// This is necessary to clear the READ register.
+		// Otherwise the status bit will not change properly to 
+		// indicate new data is available
     	auto status = m_i2c_bus->blocking_transact(SPECTRAL_7b_ADDRESS, I2C_AS72XX_SLAVE_STATUS_REG);
 
     	if (status.has_value()) {
+			
 			if ((status.value() & I2C_AS72XX_SLAVE_RX_VALID) != 0) {
 				auto not_used = m_i2c_bus->blocking_transact(SPECTRAL_7b_ADDRESS, I2C_AS72XX_READ_REG);
 			}
@@ -141,6 +148,7 @@ namespace mrover {
     		m_initialized = false;
     		return 0;
     	}
+		// *IMPORTANT*
 
     	poll_status_reg(I2C_OP::WRITE);
 
@@ -151,6 +159,10 @@ namespace mrover {
 		buf[0] = I2C_AS72XX_WRITE_REG;
 		buf[1] = virtual_reg;
 		HAL_I2C_Master_Transmit(&hi2c1, SPECTRAL_7b_ADDRESS << 1, buf, sizeof(buf), 100);
+		// UNABLE TO USE this format because TSend is 1 byte, need to double up
+		// TODO resolve this somehow...
+//		m_i2c_bus->blocking_transmit(SPECTRAL_7b_ADDRESS, buf[0]);
+
 
 		poll_status_reg(I2C_OP::READ);
 
@@ -159,6 +171,8 @@ namespace mrover {
 		}
 
 		auto result = m_i2c_bus->blocking_transact(SPECTRAL_7b_ADDRESS, I2C_AS72XX_READ_REG);
+//		m_i2c_bus->blocking_transmit(SPECTRAL_7b_ADDRESS, I2C_AS72XX_READ_REG);
+//		auto result = m_i2c_bus->blocking_receive(SPECTRAL_7b_ADDRESS);
 		if(!result.has_value()){
 			m_error = true;
 			return 0;

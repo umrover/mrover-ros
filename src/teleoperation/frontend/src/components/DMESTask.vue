@@ -22,7 +22,7 @@
     </div>
 
     <div class="shadow p-3 rounded cameras">
-      <Cameras :primary="true" :isSA="false" :mission="'ik'" />
+      <Cameras :isSA="false" :mission="'ik'" />
     </div>
     <div v-if="type === 'DM'" class="shadow p-3 rounded odom">
       <OdometryReading :odom="odom" />
@@ -69,6 +69,9 @@ import MotorsStatusTable from './MotorsStatusTable.vue'
 import OdometryReading from './OdometryReading.vue'
 import DriveControls from './DriveControls.vue'
 import MastGimbalControls from './MastGimbalControls.vue'
+import { quaternionToMapAngle } from '../utils.js'
+
+let interval: number
 
 export default defineComponent({
   components: {
@@ -82,7 +85,7 @@ export default defineComponent({
     MotorsStatusTable,
     OdometryReading,
     DriveControls,
-    MastGimbalControls
+    MastGimbalControls,
   },
 
   props: {
@@ -139,7 +142,16 @@ export default defineComponent({
         this.moteusDrive.state = msg.state
         this.moteusDrive.error = msg.error
         this.moteusDrive.limit_hit = msg.limit_hit
-      } else if (msg.type == 'center_map') {
+      }
+      else if (msg.type == 'nav_sat_fix') {
+        this.odom.latitude_deg = msg.latitude
+        this.odom.longitude_deg = msg.longitude
+        this.odom.altitude = msg.altitude
+      } 
+      else if (msg.type == 'bearing') {
+        this.odom.bearing_deg = quaternionToMapAngle(msg.rotation)
+      } 
+      else if (msg.type == 'center_map') {
         this.odom.latitude_deg = msg.latitude
         this.odom.longitude_deg = msg.longitude
       }
@@ -162,6 +174,9 @@ export default defineComponent({
         this.cancelIK(event)
       }
     })
+    interval = setInterval(() => {
+      this.sendMessage({ type: 'bearing' })
+    }, 1000)
   }
 })
 </script>

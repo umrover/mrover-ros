@@ -69,7 +69,7 @@ namespace mrover {
                 }
             } else {
                 NODELET_WARN("No CAN devices specified or config was invalid. Did you forget to load the correct ROS parameters?");
-                NODELET_WARN("For example before testing the devboard run: \"rosparam load config/esw_devboard.yml\"");
+                NODELET_WARN("For example before testing the devboard run: \"rosparam load config/esw.yml\"");
             }
 
             mCanNetLink = CanNetLink{mInterface};
@@ -201,7 +201,7 @@ namespace mrover {
         } catch (boost::system::system_error const& error) {
             // check if ran out of buffer space
             if (error.code() == boost::asio::error::no_buffer_space) {
-                NODELET_WARN_STREAM_THROTTLE(1, "No buffer space available to send CAN message");
+                NODELET_WARN_STREAM_THROTTLE(1, "No buffer space available to send CAN message. This usually indicates an electrical problem with the bus. CAN will avoid sending out messages if it can not see other devices.");
                 return;
             }
             ros::shutdown();
