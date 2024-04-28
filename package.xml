@@ -64,12 +64,16 @@
   <!-- Localization -->
   <depend>rviz_imu_plugin</depend>
   <depend>robot_localization</depend>
+  <depend>rtcm_msgs</depend>
 
   <!-- Navigation -->
 
   <!-- Utility -->
   <exec_depend>teleop_twist_joy</exec_depend>
   <exec_depend>teleop_twist_keyboard</exec_depend>
+  <depend>rqt_tf_tree</depend>
+  <depend>rosbag</depend>
+  <depend>rqt_bag</depend>
 
   <!-- Test -->
   <test_depend>rosunit</test_depend>
