@@ -9,7 +9,7 @@ left_gps_driver:
   frame_id: "base_link"
 
 basestation_gps_driver:
-  port: "/dev/ttyUSB1"
+  port: "/dev/gps"
   baud: 38400
   frame_id: "base_link"
 
