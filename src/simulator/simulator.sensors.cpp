@@ -1,4 +1,5 @@
 #include "simulator.hpp"
+#include <sensor_msgs/JointState.h>
 
 namespace mrover {
 
@@ -176,17 +177,21 @@ namespace mrover {
                 mGroundTruthPub.publish(odometry);
             }
             if (mGpsTask.shouldUpdate()) {
-                R3 gpsInMap = rover.linkInWorld("chassis_link").translation();
-                R3 gpsNoise;
-                gpsNoise << mGPSDist(mRNG), mGPSDist(mRNG), mGPSDist(mRNG);
-                gpsInMap += gpsNoise;
+                R3 leftGpsInMap = rover.linkInWorld("left_gps").translation();
+                R3 rightGpsInMap = rover.linkInWorld("right_gps").translation();
+                R3 leftGpsNoise{mGPSDist(mRNG), mGPSDist(mRNG), mGPSDist(mRNG)},
+                        rightGpsNoise{mGPSDist(mRNG), mGPSDist(mRNG), mGPSDist(mRNG)};
+                leftGpsInMap += leftGpsNoise;
+                rightGpsInMap += rightGpsNoise;
 
-                mGpsPub.publish(computeNavSatFix(gpsInMap, mGpsLinearizationReferencePoint, mGpsLinerizationReferenceHeading));
+                mLeftGpsPub.publish(computeNavSatFix(leftGpsInMap, mGpsLinearizationReferencePoint, mGpsLinerizationReferenceHeading));
+                mRightGpsPub.publish(computeNavSatFix(rightGpsInMap, mGpsLinearizationReferencePoint, mGpsLinerizationReferenceHeading));
             }
             if (mImuTask.shouldUpdate()) {
+                auto dt_s = std::chrono::duration_cast<std::chrono::duration<double>>(dt).count();
                 R3 roverAngularVelocity = btVector3ToR3(rover.physics->getBaseOmega());
                 R3 roverLinearVelocity = btVector3ToR3(rover.physics->getBaseVel());
-                R3 roverLinearAcceleration = (roverLinearVelocity - mRoverLinearVelocity) / std::chrono::duration_cast<std::chrono::duration<float>>(dt).count();
+                R3 roverLinearAcceleration = (roverLinearVelocity - mRoverLinearVelocity) / dt_s;
                 mRoverLinearVelocity = roverLinearVelocity;
                 SO3d imuInMap = rover.linkInWorld("imu").asSO3();
                 R3 roverMagVector = imuInMap.inverse().rotation().col(1);
@@ -198,9 +203,11 @@ namespace mrover {
                 roverAngularVelocity += gyroNoise;
                 roverMagVector += magNoise;
 
+                constexpr double SEC_TO_MIN = 1.0 / 60.0;
+                mOrientationDrift += mOrientationDriftRate * SEC_TO_MIN * dt_s;
                 SO3d::Tangent orientationNoise;
                 orientationNoise << mRollDist(mRNG), mPitchDist(mRNG), mYawDist(mRNG);
-                imuInMap += orientationNoise;
+                imuInMap += orientationNoise + mOrientationDrift;
 
                 mImuPub.publish(computeImu(imuInMap, roverAngularVelocity, roverLinearAcceleration, roverMagVector));
             }
@@ -243,10 +250,18 @@ namespace mrover {
             mDriveControllerStatePub.publish(driveControllerState);
 
             ControllerState armControllerState;
+            sensor_msgs::JointState armJointState;
+            std::vector<double> zeros = {0, 0, 0, 0, 0, 0};
+            armJointState.header.stamp = ros::Time::now();
             for (auto& linkName: {"arm_a_link", "arm_b_link", "arm_c_link", "arm_d_link", "arm_e_link"}) {
                 armControllerState.name.emplace_back(armMsgToUrdf.backward(linkName).value());
                 armControllerState.state.emplace_back("Armed");
                 armControllerState.error.emplace_back("None");
+
+                armJointState.name.emplace_back(armMsgToUrdf.backward(linkName).value());
+                armJointState.position.emplace_back(rover.physics->getJointPos(rover.linkNameToMeta.at(linkName).index));
+                armJointState.velocity.emplace_back(rover.physics->getJointVel(rover.linkNameToMeta.at(linkName).index));
+                armJointState.effort.emplace_back(rover.physics->getJointTorque(rover.linkNameToMeta.at(linkName).index));
 
                 std::uint8_t limitSwitches = 0b000;
                 if (auto limits = rover.model.getLink(linkName)->parent_joint->limits) {
@@ -258,16 +273,7 @@ namespace mrover {
                 armControllerState.limit_hit.push_back(limitSwitches);
             }
             mArmControllerStatePub.publish(armControllerState);
-
-            sensor_msgs::JointState jointState;
-            jointState.header.stamp = ros::Time::now();
-            for (auto& linkName: {"arm_a_link", "arm_b_link", "arm_c_link", "arm_d_link", "arm_e_link"}) {
-                jointState.name.push_back(armMsgToUrdf.backward(linkName).value());
-                jointState.position.push_back(rover.physics->getJointPos(rover.linkNameToMeta.at(linkName).index));
-                jointState.velocity.push_back(rover.physics->getJointVel(rover.linkNameToMeta.at(linkName).index));
-                jointState.effort.push_back(rover.physics->getJointTorque(rover.linkNameToMeta.at(linkName).index));
-            }
-            mArmJointStatePub.publish(jointState);
+            mArmJointStatePub.publish(armJointState);
         }
     }
 

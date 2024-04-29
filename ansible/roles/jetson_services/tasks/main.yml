@@ -1,0 +1,14 @@
+- name: USB Rules
+  become: true
+  synchronize:
+    src: files/rules/
+    dest: /etc/udev/rules.d
+    recursive: true
+
+- name: udev Reload Rules
+  become: true
+  command: udevadm control --reload-rules
+
+- name: udev TTY Trigger
+  become: true
+  command: udevadm trigger --subsystem-match=tty

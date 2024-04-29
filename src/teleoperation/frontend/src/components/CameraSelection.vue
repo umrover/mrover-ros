@@ -29,10 +29,6 @@ export default {
       type: Array,
       required: true
     },
-    ports: {
-      type: Array,
-      required: true
-    }
   },
   data() {
     return {

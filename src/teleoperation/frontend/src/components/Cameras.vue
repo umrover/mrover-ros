@@ -1,13 +1,11 @@
 <template>
   <div class="wrap row">
     <div class="col">
-      <h3>Cameras ({{ num_available }} available)</h3>
       <div class="cameraselection"> 
         <CameraSelection
           :cams-enabled="camsEnabled"
           :names="names"
           :capacity="capacity"
-          :ports="ports"
           @cam_index="setCamIndex($event)"
         />
       </div>
@@ -15,7 +13,7 @@
     <div class="col">
       <h3>All Cameras</h3>
       <div class="d-flex justify-content-end" v-if="isSA">
-        <button class="btn btn-primary btn-lg custom-btn" @click="takePanorama()">
+        <button class="btn btn-primary btn-lg" @click="takePanorama()">
           Take Panorama
         </button>
       </div>
@@ -37,10 +35,6 @@ export default {
   },
 
   props: {
-    primary: {
-      type: Boolean,
-      required: true
-    },
     isSA: {
       type: Boolean,
       required: true
@@ -58,10 +52,7 @@ export default {
       cameraIdx: 0,
       cameraName: '',
       capacity: 4,
-      qualities: reactive(new Array(9).fill(-1)),
       streamOrder: reactive([]),
-
-      num_available: -1
     }
   },
 
@@ -104,17 +95,7 @@ export default {
     setCamIndex: function (index: number) {
       // every time a button is pressed, it changes cam status and adds/removes from stream
       this.camsEnabled[index] = !this.camsEnabled[index]
-      if (this.camsEnabled[index]) this.qualities[index] = 2 //if enabling camera, turn on medium quality
       this.changeStream(index)
-    },
-
-    sendCameras: function (index: number) {
-      this.sendMessage({
-        type: 'sendCameras',
-        primary: this.primary,
-        device: index,
-        resolution: this.qualities[index]
-      })
     },
 
     addCameraName: function () {
@@ -126,9 +107,7 @@ export default {
       if (found) {
         this.streamOrder.splice(this.streamOrder.indexOf(index), 1)
         this.streamOrder.push(-1)
-        this.qualities[index] = -1 //close the stream when sending it to comms
       } else this.streamOrder[this.streamOrder.indexOf(-1)] = index
-      this.sendCameras(index)
     },
 
     takePanorama() {

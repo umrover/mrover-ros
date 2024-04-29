@@ -1,13 +1,22 @@
+right_gps_driver:
+  port: "/dev/ttyACM0"
+  baud: 38400
+  frame_id: "base_link"
+
+left_gps_driver:
+  port: "/dev/gps"
+  baud: 38400
+  frame_id: "base_link"
+
+basestation_gps_driver:
+  port: "/dev/gps"
+  baud: 38400
+  frame_id: "base_link"
+
 imu_driver:
   port: "/dev/imu"
   baud: 115200
   frame_id: "imu_link"
-
-gps:
-  port: "/dev/gps"
-  baud: 115200
-  useRMC: false # get covariance instead of velocity, see wiki for more info
-  frame_id: "base_link"
 
 can:
   devices:
@@ -43,7 +52,7 @@ can:
       id: 0x15
     - name: "joint_a"
       bus: 1
-      id: 0x20
+      id: 0x20  
     - name: "joint_b"
       bus: 1
       id: 0x21
@@ -64,10 +73,10 @@ can:
       id: 0x26
     - name: "mast_gimbal_y"
       bus: 3
-      id: 0x28
+      id: 0x27
     - name: "mast_gimbal_z"
       bus: 3
-      id: 0x27
+      id: 0x28
     - name: "sa_x"
       bus: 1
       id: 0x29
@@ -144,11 +153,11 @@ brushless_motors:
       max_backward_pos: 0.0
       max_torque: 20.0
     joint_c:
-      min_velocity: -0.04 # in terms of output
-      max_velocity: 0.04 # max output shaft speed: 5 rpm (for now)
+      min_velocity: -0.03 # in terms of output
+      max_velocity: 0.03 # max output shaft speed: 5 rpm (for now)
       min_position: -0.125
       max_position: 0.30 # 220 degrees of motion is the entire range
-      max_torque: 20.0
+      max_torque: 200.0
     joint_de_0:
       min_velocity: -5.0
       max_velocity: 5.0
@@ -591,7 +600,7 @@ motors:
 default_network_iface: "enp0s31f6"
 
 auton_led_driver:
-  port: "/dev/ttyACM0"
+  port: "/dev/led"
   baud: 115200
 
 science:

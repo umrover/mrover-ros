@@ -22,4 +22,4 @@
 
 - name: Install Moteus GUI
   pip:
-    name: moteus_gui
+    name: moteus-gui
