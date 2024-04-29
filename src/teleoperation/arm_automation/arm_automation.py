@@ -30,19 +30,16 @@ def arm_automation() -> None:
             rospy.logerr("No joint state data available")
             server.set_aborted(ArmActionResult())
             return
-        
+
         if goal.name == "de_home":
             target_names = ["joint_de_pitch", "joint_de_roll"]
-            target_positions = [
-                joint_state.position[joint_state.name.index('joint_de_pitch')],
-                np.pi / 8
-            ]
+            target_positions = [joint_state.position[joint_state.name.index("joint_de_pitch")], np.pi / 8]
             rospy.loginfo(f"Moving to {target_positions} for {target_names}")
         else:
             rospy.logerr("Invalid goal name")
             server.set_aborted(ArmActionResult())
             return
-        
+
         rate = rospy.Rate(20)
         while not rospy.is_shutdown():
             if server.is_preempt_requested():
@@ -51,14 +48,13 @@ def arm_automation() -> None:
                 server.set_aborted(ArmActionResult())
                 return
 
-
             pos_pub.publish(Position(names=target_names, positions=target_positions))
 
             feedback = [
-                joint_state.position[joint_state.name.index('joint_de_pitch')],
-                joint_state.position[joint_state.name.index('joint_de_roll')]
+                joint_state.position[joint_state.name.index("joint_de_pitch")],
+                joint_state.position[joint_state.name.index("joint_de_roll")],
             ]
-            
+
             if np.allclose(target_positions, feedback, atol=0.1):
                 rospy.loginfo("Reached target")
                 break

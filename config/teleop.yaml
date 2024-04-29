@@ -63,6 +63,8 @@ teleop:
       multiplier: 0.6
     tilt:
       multiplier: 1
+    pan:
+      multiplier: 1
 
   xbox_mappings:
     left_x: 0

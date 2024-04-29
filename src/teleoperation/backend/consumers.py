@@ -107,7 +107,7 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.drive_moteus_sub = rospy.Subscriber(
                 "/drive_controller_data", ControllerState, self.drive_controller_callback
             )
-            self.gps_fix = rospy.Subscriber("/gps/fix", NavSatFix, self.gps_fix_callback)
+            self.gps_fix = rospy.Subscriber("/left_gps_driver/fix", NavSatFix, self.gps_fix_callback)
             self.drive_status_sub = rospy.Subscriber("/drive_status", MotorsStatus, self.drive_status_callback)
             self.led_sub = rospy.Subscriber("/led", LED, self.led_callback)
             self.nav_state_sub = rospy.Subscriber("/nav_state", StateMachineStateUpdate, self.nav_state_callback)
@@ -427,7 +427,8 @@ class GUIConsumer(JsonWebsocketConsumer):
         # angular_from_lateral = get_axes_input("left_right", 0.4, True)
         angular = get_axes_input("twist", 0.03, True, self.max_angular_speed * dampen)
 
-        linear += get_axes_input("tilt", 0.5,  scale=0.1)
+        linear -= get_axes_input("tilt", 0.5, scale=0.1)
+        angular -= get_axes_input("pan", 0.5, scale=0.1)
 
         self.twist_pub.publish(
             Twist(
@@ -469,11 +470,7 @@ class GUIConsumer(JsonWebsocketConsumer):
     def sa_joint_callback(self, msg):
         names = msg.name
         z = msg.position[names.index("sa_z")]
-        self.send(
-            text_data=json.dumps(
-                {"type": "sa_z", "sa_z": z}
-            )
-        )
+        self.send(text_data=json.dumps({"type": "sa_z", "sa_z": z}))
 
     def drive_controller_callback(self, msg):
         hits = []
@@ -542,8 +539,6 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.send(text_data=json.dumps({"type": "calibrate_service", "result": result.success}))
         except rospy.ServiceException as e:
             rospy.logerr(e)
-
-        self.send(text_data=json.dumps({"type": "enable_limit_switch", "result": fail}))
 
     def calibrate_motors(self, msg):
         fail = []  # if any calibration fails, add joint name to a list to return

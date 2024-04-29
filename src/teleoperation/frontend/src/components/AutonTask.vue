@@ -47,7 +47,7 @@
       </div>
     </div>
     <div class="shadow p-3 rounded cameras">
-      <Cameras :primary="true" :isSA="false" :mission="'auton'"/>
+      <Cameras :isSA="false" :mission="'auton'"/>
     </div>
     <div class="shadow p-3 rounded moteus">
       <DriveMoteusStateTable :moteus-state-data="moteusState" />
@@ -91,8 +91,8 @@ export default defineComponent({
     return {
       // Default coordinates are at MDRS
       odom: {
-        latitude_deg: 42.293195,
-        longitude_deg: -83.7096706,
+        latitude_deg: 42.30008806193693,
+        longitude_deg: -83.6931540297569,
         bearing_deg: 0,
         altitude: 0
       },
@@ -178,7 +178,7 @@ export default defineComponent({
     window.setTimeout(() => {
       this.sendMessage({ "type": "center_map" });
     }, 250)
-      interval = setInterval(() => {
+    interval = setInterval(() => {
       this.sendMessage({ type: 'bearing' })
     }, 1000)
   },

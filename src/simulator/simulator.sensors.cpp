@@ -177,17 +177,21 @@ namespace mrover {
                 mGroundTruthPub.publish(odometry);
             }
             if (mGpsTask.shouldUpdate()) {
-                R3 gpsInMap = rover.linkInWorld("chassis_link").translation();
-                R3 gpsNoise;
-                gpsNoise << mGPSDist(mRNG), mGPSDist(mRNG), mGPSDist(mRNG);
-                gpsInMap += gpsNoise;
+                R3 leftGpsInMap = rover.linkInWorld("left_gps").translation();
+                R3 rightGpsInMap = rover.linkInWorld("right_gps").translation();
+                R3 leftGpsNoise{mGPSDist(mRNG), mGPSDist(mRNG), mGPSDist(mRNG)},
+                        rightGpsNoise{mGPSDist(mRNG), mGPSDist(mRNG), mGPSDist(mRNG)};
+                leftGpsInMap += leftGpsNoise;
+                rightGpsInMap += rightGpsNoise;
 
-                mGpsPub.publish(computeNavSatFix(gpsInMap, mGpsLinearizationReferencePoint, mGpsLinerizationReferenceHeading));
+                mLeftGpsPub.publish(computeNavSatFix(leftGpsInMap, mGpsLinearizationReferencePoint, mGpsLinerizationReferenceHeading));
+                mRightGpsPub.publish(computeNavSatFix(rightGpsInMap, mGpsLinearizationReferencePoint, mGpsLinerizationReferenceHeading));
             }
             if (mImuTask.shouldUpdate()) {
+                auto dt_s = std::chrono::duration_cast<std::chrono::duration<double>>(dt).count();
                 R3 roverAngularVelocity = btVector3ToR3(rover.physics->getBaseOmega());
                 R3 roverLinearVelocity = btVector3ToR3(rover.physics->getBaseVel());
-                R3 roverLinearAcceleration = (roverLinearVelocity - mRoverLinearVelocity) / std::chrono::duration_cast<std::chrono::duration<float>>(dt).count();
+                R3 roverLinearAcceleration = (roverLinearVelocity - mRoverLinearVelocity) / dt_s;
                 mRoverLinearVelocity = roverLinearVelocity;
                 SO3d imuInMap = rover.linkInWorld("imu").asSO3();
                 R3 roverMagVector = imuInMap.inverse().rotation().col(1);
@@ -199,9 +203,11 @@ namespace mrover {
                 roverAngularVelocity += gyroNoise;
                 roverMagVector += magNoise;
 
+                constexpr double SEC_TO_MIN = 1.0 / 60.0;
+                mOrientationDrift += mOrientationDriftRate * SEC_TO_MIN * dt_s;
                 SO3d::Tangent orientationNoise;
                 orientationNoise << mRollDist(mRNG), mPitchDist(mRNG), mYawDist(mRNG);
-                imuInMap += orientationNoise;
+                imuInMap += orientationNoise + mOrientationDrift;
 
                 mImuPub.publish(computeImu(imuInMap, roverAngularVelocity, roverLinearAcceleration, roverMagVector));
             }
