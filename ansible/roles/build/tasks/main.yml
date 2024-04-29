@@ -96,6 +96,8 @@
       - libopencv-dev
       - libgstreamer1.0-dev
       - libgstreamer-plugins-base1.0-dev
+      - vainfo
+      - x264
 
 - name: Install Local APT Packages
   become: True
@@ -190,6 +192,14 @@
     link: /usr/bin/lld
     priority: 160
 
+- name: Set clang-tidy 16 as Default
+  become: True
+  alternatives:
+    name: clang-tidy
+    path: /usr/bin/clang-tidy-16
+    link: /usr/bin/clang-tidy
+    priority: 160
+
 - name: Setup Python Virtual Environment
   pip:
     name:
@@ -197,3 +207,8 @@
       - "{{ catkin_workspace }}/src/mrover[dev]"
     virtualenv: "{{ catkin_workspace }}/src/mrover/venv"
     virtualenv_command: /usr/bin/python3.10 -m venv
+
+- name: Install Chromium
+  become: True
+  snap:
+    name: chromium

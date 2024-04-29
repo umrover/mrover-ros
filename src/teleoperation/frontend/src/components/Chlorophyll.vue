@@ -3,11 +3,11 @@
     <h3>Chlorophyll Test Control</h3>
     <div>
       <div>
-        <ToggleButton id="white_led_toggle" :current-state="whiteLEDS_active" label-enable-text="White LEDs On"
+        <ToggleButton id="white_led_toggle" :current-state="whiteLEDs_active" label-enable-text="White LEDs On"
           label-disable-text="White LEDs Off" @change="toggle_whiteLEDS()" />
       </div>
       <div>
-        <ToggleButton id="uv_led_toggle" :current-state="uvLEDS_active" label-enable-text="UV LEDs On"
+        <ToggleButton id="uv_led_toggle" :current-state="uvLEDs_active" label-enable-text="UV LEDs On"
           label-disable-text="UV LEDs Off" @change="toggle_uvLEDS()" />
       </div>
     </div>
@@ -19,20 +19,20 @@
         <thead>
           <tr class="table-primary">
             <th>Wavelength</th>
-            <th>610nm</th>
-            <th>680nm</th>
-            <th>730nm</th>
-            <th>760nm</th>
-            <th>810nm</th>
-            <th>860nm</th>
+            <th>450nm - V</th>
+            <th>500nm - B</th>
+            <th>550nm - G</th>
+            <th>570nm - Y</th>
+            <th>600nm - O</th>
+            <th>650nm - R</th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="i in 3" :key="i">
             <td>
-              Site {{ String.fromCharCode(64 + i) }}
+              Site {{ i-1 }}
             </td>
-            <td v-if="spectral_data.length > 0 && !error[i - 1]" v-for="j in 6" :key="j">
+            <td v-if="!error[i - 1]" v-for="j in 6" :key="j">
               {{ spectral_data[i - 1][j - 1].toFixed(2) }}
             </td>
             <td v-else v-for="k in 6" :key="k">
@@ -49,7 +49,7 @@
 </template>
 
 <script lang="ts">
-import html2canvas from "html2canvas";
+// import html2canvas from "html2canvas";
 import ToggleButton from "./ToggleButton.vue";
 import { mapState, mapActions } from 'vuex'
 
@@ -60,10 +60,14 @@ export default {
 
   data() {
     return {
-      whiteLEDS_active: false,
+      whiteLEDs_active: false,
       uvLEDs_active: false,
-      spectral_data: [],
-      error: [],
+      spectral_data: [
+        [],
+        [],
+        []
+      ],
+      error: [true, true, true],
     };
   },
 
@@ -74,8 +78,8 @@ export default {
   watch: {
     message(msg) {
       if (msg.type == 'spectral_data') {
-        this.spectral_data = msg.data
-        this.error = msg.error
+        this.spectral_data[msg.site] = msg.data
+        this.error[msg.site] = msg.error
       }
       // TODO: get white LED message back and fix toggle if need be
     }
@@ -85,13 +89,15 @@ export default {
     ...mapActions('websocket', ['sendMessage']),
 
     toggle_whiteLEDS: function () {
-      this.whiteLEDS_active = !this.whiteLEDS_active;
-      this.sendMessage({ type: 'enable_white_leds', data: this.whiteLEDS_active })
+      this.whiteLEDs_active = !this.whiteLEDs_active;
+      if(this.uvLEDs_active && this.whiteLEDs_active) this.toggle_uvLEDS(); 
+      this.sendMessage({ type: 'enable_white_leds', data: this.whiteLEDs_active })
     },
 
     toggle_uvLEDS: function () {
-      this.uvLEDS_active = !this.uvLEDS_active;
-      this.sendMessage({ type: 'enable_uv_leds', data: this.uvLEDS_active })
+      this.uvLEDs_active = !this.uvLEDs_active;
+      if(this.uvLEDs_active && this.whiteLEDs_active) this.toggle_whiteLEDS(); 
+      this.sendMessage({ type: 'enable_uv_leds', data: this.uvLEDs_active })
     },
 
     download_data: function(spectral_data: any) {

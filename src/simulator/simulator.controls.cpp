@@ -81,7 +81,6 @@ namespace mrover {
             if (key == mToggleCameraLockKey) {
                 if (mCameraInRoverTarget) {
                     mCameraInRoverTarget = std::nullopt;
-
                     Eigen::Matrix3d rotationMatrix = mCameraInWorld.transform().block<3, 3>(0, 0);
 
                     Eigen::Vector3d left = rotationMatrix.col(1);
@@ -155,9 +154,11 @@ namespace mrover {
     auto SimulatorNodelet::userControls(Clock::duration dt) -> void {
         if (mPublishIk) {
             IK ik;
-            ik.pose.position.x = mIkTarget.x();
-            ik.pose.position.y = mIkTarget.y();
-            ik.pose.position.z = mIkTarget.z();
+            ik.target.header.stamp = ros::Time::now();
+            ik.target.header.frame_id = "arm_base_link";
+            ik.target.pose.position.x = mIkTarget.x();
+            ik.target.pose.position.y = mIkTarget.y();
+            ik.target.pose.position.z = mIkTarget.z();
             mIkTargetPub.publish(ik);
         }
 

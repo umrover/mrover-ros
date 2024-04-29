@@ -1,29 +1,22 @@
 <template>
   <div class="shadow my-1 p-3 rounded waypoint-item">
     <div class="identification">
-      <p>{{ waypoint.name }} | ID: {{ waypoint.id }} | Type: {{ WAYPOINT_TYPES[waypoint.type] }}</p>
+      <p>{{ waypoint.name }} | ID: {{ waypoint.id }}</p>
     </div>
     <div class="row">
       <div class="col text-center">
-        <button class="btn btn-danger" @click="$emit('add', { in_route: in_route, index: index })">
-          Add
-        </button>
         <button
           class="btn btn-danger"
-          @click="$emit('delete', { in_route: in_route, index: index })"
+          @click="$emit('delete', { waypoint })"
         >
           Delete
         </button>
       </div>
     </div>
     <div class="location">
-      <p>{{ output.lat.d }}º</p>
-      <p v-if="min_enabled">{{ output.lat.m }}'</p>
-      <p v-if="sec_enabled">{{ output.lat.s }}"</p>
+      <p>{{ waypoint.lat }}º</p>
       N <b>|</b>
-      <p>{{ output.lon.d }}º</p>
-      <p v-if="min_enabled">{{ output.lon.m }}'</p>
-      <p v-if="sec_enabled">{{ output.lon.s }}"</p>
+      <p>{{ waypoint.lon }}º</p>
       W
     </div>
   </div>
@@ -33,35 +26,12 @@
 import { mapGetters } from 'vuex'
 import { convertDMS } from '../utils'
 
-const WAYPOINT_TYPES = {
-  0: 'No Search',
-  1: 'Post',
-  2: 'Mallet',
-  3: 'Water Bottle'
-}
-
 export default {
-  data() {
-    return {
-      WAYPOINT_TYPES: WAYPOINT_TYPES
-    }
-  },
-
   props: {
     waypoint: {
       type: Object,
       required: true
     },
-
-    in_route: {
-      type: Boolean,
-      required: true
-    },
-
-    index: {
-      type: Number,
-      required: true
-    }
   },
 
   computed: {

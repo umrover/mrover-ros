@@ -64,12 +64,16 @@
   <!-- Localization -->
   <depend>rviz_imu_plugin</depend>
   <depend>robot_localization</depend>
+  <depend>rtcm_msgs</depend>
 
   <!-- Navigation -->
 
   <!-- Utility -->
   <exec_depend>teleop_twist_joy</exec_depend>
   <exec_depend>teleop_twist_keyboard</exec_depend>
+  <depend>rqt_tf_tree</depend>
+  <depend>rosbag</depend>
+  <depend>rqt_bag</depend>
 
   <!-- Test -->
   <test_depend>rosunit</test_depend>
@@ -78,12 +82,12 @@
   <!-- The export tag contains other, unspecified, tags -->
   <export>
     <nodelet plugin="${prefix}/plugins/object_detector_plugin.xml"/>
-    <nodelet plugin="${prefix}/plugins/tag_detector_plugin.xml"  />
-    <nodelet plugin="${prefix}/plugins/zed_plugin.xml" />
-    <nodelet plugin="${prefix}/plugins/long_range_tag_detector_plugin.xml" />
-    <nodelet plugin="${prefix}/plugins/usb_camera_plugin.xml"  />
-    <nodelet plugin="${prefix}/plugins/can.xml" />
-    <nodelet plugin="${prefix}/plugins/simulator.xml" />
-    <nodelet plugin="${prefix}/plugins/nv_gst_h265_enc.xml" />
+    <nodelet plugin="${prefix}/plugins/tag_detector_plugin.xml"/>
+    <nodelet plugin="${prefix}/plugins/zed_plugin.xml"/>
+    <nodelet plugin="${prefix}/plugins/long_range_tag_detector_plugin.xml"/>
+    <nodelet plugin="${prefix}/plugins/usb_camera_plugin.xml"/>
+    <nodelet plugin="${prefix}/plugins/can.xml"/>
+    <nodelet plugin="${prefix}/plugins/simulator.xml"/>
+    <nodelet plugin="${prefix}/plugins/gst_websocket_streamer.xml"/>
   </export>
 </package>

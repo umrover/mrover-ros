@@ -13,6 +13,13 @@
   become: true
   command: udevadm trigger --subsystem-match=tty
 
+- name: Install fdcanusb Binary
+  become: true
+  copy:
+    src: files/bin/fdcanusb_daemon
+    dest: /usr/local/bin/
+    mode: 0755
+
 - name: Install Moteus GUI
   pip:
-    name: moteus_gui
+    name: moteus-gui

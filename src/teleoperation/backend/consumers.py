@@ -1,21 +1,24 @@
 import csv
-from datetime import datetime
 import json
 import os
-import pytz
-from math import copysign
-from math import pi
-from tf.transformations import euler_from_quaternion
 import threading
+from datetime import datetime
+from math import copysign, pi, isfinite
 
+import pytz
 from channels.generic.websocket import JsonWebsocketConsumer
+
 import rospy
 import tf2_ros
-import cv2
+from backend.models import AutonWaypoint, BasicWaypoint
+from geometry_msgs.msg import Twist, Pose, Point, Quaternion, Vector3, PoseStamped
+
+import actionlib
 
 # from cv_bridge import CvBridge
-from geometry_msgs.msg import Twist
 from mrover.msg import (
+    ArmActionAction,
+    ArmActionGoal,
     PDLB,
     ControllerState,
     GPSWaypoint,
@@ -29,42 +32,56 @@ from mrover.msg import (
     Velocity,
     Position,
     IK,
-    SpectralGroup,
+    Spectral,
     ScienceThermistors,
     HeaterData,
 )
-from mrover.srv import EnableAuton, AdjustMotor, ChangeCameras, CapturePanorama  # , CapturePhoto
-from sensor_msgs.msg import NavSatFix, Temperature, RelativeHumidity, Image
-from std_msgs.msg import String, Bool
+from mrover.srv import EnableAuton, AdjustMotor, ChangeCameras, CapturePanorama
+from sensor_msgs.msg import NavSatFix, Temperature, RelativeHumidity, JointState
+from std_msgs.msg import String, Header
 from std_srvs.srv import SetBool, Trigger
-from geometry_msgs.msg import Twist, Pose, Point, Quaternion
-
+from tf.transformations import euler_from_quaternion
 from util.SE3 import SE3
-
-from backend.models import AutonWaypoint, BasicWaypoint
-
 
 DEFAULT_ARM_DEADZONE = 0.15
 
 
-# If below threshold, make output zero
-def deadzone(magnitude: float, threshold: float) -> float:
-    temp_mag = abs(magnitude)
-    if temp_mag <= threshold:
-        temp_mag = 0
-    else:
-        temp_mag = (temp_mag - threshold) / (1 - threshold)
-    return copysign(temp_mag, magnitude)
+def deadzone(signal: float, threshold: float) -> float:
+    """
+    Values lower than the threshold will be clipped to zero.
+    Those above will be remapped to [0, 1] linearly.
+    """
+    magnitude = abs(signal)
+    magnitude = 0 if magnitude < threshold else (magnitude - threshold) / (1 - threshold)
+    return copysign(magnitude, signal)
 
 
-def quadratic(val: float) -> float:
-    return copysign(val**2, val)
+def quadratic(signal: float) -> float:
+    """
+    Use to allow more control near low inputs values by squaring the magnitude.
+    For example using a joystick to control drive.
+    """
+    return copysign(signal**2, signal)
 
 
 class GUIConsumer(JsonWebsocketConsumer):
     def connect(self):
         self.accept()
         try:
+            # ROS Parameters
+            self.mappings = rospy.get_param("teleop/joystick_mappings")
+            self.drive_config = rospy.get_param("teleop/drive_controls")
+            self.max_wheel_speed = rospy.get_param("rover/max_speed")
+            self.wheel_radius = rospy.get_param("wheel/radius")
+            self.max_angular_speed = self.max_wheel_speed / self.wheel_radius
+            self.ra_config = rospy.get_param("teleop/ra_controls")
+            self.ik_names = rospy.get_param("teleop/ik_multipliers")
+            self.RA_NAMES = rospy.get_param("teleop/ra_names")
+            self.brushless_motors = rospy.get_param("brushless_motors/controllers")
+            self.brushed_motors = rospy.get_param("brushed_motors/controllers")
+            self.xbox_mappings = rospy.get_param("teleop/xbox_mappings")
+            self.sa_config = rospy.get_param("teleop/sa_controls")
+
             # Publishers
             self.twist_pub = rospy.Publisher("/cmd_vel", Twist, queue_size=1)
             self.led_pub = rospy.Publisher("/auton_led_cmd", String, queue_size=1)
@@ -85,10 +102,12 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.arm_moteus_sub = rospy.Subscriber(
                 "/arm_controller_data", ControllerState, self.arm_controller_callback
             )
+            self.arm_joint_sub = rospy.Subscriber("/arm_joint_data", JointState, self.arm_joint_callback)
+            self.sa_joint_sub = rospy.Subscriber("/sa_joint_data", JointState, self.sa_joint_callback)
             self.drive_moteus_sub = rospy.Subscriber(
                 "/drive_controller_data", ControllerState, self.drive_controller_callback
             )
-            self.gps_fix = rospy.Subscriber("/gps/fix", NavSatFix, self.gps_fix_callback)
+            self.gps_fix = rospy.Subscriber("/left_gps_driver/fix", NavSatFix, self.gps_fix_callback)
             self.drive_status_sub = rospy.Subscriber("/drive_status", MotorsStatus, self.drive_status_callback)
             self.led_sub = rospy.Subscriber("/led", LED, self.led_callback)
             self.nav_state_sub = rospy.Subscriber("/nav_state", StateMachineStateUpdate, self.nav_state_callback)
@@ -103,7 +122,8 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.ish_heater_state = rospy.Subscriber(
                 "/science_heater_state", HeaterData, self.ish_heater_state_callback
             )
-            self.science_spectral = rospy.Subscriber("/science_spectral", SpectralGroup, self.science_spectral_callback)
+            self.science_spectral = rospy.Subscriber("/science_spectral", Spectral, self.science_spectral_callback)
+            self.cmd_vel = rospy.Subscriber("/cmd_vel", Twist, self.cmd_vel_callback)
 
             # Services
             self.laser_service = rospy.ServiceProxy("enable_arm_laser", SetBool)
@@ -115,28 +135,12 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.change_cameras_srv = rospy.ServiceProxy("change_cameras", ChangeCameras)
             self.capture_panorama_srv = rospy.ServiceProxy("capture_panorama", CapturePanorama)
             self.heater_auto_shutoff_srv = rospy.ServiceProxy("science_change_heater_auto_shutoff_state", SetBool)
-            # self.capture_photo_srv = rospy.ServiceProxy("capture_photo", CapturePhoto)
-
-            # ROS Parameters
-            self.mappings = rospy.get_param("teleop/joystick_mappings")
-            self.drive_config = rospy.get_param("teleop/drive_controls")
-            self.max_wheel_speed = rospy.get_param("rover/max_speed")
-            self.wheel_radius = rospy.get_param("wheel/radius")
-            self.max_angular_speed = self.max_wheel_speed / self.wheel_radius
-            self.ra_config = rospy.get_param("teleop/ra_controls")
-            self.ik_names = rospy.get_param("teleop/ik_multipliers")
-            self.RA_NAMES = rospy.get_param("teleop/ra_names")
-            self.brushless_motors = rospy.get_param("brushless_motors/controllers")
-            self.brushed_motors = rospy.get_param("brushed_motors/controllers")
-            self.xbox_mappings = rospy.get_param("teleop/xbox_mappings")
-            self.sa_config = rospy.get_param("teleop/sa_controls")
 
             self.tf_buffer = tf2_ros.Buffer()
             self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
             self.flight_thread = threading.Thread(target=self.flight_attitude_listener)
             self.flight_thread.start()
-
-        except rospy.ROSException as e:
+        except Exception as e:
             rospy.logerr(e)
 
     def disconnect(self, close_code):
@@ -169,10 +173,12 @@ class GUIConsumer(JsonWebsocketConsumer):
                 self.calibrate_motors(message)
             elif message["type"] == "arm_adjust":
                 self.arm_adjust(message)
-            elif message["type"] == "arm_values" or message["type"] == "cache_values":
+            elif (
+                message["type"] == "arm_values"
+                or message["type"] == "cache_values"
+                or message["type"] == "sa_arm_values"
+            ):
                 self.handle_controls_message(message)
-            elif message["type"] == "sa_enable_uv_bulb":
-                self.sa_uv_bulb_callback(message)
             elif message["type"] == "enable_white_leds":
                 self.enable_white_leds_callback(message)
             elif message["type"] == "enable_uv_leds":
@@ -181,8 +187,8 @@ class GUIConsumer(JsonWebsocketConsumer):
                 self.send_auton_command(message)
             elif message["type"] == "teleop_enabled":
                 self.send_teleop_enabled(message)
-            elif message["type"] == "auton_tfclient":
-                self.auton_bearing()
+            elif message["type"] == "bearing":
+                self.bearing()
             elif message["type"] == "mast_gimbal":
                 self.mast_gimbal(message)
             elif message["type"] == "max_streams":
@@ -214,16 +220,18 @@ class GUIConsumer(JsonWebsocketConsumer):
         except Exception as e:
             rospy.logerr(e)
 
+    @staticmethod
     def filter_xbox_axis(
-        self,
-        value: int,
+        value: float,
         deadzone_threshold: float = DEFAULT_ARM_DEADZONE,
         quad_control: bool = False,
     ) -> float:
-        deadzoned_val = deadzone(value, deadzone_threshold)
-        return quadratic(deadzoned_val) if quad_control else deadzoned_val
+        value = deadzone(value, deadzone_threshold)
+        if quad_control:
+            value = quadratic(value)
+        return value
 
-    def filter_xbox_button(self, button_array: "List[int]", pos_button: str, neg_button: str) -> float:
+    def filter_xbox_button(self, button_array: list[float], pos_button: str, neg_button: str) -> float:
         """
         Applies various filtering functions to an axis for controlling the arm
         :return: Return -1, 0, or 1 depending on what buttons are being pressed
@@ -252,210 +260,200 @@ class GUIConsumer(JsonWebsocketConsumer):
                 / 2
             )
 
+    def publish_ik(self, axes: list[float], buttons: list[float]) -> None:
+        ee_in_map = SE3.from_tf_tree(self.tf_buffer, "base_link", "arm_d_link")
+
+        ee_in_map.position[0] += self.ik_names["x"] * self.filter_xbox_axis(axes[self.xbox_mappings["left_js_x"]])
+        ee_in_map.position[1] += self.ik_names["y"] * self.filter_xbox_axis(axes[self.xbox_mappings["left_js_y"]])
+        ee_in_map.position[2] += self.ik_names["z"] * self.filter_xbox_button(buttons, "right_trigger", "left_trigger")
+
+        self.send(
+            text_data=json.dumps(
+                {
+                    "type": "ik",
+                    "target": {
+                        "position": ee_in_map.position.tolist(),
+                        "quaternion": ee_in_map.rotation.quaternion.tolist(),
+                    },
+                }
+            )
+        )
+
+        self.arm_ik_pub.publish(
+            IK(
+                target=PoseStamped(
+                    header=Header(stamp=rospy.Time.now(), frame_id="base_link"),
+                    pose=Pose(
+                        position=Point(*ee_in_map.position),
+                        orientation=Quaternion(*ee_in_map.rotation.quaternion),
+                    ),
+                )
+            )
+        )
+
+    def publish_position(self, type, names, positions):
+        position_cmd = Position(
+            names=names,
+            positions=positions,
+        )
+        if type == "arm_values":
+            self.arm_position_cmd_pub.publish(position_cmd)
+        elif type == "sa_arm_values":
+            self.sa_position_cmd_pub.publish(position_cmd)
+        elif type == "cache_values":
+            self.cache_position_cmd_pub.publish(position_cmd)
+
+    def publish_velocity(self, type, names, axes, buttons):
+        left_trigger = self.filter_xbox_axis(axes[self.xbox_mappings["left_trigger"]])
+        right_trigger = self.filter_xbox_axis(axes[self.xbox_mappings["right_trigger"]])
+        velocity_cmd = Velocity()
+        velocity_cmd.names = names
+        if type == "cache_values":
+            velocity_cmd.velocities = [
+                self.sa_config["cache"]["multiplier"] * self.filter_xbox_button(buttons, "right_bumper", "left_bumper")
+            ]
+            self.cache_velocity_cmd_pub.publish(velocity_cmd)
+        elif type == "sa_arm_values":
+            velocity_cmd.velocities = [
+                self.to_velocity(self.filter_xbox_axis(axes[self.sa_config["sa_x"]["xbox_index"]]), "sa_x", False),
+                self.to_velocity(self.filter_xbox_axis(axes[self.sa_config["sa_y"]["xbox_index"]]), "sa_y", False),
+                self.to_velocity(self.filter_xbox_axis(axes[self.sa_config["sa_z"]["xbox_index"]]), "sa_z", True),
+                self.sa_config["sampler"]["multiplier"] * (right_trigger - left_trigger),
+                self.sa_config["sensor_actuator"]["multiplier"]
+                * self.filter_xbox_button(buttons, "right_bumper", "left_bumper"),
+            ]
+            self.sa_velocity_cmd_pub.publish(velocity_cmd)
+        elif type == "arm_values":
+            velocity_cmd.velocities = [
+                self.to_velocity(self.filter_xbox_axis(axes[self.ra_config["joint_a"]["xbox_index"]]), "joint_a"),
+                self.to_velocity(
+                    self.filter_xbox_axis(axes[self.ra_config["joint_b"]["xbox_index"]]), "joint_b", False
+                ),
+                self.to_velocity(self.filter_xbox_axis(axes[self.ra_config["joint_c"]["xbox_index"]]), "joint_c"),
+                self.to_velocity(
+                    self.filter_xbox_axis(axes[self.ra_config["joint_de_pitch"]["xbox_index"]]), "joint_de_0"
+                ),
+                self.to_velocity(
+                    self.filter_xbox_axis(axes[self.ra_config["joint_de_roll"]["xbox_index"]]), "joint_de_1"
+                ),
+                self.ra_config["allen_key"]["multiplier"] * self.filter_xbox_button(buttons, "y", "a"),
+                self.ra_config["gripper"]["multiplier"] * self.filter_xbox_button(buttons, "b", "x"),
+            ]
+            self.arm_velocity_cmd_pub.publish(velocity_cmd)
+
+    def publish_throttle(self, type, names, axes, buttons):
+        left_trigger = self.filter_xbox_axis(buttons[self.xbox_mappings["left_trigger"]])
+        right_trigger = self.filter_xbox_axis(buttons[self.xbox_mappings["right_trigger"]])
+        throttle_cmd = Throttle()
+        throttle_cmd.names = names
+        if type == "cache_values":
+            throttle_cmd.throttles = [
+                self.sa_config["cache"]["multiplier"] * self.filter_xbox_button(buttons, "right_bumper", "left_bumper")
+            ]
+            self.cache_throttle_cmd_pub.publish(throttle_cmd)
+        elif type == "arm_values":
+            throttle_cmd.throttles = [
+                self.ra_config["joint_a"]["multiplier"] * self.filter_xbox_axis(axes[self.xbox_mappings["left_x"]]),
+                self.ra_config["joint_b"]["multiplier"] * self.filter_xbox_axis(axes[self.xbox_mappings["left_y"]]),
+                self.ra_config["joint_c"]["multiplier"]
+                * quadratic(self.filter_xbox_axis(axes[self.xbox_mappings["right_y"]])),
+                self.ra_config["joint_de_pitch"]["multiplier"]
+                * self.filter_xbox_axis(
+                    buttons[self.xbox_mappings["right_trigger"]] - buttons[self.xbox_mappings["left_trigger"]]
+                ),
+                self.ra_config["joint_de_roll"]["multiplier"]
+                * self.filter_xbox_axis(
+                    buttons[self.xbox_mappings["right_bumper"]] - buttons[self.xbox_mappings["left_bumper"]]
+                ),
+                self.ra_config["allen_key"]["multiplier"] * self.filter_xbox_button(buttons, "y", "a"),
+                self.ra_config["gripper"]["multiplier"] * self.filter_xbox_button(buttons, "b", "x"),
+            ]
+            self.arm_throttle_cmd_pub.publish(throttle_cmd)
+        elif type == "sa_arm_values":
+            throttle_cmd.throttles = [
+                self.filter_xbox_axis(axes[self.sa_config["sa_x"]["xbox_index"]]),
+                self.filter_xbox_axis(axes[self.sa_config["sa_y"]["xbox_index"]]),
+                self.filter_xbox_axis(axes[self.sa_config["sa_z"]["xbox_index"]]),
+                self.sa_config["sampler"]["multiplier"] * (right_trigger - left_trigger),
+                self.sa_config["sensor_actuator"]["multiplier"]
+                * self.filter_xbox_button(buttons, "right_bumper", "left_bumper"),
+            ]
+            self.sa_throttle_cmd_pub.publish(throttle_cmd)
+
     def handle_controls_message(self, msg):
-        CACHE = ["cache"]
-        SA_NAMES = ["sa_x", "sa_y", "sa_z", "sampler", "sensor_actuator"]
-        RA_NAMES = self.RA_NAMES
-        ra_slow_mode = False
-        raw_left_trigger = msg["axes"][self.xbox_mappings["left_trigger"]]
-        left_trigger = raw_left_trigger if raw_left_trigger > 0 else 0
-        raw_right_trigger = msg["axes"][self.xbox_mappings["right_trigger"]]
-        right_trigger = raw_right_trigger if raw_right_trigger > 0 else 0
-        arm_pubs = [self.arm_position_cmd_pub, self.arm_velocity_cmd_pub, self.arm_throttle_cmd_pub, self.arm_ik_pub]
-        sa_pubs = [self.sa_position_cmd_pub, self.sa_velocity_cmd_pub, self.sa_throttle_cmd_pub]
-        cache_pubs = [self.cache_position_cmd_pub, self.cache_velocity_cmd_pub, self.cache_throttle_cmd_pub]
-        publishers = []
-        controls_names = []
-        if msg["type"] == "cache_values":
-            controls_names = CACHE
-            publishers = cache_pubs
-        elif msg["type"] == "arm_values":
-            controls_names = RA_NAMES
-            publishers = arm_pubs
-        elif msg["type"] == "sa_arm_values":
-            controls_names = SA_NAMES
-            publishers = sa_pubs
+        names = ["joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll", "allen_key", "gripper"]
+        if msg["type"] == "sa_arm_values":
+            names = ["sa_x", "sa_y", "sa_z", "sampler", "sensor_actuator"]
+        elif msg["type"] == "cache_values":
+            names = ["cache"]
 
-        if msg["arm_mode"] == "ik":
-            base_link_in_map = SE3.from_tf_tree(self.tf_buffer, "map", "base_link")
+        if msg["buttons"][self.xbox_mappings["home"]] > 0.5:
+            rospy.loginfo("Homing DE")
 
-            left_trigger = self.filter_xbox_axis(msg["axes"][self.xbox_mappings["left_trigger"]])
-            if left_trigger < 0:
-                left_trigger = 0
+            client = actionlib.SimpleActionClient("arm_action", ArmActionAction)
+            if client.wait_for_server(timeout=rospy.Duration(1)):
+                goal = ArmActionGoal(name="de_home")
+                client.send_goal(goal)
 
-            right_trigger = self.filter_xbox_axis(msg["axes"][self.xbox_mappings["right_trigger"]])
-            if right_trigger < 0:
-                right_trigger = 0
-            base_link_in_map.position[0] += (
-                self.ik_names["x"] * self.filter_xbox_axis(msg["axes"][self.xbox_mappings["left_js_x"]]),
-            )
-            base_link_in_map.position[1] += (
-                self.ik_names["y"] * self.filter_xbox_axis(msg["axes"][self.xbox_mappings["left_js_y"]]),
-            )
-            base_link_in_map.position[2] -= self.ik_names["z"] * left_trigger + self.ik_names["z"] * right_trigger
+                client.wait_for_result()
+            else:
+                rospy.logwarn("Arm action server not available")
+        else:
+            if msg["arm_mode"] == "ik":
+                self.publish_ik(msg["axes"], msg["buttons"])
 
-            arm_ik_cmd = IK(
-                pose=Pose(
-                    position=Point(*base_link_in_map.position),
-                    orientation=Quaternion(*base_link_in_map.rotation.quaternion),
-                )
-            )
-            publishers[3].publish(arm_ik_cmd)
+            elif msg["arm_mode"] == "position":
+                self.publish_position(type=msg["type"], names=names, positions=msg["positions"])
 
-        if msg["arm_mode"] == "position":
-            position_names = controls_names
-            if msg["type"] == "arm_values":
-                position_names = ["joint_b", "joint_c", "joint_de_pitch", "joint_de_roll"]
-            position_cmd = Position(
-                names=position_names,
-                positions=msg["positions"],
-            )
-            publishers[0].publish(position_cmd)
+            elif msg["arm_mode"] == "velocity":
+                self.publish_velocity(type=msg["type"], names=names, axes=msg["axes"], buttons=msg["buttons"])
 
-        elif msg["arm_mode"] == "velocity":
-            velocity_cmd = Velocity()
-            velocity_cmd.names = controls_names
-            if msg["type"] == "cache_values":
-                velocity_cmd.velocities = [
-                    self.sa_config["cache"]["multiplier"]
-                    * self.filter_xbox_button(msg["buttons"], "right_bumper", "left_bumper")
-                ]
-            elif msg["type"] == "sa_arm_values":
-                velocity_cmd.velocities = [
-                    self.to_velocity(
-                        self.filter_xbox_axis(msg["axes"][self.sa_config["sa_x"]["xbox_index"]]), "sa_x", False
-                    ),
-                    self.to_velocity(
-                        self.filter_xbox_axis(msg["axes"][self.sa_config["sa_y"]["xbox_index"]]), "sa_y", False
-                    ),
-                    self.to_velocity(
-                        self.filter_xbox_axis(msg["axes"][self.sa_config["sa_z"]["xbox_index"]]), "sa_z", True
-                    ),
-                    self.sa_config["sampler"]["multiplier"] * (right_trigger - left_trigger),
-                    self.sa_config["sensor_actuator"]["multiplier"]
-                    * self.filter_xbox_button(msg["buttons"], "right_bumper", "left_bumper"),
-                ]
-            elif msg["type"] == "arm_values":
-                velocity_cmd.velocities = [
-                    self.to_velocity(
-                        self.filter_xbox_axis(msg["axes"][self.ra_config["joint_a"]["xbox_index"]]), "joint_a"
-                    ),
-                    self.to_velocity(
-                        self.filter_xbox_axis(msg["axes"][self.ra_config["joint_b"]["xbox_index"]]), "joint_b", False
-                    ),
-                    self.to_velocity(
-                        self.filter_xbox_axis(msg["axes"][self.ra_config["joint_c"]["xbox_index"]]), "joint_c"
-                    ),
-                    self.to_velocity(
-                        self.filter_xbox_axis(msg["axes"][self.ra_config["joint_de_pitch"]["xbox_index"]]), "joint_de_0"
-                    ),
-                    self.to_velocity(
-                        self.filter_xbox_axis(msg["axes"][self.ra_config["joint_de_roll"]["xbox_index"]]), "joint_de_1"
-                    ),
-                    self.ra_config["allen_key"]["multiplier"] * self.filter_xbox_button(msg["buttons"], "y", "a"),
-                    self.ra_config["gripper"]["multiplier"] * self.filter_xbox_button(msg["buttons"], "b", "x"),
-                ]
-            publishers[1].publish(velocity_cmd)
-
-        elif msg["arm_mode"] == "throttle":
-            throttle_cmd = Throttle()
-            throttle_cmd.names = controls_names
-            if msg["type"] == "cache_values":
-                throttle_cmd.throttles = [
-                    self.sa_config["cache"]["multiplier"]
-                    * self.filter_xbox_button(msg["buttons"], "right_bumper", "left_bumper")
-                ]
-            elif msg["type"] == "sa_arm_values":
-                d_pad_x = msg["axes"][self.xbox_mappings["d_pad_x"]]
-                if d_pad_x > 0.5:
-                    ra_slow_mode = True
-                elif d_pad_x < -0.5:
-                    ra_slow_mode = False
-
-                throttle_cmd.throttles = [
-                    self.filter_xbox_axis(msg["axes"][self.ra_config["joint_a"]["xbox_index"]]),
-                    self.filter_xbox_axis(msg["axes"][self.ra_config["joint_b"]["xbox_index"]]),
-                    self.filter_xbox_axis(msg["axes"][self.ra_config["joint_c"]["xbox_index"]]),
-                    self.filter_xbox_axis(msg["axes"][self.ra_config["joint_de_pitch"]["xbox_index"]]),
-                    self.filter_xbox_axis(msg["axes"][self.ra_config["joint_de_roll"]["xbox_index"]]),
-                    self.ra_config["allen_key"]["multiplier"] * self.filter_xbox_button(msg["buttons"], "y", "a"),
-                    self.ra_config["gripper"]["multiplier"] * self.filter_xbox_button(msg["buttons"], "b", "x"),
-                ]
-
-                for i, name in enumerate(self.RA_NAMES):
-                    if ra_slow_mode:
-                        throttle_cmd.throttles[i] *= self.ra_config[name]["slow_mode_multiplier"]
-                    if self.ra_config[name]["invert"]:
-                        throttle_cmd.throttles[i] *= -1
-            elif msg["type"] == "sa_values":
-                throttle_cmd.throttles = [
-                    self.sa_config[name]["multiplier"]
-                    * self.filter_xbox_axis(msg["axes"][info["xbox_index"]], 0.15, True)
-                    for name, info in self.sa_config.items()
-                    if name.startswith("sa")
-                ]
-
-                throttle_cmd.throttles.extend(
-                    [
-                        self.sa_config["sampler"]["multiplier"] * (right_trigger - left_trigger),
-                        self.sa_config["sensor_actuator"]["multiplier"]
-                        * self.filter_xbox_button(msg["buttons"], "right_bumper", "left_bumper"),
-                    ]
-                )
-
-                fast_mode_activated = msg["buttons"][self.xbox_mappings["a"]] or msg["buttons"][self.xbox_mappings["b"]]
-                if not fast_mode_activated:
-                    for i, name in enumerate(SA_NAMES):
-                        # When going up (vel > 0) with SA joint 2, we DON'T want slow mode.
-                        if not (name == "sa_y" and throttle_cmd.throttles[i] > 0):
-                            throttle_cmd.throttles[i] *= self.sa_config[name]["slow_mode_multiplier"]
-            publishers[2].publish(throttle_cmd)
+            elif msg["arm_mode"] == "throttle":
+                self.publish_throttle(type=msg["type"], names=names, axes=msg["axes"], buttons=msg["buttons"])
 
     def handle_joystick_message(self, msg):
         # Tiny deadzone so we can safely e-stop with dampen switch
         dampen = deadzone(msg["axes"][self.mappings["dampen"]], 0.01)
 
-        # Makes dampen [0,1] instead of [-1,1]
-        # negative sign required to drive forward by default instead of backward
-        # (-1*dampen) because the top of the dampen switch is -1.0
+        # Makes dampen [0,1] instead of [-1,1].
+        # Negative sign required to drive forward by default instead of backward.
+        # (-1*dampen) because the top of the dampen switch is -1.
         dampen = -1 * ((-1 * dampen) + 1) / 2
 
-        linear = deadzone(
-            msg["axes"][self.mappings["forward_back"]] * self.drive_config["forward_back"]["multiplier"], 0.05
+        def get_axes_input(
+            mapping_name: str, deadzone_threshold: float = 0.05, apply_quadratic: bool = False, scale: float = 1.0
+        ) -> float:
+            signal = msg["axes"][self.mappings[mapping_name]]
+            signal *= self.drive_config[mapping_name]["multiplier"]
+            signal = deadzone(signal, deadzone_threshold)
+            if apply_quadratic:
+                signal = quadratic(signal)
+            signal *= scale
+            return signal
+
+        linear = get_axes_input("forward_back", 0.02, True, self.max_wheel_speed * dampen)
+        # Note(quintin): I prefer using solely the twist axis for turning...
+        # angular_from_lateral = get_axes_input("left_right", 0.4, True)
+        angular = get_axes_input("twist", 0.03, True, self.max_angular_speed * dampen)
+
+        linear -= get_axes_input("tilt", 0.5, scale=0.1)
+        angular -= get_axes_input("pan", 0.5, scale=0.1)
+
+        self.twist_pub.publish(
+            Twist(
+                linear=Vector3(x=linear),
+                angular=Vector3(z=angular),
+            )
         )
-
-        # Convert from [0,1] to [0, self_max_wheel_speed] and apply dampen
-        linear *= self.max_wheel_speed * dampen
-
-        # Deadzones for each axis
-        left_right = (
-            deadzone(msg["axes"][self.mappings["left_right"]] * self.drive_config["left_right"]["multiplier"], 0.4)
-            if self.drive_config["left_right"]["enabled"]
-            else 0
-        )
-        twist = quadratic(deadzone(msg["axes"][self.mappings["twist"]] * self.drive_config["twist"]["multiplier"], 0.1))
-
-        angular = twist + left_right
-
-        # Same as linear but for angular speed
-        angular *= self.max_angular_speed * dampen
-        # Clamp if both twist and left_right are used at the same time
-        if abs(angular) > self.max_angular_speed:
-            angular = copysign(self.max_angular_speed, angular)
-        twist_msg = Twist()
-        twist_msg.linear.x = linear
-        twist_msg.angular.z = angular
-
-        self.twist_pub.publish(twist_msg)
 
         self.send(
             text_data=json.dumps(
                 {
                     "type": "joystick",
-                    "left_right": left_right,
+                    "left_right": msg["axes"][self.mappings["left_right"]],
                     "forward_back": msg["axes"][self.mappings["forward_back"]],
-                    "twist": twist,
-                    "dampen": dampen,
+                    "twist": msg["axes"][self.mappings["twist"]],
+                    "dampen": msg["axes"][self.mappings["dampen"]],
                     "pan": msg["axes"][self.mappings["pan"]],
                     "tilt": msg["axes"][self.mappings["tilt"]],
                 }
@@ -477,6 +475,11 @@ class GUIConsumer(JsonWebsocketConsumer):
                 {"type": "arm_moteus", "name": msg.name, "state": msg.state, "error": msg.error, "limit_hit": hits}
             )
         )
+
+    def sa_joint_callback(self, msg):
+        names = msg.name
+        z = msg.position[names.index("sa_z")]
+        self.send(text_data=json.dumps({"type": "sa_z", "sa_z": z}))
 
     def drive_controller_callback(self, msg):
         hits = []
@@ -546,8 +549,6 @@ class GUIConsumer(JsonWebsocketConsumer):
         except rospy.ServiceException as e:
             rospy.logerr(e)
 
-        self.send(text_data=json.dumps({"type": "enable_limit_switch", "result": fail}))
-
     def calibrate_motors(self, msg):
         fail = []  # if any calibration fails, add joint name to a list to return
         if msg["topic"] == "all_ra":
@@ -600,6 +601,9 @@ class GUIConsumer(JsonWebsocketConsumer):
             )
         )
 
+    def cmd_vel_callback(self, msg):
+        self.send(text_data=json.dumps({"type": "cmd_vel", "linear_x": msg.linear.x, "angular_z": msg.angular.z}))
+
     def gps_fix_callback(self, msg):
         self.send(
             text_data=json.dumps(
@@ -649,12 +653,12 @@ class GUIConsumer(JsonWebsocketConsumer):
         temps = [x.temperature for x in msg.temps]
         self.send(text_data=json.dumps({"type": "thermistor", "temps": temps}))
 
-    def auton_bearing(self):
+    def bearing(self):
         base_link_in_map = SE3.from_tf_tree(self.tf_buffer, "map", "base_link")
         self.send(
             text_data=json.dumps(
                 {
-                    "type": "auton_tfclient",
+                    "type": "bearing",
                     "rotation": base_link_in_map.rotation.quaternion.tolist(),
                 }
             )
@@ -806,14 +810,15 @@ class GUIConsumer(JsonWebsocketConsumer):
 
             rate.sleep()
 
-    def science_spectral_callback(self, msg):
-        data = []
-        error = []
-        for spectral in msg.spectrals:
-            data.append(spectral.data)
-            error.append(spectral.error)
+    def arm_joint_callback(self, msg: JointState) -> None:
+        # Set non-finite values to zero
+        msg.position = [x if isfinite(x) else 0 for x in msg.position]
+        self.send(text_data=json.dumps({"type": "fk", "positions": msg.position}))
 
-        self.send(text_data=json.dumps({"type": "spectral_data", "data": data, "error": error}))
+    def science_spectral_callback(self, msg):
+        self.send(
+            text_data=json.dumps({"type": "spectral_data", "site": msg.site, "data": msg.data, "error": msg.error})
+        )
 
     def download_csv(self, msg):
         username = os.getenv("USERNAME", "-1")

@@ -49,7 +49,7 @@ namespace mrover {
     auto LongRangeTagDetectorNodelet::getTagBearing(std::vector<cv::Point2f>& tagCorners) const -> float {
         // Takes the average of the corners
         cv::Point2f center = std::reduce(tagCorners.begin(), tagCorners.end()) / static_cast<float>(tagCorners.size());
-        float bearing = -1.0 * (center.x - mImg.cols / 2.0) / mImg.cols * mLongRangeFov;
+        float bearing = -1.0f * (center.x - static_cast<float>(mImg.cols) / 2.0f) / static_cast<float>(mImg.cols) * mLongRangeFov;
         return bearing;
     }
 

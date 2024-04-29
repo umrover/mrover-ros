@@ -28,7 +28,7 @@
       <BasicWaypointEditor :odom="odom" />
     </div>
     <div class="shadow p-3 rounded cameras">
-      <Cameras :primary="true" :isSA="true" />
+      <Cameras :isSA="true" :mission="'sa'" />
     </div>
     <div class="shadow p-3 rounded soildata">
       <SoilData />
@@ -78,13 +78,6 @@
           :topic_name="'sa_calibrate_sensor_actuator'"
         />
       </div>
-      <!-- <MotorAdjust
-        :options="[
-          { name: 'sa_joint_1', option: 'Joint 1' },
-          { name: 'sa_joint_2', option: 'Joint 2' },
-          { name: 'sa_joint_3', option: 'Joint 3' }
-        ]"
-      /> -->
     </div>
     <div v-show="false">
       <MastGimbalControls></MastGimbalControls>
@@ -113,7 +106,9 @@ import MotorAdjust from './MotorAdjust.vue'
 import OdometryReading from './OdometryReading.vue'
 import SAArmControls from './SAArmControls.vue'
 import { disableAutonLED, quaternionToMapAngle } from '../utils.js'
-import { mapState } from 'vuex'
+import { mapState, mapActions } from 'vuex'
+
+let interval: number
 
 export default {
   components: {
@@ -164,7 +159,7 @@ export default {
   },
 
   computed: {
-    ...mapState('websocket', ['message']),
+    ...mapState('websocket', ['message'])
   },
 
   watch: {
@@ -181,12 +176,26 @@ export default {
         this.moteusState.state = msg.state
         this.moteusState.error = msg.error
         this.moteusState.limit_hit = msg.limit_hit
+      }
+      else if (msg.type == 'nav_sat_fix') {
+        this.odom.latitude_deg = msg.latitude
+        this.odom.longitude_deg = msg.longitude
+        this.odom.altitude = msg.altitude
+      } 
+      else if (msg.type == 'bearing') {
+        this.odom.bearing_deg = quaternionToMapAngle(msg.rotation)
       } 
     }
   },
 
-  created: function () {
+  methods: {
+    ...mapActions('websocket', ['sendMessage']),
+  },
 
+  created: function () {
+    interval = setInterval(() => {
+      this.sendMessage({ type: 'bearing' })
+    }, 1000)
   }
 }
 </script>

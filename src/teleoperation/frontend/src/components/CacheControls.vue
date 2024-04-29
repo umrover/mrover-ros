@@ -1,5 +1,6 @@
 <template>
   <div class="wrap">
+    <h3>Cache Controls</h3>
     <div class="controls-flex">
       <h5>Control Mode</h5>
       <div class="form-check">
@@ -123,17 +124,6 @@ export default defineComponent({
       this.positions = Object.values(this.temp_positions).map(
         (obj: any) => (Number(obj.value) * Math.PI) / 180
       )
-
-
-
-
-      //   this.sendMessage({
-      //       type: 'cache_values',
-      //       axes: axes,
-      //       buttons: buttons,
-      //       arm_mode: "position",
-      //       positions: positions
-      //     })
     },
     publishJoystickMessage: function (axes: any, buttons: any, arm_mode: any, positions: any) {
       if (arm_mode != 'arm_disabled') {
