@@ -2,8 +2,8 @@
   <div class="wrapper">
     <div class="shadow p-3 mb-5 header">
       <h1>ISH Dashboard</h1>
-      <!-- <MCUReset class="mcu_reset"></MCUReset>
-        <CommReadout class="comms"></CommReadout> -->
+      <!-- <MCUReset class="mcu_reset"></MCUReset> -->
+      <NetworkBandwidth class="comms"></NetworkBandwidth>
       <img class="logo" src="/mrover.png" alt="MRover" title="MRover" width="200" />
       <div class="help">
         <img src="/help.png" alt="Help" title="Help" width="48" height="48" />
@@ -44,13 +44,11 @@
 
 <script lang="ts">
 import SelectSite from './SelectSite.vue'
-//   import Raman from "./Raman.vue";
 import Cache from './CacheControls.vue'
 import Chlorophyll from './Chlorophyll.vue'
 import AminoBenedict from './AminoBenedict.vue'
 import Cameras from './Cameras.vue'
-//   import CommReadout from "./CommReadout.vue";
-//   import MCUReset from "./MCUReset.vue"
+import NetworkBandwidth from './NetworkBandwidth.vue'
 import { disableAutonLED } from '../utils.js'
 
 export default {
@@ -59,9 +57,8 @@ export default {
     Cache,
     Chlorophyll,
     AminoBenedict,
-    Cameras
-    //   CommReadout,
-    //   MCUReset,
+    Cameras,
+    NetworkBandwidth
   },
   data() {
     return {
@@ -95,7 +92,8 @@ export default {
 }
 
 .comms {
-  margin-right: 5px;
+  position: absolute;
+  right: 25%;
 }
 
 .helpscreen {

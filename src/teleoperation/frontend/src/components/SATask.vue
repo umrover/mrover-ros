@@ -2,8 +2,8 @@
   <div class="wrapper">
     <div class="shadow p-3 mb-5 header">
       <h1>SA Dashboard</h1>
-      <!-- <MCUReset class="mcu_reset"></MCUReset>
-        <CommReadout class="comms"></CommReadout> -->
+      <!-- <MCUReset class="mcu_reset"></MCUReset> -->
+        <NetworkBandwidth class="comms"></NetworkBandwidth>
       <img class="logo" src="/mrover.png" alt="MRover" title="MRover" width="200" />
       <div class="help">
         <img src="/help.png" alt="Help" title="Help" width="48" height="48" />
@@ -100,11 +100,9 @@ import DriveMoteusStateTable from './DriveMoteusStateTable.vue'
 import MotorsStatusTable from './MotorsStatusTable.vue'
 import LimitSwitch from './LimitSwitch.vue'
 import CalibrationCheckbox from './CalibrationCheckbox.vue'
-//   import CommReadout from "./CommReadout.vue";
-//   import MCUReset from "./MCUReset.vue";
-import MotorAdjust from './MotorAdjust.vue'
 import OdometryReading from './OdometryReading.vue'
 import SAArmControls from './SAArmControls.vue'
+import NetworkBandwidth from './NetworkBandwidth.vue'
 import { disableAutonLED, quaternionToMapAngle } from '../utils.js'
 import { mapState, mapActions } from 'vuex'
 
@@ -123,11 +121,9 @@ export default {
     SAArmControls,
     LimitSwitch,
     CalibrationCheckbox,
-    //   CommReadout,
-    //   MCUReset,
-    MotorAdjust,
     OdometryReading,
-    MotorsStatusTable
+    MotorsStatusTable,
+    NetworkBandwidth
   },
   data() {
     return {
@@ -227,7 +223,8 @@ export default {
 }
 
 .comms {
-  margin-right: 5px;
+  position: absolute;
+  right: 25%;
 }
 
 .helpscreen {

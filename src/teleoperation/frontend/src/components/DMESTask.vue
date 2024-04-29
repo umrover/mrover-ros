@@ -4,6 +4,7 @@
       <h1 v-if="type === 'ES'">ES GUI Dashboard</h1>
       <h1 v-else>DM GUI Dashboard</h1>
       <img class="logo" src="/mrover.png" alt="MRover" title="MRover" width="200" />
+      <NetworkBandwidth class="comms"></NetworkBandwidth>
       <div class="help">
         <img src="/help.png" alt="Help" title="Help" width="48" height="48" />
       </div>
@@ -69,6 +70,7 @@ import MotorsStatusTable from './MotorsStatusTable.vue'
 import OdometryReading from './OdometryReading.vue'
 import DriveControls from './DriveControls.vue'
 import MastGimbalControls from './MastGimbalControls.vue'
+import NetworkBandwidth from './NetworkBandwidth.vue'
 import { quaternionToMapAngle } from '../utils.js'
 
 let interval: number
@@ -86,6 +88,7 @@ export default defineComponent({
     OdometryReading,
     DriveControls,
     MastGimbalControls,
+    NetworkBandwidth,
   },
 
   props: {
@@ -265,6 +268,11 @@ export default defineComponent({
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
+}
+
+.comms {
+  position: absolute;
+  right: 25%;
 }
 
 .map {
