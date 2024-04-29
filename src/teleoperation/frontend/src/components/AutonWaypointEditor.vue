@@ -6,7 +6,7 @@
       </div>
       <button class="btn btn-primary" @click="openModal()">Add Waypoint From Map</button>
       <div class="waypoints">
-        <div class="shadow p-3 my-2" v-for="waypoint in waypoints" :key="waypoint">
+        <div class="shadow p-3 my-2" v-for="(waypoint, index) in waypoints" :key="waypoint">
           <h5>{{ waypoint.name }}</h5>
           <p>ID: {{ waypoint.id }}</p>
           <div class="row">
@@ -24,6 +24,7 @@
             W
           </div>
           <button class="btn btn-primary" @click="addItem(waypoint)">Add Waypoint</button>
+          <button v-if="index > 6" class="btn btn-primary mx-1" @click="deleteMapWaypoint(index)">Delete</button>
         </div>    
       </div>
     </div>
@@ -346,6 +347,10 @@ export default {
         lon: 0,
       }
       this.modal.hide()
+    },
+
+    deleteMapWaypoint: function(index:number) {
+      this.waypoints.splice(index, 1)
     },
 
     toggleAutonMode: function (val: boolean) {
