@@ -143,7 +143,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         except Exception as e:
             rospy.logerr(e)
 
-    def disconnect(self, close_code):
+    def disconnect(self, close_code) -> None:
         self.pdb_sub.unregister()
         self.arm_moteus_sub.unregister()
         self.drive_moteus_sub.unregister()
@@ -197,8 +197,6 @@ class GUIConsumer(JsonWebsocketConsumer):
                 self.change_cameras(message)
             elif message["type"] == "takePanorama":
                 self.capture_panorama()
-            elif message["type"] == "capturePhoto":
-                self.capture_photo()
             elif message["type"] == "heaterEnable":
                 self.heater_enable_service(message)
             elif message["type"] == "autoShutoff":
@@ -220,12 +218,16 @@ class GUIConsumer(JsonWebsocketConsumer):
         except Exception as e:
             rospy.logerr(e)
 
-    @staticmethod
     def filter_xbox_axis(
-        value: float,
+        self,
+        axes: "List[float]",
+        axis: str,
         deadzone_threshold: float = DEFAULT_ARM_DEADZONE,
         quad_control: bool = False,
     ) -> float:
+        index = self.xbox_mappings[axis]  # takes the specified yaml str (e.g. "left_y") and gets index
+        value = axes[index]
+
         value = deadzone(value, deadzone_threshold)
         if quad_control:
             value = quadratic(value)
@@ -263,8 +265,8 @@ class GUIConsumer(JsonWebsocketConsumer):
     def publish_ik(self, axes: list[float], buttons: list[float]) -> None:
         ee_in_map = SE3.from_tf_tree(self.tf_buffer, "base_link", "arm_d_link")
 
-        ee_in_map.position[0] += self.ik_names["x"] * self.filter_xbox_axis(axes[self.xbox_mappings["left_js_x"]])
-        ee_in_map.position[1] += self.ik_names["y"] * self.filter_xbox_axis(axes[self.xbox_mappings["left_js_y"]])
+        ee_in_map.position[0] += self.ik_names["x"] * self.filter_xbox_axis(axes, "left_x")
+        ee_in_map.position[1] += self.ik_names["y"] * self.filter_xbox_axis(axes, "left_y")
         ee_in_map.position[2] += self.ik_names["z"] * self.filter_xbox_button(buttons, "right_trigger", "left_trigger")
 
         self.send(
@@ -304,8 +306,6 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.cache_position_cmd_pub.publish(position_cmd)
 
     def publish_velocity(self, type, names, axes, buttons):
-        left_trigger = self.filter_xbox_axis(axes[self.xbox_mappings["left_trigger"]])
-        right_trigger = self.filter_xbox_axis(axes[self.xbox_mappings["right_trigger"]])
         velocity_cmd = Velocity()
         velocity_cmd.names = names
         if type == "cache_values":
@@ -315,68 +315,115 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.cache_velocity_cmd_pub.publish(velocity_cmd)
         elif type == "sa_arm_values":
             velocity_cmd.velocities = [
-                self.to_velocity(self.filter_xbox_axis(axes[self.sa_config["sa_x"]["xbox_index"]]), "sa_x", False),
-                self.to_velocity(self.filter_xbox_axis(axes[self.sa_config["sa_y"]["xbox_index"]]), "sa_y", False),
-                self.to_velocity(self.filter_xbox_axis(axes[self.sa_config["sa_z"]["xbox_index"]]), "sa_z", True),
-                self.sa_config["sampler"]["multiplier"] * (right_trigger - left_trigger),
+                self.to_velocity(self.filter_xbox_axis(axes, self.sa_config["sa_x"]["xbox_index"]), "sa_x", False),
+                self.to_velocity(self.filter_xbox_axis(axes, self.sa_config["sa_y"]["xbox_index"]), "sa_y", False),
+                self.to_velocity(self.filter_xbox_axis(axes, self.sa_config["sa_z"]["xbox_index"]), "sa_z", True),
+                self.sa_config["sampler"]["multiplier"]
+                * self.filter_xbox_button(
+                    buttons, self.sa_config["sampler"]["xbox_index_pos"], self.sa_config["sampler"]["xbox_index_neg"]
+                ),
                 self.sa_config["sensor_actuator"]["multiplier"]
-                * self.filter_xbox_button(buttons, "right_bumper", "left_bumper"),
+                * self.filter_xbox_button(
+                    buttons,
+                    self.sa_config["sensor_actuator"]["xbox_index_pos"],
+                    self.sa_config["sensor_actuator"]["xbox_index_neg"],
+                ),
             ]
             self.sa_velocity_cmd_pub.publish(velocity_cmd)
         elif type == "arm_values":
             velocity_cmd.velocities = [
-                self.to_velocity(self.filter_xbox_axis(axes[self.ra_config["joint_a"]["xbox_index"]]), "joint_a"),
+                self.to_velocity(self.filter_xbox_axis(axes, self.ra_config["joint_a"]["xbox_index"]), "joint_a"),
                 self.to_velocity(
-                    self.filter_xbox_axis(axes[self.ra_config["joint_b"]["xbox_index"]]), "joint_b", False
+                    self.filter_xbox_axis(axes, self.ra_config["joint_b"]["xbox_index"]), "joint_b", False
                 ),
-                self.to_velocity(self.filter_xbox_axis(axes[self.ra_config["joint_c"]["xbox_index"]]), "joint_c"),
+                self.to_velocity(self.filter_xbox_axis(axes, self.ra_config["joint_c"]["xbox_index"]), "joint_c"),
                 self.to_velocity(
-                    self.filter_xbox_axis(axes[self.ra_config["joint_de_pitch"]["xbox_index"]]), "joint_de_0"
+                    self.filter_xbox_button(
+                        buttons,
+                        self.ra_config["joint_de_pitch"]["xbox_index_pos"],
+                        self.ra_config["joint_de_pitch"]["xbox_index_neg"],
+                    ),
+                    "joint_de_0",
                 ),
                 self.to_velocity(
-                    self.filter_xbox_axis(axes[self.ra_config["joint_de_roll"]["xbox_index"]]), "joint_de_1"
+                    self.filter_xbox_button(
+                        buttons,
+                        self.ra_config["joint_de_roll"]["xbox_index_pos"],
+                        self.ra_config["joint_de_roll"]["xbox_index_neg"],
+                    ),
+                    "joint_de_1",
                 ),
-                self.ra_config["allen_key"]["multiplier"] * self.filter_xbox_button(buttons, "y", "a"),
-                self.ra_config["gripper"]["multiplier"] * self.filter_xbox_button(buttons, "b", "x"),
+                self.ra_config["allen_key"]["multiplier"]
+                * self.filter_xbox_button(
+                    buttons,
+                    self.ra_config["allen_key"]["xbox_index_pos"],
+                    self.ra_config["allen_key"]["xbox_index_neg"],
+                ),
+                self.ra_config["gripper"]["multiplier"]
+                * self.filter_xbox_button(
+                    buttons, self.ra_config["gripper"]["xbox_index_pos"], self.ra_config["gripper"]["xbox_index_neg"]
+                ),
             ]
             self.arm_velocity_cmd_pub.publish(velocity_cmd)
 
     def publish_throttle(self, type, names, axes, buttons):
-        left_trigger = self.filter_xbox_axis(buttons[self.xbox_mappings["left_trigger"]])
-        right_trigger = self.filter_xbox_axis(buttons[self.xbox_mappings["right_trigger"]])
         throttle_cmd = Throttle()
         throttle_cmd.names = names
         if type == "cache_values":
             throttle_cmd.throttles = [
-                self.sa_config["cache"]["multiplier"] * self.filter_xbox_button(buttons, "right_bumper", "left_bumper")
+                self.sa_config["cache"]["multiplier"]
+                * self.filter_xbox_button(
+                    buttons, self.sa_config["cache"]["xbox_index_pos"], self.sa_config["cache"]["xbox_index_neg"]
+                )
             ]
             self.cache_throttle_cmd_pub.publish(throttle_cmd)
         elif type == "arm_values":
             throttle_cmd.throttles = [
-                self.ra_config["joint_a"]["multiplier"] * self.filter_xbox_axis(axes[self.xbox_mappings["left_x"]]),
-                self.ra_config["joint_b"]["multiplier"] * self.filter_xbox_axis(axes[self.xbox_mappings["left_y"]]),
+                self.ra_config["joint_a"]["multiplier"]
+                * self.filter_xbox_axis(axes, self.ra_config["joint_a"]["xbox_index"]),
+                self.ra_config["joint_b"]["multiplier"]
+                * self.filter_xbox_axis(axes, self.ra_config["joint_b"]["xbox_index"]),
                 self.ra_config["joint_c"]["multiplier"]
-                * quadratic(self.filter_xbox_axis(axes[self.xbox_mappings["right_y"]])),
+                * self.filter_xbox_axis(axes, self.ra_config["joint_c"]["xbox_index"], quad_control=True),
                 self.ra_config["joint_de_pitch"]["multiplier"]
-                * self.filter_xbox_axis(
-                    buttons[self.xbox_mappings["right_trigger"]] - buttons[self.xbox_mappings["left_trigger"]]
+                * self.filter_xbox_button(
+                    buttons,
+                    self.ra_config["joint_de_pitch"]["xbox_index_pos"],
+                    self.ra_config["joint_de_pitch"]["xbox_index_neg"],
                 ),
                 self.ra_config["joint_de_roll"]["multiplier"]
-                * self.filter_xbox_axis(
-                    buttons[self.xbox_mappings["right_bumper"]] - buttons[self.xbox_mappings["left_bumper"]]
+                * self.filter_xbox_button(
+                    buttons,
+                    self.ra_config["joint_de_roll"]["xbox_index_pos"],
+                    self.ra_config["joint_de_roll"]["xbox_index_neg"],
                 ),
-                self.ra_config["allen_key"]["multiplier"] * self.filter_xbox_button(buttons, "y", "a"),
-                self.ra_config["gripper"]["multiplier"] * self.filter_xbox_button(buttons, "b", "x"),
+                self.ra_config["allen_key"]["multiplier"]
+                * self.filter_xbox_button(
+                    buttons,
+                    self.ra_config["allen_key"]["xbox_index_pos"],
+                    self.ra_config["allen_key"]["xbox_index_neg"],
+                ),
+                self.ra_config["gripper"]["multiplier"]
+                * self.filter_xbox_button(
+                    buttons, self.ra_config["gripper"]["xbox_index_pos"], self.ra_config["gripper"]["xbox_index_neg"]
+                ),
             ]
             self.arm_throttle_cmd_pub.publish(throttle_cmd)
         elif type == "sa_arm_values":
             throttle_cmd.throttles = [
-                self.filter_xbox_axis(axes[self.sa_config["sa_x"]["xbox_index"]]),
-                self.filter_xbox_axis(axes[self.sa_config["sa_y"]["xbox_index"]]),
-                self.filter_xbox_axis(axes[self.sa_config["sa_z"]["xbox_index"]]),
-                self.sa_config["sampler"]["multiplier"] * (right_trigger - left_trigger),
+                self.filter_xbox_axis(axes, self.sa_config["sa_x"]["xbox_index"]),
+                self.filter_xbox_axis(axes, self.sa_config["sa_y"]["xbox_index"]),
+                self.filter_xbox_axis(axes, self.sa_config["sa_z"]["xbox_index"]),
+                self.sa_config["sampler"]["multiplier"]
+                * self.filter_xbox_button(
+                    buttons, self.sa_config["sampler"]["xbox_index_pos"], self.sa_config["sampler"]["xbox_index_neg"]
+                ),
                 self.sa_config["sensor_actuator"]["multiplier"]
-                * self.filter_xbox_button(buttons, "right_bumper", "left_bumper"),
+                * self.filter_xbox_button(
+                    buttons,
+                    self.sa_config["sensor_actuator"]["xbox_index_pos"],
+                    self.sa_config["sensor_actuator"]["xbox_index_neg"],
+                ),
             ]
             self.sa_throttle_cmd_pub.publish(throttle_cmd)
 
