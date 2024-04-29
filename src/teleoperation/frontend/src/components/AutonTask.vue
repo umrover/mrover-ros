@@ -20,10 +20,10 @@
         <p style="margin-top: 6px">Joystick Values</p>
         <JoystickValues />
       </div>
-      <div class="d-flex justify-content-end">
-        <CameraFeed :mission="'ZED'" :id="999" :name="'ZED'"></CameraFeed>
-      </div>
       <OdometryReading :odom="odom" />
+    </div>
+    <div class="shadow p-3 rounded feed">
+        <CameraFeed :mission="'ZED'" :id="0" :name="'ZED'"></CameraFeed>
     </div>
     <div class="shadow p-3 rounded map">
       <AutonRoverMap :odom="odom" />
@@ -47,7 +47,7 @@
       </div>
     </div>
     <div class="shadow p-3 rounded cameras">
-      <Cameras :primary="true" :isSA="false" :mission="'auton'"/>
+      <Cameras :isSA="false" :mission="'auton'"/>
     </div>
     <div class="shadow p-3 rounded moteus">
       <DriveMoteusStateTable :moteus-state-data="moteusState" />
@@ -93,8 +93,8 @@ export default defineComponent({
     return {
       // Default coordinates are at MDRS
       odom: {
-        latitude_deg: 42.293195,
-        longitude_deg: -83.7096706,
+        latitude_deg: 42.30008806193693,
+        longitude_deg: -83.6931540297569,
         bearing_deg: 0,
         altitude: 0
       },
@@ -158,7 +158,7 @@ export default defineComponent({
         this.odom.latitude_deg = msg.latitude
         this.odom.longitude_deg = msg.longitude
         this.odom.altitude = msg.altitude
-      } else if (msg.type == 'auton_tfclient') {
+      } else if (msg.type == 'bearing') {
         this.odom.bearing_deg = quaternionToMapAngle(msg.rotation)
       } else if (msg.type == "center_map") {
         this.odom.latitude_deg = msg.latitude
@@ -180,8 +180,8 @@ export default defineComponent({
     window.setTimeout(() => {
       this.sendMessage({ "type": "center_map" });
     }, 250)
-      interval = setInterval(() => {
-      this.sendMessage({ type: 'auton_tfclient' })
+    interval = setInterval(() => {
+      this.sendMessage({ type: 'bearing' })
     }, 1000)
   },
 
@@ -192,15 +192,15 @@ export default defineComponent({
 .wrapper {
   display: grid;
   grid-gap: 10px;
-  grid-template-columns: 60% 40%;
+  grid-template-columns: auto 30% 30%;
   grid-template-rows: repeat(6, auto);
   grid-template-areas:
-    'header header'
-    'map waypoints'
-    'data waypoints'
-    'data conditions'
-    'moteus moteus'
-    'cameras cameras';
+    'header header header'
+    'feed map waypoints'
+    'data data waypoints'
+    'data data conditions'
+    'moteus moteus moteus'
+    'cameras cameras cameras';
 
   font-family: sans-serif;
   height: auto;
@@ -310,5 +310,9 @@ h2 {
 
 .data {
   grid-area: data;
+}
+
+.feed {
+  grid-area: feed;
 }
 </style>

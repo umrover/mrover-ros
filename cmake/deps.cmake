@@ -1,3 +1,9 @@
+# The simulator will only be built if Dawn (low-level graphics API) is found:
+# 1) Installed system-wide with the .deb package in the pkg/ folder. This is ONLY for Ubuntu 20
+#    If this is the case then "find_package" will set "dawn_FOUND" to true
+# 2) Built from source with the build_dawn.sh script. This is for all other systems (non-Ubuntu, macOS, etc.)
+#    If this is the case libwebgpu_dawn.* will be found in deps/dawn/out/Release and "dawn_FOUND" will be set to true
+
 find_package(dawn QUIET)
 if (dawn_FOUND)
     message(STATUS "Using Dawn system install")
@@ -43,6 +49,7 @@ find_package(OpenCV REQUIRED)
 find_package(ZED QUIET)
 find_package(Eigen3 REQUIRED)
 
+# Same idea as dawn, ideally installed via a package, but if not then build from source
 find_package(manif QUIET)
 if (NOT manif_FOUND)
     if (EXISTS ${CMAKE_CURRENT_LIST_DIR}/../deps/manif/include/manif)
@@ -55,8 +62,12 @@ if (NOT manif_FOUND)
     endif ()
 endif ()
 
+# These are old packages so they do not support "find_package" and must be found with pkg-config
+# Thankfully CMake has a built-in module for this
 find_package(PkgConfig REQUIRED)
 pkg_search_module(NetLink libnl-3.0 QUIET)
 pkg_search_module(NetLinkRoute libnl-route-3.0 QUIET)
 pkg_search_module(Gst gstreamer-1.0 QUIET)
 pkg_search_module(GstApp gstreamer-app-1.0 QUIET)
+pkg_search_module(LibUsb libusb-1.0 QUIET)
+pkg_search_module(LibUdev libudev QUIET)

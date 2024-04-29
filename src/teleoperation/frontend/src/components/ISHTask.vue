@@ -25,7 +25,7 @@
       <SelectSite @site="onSiteChange" />
     </div>
     <div class="shadow p-3 rounded cameras">
-      <Cameras :primary="primary" :isSA="false" :mission="'sa'" />
+      <Cameras :isSA="false" :mission="'sa'" />
     </div>
     <div class="shadow p-3 rounded benedicts">
       <AminoBenedict :site="site" :isAmino="false" />

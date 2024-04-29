@@ -1,0 +1,6 @@
+SUBSYSTEM=="tty", ATTRS{idVendor}=="1546", ATTRS{idProduct}=="01a9", SYMLINK+="gps_%n"
+SUBSYSTEM=="tty", ATTRS{idVendor}=="2341", ATTRS{idProduct}=="0058", SYMLINK+="imu"
+SUBSYSTEM=="video4linux", KERNEL=="video*", ATTRS{idVendor}=="1bcf", ATTRS{idProduct}=="0b12", ATTR{index}=="0", GROUP="video", SYMLINK+="arducam" 
+SUBSYSTEM=="video4linux", KERNEL=="video*", ATTRS{idVendor}=="2b03", ATTRS{idProduct}=="f582", ATTR{index}=="0", GROUP="video", SYMLINK+="zed"
+SUBSYSTEM=="video4linux", KERNEL=="video*", ATTRS{idVendor}=="05a3", ATTRS{idProduct}=="9601", ATTR{index}=="0", GROUP="video", SYMLINK+="mobcam"
+SUBSYSTEM=="video4linux", KERNEL=="video*", ATTRS{idVendor}=="32e4", ATTRS{idProduct}=="9601", ATTR{index}=="0", GROUP="video", SYMLINK+="staticcam"
