@@ -28,7 +28,7 @@ export default {
     names: {
       type: Array,
       required: true
-    }
+    },
   },
   data() {
     return {

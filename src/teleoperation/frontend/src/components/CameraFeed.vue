@@ -11,6 +11,7 @@
 import {defineComponent} from 'vue'
 import {mapActions} from 'vuex'
 import Checkbox from './Checkbox.vue'
+import CameraSelection from './CameraSelection.vue'
 
 export default defineComponent({
   props: {
@@ -28,7 +29,8 @@ export default defineComponent({
     }
   },
   components: {
-    Checkbox
+    Checkbox,
+    CameraSelection
   },
 
   data() {

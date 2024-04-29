@@ -3,7 +3,7 @@
     <div class="grid-container">
       <div v-for="i in 4" :key="i" :class="'feed' + i">
         <div v-if="i <= numStreams">
-          <CameraFeed :mission="mission" :id="getID(i)" :name="names[getID(i)]"></CameraFeed>
+          <CameraFeed :mission="mission" :id="ports[getID(i)]" :name="names[getID(i)]"></CameraFeed>
         </div>
       </div>
     </div>
@@ -20,6 +20,10 @@ export default defineComponent({
   },
   props: {
     names: {
+      type: Array,
+      required: true
+    },
+    ports: {
       type: Array,
       required: true
     },
