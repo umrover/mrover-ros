@@ -515,10 +515,10 @@ cameras:
 rover:
   length: 0.86
   width: 0.86
-  max_speed: 1.00
+  max_speed: 1.0
 
 wheel:
-  gear_ratio: 50.0
+  gear_ratio: 15.0
   radius: 0.13
 
 motors_group:

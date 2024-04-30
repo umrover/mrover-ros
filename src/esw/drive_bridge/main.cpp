@@ -19,6 +19,9 @@ ros::Publisher leftVelocityPub, rightVelocityPub;
 Meters WHEEL_DISTANCE_INNER;
 Meters WHEEL_DISTANCE_OUTER;
 compound_unit<Radians, inverse<Meters>> WHEEL_LINEAR_TO_ANGULAR;
+RevolutionsPerSecond MAX_SPEED;
+std::vector<std::string> leftNames = {"front_left", "middle_left", "back_left"};
+std::vector<std::string> rightNames = {"front_right", "middle_right", "back_right"};
 
 auto main(int argc, char** argv) -> int {
     ros::init(argc, argv, "drive_bridge");
@@ -26,6 +29,17 @@ auto main(int argc, char** argv) -> int {
 
     auto roverWidth = requireParamAsUnit<Meters>(nh, "rover/width");
     auto roverLength = requireParamAsUnit<Meters>(nh, "rover/length");
+    
+    MAX_SPEED = requireParamAsUnit<RevolutionsPerSecond>(nh, "brushless_motors/controllers/front_left/max_velocity");
+    for (auto name: leftNames) {
+        MAX_SPEED = std::min(MAX_SPEED, 
+        requireParamAsUnit<RevolutionsPerSecond>(nh, std::format("brushless_motors/controllers/{}/max_velocity", name)));
+    }
+    for (auto name: rightNames) {
+        MAX_SPEED = std::min(MAX_SPEED, 
+        requireParamAsUnit<RevolutionsPerSecond>(nh, std::format("brushless_motors/controllers/{}/max_velocity", name)));
+    }
+    
     WHEEL_DISTANCE_INNER = roverWidth / 2;
     WHEEL_DISTANCE_OUTER = sqrt((roverWidth / 2) * (roverWidth / 2) + (roverLength / 2) * (roverLength / 2));
 
@@ -60,7 +74,6 @@ void moveDrive(geometry_msgs::Twist::ConstPtr const& msg) {
     RadiansPerSecond left_outer = (forward - delta_outer) * WHEEL_LINEAR_TO_ANGULAR;
     RadiansPerSecond right_outer = (forward + delta_outer) * WHEEL_LINEAR_TO_ANGULAR;
 
-    constexpr auto MAX_SPEED = RadiansPerSecond{15 * 2 * M_PI};
     RadiansPerSecond maximal = std::max(abs(left_outer), abs(right_outer));
     if (maximal > MAX_SPEED) {
         Dimensionless changeRatio = MAX_SPEED / maximal;
@@ -72,13 +85,13 @@ void moveDrive(geometry_msgs::Twist::ConstPtr const& msg) {
 
     {
         Velocity leftVelocity;
-        leftVelocity.names = {"front_left", "middle_left", "back_left"};
+        leftVelocity.names = leftNames;
         leftVelocity.velocities = {left_outer.get(), left_inner.get(), left_outer.get()};
         leftVelocityPub.publish(leftVelocity);
     }
     {
         Velocity rightVelocity;
-        rightVelocity.names = {"front_right", "middle_right", "back_right"};
+        rightVelocity.names = rightNames;
         rightVelocity.velocities = {right_outer.get(), right_inner.get(), right_outer.get()};
         rightVelocityPub.publish(rightVelocity);
     }
