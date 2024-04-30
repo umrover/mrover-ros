@@ -1,7 +1,6 @@
 <launch>
 
-    <!-- NOTE(quintin): this was failing an assert so I commented it out -->
-    <!-- <node name="cache_bridge" pkg="mrover" type="cache_bridge" /> -->
+    <node name="cache_bridge" pkg="mrover" type="cache_bridge" />
     <node name="sa_bridge" pkg="mrover" type="sa_bridge" />
     <node name="science_bridge" pkg="mrover" type="science_bridge" />
 
