@@ -76,7 +76,7 @@ void moveDrive(geometry_msgs::Twist::ConstPtr const& msg) {
 
     RadiansPerSecond maximal = std::max(abs(left_outer), abs(right_outer));
     if (maximal > MAX_SPEED) {
-        Dimensionless changeRatio = MAX_SPEED / RevolutionsPerSecond{maximal};
+        Dimensionless changeRatio = MAX_SPEED / maximal;
         left_inner = left_inner * changeRatio;
         right_inner = right_inner * changeRatio;
         left_outer = left_outer * changeRatio;
