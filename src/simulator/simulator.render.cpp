@@ -208,6 +208,7 @@ namespace mrover {
         mWindow = GlfwPointer<GLFWwindow, glfwCreateWindow, glfwDestroyWindow>{w, h, WINDOW_NAME, nullptr, nullptr};
         NODELET_INFO_STREAM(std::format("Created window of size: {}x{}", w, h));
 
+#ifndef __APPLE__
         if (cv::Mat logo = imread(std::filesystem::path{std::source_location::current().file_name()}.parent_path() / "mrover_logo.png", cv::IMREAD_UNCHANGED);
             logo.type() == CV_8UC4) {
             cvtColor(logo, logo, cv::COLOR_BGRA2RGBA);
@@ -220,6 +221,7 @@ namespace mrover {
         } else {
             ROS_WARN_STREAM("Failed to load logo image");
         }
+#endif
 
         if (glfwRawMouseMotionSupported()) glfwSetInputMode(mWindow.get(), GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
 
@@ -286,7 +288,23 @@ namespace mrover {
             ROS_INFO_STREAM(std::format("\tWGPU Adapter Driver: {}", properties.driverDescription));
         }
 
-        mDevice = mAdapter.createDevice();
+        wgpu::SupportedLimits limits;
+        mAdapter.getLimits(&limits);
+
+        wgpu::RequiredLimits requiredLimits = wgpu::Default;
+        requiredLimits.limits.maxVertexAttributes = 4;
+        requiredLimits.limits.maxVertexBuffers = 8;
+        requiredLimits.limits.maxBindGroups = 2;
+        requiredLimits.limits.maxUniformBuffersPerShaderStage = 4;
+        requiredLimits.limits.maxUniformBufferBindingSize = 1024;
+        requiredLimits.limits.maxComputeWorkgroupsPerDimension = 2048;
+        requiredLimits.limits.minUniformBufferOffsetAlignment = 256;
+        requiredLimits.limits.minStorageBufferOffsetAlignment = 256;
+
+        wgpu::DeviceDescriptor deviceDescriptor;
+        deviceDescriptor.requiredLimits = &requiredLimits;
+
+        mDevice = mAdapter.requestDevice(deviceDescriptor);
         if (!mDevice) throw std::runtime_error("Failed to create WGPU device");
 
         mErrorCallback = mDevice.setUncapturedErrorCallback([](wgpu::ErrorType type, char const* message) {
