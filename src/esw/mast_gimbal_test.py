@@ -7,9 +7,11 @@ from mrover.srv import AdjustMotor
 
 
 def adjust_gimbal_client(value):
-    rospy.wait_for_service('adjust_mast_gimbal_z')
+
+    rospy.wait_for_service('mast_gimbal_z_adjust')
+    
     try:
-        adjust_z = rospy.ServiceProxy('adjust_mast_gimbal_z', AdjustMotor)
+        adjust_z = rospy.ServiceProxy('mast_gimbal_z_adjust', AdjustMotor)
         resp = adjust_z("mast_gimbal_z", value)
         return resp
     except rospy.ServiceException as e:
@@ -17,6 +19,7 @@ def adjust_gimbal_client(value):
 
 
 def main():
+    print("adjust to: 0.0")
     adjust_gimbal_client(0.0)
 
 
