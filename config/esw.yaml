@@ -64,10 +64,10 @@ can:
       id: 0x26
     - name: "mast_gimbal_y"
       bus: 3
-      id: 0x28
+      id: 0x27
     - name: "mast_gimbal_z"
       bus: 3
-      id: 0x27
+      id: 0x28
     - name: "sa_x"
       bus: 1
       id: 0x29
@@ -278,6 +278,10 @@ brushed_motors:
       motor_max_voltage: 12.0 # used to calculate max pwm
     mast_gimbal_z:
       gear_ratio: 1000.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
+      quad_present: true
+      quad_is_fwd_polarity: true
+      abs_present: false
+      quad_ratio: 1.0
       driver_voltage: 12.0 # used to calculate max pwm
       motor_max_voltage: 12.0 # used to calculate max pwm
     sa_x:
