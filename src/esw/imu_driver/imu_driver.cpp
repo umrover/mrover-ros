@@ -1,13 +1,13 @@
-#include <cstdlib>
 #include <ros/init.h>
 #include <ros/node_handle.h>
+#include <ros/publisher.h>
 
 #include <fcntl.h>
-#include <ros/publisher.h>
 #include <termios.h>
 
 #include <sstream>
 #include <array>
+#include <cstdlib>
 
 #include <mrover/ImuAndMag.h>
 
