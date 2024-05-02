@@ -3,10 +3,11 @@
 import numpy as np
 from sensor_msgs.msg import PointCloud2, Image
 from std_msgs.msg import Header
-from mrover.msg import Position
+from mrover.msg import Throttle
 import sensor_msgs.point_cloud2 as pc2
 import tf2_ros
-from util.SE3 import SE3
+from tf.transformations import euler_from_quaternion
+from util.SE3 import SE3, SO3
 
 
 import rospy
@@ -58,13 +59,14 @@ class Panorama:
 
     def capture_panorama(self, goal: CapturePanoramaGoal):
         # self.position_subscriber = rospy.Subscriber("/mast_status", MotorsStatus, self.position_callback, callback_args = Position, queue_size=1)
-        self.pc_subscriber = rospy.Subscriber("/mast_camera/left/points", PointCloud2, self.pc_callback, queue_size=1)
-        self.img_subscriber = rospy.Subscriber("/mast_camera/left/image", Image, self.image_callback, queue_size=1)
-        self.mast_pose = rospy.Publisher("/mast_gimbal_position_cmd", Position, queue_size=1)
+        self.pc_subscriber = rospy.Subscriber("/camera/left/points", PointCloud2, self.pc_callback, queue_size=1)
+        self.img_subscriber = rospy.Subscriber("/camera/left/image", Image, self.image_callback, queue_size=1)
+        self.mast_throttle = rospy.Publisher("/mast_gimbal_throttle_cmd", Throttle, queue_size=1)
         self.pc_publisher = rospy.Publisher("/stitched_pc", PointCloud2)
         self.tf_buffer = tf2_ros.Buffer()
         self.listener = tf2_ros.TransformListener(self.tf_buffer)
 
+        # wait for tf buffer
         time.sleep(1)
 
         try:
@@ -73,35 +75,43 @@ class Panorama:
                 break
         except:
             rospy.loginfo("Failed to get transform from map to zed_base_link")
+            return 1
         # TODO: Don't hardcode or parametrize this?
-        angle_inc = 0.2 # in radians
-        current_angle = 0.0
+        current_angle = 0
         stitched_pc = np.empty((0,8), dtype=np.float32)
-        
+
         while (current_angle < goal.angle):
 
-            # allow gimbal to come to rest
-            time.sleep(0.5)
-            
-            if self._as.is_preempt_requested():
-                rospy.loginfo('%s: Preempted and stopped by operator' % self._action_name)
-                self._as.set_preempted()
-                break
-            if self.current_img is None:
-                pass
+            # current_pos
+            # calculate angle 
+            rospy.loginfo("rotating mast...")
+            self.mast_throttle.publish(Throttle(["mast_gimbal_z"], [0.2]))
+            rospy.sleep(duration=0.5)
+
+            self.mast_throttle.publish(Throttle(["mast_gimbal_z"], [0.0]))
+
             try:
                 zed_in_base_current = SE3.transform_matrix(SE3.from_tf_time(self.tf_buffer, "odom", "zed_base_link")[0])
                 tf_diff = np.linalg.inv(zed_in_base) @ zed_in_base_current
-                rotated_pc = self.rotate_pc(tf_diff, self.arr_pc)
-                stitched_pc = np.vstack((stitched_pc, rotated_pc))
-            except:
-                pass
 
-            self.img_list.append(np.copy(self.current_img))
-            rospy.loginfo("rotating mast...")
-            current_angle += angle_inc
-            self.mast_pose.publish(Position(["mast_gimbal_z"], [current_angle]))
-            self._as.publish_feedback(CapturePanoramaFeedback(current_angle / goal.angle))
+                if self._as.is_preempt_requested():
+                    rospy.loginfo('%s: Preempted and stopped by operator' % self._action_name)
+                    self._as.set_preempted()
+                    break
+                if self.current_img is not None:
+                    self.img_list.append(np.copy(self.current_img))
+                if self.current_pc is not None:
+                    rotated_pc = self.rotate_pc(tf_diff, self.arr_pc)
+                    stitched_pc = np.vstack((stitched_pc, rotated_pc))
+
+                current_angle = euler_from_quaternion(SO3.from_matrix(rotation_matrix=tf_diff[:3, :3]).quaternion)[2]
+                rospy.loginfo(f"current angle {current_angle}")
+                self._as.publish_feedback(CapturePanoramaFeedback(current_angle / goal.angle))
+
+            except tf2_ros.TransformException as e:
+                rospy.logwarn_throttle(f"Transform exception: {e}")
+        
+        self.mast_throttle.publish(Throttle(["mast_gimbal_z"], [0.0]))
 
         rospy.loginfo("Creating Panorama using %s images...", str(len(self.img_list)))
         stitcher = cv2.Stitcher.create()
