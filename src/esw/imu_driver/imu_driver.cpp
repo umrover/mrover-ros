@@ -11,7 +11,8 @@
 
 #include <mrover/ImuAndMag.h>
 
-constexpr std::size_t BUFFER_SIZE = 1024;
+constexpr std::size_t BUFFER_SIZE = 256;
+constexpr std::size_t LINE_ABORT_SIZE = 4096;
 
 struct ImuData {
     float qx, qy, qz, qw;
@@ -37,9 +38,12 @@ auto main(int argc, char** argv) -> int {
 
     ros::Publisher pub = nh.advertise<mrover::ImuAndMag>("/imu/data", 1);
 
-    int fd = open("/dev/imu", O_RDWR);
+    auto port = nh.param<std::string>("/imu_driver/port", "/dev/imu");
+    auto frame = nh.param<std::string>("/imu_driver/frame_id", "imu_link");
+
+    int fd = open(port.c_str(), O_RDWR);
     if (fd < 0) {
-        ROS_ERROR("Failed to open IMU device");
+        ROS_ERROR("Failed to open IMU device! Check that udev is set up properly and that the device is connected.");
         return EXIT_FAILURE;
     }
 
@@ -68,6 +72,9 @@ auto main(int argc, char** argv) -> int {
     std::string remaining;
 
     while (ros::ok()) {
+        // Idea: Read in a chunk of data and then extract as many lines as possible
+        //       Reading byte-by-byte is inefficient due to the number of syscalls
+
         std::array<char, BUFFER_SIZE> buffer{};
         ssize_t actually_read = read(fd, buffer.data(), buffer.size());
         if (actually_read == 0) throw std::runtime_error("EOF");
@@ -81,7 +88,8 @@ auto main(int argc, char** argv) -> int {
             std::string line = remaining.substr(0, pos);
             remaining = remaining.substr(pos + 1);
 
-            if (remaining.size() > 2048) throw std::runtime_error("Too much data");
+            // Means we have not seen a new line in a while, IMU firmware may be giving wrong data
+            if (remaining.size() > LINE_ABORT_SIZE) throw std::runtime_error("Too much data");
 
             ImuData data{};
 
@@ -97,7 +105,7 @@ auto main(int argc, char** argv) -> int {
 
             mrover::ImuAndMag msg{};
             msg.header.stamp = ros::Time::now();
-            msg.header.frame_id = "map";
+            msg.header.frame_id = frame;
             msg.imu.orientation.x = data.qx;
             msg.imu.orientation.y = data.qy;
             msg.imu.orientation.z = data.qz;
@@ -109,6 +117,7 @@ auto main(int argc, char** argv) -> int {
             msg.imu.linear_acceleration.y = data.ay;
             msg.imu.linear_acceleration.z = data.az;
             msg.mag.header.stamp = ros::Time::now();
+            msg.mag.header.frame_id = frame;
             msg.mag.magnetic_field.x = data.mx;
             msg.mag.magnetic_field.y = data.my;
             msg.mag.magnetic_field.z = data.mz;
