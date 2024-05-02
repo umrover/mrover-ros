@@ -233,6 +233,8 @@ class GUIConsumer(JsonWebsocketConsumer):
                 self.get_basic_waypoint_list(message)
             elif message["type"] == "download_csv":
                 self.download_csv(message)
+            elif message["type"] == "reset_gimbal":
+                self.reset_gimbal()
         except Exception as e:
             rospy.logerr(e)
 
@@ -592,6 +594,14 @@ class GUIConsumer(JsonWebsocketConsumer):
         try:
             arm_adjust_srv = rospy.ServiceProxy(msg["name"] + "_adjust", AdjustMotor)
             result = arm_adjust_srv(name=msg["name"], value=msg["value"])
+            self.send(text_data=json.dumps({"type": "arm_adjust", "success": result.success}))
+        except rospy.ServiceException as e:
+            print(f"Service call failed: {e}")
+
+    def reset_gimbal(self):
+        try:
+            adjust_srv = rospy.ServiceProxy( "mast_gimbal_z_adjust", AdjustMotor)
+            result = adjust_srv(name="mast_gimbal_z", value=0)
             self.send(text_data=json.dumps({"type": "arm_adjust", "success": result.success}))
         except rospy.ServiceException as e:
             print(f"Service call failed: {e}")
