@@ -148,7 +148,8 @@ namespace mrover {
 
         template<IsUnit U>
         constexpr Unit(U const& other)
-            requires AreExponentsSame<Unit, U> : rep{other.rep} {}
+            requires AreExponentsSame<Unit, U>
+            : rep{other.rep} {}
 
         template<IsUnit U>
         [[nodiscard]] constexpr auto operator=(U const& rhs) -> Unit&

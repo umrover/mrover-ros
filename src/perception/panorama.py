@@ -20,11 +20,13 @@ import time
 from mrover.msg import CapturePanoramaAction, CapturePanoramaFeedback, CapturePanoramaResult, CapturePanoramaGoal
 from sensor_msgs.point_cloud2 import PointCloud2
 
-class Panorama:
 
+class Panorama:
     def __init__(self, name):
         self._action_name = name
-        self._as = actionlib.SimpleActionServer(self._action_name, CapturePanoramaAction, execute_cb=self.capture_panorama, auto_start=False)
+        self._as = actionlib.SimpleActionServer(
+            self._action_name, CapturePanoramaAction, execute_cb=self.capture_panorama, auto_start=False
+        )
         self.tf_buffer = None
         self.listener = None
         self.img_list = []
@@ -34,16 +36,16 @@ class Panorama:
         # TODO: Why no auto start?
         self._as.start()
 
-    def rotate_pc(self, trans_mat : np.ndarray, pc : np.ndarray):
+    def rotate_pc(self, trans_mat: np.ndarray, pc: np.ndarray):
         # rotate the provided point cloud's x, y points by the se3_pose
-        
+
         # remove NaNs and infs from pc
         pc = pc[np.isfinite(pc).all(axis=1)]
 
         # represent pc in homogenous coordinates
-        points = np.hstack((pc[:,0:3], np.ones((pc.shape[0],1))))
+        points = np.hstack((pc[:, 0:3], np.ones((pc.shape[0], 1))))
         rotated_points = np.matmul(trans_mat, points.T).T
-        pc[:,0:3] = np.delete(rotated_points, 3, 1)
+        pc[:, 0:3] = np.delete(rotated_points, 3, 1)
         return pc
 
     def pc_callback(self, msg: PointCloud2):
@@ -52,10 +54,14 @@ class Panorama:
         # extract xyzrgb fields
         # get every tenth point to make the pc sparser
         # TODO: dtype hard-coded to float32
-        self.arr_pc = np.frombuffer(bytearray(msg.data), dtype=np.float32).reshape(msg.height * msg.width, int(msg.point_step / 4))[0::10,:]
+        self.arr_pc = np.frombuffer(bytearray(msg.data), dtype=np.float32).reshape(
+            msg.height * msg.width, int(msg.point_step / 4)
+        )[0::10, :]
 
     def image_callback(self, msg: Image):
-        self.current_img = cv2.cvtColor(np.frombuffer(msg.data, dtype=np.uint8).reshape(msg.height, msg.width, 4), cv2.COLOR_RGBA2RGB)
+        self.current_img = cv2.cvtColor(
+            np.frombuffer(msg.data, dtype=np.uint8).reshape(msg.height, msg.width, 4), cv2.COLOR_RGBA2RGB
+        )
 
     def capture_panorama(self, goal: CapturePanoramaGoal):
         # self.position_subscriber = rospy.Subscriber("/mast_status", MotorsStatus, self.position_callback, callback_args = Position, queue_size=1)
@@ -78,18 +84,17 @@ class Panorama:
             return 1
         # TODO: Don't hardcode or parametrize this?
         current_angle = 0
-        stitched_pc = np.empty((0,8), dtype=np.float32)
+        stitched_pc = np.empty((0, 8), dtype=np.float32)
 
-        while (current_angle < goal.angle):
-
+        while current_angle < goal.angle:
             # current_pos
-            # calculate angle 
+            # calculate angle
             rospy.loginfo("rotating mast...")
             time_start = rospy.Time.now()
             while rospy.Time.now() - time_start < rospy.Duration(1.5):
                 self.mast_throttle.publish(Throttle(["mast_gimbal_z"], [1.0]))
                 rospy.Rate(10).sleep()
-            
+
             self.mast_throttle.publish(Throttle(["mast_gimbal_z"], [0.0]))
 
             try:
@@ -97,7 +102,7 @@ class Panorama:
                 tf_diff = np.linalg.inv(zed_in_base) @ zed_in_base_current
 
                 if self._as.is_preempt_requested():
-                    rospy.loginfo('%s: Preempted and stopped by operator' % self._action_name)
+                    rospy.loginfo("%s: Preempted and stopped by operator" % self._action_name)
                     self._as.set_preempted()
                     break
                 if self.current_img is not None:
@@ -112,7 +117,7 @@ class Panorama:
 
             except tf2_ros.TransformException as e:
                 rospy.logwarn_throttle(f"Transform exception: {e}")
-        
+
         self.mast_throttle.publish(Throttle(["mast_gimbal_z"], [0.0]))
 
         rospy.loginfo("Creating Panorama using %s images...", str(len(self.img_list)))
@@ -135,15 +140,15 @@ class Panorama:
             rospy.loginfo("Failed to create image message")
             self._as.set_aborted()
             return
-        
-        self._as.set_succeeded(CapturePanoramaResult(panorama=img_msg)) # TODO: replace with temp_img with stitched img
+
+        self._as.set_succeeded(CapturePanoramaResult(panorama=img_msg))  # TODO: replace with temp_img with stitched img
 
         # construct pc from stitched
         try:
             pc_msg = PointCloud2()
             pc_msg.width = stitched_pc.shape[0]
             stitched_pc = stitched_pc.flatten()
-            header.frame_id = 'base_link'
+            header.frame_id = "base_link"
             pc_msg.header = header
             pc_msg.fields = self.current_pc.fields
             pc_msg.is_bigendian = self.current_pc.is_bigendian
@@ -160,10 +165,12 @@ class Panorama:
             rospy.loginfo("Failed to create point cloud message")
             return
 
+
 def main() -> int:
     rospy.init_node(name="panorama")
     pano = Panorama(rospy.get_name())
     rospy.spin()
+
 
 if __name__ == "__main__":
     sys.exit(main())

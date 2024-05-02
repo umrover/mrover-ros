@@ -40,7 +40,7 @@ from mrover.msg import (
     HeaterData,
     CapturePanoramaAction,
     CapturePanoramaFeedback,
-    CapturePanoramaGoal
+    CapturePanoramaGoal,
 )
 from mrover.srv import EnableAuton, AdjustMotor, ChangeCameras
 from sensor_msgs.msg import NavSatFix, Temperature, RelativeHumidity, JointState
@@ -69,7 +69,9 @@ def quadratic(signal: float) -> float:
     """
     return copysign(signal**2, signal)
 
+
 has_init = False
+
 
 class GUIConsumer(JsonWebsocketConsumer):
     def connect(self):
@@ -77,7 +79,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         if has_init:
             rospy.logwarn("Node already initialized")
             return
-        
+
         self.accept()
         try:
             # ROS Parameters
@@ -389,11 +391,15 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.arm_throttle_cmd_pub.publish(throttle_cmd)
         elif type == "sa_arm_values":
             throttle_cmd.throttles = [
-                self.filter_xbox_axis(axes[self.sa_config["sa_x"]["xbox_index"]]) * self.sa_config["sa_x"]["multiplier"],
-                self.filter_xbox_axis(axes[self.sa_config["sa_y"]["xbox_index"]]) * self.sa_config["sa_y"]["multiplier"],
-                self.filter_xbox_axis(axes[self.sa_config["sa_z"]["xbox_index"]]) * self.sa_config["sa_z"]["multiplier"],
+                self.filter_xbox_axis(axes[self.sa_config["sa_x"]["xbox_index"]])
+                * self.sa_config["sa_x"]["multiplier"],
+                self.filter_xbox_axis(axes[self.sa_config["sa_y"]["xbox_index"]])
+                * self.sa_config["sa_y"]["multiplier"],
+                self.filter_xbox_axis(axes[self.sa_config["sa_z"]["xbox_index"]])
+                * self.sa_config["sa_z"]["multiplier"],
                 (right_trigger - left_trigger) * self.sa_config["sampler"]["multiplier"],
-                self.filter_xbox_button(buttons, "right_bumper", "left_bumper") * self.sa_config["sensor_actuator"]["multiplier"],
+                self.filter_xbox_button(buttons, "right_bumper", "left_bumper")
+                * self.sa_config["sensor_actuator"]["multiplier"],
             ]
             self.sa_throttle_cmd_pub.publish(throttle_cmd)
 
@@ -414,7 +420,7 @@ class GUIConsumer(JsonWebsocketConsumer):
 
                 client.wait_for_result()
             else:
-                rospy.logwarn("Arm action server not available") 
+                rospy.logwarn("Arm action server not available")
         else:
             if msg["arm_mode"] == "ik":
                 self.publish_ik(msg["axes"], msg["buttons"])
@@ -456,7 +462,6 @@ class GUIConsumer(JsonWebsocketConsumer):
         linear -= get_axes_input("tilt", 0.5, scale=0.1)
         angular -= get_axes_input("pan", 0.5, scale=0.1)
 
-        print('HI!')
         self.twist_pub.publish(
             Twist(
                 linear=Vector3(x=linear),
@@ -599,7 +604,7 @@ class GUIConsumer(JsonWebsocketConsumer):
 
     def reset_gimbal(self):
         try:
-            adjust_srv = rospy.ServiceProxy( "mast_gimbal_z_adjust", AdjustMotor)
+            adjust_srv = rospy.ServiceProxy("mast_gimbal_z_adjust", AdjustMotor)
             result = adjust_srv(name="mast_gimbal_z", value=0)
             self.send(text_data=json.dumps({"type": "arm_adjust", "success": result.success}))
         except rospy.ServiceException as e:
@@ -712,11 +717,13 @@ class GUIConsumer(JsonWebsocketConsumer):
     def capture_panorama(self) -> None:
         rospy.logerr("Capturing panorama")
         goal = CapturePanoramaGoal()
-        goal.angle = pi/2
+        goal.angle = pi / 2
+
         def feedback_cb(feedback: CapturePanoramaGoal) -> None:
             self.send(text_data=json.dumps({"type": "pano_feedback", "percent": feedback.percent_done}))
+
         self.pano_client.send_goal(goal, feedback_cb=feedback_cb)
-        finished = self.pano_client.wait_for_result(timeout=rospy.Duration(30)) # timeouts after 30 seconds
+        finished = self.pano_client.wait_for_result(timeout=rospy.Duration(30))  # timeouts after 30 seconds
         if finished:
             rospy.logerr("Finished!")
             image = self.pano_client.get_result().panorama
