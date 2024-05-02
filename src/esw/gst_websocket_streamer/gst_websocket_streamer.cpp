@@ -180,9 +180,9 @@ namespace mrover {
             if (!candidateDevice) throw std::runtime_error{"Failed to get udev device"};
 
             std::string candidateDevicePath = udev_device_get_devpath(candidateDevice);
-            ROS_INFO_STREAM(std::format("Considering device path: {} compared to {}", candidateDevicePath, devicePath));
-            if (candidateDevicePath != devicePath) continue;
 
+            if (!candidateDevicePath.starts_with(devicePath)) continue;
+            
             device = candidateDevice;
             break;
         }
