@@ -8,4 +8,32 @@
         <param name="port" type="string" value="/dev/ttyACM0" />
         <param name="baud" type="int" value="57600" />
     </node> -->
+
+    <node pkg="nodelet" type="nodelet" name="streamer_nodelet_ish_1"
+        args="load mrover/GstWebsocketStreamerNodelet perception_nodelet_manager"
+        output="screen">
+        <param name="dev_path" value="/devices/platform/3610000.xhci/usb1/1-1/1-1.4/1-1.4.4"/>
+        <param name="port" value="8084"/>
+        <param name="width" value="1280"/>
+        <param name="height" value="720"/>
+    </node>
+
+    <node pkg="nodelet" type="nodelet" name="streamer_nodelet_ish_2"
+        args="load mrover/GstWebsocketStreamerNodelet perception_nodelet_manager"
+        output="screen">
+        <param name="dev_path" value="/devices/platform/3610000.xhci/usb1/1-1/1-1.4/1-1.4.3"/>
+        <param name="port" value="8085"/>
+        <param name="width" value="1280"/>
+        <param name="height" value="720"/>
+    </node>
+
+    <node pkg="nodelet" type="nodelet" name="streamer_nodelet_ish_3"
+        args="load mrover/GstWebsocketStreamerNodelet perception_nodelet_manager"
+        output="screen">
+        <param name="dev_path" value="/devices/platform/3610000.xhci/usb1/1-1/1-1.4/1-1.4.2"/>
+        <param name="port" value="8086"/>
+        <param name="width" value="1280"/>
+        <param name="height" value="720"/>
+    </node>
+
 </launch>
