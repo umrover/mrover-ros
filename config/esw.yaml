@@ -281,13 +281,15 @@ brushed_motors:
       calibration_throttle: 0.5  # throttle during calibration
     mast_gimbal_y:
       gear_ratio: 1000.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
+      quad_present: true
+      quad_is_fwd_polarity: true
+      quad_ratio: 1.0
       driver_voltage: 12.0 # used to calculate max pwm
       motor_max_voltage: 12.0 # used to calculate max pwm
     mast_gimbal_z:
       gear_ratio: 1000.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
       quad_present: true
       quad_is_fwd_polarity: true
-      abs_present: false
       quad_ratio: 1.0
       driver_voltage: 12.0 # used to calculate max pwm
       motor_max_voltage: 12.0 # used to calculate max pwm
