@@ -1,0 +1,5 @@
+float32 angle # Panorama sweep angle in radians
+---
+sensor_msgs/Image panorama # panorama result image
+---
+float32 percent_done # Percent of the sweep the gimbal has completed

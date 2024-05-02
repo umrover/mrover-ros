@@ -4,6 +4,7 @@ import os
 import threading
 from datetime import datetime
 from math import copysign, pi, isfinite
+import cv2
 
 import pytz
 from channels.generic.websocket import JsonWebsocketConsumer
@@ -15,7 +16,9 @@ from geometry_msgs.msg import Twist, Pose, Point, Quaternion, Vector3, PoseStamp
 
 import actionlib
 
-# from cv_bridge import CvBridge
+import actionlib
+
+from cv_bridge import CvBridge
 from mrover.msg import (
     ArmActionAction,
     ArmActionGoal,
@@ -35,8 +38,11 @@ from mrover.msg import (
     Spectral,
     ScienceThermistors,
     HeaterData,
+    CapturePanoramaAction,
+    CapturePanoramaFeedback,
+    CapturePanoramaGoal
 )
-from mrover.srv import EnableAuton, AdjustMotor, ChangeCameras, CapturePanorama
+from mrover.srv import EnableAuton, AdjustMotor, ChangeCameras
 from sensor_msgs.msg import NavSatFix, Temperature, RelativeHumidity, JointState
 from std_msgs.msg import String, Header
 from std_srvs.srv import SetBool, Trigger
@@ -63,9 +69,15 @@ def quadratic(signal: float) -> float:
     """
     return copysign(signal**2, signal)
 
+has_init = False
 
 class GUIConsumer(JsonWebsocketConsumer):
     def connect(self):
+        global has_init
+        if has_init:
+            rospy.logwarn("Node already initialized")
+            return
+        
         self.accept()
         try:
             # ROS Parameters
@@ -125,6 +137,9 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.science_spectral = rospy.Subscriber("/science_spectral", Spectral, self.science_spectral_callback)
             self.cmd_vel = rospy.Subscriber("/cmd_vel", Twist, self.cmd_vel_callback)
 
+            # Action clients
+            self.pano_client = actionlib.SimpleActionClient("panorama", CapturePanoramaAction)
+
             # Services
             self.laser_service = rospy.ServiceProxy("enable_arm_laser", SetBool)
             self.enable_auton = rospy.ServiceProxy("enable_auton", EnableAuton)
@@ -133,7 +148,6 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.cache_enable_limit = rospy.ServiceProxy("cache_enable_limit_switches", SetBool)
             self.calibrate_service = rospy.ServiceProxy("arm_calibrate", Trigger)
             self.change_cameras_srv = rospy.ServiceProxy("change_cameras", ChangeCameras)
-            self.capture_panorama_srv = rospy.ServiceProxy("capture_panorama", CapturePanorama)
             self.heater_auto_shutoff_srv = rospy.ServiceProxy("science_change_heater_auto_shutoff_state", SetBool)
 
             self.tf_buffer = tf2_ros.Buffer()
@@ -142,6 +156,8 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.flight_thread.start()
         except Exception as e:
             rospy.logerr(e)
+
+        has_init = True
 
     def disconnect(self, close_code):
         self.pdb_sub.unregister()
@@ -440,6 +456,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         linear -= get_axes_input("tilt", 0.5, scale=0.1)
         angular -= get_axes_input("pan", 0.5, scale=0.1)
 
+        print('HI!')
         self.twist_pub.publish(
             Twist(
                 linear=Vector3(x=linear),
@@ -693,37 +710,36 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.send(text_data=json.dumps({"type": "max_streams", "streams": streams}))
 
     def capture_panorama(self) -> None:
+        rospy.logerr("Capturing panorama")
+        goal = CapturePanoramaGoal()
+        goal.angle = pi/2
+        def feedback_cb(feedback: CapturePanoramaGoal) -> None:
+            self.send(text_data=json.dumps({"type": "pano_feedback", "percent": feedback.percent_done}))
+        self.pano_client.send_goal(goal, feedback_cb=feedback_cb)
+        finished = self.pano_client.wait_for_result(timeout=rospy.Duration(30)) # timeouts after 30 seconds
+        if finished:
+            rospy.logerr("Finished!")
+            image = self.pano_client.get_result().panorama
+            self.image_callback(image)
+        else:
+            rospy.logerr("CapturePanorama took too long!")
+
+    def image_callback(self, msg):
+        bridge = CvBridge()
         try:
-            response = self.capture_panorama_srv()
-            image = response.panorama
-            # self.image_callback(image)
-        except rospy.ServiceException as e:
-            print(f"Service call failed: {e}")
+            # Convert the image to OpenCV standard format
+            cv_image = bridge.imgmsg_to_cv2(msg, desired_encoding="passthrough")
+        except Exception as e:
+            rospy.logerr("Could not convert image message to OpenCV image: " + str(e))
+            return
 
-    # def capture_photo(self):
-    #     try:
-    #         response = self.capture_photo_srv()
-    #         image = response.photo
-    #         self.image_callback(image)
-    #     except rospy.ServiceException as e:
-    #         print(f"Service call failed: {e}")
-
-    # def image_callback(self, msg):
-    #     bridge = CvBridge()
-    #     try:
-    #         # Convert the image to OpenCV standard format
-    #         cv_image = bridge.imgmsg_to_cv2(msg, desired_encoding="passthrough")
-    #     except Exception as e:
-    #         rospy.logerr("Could not convert image message to OpenCV image: " + str(e))
-    #         return
-
-    #     # Save the image to a file (you could change 'png' to 'jpg' or other formats)
-    #     image_filename = "panorama.png"
-    #     try:
-    #         cv2.imwrite(image_filename, cv_image)
-    #         rospy.loginfo("Saved image to {}".format(image_filename))
-    #     except Exception as e:
-    #         rospy.logerr("Could not save image: " + str(e))
+        # Save the image to a file (you could change 'png' to 'jpg' or other formats)
+        image_filename = "~/Downloads/panorama.png"
+        try:
+            cv2.imwrite(os.path.expanduser(image_filename), cv_image)
+            rospy.logerr("Saved image to {}".format(image_filename))
+        except Exception as e:
+            rospy.logerr("Could not save image: " + str(e))
 
     def heater_enable_service(self, msg):
         try:
