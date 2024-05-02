@@ -23,7 +23,7 @@ export default defineComponent({
       required: true
     },
     mission: {
-      type: String, // {'sa', 'ik', 'auton'}
+      type: String, // // {'ish', 'ik', 'sa', 'auton', 'ZED'}
       required: true
     }
   },
