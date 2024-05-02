@@ -4,6 +4,7 @@
 
 #include "glfw_pointer.hpp"
 #include "wgpu_objects.hpp"
+#include <ros/publisher.h>
 
 using namespace std::literals;
 
@@ -211,7 +212,8 @@ namespace mrover {
         ros::Subscriber mMastPositionsSub, mMastThrottleSub;
 
         ros::Publisher mGroundTruthPub;
-        ros::Publisher mGpsPub;
+        ros::Publisher mLeftGpsPub;
+        ros::Publisher mRightGpsPub;
         ros::Publisher mImuPub;
         ros::Publisher mMotorStatusPub;
         ros::Publisher mMastStatusPub;
@@ -239,6 +241,10 @@ namespace mrover {
                 mRollDist{0, 0.01},
                 mPitchDist{0, 0.01},
                 mYawDist{0, 0.01};
+
+        // drift rate in rad/minute about each axis
+        R3 mOrientationDriftRate{0.0, 0.0, 1.0};
+        R3 mOrientationDrift = R3::Zero();
 
         PeriodicTask mGpsTask;
         PeriodicTask mImuTask;

@@ -102,7 +102,7 @@ if (ZED_FOUND)
     set(CMAKE_CUDA_STANDARD 17)
     set(CMAKE_CUDA_STANDARD_REQUIRED ON)
     set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
-    set(CMAKE_CUDA_FLAGS "--diag-suppress 108,68")
+    set(CMAKE_CUDA_FLAGS "--diag-suppress 20012")
     # Jetson Xavier NX/AGX has Volta 7.2 architecture
     # Perception Laptop (A4000, Quadro version of RTX 3080) has Ampere 8.6 architecture
     set(CMAKE_CUDA_ARCHITECTURES 72 86)
@@ -203,9 +203,11 @@ if (CUDA_FOUND)
     #    target_include_directories(nv_vid_codec_h265_enc SYSTEM PUBLIC deps/nvenc)
 endif ()
 
-mrover_add_nodelet(gst_websocket_streamer src/esw/gst_websocket_streamer/*.c* src/esw/gst_websocket_streamer src/esw/gst_websocket_streamer/pch.hpp)
-mrover_nodelet_link_libraries(gst_websocket_streamer PRIVATE websocket_server ${Gst_LIBRARIES} ${GstApp_LIBRARIES})
-mrover_nodelet_include_directories(gst_websocket_streamer ${Gst_INCLUDE_DIRS} ${GstApp_INCLUDE_DIRS})
+if (Gst_FOUND AND GstApp_FOUND AND LibUsb_FOUND AND LibUdev_FOUND)
+    mrover_add_nodelet(gst_websocket_streamer src/esw/gst_websocket_streamer/*.c* src/esw/gst_websocket_streamer src/esw/gst_websocket_streamer/pch.hpp)
+    mrover_nodelet_link_libraries(gst_websocket_streamer PRIVATE websocket_server ${Gst_LIBRARIES} ${GstApp_LIBRARIES} ${LibUsb_LIBRARIES} ${LibUdev_LIBRARIES} opencv_core opencv_imgproc)
+    mrover_nodelet_include_directories(gst_websocket_streamer ${Gst_INCLUDE_DIRS} ${GstApp_INCLUDE_DIRS} ${LibUsb_INCLUDE_DIRS} ${LibUdev_INCLUDE_DIRS})
+endif ()
 
 if (ZED_FOUND)
     mrover_add_nodelet(object_detector src/perception/object_detector/*.c* src/perception/object_detector src/perception/object_detector/pch.hpp)

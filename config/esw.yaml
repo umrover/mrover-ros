@@ -1,13 +1,22 @@
+right_gps_driver:
+  port: "/dev/ttyACM0"
+  baud: 38400
+  frame_id: "base_link"
+
+left_gps_driver:
+  port: "/dev/gps"
+  baud: 38400
+  frame_id: "base_link"
+
+basestation_gps_driver:
+  port: "/dev/gps"
+  baud: 38400
+  frame_id: "base_link"
+
 imu_driver:
   port: "/dev/imu"
   baud: 115200
   frame_id: "imu_link"
-
-gps:
-  port: "/dev/gps"
-  baud: 115200
-  useRMC: false # get covariance instead of velocity, see wiki for more info
-  frame_id: "base_link"
 
 can:
   devices:
@@ -43,7 +52,7 @@ can:
       id: 0x15
     - name: "joint_a"
       bus: 1
-      id: 0x20
+      id: 0x20  
     - name: "joint_b"
       bus: 1
       id: 0x21
@@ -64,10 +73,10 @@ can:
       id: 0x26
     - name: "mast_gimbal_y"
       bus: 3
-      id: 0x28
+      id: 0x27
     - name: "mast_gimbal_z"
       bus: 3
-      id: 0x27
+      id: 0x28
     - name: "sa_x"
       bus: 1
       id: 0x29
@@ -83,41 +92,47 @@ can:
     - name: "sensor_actuator"
       bus: 1
       id: 0x33
-    - name: "cache"
-      bus: 2
+    - name: "cache_motor"
+      bus: 1
       id: 0x34
     - name: "pdlb"
       bus: 3
       id: 0x50
     - name: "science"
-      bus: 2
+      bus: 1
       id: 0x51
 
 brushless_motors:
   controllers:
     front_left:
-      min_velocity: -20.0
-      max_velocity: 20.0
+      min_velocity: -1.00
+      max_velocity: 1.00
+      max_torque: 10.0
     front_right:
-      min_velocity: -20.0
-      max_velocity: 20.0
+      min_velocity: -1.00
+      max_velocity: 1.00
+      max_torque: 10.0
     middle_left:
-      min_velocity: -20.0
-      max_velocity: 20.0
+      min_velocity: -1.00
+      max_velocity: 1.00
+      max_torque: 10.0
     middle_right:
-      min_velocity: -20.0
-      max_velocity: 20.0
+      min_velocity: -1.00
+      max_velocity: 1.00
+      max_torque: 10.0
     back_left:
-      min_velocity: -20.0
-      max_velocity: 20.0
+      min_velocity: -1.00
+      max_velocity: 1.00
+      max_torque: 10.0
     back_right:
-      min_velocity: -20.0
-      max_velocity: 20.0
+      min_velocity: -1.00
+      max_velocity: 1.00
+      max_torque: 10.0
     joint_a:
-      # 1236.8475 rad/meter, or 196.850393476 rev/meter, and we want a max vel of 40 meter/s. 
+      # 1236.8475 rad/meter, or 196.850393476 rev/meter, and we want a max vel of 40 meter/s.
       # gear ratio is currently at 0.005080 revolutions = 1 meter
-      min_velocity: -0.10  # this means -0.10 meters per second.
-      max_velocity: 0.10
+      min_velocity: -0.05  # this means -0.10 meters per second.
+      max_velocity: 0.05
       limit_0_present: true
       limit_1_present: true
       limit_0_enabled: true
@@ -136,10 +151,11 @@ brushless_motors:
       max_backward_pos: 0.0
       max_torque: 20.0
     joint_c:
-      min_velocity: -0.08 # in terms of output
-      max_velocity: 0.08 # max output shaft speed: 5 rpm (for now)
+      min_velocity: -0.03 # in terms of output
+      max_velocity: 0.03 # max output shaft speed: 5 rpm (for now)
       min_position: -0.125
       max_position: 0.30 # 220 degrees of motion is the entire range
+      max_torque: 200.0
     joint_de_0:
       min_velocity: -5.0
       max_velocity: 5.0
@@ -357,7 +373,7 @@ brushed_motors:
       limit_1_readjust_position: 0.0 # radians
       driver_voltage: 12.0 # used to calculate max pwm
       motor_max_voltage: 6.0 # used to calculate max pwm
-    cache:
+    cache_motor:
       gear_ratio: 1.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
       limit_0_present: false
       limit_1_present: false
@@ -499,10 +515,10 @@ cameras:
 rover:
   length: 0.86
   width: 0.86
-  max_speed: 1.25
+  max_speed: 1.0
 
 wheel:
-  gear_ratio: 50.0
+  gear_ratio: 15.0
   radius: 0.13
 
 motors_group:
@@ -582,7 +598,7 @@ motors:
 default_network_iface: "enp0s31f6"
 
 auton_led_driver:
-  port: "/dev/ttyACM0"
+  port: "/dev/led"
   baud: 115200
 
 science:

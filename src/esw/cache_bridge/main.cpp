@@ -13,5 +13,5 @@ auto main(int argc, char** argv) -> int {
     // Enter the ROS event loop
     ros::spin();
 
-    return EXIT_SUCCESS;
+    return 0;
 }

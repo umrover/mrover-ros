@@ -1,7 +1,6 @@
 <template>
   <div class="wrap row">
     <div class="col">
-      <h3>Cameras ({{ num_available }} available)</h3>
       <div class="row justify-content-md-left">
         <div class="form-group col-md-4">
           <label for="Camera Name">Camera name</label>
@@ -52,7 +51,7 @@
           </div>
       </div>
     </div>
-    <CameraDisplay :streamOrder="streamOrder" :mission="mission" :names="names" :qualities="qualities"></CameraDisplay>
+    <CameraDisplay :streamOrder="streamOrder" :mission="mission" :names="names"></CameraDisplay>
   </div>
 </template>
 
@@ -69,7 +68,11 @@ export default {
   },
 
   props: {
+<<<<<<< HEAD
     primary: {
+=======
+    isSA: {
+>>>>>>> integration
       type: Boolean,
       required: true
     },
@@ -85,11 +88,13 @@ export default {
       cameraIdx: 0,
       cameraName: '',
       capacity: 4,
-      qualities: reactive(new Array(9).fill(-1)),
       streamOrder: reactive([]),
+<<<<<<< HEAD
 
       num_available: -1,
       percent: 0
+=======
+>>>>>>> integration
     }
   },
 
@@ -130,17 +135,7 @@ export default {
     setCamIndex: function (index: number) {
       // every time a button is pressed, it changes cam status and adds/removes from stream
       this.camsEnabled[index] = !this.camsEnabled[index]
-      if (this.camsEnabled[index]) this.qualities[index] = 2 //if enabling camera, turn on medium quality
       this.changeStream(index)
-    },
-
-    sendCameras: function (index: number) {
-      this.sendMessage({
-        type: 'sendCameras',
-        primary: this.primary,
-        device: index,
-        resolution: this.qualities[index]
-      })
     },
 
     addCameraName: function () {
@@ -152,9 +147,7 @@ export default {
       if (found) {
         this.streamOrder.splice(this.streamOrder.indexOf(index), 1)
         this.streamOrder.push(-1)
-        this.qualities[index] = -1 //close the stream when sending it to comms
       } else this.streamOrder[this.streamOrder.indexOf(-1)] = index
-      this.sendCameras(index)
     },
 
     takePanorama() {

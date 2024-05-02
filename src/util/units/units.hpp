@@ -134,35 +134,32 @@ namespace mrover {
         using byte_exp_t = zero_exp_t;
         using tick_exp_t = zero_exp_t;
 
-        constexpr static float CONVERSION = 1.0f;
+        constexpr static rep_t CONVERSION = 1.0f;
 
         // Stores the SI base unit value, NOT the transformed unit value based on the conversion ratio
-        float rep{};
+        rep_t rep{};
 
         [[nodiscard]] constexpr auto get() const -> float {
             return rep;
         }
 
         constexpr Unit() = default;
-        constexpr Unit(IsArithmetic auto const& val) : rep{static_cast<float>(val)} {}
+        constexpr Unit(IsArithmetic auto const& val) : rep{static_cast<rep_t>(val)} {}
 
         template<IsUnit U>
         constexpr Unit(U const& other)
-            requires AreExponentsSame<Unit, U>
-        {
-            rep = other.get();
-        }
+            requires AreExponentsSame<Unit, U> : rep{other.rep} {}
 
         template<IsUnit U>
         [[nodiscard]] constexpr auto operator=(U const& rhs) -> Unit&
             requires AreExponentsSame<Unit, U>
         {
-            rep = rhs.get();
+            rep = rhs.rep;
             return *this;
         }
 
         constexpr auto operator=(IsArithmetic auto const& rhs) -> Unit& {
-            rep = static_cast<float>(rhs);
+            rep = static_cast<rep_t>(rhs);
             return *this;
         }
     };

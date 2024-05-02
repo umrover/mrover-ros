@@ -1,4 +1,5 @@
 #include "simulator.hpp"
+#include <sensor_msgs/JointState.h>
 
 namespace mrover {
 
@@ -18,7 +19,8 @@ namespace mrover {
         mMastThrottleSub = mNh.subscribe<Throttle>("/mast_gimbal_throttle_cmd", 1, &SimulatorNodelet::mastThrottleCallback, this);
 
         mGroundTruthPub = mNh.advertise<nav_msgs::Odometry>("/ground_truth", 1);
-        mGpsPub = mNh.advertise<sensor_msgs::NavSatFix>("/gps/fix", 1);
+        mLeftGpsPub = mNh.advertise<sensor_msgs::NavSatFix>("/left_gps_driver/fix", 1);
+        mRightGpsPub = mNh.advertise<sensor_msgs::NavSatFix>("/right_gps_driver/fix", 1);
         mImuPub = mNh.advertise<ImuAndMag>("/imu/data", 1);
         mGpsTask = PeriodicTask{mPnh.param<float>("gps_rate", 10)};
         mImuTask = PeriodicTask{mPnh.param<float>("imu_rate", 100)};
@@ -26,7 +28,7 @@ namespace mrover {
         mMastStatusPub = mNh.advertise<MotorsStatus>("/mast_status", 1);
         mDriveControllerStatePub = mNh.advertise<ControllerState>("/drive_controller_data", 1);
         mArmControllerStatePub = mNh.advertise<ControllerState>("/arm_controller_data", 1);
-        mArmJointStatePub = mNh.advertise<sensor_msgs::JointState>("/arm_joint_states", 1);
+        mArmJointStatePub = mNh.advertise<sensor_msgs::JointState>("/arm_joint_data", 1);
 
         mIkTargetPub = mNh.advertise<IK>("/arm_ik", 1);
 
