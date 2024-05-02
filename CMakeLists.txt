@@ -165,6 +165,8 @@ macro(mrover_add_esw_bridge_node name sources)
     target_link_libraries(${name} PRIVATE can_device motor_library)
 endmacro()
 
+mrover_add_node(imu_driver src/esw/imu_driver/*.cpp)
+
 mrover_add_esw_bridge_node(arm_hw_bridge src/esw/arm_hw_bridge/*.cpp)
 mrover_add_esw_bridge_node(arm_translator_bridge src/esw/arm_translator_bridge/*.cpp src/esw/arm_translator_bridge/*.hpp)
 mrover_add_esw_bridge_node(cache_bridge src/esw/cache_bridge/*.cpp)
