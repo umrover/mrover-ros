@@ -66,6 +66,7 @@
       <h3>Calibrations</h3>
       <br />
       <div class="calibration-checkboxes">
+        <button class="btn btn-primary my-5" @click="resetGimbal()">Reset Gimbal</button>
         <CalibrationCheckbox :name="'SA X Calibration'" :topic_name="'sa_calibrate_sa_x'" />
         <CalibrationCheckbox :name="'SA Y Calibration'" :topic_name="'sa_calibrate_sa_y'" />
         <CalibrationCheckbox :name="'SA Z Calibration'" :topic_name="'sa_calibrate_sa_z'" />
@@ -190,6 +191,10 @@ export default {
 
   methods: {
     ...mapActions('websocket', ['sendMessage']),
+
+    resetGimbal: function() {
+      this.sendMessage({type: 'reset_gimbal'})
+    }
   },
 
   created: function () {
