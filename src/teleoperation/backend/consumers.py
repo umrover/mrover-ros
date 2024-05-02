@@ -320,20 +320,13 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.arm_position_cmd_pub.publish(position_cmd)
         elif type == "sa_arm_values":
             self.sa_position_cmd_pub.publish(position_cmd)
-        elif type == "cache_values":
-            self.cache_position_cmd_pub.publish(position_cmd)
 
     def publish_velocity(self, type, names, axes, buttons):
         left_trigger = self.filter_xbox_axis(axes[self.xbox_mappings["left_trigger"]])
         right_trigger = self.filter_xbox_axis(axes[self.xbox_mappings["right_trigger"]])
         velocity_cmd = Velocity()
         velocity_cmd.names = names
-        if type == "cache_values":
-            velocity_cmd.velocities = [
-                self.sa_config["cache"]["multiplier"] * self.filter_xbox_button(buttons, "right_bumper", "left_bumper")
-            ]
-            self.cache_velocity_cmd_pub.publish(velocity_cmd)
-        elif type == "sa_arm_values":
+        if type == "sa_arm_values":
             velocity_cmd.velocities = [
                 self.to_velocity(self.filter_xbox_axis(axes[self.sa_config["sa_x"]["xbox_index"]]), "sa_x", False),
                 self.to_velocity(self.filter_xbox_axis(axes[self.sa_config["sa_y"]["xbox_index"]]), "sa_y", False),
@@ -366,12 +359,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         right_trigger = self.filter_xbox_axis(buttons[self.xbox_mappings["right_trigger"]])
         throttle_cmd = Throttle()
         throttle_cmd.names = names
-        if type == "cache_values":
-            throttle_cmd.throttles = [
-                self.sa_config["cache"]["multiplier"] * self.filter_xbox_button(buttons, "right_bumper", "left_bumper")
-            ]
-            self.cache_throttle_cmd_pub.publish(throttle_cmd)
-        elif type == "arm_values":
+        if type == "arm_values":
             throttle_cmd.throttles = [
                 self.ra_config["joint_a"]["multiplier"] * self.filter_xbox_axis(axes[self.xbox_mappings["left_x"]]),
                 self.ra_config["joint_b"]["multiplier"] * self.filter_xbox_axis(axes[self.xbox_mappings["left_y"]]),
@@ -403,12 +391,32 @@ class GUIConsumer(JsonWebsocketConsumer):
             ]
             self.sa_throttle_cmd_pub.publish(throttle_cmd)
 
+    def handle_cache(self, mode, input, positions):
+        if mode == "position":
+            position_cmd = Position(
+                names=["cache"],
+                positions=positions,
+            )
+            self.cache_position_cmd_pub.publish(position_cmd)
+        elif mode == "velocity":
+            velocity_cmd = Velocity()
+            velocity_cmd.names = ["cache"]
+            velocity_cmd.velocities = [
+                self.sa_config["cache"]["multiplier"] * input
+            ]
+            self.cache_velocity_cmd_pub.publish(velocity_cmd)
+        else:
+            throttle_cmd = Throttle()
+            throttle_cmd.names = ["cache"]
+            throttle_cmd.throttles = [
+                self.sa_config["cache"]["multiplier"] * input
+            ]
+            self.cache_throttle_cmd_pub.publish(throttle_cmd)
+
     def handle_controls_message(self, msg):
         names = ["joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll", "allen_key", "gripper"]
         if msg["type"] == "sa_arm_values":
             names = ["sa_x", "sa_y", "sa_z", "sampler", "sensor_actuator"]
-        elif msg["type"] == "cache_values":
-            names = ["cache"]
 
         if msg["buttons"][self.xbox_mappings["home"]] > 0.5:
             rospy.loginfo("Homing DE")
@@ -420,7 +428,9 @@ class GUIConsumer(JsonWebsocketConsumer):
 
                 client.wait_for_result()
             else:
-                rospy.logwarn("Arm action server not available")
+                rospy.logwarn("Arm action server not available") 
+        elif msg["type"] == "cache_values":
+            self.handle_cache(mode=msg["arm_mode"], input=msg["input"], positions=msg["positions"])
         else:
             if msg["arm_mode"] == "ik":
                 self.publish_ik(msg["axes"], msg["buttons"])

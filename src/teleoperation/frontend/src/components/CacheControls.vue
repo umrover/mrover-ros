@@ -65,6 +65,7 @@ import { mapActions, mapState } from 'vuex'
 
 // Update rate in seconds
 const updateRate = 0.1
+let interval: number|undefined
 
 export default defineComponent({
   data() {
@@ -78,36 +79,50 @@ export default defineComponent({
         }
       },
       positions:[],
-      interval: null as number | null
+      send_positions: false, // Only send after submit is clicked for the first time
+
+      inputData: {
+        a_key: 0,
+        s_key: 0,
+      }
     }
   },
-  created: function () {
-    this.interval = window.setInterval(() => {
-      const gamepads = navigator.getGamepads()
-      for (let i = 0; i < 4; i++) {
-        const gamepad = gamepads[i]
-        if (gamepad) {
-          // Microsoft and Xbox for old Xbox 360 controllers
-          // X-Box for new PowerA Xbox One controllers
-          if (
-            gamepad.id.includes('Microsoft') ||
-            gamepad.id.includes('Xbox') ||
-            gamepad.id.includes('X-Box')
-          ) {
-            let buttons = gamepad.buttons.map((button) => {
-              return button.value
-            })
 
-            this.publishJoystickMessage(gamepad.axes, buttons, this.arm_mode, this.positions)
-          }
-        }
-      }
-    }, updateRate * 1000)
-  },
   components: {
     CalibrationCheckbox,
     LimitSwitch
   },
+
+  beforeUnmount: function () {
+    window.clearInterval(interval)
+    document.removeEventListener('keyup', this.keyMonitorUp)
+    document.removeEventListener('keydown', this.keyMonitorDown)
+  },
+
+  mounted: function() {
+    document.addEventListener('keydown', this.keyMonitorDown);
+    document.addEventListener('keyup', this.keyMonitorUp);
+  },
+
+  created: function () {
+    interval = window.setInterval(() => {
+      if (this.send_positions) {
+        this.publish()
+      } else if (this.arm_mode !== "position") {
+        this.publish()
+      }
+    }, updateRate * 1000)
+  },
+
+  watch: {
+    arm_mode(newMode) {
+      if (newMode !== 'position') {
+        this.positions = []
+        this.send_positions = false
+      }
+    }
+  },
+
   methods: {
     ...mapActions('websocket', ['sendMessage']),
     validateInput(joint: any, event: any) {
@@ -117,22 +132,43 @@ export default defineComponent({
         joint.value = joint.max
       }
     },
-    submit_positions: function () {
-      // TODO: Redo position logic to be similar to SAArmControls.vue so that they will be sent repeatedly on the gamepad interval
-      //converts to radians
 
+    submit_positions: function () {
       this.positions = Object.values(this.temp_positions).map(
         (obj: any) => (Number(obj.value) * Math.PI) / 180
       )
+      this.send_positions = true
+      this.publish()
     },
-    publishJoystickMessage: function (axes: any, buttons: any, arm_mode: any, positions: any) {
-      if (arm_mode != 'arm_disabled') {
+
+    keyMonitorDown: function (event: { key: string }) {
+      if (event.key.toLowerCase() == 'a') {
+        this.inputData.a_key = 1
+      } else if (event.key.toLowerCase() == 's') {
+        this.inputData.s_key = 1
+      }
+
+      this.publish()
+    },
+
+    // when a key is released, sets input for that key as 0
+    keyMonitorUp: function (event: { key: string }) {
+      if (event.key.toLowerCase() == 'a') {
+        this.inputData.a_key = 0
+      } else if (event.key.toLowerCase() == 's') {
+        this.inputData.s_key = 0
+      }
+
+      this.publish()
+    },
+
+    publish: function () {
+      if (this.arm_mode != 'arm_disabled') {
         this.sendMessage({
           type: 'cache_values',
-          axes: axes,
-          buttons: buttons,
-          arm_mode: arm_mode,
-          positions: positions
+          input: this.inputData.d_key - this.inputData.a_key,
+          arm_mode: this.arm_mode,
+          positions: this.positions
         })
       }
     }
