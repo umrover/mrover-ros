@@ -7,15 +7,14 @@ from mrover.srv import AdjustMotor
 
 
 def adjust_gimbal_client(value):
+    rospy.wait_for_service("mast_gimbal_z_adjust")
 
-    rospy.wait_for_service('mast_gimbal_z_adjust')
-    
     try:
-        adjust_z = rospy.ServiceProxy('mast_gimbal_z_adjust', AdjustMotor)
+        adjust_z = rospy.ServiceProxy("mast_gimbal_z_adjust", AdjustMotor)
         resp = adjust_z("mast_gimbal_z", value)
         return resp
     except rospy.ServiceException as e:
-        print("Service call failed: %s"%e)
+        print("Service call failed: %s" % e)
 
 
 def main():

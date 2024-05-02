@@ -65,7 +65,7 @@ auto main(int argc, char** argv) -> int {
     cfsetospeed(&tty, B115200);
 
     if (tcsetattr(fd, TCSANOW, &tty) != 0) {
-        printf("Error %i from tcsetattr: %s\n", errno, strerror(errno));
+        ROS_ERROR_STREAM("Error " << errno << " from tcsetattr: " << strerror(errno));
         return EXIT_FAILURE;
     }
 

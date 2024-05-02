@@ -101,7 +101,7 @@ def main() -> None:
             if not line:
                 rospy.logerr("Timeout on read")
                 return
-            
+
             # parse data into a list of floats,
             # if it fails to parse then skip this message
             try:

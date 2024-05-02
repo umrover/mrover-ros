@@ -4,6 +4,7 @@ import rospy
 
 has_init = False
 
+
 class BackendConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
     name = "backend"
