@@ -176,12 +176,14 @@ namespace mrover {
         udev_device* device{};
         udev_list_entry* entry;
         udev_list_entry_foreach(entry, devices) {
-            device = udev_device_new_from_syspath(udevContext, udev_list_entry_get_name(entry));
+            udev_device* candidateDevice = udev_device_new_from_syspath(udevContext, udev_list_entry_get_name(entry));
+            if (!candidateDevice) throw std::runtime_error{"Failed to get udev device"};
 
-            if (udev_device_get_devpath(device) != devicePath) continue;
+            std::string candidateDevicePath = udev_device_get_devpath(candidateDevice);
+            ROS_INFO_STREAM(std::format("Considering device path: {} compared to {}", candidateDevicePath, devicePath));
+            if (candidateDevicePath != devicePath) continue;
 
-            if (!device) throw std::runtime_error{"Failed to get udev device"};
-
+            device = candidateDevice;
             break;
         }
         if (!device) throw std::runtime_error{"Failed to find udev device"};

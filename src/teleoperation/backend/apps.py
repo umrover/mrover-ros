@@ -2,7 +2,6 @@ from django.apps import AppConfig
 
 import rospy
 
-has_init = False
 
 
 class BackendConfig(AppConfig):
@@ -10,9 +9,4 @@ class BackendConfig(AppConfig):
     name = "backend"
 
     def ready(self):
-        global has_init
-        if not has_init:
-            rospy.init_node("teleop")
-            has_init = True
-        else:
-            rospy.logwarn("Node already initialized")
+        rospy.init_node("teleop", disable_signals=True)

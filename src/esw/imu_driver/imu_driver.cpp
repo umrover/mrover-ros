@@ -1,13 +1,13 @@
-#include <cstdlib>
 #include <ros/init.h>
 #include <ros/node_handle.h>
+#include <ros/publisher.h>
 
 #include <fcntl.h>
-#include <ros/publisher.h>
 #include <termios.h>
 
 #include <sstream>
 #include <array>
+#include <cstdlib>
 
 #include <mrover/ImuAndMag.h>
 
@@ -65,7 +65,7 @@ auto main(int argc, char** argv) -> int {
     cfsetospeed(&tty, B115200);
 
     if (tcsetattr(fd, TCSANOW, &tty) != 0) {
-        printf("Error %i from tcsetattr: %s\n", errno, strerror(errno));
+        ROS_ERROR_STREAM("Error " << errno << " from tcsetattr: " << strerror(errno));
         return EXIT_FAILURE;
     }
 

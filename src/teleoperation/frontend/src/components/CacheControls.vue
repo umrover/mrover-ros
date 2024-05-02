@@ -83,7 +83,7 @@ export default defineComponent({
 
       inputData: {
         a_key: 0,
-        s_key: 0,
+        d_key: 0,
       }
     }
   },
@@ -144,8 +144,8 @@ export default defineComponent({
     keyMonitorDown: function (event: { key: string }) {
       if (event.key.toLowerCase() == 'a') {
         this.inputData.a_key = 1
-      } else if (event.key.toLowerCase() == 's') {
-        this.inputData.s_key = 1
+      } else if (event.key.toLowerCase() == 'd') {
+        this.inputData.d_key = 1
       }
 
       this.publish()
@@ -155,8 +155,8 @@ export default defineComponent({
     keyMonitorUp: function (event: { key: string }) {
       if (event.key.toLowerCase() == 'a') {
         this.inputData.a_key = 0
-      } else if (event.key.toLowerCase() == 's') {
-        this.inputData.s_key = 0
+      } else if (event.key.toLowerCase() == 'd') {
+        this.inputData.d_key = 0
       }
 
       this.publish()
