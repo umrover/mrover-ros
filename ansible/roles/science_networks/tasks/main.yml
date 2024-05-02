@@ -1,0 +1,19 @@
+- name: Wired Connection
+  become: True
+  nmcli:
+    conn_name: MRover
+    state: present
+    type: ethernet
+    ifname: "{{ ifname }}"
+    autoconnect: yes
+    ip4: 10.1.0.3/8
+    # Share connection to the Internet
+    method4: shared
+    method6: disabled
+
+- name: Jetson SSH Config
+  community.general.ssh_config:
+    user: "{{ ansible_user_id }}"
+    host: jetson
+    hostname: 10.1.0.10
+    remote_user: mrover
