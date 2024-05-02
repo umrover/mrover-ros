@@ -85,9 +85,11 @@ class Panorama:
             # current_pos
             # calculate angle 
             rospy.loginfo("rotating mast...")
-            self.mast_throttle.publish(Throttle(["mast_gimbal_z"], [0.2]))
-            rospy.sleep(duration=0.5)
-
+            time_start = rospy.Time.now()
+            while rospy.Time.now() - time_start < rospy.Duration(1.5):
+                self.mast_throttle.publish(Throttle(["mast_gimbal_z"], [1.0]))
+                rospy.Rate(10).sleep()
+            
             self.mast_throttle.publish(Throttle(["mast_gimbal_z"], [0.0]))
 
             try:
