@@ -24,9 +24,7 @@
     <node name="gps_linearization" pkg="mrover" type="gps_linearization.py" output="screen" />
 
     <!-- Launch IMU driver -->
-    <node unless="$(arg sim)"
-          respawn="true" respawn_delay="2"
-          name="imu_driver" pkg="mrover" type="imu_driver.py" output="screen" />
+    <node unless="$(arg sim)" name="imu_driver" pkg="mrover" type="imu_driver" output="screen" />
 
     <!-- Launch GPS driver(s) -->
     <group ns="right_gps_driver" unless="$(arg sim)">
