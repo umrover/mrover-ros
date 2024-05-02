@@ -37,18 +37,11 @@
       </div>
     </div>
     <div class="col">
-      <div class="row text-center align-items-center">
-        <div class="col">
-          <h3>All Cameras</h3>
-        </div>
-          <div class="col" v-if="mission === 'ish'">
-            <button class="btn btn-primary" @click="takePanorama()">
-              Take Panorama
-            </button>
-          </div>
-          <div class="col" v-if="mission === 'ish'">
-            <p class="my-auto percent">{{ (percent*100).toFixed(2) }}%</p>
-          </div>
+      <h3>All Cameras</h3>
+      <div class="d-flex justify-content-end" v-if="isSA">
+        <button class="btn btn-primary btn-lg" @click="takePanorama()">
+          Take Panorama
+        </button>
       </div>
     </div>
     <CameraDisplay :streamOrder="streamOrder" :mission="mission" :names="names"></CameraDisplay>
@@ -68,16 +61,12 @@ export default {
   },
 
   props: {
-<<<<<<< HEAD
-    primary: {
-=======
     isSA: {
->>>>>>> integration
       type: Boolean,
       required: true
     },
     mission: {
-      type: String, // {'ish', 'ik', 'sa', 'auton'}
+      type: String, // {'sa', 'ik', 'other'}
       required: true
     }
   },
@@ -89,12 +78,6 @@ export default {
       cameraName: '',
       capacity: 4,
       streamOrder: reactive([]),
-<<<<<<< HEAD
-
-      num_available: -1,
-      percent: 0
-=======
->>>>>>> integration
     }
   },
 
@@ -102,9 +85,6 @@ export default {
     message(msg) {
       if (msg.type == 'max_streams') {
         this.streamOrder = new Array(msg.streams).fill(-1)
-      }
-      else if (msg.type == 'pano_feedback') {
-        this.percent = msg.percent;
       }
     },
     capacity: function (newCap, oldCap) {
@@ -170,9 +150,5 @@ export default {
 .info {
   height: 200px;
   overflow-y: auto;
-}
-
-.percent {
-  font-size: large;
 }
 </style>

@@ -69,9 +69,15 @@ def quadratic(signal: float) -> float:
     """
     return copysign(signal**2, signal)
 
+has_init = False
 
 class GUIConsumer(JsonWebsocketConsumer):
     def connect(self):
+        global has_init
+        if has_init:
+            rospy.logwarn("Node already initialized")
+            return
+        
         self.accept()
         try:
             # ROS Parameters
@@ -150,6 +156,8 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.flight_thread.start()
         except Exception as e:
             rospy.logerr(e)
+
+        has_init = True
 
     def disconnect(self, close_code):
         self.pdb_sub.unregister()
@@ -447,6 +455,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         linear -= get_axes_input("tilt", 0.5, scale=0.1)
         angular -= get_axes_input("pan", 0.5, scale=0.1)
 
+        print('HI!')
         self.twist_pub.publish(
             Twist(
                 linear=Vector3(x=linear),
