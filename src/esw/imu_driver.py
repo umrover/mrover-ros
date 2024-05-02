@@ -88,11 +88,7 @@ def main() -> None:
 
     # create serial connection with Arduino
     try:
-        ser = serial.Serial(dsrdtr=True)
-        ser.port = port
-        ser.baudrate = baud
-        ser.dtr = False
-        ser.open()
+        ser = serial.Serial(port=port, baudrate=baud, timeout=1)
     except Exception as e:
         rospy.logerr(f"Failed to open serial port {port}@{baud}: {e}")
         return
