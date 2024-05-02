@@ -70,16 +70,12 @@ def quadratic(signal: float) -> float:
     return copysign(signal**2, signal)
 
 
-has_init = False
+TF_BUFFER = tf2_ros.Buffer()
+tf2_ros.TransformListener(TF_BUFFER)
 
 
 class GUIConsumer(JsonWebsocketConsumer):
     def connect(self):
-        global has_init
-        if has_init:
-            rospy.logwarn("Node already initialized")
-            return
-
         self.accept()
         try:
             # ROS Parameters
@@ -152,14 +148,10 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.change_cameras_srv = rospy.ServiceProxy("change_cameras", ChangeCameras)
             self.heater_auto_shutoff_srv = rospy.ServiceProxy("science_change_heater_auto_shutoff_state", SetBool)
 
-            self.tf_buffer = tf2_ros.Buffer()
-            self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
             self.flight_thread = threading.Thread(target=self.flight_attitude_listener)
             self.flight_thread.start()
         except Exception as e:
             rospy.logerr(e)
-
-        has_init = True
 
     def disconnect(self, close_code):
         self.pdb_sub.unregister()
@@ -281,7 +273,7 @@ class GUIConsumer(JsonWebsocketConsumer):
             )
 
     def publish_ik(self, axes: list[float], buttons: list[float]) -> None:
-        ee_in_map = SE3.from_tf_tree(self.tf_buffer, "base_link", "arm_d_link")
+        ee_in_map = SE3.from_tf_tree(TF_BUFFER, "base_link", "arm_d_link")
 
         ee_in_map.position[0] += self.ik_names["x"] * self.filter_xbox_axis(axes[self.xbox_mappings["left_js_x"]])
         ee_in_map.position[1] += self.ik_names["y"] * self.filter_xbox_axis(axes[self.xbox_mappings["left_js_y"]])
@@ -685,7 +677,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.send(text_data=json.dumps({"type": "thermistor", "temps": temps}))
 
     def bearing(self):
-        base_link_in_map = SE3.from_tf_tree(self.tf_buffer, "map", "base_link")
+        base_link_in_map = SE3.from_tf_tree(TF_BUFFER, "map", "base_link")
         self.send(
             text_data=json.dumps(
                 {
@@ -819,7 +811,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         rate = rospy.Rate(10.0)
         while not rospy.is_shutdown():
             try:
-                tf_msg = SE3.from_tf_tree(self.tf_buffer, "map", "base_link")
+                tf_msg = SE3.from_tf_tree(TF_BUFFER, "map", "base_link")
 
                 if tf_msg.is_approx(map_to_baselink, threshold):
                     rate.sleep()
