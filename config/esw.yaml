@@ -169,21 +169,23 @@ brushless_motors:
       max_position: 10000.0
       max_torque: 20.0
     sa_z:
-      min_velocity: -0.05
-      max_velocity: 0.05
-      limit_0_present: false
-      limit_1_present: false
+      min_velocity: -0.03
+      max_velocity: 0.03
+      min_position: 0.0
+      max_position: 0.6007
+      limit_0_present: true
+      limit_1_present: true
       limit_0_enabled: true
       limit_1_enabled: true
-      limit_0_limits_fwd: true
-      limit_1_limits_fwd: false
+      limit_0_limits_fwd: false
+      limit_1_limits_fwd: true
       limit_0_is_active_high: false
       limit_1_is_active_high: false
       limit_0_used_for_readjustment: true
       limit_1_used_for_readjustment: true
-      limit_0_readjust_position: 0.0 # radians TODO
-      limit_1_readjust_position: 0.0 # radians TODO
-      max_torque: 30.0
+      limit_0_readjust_position: 0.0 # meters 
+      limit_1_readjust_position: 0.6007 # meters 
+      max_torque: 500.0
 
 brushed_motors:
   controllers:
@@ -283,13 +285,18 @@ brushed_motors:
       motor_max_voltage: 12.0 # used to calculate max pwm
     mast_gimbal_z:
       gear_ratio: 1000.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
+      quad_present: true
+      quad_is_fwd_polarity: true
+      abs_present: false
+      quad_ratio: 1.0
       driver_voltage: 12.0 # used to calculate max pwm
       motor_max_voltage: 12.0 # used to calculate max pwm
     sa_x:
+      is_inverted: true
       gear_ratio: 75.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
       rad_to_meters_ratio: 1.0 #TODO 5.0 = 5 motor radians -> 1 meter
-      limit_0_present: false
-      limit_1_present: false
+      limit_0_present: true
+      limit_1_present: true
       limit_2_present: false
       limit_0_enabled: true
       limit_1_enabled: true
@@ -297,21 +304,23 @@ brushed_motors:
       limit_0_is_active_high: false
       limit_1_is_active_high: false
       limit_2_is_active_high: false
-      limit_0_limits_fwd: true
-      limit_1_limits_fwd: false
-      limit_2_limits_fwd: true
+      limit_0_limits_fwd: false
+      limit_1_limits_fwd: true
+      limit_2_limits_fwd: false
       limit_0_used_for_readjustment: true
       limit_1_used_for_readjustment: true
       limit_2_used_for_readjustment: false
       quad_present: true
       quad_is_fwd_polarity: true
-      limit_0_readjust_position: 0.0 # radians
-      limit_1_readjust_position: 0.0 # radians
+      limit_0_readjust_position: 0.0 # meters
+      limit_1_readjust_position: 0.2452 # meters
       quad_ratio: 48.0 # encoder ratio compared to motor
-      driver_voltage: 12.0 # used to calculate max pwm
+      driver_voltage: 10.0 # used to calculate max pwm
       motor_max_voltage: 6.0 # used to calculate max pwm
       min_velocity: -1.0
       max_velocity: 1.0
+      min_position: 0.0
+      max_position: 0.2452
       calibration_throttle: 0.5  # throttle during calibration
     sa_y:
       gear_ratio: 75.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
@@ -328,13 +337,15 @@ brushed_motors:
       limit_1_used_for_readjustment: true
       quad_present: true
       quad_is_fwd_polarity: true
-      limit_0_readjust_position: 0.0 # radians
-      limit_1_readjust_position: 0.0 # radians
+      limit_0_readjust_position: 0.4356 # meters
+      limit_1_readjust_position: 0.0 # meters
       quad_ratio: 48.0 # encoder ratio compared to motor
       driver_voltage: 12.0 # used to calculate max pwm
       motor_max_voltage: 6.0 # used to calculate max pwm
       min_velocity: -1.0
       max_velocity: 1.0
+      min_position: 0.0
+      max_position: 0.4356
       calibration_throttle: 0.5  # throttle during calibration
     sampler:
       gear_ratio: 75.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
@@ -355,7 +366,7 @@ brushed_motors:
       limit_1_readjust_position: 0.0 # radians
       quad_ratio: 48.0 # encoder ratio compared to motor
       driver_voltage: 12.0 # used to calculate max pwm
-      motor_max_voltage: 6.0 # used to calculate max pwm
+      motor_max_voltage: 12.0 # used to calculate max pwm
       calibration_throttle: 0.5  # throttle during calibration
     sensor_actuator:
       gear_ratio: 1.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint

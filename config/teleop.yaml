@@ -27,7 +27,7 @@ teleop:
 
   sa_controls:
     sa_x:
-      multiplier: 1
+      multiplier: -1
       slow_mode_multiplier: 1.0 # 0.5
       xbox_index: 1
     sa_y:
@@ -36,8 +36,8 @@ teleop:
       xbox_index: 0
     sa_z:
       multiplier: 1
-      slow_mode_multiplier: 0.5
-      xbox_index: 4
+      slow_mode_multiplier: 1.0 # 0.5
+      xbox_index: 3
     sampler:
       multiplier: 1
       slow_mode_multiplier: 1.0

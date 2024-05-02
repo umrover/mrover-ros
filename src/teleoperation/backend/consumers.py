@@ -373,12 +373,11 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.arm_throttle_cmd_pub.publish(throttle_cmd)
         elif type == "sa_arm_values":
             throttle_cmd.throttles = [
-                self.filter_xbox_axis(axes[self.sa_config["sa_x"]["xbox_index"]]),
-                self.filter_xbox_axis(axes[self.sa_config["sa_y"]["xbox_index"]]),
-                self.filter_xbox_axis(axes[self.sa_config["sa_z"]["xbox_index"]]),
-                self.sa_config["sampler"]["multiplier"] * (right_trigger - left_trigger),
-                self.sa_config["sensor_actuator"]["multiplier"]
-                * self.filter_xbox_button(buttons, "right_bumper", "left_bumper"),
+                self.filter_xbox_axis(axes[self.sa_config["sa_x"]["xbox_index"]]) * self.sa_config["sa_x"]["multiplier"],
+                self.filter_xbox_axis(axes[self.sa_config["sa_y"]["xbox_index"]]) * self.sa_config["sa_y"]["multiplier"],
+                self.filter_xbox_axis(axes[self.sa_config["sa_z"]["xbox_index"]]) * self.sa_config["sa_z"]["multiplier"],
+                (right_trigger - left_trigger) * self.sa_config["sampler"]["multiplier"],
+                self.filter_xbox_button(buttons, "right_bumper", "left_bumper") * self.sa_config["sensor_actuator"]["multiplier"],
             ]
             self.sa_throttle_cmd_pub.publish(throttle_cmd)
 
@@ -399,7 +398,7 @@ class GUIConsumer(JsonWebsocketConsumer):
 
                 client.wait_for_result()
             else:
-                rospy.logwarn("Arm action server not available")
+                rospy.logwarn("Arm action server not available") 
         else:
             if msg["arm_mode"] == "ik":
                 self.publish_ik(msg["axes"], msg["buttons"])
