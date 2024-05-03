@@ -860,10 +860,10 @@ class GUIConsumer(JsonWebsocketConsumer):
         username = os.getenv("USERNAME", "-1")
 
         now = datetime.now(pytz.timezone("US/Eastern"))
-        current_time = now.strftime("%m/%d/%Y-%H:%M")
+        current_time = now.strftime("%m-%d-%Y_%H:%M:%S")
         spectral_data = msg["data"]
 
-        site_names = ["A", "B", "C"]
+        site_names = ["0", "1", "2"]
         index = 0
 
         # add site letter in front of data
@@ -877,6 +877,6 @@ class GUIConsumer(JsonWebsocketConsumer):
         if username == "-1":
             rospy.logerr("username not found")
 
-        with open(os.path.join(f"/home/{username}/Downloads/spectral_data.csv"), "w") as f:
+        with open(os.path.join(f"/home/{username}/Downloads/spectral_data_{current_time}.csv"), "w") as f:
             csv_writer = csv.writer(f)
             csv_writer.writerows(spectral_data)
