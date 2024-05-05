@@ -769,6 +769,18 @@ namespace mrover {
         wgpu::CommandBuffer commands = encoder.finish();
         mQueue.submit(commands);
 
+#ifdef __APPLE__
+        bool isDone = false;
+        auto workDone = mQueue.onSubmittedWorkDone([&isDone](wgpu::QueueWorkDoneStatus status) {
+            if (status == wgpu::QueueWorkDoneStatus::Success) {
+                isDone = true;
+            }
+        });
+        while (!isDone) {
+            mDevice.tick();
+        }
+#endif
+
         if (!mIsHeadless) mSwapChain.present();
 
         // TODO(quintin): Remote duplicate code
