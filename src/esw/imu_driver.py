@@ -64,7 +64,7 @@ def publish_mag_pose(pub: rospy.Publisher, msg: MagneticField, covariance: List,
     )
 
 
-def main():
+def main() -> None:
     """
     This program reads in IMU data over serial, converts it to the ENU frame,
     and adds necessary metadata used for filtering.
@@ -87,88 +87,83 @@ def main():
     imu_frame = rospy.get_param("imu_driver/frame_id", "imu_link")
 
     # create serial connection with Arduino
-    ser = serial.Serial(port, baud)
-    if ser.is_open:
-        print("Serial connection successfully opened.")
-    else:
-        print("Failed to open serial connection.")
-    attempts = 0
+    try:
+        ser = serial.Serial(port=port, baudrate=baud, timeout=1)
+    except Exception as e:
+        rospy.logerr(f"Failed to open serial port {port}@{baud}: {e}")
+        return
 
-    while not rospy.is_shutdown():
-        # try to read a line from the serial connection,
-        # if this fails 100 times in a row then end the program
-        try:
+    with ser:
+        while not rospy.is_shutdown():
+            # try to read a line from the serial connection,
+            # if this fails 100 times in a row then end the program
             line = ser.readline()
-            attempts = 0
+            if not line:
+                rospy.logerr("Timeout on read")
+                return
 
-        except SerialException:
-            attempts += 1
-            if attempts > 100:
-                raise SerialTimeoutException(f"Unable to read from serial port {port}, timed out after 100 attempts")
+            # parse data into a list of floats,
+            # if it fails to parse then skip this message
+            try:
+                data = [float(val.strip()) for val in line.split()]
+            except ValueError:
+                rospy.logwarn(f"Invalid message line received: {line}, skipping...")
+                continue
 
-        # parse data into a list of floats,
-        # if it fails to parse then skip this message
-        try:
-            data = [float(val.strip()) for val in line.split()]
+            # partition data into different sensors, converting calibration data from float to int
+            # if the indices of data don't exist, then skip this message
 
-        except ValueError:
-            rospy.logerr("invalid msg format")
-            continue
+            try:
+                imu_orientation_data = data[:4]
+                accel_data = data[4:7]
+                gyro_data = data[7:10]
+                mag_data = data[10:13]
+                temp_data = data[13]
+                cal_data = int(data[14])
 
-        # partition data into different sensors, converting calibration data from float to int
-        # if the indices of data don't exist, then skip this message
+            except IndexError:
+                rospy.logwarn(f"Incomplete message line receiveD: {line}, skipping...")
+                continue
 
-        try:
-            imu_orientation_data = data[:4]
-            accel_data = data[4:7]
-            gyro_data = data[7:10]
-            mag_data = data[10:13]
-            temp_data = data[13]
-            cal_data = int(data[14])
+            # rotate the imu orientation by 90 degrees about the Z axis to convert it to ENU frame
+            # enu_offset_quat = quaternion_about_axis(np.pi / 2, [0, 0, 1])
+            # enu_imu_orientation = quaternion_multiply(enu_offset_quat, imu_orientation_data)
 
-        except IndexError:
-            rospy.logerr("incomplete msg")
-            continue
+            # similarly rotate the magnetometer vector into the ENU frame
+            R = rotation_matrix(np.pi / 2, [0, 0, 1])
+            h_mag_vec = np.append(mag_data, 1)
+            enu_mag_vec = (R @ h_mag_vec)[:-1]
 
-        # rotate the imu orientation by 90 degrees about the Z axis to convert it to ENU frame
-        # enu_offset_quat = quaternion_about_axis(np.pi / 2, [0, 0, 1])
-        # enu_imu_orientation = quaternion_multiply(enu_offset_quat, imu_orientation_data)
-
-        # similarly rotate the magnetometer vector into the ENU frame
-        R = rotation_matrix(np.pi / 2, [0, 0, 1])
-        h_mag_vec = np.append(mag_data, 1)
-        enu_mag_vec = (R @ h_mag_vec)[:-1]
-
-        # fill in all sensor messages, setting timestamps of each message to right now,
-        # and setting the reference frame of all messages to IMU frame
-        header = Header(stamp=rospy.Time.now(), frame_id=imu_frame)
-        mag_msg = MagneticField(
-            header=header,
-            magnetic_field=Vector3(*enu_mag_vec),
-        )
-        imu_msg = ImuAndMag(
-            header=header,
-            imu=Imu(
+            # fill in all sensor messages, setting timestamps of each message to right now,
+            # and setting the reference frame of all messages to IMU frame
+            header = Header(stamp=rospy.Time.now(), frame_id=imu_frame)
+            mag_msg = MagneticField(
                 header=header,
-                orientation=Quaternion(*imu_orientation_data),
-                linear_acceleration=Vector3(*accel_data),
-                angular_velocity=Vector3(*gyro_data),
-                orientation_covariance=orientation_covariance,
-                angular_velocity_covariance=gyro_covariance,
-                linear_acceleration_covariance=accel_covariance,
-            ),
-            mag=mag_msg,
-        )
+                magnetic_field=Vector3(*enu_mag_vec),
+            )
+            imu_msg = ImuAndMag(
+                header=header,
+                imu=Imu(
+                    header=header,
+                    orientation=Quaternion(*imu_orientation_data),
+                    linear_acceleration=Vector3(*accel_data),
+                    angular_velocity=Vector3(*gyro_data),
+                    orientation_covariance=orientation_covariance,
+                    angular_velocity_covariance=gyro_covariance,
+                    linear_acceleration_covariance=accel_covariance,
+                ),
+                mag=mag_msg,
+            )
 
-        temp_msg = Temperature(header=header, temperature=temp_data)
+            temp_msg = Temperature(header=header, temperature=temp_data)
 
-        calibration_msg = CalibrationStatus(header, cal_data)
+            calibration_msg = CalibrationStatus(header, cal_data)
 
-        # publish each message
-        imu_pub.publish(imu_msg)
-        temp_pub.publish(temp_msg)
-        calibration_pub.publish(calibration_msg)
-        publish_mag_pose(mag_pose_pub, mag_msg, mag_pose_covariance, world_frame)
+            # publish each message
+            imu_pub.publish(imu_msg)
+            temp_pub.publish(temp_msg)
+            calibration_pub.publish(calibration_msg)
+            publish_mag_pose(mag_pose_pub, mag_msg, mag_pose_covariance, world_frame)
 
 
 if __name__ == "__main__":

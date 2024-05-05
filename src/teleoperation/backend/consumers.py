@@ -4,6 +4,7 @@ import os
 import threading
 from datetime import datetime
 from math import copysign, pi, isfinite
+import cv2
 
 import pytz
 from channels.generic.websocket import JsonWebsocketConsumer
@@ -15,7 +16,9 @@ from geometry_msgs.msg import Twist, Pose, Point, Quaternion, Vector3, PoseStamp
 
 import actionlib
 
-# from cv_bridge import CvBridge
+import actionlib
+
+from cv_bridge import CvBridge
 from mrover.msg import (
     ArmActionAction,
     ArmActionGoal,
@@ -35,8 +38,11 @@ from mrover.msg import (
     Spectral,
     ScienceThermistors,
     HeaterData,
+    CapturePanoramaAction,
+    CapturePanoramaFeedback,
+    CapturePanoramaGoal,
 )
-from mrover.srv import EnableAuton, AdjustMotor, ChangeCameras, CapturePanorama
+from mrover.srv import EnableAuton, AdjustMotor, ChangeCameras
 from sensor_msgs.msg import NavSatFix, Temperature, RelativeHumidity, JointState
 from std_msgs.msg import String, Header
 from std_srvs.srv import SetBool, Trigger
@@ -62,6 +68,11 @@ def quadratic(signal: float) -> float:
     For example using a joystick to control drive.
     """
     return copysign(signal**2, signal)
+
+
+TF_BUFFER = tf2_ros.Buffer()
+tf2_ros.TransformListener(TF_BUFFER)
+
 
 
 class GUIConsumer(JsonWebsocketConsumer):
@@ -125,6 +136,9 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.science_spectral = rospy.Subscriber("/science_spectral", Spectral, self.science_spectral_callback)
             self.cmd_vel = rospy.Subscriber("/cmd_vel", Twist, self.cmd_vel_callback)
 
+            # Action clients
+            self.pano_client = actionlib.SimpleActionClient("panorama", CapturePanoramaAction)
+
             # Services
             self.laser_service = rospy.ServiceProxy("enable_arm_laser", SetBool)
             self.enable_auton = rospy.ServiceProxy("enable_auton", EnableAuton)
@@ -133,11 +147,8 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.cache_enable_limit = rospy.ServiceProxy("cache_enable_limit_switches", SetBool)
             self.calibrate_service = rospy.ServiceProxy("arm_calibrate", Trigger)
             self.change_cameras_srv = rospy.ServiceProxy("change_cameras", ChangeCameras)
-            self.capture_panorama_srv = rospy.ServiceProxy("capture_panorama", CapturePanorama)
             self.heater_auto_shutoff_srv = rospy.ServiceProxy("science_change_heater_auto_shutoff_state", SetBool)
 
-            self.tf_buffer = tf2_ros.Buffer()
-            self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
             self.flight_thread = threading.Thread(target=self.flight_attitude_listener)
             self.flight_thread.start()
         except Exception as e:
@@ -217,6 +228,8 @@ class GUIConsumer(JsonWebsocketConsumer):
                 self.get_basic_waypoint_list(message)
             elif message["type"] == "download_csv":
                 self.download_csv(message)
+            elif message["type"] == "reset_gimbal":
+                self.reset_gimbal()
         except Exception as e:
             rospy.logerr(e)
 
@@ -261,7 +274,7 @@ class GUIConsumer(JsonWebsocketConsumer):
             )
 
     def publish_ik(self, axes: list[float], buttons: list[float]) -> None:
-        ee_in_map = SE3.from_tf_tree(self.tf_buffer, "base_link", "arm_d_link")
+        ee_in_map = SE3.from_tf_tree(TF_BUFFER, "base_link", "arm_d_link")
 
         ee_in_map.position[0] += self.ik_names["x"] * self.filter_xbox_axis(axes[self.xbox_mappings["left_js_x"]])
         ee_in_map.position[1] += self.ik_names["y"] * self.filter_xbox_axis(axes[self.xbox_mappings["left_js_y"]])
@@ -300,20 +313,13 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.arm_position_cmd_pub.publish(position_cmd)
         elif type == "sa_arm_values":
             self.sa_position_cmd_pub.publish(position_cmd)
-        elif type == "cache_values":
-            self.cache_position_cmd_pub.publish(position_cmd)
 
     def publish_velocity(self, type, names, axes, buttons):
         left_trigger = self.filter_xbox_axis(axes[self.xbox_mappings["left_trigger"]])
         right_trigger = self.filter_xbox_axis(axes[self.xbox_mappings["right_trigger"]])
         velocity_cmd = Velocity()
         velocity_cmd.names = names
-        if type == "cache_values":
-            velocity_cmd.velocities = [
-                self.sa_config["cache"]["multiplier"] * self.filter_xbox_button(buttons, "right_bumper", "left_bumper")
-            ]
-            self.cache_velocity_cmd_pub.publish(velocity_cmd)
-        elif type == "sa_arm_values":
+        if type == "sa_arm_values":
             velocity_cmd.velocities = [
                 self.to_velocity(self.filter_xbox_axis(axes[self.sa_config["sa_x"]["xbox_index"]]), "sa_x", False),
                 self.to_velocity(self.filter_xbox_axis(axes[self.sa_config["sa_y"]["xbox_index"]]), "sa_y", False),
@@ -346,12 +352,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         right_trigger = self.filter_xbox_axis(buttons[self.xbox_mappings["right_trigger"]])
         throttle_cmd = Throttle()
         throttle_cmd.names = names
-        if type == "cache_values":
-            throttle_cmd.throttles = [
-                self.sa_config["cache"]["multiplier"] * self.filter_xbox_button(buttons, "right_bumper", "left_bumper")
-            ]
-            self.cache_throttle_cmd_pub.publish(throttle_cmd)
-        elif type == "arm_values":
+        if type == "arm_values":
             throttle_cmd.throttles = [
                 self.ra_config["joint_a"]["multiplier"] * self.filter_xbox_axis(axes[self.xbox_mappings["left_x"]]),
                 self.ra_config["joint_b"]["multiplier"] * self.filter_xbox_axis(axes[self.xbox_mappings["left_y"]]),
@@ -371,23 +372,49 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.arm_throttle_cmd_pub.publish(throttle_cmd)
         elif type == "sa_arm_values":
             throttle_cmd.throttles = [
-                self.filter_xbox_axis(axes[self.sa_config["sa_x"]["xbox_index"]]),
-                self.filter_xbox_axis(axes[self.sa_config["sa_y"]["xbox_index"]]),
-                self.filter_xbox_axis(axes[self.sa_config["sa_z"]["xbox_index"]]),
-                self.sa_config["sampler"]["multiplier"] * (right_trigger - left_trigger),
-                self.sa_config["sensor_actuator"]["multiplier"]
-                * self.filter_xbox_button(buttons, "right_bumper", "left_bumper"),
+                self.filter_xbox_axis(axes[self.sa_config["sa_x"]["xbox_index"]])
+                * self.sa_config["sa_x"]["multiplier"],
+                self.filter_xbox_axis(axes[self.sa_config["sa_y"]["xbox_index"]])
+                * self.sa_config["sa_y"]["multiplier"],
+                self.filter_xbox_axis(axes[self.sa_config["sa_z"]["xbox_index"]])
+                * self.sa_config["sa_z"]["multiplier"],
+                (right_trigger - left_trigger) * self.sa_config["sampler"]["multiplier"],
+                self.filter_xbox_button(buttons, "right_bumper", "left_bumper")
+                * self.sa_config["sensor_actuator"]["multiplier"],
             ]
             self.sa_throttle_cmd_pub.publish(throttle_cmd)
+
+    def handle_cache(self, mode, input, positions):
+        if mode == "position":
+            position_cmd = Position(
+                names=["cache"],
+                positions=positions,
+            )
+            self.cache_position_cmd_pub.publish(position_cmd)
+        elif mode == "velocity":
+            velocity_cmd = Velocity()
+            velocity_cmd.names = ["cache"]
+            velocity_cmd.velocities = [
+                self.sa_config["cache"]["multiplier"] * input
+            ]
+            self.cache_velocity_cmd_pub.publish(velocity_cmd)
+        else:
+            throttle_cmd = Throttle()
+            throttle_cmd.names = ["cache"]
+            throttle_cmd.throttles = [
+                self.sa_config["cache"]["multiplier"] * input
+            ]
+            self.cache_throttle_cmd_pub.publish(throttle_cmd)
 
     def handle_controls_message(self, msg):
         names = ["joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll", "allen_key", "gripper"]
         if msg["type"] == "sa_arm_values":
             names = ["sa_x", "sa_y", "sa_z", "sampler", "sensor_actuator"]
-        elif msg["type"] == "cache_values":
-            names = ["cache"]
 
-        if msg["buttons"][self.xbox_mappings["home"]] > 0.5:
+        if msg["type"] == "cache_values":
+            self.handle_cache(mode=msg["arm_mode"], input=msg["input"], positions=msg["positions"])
+
+        elif msg["buttons"][self.xbox_mappings["home"]] > 0.5:
             rospy.loginfo("Homing DE")
 
             client = actionlib.SimpleActionClient("arm_action", ArmActionAction)
@@ -397,7 +424,7 @@ class GUIConsumer(JsonWebsocketConsumer):
 
                 client.wait_for_result()
             else:
-                rospy.logwarn("Arm action server not available")
+                rospy.logwarn("Arm action server not available") 
         else:
             if msg["arm_mode"] == "ik":
                 self.publish_ik(msg["axes"], msg["buttons"])
@@ -579,6 +606,14 @@ class GUIConsumer(JsonWebsocketConsumer):
         except rospy.ServiceException as e:
             print(f"Service call failed: {e}")
 
+    def reset_gimbal(self):
+        try:
+            adjust_srv = rospy.ServiceProxy("mast_gimbal_z_adjust", AdjustMotor)
+            result = adjust_srv(name="mast_gimbal_z", value=0)
+            self.send(text_data=json.dumps({"type": "arm_adjust", "success": result.success}))
+        except rospy.ServiceException as e:
+            print(f"Service call failed: {e}")
+
     def disable_auton_led(self):
         message = String()
         message.data = "off"
@@ -654,7 +689,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.send(text_data=json.dumps({"type": "thermistor", "temps": temps}))
 
     def bearing(self):
-        base_link_in_map = SE3.from_tf_tree(self.tf_buffer, "map", "base_link")
+        base_link_in_map = SE3.from_tf_tree(TF_BUFFER, "map", "base_link")
         self.send(
             text_data=json.dumps(
                 {
@@ -684,37 +719,38 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.send(text_data=json.dumps({"type": "max_streams", "streams": streams}))
 
     def capture_panorama(self) -> None:
+        rospy.logerr("Capturing panorama")
+        goal = CapturePanoramaGoal()
+        goal.angle = pi / 2
+
+        def feedback_cb(feedback: CapturePanoramaGoal) -> None:
+            self.send(text_data=json.dumps({"type": "pano_feedback", "percent": feedback.percent_done}))
+
+        self.pano_client.send_goal(goal, feedback_cb=feedback_cb)
+        finished = self.pano_client.wait_for_result(timeout=rospy.Duration(30))  # timeouts after 30 seconds
+        if finished:
+            rospy.logerr("Finished!")
+            image = self.pano_client.get_result().panorama
+            self.image_callback(image)
+        else:
+            rospy.logerr("CapturePanorama took too long!")
+
+    def image_callback(self, msg):
+        bridge = CvBridge()
         try:
-            response = self.capture_panorama_srv()
-            image = response.panorama
-            # self.image_callback(image)
-        except rospy.ServiceException as e:
-            print(f"Service call failed: {e}")
+            # Convert the image to OpenCV standard format
+            cv_image = bridge.imgmsg_to_cv2(msg, desired_encoding="passthrough")
+        except Exception as e:
+            rospy.logerr("Could not convert image message to OpenCV image: " + str(e))
+            return
 
-    # def capture_photo(self):
-    #     try:
-    #         response = self.capture_photo_srv()
-    #         image = response.photo
-    #         self.image_callback(image)
-    #     except rospy.ServiceException as e:
-    #         print(f"Service call failed: {e}")
-
-    # def image_callback(self, msg):
-    #     bridge = CvBridge()
-    #     try:
-    #         # Convert the image to OpenCV standard format
-    #         cv_image = bridge.imgmsg_to_cv2(msg, desired_encoding="passthrough")
-    #     except Exception as e:
-    #         rospy.logerr("Could not convert image message to OpenCV image: " + str(e))
-    #         return
-
-    #     # Save the image to a file (you could change 'png' to 'jpg' or other formats)
-    #     image_filename = "panorama.png"
-    #     try:
-    #         cv2.imwrite(image_filename, cv_image)
-    #         rospy.loginfo("Saved image to {}".format(image_filename))
-    #     except Exception as e:
-    #         rospy.logerr("Could not save image: " + str(e))
+        # Save the image to a file (you could change 'png' to 'jpg' or other formats)
+        image_filename = "~/Downloads/panorama.png"
+        try:
+            cv2.imwrite(os.path.expanduser(image_filename), cv_image)
+            rospy.logerr("Saved image to {}".format(image_filename))
+        except Exception as e:
+            rospy.logerr("Could not save image: " + str(e))
 
     def heater_enable_service(self, msg):
         try:
@@ -787,7 +823,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         rate = rospy.Rate(10.0)
         while not rospy.is_shutdown():
             try:
-                tf_msg = SE3.from_tf_tree(self.tf_buffer, "map", "base_link")
+                tf_msg = SE3.from_tf_tree(TF_BUFFER, "map", "base_link")
 
                 if tf_msg.is_approx(map_to_baselink, threshold):
                     rate.sleep()
@@ -824,10 +860,10 @@ class GUIConsumer(JsonWebsocketConsumer):
         username = os.getenv("USERNAME", "-1")
 
         now = datetime.now(pytz.timezone("US/Eastern"))
-        current_time = now.strftime("%m/%d/%Y-%H:%M")
+        current_time = now.strftime("%m-%d-%Y_%H:%M:%S")
         spectral_data = msg["data"]
 
-        site_names = ["A", "B", "C"]
+        site_names = ["0", "1", "2"]
         index = 0
 
         # add site letter in front of data
@@ -841,6 +877,6 @@ class GUIConsumer(JsonWebsocketConsumer):
         if username == "-1":
             rospy.logerr("username not found")
 
-        with open(os.path.join(f"/home/{username}/Downloads/spectral_data.csv"), "w") as f:
+        with open(os.path.join(f"/home/{username}/Downloads/spectral_data_{current_time}.csv"), "w") as f:
             csv_writer = csv.writer(f)
             csv_writer.writerows(spectral_data)

@@ -68,7 +68,7 @@ import CalibrationCheckbox from './CalibrationCheckbox.vue'
 import MotorAdjust from './MotorAdjust.vue'
 
 // In seconds
-const updateRate = 0.1
+const updateRate = 0.01
 const metersToInches = 39.3701
 let interval: number | undefined
 

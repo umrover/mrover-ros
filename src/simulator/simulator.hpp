@@ -209,12 +209,14 @@ namespace mrover {
         ros::NodeHandle mNh, mPnh;
 
         ros::Subscriber mTwistSub, mArmPositionsSub, mArmVelocitiesSub, mArmThrottlesSub;
+        ros::Subscriber mMastPositionsSub, mMastThrottleSub;
 
         ros::Publisher mGroundTruthPub;
         ros::Publisher mLeftGpsPub;
         ros::Publisher mRightGpsPub;
         ros::Publisher mImuPub;
         ros::Publisher mMotorStatusPub;
+        ros::Publisher mMastStatusPub;
         ros::Publisher mDriveControllerStatePub;
         ros::Publisher mArmControllerStatePub;
         ros::Publisher mArmJointStatePub;
@@ -415,6 +417,10 @@ namespace mrover {
 
         auto armThrottlesCallback(Throttle::ConstPtr const& message) -> void;
 
+        auto mastPositionsCallback(Position::ConstPtr const& message) -> void;
+
+        auto mastThrottleCallback(Throttle::ConstPtr const& message) -> void;
+
         // TODO(quintin): May want to restructure the names to all agree
         bimap<std::string, std::string> armMsgToUrdf{
                 {"joint_a", "arm_a_link"},
@@ -425,7 +431,7 @@ namespace mrover {
         };
 
         template<typename F, typename N, typename V>
-        auto forEachWithMotor(N const& names, V const& values, F&& function) -> void {
+        auto forEachArmMotor(N const& names, V const& values, F&& function) -> void {
             if (auto it = mUrdfs.find("rover"); it != mUrdfs.end()) {
                 URDF const& rover = it->second;
 

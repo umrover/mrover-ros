@@ -183,12 +183,22 @@ namespace mrover {
             if (link->name.contains("camera"sv)) {
                 Camera camera = makeCameraForLink(simulator, &multiBody->getLink(linkIndex));
                 if (link->name.contains("zed"sv)) {
-                    camera.frameId = "zed_left_camera_frame";
-                    camera.pub = simulator.mNh.advertise<sensor_msgs::Image>("camera/left/image", 1);
+                    std::string frameId, imageTopic, pointCloudTopic;
+                    if (link->name.contains("zed_mini")) {
+                        frameId = "zed_mini_left_camera_frame";
+                        imageTopic = "mast_camera/left/image";
+                        pointCloudTopic = "mast_camera/left/points";
+                    } else {
+                        frameId = "zed_left_camera_frame";
+                        imageTopic = "camera/left/image";
+                        pointCloudTopic = "camera/left/points";
+                    }
+                    camera.frameId = frameId;
+                    camera.pub = simulator.mNh.advertise<sensor_msgs::Image>(imageTopic, 1);
                     camera.fov = 60;
                     StereoCamera stereoCamera;
                     stereoCamera.base = std::move(camera);
-                    stereoCamera.pcPub = simulator.mNh.advertise<sensor_msgs::PointCloud2>("camera/left/points", 1);
+                    stereoCamera.pcPub = simulator.mNh.advertise<sensor_msgs::PointCloud2>(pointCloudTopic, 1);
                     simulator.mStereoCameras.emplace_back(std::move(stereoCamera));
                 } else {
                     camera.frameId = "long_range_camera_link";

@@ -138,8 +138,11 @@ namespace mrover {
         }
         if (mIsCalibrated) {
             mState = "Armed";
-        } else {
-            mState = "Not Armed";
+        } else if (mIsConfigured) {
+            mState = "Not Calibrated";
+        }
+        else {
+            mState = "Not Configured";
         }
     }
 
