@@ -770,14 +770,19 @@ namespace mrover {
         mQueue.submit(commands);
 
 #ifdef __APPLE__
-        bool isDone = false;
-        auto workDone = mQueue.onSubmittedWorkDone([&isDone](wgpu::QueueWorkDoneStatus status) {
-            if (status == wgpu::QueueWorkDoneStatus::Success) {
-                isDone = true;
+        {
+            // Temporary fix...
+            // See: https://issues.chromium.org/issues/338710345
+            // This only happens on M2/M3 (M1 is fine)
+            bool isWorkDone = false;
+            auto workDoneCallback = mQueue.onSubmittedWorkDone([&isWorkDone](wgpu::QueueWorkDoneStatus const& status) {
+                if (status == wgpu::QueueWorkDoneStatus::Success) {
+                    isWorkDone = true;
+                }
+            });
+            while (!isWorkDone) {
+                mDevice.tick();
             }
-        });
-        while (!isDone) {
-            mDevice.tick();
         }
 #endif
 
