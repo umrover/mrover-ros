@@ -74,7 +74,6 @@ TF_BUFFER = tf2_ros.Buffer()
 tf2_ros.TransformListener(TF_BUFFER)
 
 
-
 class GUIConsumer(JsonWebsocketConsumer):
     def connect(self):
         self.accept()
@@ -394,16 +393,12 @@ class GUIConsumer(JsonWebsocketConsumer):
         elif mode == "velocity":
             velocity_cmd = Velocity()
             velocity_cmd.names = ["cache"]
-            velocity_cmd.velocities = [
-                self.sa_config["cache"]["multiplier"] * input
-            ]
+            velocity_cmd.velocities = [self.sa_config["cache"]["multiplier"] * input]
             self.cache_velocity_cmd_pub.publish(velocity_cmd)
         else:
             throttle_cmd = Throttle()
             throttle_cmd.names = ["cache"]
-            throttle_cmd.throttles = [
-                self.sa_config["cache"]["multiplier"] * input
-            ]
+            throttle_cmd.throttles = [self.sa_config["cache"]["multiplier"] * input]
             self.cache_throttle_cmd_pub.publish(throttle_cmd)
 
     def handle_controls_message(self, msg):
@@ -424,7 +419,7 @@ class GUIConsumer(JsonWebsocketConsumer):
 
                 client.wait_for_result()
             else:
-                rospy.logwarn("Arm action server not available") 
+                rospy.logwarn("Arm action server not available")
         else:
             if msg["arm_mode"] == "ik":
                 self.publish_ik(msg["axes"], msg["buttons"])

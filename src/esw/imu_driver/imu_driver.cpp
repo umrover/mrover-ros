@@ -5,10 +5,11 @@
 #include <fcntl.h>
 #include <termios.h>
 
-#include <sstream>
 #include <array>
 #include <cstdlib>
+#include <sstream>
 
+#include <mrover/CalibrationStatus.h>
 #include <mrover/ImuAndMag.h>
 
 constexpr std::size_t BUFFER_SIZE = 256;
@@ -36,7 +37,8 @@ auto main(int argc, char** argv) -> int {
     ros::init(argc, argv, "imu_driver");
     ros::NodeHandle nh;
 
-    ros::Publisher pub = nh.advertise<mrover::ImuAndMag>("/imu/data", 1);
+    ros::Publisher dataPublisher = nh.advertise<mrover::ImuAndMag>("/imu/data", 1);
+    ros::Publisher calibrationPublisher = nh.advertise<mrover::CalibrationStatus>("/imu/calibration", 1);
 
     auto port = nh.param<std::string>("/imu_driver/port", "/dev/imu");
     auto frame = nh.param<std::string>("/imu_driver/frame_id", "imu_link");
@@ -93,12 +95,7 @@ auto main(int argc, char** argv) -> int {
 
             ImuData data{};
 
-            std::istringstream iss{line};
-            if (!(iss >> data.qx >> data.qy >> data.qz >> data.qw
-                      >> data.ax >> data.ay >> data.az
-                      >> data.gx >> data.gy >> data.gz
-                      >> data.mx >> data.my >> data.mz
-                      >> data.temperature >> data.calibration)) {
+            if (std::istringstream iss{line}; !(iss >> data.qx >> data.qy >> data.qz >> data.qw >> data.ax >> data.ay >> data.az >> data.gx >> data.gy >> data.gz >> data.mx >> data.my >> data.mz >> data.temperature >> data.calibration)) {
                 ROS_ERROR_STREAM("Failed to parse IMU data: " << line);
                 continue;
             }
@@ -121,7 +118,13 @@ auto main(int argc, char** argv) -> int {
             msg.mag.magnetic_field.x = data.mx;
             msg.mag.magnetic_field.y = data.my;
             msg.mag.magnetic_field.z = data.mz;
-            pub.publish(msg);
+            dataPublisher.publish(msg);
+
+            mrover::CalibrationStatus calibration{};
+            calibration.header.stamp = ros::Time::now();
+            calibration.header.frame_id = frame;
+            calibration.system_calibration = data.calibration;
+            calibrationPublisher.publish(calibration);
         }
 
         ros::spinOnce();
