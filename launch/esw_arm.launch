@@ -3,4 +3,13 @@
 
   <node name="arm_hw_bridge" pkg="mrover" type="arm_hw_bridge"/>
   <node name="arm_translator_bridge" pkg="mrover" type="arm_translator_bridge"/>
+
+  <node pkg="nodelet" type="nodelet" name="streamer_nodelet_boom"
+  args="load mrover/GstWebsocketStreamerNodelet perception_nodelet_manager"
+  output="screen">
+    <param name="dev_node" value="/dev/boomcam"/>
+    <param name="port" value="8084"/>
+    <param name="width" value="640"/>
+    <param name="height" value="480"/>
+  </node>
 </launch>
