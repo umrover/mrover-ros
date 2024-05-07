@@ -166,6 +166,7 @@ macro(mrover_add_esw_bridge_node name sources)
 endmacro()
 
 mrover_add_node(imu_driver src/esw/imu_driver/*.cpp)
+target_link_libraries(imu_driver PRIVATE lie)
 
 mrover_add_esw_bridge_node(arm_hw_bridge src/esw/arm_hw_bridge/*.cpp)
 mrover_add_esw_bridge_node(arm_translator_bridge src/esw/arm_translator_bridge/*.cpp src/esw/arm_translator_bridge/*.hpp)

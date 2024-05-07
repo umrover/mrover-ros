@@ -12,6 +12,7 @@
 
 using manif::SE3d, manif::SO3d, manif::SE3f, manif::SO3f;
 
+using R2 = Eigen::Vector2d;
 using R3 = Eigen::Vector3d;
 using S3 = Eigen::Quaterniond;
 
@@ -38,9 +39,10 @@ public:
      * \param buffer    ROS TF Buffer, make sure a listener is attached
      * \param fromFrame From (transform) or child (pose) frame
      * \param toFrame   To (transform) or parent (pose) frame
+     * \param time      Time to query the transform at, default is the latest
      * \return          The transform or pose represented by an SE3 lie group element
      */
-    [[nodiscard]] static auto fromTfTree(tf2_ros::Buffer const& buffer, std::string const& fromFrame, std::string const& toFrame) -> SE3d;
+    [[nodiscard]] static auto fromTfTree(tf2_ros::Buffer const& buffer, std::string const& fromFrame, std::string const& toFrame, ros::Time const& time = ros::Time{}) -> SE3d;
 
     /**
      * \brief             Push a transform to the TF tree between two frames

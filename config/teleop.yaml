@@ -1,50 +1,38 @@
 # You will need to restart basestation.launch for
 # Any changes to take effect
 teleop:
-  ra_names: ["joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll", "allen_key", "gripper"]
+  ra_names: [ "joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll", "allen_key", "gripper" ]
   ra_controls:
     joint_a:
       multiplier: -1
-      slow_mode_multiplier: 0.5
     joint_b:
       multiplier: 1
-      slow_mode_multiplier: 1
     joint_c:
       multiplier: 1
-      slow_mode_multiplier: 0.6
     joint_de_pitch:
       multiplier: -1
-      slow_mode_multiplier: 1
     joint_de_roll:
       multiplier: 1
-      slow_mode_multiplier: 1
     allen_key:
       multiplier: 1
-      slow_mode_multiplier: 1
     gripper:
       multiplier: 1
-      slow_mode_multiplier: 1
 
   sa_controls:
     sa_x:
       multiplier: -1
-      slow_mode_multiplier: 1.0 # 0.5
       xbox_index: 1
     sa_y:
       multiplier: -1
-      slow_mode_multiplier: 1.0 # 0.5
       xbox_index: 0
     sa_z:
       multiplier: 1
-      slow_mode_multiplier: 1.0 # 0.5
       xbox_index: 3
     sampler:
       multiplier: 1
-      slow_mode_multiplier: 1.0
       xbox_index: 5
     sensor_actuator:
       multiplier: 1
-      slow_mode_multiplier: 0.5
     cache:
       multiplier: 1
       xbox_index: 4
@@ -53,8 +41,6 @@ teleop:
     forward_back:
       multiplier: 1
     left_right:
-      # Can be disabled here since left_right axis sucks
-      enabled: true
       multiplier: 1
     twist:
       multiplier: 0.6
@@ -115,11 +101,6 @@ teleop:
     A: 0
     B: 1
     C: 2
-
-  echo_presets:
-    blah: ["/tf", "/tf_static", "/rosout"]
-    foo: ["/rosout", "/tf"]
-    bar: ["/tf_static", "/rosout", "/tf"]
 
   ik_multipliers:
     x: 0.1

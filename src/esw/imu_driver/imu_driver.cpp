@@ -1,21 +1,28 @@
 #include <ros/init.h>
 #include <ros/node_handle.h>
 #include <ros/publisher.h>
+#include <tf2_ros/buffer.h>
+#include <tf2_ros/transform_listener.h>
+
+#include <lie.hpp>
+
+#include <sensor_msgs/Temperature.h>
 
 #include <fcntl.h>
 #include <termios.h>
 
 #include <array>
 #include <cstdlib>
+#include <numeric>
 #include <sstream>
-
-#include <sensor_msgs/Temperature.h>
 
 #include <mrover/CalibrationStatus.h>
 #include <mrover/ImuAndMag.h>
 
-constexpr std::size_t BUFFER_SIZE = 256;
-constexpr std::size_t LINE_ABORT_SIZE = 4096;
+#include <boost/circular_buffer.hpp>
+
+constexpr static std::size_t BUFFER_SIZE = 256;
+constexpr static std::size_t LINE_ABORT_SIZE = 4096;
 
 struct ImuData {
     float qx, qy, qz, qw;
@@ -26,14 +33,9 @@ struct ImuData {
     unsigned int calibration;
 };
 
-// TODO(quintin): Why doesn't this work?
-// auto operator>>(std::istringstream& iss, ImuData& data) -> std::istringstream& {
-//     return iss >> data.qx >> data.qy >> data.qz >> data.qw
-//                >> data.ax >> data.ay >> data.az
-//                >> data.gx >> data.gy >> data.gz
-//                >> data.mx >> data.my >> data.mz
-//                >> data.temperature >> data.calibration;
-// }
+auto operator>>(std::istream& iss, ImuData& data) -> std::istream& {
+    return iss >> data.qx >> data.qy >> data.qz >> data.qw >> data.ax >> data.ay >> data.az >> data.gx >> data.gy >> data.gz >> data.mx >> data.my >> data.mz >> data.temperature >> data.calibration;
+}
 
 auto main(int argc, char** argv) -> int {
     ros::init(argc, argv, "imu_driver");
@@ -43,8 +45,36 @@ auto main(int argc, char** argv) -> int {
     ros::Publisher calibrationPublisher = nh.advertise<mrover::CalibrationStatus>("/imu/calibration", 1);
     ros::Publisher temperaturePublisher = nh.advertise<sensor_msgs::Temperature>("/imu/temperature", 1);
 
+    tf2_ros::Buffer tfBuffer;
+    tf2_ros::TransformListener tfListener{tfBuffer};
+
     auto port = nh.param<std::string>("/imu_driver/port", "/dev/imu");
     auto frame = nh.param<std::string>("/imu_driver/frame_id", "imu_link");
+    auto correct = nh.param<bool>("/imu_driver/correct", true);
+
+    float correctionOffset = 0;
+
+    constexpr ros::Duration step{0.1};
+    constexpr ros::Duration window{1};
+    ros::Timer correctTimer = nh.createTimer(window, [&](ros::TimerEvent const&) {
+        std::vector<float> angles;
+        ros::Time end = ros::Time::now(), start = end - window;
+        for (ros::Time t = start; t < end; t += step) {
+            auto t1 = SE3Conversions::fromTfTree(tfBuffer, "base_link", "imu_link", t);
+            auto t2 = SE3Conversions::fromTfTree(tfBuffer, "base_link", "imu_link", t + step);
+            auto v = (t2.translation() - t1.translation()) / step.toSec();
+            angles.push_back(std::atan2(v.y(), v.x()));
+        }
+
+        float mean = std::accumulate(angles.begin(), angles.end(), 0.0f) / static_cast<float>(angles.size());
+        float variance = std::accumulate(angles.begin(), angles.end(), 0.0f, [mean](float acc, float angle) {
+                             return acc + (angle - mean) * (angle - mean);
+                         }) /
+                         static_cast<float>(angles.size());
+        if (float stddev = std::sqrt(variance); stddev < 1) {
+            correctionOffset = mean;
+        }
+    });
 
     int fd = open(port.c_str(), O_RDWR);
     if (fd < 0) {
@@ -86,7 +116,7 @@ auto main(int argc, char** argv) -> int {
 
         remaining.append(buffer.data(), actually_read);
 
-        while (true) {
+        while (ros::ok()) {
             auto pos = remaining.find('\n');
             if (pos == std::string::npos) break;
 
@@ -98,7 +128,7 @@ auto main(int argc, char** argv) -> int {
 
             ImuData data{};
 
-            if (std::istringstream iss{line}; !(iss >> data.qx >> data.qy >> data.qz >> data.qw >> data.ax >> data.ay >> data.az >> data.gx >> data.gy >> data.gz >> data.mx >> data.my >> data.mz >> data.temperature >> data.calibration)) {
+            if (std::istringstream iss{line}; !(iss >> data)) {
                 ROS_ERROR_STREAM("Failed to parse IMU data: " << line);
                 continue;
             }

@@ -49,6 +49,8 @@ from std_srvs.srv import SetBool, Trigger
 from tf.transformations import euler_from_quaternion
 from util.SE3 import SE3
 
+import numpy as np
+
 DEFAULT_ARM_DEADZONE = 0.15
 
 
@@ -67,11 +69,11 @@ def quadratic(signal: float) -> float:
     Use to allow more control near low inputs values by squaring the magnitude.
     For example using a joystick to control drive.
     """
-    return copysign(signal**2, signal)
+    return copysign(signal ** 2, signal)
 
 
-TF_BUFFER = tf2_ros.Buffer()
-tf2_ros.TransformListener(TF_BUFFER)
+tf2_buffer = tf2_ros.Buffer()
+tf2_ros.TransformListener(tf2_buffer)
 
 
 class GUIConsumer(JsonWebsocketConsumer):
@@ -79,7 +81,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.accept()
         try:
             # ROS Parameters
-            self.mappings = rospy.get_param("teleop/joystick_mappings")
+            self.joystick_mappings = rospy.get_param("teleop/joystick_mappings")
             self.drive_config = rospy.get_param("teleop/drive_controls")
             self.max_wheel_speed = rospy.get_param("rover/max_speed")
             self.wheel_radius = rospy.get_param("wheel/radius")
@@ -150,6 +152,9 @@ class GUIConsumer(JsonWebsocketConsumer):
 
             self.flight_thread = threading.Thread(target=self.flight_attitude_listener)
             self.flight_thread.start()
+
+            self.joystick_twist = np.zeros(2)
+            self.xbox_twist = np.zeros(2)
         except Exception as e:
             rospy.logerr(e)
 
@@ -167,10 +172,20 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.ish_thermistor_data.unregister()
         self.science_spectral.unregister()
 
-    def receive(self, text_data):
-        """
-        Receive message from WebSocket.
-        """
+    def send_twist(self):
+        combined = self.joystick_twist + self.xbox_twist
+        self.twist_pub.publish(
+            Twist(
+                linear=Vector3(x=combined[0]),
+                angular=Vector3(z=combined[1]),
+            )
+        )
+
+    def receive(self, text_data=None, bytes_data=None, **kwargs):
+        if text_data is None:
+            rospy.logwarn("Expecting text but received binary on GUI websocket...")
+            return
+
         message = json.loads(text_data)
         try:
             if message["type"] == "joystick_values":
@@ -183,11 +198,7 @@ class GUIConsumer(JsonWebsocketConsumer):
                 self.calibrate_motors(message)
             elif message["type"] == "arm_adjust":
                 self.arm_adjust(message)
-            elif (
-                message["type"] == "arm_values"
-                or message["type"] == "cache_values"
-                or message["type"] == "sa_arm_values"
-            ):
+            elif message["type"] in {"arm_values", "cache_values", "sa_arm_values"}:
                 self.handle_controls_message(message)
             elif message["type"] == "enable_white_leds":
                 self.enable_white_leds_callback(message)
@@ -233,75 +244,64 @@ class GUIConsumer(JsonWebsocketConsumer):
             rospy.logerr(e)
 
     @staticmethod
-    def filter_xbox_axis(
-        value: float,
-        deadzone_threshold: float = DEFAULT_ARM_DEADZONE,
-        quad_control: bool = False,
-    ) -> float:
-        value = deadzone(value, deadzone_threshold)
-        if quad_control:
-            value = quadratic(value)
-        return value
+    def remap(value: float, old_min: float, old_max: float, new_min: float, new_max: float) -> float:
+        return (value - old_min) * (new_max - new_min) / (old_max - old_min) + new_min
 
-    def filter_xbox_button(self, button_array: list[float], pos_button: str, neg_button: str) -> float:
-        """
-        Applies various filtering functions to an axis for controlling the arm
-        :return: Return -1, 0, or 1 depending on what buttons are being pressed
-        """
-        return button_array[self.xbox_mappings[pos_button]] - button_array[self.xbox_mappings[neg_button]]
+    @staticmethod
+    def buttons_as_axis(buttons: list[float], mappings: dict[str, int], pos_button: str, neg_button: str) -> float:
+        return buttons[mappings[pos_button]] - buttons[mappings[neg_button]]
+
+    @staticmethod
+    def filter_axis(axes: list[float], mappings: dict[str, int], name: str,
+                    deadzone_threshold: float = 0.05,
+                    apply_quadratic: bool = False,
+                    scale: float = 1.0) -> float:
+        signal = axes[mappings[name]]
+        signal = deadzone(signal, deadzone_threshold)
+        if apply_quadratic:
+            signal = quadratic(signal)
+        signal *= scale
+        return signal
 
     def to_velocity(self, input: int, joint_name: str, brushless: bool = True) -> float:
         """
         Scales [-1,1] joystick input to min/max of each joint
         """
-        if brushless:
-            return (
-                self.brushless_motors[joint_name]["min_velocity"]
-                + (input + 1)
-                * (
-                    self.brushless_motors[joint_name]["max_velocity"]
-                    - self.brushless_motors[joint_name]["min_velocity"]
-                )
-                / 2
-            )
-        else:
-            return (
-                self.brushed_motors[joint_name]["min_velocity"]
-                + (input + 1)
-                * (self.brushed_motors[joint_name]["max_velocity"] - self.brushed_motors[joint_name]["min_velocity"])
-                / 2
-            )
+        lookup = self.brushless_motors if brushless else self.brushed_motors
+        min_velocity = lookup[joint_name]["min_velocity"]
+        max_velocity = lookup[joint_name]["max_velocity"]
+        return self.remap(input, -1, 1, min_velocity, max_velocity)
 
-    def publish_ik(self, axes: list[float], buttons: list[float]) -> None:
-        ee_in_map = SE3.from_tf_tree(TF_BUFFER, "base_link", "arm_d_link")
-
-        ee_in_map.position[0] += self.ik_names["x"] * self.filter_xbox_axis(axes[self.xbox_mappings["left_js_x"]])
-        ee_in_map.position[1] += self.ik_names["y"] * self.filter_xbox_axis(axes[self.xbox_mappings["left_js_y"]])
-        ee_in_map.position[2] += self.ik_names["z"] * self.filter_xbox_button(buttons, "right_trigger", "left_trigger")
-
-        self.send(
-            text_data=json.dumps(
-                {
-                    "type": "ik",
-                    "target": {
-                        "position": ee_in_map.position.tolist(),
-                        "quaternion": ee_in_map.rotation.quaternion.tolist(),
-                    },
-                }
-            )
-        )
-
-        self.arm_ik_pub.publish(
-            IK(
-                target=PoseStamped(
-                    header=Header(stamp=rospy.Time.now(), frame_id="base_link"),
-                    pose=Pose(
-                        position=Point(*ee_in_map.position),
-                        orientation=Quaternion(*ee_in_map.rotation.quaternion),
-                    ),
-                )
-            )
-        )
+    # def publish_ik(self, axes: list[float], buttons: list[float]) -> None:
+    #     ee_in_map = SE3.from_tf_tree(TF_BUFFER, "base_link", "arm_d_link")
+    #
+    #     ee_in_map.position[0] += self.ik_names["x"] * self.filter_xbox_axis(axes[self.xbox_mappings["left_js_x"]])
+    #     ee_in_map.position[1] += self.ik_names["y"] * self.filter_xbox_axis(axes[self.xbox_mappings["left_js_y"]])
+    #     ee_in_map.position[2] += self.ik_names["z"] * self.filter_xbox_button(buttons, "right_trigger", "left_trigger")
+    #
+    #     self.send(
+    #         text_data=json.dumps(
+    #             {
+    #                 "type": "ik",
+    #                 "target": {
+    #                     "position": ee_in_map.position.tolist(),
+    #                     "quaternion": ee_in_map.rotation.quaternion.tolist(),
+    #                 },
+    #             }
+    #         )
+    #     )
+    #
+    #     self.arm_ik_pub.publish(
+    #         IK(
+    #             target=PoseStamped(
+    #                 header=Header(stamp=rospy.Time.now(), frame_id="base_link"),
+    #                 pose=Pose(
+    #                     position=Point(*ee_in_map.position),
+    #                     orientation=Quaternion(*ee_in_map.rotation.quaternion),
+    #                 ),
+    #             )
+    #         )
+    #     )
 
     def publish_position(self, type, names, positions):
         position_cmd = Position(
@@ -409,29 +409,44 @@ class GUIConsumer(JsonWebsocketConsumer):
         if msg["type"] == "cache_values":
             self.handle_cache(mode=msg["arm_mode"], input=msg["input"], positions=msg["positions"])
 
-        elif msg["buttons"][self.xbox_mappings["home"]] > 0.5:
-            rospy.loginfo("Homing DE")
+        # elif msg["buttons"][self.xbox_mappings["home"]] > 0.5:
+        #     rospy.loginfo("Homing DE")
+        #
+        #     client = actionlib.SimpleActionClient("arm_action", ArmActionAction)
+        #     if client.wait_for_server(timeout=rospy.Duration(1)):
+        #         goal = ArmActionGoal(name="de_home")
+        #         client.send_goal(goal)
+        #
+        #         client.wait_for_result()
+        #     else:
+        #         rospy.logwarn("Arm action server not available")
+        # else:
 
-            client = actionlib.SimpleActionClient("arm_action", ArmActionAction)
-            if client.wait_for_server(timeout=rospy.Duration(1)):
-                goal = ArmActionGoal(name="de_home")
-                client.send_goal(goal)
+        def filter_axis(name: str,
+                        deadzone_threshold: float = 0.05, apply_quadratic: bool = False,
+                        scale: float = 1.0) -> float:
+            return self.filter_axis(msg["axes"], self.xbox_mappings, name,
+                                    deadzone_threshold, apply_quadratic,
+                                    scale * self.ra_config[name]["multiplier"])
 
-                client.wait_for_result()
-            else:
-                rospy.logwarn("Arm action server not available")
-        else:
-            if msg["arm_mode"] == "ik":
-                self.publish_ik(msg["axes"], msg["buttons"])
+        self.xbox_twist = np.zeros(2)
+        self.xbox_twist -= np.array([
+            self.filter_xbox_axis(msg["axes"][self.xbox_mappings["left_y"]]),
+            self.filter_xbox_axis(msg["axes"][self.xbox_mappings["right_x"]]),
+        ])
+        self.send_twist()
 
-            elif msg["arm_mode"] == "position":
-                self.publish_position(type=msg["type"], names=names, positions=msg["positions"])
+        # if msg["arm_mode"] == "ik":
+        #     self.publish_ik(msg["axes"], msg["buttons"])
 
-            elif msg["arm_mode"] == "velocity":
-                self.publish_velocity(type=msg["type"], names=names, axes=msg["axes"], buttons=msg["buttons"])
+        if msg["arm_mode"] == "position":
+            self.publish_position(type=msg["type"], names=names, positions=msg["positions"])
 
-            elif msg["arm_mode"] == "throttle":
-                self.publish_throttle(type=msg["type"], names=names, axes=msg["axes"], buttons=msg["buttons"])
+        elif msg["arm_mode"] == "velocity":
+            self.publish_velocity(type=msg["type"], names=names, axes=msg["axes"], buttons=msg["buttons"])
+
+        elif msg["arm_mode"] == "throttle":
+            self.publish_throttle(type=msg["type"], names=names, axes=msg["axes"], buttons=msg["buttons"])
 
     def handle_joystick_message(self, msg):
         # Tiny deadzone so we can safely e-stop with dampen switch
@@ -442,42 +457,35 @@ class GUIConsumer(JsonWebsocketConsumer):
         # (-1*dampen) because the top of the dampen switch is -1.
         dampen = -1 * ((-1 * dampen) + 1) / 2
 
-        def get_axes_input(
-            mapping_name: str, deadzone_threshold: float = 0.05, apply_quadratic: bool = False, scale: float = 1.0
-        ) -> float:
-            signal = msg["axes"][self.mappings[mapping_name]]
-            signal *= self.drive_config[mapping_name]["multiplier"]
-            signal = deadzone(signal, deadzone_threshold)
-            if apply_quadratic:
-                signal = quadratic(signal)
-            signal *= scale
-            return signal
+        def filter_axis(name: str,
+                        deadzone_threshold: float = 0.05, apply_quadratic: bool = False,
+                        scale: float = 1.0) -> float:
+            return self.filter_axis(msg["axes"], self.joystick_mappings, name,
+                                    deadzone_threshold, apply_quadratic,
+                                    scale * self.drive_config[name]["multiplier"])
 
-        linear = get_axes_input("forward_back", 0.02, True, self.max_wheel_speed * dampen)
-        # Note(quintin): I prefer using solely the twist axis for turning...
-        # angular_from_lateral = get_axes_input("left_right", 0.4, True)
-        angular = get_axes_input("twist", 0.03, True, self.max_angular_speed * dampen)
-
-        linear -= get_axes_input("tilt", 0.5, scale=0.1)
-        angular -= get_axes_input("pan", 0.5, scale=0.1)
-
-        self.twist_pub.publish(
-            Twist(
-                linear=Vector3(x=linear),
-                angular=Vector3(z=angular),
-            )
-        )
+        self.joystick_twist = np.zeros(2)
+        self.joystick_twist += np.array([
+            filter_axis("forward_back", 0.02, True, self.max_wheel_speed * dampen),
+            # Note(quintin): I prefer using solely the twist axis for turning...
+            filter_axis("twist", 0.03, True, self.max_angular_speed * dampen)
+        ])
+        self.joystick_twist -= np.array([
+            filter_axis("tilt", 0.5, scale=0.1),
+            filter_axis("pan", 0.5, scale=0.1),
+        ])
+        self.send_twist()
 
         self.send(
             text_data=json.dumps(
                 {
                     "type": "joystick",
-                    "left_right": msg["axes"][self.mappings["left_right"]],
-                    "forward_back": msg["axes"][self.mappings["forward_back"]],
-                    "twist": msg["axes"][self.mappings["twist"]],
-                    "dampen": msg["axes"][self.mappings["dampen"]],
-                    "pan": msg["axes"][self.mappings["pan"]],
-                    "tilt": msg["axes"][self.mappings["tilt"]],
+                    "left_right": msg["axes"][self.joystick_mappings["left_right"]],
+                    "forward_back": msg["axes"][self.joystick_mappings["forward_back"]],
+                    "twist": msg["axes"][self.joystick_mappings["twist"]],
+                    "dampen": msg["axes"][self.joystick_mappings["dampen"]],
+                    "pan": msg["axes"][self.joystick_mappings["pan"]],
+                    "tilt": msg["axes"][self.joystick_mappings["tilt"]],
                 }
             )
         )
@@ -824,9 +832,9 @@ class GUIConsumer(JsonWebsocketConsumer):
                     rate.sleep()
                     continue
             except (
-                tf2_ros.LookupException,
-                tf2_ros.ConnectivityException,
-                tf2_ros.ExtrapolationException,
+                    tf2_ros.LookupException,
+                    tf2_ros.ConnectivityException,
+                    tf2_ros.ExtrapolationException,
             ):
                 rate.sleep()
                 continue
