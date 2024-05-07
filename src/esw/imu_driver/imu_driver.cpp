@@ -9,6 +9,8 @@
 #include <cstdlib>
 #include <sstream>
 
+#include <sensor_msgs/Temperature.h>
+
 #include <mrover/CalibrationStatus.h>
 #include <mrover/ImuAndMag.h>
 
@@ -39,6 +41,7 @@ auto main(int argc, char** argv) -> int {
 
     ros::Publisher dataPublisher = nh.advertise<mrover::ImuAndMag>("/imu/data", 1);
     ros::Publisher calibrationPublisher = nh.advertise<mrover::CalibrationStatus>("/imu/calibration", 1);
+    ros::Publisher temperaturePublisher = nh.advertise<sensor_msgs::Temperature>("/imu/temperature", 1);
 
     auto port = nh.param<std::string>("/imu_driver/port", "/dev/imu");
     auto frame = nh.param<std::string>("/imu_driver/frame_id", "imu_link");
@@ -125,6 +128,12 @@ auto main(int argc, char** argv) -> int {
             calibration.header.frame_id = frame;
             calibration.system_calibration = data.calibration;
             calibrationPublisher.publish(calibration);
+
+            sensor_msgs::Temperature temperature{};
+            temperature.header.stamp = ros::Time::now();
+            temperature.header.frame_id = frame;
+            temperature.temperature = data.temperature;
+            temperaturePublisher.publish(temperature);
         }
 
         ros::spinOnce();
