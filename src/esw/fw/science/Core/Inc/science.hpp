@@ -88,7 +88,7 @@ namespace mrover {
         Science(FDCAN<InBoundScienceMessage> const& fdcan_bus,
         		std::array<Spectral, 3> spectral_sensors,
 				std::shared_ptr<ADCSensor> adc_sensor,
-				std::array<DiagTempSensor, 6> diag_temp_sensors,
+				std::array<Thermistor, 6> thermistors,
 				std::array<Pin, 6> heater_pins,
 				std::array<Pin, 3> uv_leds,
 				std::array<Pin, 3> white_leds
@@ -101,7 +101,7 @@ namespace mrover {
 		   m_can_tx_mutex{osMutexNew(NULL)}
 	   {
 		   for (int i = 0; i < 6; ++i) {
-			   m_heaters.at(i) = Heater(diag_temp_sensors[i], heater_pins[i]);
+			   m_heaters.at(i) = Heater(thermistors[i], heater_pins[i]);
 		   }
 	   }
 

@@ -11,11 +11,11 @@
 
 namespace mrover {
 
-    class DiagTempSensor {
+    class Thermistor {
     public:
-    	DiagTempSensor() = default;
+    	Thermistor() = default;
 
-    	DiagTempSensor(std::shared_ptr<ADCSensor> adc_sensor, uint8_t channel);
+    	Thermistor(std::shared_ptr<ADCSensor> adc_sensor, uint8_t channel);
 
         void update_temp();
 

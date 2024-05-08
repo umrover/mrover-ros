@@ -12,16 +12,16 @@ namespace mrover {
 
     constexpr static int MAX_HEATER_WATCHDOG_TICK = 1000;
 
-    Heater::Heater(DiagTempSensor const& diag_temp_sensor, Pin const& heater_pin)
-    	: m_diag_temp_sensor(std::move(diag_temp_sensor)),
+    Heater::Heater(Thermistor const& thermistor, Pin const& heater_pin)
+    	: m_thermistor(std::move(thermistor)),
 		  m_heater_pin(std::move(heater_pin)),
 		  m_state(false),
-		  m_auto_shutoff_enabled(true),  // TODO - may want to make true if thermistors work
+		  m_auto_shutoff_enabled(true),
 		  m_last_time_received_message(0)
 	   {}
 
     float Heater::get_temp() {
-    	return m_diag_temp_sensor.get_temp();
+    	return m_thermistor.get_temp();
     }
 
     bool Heater::get_state() {
@@ -44,7 +44,7 @@ namespace mrover {
     }
 
     void Heater::update_temp_and_auto_shutoff_if_applicable() {
-    	m_diag_temp_sensor.update_science_temp();
+    	m_thermistor.update_science_temp();
     	if (m_state && m_auto_shutoff_enabled && (get_temp() >= m_max_heater_temp)) {
 			m_state = false;
 			m_heater_pin.write(GPIO_PIN_RESET);

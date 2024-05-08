@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "diag_temp_sensor.hpp"
+#include "thermistor.hpp"
 
 namespace mrover {
 
@@ -17,7 +17,7 @@ namespace mrover {
     public:
     	Heater() = default;
 
-    	Heater(DiagTempSensor const& diag_temp_sensor, Pin const& heater_pin);
+    	Heater(Thermistor const& thermistor, Pin const& heater_pin);
 
         float get_temp();
 
@@ -36,7 +36,7 @@ namespace mrover {
     private:
         void feed_watchdog();
 
-        DiagTempSensor m_diag_temp_sensor;
+        Thermistor m_thermistor;
         Pin m_heater_pin;
         bool m_state {};
         bool m_auto_shutoff_enabled {};

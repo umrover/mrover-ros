@@ -34,14 +34,14 @@ namespace mrover {
 
         std::shared_ptr<ADCSensor> adc_sensor = std::make_shared<ADCSensor>(&hadc1, 6);
 
-        std::array<DiagTempSensor, 6> diag_temp_sensors =
+        std::array<Thermistor, 6> thermistors =
 		{
-				DiagTempSensor{adc_sensor, 0},
-				DiagTempSensor{adc_sensor, 1},
-				DiagTempSensor{adc_sensor, 2},
-				DiagTempSensor{adc_sensor, 3},
-				DiagTempSensor{adc_sensor, 4},
-				DiagTempSensor{adc_sensor, 5},
+				Thermistor{adc_sensor, 0},
+				Thermistor{adc_sensor, 1},
+				Thermistor{adc_sensor, 2},
+				Thermistor{adc_sensor, 3},
+				Thermistor{adc_sensor, 4},
+				Thermistor{adc_sensor, 5},
 
 		};
         std::array<Pin, 6> heater_pins =
@@ -67,7 +67,7 @@ namespace mrover {
 		};
 
         fdcan_bus = FDCAN<InBoundScienceMessage>{DEVICE_ID, DESTINATION_DEVICE_ID, &hfdcan1};
-        science = Science{fdcan_bus, spectral_sensors, adc_sensor, diag_temp_sensors, heater_pins, uv_leds, white_leds};
+        science = Science{fdcan_bus, spectral_sensors, adc_sensor, thermistors, heater_pins, uv_leds, white_leds};
     }
 
     void reboot_spectral() {
