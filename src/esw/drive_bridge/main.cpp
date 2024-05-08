@@ -43,9 +43,8 @@ auto main(int argc, char** argv) -> int {
     WHEEL_DISTANCE_INNER = roverWidth / 2;
     WHEEL_DISTANCE_OUTER = sqrt((roverWidth / 2) * (roverWidth / 2) + (roverLength / 2) * (roverLength / 2));
 
-    auto ratioMotorToWheel = requireParamAsUnit<Dimensionless>(nh, "wheel/gear_ratio");
     auto wheelRadius = requireParamAsUnit<Meters>(nh, "wheel/radius");
-    WHEEL_LINEAR_TO_ANGULAR = Radians{1} / wheelRadius * ratioMotorToWheel;
+    WHEEL_LINEAR_TO_ANGULAR = Radians{1} / wheelRadius;
 
     auto leftGroup = std::make_unique<MotorsGroup>(nh, "drive_left");
     auto rightGroup = std::make_unique<MotorsGroup>(nh, "drive_right");
