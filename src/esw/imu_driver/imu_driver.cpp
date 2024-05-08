@@ -13,7 +13,6 @@
 
 #include <array>
 #include <cstdlib>
-#include <numbers>
 #include <numeric>
 #include <sstream>
 
@@ -22,8 +21,7 @@
 
 #include <Eigen/Eigenvalues>
 
-constexpr static std::size_t BUFFER_SIZE = 256;
-constexpr static std::size_t LINE_ABORT_SIZE = 4096;
+constexpr static std::size_t BUFFER_SIZE = 256, LINE_ABORT_SIZE = 4096;
 
 static ros::Duration const STEP{0.1}, WINDOW{1};
 

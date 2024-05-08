@@ -69,7 +69,7 @@ def quadratic(signal: float) -> float:
     Use to allow more control near low inputs values by squaring the magnitude.
     For example using a joystick to control drive.
     """
-    return copysign(signal ** 2, signal)
+    return copysign(signal**2, signal)
 
 
 tf2_buffer = tf2_ros.Buffer()
@@ -252,10 +252,14 @@ class GUIConsumer(JsonWebsocketConsumer):
         return buttons[mappings[pos_button]] - buttons[mappings[neg_button]]
 
     @staticmethod
-    def filter_axis(axes: list[float], mappings: dict[str, int], name: str,
-                    deadzone_threshold: float = 0.05,
-                    apply_quadratic: bool = False,
-                    scale: float = 1.0) -> float:
+    def filter_axis(
+        axes: list[float],
+        mappings: dict[str, int],
+        name: str,
+        deadzone_threshold: float = 0.05,
+        apply_quadratic: bool = False,
+        scale: float = 1.0,
+    ) -> float:
         signal = axes[mappings[name]]
         signal = deadzone(signal, deadzone_threshold)
         if apply_quadratic:
@@ -422,18 +426,25 @@ class GUIConsumer(JsonWebsocketConsumer):
         #         rospy.logwarn("Arm action server not available")
         # else:
 
-        def filter_axis(name: str,
-                        deadzone_threshold: float = 0.05, apply_quadratic: bool = False,
-                        scale: float = 1.0) -> float:
-            return self.filter_axis(msg["axes"], self.xbox_mappings, name,
-                                    deadzone_threshold, apply_quadratic,
-                                    scale * self.ra_config[name]["multiplier"])
+        def filter_axis(
+            name: str, deadzone_threshold: float = 0.05, apply_quadratic: bool = False, scale: float = 1.0
+        ) -> float:
+            return self.filter_axis(
+                msg["axes"],
+                self.xbox_mappings,
+                name,
+                deadzone_threshold,
+                apply_quadratic,
+                scale * self.ra_config[name]["multiplier"],
+            )
 
         self.xbox_twist = np.zeros(2)
-        self.xbox_twist -= np.array([
-            self.filter_xbox_axis(msg["axes"][self.xbox_mappings["left_y"]]),
-            self.filter_xbox_axis(msg["axes"][self.xbox_mappings["right_x"]]),
-        ])
+        self.xbox_twist -= np.array(
+            [
+                self.filter_xbox_axis(msg["axes"][self.xbox_mappings["left_y"]]),
+                self.filter_xbox_axis(msg["axes"][self.xbox_mappings["right_x"]]),
+            ]
+        )
         self.send_twist()
 
         # if msg["arm_mode"] == "ik":
@@ -457,23 +468,32 @@ class GUIConsumer(JsonWebsocketConsumer):
         # (-1*dampen) because the top of the dampen switch is -1.
         dampen = -1 * ((-1 * dampen) + 1) / 2
 
-        def filter_axis(name: str,
-                        deadzone_threshold: float = 0.05, apply_quadratic: bool = False,
-                        scale: float = 1.0) -> float:
-            return self.filter_axis(msg["axes"], self.joystick_mappings, name,
-                                    deadzone_threshold, apply_quadratic,
-                                    scale * self.drive_config[name]["multiplier"])
+        def filter_axis(
+            name: str, deadzone_threshold: float = 0.05, apply_quadratic: bool = False, scale: float = 1.0
+        ) -> float:
+            return self.filter_axis(
+                msg["axes"],
+                self.joystick_mappings,
+                name,
+                deadzone_threshold,
+                apply_quadratic,
+                scale * self.drive_config[name]["multiplier"],
+            )
 
         self.joystick_twist = np.zeros(2)
-        self.joystick_twist += np.array([
-            filter_axis("forward_back", 0.02, True, self.max_wheel_speed * dampen),
-            # Note(quintin): I prefer using solely the twist axis for turning...
-            filter_axis("twist", 0.03, True, self.max_angular_speed * dampen)
-        ])
-        self.joystick_twist -= np.array([
-            filter_axis("tilt", 0.5, scale=0.1),
-            filter_axis("pan", 0.5, scale=0.1),
-        ])
+        self.joystick_twist += np.array(
+            [
+                filter_axis("forward_back", 0.02, True, self.max_wheel_speed * dampen),
+                # Note(quintin): I prefer using solely the twist axis for turning...
+                filter_axis("twist", 0.03, True, self.max_angular_speed * dampen),
+            ]
+        )
+        self.joystick_twist -= np.array(
+            [
+                filter_axis("tilt", 0.5, scale=0.1),
+                filter_axis("pan", 0.5, scale=0.1),
+            ]
+        )
         self.send_twist()
 
         self.send(
@@ -832,9 +852,9 @@ class GUIConsumer(JsonWebsocketConsumer):
                     rate.sleep()
                     continue
             except (
-                    tf2_ros.LookupException,
-                    tf2_ros.ConnectivityException,
-                    tf2_ros.ExtrapolationException,
+                tf2_ros.LookupException,
+                tf2_ros.ConnectivityException,
+                tf2_ros.ExtrapolationException,
             ):
                 rate.sleep()
                 continue

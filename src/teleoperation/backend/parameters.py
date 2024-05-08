@@ -8,6 +8,7 @@ from typing import Union, TypeAlias
 
 # The following are for an XBox 360 controller and a Thrustmaster joystick
 
+
 class XboxButton(Enum):
     A = 0
     B = 1
