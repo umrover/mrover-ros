@@ -15,7 +15,7 @@ export default defineComponent({
     return {
       threeScene: null,
       temp_positions: ['base', 'a', 'b', 'c', 'd', 'e'],
-      positions: []
+      positions: [],
     }
   },
 

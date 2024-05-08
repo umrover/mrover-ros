@@ -16,10 +16,6 @@
     </div>
     <div :class="['shadow p-3 rounded data', ledColor]">
       <h2>Nav State: {{ navState }}</h2>
-      <div style='display: inline-block; vertical-align: top'>
-        <p style='margin-top: 6px'>Joystick Values</p>
-        <JoystickValues />
-      </div>
       <OdometryReading :odom='odom' />
     </div>
     <div class='shadow p-3 rounded feed'>
@@ -62,7 +58,6 @@ import AutonWaypointEditor from './AutonWaypointEditor.vue'
 import Cameras from './Cameras.vue'
 import CameraFeed from './CameraFeed.vue'
 import OdometryReading from './OdometryReading.vue'
-import JoystickValues from './JoystickValues.vue'
 import DriveControls from './DriveControls.vue'
 import MastGimbalControls from './MastGimbalControls.vue'
 import ControllerDataTable from './ControllerDataTable.vue'
@@ -80,7 +75,6 @@ export default defineComponent({
     Cameras,
     CameraFeed,
     OdometryReading,
-    JoystickValues,
     DriveControls,
     MastGimbalControls
   },

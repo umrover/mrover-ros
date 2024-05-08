@@ -15,16 +15,12 @@ const UPDATE_HZ = 20
 export default {
   data() {
     return {
-      rotation_pwr: 1,
-      up_down_pwr: 1,
-
-      keyboard_pub: null,
-
-      inputData: {
-        w_key: 0,
-        a_key: 0,
-        s_key: 0,
-        d_key: 0
+      keys: [0, 0, 0, 0],
+      mappings: {
+        w: 0,
+        a: 1,
+        s: 2,
+        d: 3
       }
     }
   },
@@ -41,6 +37,8 @@ export default {
   },
 
   created: function() {
+    // This is necessary instead of just sending in the event listeners
+    // The listeners have this strange behavior where they pause for a bit before sending many
     this.interval = window.setInterval(() => {
       this.publish()
     }, 1000 / UPDATE_HZ)
@@ -48,40 +46,25 @@ export default {
 
   methods: {
     ...mapActions('websocket', ['sendMessage']),
-    // When a key is being pressed down, set the power level.
-    // Ignore keys that are already pressed to avoid spamming when holding values.
+
     keyMonitorDown: function(event: { key: string }) {
-      if (event.key.toLowerCase() == 'w') {
-        this.inputData.w_key = 1
-      } else if (event.key.toLowerCase() == 'a') {
-        this.inputData.a_key = 1
-      } else if (event.key.toLowerCase() == 's') {
-        this.inputData.s_key = 1
-      } else if (event.key.toLowerCase() == 'd') {
-        this.inputData.d_key = 1
-      }
+      const index = this.mappings[event.key.toLowerCase()]
+      if (!index) return
+
+      this.keys[index] = 1
     },
 
-    // when a key is released, sets input for that key as 0
     keyMonitorUp: function(event: { key: string }) {
-      if (event.key.toLowerCase() == 'w') {
-        this.inputData.w_key = 0
-      } else if (event.key.toLowerCase() == 'a') {
-        this.inputData.a_key = 0
-      } else if (event.key.toLowerCase() == 's') {
-        this.inputData.s_key = 0
-      } else if (event.key.toLowerCase() == 'd') {
-        this.inputData.d_key = 0
-      }
+      const index = this.mappings[event.key.toLowerCase()]
+      if (!index) return
+
+      this.keys[index] = 0
     },
 
     publish: function() {
       this.sendMessage({
-        type: 'mast_gimbal',
-        throttles: [
-          this.inputData.w_key - this.inputData.s_key,
-          this.inputData.d_key - this.inputData.a_key
-        ]
+        type: 'keyboard_values',
+        buttons: this.keys
       })
     }
   }

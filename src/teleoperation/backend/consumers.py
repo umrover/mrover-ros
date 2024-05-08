@@ -9,9 +9,11 @@ import rospy
 import tf2_ros
 from backend.drive_controls import compute_drive_controls
 from backend.input import Inputs
+from backend.mast_controls import compute_mast_controls
 from backend.ra_controls import compute_ra_controls
 from mrover.msg import ControllerState, MotorsStatus
 from sensor_msgs.msg import JointState
+from util.SE3 import SE3
 
 rospy.init_node("teleoperation", disable_signals=True)
 
@@ -47,7 +49,7 @@ def controller_state_to_message(msg_type: str, msg: ControllerState) -> dict:
         "state": msg.state,
         "error": msg.error,
         # Convert list of bit-packed integers to list of lists of booleans
-        "limit_hit": [[1 if n & (1 << i) != 0 else 0 for i in range(4)] for n in msg.limit_hit],
+        "limit_hit": [[n & (1 << i) for i in range(4)] for n in msg.limit_hit],
     }
 
 
@@ -76,6 +78,19 @@ def motor_status_callback(msg: MotorsStatus, msg_type: str) -> None:
 rospy.Subscriber("/drive_status", MotorsStatus, partial(motor_status_callback, msg_type="drive_status"))
 
 
+def send_bearing_callback(_) -> None:
+    base_link_in_map = SE3.from_tf_tree(tf2_buffer, "map", "base_link")
+    send_message_to_all(
+        {
+            "type": "bearing",
+            "rotation": base_link_in_map.rotation.quaternion.tolist(),
+        }
+    )
+
+
+rospy.Timer(rospy.Duration(0.2), send_bearing_callback)
+
+
 class GUIConsumer(JsonWebsocketConsumer):
     def connect(self) -> None:
         self.accept()
@@ -85,6 +100,8 @@ class GUIConsumer(JsonWebsocketConsumer):
         consumers.remove(self)
 
     def receive(self, text_data=None, bytes_data=None, **kwargs) -> None:
+        global all_inputs
+
         if text_data is None:
             rospy.logwarn("Expecting text but received binary on GUI websocket...")
             return
@@ -92,8 +109,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         message = json.loads(text_data)
         rospy.loginfo(message)
         match message["type"]:
-            case "joystick_values" | "controller_values":
-                global all_inputs
+            case "joystick_values" | "controller_values" | "keyboard_values":
                 match message["type"]:
                     case "joystick_values":
                         all_inputs.joystick.axes = message["axes"]
@@ -101,8 +117,11 @@ class GUIConsumer(JsonWebsocketConsumer):
                     case "controller_values":
                         all_inputs.controller.axes = message["axes"]
                         all_inputs.controller.buttons = message["buttons"]
+                    case "keyboard_values":
+                        all_inputs.keyboard.buttons = message["buttons"]
                 compute_drive_controls(all_inputs)
                 compute_ra_controls(all_inputs)
+                compute_mast_controls(all_inputs)
         # try:
         #     if message["type"] == "joystick_values":
         #         update_joystick(message)
@@ -321,29 +340,13 @@ class GUIConsumer(JsonWebsocketConsumer):
     # def ish_thermistor_data_callback(self, msg):
     #     temps = [x.temperature for x in msg.temps]
     #     self.send(text_data=json.dumps({"type": "thermistor", "temps": temps}))
-    #
-    # def bearing(self):
-    #     base_link_in_map = SE3.from_tf_tree(TF_BUFFER, "map", "base_link")
-    #     self.send(
-    #         text_data=json.dumps(
-    #             {
-    #                 "type": "bearing",
-    #                 "rotation": base_link_in_map.rotation.quaternion.tolist(),
-    #             }
-    #         )
-    #     )
-    #
+
     # def mast_gimbal(self, msg):
     #     pwr = rospy.get_param("teleop/mast_gimbal_power")
     #     rot_pwr = msg["throttles"][0] * pwr["rotation_pwr"]
     #     up_down_pwr = msg["throttles"][1] * pwr["up_down_pwr"]
     #     self.mast_gimbal_pub.publish(Throttle(["mast_gimbal_y", "mast_gimbal_z"], [rot_pwr, up_down_pwr]))
     #
-    # def send_res_streams(self):
-    #     res = rospy.get_param("cameras/max_num_resolutions")
-    #     streams = rospy.get_param("cameras/max_streams")
-    #     self.send(text_data=json.dumps({"type": "max_resolution", "res": res}))
-    #     self.send(text_data=json.dumps({"type": "max_streams", "streams": streams}))
     #
     # def capture_panorama(self) -> None:
     #     rospy.logerr("Capturing panorama")

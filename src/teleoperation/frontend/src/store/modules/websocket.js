@@ -13,7 +13,8 @@ const mutations = {
 
 const actions = {
   sendMessage({ commit }, message) {
-    // Send message through the WebSocket
+    if (webSocket.readyState !== WebSocket.OPEN) return
+
     webSocket.send(JSON.stringify(message))
   },
 

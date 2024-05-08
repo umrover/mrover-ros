@@ -77,21 +77,16 @@ def compute_ra_controls(inputs: Inputs) -> None:
     axes = inputs.controller.axes
 
     match inputs.ra_arm_mode:
-        case "manual" | "manual++":
+        case "manual" | "hybrid":
             manual_controls = compute_manual_joint_controls(axes)
 
             match inputs.ra_arm_mode:
                 case "manual":
-                    throttle_publisher.publish(
-                        Throttle(
-                            names=JOINT_NAMES,
-                            throttles=manual_controls,
-                        )
-                    )
-                case "manual++":
+                    throttle_publisher.publish(Throttle(JOINT_NAMES, manual_controls))
+                case "hybrid":
                     # Control all joints before DE normally
                     names, throttles = subset(JOINT_NAMES, manual_controls, {Joint.A, Joint.B, Joint.C})
-                    throttle_publisher.publish(Throttle(names=names, throttles=throttles))
+                    throttle_publisher.publish(Throttle(names, throttles))
 
                     # Control DE joints based on current position
                     if joint_positions:
@@ -103,8 +98,8 @@ def compute_ra_controls(inputs: Inputs) -> None:
                         )
                         position_publisher.publish(
                             Position(
-                                names=names,
-                                positions=[
+                                names,
+                                [
                                     # Extend out like a carrot on a stick
                                     joint_de_pitch + de_pitch_throttle * JOINT_DE_POSITION_SCALE,
                                     joint_de_roll + de_roll_throttle * JOINT_DE_POSITION_SCALE,

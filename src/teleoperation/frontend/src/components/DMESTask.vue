@@ -47,8 +47,6 @@ import MastGimbalControls from './MastGimbalControls.vue'
 import Rover3D from './Rover3D.vue'
 import { quaternionToMapAngle } from '../utils.js'
 
-let interval: number
-
 export default defineComponent({
   components: {
     ControllerDataTable,
@@ -115,9 +113,6 @@ export default defineComponent({
         this.cancelIK(event)
       }
     })
-    interval = setInterval(() => {
-      this.sendMessage({ type: 'bearing' })
-    }, 1000)
   }
 })
 </script>

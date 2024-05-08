@@ -6,7 +6,7 @@ The following are for an XBox 360 controller and a Thrustmaster T.16000M joystic
 from enum import Enum
 
 
-class ControllerButtons(Enum):
+class ControllerButton(Enum):
     A = 0
     B = 1
     X = 2
@@ -41,3 +41,10 @@ class JoystickAxis(Enum):
     # The small joystick on top of the big one
     MICRO_LEFT_RIGHT = 4
     MICRO_FORWARD_BACK = 5
+
+
+class KeyboardButton(Enum):
+    W = 0
+    A = 1
+    S = 2
+    D = 3

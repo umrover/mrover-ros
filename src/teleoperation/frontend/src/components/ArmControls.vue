@@ -18,8 +18,8 @@
         <label class='form-check-label' for='manual'>Manual</label>
       </div>
       <div class='form-check'>
-        <input v-model='mode' class='form-check-input' type='radio' id='manual++' value='manual++' />
-        <label class='form-check-label' for='manual++'>Manual++</label>
+        <input v-model='mode' class='form-check-input' type='radio' id='hybrid' value='hybrid' />
+        <label class='form-check-label' for='hybrid'>Hybrid</label>
       </div>
     </div>
   </div>
