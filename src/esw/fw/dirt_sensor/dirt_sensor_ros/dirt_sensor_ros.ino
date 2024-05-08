@@ -42,7 +42,6 @@ void loop(){
   int rawVal = temp_sensor.getRawData();
   thermistor_data.temperature = thermistorValue;
   thermistor_pub.publish(&thermistor_data);
-  Serial.println(thermistorValue);
 
   float humidity = sht20.readHumidity() / 100.0;
   humidity_data.relative_humidity = humidity;
