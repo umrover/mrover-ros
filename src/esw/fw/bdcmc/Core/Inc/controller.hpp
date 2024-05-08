@@ -149,13 +149,15 @@ namespace mrover {
                 // This also includes when going to zero from a non-zero value (since signum(0) == 0), helpful for when you want to stop moving quickly on input release
                 m_throttled_output = 0_percent;
             }
-
-            if (abs(delta) < applied_delta) {
-                // We are very close to the desired output, just set it
-                m_throttled_output = output_after_limit;
-            } else {
-                m_throttled_output += applied_delta * signum(delta);
+            else {
+				if (abs(delta) < applied_delta) {
+					// We are very close to the desired output, just set it
+					m_throttled_output = output_after_limit;
+				} else {
+					m_throttled_output += applied_delta * signum(delta);
+				}
             }
+
 
             m_motor_driver.write(m_throttled_output);
         }
