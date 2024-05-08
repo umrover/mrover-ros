@@ -9,8 +9,11 @@
 
 #include <Eigen/Geometry>
 #include <manif/SE3.h>
+#include <manif/SO3.h>
+#include <manif/SE2.h>
+#include <manif/SO2.h>
 
-using manif::SE3d, manif::SO3d, manif::SE3f, manif::SO3f;
+using manif::SE3d, manif::SO3d, manif::SE3f, manif::SO3f, manif::SE2d, manif::SO2d, manif::SE2f, manif::SO2f;
 
 using R2 = Eigen::Vector2d;
 using R3 = Eigen::Vector3d;

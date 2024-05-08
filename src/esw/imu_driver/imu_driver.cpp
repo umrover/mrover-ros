@@ -1,39 +1,31 @@
-#include <ros/init.h>
-#include <ros/node_handle.h>
-#include <ros/publisher.h>
-#include <tf2_ros/buffer.h>
-#include <tf2_ros/transform_listener.h>
-
-#include <lie.hpp>
-
-#include <sensor_msgs/Temperature.h>
-
-#include <fcntl.h>
-#include <termios.h>
-
 #include <array>
 #include <cstdlib>
 #include <numeric>
 #include <sstream>
 
+#include <fcntl.h>
+#include <termios.h>
+
+#include <ros/init.h>
+#include <ros/node_handle.h>
+#include <ros/publisher.h>
+
+#include <sensor_msgs/Temperature.h>
+
+#include <lie.hpp>
+
 #include <mrover/CalibrationStatus.h>
 #include <mrover/ImuAndMag.h>
 
-#include <Eigen/Eigenvalues>
-
 constexpr static std::size_t BUFFER_SIZE = 256, LINE_ABORT_SIZE = 4096;
-
-static ros::Duration const STEP{0.1}, WINDOW{1};
-
-constexpr static float CORRECTION_THRESHOLD = 1;
-
-static std::string const BASE_LINK_FRAME = "base_link", MAP_FRAME = "map";
 
 struct ImuData {
     S3 q = S3::Identity();
     R3 a, g, m;
     float temperature{};
     unsigned int calibration{};
+
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 auto operator>>(std::istream& iss, ImuData& data) -> std::istream& {
@@ -45,8 +37,6 @@ auto operator>>(std::istream& iss, ImuData& data) -> std::istream& {
            data.calibration;
 }
 
-auto squared(auto const& x) { return x * x; }
-
 auto main(int argc, char** argv) -> int {
     ros::init(argc, argv, "imu_driver");
     ros::NodeHandle nh;
@@ -55,45 +45,10 @@ auto main(int argc, char** argv) -> int {
     ros::Publisher calibrationPublisher = nh.advertise<mrover::CalibrationStatus>("/imu/calibration", 1);
     ros::Publisher temperaturePublisher = nh.advertise<sensor_msgs::Temperature>("/imu/temperature", 1);
 
-    tf2_ros::Buffer tfBuffer;
-    tf2_ros::TransformListener tfListener{tfBuffer};
-
     auto port = nh.param<std::string>("/imu_driver/port", "/dev/imu");
     auto frame = nh.param<std::string>("/imu_driver/frame_id", "imu_link");
-    auto correct = nh.param<bool>("/imu_driver/correct", true);
-
-    S3 orientationCorrection = S3::Identity();
 
     ImuData data;
-
-    ros::Timer correctTimer;
-    if (correct) correctTimer = nh.createTimer(WINDOW, [&](ros::TimerEvent const&) {
-        Eigen::Matrix3Xd roverVelocitiesInMap; // Each column vector is a velocity
-
-        ros::Time end = ros::Time::now(), start = end - WINDOW;
-        for (ros::Time t = start; t < end; t += STEP) {
-            auto roverInMapOld = SE3Conversions::fromTfTree(tfBuffer, BASE_LINK_FRAME, MAP_FRAME, t);
-            auto roverInMapNew = SE3Conversions::fromTfTree(tfBuffer, BASE_LINK_FRAME, MAP_FRAME, t + STEP);
-            R3 roverVelocityInMap = (roverInMapNew.translation() - roverInMapOld.translation()) / STEP.toSec();
-            roverVelocitiesInMap.resize(Eigen::NoChange, roverVelocitiesInMap.cols() + 1);
-            roverVelocitiesInMap.col(roverVelocitiesInMap.cols() - 1) = roverVelocityInMap;
-        }
-
-        R3 mean = roverVelocitiesInMap.rowwise().mean();
-        R3 centered = roverVelocitiesInMap.colwise() - mean;
-        Eigen::Matrix3d covariance = centered * centered.adjoint() / static_cast<double>(roverVelocitiesInMap.cols());
-
-        // If the velocity has not changed too much in a local timeframe, assume we are driving straight
-        if (covariance.norm() < CORRECTION_THRESHOLD) {
-            R3 forward = mean.normalized();
-            R3 right = R3::UnitZ().cross(forward).normalized();
-            R3 up = forward.cross(right);
-            SO3d::Rotation orientation;
-            orientation << forward, right, up;
-            orientationCorrection = orientation * data.q.inverse();
-        }
-    });
-    (void) correctTimer;
 
     int fd = open(port.c_str(), O_RDWR);
     if (fd < 0) {
@@ -150,15 +105,13 @@ auto main(int argc, char** argv) -> int {
                 continue;
             }
 
-            S3 correctedOrientation = data.q * orientationCorrection;
-
             mrover::ImuAndMag msg{};
             msg.header.stamp = ros::Time::now();
             msg.header.frame_id = frame;
-            msg.imu.orientation.x = correctedOrientation.x();
-            msg.imu.orientation.y = correctedOrientation.y();
-            msg.imu.orientation.z = correctedOrientation.z();
-            msg.imu.orientation.w = correctedOrientation.w();
+            msg.imu.orientation.x = data.q.x();
+            msg.imu.orientation.y = data.q.y();
+            msg.imu.orientation.z = data.q.z();
+            msg.imu.orientation.w = data.q.w();
             msg.imu.angular_velocity.x = data.g.x();
             msg.imu.angular_velocity.y = data.g.y();
             msg.imu.angular_velocity.z = data.g.z();
