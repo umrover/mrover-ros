@@ -1,15 +1,16 @@
 <template>
-  <div class="wrap">
-    <div v-show="false" id="key">
-      <input @keydown="keyMonitorDown" />
-      <input @keyup="keyMonitorUp" />
+  <div class='wrap'>
+    <div v-show='false' id='key'>
+      <input @keydown='keyMonitorDown' />
+      <input @keyup='keyMonitorUp' />
     </div>
   </div>
 </template>
 
-<script lang="ts">
+<script lang='ts'>
 import { mapActions } from 'vuex'
-let interval: number
+
+const UPDATE_HZ = 20
 
 export default {
   data() {
@@ -28,22 +29,28 @@ export default {
     }
   },
 
-  beforeUnmount: function () {
-    window.clearInterval(interval)
+  beforeUnmount: function() {
+    window.clearInterval(this.interval)
     document.removeEventListener('keyup', this.keyMonitorUp)
     document.removeEventListener('keydown', this.keyMonitorDown)
   },
 
   mounted: function() {
-    document.addEventListener('keydown', this.keyMonitorDown);
-    document.addEventListener('keyup', this.keyMonitorUp);
+    document.addEventListener('keydown', this.keyMonitorDown)
+    document.addEventListener('keyup', this.keyMonitorUp)
+  },
+
+  created: function() {
+    this.interval = window.setInterval(() => {
+      this.publish()
+    }, 1000 / UPDATE_HZ)
   },
 
   methods: {
     ...mapActions('websocket', ['sendMessage']),
     // When a key is being pressed down, set the power level.
     // Ignore keys that are already pressed to avoid spamming when holding values.
-    keyMonitorDown: function (event: { key: string }) {
+    keyMonitorDown: function(event: { key: string }) {
       if (event.key.toLowerCase() == 'w') {
         this.inputData.w_key = 1
       } else if (event.key.toLowerCase() == 'a') {
@@ -53,12 +60,10 @@ export default {
       } else if (event.key.toLowerCase() == 'd') {
         this.inputData.d_key = 1
       }
-
-      this.publish()
     },
 
     // when a key is released, sets input for that key as 0
-    keyMonitorUp: function (event: { key: string }) {
+    keyMonitorUp: function(event: { key: string }) {
       if (event.key.toLowerCase() == 'w') {
         this.inputData.w_key = 0
       } else if (event.key.toLowerCase() == 'a') {
@@ -68,11 +73,9 @@ export default {
       } else if (event.key.toLowerCase() == 'd') {
         this.inputData.d_key = 0
       }
-
-      this.publish()
     },
 
-    publish: function () {
+    publish: function() {
       this.sendMessage({
         type: 'mast_gimbal',
         throttles: [

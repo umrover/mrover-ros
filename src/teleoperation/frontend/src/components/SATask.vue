@@ -1,54 +1,51 @@
 <template>
-  <div class="wrapper">
-    <div class="shadow p-3 mb-5 header">
+  <div class='wrapper'>
+    <div class='shadow p-3 mb-5 header'>
       <h1>SA Dashboard</h1>
       <!-- <MCUReset class="mcu_reset"></MCUReset>
         <CommReadout class="comms"></CommReadout> -->
-      <img class="logo" src="/mrover.png" alt="MRover" title="MRover" width="200" />
-      <div class="help">
-        <img src="/help.png" alt="Help" title="Help" width="48" height="48" />
+      <img class='logo' src='/mrover.png' alt='MRover' title='MRover' width='200' />
+      <div class='help'>
+        <img src='/help.png' alt='Help' title='Help' width='48' height='48' />
       </div>
-      <div class="helpscreen"></div>
+      <div class='helpscreen'></div>
       <div
-        class="helpimages"
-        style="display: flex; align-items: center; justify-content: space-evenly"
+        class='helpimages'
+        style='display: flex; align-items: center; justify-content: space-evenly'
       >
         <img
-          src="/joystick.png"
-          alt="Joystick"
-          title="Joystick Controls"
-          style="width: auto; height: 70%; display: inline-block"
+          src='/joystick.png'
+          alt='Joystick'
+          title='Joystick Controls'
+          style='width: auto; height: 70%; display: inline-block'
         />
       </div>
     </div>
-    <div class="shadow p-3 rounded map">
-      <BasicMap :odom="odom" />
+    <div class='shadow p-3 rounded map'>
+      <BasicMap :odom='odom' />
     </div>
-    <div class="shadow p-3 rounded waypoints">
-      <BasicWaypointEditor :odom="odom" />
+    <div class='shadow p-3 rounded waypoints'>
+      <BasicWaypointEditor :odom='odom' />
     </div>
-    <div class="shadow p-3 rounded cameras">
-      <Cameras :isSA="true" :mission="'sa'" />
+    <div class='shadow p-3 rounded cameras'>
+      <Cameras :isSA='true' :mission="'sa'" />
     </div>
-    <div class="shadow p-3 rounded soildata">
+    <div class='shadow p-3 rounded soildata'>
       <SoilData />
     </div>
     <div>
       <DriveControls />
     </div>
-    <div class="shadow p-3 rounded arm">
+    <div class='shadow p-3 rounded arm'>
       <SAArmControls />
     </div>
-    <div class="shadow p-3 rounded pdb">
+    <div class='shadow p-3 rounded pdb'>
       <PDBFuse />
     </div>
-    <div class="shadow p-3 rounded motorData">
-      <MotorsStatusTable :motor-data="motorData" :vertical="true" />
+    <div class='shadow p-3 rounded moteus'>
+      <ControllerDataTable msg-type='drive_state' header='Drive States' />
     </div>
-    <div class="shadow p-3 rounded moteus">
-      <DriveMoteusStateTable :moteus-state-data="moteusState" />
-    </div>
-    <div class="shadow p-3 rounded limit">
+    <div class='shadow p-3 rounded limit'>
       <h3>Limit Switches</h3>
       <LimitSwitch :service_name="'sa_enable_limit_switch_sa_x'" :display_name="'SA X Switch'" />
       <LimitSwitch :service_name="'sa_enable_limit_switch_sa_y'" :display_name="'SA Y Switch'" />
@@ -62,11 +59,11 @@
         :display_name="'Sensor Actuator Switch'"
       />
     </div>
-    <div class="shadow p-3 rounded calibration">
+    <div class='shadow p-3 rounded calibration'>
       <h3>Calibrations</h3>
       <br />
-      <div class="calibration-checkboxes">
-        <button class="btn btn-primary my-5" @click="resetGimbal()">Reset Gimbal</button>
+      <div class='calibration-checkboxes'>
+        <button class='btn btn-primary my-5' @click='resetGimbal()'>Reset Gimbal</button>
         <CalibrationCheckbox :name="'SA X Calibration'" :topic_name="'sa_calibrate_sa_x'" />
         <CalibrationCheckbox :name="'SA Y Calibration'" :topic_name="'sa_calibrate_sa_y'" />
         <CalibrationCheckbox :name="'SA Z Calibration'" :topic_name="'sa_calibrate_sa_z'" />
@@ -80,16 +77,16 @@
         />
       </div>
     </div>
-    <div v-show="false">
-      <MastGimbalControls></MastGimbalControls>
+    <div v-show='false'>
+      <MastGimbalControls />
     </div>
-    <div class="shadow p-3 rounded odom">
-      <OdometryReading :odom="odom"></OdometryReading>
+    <div class='shadow p-3 rounded odom'>
+      <OdometryReading :odom='odom'></OdometryReading>
     </div>
   </div>
 </template>
 
-<script lang="ts">
+<script lang='ts'>
 import BasicMap from './BasicRoverMap.vue'
 import SoilData from './SoilData.vue'
 import BasicWaypointEditor from './BasicWaypointEditor.vue'
@@ -97,29 +94,27 @@ import DriveControls from './DriveControls.vue'
 import MastGimbalControls from './MastGimbalControls.vue'
 import PDBFuse from './PDBFuse.vue'
 import Cameras from './Cameras.vue'
-import DriveMoteusStateTable from './DriveMoteusStateTable.vue'
-import MotorsStatusTable from './MotorsStatusTable.vue'
 import LimitSwitch from './LimitSwitch.vue'
 import CalibrationCheckbox from './CalibrationCheckbox.vue'
-//   import CommReadout from "./CommReadout.vue";
-//   import MCUReset from "./MCUReset.vue";
 import MotorAdjust from './MotorAdjust.vue'
 import OdometryReading from './OdometryReading.vue'
+import ControllerDataTable from './ControllerDataTable.vue'
 import SAArmControls from './SAArmControls.vue'
-import { disableAutonLED, quaternionToMapAngle } from '../utils.js'
-import { mapState, mapActions } from 'vuex'
+import { quaternionToMapAngle } from '../utils.js'
+import { mapActions, mapState } from 'vuex'
 
 let interval: number
 
 export default {
   components: {
+    ControllerDataTable,
     BasicMap,
     SoilData,
     BasicWaypointEditor,
     Cameras,
     DriveControls,
     MastGimbalControls,
-    DriveMoteusStateTable,
+    DriveMoteusStateTable: ControllerDataTable,
     PDBFuse,
     SAArmControls,
     LimitSwitch,
@@ -128,7 +123,6 @@ export default {
     //   MCUReset,
     MotorAdjust,
     OdometryReading,
-    MotorsStatusTable
   },
   data() {
     return {
@@ -177,15 +171,13 @@ export default {
         this.moteusState.state = msg.state
         this.moteusState.error = msg.error
         this.moteusState.limit_hit = msg.limit_hit
-      }
-      else if (msg.type == 'nav_sat_fix') {
+      } else if (msg.type == 'nav_sat_fix') {
         this.odom.latitude_deg = msg.latitude
         this.odom.longitude_deg = msg.longitude
         this.odom.altitude = msg.altitude
-      } 
-      else if (msg.type == 'bearing') {
+      } else if (msg.type == 'bearing') {
         this.odom.bearing_deg = quaternionToMapAngle(msg.rotation)
-      } 
+      }
     }
   },
 
@@ -193,11 +185,11 @@ export default {
     ...mapActions('websocket', ['sendMessage']),
 
     resetGimbal: function() {
-      this.sendMessage({type: 'reset_gimbal'})
+      this.sendMessage({ type: 'reset_gimbal' })
     }
   },
 
-  created: function () {
+  created: function() {
     interval = setInterval(() => {
       this.sendMessage({ type: 'bearing' })
     }, 1000)

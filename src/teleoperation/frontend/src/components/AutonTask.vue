@@ -1,73 +1,71 @@
 <template>
-  <div class="wrapper">
-    <div class="shadow p-3 mb-5 header">
-      <img class="logo" src="/mrover.png" alt="MRover" title="MRover" width="200" />
+  <div class='wrapper'>
+    <div class='shadow p-3 mb-5 header'>
+      <img class='logo' src='/mrover.png' alt='MRover' title='MRover' width='200' />
       <h1>Auton Dashboard</h1>
       <!-- <MCUReset class="mcu_reset"></MCUReset>
         <CommReadout class="comms"></CommReadout> -->
-      <div class="help">
-        <img src="/help.png" alt="Help" title="Help" width="48" height="48" />
+      <div class='help'>
+        <img src='/help.png' alt='Help' title='Help' width='48' height='48' />
       </div>
-      <div class="helpscreen"></div>
-      <div class="helpimages" style="display: flex; align-items: center; justify-content: space-evenly">
-        <img src="/joystick.png" alt="Joystick" title="Joystick Controls"
-          style="width: auto; height: 70%; display: inline-block" />
+      <div class='helpscreen'></div>
+      <div class='helpimages' style='display: flex; align-items: center; justify-content: space-evenly'>
+        <img src='/joystick.png' alt='Joystick' title='Joystick Controls'
+             style='width: auto; height: 70%; display: inline-block' />
       </div>
     </div>
     <div :class="['shadow p-3 rounded data', ledColor]">
       <h2>Nav State: {{ navState }}</h2>
-      <div style="display: inline-block; vertical-align: top">
-        <p style="margin-top: 6px">Joystick Values</p>
+      <div style='display: inline-block; vertical-align: top'>
+        <p style='margin-top: 6px'>Joystick Values</p>
         <JoystickValues />
       </div>
-      <OdometryReading :odom="odom" />
+      <OdometryReading :odom='odom' />
     </div>
-    <div class="shadow p-3 rounded feed">
-        <CameraFeed :mission="'ZED'" :id="0" :name="'ZED'"></CameraFeed>
+    <div class='shadow p-3 rounded feed'>
+      <CameraFeed :mission="'ZED'" :id='0' :name="'ZED'"></CameraFeed>
     </div>
-    <div class="shadow p-3 rounded map">
-      <AutonRoverMap :odom="odom" />
+    <div class='shadow p-3 rounded map'>
+      <AutonRoverMap :odom='odom' />
     </div>
-    <div class="shadow p-3 rounded waypoints">
-      <AutonWaypointEditor :odom="odom" @toggleTeleop="teleopEnabledCheck = $event" />
+    <div class='shadow p-3 rounded waypoints'>
+      <AutonWaypointEditor :odom='odom' @toggleTeleop='teleopEnabledCheck = $event' />
     </div>
     <!--Enable the drive controls if auton is off-->
-    <div v-if="!autonEnabled && teleopEnabledCheck" v-show="false" class="driveControls">
+    <div v-if='!autonEnabled && teleopEnabledCheck' v-show='false' class='driveControls'>
       <DriveControls />
     </div>
-    <div v-show="false">
+    <div v-show='false'>
       <MastGimbalControls></MastGimbalControls>
     </div>
-    <div class="conditions">
-      <div v-if="!stuck_status" class="shadow p-3 rounded bg-success text-center">
+    <div class='conditions'>
+      <div v-if='!stuck_status' class='shadow p-3 rounded bg-success text-center'>
         <h4>Nominal Conditions</h4>
       </div>
-      <div v-else class="shadow p-3 rounded bg-danger text-center">
+      <div v-else class='shadow p-3 rounded bg-danger text-center'>
         <h4>Obstruction Detected</h4>
       </div>
     </div>
-    <div class="shadow p-3 rounded cameras">
-      <Cameras :isSA="false" :mission="'auton'"/>
+    <div class='shadow p-3 rounded cameras'>
+      <Cameras :isSA='false' :mission="'auton'" />
     </div>
-    <div class="shadow p-3 rounded moteus">
-      <DriveMoteusStateTable :moteus-state-data="moteusState" />
-      <MotorsStatusTable :motor-data="motorData" :vertical="true" />
+    <div class='shadow p-3 rounded moteus'>
+      <ControllerDataTable msg-type='drive_state' header='Drive States' />
     </div>
   </div>
 </template>
 
-<script lang="ts">
-import { mapActions, mapState, mapGetters } from 'vuex'
-import DriveMoteusStateTable from './DriveMoteusStateTable.vue'
+<script lang='ts'>
+import { mapActions, mapGetters, mapState } from 'vuex'
 import AutonRoverMap from './AutonRoverMap.vue'
 import AutonWaypointEditor from './AutonWaypointEditor.vue'
 import Cameras from './Cameras.vue'
 import CameraFeed from './CameraFeed.vue'
-import MotorsStatusTable from './MotorsStatusTable.vue'
 import OdometryReading from './OdometryReading.vue'
 import JoystickValues from './JoystickValues.vue'
 import DriveControls from './DriveControls.vue'
 import MastGimbalControls from './MastGimbalControls.vue'
+import ControllerDataTable from './ControllerDataTable.vue'
 import { quaternionToMapAngle } from '../utils.js'
 import { defineComponent } from 'vue'
 
@@ -75,12 +73,12 @@ let interval: number
 
 export default defineComponent({
   components: {
-    DriveMoteusStateTable,
+    ControllerDataTable,
+    DriveMoteusStateTable: ControllerDataTable,
     AutonRoverMap,
     AutonWaypointEditor,
     Cameras,
     CameraFeed,
-    MotorsStatusTable,
     OdometryReading,
     JoystickValues,
     DriveControls,
@@ -158,7 +156,7 @@ export default defineComponent({
         this.odom.altitude = msg.altitude
       } else if (msg.type == 'bearing') {
         this.odom.bearing_deg = quaternionToMapAngle(msg.rotation)
-      } else if (msg.type == "center_map") {
+      } else if (msg.type == 'center_map') {
         this.odom.latitude_deg = msg.latitude
         this.odom.longitude_deg = msg.longitude
       }
@@ -169,19 +167,19 @@ export default defineComponent({
     ...mapActions('websocket', ['sendMessage'])
   },
 
-  beforeUnmount: function () {
+  beforeUnmount: function() {
     this.ledColor = 'bg-white'
     window.clearInterval(interval)
   },
 
-  created: function () {
+  created: function() {
     window.setTimeout(() => {
-      this.sendMessage({ "type": "center_map" });
+      this.sendMessage({ 'type': 'center_map' })
     }, 250)
     interval = setInterval(() => {
       this.sendMessage({ type: 'bearing' })
     }, 1000)
-  },
+  }
 
 })
 </script>
@@ -289,6 +287,7 @@ h2 {
 .map {
   grid-area: map;
 }
+
 .waypoints {
   grid-area: waypoints;
 }

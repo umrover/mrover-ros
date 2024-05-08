@@ -215,7 +215,6 @@ namespace mrover {
         ros::Publisher mLeftGpsPub;
         ros::Publisher mRightGpsPub;
         ros::Publisher mImuPub;
-        ros::Publisher mMotorStatusPub;
         ros::Publisher mMastStatusPub;
         ros::Publisher mDriveControllerStatePub;
         ros::Publisher mArmControllerStatePub;

@@ -403,128 +403,6 @@ brushed_motors:
       driver_voltage: 10.5 # used to calculate max pwm
       motor_max_voltage: 6.0 # used to calculate max pwm
 
-cameras:
-  camera_type_info:
-    # vendor_id and vendor is obtained by running `udevadm info --query=all /dev/video0`
-    # width and height are obtained by running `v4l2-ctl -d /dev/video0 --list-formats-ext`
-    # An important thing to know is that actual bps is much less than bps in config.
-    # However, we need to keep bps in config higher otherwise there is too much compression
-    regular:
-      vendor_id: "32e4"
-      vendor: "HD_USB_Camera"
-      use_jpeg: true
-      quality_options:
-        - width: 320
-          height: 240
-          fps: 15
-          bps: 173000
-        - width: 352
-          height: 288
-          fps: 15
-          bps: 691000
-        - width: 640
-          height: 480
-          fps: 15
-          bps: 2000000
-        - width: 960
-          height: 720
-          fps: 15
-          bps: 3000000
-        - width: 1280
-          height: 720
-          fps: 15
-          bps: 4200000
-    microscope:
-      vendor_id: "a16f"
-      vendor: "GenesysLogic_Technology_Co.__Ltd."
-      use_jpeg: false
-      quality_options:
-        - width: 160
-          height: 120
-          fps: 25
-          bps: 173000
-        - width: 176
-          height: 144
-          fps: 25
-          bps: 691000
-        - width: 320
-          height: 240
-          fps: 25
-          bps: 2000000
-        - width: 352
-          height: 288
-          fps: 25
-          bps: 3000000
-        - width: 640
-          height: 480
-          fps: 25
-          bps: 4200000
-    res_1080:
-      vendor_id: "0c45"
-      vendor: "Sonix_Technology_Co.__Ltd."
-      use_jpeg: true
-      quality_options:
-        - width: 320
-          height: 240
-          fps: 30
-          bps: 173000
-        - width: 800
-          height: 600
-          fps: 30
-          bps: 691000
-        - width: 960
-          height: 720
-          fps: 30
-          bps: 2000000
-        - width: 1280
-          height: 720
-          fps: 30
-          bps: 3000000
-        - width: 1920
-          height: 1080
-          fps: 30
-          bps: 4200000
-    rock_4k:
-      vendor_id: "0c45"
-      vendor: "Arducam_Technology_Co.__Ltd."
-      use_jpeg: true
-      quality_options:
-        # Only have some resolutions since there are only a few
-        # with the same aspect ratio. When changing aspect ratios,
-        # there are sometimes issues with decoding jpeg images.
-        # We also reuse some resolutions so that we the default
-        # resolution (option 2) is not maximum quality (which
-        # has some delay of ~2 seconds).
-        - width: 640
-          height: 480
-          fps: 30
-          bps: 173000
-        - width: 640
-          height: 480
-          fps: 30
-          bps: 173000
-        - width: 1600
-          height: 1200
-          fps: 30
-          bps: 7000000
-        - width: 1600
-          height: 1200
-          fps: 30
-          bps: 7000000
-        - width: 3264
-          height: 2448
-          fps: 15
-          bps: 9000000
-  max_num_resolutions: 5
-  # Number of devices corresponds to number of cmds in
-  #   - ChangeCameras.srv
-  #   - ResetCameras.srv
-  max_streams: 4
-  max_device_id: 20
-  ips:
-    primary: "10.0.0.7"
-    secondary: "10.0.0.8"
-
 rover:
   length: 0.86
   width: 0.86
@@ -607,8 +485,6 @@ motors:
       type: "brushed"
     cache_motor:
       type: "brushed"
-
-default_network_iface: "enp0s31f6"
 
 auton_led_driver:
   port: "/dev/led"

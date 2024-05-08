@@ -2,23 +2,24 @@
     This launch file should be run on the basestation in order to interface with and control the rover.
  -->
 <launch>
-  <arg name="run_rviz" default="false" />
-  <arg name="run_network_monitor" default="false" />
-  <arg name="run_backend" default="true" />
-  <arg name="run_frontend" default="true" />
-  <arg name="run_browser" default="true" />
+  <arg name="rviz" default="false" />
+  <arg name="network" default="false" />
+  <arg name="backend" default="true" />
+  <arg name="frontend" default="true" />
+  <arg name="browser" default="true" />
+  <arg name="cameras" default="true" />
   <arg name="rtk" default="true" />
 
   <rosparam command="load" file="$(find mrover)/config/esw.yaml" />
   <rosparam command="load" file="$(find mrover)/config/teleop.yaml" />
   <rosparam command="load" file="$(find mrover)/config/localization.yaml" />
 
-  <node if="$(arg run_frontend)" name="gui_frontend" pkg="mrover" type="gui_frontend.sh" cwd="node" required="true" />
-  <node if="$(arg run_backend)" name="gui_backend" pkg="mrover" type="gui_backend.sh" cwd="node" required="true" />
-  <node if="$(arg run_browser)" name="gui_chromium_menu" pkg="mrover" type="gui_chromium_menu.sh" />
-  <node if="$(arg run_browser)" name="gui_chromium_cameras" pkg="mrover" type="gui_chromium_cameras.sh" />
+  <node if="$(arg frontend)" name="gui_frontend" pkg="mrover" type="gui_frontend.sh" cwd="node" required="true" />
+  <node if="$(arg backend)" name="gui_backend" pkg="mrover" type="gui_backend.sh" cwd="node" required="true" />
+  <node if="$(arg browser)" name="gui_chromium_menu" pkg="mrover" type="gui_chromium_menu.sh" />
+  <node if="$(arg cameras)" name="gui_chromium_cameras" pkg="mrover" type="gui_chromium_cameras.sh" />
 
-  <group if="$(arg run_rviz)">
+  <group if="$(arg rviz)">
     <arg name="rvizconfig" default="$(find mrover)/config/rviz/basestation.rviz" />
     <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" />
     <node name="topic_services" pkg="mrover" type="topic_services.py" />
@@ -27,6 +28,6 @@
   <include if="$(arg rtk)" file="$(find mrover)/launch/rtk_basestation.launch" />
 
   <!-- network monitor node-->
-  <node if="$(arg run_network_monitor)"
+  <node if="$(arg network)"
     name="network_monitor" pkg="mrover" type="network_monitor.py" />
 </launch>

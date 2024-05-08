@@ -218,35 +218,16 @@ namespace mrover {
         if (auto lookup = getUrdf("rover"); lookup) {
             URDF const& rover = *lookup;
 
-            MotorsStatus status;
-            status.joint_states.header.stamp = ros::Time::now();
-            status.joint_states.header.frame_id = "map";
             ControllerState driveControllerState;
             for (auto& position: {"front", "center", "back"}) {
                 for (auto& side: {"left", "right"}) {
                     std::string linkName = std::format("{}_{}_wheel_link", position, side);
-                    int index = rover.linkNameToMeta.at(linkName).index;
-                    double pos = rover.physics->getJointPos(index);
-                    double vel = rover.physics->getJointVel(index);
-                    double torque = rover.physics->getJointTorque(index);
-
-                    status.name.push_back(linkName);
-                    status.joint_states.name.push_back(linkName);
-                    status.joint_states.position.push_back(pos);
-                    status.joint_states.velocity.push_back(vel);
-                    status.joint_states.effort.push_back(torque);
-
-                    status.moteus_states.name.push_back(linkName);
-                    status.moteus_states.state.emplace_back("Armed");
-                    status.moteus_states.error.emplace_back("None");
-
                     driveControllerState.name.push_back(linkName);
                     driveControllerState.state.emplace_back("Armed");
                     driveControllerState.error.emplace_back("None");
                     driveControllerState.limit_hit.push_back(0b000);
                 }
             }
-            mMotorStatusPub.publish(status);
             mDriveControllerStatePub.publish(driveControllerState);
 
             ControllerState armControllerState;
