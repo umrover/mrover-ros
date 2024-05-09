@@ -6,7 +6,7 @@
           <label for="Camera Name">Camera name</label>
           <input
             v-model="cameraName"
-            type="message"
+            type="text"
             class="form-control"
             id="CameraName"
             placeholder="Enter Camera Name"
@@ -44,7 +44,7 @@
         </button>
       </div>
     </div>
-    <CameraDisplay :streamOrder="streamOrder" :mission="mission" :names="names"></CameraDisplay>
+    <CameraDisplay :streamOrder="streamOrder" :mission="mission" :names="names" />
   </div>
 </template>
 
@@ -77,48 +77,37 @@ export default {
       cameraIdx: 0,
       cameraName: '',
       capacity: 4,
-      streamOrder: reactive([]),
+      streamOrder: [-1, -1, -1, -1]
     }
   },
 
   watch: {
-    message(msg) {
-      if (msg.type == 'max_streams') {
-        this.streamOrder = new Array(msg.streams).fill(-1)
-      }
-    },
-    capacity: function (newCap, oldCap) {
+    capacity: function(newCap, oldCap) {
       if (newCap < oldCap) {
-        var numStreaming = this.streamOrder.filter((index) => index != -1)
-        var ind = numStreaming.length - 1
-        this.setCamIndex(numStreaming[ind])
+        const numStreaming = this.streamOrder.filter(index => index != -1)
+        const index = numStreaming.length - 1
+        this.setCamIndex(numStreaming[index])
       }
     }
   },
 
   computed: {
     ...mapState('websocket', ['message']),
-    color: function () {
+    color: function() {
       return this.camsEnabled ? 'btn-success' : 'btn-secondary'
     }
-  },
-
-  created: function () {
-    window.setTimeout(() => {
-      this.sendMessage({ type: 'max_streams' })
-    }, 250)
   },
 
   methods: {
     ...mapActions('websocket', ['sendMessage']),
 
-    setCamIndex: function (index: number) {
+    setCamIndex: function(index: number) {
       // every time a button is pressed, it changes cam status and adds/removes from stream
       this.camsEnabled[index] = !this.camsEnabled[index]
       this.changeStream(index)
     },
 
-    addCameraName: function () {
+    addCameraName: function() {
       this.names[this.cameraIdx] = this.cameraName
     },
 
