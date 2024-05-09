@@ -57,12 +57,24 @@ rospy.Subscriber("arm_joint_data", JointState, joint_positions_callback)
 
 def compute_manual_joint_controls(controller: DeviceInputs) -> list[float]:
     return [
-        filter_input(safe_index(controller.axes, ControllerAxis.LEFT_X),
-                     quadratic=True, scale=JOINT_SCALES[Joint.A.value], deadzone=DEADZONE),
-        filter_input(safe_index(controller.axes, ControllerAxis.LEFT_Y),
-                     quadratic=True, scale=JOINT_SCALES[Joint.B.value], deadzone=DEADZONE),
-        filter_input(safe_index(controller.axes, ControllerAxis.RIGHT_Y),
-                     quadratic=True, scale=JOINT_SCALES[Joint.C.value], deadzone=DEADZONE),
+        filter_input(
+            safe_index(controller.axes, ControllerAxis.LEFT_X),
+            quadratic=True,
+            scale=JOINT_SCALES[Joint.A.value],
+            deadzone=DEADZONE,
+        ),
+        filter_input(
+            safe_index(controller.axes, ControllerAxis.LEFT_Y),
+            quadratic=True,
+            scale=JOINT_SCALES[Joint.B.value],
+            deadzone=DEADZONE,
+        ),
+        filter_input(
+            safe_index(controller.axes, ControllerAxis.RIGHT_Y),
+            quadratic=True,
+            scale=JOINT_SCALES[Joint.C.value],
+            deadzone=DEADZONE,
+        ),
         filter_input(
             simulated_axis(controller.buttons, ControllerButton.RIGHT_TRIGGER, ControllerButton.LEFT_TRIGGER),
             scale=JOINT_SCALES[Joint.DE_PITCH.value],

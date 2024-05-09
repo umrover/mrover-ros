@@ -30,11 +30,15 @@ def compute_drive_controls(inputs: Inputs) -> None:
 
     joystick_linear = filter_input(
         safe_index(joystick_axes, JoystickAxis.FORWARD_BACK),
-        quadratic=True, scale=JOYSTICK_LINEAR * throttle, deadzone=DEADZONE
+        quadratic=True,
+        scale=JOYSTICK_LINEAR * throttle,
+        deadzone=DEADZONE,
     )
     joystick_angular = filter_input(
         safe_index(joystick_axes, JoystickAxis.TWIST),
-        quadratic=True, scale=JOYSTICK_ANGULAR * throttle, deadzone=DEADZONE
+        quadratic=True,
+        scale=JOYSTICK_ANGULAR * throttle,
+        deadzone=DEADZONE,
     )
 
     joystick_micro_linear = filter_input(

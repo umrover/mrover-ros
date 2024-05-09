@@ -48,19 +48,17 @@ def joint_state_callback(msg: JointState) -> None:
 rospy.Subscriber("/arm_joint_data", JointState, joint_state_callback)
 
 
-def controller_state_to_message(msg_type: str, msg: ControllerState) -> dict:
-    return {
-        "type": msg_type,
-        "name": msg.name,
-        "state": msg.state,
-        "error": msg.error,
-        # Convert list of bit-packed integers to list of lists of booleans
-        "limit_hit": [[n & (1 << i) for i in range(4)] for n in msg.limit_hit],
-    }
-
-
 def controller_state_callback(msg: ControllerState, msg_type: str) -> None:
-    send_message_to_all(controller_state_to_message(msg_type, msg))
+    send_message_to_all(
+        {
+            "type": msg_type,
+            "name": msg.name,
+            "state": msg.state,
+            "error": msg.error,
+            # Convert list of bit-packed integers to list of lists of booleans
+            "limit_hit": [[n & (1 << i) for i in range(4)] for n in msg.limit_hit],
+        }
+    )
 
 
 rospy.Subscriber("/arm_controller_data", ControllerState, partial(controller_state_callback, msg_type="arm_state"))
@@ -141,16 +139,22 @@ rospy.Subscriber("/imu/temperature", Temperature, imu_temperature_callback)
 
 def save_basic_waypoint_list(msg):
     BasicWaypoint.objects.all().delete()
-    BasicWaypoint.objects.bulk_create([
-        BasicWaypoint(drone=w["drone"], latitude=w["lat"], longitude=w["lon"], name=w["name"]) for w in msg["data"]
-    ])
+    BasicWaypoint.objects.bulk_create(
+        [BasicWaypoint(drone=w["drone"], latitude=w["lat"], longitude=w["lon"], name=w["name"]) for w in msg["data"]]
+    )
     send_message_to_all({"type": "save_basic_waypoint_list", "success": True})
 
 
 def send_basic_waypoint_list():
-    send_message_to_all({"type": "get_basic_waypoint_list", "data": [
-        {"name": w.name, "drone": w.drone, "lat": w.latitude, "lon": w.longitude} for w in BasicWaypoint.objects.all()
-    ]})
+    send_message_to_all(
+        {
+            "type": "get_basic_waypoint_list",
+            "data": [
+                {"name": w.name, "drone": w.drone, "lat": w.latitude, "lon": w.longitude}
+                for w in BasicWaypoint.objects.all()
+            ],
+        }
+    )
 
 
 class GUIConsumer(JsonWebsocketConsumer):

@@ -39,7 +39,7 @@ def quadratic_filter(signal: float) -> float:
     Use to allow more control near low inputs values by squaring the magnitude.
     For example using a joystick to control drive.
     """
-    return copysign(signal ** 2, signal)
+    return copysign(signal**2, signal)
 
 
 def filter_input(value: float, deadzone: float = 0.1, quadratic: bool = False, scale: float = 1.0) -> float:
