@@ -373,8 +373,14 @@ namespace mrover {
                     return "Motor Stopped";
                 case moteus::Mode::kFault:
                     return "Motor Fault";
+                case moteus::Mode::kEnabling:
+                    return "Motor Enabling";
+                case moteus::Mode::kCalibrating:
+                    return "Motor Calibrating";
+                case moteus::Mode::kCalibrationComplete:
+                    return "Motor Calibration Complete";
                 case moteus::Mode::kPwm:
-                    return "PWM Operating Mode";
+                    return "Motor Pwm";
                 case moteus::Mode::kVoltage:
                     return "Voltage Operating Mode";
                 case moteus::Mode::kVoltageFoc:
@@ -389,6 +395,12 @@ namespace mrover {
                     return "Position Timeout";
                 case moteus::Mode::kZeroVelocity:
                     return "Zero Velocity";
+                case moteus::Mode::kStayWithin:
+                    return "Motor Stay Within";
+                case moteus::Mode::kMeasureInd:
+                    return "Measure Ind";
+                case moteus::Mode::kBrake:
+                    return "Motor Brake";
                 default:
                     return "Unknown Mode";
             }
