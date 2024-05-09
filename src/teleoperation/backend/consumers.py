@@ -10,9 +10,11 @@ import tf2_ros
 from backend.drive_controls import compute_drive_controls
 from backend.input import Inputs
 from backend.mast_controls import compute_mast_controls
+from backend.models import BasicWaypoint
 from backend.ra_controls import compute_ra_controls
+from mrover.msg import CalibrationStatus
 from mrover.msg import ControllerState, MotorsStatus
-from sensor_msgs.msg import JointState
+from sensor_msgs.msg import JointState, Temperature, NavSatFix
 from util.SE3 import SE3
 
 rospy.init_node("teleoperation", disable_signals=True)
@@ -24,7 +26,7 @@ consumers = []
 
 all_inputs = Inputs()
 
-BEARING_HZ = 10
+LOCALIZATION_INFO_HZ = 10
 CONTROL_HZ = 20
 
 INPUT_EXPIRE_DURATION = rospy.Duration(0.5)
@@ -82,20 +84,29 @@ def motor_status_callback(msg: MotorsStatus, msg_type: str) -> None:
 rospy.Subscriber("/drive_status", MotorsStatus, partial(motor_status_callback, msg_type="drive_status"))
 
 
-def send_bearing_callback(_) -> None:
+def send_orientation_callback(_) -> None:
     try:
         base_link_in_map = SE3.from_tf_tree(tf2_buffer, "map", "base_link")
         send_message_to_all(
             {
                 "type": "bearing",
-                "rotation": base_link_in_map.rotation.quaternion.tolist(),
+                "orientation": base_link_in_map.rotation.quaternion.tolist(),
             }
         )
     except Exception as e:
         rospy.logwarn_throttle(5, f"Failed to get bearing: {e}")
 
 
-rospy.Timer(rospy.Duration(1 / BEARING_HZ), send_bearing_callback)
+rospy.Timer(rospy.Duration(1 / LOCALIZATION_INFO_HZ), send_orientation_callback)
+
+
+def send_gps_fix_callback(msg: NavSatFix) -> None:
+    send_message_to_all(
+        {"type": "nav_sat_fix", "latitude": msg.latitude, "longitude": msg.longitude, "altitude": msg.altitude}
+    )
+
+
+rospy.Subscriber("/left_gps_driver/fix", NavSatFix, send_gps_fix_callback)
 
 
 def send_controls(_) -> None:
@@ -112,6 +123,34 @@ def send_controls(_) -> None:
 
 
 rospy.Timer(rospy.Duration(1 / CONTROL_HZ), send_controls)
+
+
+def imu_calibration_callback(msg: CalibrationStatus) -> None:
+    send_message_to_all({"type": "calibration_status", "system_calibration": msg.system_calibration})
+
+
+rospy.Subscriber("/imu/calibration", CalibrationStatus, imu_calibration_callback)
+
+
+def imu_temperature_callback(msg: Temperature) -> None:
+    send_message_to_all({"type": "temperature", "temperature": msg.temperature})
+
+
+rospy.Subscriber("/imu/temperature", Temperature, imu_temperature_callback)
+
+
+def save_basic_waypoint_list(msg):
+    BasicWaypoint.objects.all().delete()
+    BasicWaypoint.objects.bulk_create([
+        BasicWaypoint(drone=w["drone"], latitude=w["lat"], longitude=w["lon"], name=w["name"]) for w in msg["data"]
+    ])
+    send_message_to_all({"type": "save_basic_waypoint_list", "success": True})
+
+
+def send_basic_waypoint_list():
+    send_message_to_all({"type": "get_basic_waypoint_list", "data": [
+        {"name": w.name, "drone": w.drone, "lat": w.latitude, "lon": w.longitude} for w in BasicWaypoint.objects.all()
+    ]})
 
 
 class GUIConsumer(JsonWebsocketConsumer):
@@ -147,6 +186,11 @@ class GUIConsumer(JsonWebsocketConsumer):
                         all_inputs.keyboard.buttons = message["buttons"]
             case "arm_mode":
                 all_inputs.ra_arm_mode = message["mode"]
+            case "save_basic_waypoint_list":
+                save_basic_waypoint_list(message)
+            case "get_basic_waypoint_list":
+                send_basic_waypoint_list()
+
         # try:
         #     if message["type"] == "joystick_values":
         #         update_joystick(message)

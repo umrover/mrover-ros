@@ -140,9 +140,6 @@ export default defineComponent({
         this.odom.altitude = msg.altitude
       } else if (msg.type == 'bearing') {
         this.odom.bearing_deg = quaternionToMapAngle(msg.rotation)
-      } else if (msg.type == 'center_map') {
-        this.odom.latitude_deg = msg.latitude
-        this.odom.longitude_deg = msg.longitude
       }
     }
   },
@@ -154,17 +151,7 @@ export default defineComponent({
   beforeUnmount: function() {
     this.ledColor = 'bg-white'
     window.clearInterval(interval)
-  },
-
-  created: function() {
-    window.setTimeout(() => {
-      this.sendMessage({ 'type': 'center_map' })
-    }, 250)
-    interval = setInterval(() => {
-      this.sendMessage({ type: 'bearing' })
-    }, 1000)
   }
-
 })
 </script>
 

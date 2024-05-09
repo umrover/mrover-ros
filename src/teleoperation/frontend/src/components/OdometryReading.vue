@@ -1,7 +1,7 @@
 <template>
   <div class="odom-wrap">
     <div class="odom">
-      <p>Current odometry reading:</p>
+      <p>Current Odometry Reading:</p>
       <div>
         <p>{{ formatted_odom.lat.d }}º</p>
         <p v-if="min_enabled">{{ formatted_odom.lat.m }}'</p>

@@ -89,10 +89,7 @@ export default defineComponent({
         this.odom.longitude_deg = msg.longitude
         this.odom.altitude = msg.altitude
       } else if (msg.type == 'bearing') {
-        this.odom.bearing_deg = quaternionToMapAngle(msg.rotation)
-      } else if (msg.type == 'center_map') {
-        this.odom.latitude_deg = msg.latitude
-        this.odom.longitude_deg = msg.longitude
+        this.odom.bearing_deg = quaternionToMapAngle(msg.orientation)
       }
     }
   },
@@ -105,13 +102,10 @@ export default defineComponent({
   },
 
   created: function() {
-    window.setTimeout(() => {
-      this.sendMessage({ type: 'center_map' })
-    }, 250)
     window.addEventListener('keydown', (event: KeyboardEvent) => {
-      if (event.key === ' ') {
-        this.cancelIK(event)
-      }
+      if (event.key !== ' ') return
+
+      this.cancelIK(event)
     })
   }
 })
