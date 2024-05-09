@@ -291,10 +291,6 @@ export default {
   margin-right: 20px;
 }
 
-.dragArea {
-  height: 100%;
-}
-
 .all-waypoints {
   display: inline-flex;
   align-items: center;

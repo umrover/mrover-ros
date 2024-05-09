@@ -182,9 +182,9 @@ export default {
         const latLng = L.latLng(lat, lng)
 
         // Move to rover on first odom message
-        if (!this.findRover) {
+        if (!this.findRover && this.map) {
           this.findRover = true
-          this.center = latLng
+          this.map.setView(latLng, 22)
         }
 
         // Update the rover marker using bearing angle
