@@ -2,8 +2,8 @@ from enum import Enum
 from typing import Union
 
 import rospy
-from backend.input import Inputs, filter_input, simulated_axis
-from backend.mappings import ControllerAxis
+from backend.input import Inputs, filter_input, simulated_axis, safe_index, DeviceInputs
+from backend.mappings import ControllerAxis, ControllerButton
 from mrover.msg import Throttle, Position
 from sensor_msgs.msg import JointState
 
@@ -41,6 +41,8 @@ JOINT_SCALES = [
 
 JOINT_DE_POSITION_SCALE = 1
 
+DEADZONE = 0.18
+
 # Positions reported by the arm sensors
 joint_positions: Union[JointState, None] = None
 
@@ -53,32 +55,33 @@ def joint_positions_callback(msg: JointState) -> None:
 rospy.Subscriber("arm_joint_data", JointState, joint_positions_callback)
 
 
-def compute_manual_joint_controls(axes: list[float]) -> list[float]:
+def compute_manual_joint_controls(controller: DeviceInputs) -> list[float]:
     return [
-        filter_input(axes[ControllerAxis.LEFT_X.value], quadratic=True, scale=JOINT_SCALES[Joint.A.value]),
-        filter_input(axes[ControllerAxis.LEFT_Y.value], quadratic=True, scale=JOINT_SCALES[Joint.B.value]),
-        filter_input(axes[ControllerAxis.RIGHT_Y.value], quadratic=True, scale=JOINT_SCALES[Joint.C.value]),
+        filter_input(safe_index(controller.axes, ControllerAxis.LEFT_X),
+                     quadratic=True, scale=JOINT_SCALES[Joint.A.value], deadzone=DEADZONE),
+        filter_input(safe_index(controller.axes, ControllerAxis.LEFT_Y),
+                     quadratic=True, scale=JOINT_SCALES[Joint.B.value], deadzone=DEADZONE),
+        filter_input(safe_index(controller.axes, ControllerAxis.RIGHT_Y),
+                     quadratic=True, scale=JOINT_SCALES[Joint.C.value], deadzone=DEADZONE),
         filter_input(
-            simulated_axis(axes, ControllerAxis.RIGHT_TRIGGER.value, ControllerAxis.LEFT_TRIGGER.value),
+            simulated_axis(controller.buttons, ControllerButton.RIGHT_TRIGGER, ControllerButton.LEFT_TRIGGER),
             scale=JOINT_SCALES[Joint.DE_PITCH.value],
         ),
         filter_input(
-            simulated_axis(axes, ControllerAxis.RIGHT_BUMPER.value, ControllerAxis.LEFT_BUMPER.value),
+            simulated_axis(controller.buttons, ControllerButton.RIGHT_BUMPER, ControllerButton.LEFT_BUMPER),
             scale=JOINT_SCALES[Joint.DE_ROLL.value],
         ),
     ]
 
 
-def subset(names: list[str], values: list[float], joints: set[Joint]) -> tuple[list[float], list[float]]:
-    return zip(*[(name, value) for name, value in zip(names, values) if name in joints])
+def subset(names: list[str], values: list[float], joints: set[Joint]) -> tuple[list[str], list[float]]:
+    return [names[i.value] for i in joints], [values[i.value] for i in joints]
 
 
 def compute_ra_controls(inputs: Inputs) -> None:
-    axes = inputs.controller.axes
-
     match inputs.ra_arm_mode:
         case "manual" | "hybrid":
-            manual_controls = compute_manual_joint_controls(axes)
+            manual_controls = compute_manual_joint_controls(inputs.controller)
 
             match inputs.ra_arm_mode:
                 case "manual":

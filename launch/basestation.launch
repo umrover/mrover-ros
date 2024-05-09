@@ -11,7 +11,6 @@
   <arg name="rtk" default="true" />
 
   <rosparam command="load" file="$(find mrover)/config/esw.yaml" />
-  <rosparam command="load" file="$(find mrover)/config/teleop.yaml" />
   <rosparam command="load" file="$(find mrover)/config/localization.yaml" />
 
   <node if="$(arg frontend)" name="gui_frontend" pkg="mrover" type="gui_frontend.sh" cwd="node" required="true" />

@@ -1,9 +1,13 @@
 from dataclasses import dataclass, field
+from enum import Enum
 from math import copysign
+
+import rospy
 
 
 @dataclass
 class DeviceInputs:
+    timestamp: rospy.Time = rospy.Time()
     axes: list[float] = field(default_factory=list)
     buttons: list[float] = field(default_factory=list)
 
@@ -35,7 +39,7 @@ def quadratic_filter(signal: float) -> float:
     Use to allow more control near low inputs values by squaring the magnitude.
     For example using a joystick to control drive.
     """
-    return copysign(signal**2, signal)
+    return copysign(signal ** 2, signal)
 
 
 def filter_input(value: float, deadzone: float = 0.1, quadratic: bool = False, scale: float = 1.0) -> float:
@@ -49,8 +53,12 @@ def filter_input(value: float, deadzone: float = 0.1, quadratic: bool = False, s
     return value
 
 
-def simulated_axis(axes: list[float], positive_index: int, negative_index: int) -> float:
+def safe_index(values: list[float], index: Enum) -> float:
+    return values[index.value] if values else 0.0
+
+
+def simulated_axis(axes: list[float], positive_index: Enum, negative_index: Enum) -> float:
     """
     Simulate a single axis from two buttons.
     """
-    return axes[positive_index] - axes[negative_index]
+    return safe_index(axes, positive_index) - safe_index(axes, negative_index)

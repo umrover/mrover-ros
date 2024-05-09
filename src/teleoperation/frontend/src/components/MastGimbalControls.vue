@@ -49,14 +49,14 @@ export default {
 
     keyMonitorDown: function(event: { key: string }) {
       const index = this.mappings[event.key.toLowerCase()]
-      if (!index) return
+      if (index === undefined) return
 
       this.keys[index] = 1
     },
 
     keyMonitorUp: function(event: { key: string }) {
       const index = this.mappings[event.key.toLowerCase()]
-      if (!index) return
+      if (index === undefined) return
 
       this.keys[index] = 0
     },

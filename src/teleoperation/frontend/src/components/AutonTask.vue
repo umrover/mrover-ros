@@ -3,16 +3,6 @@
     <div class='shadow p-3 mb-5 header'>
       <img class='logo' src='/mrover.png' alt='MRover' title='MRover' width='200' />
       <h1>Auton Dashboard</h1>
-      <!-- <MCUReset class="mcu_reset"></MCUReset>
-        <CommReadout class="comms"></CommReadout> -->
-      <div class='help'>
-        <img src='/help.png' alt='Help' title='Help' width='48' height='48' />
-      </div>
-      <div class='helpscreen'></div>
-      <div class='helpimages' style='display: flex; align-items: center; justify-content: space-evenly'>
-        <img src='/joystick.png' alt='Joystick' title='Joystick Controls'
-             style='width: auto; height: 70%; display: inline-block' />
-      </div>
     </div>
     <div :class="['shadow p-3 rounded data', ledColor]">
       <h2>Nav State: {{ navState }}</h2>

@@ -24,6 +24,11 @@ consumers = []
 
 all_inputs = Inputs()
 
+BEARING_HZ = 10
+CONTROL_HZ = 20
+
+INPUT_EXPIRE_DURATION = rospy.Duration(0.5)
+
 
 def send_message_to_all(message: Any) -> None:
     """
@@ -34,7 +39,6 @@ def send_message_to_all(message: Any) -> None:
 
 
 def joint_state_callback(msg: JointState) -> None:
-    # Set non-finite values to zero to avoid weird FK rendering results
     msg.position = [p if isfinite(p) else 0 for p in msg.position]
     send_message_to_all({"type": "fk", "positions": msg.position})
 
@@ -79,16 +83,35 @@ rospy.Subscriber("/drive_status", MotorsStatus, partial(motor_status_callback, m
 
 
 def send_bearing_callback(_) -> None:
-    base_link_in_map = SE3.from_tf_tree(tf2_buffer, "map", "base_link")
-    send_message_to_all(
-        {
-            "type": "bearing",
-            "rotation": base_link_in_map.rotation.quaternion.tolist(),
-        }
-    )
+    try:
+        base_link_in_map = SE3.from_tf_tree(tf2_buffer, "map", "base_link")
+        send_message_to_all(
+            {
+                "type": "bearing",
+                "rotation": base_link_in_map.rotation.quaternion.tolist(),
+            }
+        )
+    except Exception as e:
+        rospy.logwarn_throttle(5, f"Failed to get bearing: {e}")
 
 
-rospy.Timer(rospy.Duration(0.2), send_bearing_callback)
+rospy.Timer(rospy.Duration(1 / BEARING_HZ), send_bearing_callback)
+
+
+def send_controls(_) -> None:
+    for device in [all_inputs.joystick, all_inputs.controller, all_inputs.keyboard]:
+        if device.timestamp > rospy.Time.now() - INPUT_EXPIRE_DURATION:
+            continue
+
+        device.axes = []
+        device.buttons = []
+
+    compute_drive_controls(all_inputs)
+    compute_ra_controls(all_inputs)
+    compute_mast_controls(all_inputs)
+
+
+rospy.Timer(rospy.Duration(1 / CONTROL_HZ), send_controls)
 
 
 class GUIConsumer(JsonWebsocketConsumer):
@@ -112,16 +135,18 @@ class GUIConsumer(JsonWebsocketConsumer):
             case "joystick_values" | "controller_values" | "keyboard_values":
                 match message["type"]:
                     case "joystick_values":
+                        all_inputs.joystick.timestamp = rospy.Time.now()
                         all_inputs.joystick.axes = message["axes"]
                         all_inputs.joystick.buttons = message["buttons"]
                     case "controller_values":
+                        all_inputs.controller.timestamp = rospy.Time.now()
                         all_inputs.controller.axes = message["axes"]
                         all_inputs.controller.buttons = message["buttons"]
                     case "keyboard_values":
+                        all_inputs.keyboard.timestamp = rospy.Time.now()
                         all_inputs.keyboard.buttons = message["buttons"]
-                compute_drive_controls(all_inputs)
-                compute_ra_controls(all_inputs)
-                compute_mast_controls(all_inputs)
+            case "arm_mode":
+                all_inputs.ra_arm_mode = message["mode"]
         # try:
         #     if message["type"] == "joystick_values":
         #         update_joystick(message)

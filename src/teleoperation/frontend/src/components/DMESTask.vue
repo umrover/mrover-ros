@@ -122,13 +122,12 @@ export default defineComponent({
   display: grid;
   gap: 10px;
   grid-template-columns: 50% 50%;
-  grid-template-rows: repeat(5, auto);
+  grid-template-rows: repeat(4, auto);
   grid-template-areas:
     'header header'
+    'arm-controls arm-controls'
     'map waypoint-editor'
-    'map odom'
-    'arm-controls drive-vel-data'
-    'moteus pdb';
+    'map odom';
   font-family: sans-serif;
   height: auto;
 }

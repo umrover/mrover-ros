@@ -11,13 +11,6 @@ class ControllerButton(Enum):
     B = 1
     X = 2
     Y = 3
-
-
-class ControllerAxis(Enum):
-    LEFT_X = 0
-    LEFT_Y = 1
-    RIGHT_X = 2
-    RIGHT_Y = 3
     LEFT_BUMPER = 4
     RIGHT_BUMPER = 5
     LEFT_TRIGGER = 6
@@ -33,11 +26,19 @@ class ControllerAxis(Enum):
     HOME = 16
 
 
+class ControllerAxis(Enum):
+    LEFT_X = 0
+    LEFT_Y = 1
+    RIGHT_X = 2
+    RIGHT_Y = 3
+
+
 class JoystickAxis(Enum):
     LEFT_RIGHT = 0
     FORWARD_BACK = 1
     TWIST = 2
-    DAMPEN = 3
+    # The slider at the base of the joystick, used to adjust maximum speed
+    THROTTLE = 3
     # The small joystick on top of the big one
     MICRO_LEFT_RIGHT = 4
     MICRO_FORWARD_BACK = 5
