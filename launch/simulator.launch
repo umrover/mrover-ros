@@ -1,6 +1,6 @@
 <launch>
   <arg name="headless" default="false"/>
-  <arg name="run_rviz" default="true"/>
+  <arg name="rviz" default="true"/>
 
   <rosparam command="load" file="$(find mrover)/config/simulator/simulator.yaml"/>
 
@@ -24,7 +24,7 @@
 
   <node name="arm_controller" pkg="mrover" type="arm_controller" output="screen"/>
 
-  <group if="$(arg run_rviz)">
+  <group if="$(arg rviz)">
     <arg name="rvizconfig" default="$(find mrover)/config/rviz/auton_sim.rviz"/>
     <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)"/>
   </group>

@@ -1,4 +1,5 @@
 from enum import Enum
+from math import pi
 from typing import Union
 
 import rospy
@@ -6,6 +7,8 @@ from backend.input import Inputs, filter_input, simulated_axis, safe_index, Devi
 from backend.mappings import ControllerAxis, ControllerButton
 from mrover.msg import Throttle, Position
 from sensor_msgs.msg import JointState
+
+TAU = 2 * pi
 
 rospy.init_node("teleoperation", disable_signals=True)
 
@@ -93,31 +96,47 @@ def subset(names: list[str], values: list[float], joints: set[Joint]) -> tuple[l
 def compute_ra_controls(inputs: Inputs) -> None:
     match inputs.ra_arm_mode:
         case "manual" | "hybrid":
-            manual_controls = compute_manual_joint_controls(inputs.controller)
+            back_pressed = safe_index(inputs.controller.buttons, ControllerButton.BACK) > 0.5
+            forward_pressed = safe_index(inputs.controller.buttons, ControllerButton.FORWARD) > 0.5
+            home_pressed = safe_index(inputs.controller.buttons, ControllerButton.HOME) > 0.5
+            match back_pressed, forward_pressed, home_pressed:
+                case True, False, False:
+                    de_roll = -TAU / 4
+                case False, True, False:
+                    de_roll = TAU / 4
+                case False, False, True:
+                    de_roll = 0
+                case _:
+                    de_roll = None
 
-            match inputs.ra_arm_mode:
-                case "manual":
-                    throttle_publisher.publish(Throttle(JOINT_NAMES, manual_controls))
-                case "hybrid":
-                    # Control all joints before DE normally
-                    names, throttles = subset(JOINT_NAMES, manual_controls, {Joint.A, Joint.B, Joint.C})
-                    throttle_publisher.publish(Throttle(names, throttles))
+            if de_roll is None:
+                manual_controls = compute_manual_joint_controls(inputs.controller)
 
-                    # Control DE joints based on current position
-                    if joint_positions:
-                        joint_de_pitch = joint_positions.position[joint_positions.name.index("joint_de_pitch")]
-                        joint_de_roll = joint_positions.position[joint_positions.name.index("joint_de_roll")]
+                match inputs.ra_arm_mode:
+                    case "manual":
+                        throttle_publisher.publish(Throttle(JOINT_NAMES, manual_controls))
+                    case "hybrid":
+                        # Control all joints before DE normally
+                        names, throttles = subset(JOINT_NAMES, manual_controls, {Joint.A, Joint.B, Joint.C})
+                        throttle_publisher.publish(Throttle(names, throttles))
 
-                        names, (de_pitch_throttle, de_roll_throttle) = subset(
-                            JOINT_NAMES, manual_controls, {Joint.DE_PITCH, Joint.DE_ROLL}
-                        )
-                        position_publisher.publish(
-                            Position(
-                                names,
-                                [
-                                    # Extend out like a carrot on a stick
-                                    joint_de_pitch + de_pitch_throttle * JOINT_DE_POSITION_SCALE,
-                                    joint_de_roll + de_roll_throttle * JOINT_DE_POSITION_SCALE,
-                                ],
+                        # Control DE joints based on current position
+                        if joint_positions:
+                            joint_de_pitch = joint_positions.position[joint_positions.name.index("joint_de_pitch")]
+                            joint_de_roll = joint_positions.position[joint_positions.name.index("joint_de_roll")]
+
+                            names, (de_pitch_throttle, de_roll_throttle) = subset(
+                                JOINT_NAMES, manual_controls, {Joint.DE_PITCH, Joint.DE_ROLL}
                             )
-                        )
+                            position_publisher.publish(
+                                Position(
+                                    names,
+                                    [
+                                        # Extend out like a carrot on a stick
+                                        joint_de_pitch + de_pitch_throttle * JOINT_DE_POSITION_SCALE,
+                                        joint_de_roll + de_roll_throttle * JOINT_DE_POSITION_SCALE,
+                                    ],
+                                )
+                            )
+            else:
+                position_publisher.publish(Position(["joint_de_roll"], [de_roll]))
