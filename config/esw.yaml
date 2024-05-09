@@ -107,27 +107,27 @@ brushless_motors:
     front_left:
       min_velocity: -1.00
       max_velocity: 1.00
-      max_torque: 10.0
+      max_torque: 20.0
     front_right:
       min_velocity: -1.00
       max_velocity: 1.00
-      max_torque: 10.0
+      max_torque: 20.0
     middle_left:
       min_velocity: -1.00
       max_velocity: 1.00
-      max_torque: 10.0
+      max_torque: 20.0
     middle_right:
       min_velocity: -1.00
       max_velocity: 1.00
-      max_torque: 10.0
+      max_torque: 20.0
     back_left:
       min_velocity: -1.00
       max_velocity: 1.00
-      max_torque: 10.0
+      max_torque: 20.0
     back_right:
       min_velocity: -1.00
       max_velocity: 1.00
-      max_torque: 10.0
+      max_torque: 20.0
     joint_a:
       # 1236.8475 rad/meter, or 196.850393476 rev/meter, and we want a max vel of 40 meter/s.
       # gear ratio is currently at 0.005080 revolutions = 1 meter
@@ -409,7 +409,6 @@ rover:
   max_speed: 1.0
 
 wheel:
-  gear_ratio: 15.0
   radius: 0.13
 
 motors_group:
