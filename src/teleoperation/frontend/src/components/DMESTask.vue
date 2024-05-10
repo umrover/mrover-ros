@@ -88,7 +88,7 @@ export default defineComponent({
         this.odom.latitude_deg = msg.latitude
         this.odom.longitude_deg = msg.longitude
         this.odom.altitude = msg.altitude
-      } else if (msg.type == 'bearing') {
+      } else if (msg.type == 'orientation') {
         this.odom.bearing_deg = quaternionToMapAngle(msg.orientation)
       }
     }

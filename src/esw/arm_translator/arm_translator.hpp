@@ -66,9 +66,9 @@ namespace mrover {
         std::optional<Vector2<Radians>> mJointDePitchRoll;
 
         ros::Subscriber mThrottleSub;
+        ros::Subscriber mJointDataSub;
         ros::Subscriber mVelocitySub;
         ros::Subscriber mPositionSub;
-        ros::Subscriber mJointDataSub;
 
         std::unordered_map<std::string, ros::ServiceClient> mAdjustClientsByArmHwNames;
     };

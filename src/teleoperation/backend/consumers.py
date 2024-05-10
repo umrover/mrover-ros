@@ -7,15 +7,17 @@ from channels.generic.websocket import JsonWebsocketConsumer
 
 import rospy
 import tf2_ros
-from backend.drive_controls import compute_drive_controls
-from backend.input import Inputs
-from backend.mast_controls import compute_mast_controls
+from backend.drive_controls import send_controller_twist, send_joystick_twist
+from backend.input import DeviceInputs
+from backend.mast_controls import send_mast_controls
 from backend.models import BasicWaypoint
-from backend.ra_controls import compute_ra_controls
+from backend.ra_controls import send_ra_controls
 from mrover.msg import CalibrationStatus
 from mrover.msg import ControllerState
 from sensor_msgs.msg import JointState, Temperature, NavSatFix
 from util.SE3 import SE3
+
+LOCALIZATION_INFO_HZ = 10
 
 rospy.init_node("teleoperation", disable_signals=True)
 
@@ -24,12 +26,15 @@ tf2_ros.TransformListener(tf2_buffer)
 
 consumers = []
 
-all_inputs = Inputs()
+ra_arm_mode = "disabled"
 
-LOCALIZATION_INFO_HZ = 10
-CONTROL_HZ = 20
 
-INPUT_EXPIRE_DURATION = rospy.Duration(0.5)
+def ra_timer_expired(_):
+    global ra_arm_mode
+    ra_arm_mode = "disabled"
+
+
+ra_timer = None
 
 
 def send_message_to_all(message: Any) -> None:
@@ -70,7 +75,7 @@ def send_orientation_callback(_) -> None:
         base_link_in_map = SE3.from_tf_tree(tf2_buffer, "map", "base_link")
         send_message_to_all(
             {
-                "type": "bearing",
+                "type": "orientation",
                 "orientation": base_link_in_map.rotation.quaternion.tolist(),
             }
         )
@@ -88,22 +93,6 @@ def send_gps_fix_callback(msg: NavSatFix) -> None:
 
 
 rospy.Subscriber("/gps/fix", NavSatFix, send_gps_fix_callback)
-
-
-def send_controls(_) -> None:
-    for device in [all_inputs.joystick, all_inputs.controller, all_inputs.keyboard]:
-        if device.timestamp > rospy.Time.now() - INPUT_EXPIRE_DURATION:
-            continue
-
-        device.axes = []
-        device.buttons = []
-
-    compute_drive_controls(all_inputs)
-    compute_ra_controls(all_inputs)
-    compute_mast_controls(all_inputs)
-
-
-rospy.Timer(rospy.Duration(1 / CONTROL_HZ), send_controls)
 
 
 def imu_calibration_callback(msg: CalibrationStatus) -> None:
@@ -149,8 +138,6 @@ class GUIConsumer(JsonWebsocketConsumer):
         consumers.remove(self)
 
     def receive(self, text_data=None, bytes_data=None, **kwargs) -> None:
-        global all_inputs
-
         if text_data is None:
             rospy.logwarn("Expecting text but received binary on GUI websocket...")
             return
@@ -159,20 +146,22 @@ class GUIConsumer(JsonWebsocketConsumer):
         rospy.loginfo(message)
         match message["type"]:
             case "joystick_values" | "controller_values" | "keyboard_values":
+                device_input = DeviceInputs(message["axes"], message["buttons"])
                 match message["type"]:
                     case "joystick_values":
-                        all_inputs.joystick.timestamp = rospy.Time.now()
-                        all_inputs.joystick.axes = message["axes"]
-                        all_inputs.joystick.buttons = message["buttons"]
+                        send_joystick_twist(device_input)
+                        send_ra_controls(device_input)
                     case "controller_values":
-                        all_inputs.controller.timestamp = rospy.Time.now()
-                        all_inputs.controller.axes = message["axes"]
-                        all_inputs.controller.buttons = message["buttons"]
+                        send_controller_twist(device_input)
                     case "keyboard_values":
-                        all_inputs.keyboard.timestamp = rospy.Time.now()
-                        all_inputs.keyboard.buttons = message["buttons"]
+                        send_mast_controls(device_input)
             case "arm_mode":
-                all_inputs.ra_arm_mode = message["mode"]
+                global ra_arm_mode, ra_timer
+
+                ra_arm_mode = message["mode"]
+                if ra_timer:
+                    ra_timer.shutdown()
+                ra_timer = rospy.Timer(rospy.Duration(1), ra_timer_expired, oneshot=True)
             case "save_basic_waypoint_list":
                 save_basic_waypoint_list(message)
             case "get_basic_waypoint_list":

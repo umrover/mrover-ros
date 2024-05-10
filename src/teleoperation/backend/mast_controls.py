@@ -1,5 +1,5 @@
 import rospy
-from backend.input import Inputs, filter_input, simulated_axis
+from backend.input import DeviceInputs, filter_input, simulated_axis
 from backend.mappings import KeyboardButton
 from mrover.msg import Throttle
 
@@ -11,8 +11,8 @@ Y_SCALE = 0.5
 Z_SCALE = -1.0
 
 
-def compute_mast_controls(inputs: Inputs) -> None:
-    buttons = inputs.keyboard.buttons
+def send_mast_controls(keyboard: DeviceInputs) -> None:
+    buttons = keyboard.buttons
 
     controller_y = filter_input(
         simulated_axis(buttons, KeyboardButton.W, KeyboardButton.S),

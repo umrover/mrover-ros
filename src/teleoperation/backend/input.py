@@ -2,22 +2,11 @@ from dataclasses import dataclass, field
 from enum import Enum
 from math import copysign
 
-import rospy
-
 
 @dataclass
 class DeviceInputs:
-    timestamp: rospy.Time = rospy.Time()
     axes: list[float] = field(default_factory=list)
     buttons: list[float] = field(default_factory=list)
-
-
-@dataclass
-class Inputs:
-    joystick: DeviceInputs = field(default_factory=DeviceInputs)
-    controller: DeviceInputs = field(default_factory=DeviceInputs)
-    keyboard: DeviceInputs = field(default_factory=DeviceInputs)
-    ra_arm_mode: str = "disabled"
 
 
 def remap(value: float, old_min: float, old_max: float, new_min: float, new_max: float) -> float:

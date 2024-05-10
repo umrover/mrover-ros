@@ -157,7 +157,7 @@ export default {
         this.odom.latitude_deg = msg.latitude
         this.odom.longitude_deg = msg.longitude
         this.odom.altitude = msg.altitude
-      } else if (msg.type == 'bearing') {
+      } else if (msg.type == 'orientation') {
         this.odom.bearing_deg = quaternionToMapAngle(msg.rotation)
       }
     }
@@ -173,7 +173,7 @@ export default {
 
   created: function() {
     interval = setInterval(() => {
-      this.sendMessage({ type: 'bearing' })
+      this.sendMessage({ type: 'orientation' })
     }, 1000)
   }
 }

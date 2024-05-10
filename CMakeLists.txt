@@ -169,18 +169,18 @@ macro(mrover_add_esw_bridge_node name sources)
     target_link_libraries(${name} PRIVATE can_device motor_library)
 endmacro()
 
-mrover_add_node(imu_driver src/esw/imu_driver/*.cpp)
+mrover_add_node(imu_driver src/esw/imu_driver.cpp)
 target_link_libraries(imu_driver PRIVATE lie)
 
 mrover_add_node(heading_correcting_filter src/localization/heading_correcting_filter.cpp)
 target_link_libraries(heading_correcting_filter PRIVATE lie)
 
 mrover_add_esw_bridge_node(arm_translator_bridge src/esw/arm_translator/*.cpp src/esw/arm_translator/*.hpp)
-mrover_add_esw_bridge_node(differential_drive_controller src/esw/differential_drive_controller/*.cpp)
-mrover_add_esw_bridge_node(led_hw_bridge src/esw/led_hw_bridge/*.cpp)
-mrover_add_esw_bridge_node(led src/esw/led/*.cpp)
-mrover_add_esw_bridge_node(simple_bridge src/esw/simple_bridge/*.cpp)
-mrover_add_esw_bridge_node(science_bridge src/esw/science_bridge/*.cpp)
+mrover_add_esw_bridge_node(differential_drive_controller src/esw/differential_drive_controller.cpp)
+mrover_add_esw_bridge_node(led_hw_bridge src/esw/led_hw_bridge.cpp)
+mrover_add_esw_bridge_node(led src/esw/led.cpp)
+mrover_add_esw_bridge_node(simple_bridge src/esw/simple_bridge.cpp)
+mrover_add_esw_bridge_node(science_bridge src/esw/science_bridge.cpp)
 
 ## Perception
 
@@ -235,6 +235,10 @@ if (MROVER_BUILD_SIM)
     mrover_nodelet_link_libraries(simulator ${ASSIMP_LIBRARIES} ${BULLET_LIBRARIES} glfw3webgpu webgpu glfw opencv_core opencv_imgcodecs opencv_imgproc webgpu_hpp imgui lie)
     mrover_nodelet_defines(simulator BOOST_THREAD_PROVIDES_FUTURE)
 endif ()
+
+### General
+
+mrover_add_node(superstructure src/superstructure.cpp)
 
 ### ======= ###
 ### Testing ###
