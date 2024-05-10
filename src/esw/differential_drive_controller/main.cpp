@@ -2,7 +2,6 @@
 #include <ros/ros.h>
 
 #include <can_device.hpp>
-#include <motors_group.hpp>
 #include <params_utils.hpp>
 #include <units/units.hpp>
 
@@ -32,7 +31,7 @@ std::vector<std::string> LEFT_NAMES{"front_left", "middle_left", "back_left"};
 std::vector<std::string> RIGHT_NAMES{"front_right", "middle_right", "back_right"};
 
 auto main(int argc, char** argv) -> int {
-    ros::init(argc, argv, "drive_bridge");
+    ros::init(argc, argv, "differential_drive_controller");
     ros::NodeHandle nh;
 
     auto roverWidth = requireParamAsUnit<Meters>(nh, "rover/width");
@@ -53,9 +52,6 @@ auto main(int argc, char** argv) -> int {
 
     auto wheelRadius = requireParamAsUnit<Meters>(nh, "wheel/radius");
     WHEEL_LINEAR_TO_ANGULAR = Radians{1} / wheelRadius;
-
-    auto leftGroup = std::make_unique<MotorsGroup>(nh, "drive_left");
-    auto rightGroup = std::make_unique<MotorsGroup>(nh, "drive_right");
 
     leftVelocityPub = nh.advertise<Velocity>("drive_left_velocity_cmd", 1);
     rightVelocityPub = nh.advertise<Velocity>("drive_right_velocity_cmd", 1);
