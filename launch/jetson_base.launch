@@ -1,6 +1,20 @@
 <launch>
-    <node pkg="nodelet" type="nodelet" name="perception_nodelet_manager" required="true"
-          args="manager" output="screen"/>
+  <node pkg="nodelet" type="nodelet" name="perception_nodelet_manager" required="true"
+        args="manager" output="screen"/>
 
-    <include file="$(find mrover)/launch/esw_base.launch" />
+  <rosparam command="load" file="$(find mrover)/config/esw.yaml"/>
+
+  <include file="$(find mrover)/launch/jetson_can.launch"/>
+
+  <include file="$(find mrover)/launch/jetson_base_cameras.launch"/>
+
+  <node name="drive_bridge" pkg="mrover" type="drive_bridge" output="screen"/>
+
+  <!-- Interprets status from navigation and teleoperation to deliver the correct LED mode to the bridge -->
+  <node name="led" pkg="mrover" type="led" output="screen"/>
+  <node name="arduino_led_hw_bridge" pkg="mrover" type="arduino_led_hw_bridge.py" output="screen"/>
+
+  <node name="mast_gimbal_bridge" pkg="mrover" type="simple_bridge" output="screen">
+    <param name="group_name" value="mast_gimbal"/>
+  </node>
 </launch>

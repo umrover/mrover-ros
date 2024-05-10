@@ -15,7 +15,7 @@
   apt_key:
     url: https://apt.llvm.org/llvm-snapshot.gpg.key
 
-# Allows us to install Clang 16 and other LLVM tools
+# Allows us to install LLVM tools
 - name: Add LLVM APT List
   become: True
   apt_repository:
@@ -75,7 +75,6 @@
       - python3-rosdep
       - python3-catkin-tools
       - python3-virtualenvwrapper
-      - clang-16
       - clangd-16
       - clang-tidy-16
       - clang-format-16
@@ -159,22 +158,6 @@
     path: /usr/bin/gcc-13
     link: /usr/bin/gcc
     priority: 130
-
-- name: Set Clang++ 16 as Default
-  become: True
-  alternatives:
-    name: clang++
-    path: /usr/bin/clang++-16
-    link: /usr/bin/clang++
-    priority: 160
-
-- name: Set Clang 16 as Default
-  become: True
-  alternatives:
-    name: clang
-    path: /usr/bin/clang-16
-    link: /usr/bin/clang
-    priority: 160
 
 - name: Set clangd 16 as Default
   become: True

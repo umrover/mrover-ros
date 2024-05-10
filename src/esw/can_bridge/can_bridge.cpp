@@ -1,4 +1,4 @@
-#include "can_driver.hpp"
+#include "can_bridge.hpp"
 
 namespace mrover {
 
@@ -83,10 +83,10 @@ namespace mrover {
             // Since "onInit" needs to return, kick off a self-joining thread to run the IO concurrently
             mIoThread = std::jthread{[this] { mIoService.run(); }};
 
-            NODELET_INFO("CAN driver started");
+            NODELET_INFO("CAN bridge started");
 
         } catch (std::exception const& exception) {
-            NODELET_FATAL_STREAM(std::format("CAN driver failed to start: {}", exception.what()));
+            NODELET_FATAL_STREAM(std::format("CAN bridge failed to start: {}", exception.what()));
             ros::shutdown();
         }
     }

@@ -13,7 +13,7 @@ from backend.mast_controls import compute_mast_controls
 from backend.models import BasicWaypoint
 from backend.ra_controls import compute_ra_controls
 from mrover.msg import CalibrationStatus
-from mrover.msg import ControllerState, MotorsStatus
+from mrover.msg import ControllerState
 from sensor_msgs.msg import JointState, Temperature, NavSatFix
 from util.SE3 import SE3
 
@@ -65,23 +65,6 @@ rospy.Subscriber("/arm_controller_data", ControllerState, partial(controller_sta
 rospy.Subscriber("/drive_controller_data", ControllerState, partial(controller_state_callback, msg_type="drive_state"))
 
 
-def motor_status_callback(msg: MotorsStatus, msg_type: str) -> None:
-    send_message_to_all(
-        {
-            "type": msg_type,
-            "name": msg.name,
-            "position": msg.joint_states.position,
-            "velocity": msg.joint_states.velocity,
-            "effort": msg.joint_states.effort,
-            "state": msg.moteus_states.state,
-            "error": msg.moteus_states.error,
-        }
-    )
-
-
-rospy.Subscriber("/drive_status", MotorsStatus, partial(motor_status_callback, msg_type="drive_status"))
-
-
 def send_orientation_callback(_) -> None:
     try:
         base_link_in_map = SE3.from_tf_tree(tf2_buffer, "map", "base_link")
@@ -104,7 +87,7 @@ def send_gps_fix_callback(msg: NavSatFix) -> None:
     )
 
 
-rospy.Subscriber("/left_gps_driver/fix", NavSatFix, send_gps_fix_callback)
+rospy.Subscriber("/gps/fix", NavSatFix, send_gps_fix_callback)
 
 
 def send_controls(_) -> None:

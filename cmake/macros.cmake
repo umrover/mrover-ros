@@ -3,7 +3,8 @@ macro(target_rosify target)
     target_include_directories(${target} SYSTEM PRIVATE ${catkin_INCLUDE_DIRS} src/util)
     add_dependencies(${target} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-    target_compile_options(${target} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:${MROVER_CPP_COMPILE_OPTIONS}>)
+    target_compile_options(${target} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:${MROVER_COMPILE_OPTIONS}>)
+    target_link_options(${target} PRIVATE ${MROVER_LINKER_OPTIONS})
 
     # Installing is necessary for roslaunch to find the node
     install(TARGETS ${target}

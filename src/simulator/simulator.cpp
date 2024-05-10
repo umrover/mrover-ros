@@ -10,24 +10,7 @@ namespace mrover {
         mSaveTask = PeriodicTask{mPnh.param<float>("save_rate", 5)};
         mSaveHistory = boost::circular_buffer<SaveData>{static_cast<std::size_t>(mPnh.param<int>("save_history", 4096))};
 
-        mTwistSub = mNh.subscribe<geometry_msgs::Twist>("/cmd_vel", 1, &SimulatorNodelet::twistCallback, this);
-        mArmPositionsSub = mNh.subscribe<Position>("/arm_position_cmd", 1, &SimulatorNodelet::armPositionsCallback, this);
-        mArmVelocitiesSub = mNh.subscribe<Velocity>("/arm_velocity_cmd", 1, &SimulatorNodelet::armVelocitiesCallback, this);
-        mArmThrottlesSub = mNh.subscribe<Throttle>("/arm_throttle_cmd", 1, &SimulatorNodelet::armThrottlesCallback, this);
-
-        mMastPositionsSub = mNh.subscribe<Position>("/mast_gimbal_position_cmd", 1, &SimulatorNodelet::mastPositionsCallback, this);
-        mMastThrottleSub = mNh.subscribe<Throttle>("/mast_gimbal_throttle_cmd", 1, &SimulatorNodelet::mastThrottleCallback, this);
-
         mGroundTruthPub = mNh.advertise<nav_msgs::Odometry>("/ground_truth", 1);
-        mLeftGpsPub = mNh.advertise<sensor_msgs::NavSatFix>("/left_gps_driver/fix", 1);
-        mRightGpsPub = mNh.advertise<sensor_msgs::NavSatFix>("/right_gps_driver/fix", 1);
-        mImuPub = mNh.advertise<ImuAndMag>("/imu/data", 1);
-        mGpsTask = PeriodicTask{mPnh.param<float>("gps_rate", 10)};
-        mImuTask = PeriodicTask{mPnh.param<float>("imu_rate", 100)};
-        mMastStatusPub = mNh.advertise<MotorsStatus>("/mast_status", 1);
-        mDriveControllerStatePub = mNh.advertise<ControllerState>("/drive_controller_data", 1);
-        mArmControllerStatePub = mNh.advertise<ControllerState>("/arm_controller_data", 1);
-        mArmJointStatePub = mNh.advertise<sensor_msgs::JointState>("/arm_joint_data", 1);
 
         mIkTargetPub = mNh.advertise<IK>("/arm_ik", 1);
 
@@ -53,8 +36,6 @@ namespace mrover {
         initRender();
 
         initUrdfsFromParams();
-
-        twistCallback(boost::make_shared<geometry_msgs::Twist>());
 
         mRunThread = std::thread{&SimulatorNodelet::run, this};
 

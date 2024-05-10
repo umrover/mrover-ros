@@ -3,18 +3,18 @@
 from pathlib import Path
 from typing import Optional
 
-import message_filters
 import numpy as np
 import pandas as pd
+
+import message_filters
 import rospy
 from geometry_msgs.msg import Twist
-from mrover.msg import MotorsStatus, StateMachineStateUpdate
+from mrover.msg import StateMachineStateUpdate
 from nav_msgs.msg import Odometry
-from std_msgs.msg import Bool
-
-from util.ros_utils import get_rosparam
-
 from navigation.failure_identification.watchdog import WatchDog
+from sensor_msgs.msg import JointState
+from std_msgs.msg import Bool
+from util.ros_utils import get_rosparam
 
 DATAFRAME_MAX_SIZE = get_rosparam("failure_identification/dataframe_max_size", 200)
 POST_RECOVERY_GRACE_PERIOD = get_rosparam("failure_identification/post_recovery_grace_period", 5.0)
@@ -39,7 +39,7 @@ class FailureIdentifier:
 
     def __init__(self):
         nav_status_sub = message_filters.Subscriber("nav_state", StateMachineStateUpdate)
-        drive_status_sub = message_filters.Subscriber("drive_status", MotorsStatus)
+        drive_status_sub = message_filters.Subscriber("drive_joint_data", JointState)
         odometry_sub = message_filters.Subscriber("global_ekf/odometry", Odometry)
 
         ts = message_filters.ApproximateTimeSynchronizer(
@@ -98,7 +98,7 @@ class FailureIdentifier:
     def cmd_vel_update(self, cmd_vel: Twist) -> None:
         self.cur_cmd = cmd_vel
 
-    def update(self, nav_status: StateMachineStateUpdate, drive_status: MotorsStatus, odometry: Odometry) -> None:
+    def update(self, nav_status: StateMachineStateUpdate, drive_status: JointState, odometry: Odometry) -> None:
         """
         Updates the current row of the data frame with the latest data from the rover
         then appends the row to the data frame
@@ -156,8 +156,8 @@ class FailureIdentifier:
 
         # get the wheel effort and velocity from the drive status message
         for wheel_num in range(6):
-            cur_row[f"wheel_{wheel_num}_effort"] = drive_status.joint_states.effort[wheel_num]
-            cur_row[f"wheel_{wheel_num}_velocity"] = drive_status.joint_states.velocity[wheel_num]
+            cur_row[f"wheel_{wheel_num}_effort"] = drive_status.effort[wheel_num]
+            cur_row[f"wheel_{wheel_num}_velocity"] = drive_status.velocity[wheel_num]
 
         # update the data frame with the cur row
         self._df = pd.concat([self._df, pd.DataFrame([cur_row])]) if self._df.size else pd.DataFrame([cur_row])

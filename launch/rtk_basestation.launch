@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-
-<launch>
-
-    <rosparam command="load" file="$(find mrover)/config/esw.yaml" />
-    <node pkg="mrover" type="basestation_gps_driver.py" name="basestation_gps_driver"
-        output="screen" />
-
-</launch>

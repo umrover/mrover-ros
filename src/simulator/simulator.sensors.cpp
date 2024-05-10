@@ -176,27 +176,27 @@ namespace mrover {
                 odometry.twist.twist.angular.z = w.z();
                 mGroundTruthPub.publish(odometry);
             }
-            if (mGpsTask.shouldUpdate()) {
-                R3 leftGpsInMap = rover.linkInWorld("left_gps").translation();
-                R3 rightGpsInMap = rover.linkInWorld("right_gps").translation();
-                R3 leftGpsNoise{mGPSDist(mRNG), mGPSDist(mRNG), mGPSDist(mRNG)},
-                        rightGpsNoise{mGPSDist(mRNG), mGPSDist(mRNG), mGPSDist(mRNG)};
-                leftGpsInMap += leftGpsNoise;
-                rightGpsInMap += rightGpsNoise;
+            for (auto& [link, updateTask, pub]: mGps) {
+                if (!updateTask.shouldUpdate()) continue;
 
-                mLeftGpsPub.publish(computeNavSatFix(leftGpsInMap, mGpsLinearizationReferencePoint, mGpsLinerizationReferenceHeading));
-                mRightGpsPub.publish(computeNavSatFix(rightGpsInMap, mGpsLinearizationReferencePoint, mGpsLinerizationReferenceHeading));
+                R3 gpsInMap = btTransformToSe3(link->m_cachedWorldTransform).translation();
+                R3 gpsNoise{mGPSDist(mRNG), mGPSDist(mRNG), mGPSDist(mRNG)};
+                gpsInMap += gpsNoise;
+                pub.publish(computeNavSatFix(gpsInMap, mGpsLinearizationReferencePoint, mGpsLinerizationReferenceHeading));
             }
-            if (mImuTask.shouldUpdate()) {
-                auto dt_s = std::chrono::duration_cast<std::chrono::duration<double>>(dt).count();
+            for (auto& [link, updateTask, pub]: mImus) {
+                if (!updateTask.shouldUpdate()) continue;
+
+                auto dtS = std::chrono::duration_cast<std::chrono::duration<double>>(dt).count();
                 R3 roverAngularVelocity = btVector3ToR3(rover.physics->getBaseOmega());
                 R3 roverLinearVelocity = btVector3ToR3(rover.physics->getBaseVel());
-                R3 roverLinearAcceleration = (roverLinearVelocity - mRoverLinearVelocity) / dt_s;
+                R3 roverLinearAcceleration = (roverLinearVelocity - mRoverLinearVelocity) / dtS;
                 mRoverLinearVelocity = roverLinearVelocity;
-                SO3d imuInMap = rover.linkInWorld("imu").asSO3();
+                SO3d imuInMap = btTransformToSe3(link->m_cachedWorldTransform).asSO3();
                 R3 roverMagVector = imuInMap.inverse().rotation().col(1);
 
-                R3 accelNoise{mAccelDist(mRNG), mAccelDist(mRNG), mAccelDist(mRNG)},
+                R3
+                        accelNoise{mAccelDist(mRNG), mAccelDist(mRNG), mAccelDist(mRNG)},
                         gyroNoise{mGyroDist(mRNG), mGyroDist(mRNG), mGyroDist(mRNG)},
                         magNoise{mMagDist(mRNG), mMagDist(mRNG), mMagDist(mRNG)};
                 roverLinearAcceleration += accelNoise;
@@ -204,58 +204,58 @@ namespace mrover {
                 roverMagVector += magNoise;
 
                 constexpr double SEC_TO_MIN = 1.0 / 60.0;
-                mOrientationDrift += mOrientationDriftRate * SEC_TO_MIN * dt_s;
+                mOrientationDrift += mOrientationDriftRate * SEC_TO_MIN * dtS;
                 SO3d::Tangent orientationNoise;
                 orientationNoise << mRollDist(mRNG), mPitchDist(mRNG), mYawDist(mRNG);
                 imuInMap += orientationNoise + mOrientationDrift;
 
-                mImuPub.publish(computeImu(imuInMap, roverAngularVelocity, roverLinearAcceleration, roverMagVector));
+                pub.publish(computeImu(imuInMap, roverAngularVelocity, roverLinearAcceleration, roverMagVector));
             }
         }
     }
 
     auto SimulatorNodelet::motorStatusUpdate() -> void {
-        if (auto lookup = getUrdf("rover"); lookup) {
-            URDF const& rover = *lookup;
-
-            ControllerState driveControllerState;
-            for (auto& position: {"front", "center", "back"}) {
-                for (auto& side: {"left", "right"}) {
-                    std::string linkName = std::format("{}_{}_wheel_link", position, side);
-                    driveControllerState.name.push_back(linkName);
-                    driveControllerState.state.emplace_back("Armed");
-                    driveControllerState.error.emplace_back("None");
-                    driveControllerState.limit_hit.push_back(0b000);
-                }
-            }
-            mDriveControllerStatePub.publish(driveControllerState);
-
-            ControllerState armControllerState;
-            sensor_msgs::JointState armJointState;
-            std::vector<double> zeros = {0, 0, 0, 0, 0, 0};
-            armJointState.header.stamp = ros::Time::now();
-            for (auto& linkName: {"arm_a_link", "arm_b_link", "arm_c_link", "arm_d_link", "arm_e_link"}) {
-                armControllerState.name.emplace_back(armMsgToUrdf.backward(linkName).value());
-                armControllerState.state.emplace_back("Armed");
-                armControllerState.error.emplace_back("None");
-
-                armJointState.name.emplace_back(armMsgToUrdf.backward(linkName).value());
-                armJointState.position.emplace_back(rover.physics->getJointPos(rover.linkNameToMeta.at(linkName).index));
-                armJointState.velocity.emplace_back(rover.physics->getJointVel(rover.linkNameToMeta.at(linkName).index));
-                armJointState.effort.emplace_back(rover.physics->getJointTorque(rover.linkNameToMeta.at(linkName).index));
-
-                std::uint8_t limitSwitches = 0b000;
-                if (auto limits = rover.model.getLink(linkName)->parent_joint->limits) {
-                    double joinPosition = rover.physics->getJointPos(rover.linkNameToMeta.at(linkName).index);
-                    constexpr double OFFSET = 0.05;
-                    if (joinPosition < limits->lower + OFFSET) limitSwitches |= 0b001;
-                    if (joinPosition > limits->upper - OFFSET) limitSwitches |= 0b010;
-                }
-                armControllerState.limit_hit.push_back(limitSwitches);
-            }
-            mArmControllerStatePub.publish(armControllerState);
-            mArmJointStatePub.publish(armJointState);
-        }
+        // if (auto lookup = getUrdf("rover"); lookup) {
+        //     URDF const& rover = *lookup;
+        //
+        //     ControllerState driveControllerState;
+        //     for (auto& position: {"front", "center", "back"}) {
+        //         for (auto& side: {"left", "right"}) {
+        //             std::string linkName = std::format("{}_{}_wheel_link", position, side);
+        //             driveControllerState.name.push_back(linkName);
+        //             driveControllerState.state.emplace_back("Armed");
+        //             driveControllerState.error.emplace_back("None");
+        //             driveControllerState.limit_hit.push_back(0b000);
+        //         }
+        //     }
+        //     mDriveControllerStatePub.publish(driveControllerState);
+        //
+        //     ControllerState armControllerState;
+        //     sensor_msgs::JointState armJointState;
+        //     std::vector<double> zeros = {0, 0, 0, 0, 0, 0};
+        //     armJointState.header.stamp = ros::Time::now();
+        //     for (auto& linkName: {"arm_a_link", "arm_b_link", "arm_c_link", "arm_d_link", "arm_e_link"}) {
+        //         armControllerState.name.emplace_back(armMsgToUrdf.backward(linkName).value());
+        //         armControllerState.state.emplace_back("Armed");
+        //         armControllerState.error.emplace_back("None");
+        //
+        //         armJointState.name.emplace_back(armMsgToUrdf.backward(linkName).value());
+        //         armJointState.position.emplace_back(rover.physics->getJointPos(rover.linkNameToMeta.at(linkName).index));
+        //         armJointState.velocity.emplace_back(rover.physics->getJointVel(rover.linkNameToMeta.at(linkName).index));
+        //         armJointState.effort.emplace_back(rover.physics->getJointTorque(rover.linkNameToMeta.at(linkName).index));
+        //
+        //         std::uint8_t limitSwitches = 0b000;
+        //         if (auto limits = rover.model.getLink(linkName)->parent_joint->limits) {
+        //             double joinPosition = rover.physics->getJointPos(rover.linkNameToMeta.at(linkName).index);
+        //             constexpr double OFFSET = 0.05;
+        //             if (joinPosition < limits->lower + OFFSET) limitSwitches |= 0b001;
+        //             if (joinPosition > limits->upper - OFFSET) limitSwitches |= 0b010;
+        //         }
+        //         armControllerState.limit_hit.push_back(limitSwitches);
+        //     }
+        //     mArmControllerStatePub.publish(armControllerState);
+        //     mArmJointStatePub.publish(armJointState);
+        // }
     }
 
 } // namespace mrover

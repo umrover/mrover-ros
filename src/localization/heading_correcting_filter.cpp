@@ -1,3 +1,4 @@
+#include <format>
 #include <numbers>
 #include <numeric>
 
@@ -46,6 +47,8 @@ auto main(int argc, char** argv) -> int {
         if (std::fabs(currentTwist.linear.x) < MIN_LINEAR_SPEED) return;
         if (std::fabs(currentTwist.angular.z) > MAX_ANGULAR_SPEED) return;
 
+        ROS_INFO("Rover is being commanded forward");
+
         // Compute the past velocities and headings of the rover in the map frame over a window of time
 
         std::vector<R2> roverVelocitiesInMap;
@@ -65,6 +68,8 @@ auto main(int argc, char** argv) -> int {
         R2 meanVelocityInMap = std::accumulate(roverVelocitiesInMap.begin(), roverVelocitiesInMap.end(), R2{}) / roverVelocitiesInMap.size();
         if (meanVelocityInMap.norm() < MIN_LINEAR_SPEED) return;
 
+        ROS_INFO("Rover is actually moving forward");
+
         // Angles wrap around so the mean + variance must be treated specially
         double meanHeadingInMap = std::atan2(meanVelocityInMap.y(), meanVelocityInMap.x());
         double stdDevHeadingInMap = std::sqrt(std::accumulate(roverHeadingsInMap.begin(), roverHeadingsInMap.end(), double{}, [&](double sum, double heading) {
@@ -76,6 +81,7 @@ auto main(int argc, char** argv) -> int {
 
         if (stdDevHeadingInMap > MIN_HEADING_STD_DEV) return;
 
+        ROS_INFO_STREAM("Heading corrected");
         correctionRotation = Eigen::AngleAxisd(meanHeadingInMap, R3::UnitZ()) * currentOrientation.inverse();
     });
 

@@ -123,11 +123,14 @@ namespace mrover {
         }
     };
 
-    struct Camera {
+    struct SensorBase {
         btMultibodyLink const* link = nullptr;
-        Eigen::Vector2i resolution;
         PeriodicTask updateTask;
         ros::Publisher pub;
+    };
+
+    struct Camera : SensorBase {
+        Eigen::Vector2i resolution;
         float fov{};
         std::string frameId;
 
@@ -161,6 +164,18 @@ namespace mrover {
         wgpu::BindGroup computeBindGroup = nullptr;
 
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+    };
+
+    struct MotorGroup {
+        PeriodicTask updateTask;
+        ros::Subscriber throttleSub, velocitySub, positionSub;
+        ros::Publisher jointStatePub, controllerStatePub;
+    };
+
+    struct Imu : SensorBase {
+    };
+
+    struct Gps : SensorBase {
     };
 
     class SimulatorNodelet final : public nodelet::Nodelet {
@@ -208,17 +223,7 @@ namespace mrover {
 
         ros::NodeHandle mNh, mPnh;
 
-        ros::Subscriber mTwistSub, mArmPositionsSub, mArmVelocitiesSub, mArmThrottlesSub;
-        ros::Subscriber mMastPositionsSub, mMastThrottleSub;
-
         ros::Publisher mGroundTruthPub;
-        ros::Publisher mLeftGpsPub;
-        ros::Publisher mRightGpsPub;
-        ros::Publisher mImuPub;
-        ros::Publisher mMastStatusPub;
-        ros::Publisher mDriveControllerStatePub;
-        ros::Publisher mArmControllerStatePub;
-        ros::Publisher mArmJointStatePub;
 
         tf2_ros::Buffer mTfBuffer;
         tf2_ros::TransformListener mTfListener{mTfBuffer};
@@ -231,7 +236,6 @@ namespace mrover {
         R3 mGpsLinearizationReferencePoint{};
         double mGpsLinerizationReferenceHeading{};
 
-        // TODO: make variances configurable
         std::default_random_engine mRNG;
         std::normal_distribution<> mGPSDist{0, 0.02},
                 mAccelDist{0, 0.01},
@@ -244,9 +248,6 @@ namespace mrover {
         // drift rate in rad/minute about each axis
         R3 mOrientationDriftRate{0.0, 0.0, 1.0};
         R3 mOrientationDrift = R3::Zero();
-
-        PeriodicTask mGpsTask;
-        PeriodicTask mImuTask;
 
         bool mIsHeadless{};
 
@@ -333,6 +334,8 @@ namespace mrover {
 
         std::vector<StereoCamera> mStereoCameras;
         std::vector<Camera> mCameras;
+        std::vector<Imu> mImus;
+        std::vector<Gps> mGps;
 
         static constexpr float NEAR = 0.1f;
         static constexpr float FAR = 1000.0f;
@@ -382,7 +385,7 @@ namespace mrover {
 
         auto run() -> void;
 
-        auto centerCursor() -> void;
+        auto centerCursor() const -> void;
 
         auto freeLook(Clock::duration dt) -> void;
 
@@ -407,18 +410,6 @@ namespace mrover {
         auto guiUpdate(wgpu::RenderPassEncoder& pass) -> void;
 
         auto physicsUpdate(Clock::duration dt) -> void;
-
-        auto twistCallback(geometry_msgs::Twist::ConstPtr const& twist) -> void;
-
-        auto armPositionsCallback(Position::ConstPtr const& message) -> void;
-
-        auto armVelocitiesCallback(Velocity::ConstPtr const& message) -> void;
-
-        auto armThrottlesCallback(Throttle::ConstPtr const& message) -> void;
-
-        auto mastPositionsCallback(Position::ConstPtr const& message) -> void;
-
-        auto mastThrottleCallback(Throttle::ConstPtr const& message) -> void;
 
         // TODO(quintin): May want to restructure the names to all agree
         bimap<std::string, std::string> armMsgToUrdf{

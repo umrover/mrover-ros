@@ -4,10 +4,7 @@
 
   <rosparam command="load" file="$(find mrover)/config/simulator/simulator.yaml"/>
 
-  <include file="$(find mrover)/launch/autonomy.launch">
-    <arg name="sim" value="true"/>
-    <arg name="ekf_start_delay" value="1"/>
-  </include>
+  <include file="$(find mrover)/launch/autonomy.launch"/>
 
   <node pkg="nodelet" type="nodelet" name="perception_nodelet_manager" required="true"
         args="manager" output="screen"/>

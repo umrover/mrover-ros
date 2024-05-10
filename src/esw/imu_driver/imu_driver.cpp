@@ -1,7 +1,10 @@
+#include <numeric>
 #include <array>
 #include <cstdlib>
-#include <numeric>
+#include <format>
+#include <istream>
 #include <sstream>
+#include <string>
 
 #include <fcntl.h>
 #include <termios.h>
@@ -52,13 +55,15 @@ auto main(int argc, char** argv) -> int {
 
     int fd = open(port.c_str(), O_RDWR);
     if (fd < 0) {
-        ROS_ERROR("Failed to open IMU device! Check that udev is set up properly and that the device is connected.");
+        ROS_ERROR("Failed to open the serial device with the IMU attached! Check that udev is set up properly and that the device is connect to the USB bus.");
         return EXIT_FAILURE;
     }
 
+    ROS_INFO_STREAM(std::format("Opened the serial device :{}@115200", port));
+
     termios tty{};
     if (tcgetattr(fd, &tty) < 0) {
-        ROS_ERROR("Failed to get IMU device attributes");
+        ROS_ERROR("Failed to get serial device attributes");
         return EXIT_FAILURE;
     }
 
@@ -69,16 +74,20 @@ auto main(int argc, char** argv) -> int {
 
     tty.c_cflag = CS8 | CLOCAL | CREAD;
     tty.c_iflag = IGNPAR;
+#include <numeric>
+
 
     cfsetispeed(&tty, B115200);
     cfsetospeed(&tty, B115200);
 
     if (tcsetattr(fd, TCSANOW, &tty) != 0) {
-        ROS_ERROR_STREAM("Error " << errno << " from tcsetattr: " << strerror(errno));
+        ROS_ERROR_STREAM(std::format("Error {} from tcsetattr: {}", errno, strerror(errno)));
         return EXIT_FAILURE;
     }
 
     std::string remaining;
+
+    ROS_INFO_STREAM("Starting to read IMU data from the serial port...");
 
     while (ros::ok()) {
         // Idea: Read in a chunk of data and then extract as many lines as possible
@@ -101,7 +110,7 @@ auto main(int argc, char** argv) -> int {
             if (remaining.size() > LINE_ABORT_SIZE) throw std::runtime_error("Too much data");
 
             if (std::istringstream iss{line}; !(iss >> data)) {
-                ROS_ERROR_STREAM("Failed to parse IMU data: " << line);
+                ROS_WARN_STREAM(std::format("Failed to parse IMU data line: {}. This is okay once when we join mid-line.", line));
                 continue;
             }
 

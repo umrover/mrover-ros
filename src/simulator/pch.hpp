@@ -80,7 +80,6 @@
 #include <mrover/ControllerState.h>
 #include <mrover/IK.h>
 #include <mrover/ImuAndMag.h>
-#include <mrover/MotorsStatus.h>
 #include <mrover/Position.h>
 #include <mrover/Throttle.h>
 #include <mrover/Velocity.h>

@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
-from typing import Optional, Tuple
+
+from typing import Optional
 
 import numpy as np
+from pymap3d.enu import geodetic2enu
+
+import message_filters
 import rospy
 from geometry_msgs.msg import PoseWithCovarianceStamped, PoseWithCovariance, Pose, Point, Quaternion
 from mrover.msg import ImuAndMag
-from pymap3d.enu import geodetic2enu
 from sensor_msgs.msg import NavSatFix
 from std_msgs.msg import Header
 from util.SE3 import SE3
 from util.SO3 import SO3
 from util.np_utils import numpify
-import message_filters
 
 QUEUE_SIZE = 10
 SLOP = 0.5
@@ -38,7 +40,6 @@ class GPSLinearization:
     both_gps: bool
 
     # covariance config
-    use_dop_covariance: bool
     config_gps_covariance: np.ndarray
 
     def __init__(self):
@@ -48,24 +49,23 @@ class GPSLinearization:
         self.ref_alt = rospy.get_param("gps_linearization/reference_point_altitude")
         self.both_gps = rospy.get_param("gps_linearization/use_both_gps")
         self.world_frame = rospy.get_param("world_frame")
-        self.use_dop_covariance = rospy.get_param("global_ekf/use_gps_dop_covariance")
         self.ref_coord = np.array([self.ref_lat, self.ref_lon, self.ref_alt])
 
-        # config gps and imu convariance matrices
-        self.config_gps_covariance = np.array(rospy.get_param("global_ekf/gps_covariance", None))
-        self.config_imu_covariance = np.array(rospy.get_param("global_ekf/imu_orientation_covariance", None))
+        # config gps and imu covariance matrices
+        self.config_gps_covariance = np.array(rospy.get_param("gps_covariance", None))
+        self.config_imu_covariance = np.array(rospy.get_param("imu_orientation_covariance", None))
 
         self.last_gps_msg = None
         self.last_pose = None
         self.last_imu_msg = None
 
         if self.both_gps:
-            right_gps_sub = message_filters.Subscriber("right_gps_driver/fix", NavSatFix)
-            left_gps_sub = message_filters.Subscriber("left_gps_driver/fix", NavSatFix)
+            right_gps_sub = message_filters.Subscriber("right_gps/fix", NavSatFix)
+            left_gps_sub = message_filters.Subscriber("left_gps/fix", NavSatFix)
             sync_gps_sub = message_filters.ApproximateTimeSynchronizer([right_gps_sub, left_gps_sub], QUEUE_SIZE, SLOP)
             sync_gps_sub.registerCallback(self.dual_gps_callback)
         else:
-            rospy.Subscriber("left_gps_driver/fix", NavSatFix, self.single_gps_callback)
+            rospy.Subscriber("gps/fix", NavSatFix, self.single_gps_callback)
 
         rospy.Subscriber("imu/data", ImuAndMag, self.imu_callback)
         self.pose_publisher = rospy.Publisher("linearized_pose", PoseWithCovarianceStamped, queue_size=1)
@@ -83,8 +83,7 @@ class GPSLinearization:
         if np.any(np.isnan([msg.latitude, msg.longitude, msg.altitude])):
             return
 
-        if not self.use_dop_covariance:
-            msg.position_covariance = self.config_gps_covariance
+        msg.position_covariance = self.config_gps_covariance
 
         if self.last_imu_msg is not None:
             self.last_pose = self.get_linearized_pose_in_world(msg, self.last_imu_msg, self.ref_coord)
@@ -95,7 +94,8 @@ class GPSLinearization:
         Callback function that receives GPS messages, assigns their covariance matrix,
         and then publishes the linearized pose.
 
-        :param msg: The NavSatFix message containing GPS data that was just received
+        :param right_gps_msg: The NavSatFix message containing GPS data from the right antenna
+        :param left_gps_msg: The NavSatFix message containing GPS data from the left antenna
         TODO: Handle invalid PVTs
         """
 

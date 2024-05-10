@@ -179,7 +179,7 @@ namespace mrover {
             auto [it, was_inserted] = linkNameToMeta.emplace(link->name, linkIndex);
             assert(was_inserted);
 
-            // TODO(quintin): Configure this from a plugins XML file
+            // TODO(quintin): Configure this from a plugins XML file?
             if (link->name.contains("camera"sv)) {
                 Camera camera = makeCameraForLink(simulator, &multiBody->getLink(linkIndex));
                 if (link->name.contains("zed"sv)) {
@@ -206,6 +206,24 @@ namespace mrover {
                     camera.fov = 15;
                     simulator.mCameras.push_back(std::move(camera));
                 }
+            } else if (link->name.contains("imu"sv)) {
+                Imu imu;
+                imu.link = &multiBody->getLink(linkIndex);
+                imu.updateTask = PeriodicTask{100};
+                imu.pub = simulator.mNh.advertise<ImuAndMag>("imu/data", 1);
+            } else if (link->name.contains("gps"sv)) {
+                Gps gps;
+                gps.link = &multiBody->getLink(linkIndex);
+                gps.updateTask = PeriodicTask{10};
+                std::string topic;
+                if (link->name.contains("left")) {
+                    topic = "right_gps/fix";
+                } else if (link->name.contains("right")) {
+                    topic = "left_gps/fix";
+                } else {
+                    topic = "gps/fix";
+                }
+                gps.pub = simulator.mNh.advertise<sensor_msgs::NavSatFix>(topic, 1);
             }
 
             for (urdf::VisualSharedPtr const& visual: link->visual_array) {

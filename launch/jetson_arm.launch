@@ -1,0 +1,15 @@
+<launch>
+  <rosparam command="load" file="$(find mrover)/config/esw.yaml"/>
+
+  <node name="arm_direct_bridge" pkg="mrover" type="simple_bridge">
+    <param name="group_name" value="arm"/>
+  </node>
+  <node name="arm_translator_bridge" pkg="mrover" type="arm_translator_bridge"/>
+
+  <node pkg="nodelet" type="nodelet" name="streamer_nodelet_boom"
+        args="load mrover/GstWebsocketStreamerNodelet perception_nodelet_manager"
+        output="screen">
+    <param name="dev_node" value="/dev/boomcam"/>
+    <param name="port" value="8084"/>
+  </node>
+</launch>

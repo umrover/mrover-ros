@@ -1,4 +1,4 @@
-#include "can_driver.hpp"
+#include "can_bridge.hpp"
 
 #ifdef MROVER_IS_NODELET
 
@@ -8,7 +8,7 @@ PLUGINLIB_EXPORT_CLASS(mrover::CanNodelet, nodelet::Nodelet)
 #else
 
 auto main(int argc, char** argv) -> int {
-    ros::init(argc, argv, "can_driver");
+    ros::init(argc, argv, "can_bridge");
 
     // Start the CAN Nodelet
     nodelet::Loader nodelet;

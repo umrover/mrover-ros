@@ -3,7 +3,6 @@ project(mrover VERSION 2024.0.0 LANGUAGES CXX)
 
 option(MROVER_IS_CI "Build for CI" OFF)
 option(MROVER_RUN_CLANG_TIDY "Run clang-tidy" OFF)
-option(MROVER_IS_JETSON "Build for the Jetson" OFF)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -33,19 +32,24 @@ else ()
     endif ()
 endif ()
 
-if (NOT APPLE AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang") # Link with LLVM lld instead of GNU ld when using Clang on Linux, it is faster
-    add_link_options(-fuse-ld=lld)
-endif ()
-
-if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    set(MROVER_CPP_COMPILE_OPTIONS -Wall -Wextra -pedantic -Wno-missing-field-initializers)
-    if (MROVER_IS_CI) # Make warnings errors in CI
-        list(APPEND MROVER_CPP_COMPILE_OPTIONS -Werror)
+# Mold and LLVM lld are faster than GNU ld on Linux
+if (NOT APPLE)
+    find_program(MOLD mold)
+    find_program(LLD lld)
+    if (MOLD)
+        set(MROVER_LINKER_OPTIONS -fuse-ld=mold)
+        message(STATUS "Using mold as linker")
+    elseif (LLD)
+        set(MROVER_LINKER_OPTIONS -fuse-ld=lld)
+        message(STATUS "Using lld as linker")
     endif ()
 endif ()
 
-if (MROVER_IS_JETSON)
-    add_definitions(-DMROVER_IS_JETSON)
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    set(MROVER_COMPILE_OPTIONS -Wall -Wextra -pedantic -Wno-missing-field-initializers -Wno-subobject-linkage)
+    if (MROVER_IS_CI) # Make warnings errors in CI
+        list(APPEND MROVER_COMPILE_OPTIONS -Werror)
+    endif ()
 endif ()
 
 # Inject header files that get included before anything else, including system headers
@@ -155,7 +159,7 @@ mrover_add_library(motor_library src/esw/motor_library/*.cpp src/esw/motor_libra
 target_link_libraries(motor_library PUBLIC can_device moteus)
 
 if (NetLink_FOUND AND NetLinkRoute_FOUND)
-    mrover_add_nodelet(can_driver src/esw/can_driver/*.cpp src/esw/can_driver src/esw/can_driver/pch.hpp)
+    mrover_add_nodelet(can_driver src/esw/can_bridge/*.cpp src/esw/can_bridge src/esw/can_bridge/pch.hpp)
     mrover_nodelet_link_libraries(can_driver ${NetLink_LIBRARIES} ${NetLinkRoute_LIBRARIES})
     mrover_nodelet_include_directories(can_driver ${NetLink_INCLUDE_DIRS} ${NetLinkRoute_INCLUDE_DIRS})
 endif ()
@@ -171,23 +175,12 @@ target_link_libraries(imu_driver PRIVATE lie)
 mrover_add_node(heading_correcting_filter src/localization/heading_correcting_filter.cpp)
 target_link_libraries(heading_correcting_filter PRIVATE lie)
 
-mrover_add_esw_bridge_node(arm_hw_bridge src/esw/arm_hw_bridge/*.cpp)
-mrover_add_esw_bridge_node(arm_translator_bridge src/esw/arm_translator_bridge/*.cpp src/esw/arm_translator_bridge/*.hpp)
-mrover_add_esw_bridge_node(cache_bridge src/esw/cache_bridge/*.cpp)
+mrover_add_esw_bridge_node(arm_translator_bridge src/esw/arm_translator/*.cpp src/esw/arm_translator/*.hpp)
 mrover_add_esw_bridge_node(drive_bridge src/esw/drive_bridge/*.cpp)
 mrover_add_esw_bridge_node(led_hw_bridge src/esw/led_hw_bridge/*.cpp)
 mrover_add_esw_bridge_node(led src/esw/led/*.cpp)
-mrover_add_esw_bridge_node(mast_gimbal_bridge src/esw/mast_gimbal_bridge/*.cpp)
-mrover_add_esw_bridge_node(pdb_bridge src/esw/pdb_bridge/*.cpp)
-mrover_add_esw_bridge_node(sa_bridge src/esw/sa_bridge/*.cpp)
+mrover_add_esw_bridge_node(simple_bridge src/esw/simple_bridge/*.cpp)
 mrover_add_esw_bridge_node(science_bridge src/esw/science_bridge/*.cpp)
-mrover_add_esw_bridge_node(brushless_test_bridge src/esw/brushless_test_bridge/*.cpp)
-mrover_add_esw_bridge_node(brushed_test_bridge src/esw/brushed_test_bridge/*.cpp)
-mrover_add_esw_bridge_node(science_test_bridge src/esw/science_test_bridge/*.cpp)
-mrover_add_esw_bridge_node(test_arm_bridge src/esw/test_arm_bridge/*.cpp)
-mrover_add_esw_bridge_node(pdb_test_bridge src/esw/pdb_test_bridge/*.cpp)
-# mrover_add_esw_bridge_node(arm_position_test_bridge src/esw/arm_position_test_bridge/*.cpp)
-# mrover_add_esw_bridge_node(sa_sensor src/esw/fw/dirt_sensor/dirt_sensor_ros/dirt_sensor_ros.ino)
 
 ## Perception
 
