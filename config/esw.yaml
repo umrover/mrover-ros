@@ -1,9 +1,4 @@
-right_gps_driver:
-  port: "/dev/ttyACM0"
-  baud: 38400
-  frame_id: "base_link"
-
-left_gps_driver:
+rover_gps_driver:
   port: "/dev/gps"
   baud: 38400
   frame_id: "base_link"

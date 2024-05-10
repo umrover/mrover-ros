@@ -1,5 +1,4 @@
 #include "simulator.hpp"
-#include <sensor_msgs/JointState.h>
 
 namespace mrover {
 
@@ -215,47 +214,40 @@ namespace mrover {
     }
 
     auto SimulatorNodelet::motorStatusUpdate() -> void {
-        // if (auto lookup = getUrdf("rover"); lookup) {
-        //     URDF const& rover = *lookup;
-        //
-        //     ControllerState driveControllerState;
-        //     for (auto& position: {"front", "center", "back"}) {
-        //         for (auto& side: {"left", "right"}) {
-        //             std::string linkName = std::format("{}_{}_wheel_link", position, side);
-        //             driveControllerState.name.push_back(linkName);
-        //             driveControllerState.state.emplace_back("Armed");
-        //             driveControllerState.error.emplace_back("None");
-        //             driveControllerState.limit_hit.push_back(0b000);
-        //         }
-        //     }
-        //     mDriveControllerStatePub.publish(driveControllerState);
-        //
-        //     ControllerState armControllerState;
-        //     sensor_msgs::JointState armJointState;
-        //     std::vector<double> zeros = {0, 0, 0, 0, 0, 0};
-        //     armJointState.header.stamp = ros::Time::now();
-        //     for (auto& linkName: {"arm_a_link", "arm_b_link", "arm_c_link", "arm_d_link", "arm_e_link"}) {
-        //         armControllerState.name.emplace_back(armMsgToUrdf.backward(linkName).value());
-        //         armControllerState.state.emplace_back("Armed");
-        //         armControllerState.error.emplace_back("None");
-        //
-        //         armJointState.name.emplace_back(armMsgToUrdf.backward(linkName).value());
-        //         armJointState.position.emplace_back(rover.physics->getJointPos(rover.linkNameToMeta.at(linkName).index));
-        //         armJointState.velocity.emplace_back(rover.physics->getJointVel(rover.linkNameToMeta.at(linkName).index));
-        //         armJointState.effort.emplace_back(rover.physics->getJointTorque(rover.linkNameToMeta.at(linkName).index));
-        //
-        //         std::uint8_t limitSwitches = 0b000;
-        //         if (auto limits = rover.model.getLink(linkName)->parent_joint->limits) {
-        //             double joinPosition = rover.physics->getJointPos(rover.linkNameToMeta.at(linkName).index);
-        //             constexpr double OFFSET = 0.05;
-        //             if (joinPosition < limits->lower + OFFSET) limitSwitches |= 0b001;
-        //             if (joinPosition > limits->upper - OFFSET) limitSwitches |= 0b010;
-        //         }
-        //         armControllerState.limit_hit.push_back(limitSwitches);
-        //     }
-        //     mArmControllerStatePub.publish(armControllerState);
-        //     mArmJointStatePub.publish(armJointState);
-        // }
+        if (auto lookup = getUrdf("rover"); lookup) {
+            URDF const& rover = *lookup;
+
+            for (MotorGroup& motorGroup: mMotorGroups) {
+                ControllerState controllerState;
+
+                sensor_msgs::JointState jointState;
+                jointState.header.stamp = ros::Time::now();
+
+                for (std::string const& msgName: motorGroup.names) {
+                    std::string urdfName = msgToUrdf.forward(msgName).value();
+
+                    controllerState.name.push_back(msgName);
+                    controllerState.state.emplace_back("Armed");
+                    controllerState.error.emplace_back("None");
+                    std::uint8_t limitSwitches = 0b000;
+                    if (auto limits = rover.model.getLink(urdfName)->parent_joint->limits) {
+                        double jointPosition = rover.physics->getJointPos(rover.linkNameToMeta.at(urdfName).index);
+                        constexpr double OFFSET = 0.05;
+                        if (jointPosition < limits->lower + OFFSET) limitSwitches |= 0b001;
+                        if (jointPosition > limits->upper - OFFSET) limitSwitches |= 0b010;
+                    }
+                    controllerState.limit_hit.push_back(limitSwitches);
+
+                    jointState.name.push_back(msgName);
+                    jointState.position.push_back(rover.physics->getJointPos(rover.linkNameToMeta.at(urdfName).index));
+                    jointState.velocity.push_back(rover.physics->getJointVel(rover.linkNameToMeta.at(urdfName).index));
+                    jointState.effort.push_back(rover.physics->getJointTorque(rover.linkNameToMeta.at(urdfName).index));
+                }
+
+                motorGroup.controllerStatePub.publish(controllerState);
+                motorGroup.jointStatePub.publish(jointState);
+            }
+        }
     }
 
 } // namespace mrover

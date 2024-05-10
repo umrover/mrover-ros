@@ -21,6 +21,8 @@
 
   <node name="arm_controller" pkg="mrover" type="arm_controller" output="screen"/>
 
+  <node name="differential_drive_controller" pkg="mrover" type="differential_drive_controller" output="screen"/>
+
   <group if="$(arg rviz)">
     <arg name="rvizconfig" default="$(find mrover)/config/rviz/auton_sim.rviz"/>
     <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)"/>

@@ -266,6 +266,14 @@
 
   <link name="right_gps"/>
 
+    <joint name="chassis_link_to_center_gps" type="fixed">
+      <origin xyz="0 0 1"/>
+      <parent link="chassis_link"/>
+      <child link="center_gps"/>
+    </joint>
+
+    <link name="center_gps"/>
+
   <joint name="chassis_link_to_imu" type="fixed">
     <origin xyz="0 0 0"/>
     <parent link="chassis_link"/>

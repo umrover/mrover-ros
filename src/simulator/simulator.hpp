@@ -134,17 +134,17 @@ namespace mrover {
         float fov{};
         std::string frameId;
 
-        wgpu::Texture colorTexture = nullptr;
-        wgpu::TextureView colorTextureView = nullptr;
-        wgpu::Texture depthTexture = nullptr;
-        wgpu::TextureView depthTextureView = nullptr;
-        wgpu::Texture normalTexture = nullptr;
-        wgpu::TextureView normalTextureView = nullptr;
+        wgpu::Texture colorTexture;
+        wgpu::TextureView colorTextureView;
+        wgpu::Texture depthTexture;
+        wgpu::TextureView depthTextureView;
+        wgpu::Texture normalTexture;
+        wgpu::TextureView normalTextureView;
 
         Uniform<SceneUniforms> sceneUniforms{};
-        wgpu::BindGroup sceneBindGroup = nullptr;
+        wgpu::BindGroup sceneBindGroup;
 
-        wgpu::Buffer stagingBuffer = nullptr;
+        wgpu::Buffer stagingBuffer;
 
         std::unique_ptr<wgpu::BufferMapCallback> callback;
         bool needsMap = false;
@@ -156,17 +156,18 @@ namespace mrover {
         Camera base;
         ros::Publisher pcPub;
 
-        wgpu::Buffer pointCloudStagingBuffer = nullptr;
-        wgpu::Buffer pointCloudBuffer = nullptr;
+        wgpu::Buffer pointCloudStagingBuffer;
+        wgpu::Buffer pointCloudBuffer;
         std::unique_ptr<wgpu::BufferMapCallback> pointCloudCallback;
 
         Uniform<ComputeUniforms> computeUniforms{};
-        wgpu::BindGroup computeBindGroup = nullptr;
+        wgpu::BindGroup computeBindGroup;
 
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     };
 
     struct MotorGroup {
+        std::vector<std::string> names;
         PeriodicTask updateTask;
         ros::Subscriber throttleSub, velocitySub, positionSub;
         ros::Publisher jointStatePub, controllerStatePub;
@@ -255,23 +256,23 @@ namespace mrover {
 
         GlfwInstance mGlfwInstance;
         GlfwPointer<GLFWwindow, glfwCreateWindow, glfwDestroyWindow> mWindow;
-        wgpu::Instance mWgpuInstance = nullptr;
-        wgpu::Surface mSurface = nullptr;
-        wgpu::Adapter mAdapter = nullptr;
-        wgpu::Device mDevice = nullptr;
+        wgpu::Instance mWgpuInstance;
+        wgpu::Surface mSurface;
+        wgpu::Adapter mAdapter;
+        wgpu::Device mDevice;
         std::unique_ptr<wgpu::ErrorCallback> mErrorCallback;
-        wgpu::Queue mQueue = nullptr;
-        wgpu::SwapChain mSwapChain = nullptr;
-        wgpu::Texture mDepthTexture = nullptr;
-        wgpu::TextureView mDepthTextureView = nullptr;
-        wgpu::Texture mNormalTexture = nullptr;
-        wgpu::TextureView mNormalTextureView = nullptr;
+        wgpu::Queue mQueue;
+        wgpu::SwapChain mSwapChain;
+        wgpu::Texture mDepthTexture;
+        wgpu::TextureView mDepthTextureView;
+        wgpu::Texture mNormalTexture;
+        wgpu::TextureView mNormalTextureView;
 
-        wgpu::ShaderModule mShaderModule = nullptr;
-        wgpu::RenderPipeline mPbrPipeline = nullptr;
-        wgpu::RenderPipeline mWireframePipeline = nullptr;
+        wgpu::ShaderModule mShaderModule;
+        wgpu::RenderPipeline mPbrPipeline;
+        wgpu::RenderPipeline mWireframePipeline;
 
-        wgpu::ComputePipeline mPointCloudPipeline = nullptr;
+        wgpu::ComputePipeline mPointCloudPipeline;
 
         std::unordered_map<std::string, Model> mUriToModel;
 
@@ -336,9 +337,55 @@ namespace mrover {
         std::vector<Camera> mCameras;
         std::vector<Imu> mImus;
         std::vector<Gps> mGps;
+        std::vector<MotorGroup> mMotorGroups;
 
         static constexpr float NEAR = 0.1f;
         static constexpr float FAR = 1000.0f;
+
+        // TODO(quintin): May want to restructure the names to all agree
+        bimap<std::string, std::string> msgToUrdf{
+                {"joint_a", "arm_a_link"},
+                {"joint_b", "arm_b_link"},
+                {"joint_c", "arm_c_link"},
+                {"joint_de_pitch", "arm_d_link"},
+                {"joint_de_roll", "arm_e_link"},
+                {"front_left", "front_left_wheel_link"},
+                {"middle_left", "center_left_wheel_link"},
+                {"back_left", "back_left_wheel_link"},
+                {"front_right", "front_right_wheel_link"},
+                {"middle_right", "center_right_wheel_link"},
+                {"back_right", "back_right_wheel_link"},
+                {"mast_gimbal_y", "zed_mini_camera"},
+        };
+
+        template<typename F, typename N, typename V>
+        auto forEachMotor(N const& names, V const& values, F&& function) -> void {
+            if (names.size() != values.size()) {
+                ROS_WARN_STREAM_THROTTLE(1, "Received different number of joint names and values. Ignoring...");
+                return;
+            }
+
+            if (auto it = mUrdfs.find("rover"); it != mUrdfs.end()) {
+                URDF const& rover = it->second;
+
+                for (auto const& combined: boost::combine(names, values)) {
+                    std::string const& name = boost::get<0>(combined);
+                    float value = boost::get<1>(combined);
+
+                    if (auto urdfNameOpt = msgToUrdf.forward(name)) {
+                        std::string const& urdfName = urdfNameOpt.value();
+
+                        int linkIndex = rover.linkNameToMeta.at(urdfName).index;
+
+                        auto* motor = std::bit_cast<btMultiBodyJointMotor*>(rover.physics->getLink(linkIndex).m_userPtr);
+                        assert(motor);
+                        function(motor, value);
+                    } else {
+                        ROS_WARN_STREAM_THROTTLE(1, std::format("Unknown joint name: {}. Either the wrong name was sent OR the simulator does not yet support it", name));
+                    }
+                }
+            }
+        }
 
         // Other
 
@@ -359,6 +406,13 @@ namespace mrover {
         auto keyCallback(int key, int scancode, int action, int mods) -> void;
 
         auto frameBufferResizedCallback(int width, int height) -> void;
+
+        auto positionsCallback(Position::ConstPtr const& msg) -> void;
+
+        auto velocitiesCallback(Velocity::ConstPtr const& msg) -> void;
+
+        auto throttlesCallback(Throttle::ConstPtr
+            const& msg) -> void;
 
     public:
         SimulatorNodelet() = default;
@@ -410,39 +464,6 @@ namespace mrover {
         auto guiUpdate(wgpu::RenderPassEncoder& pass) -> void;
 
         auto physicsUpdate(Clock::duration dt) -> void;
-
-        // TODO(quintin): May want to restructure the names to all agree
-        bimap<std::string, std::string> armMsgToUrdf{
-                {"joint_a", "arm_a_link"},
-                {"joint_b", "arm_b_link"},
-                {"joint_c", "arm_c_link"},
-                {"joint_de_pitch", "arm_d_link"},
-                {"joint_de_roll", "arm_e_link"},
-        };
-
-        template<typename F, typename N, typename V>
-        auto forEachArmMotor(N const& names, V const& values, F&& function) -> void {
-            if (auto it = mUrdfs.find("rover"); it != mUrdfs.end()) {
-                URDF const& rover = it->second;
-
-                for (auto const& combined: boost::combine(names, values)) {
-                    std::string const& name = boost::get<0>(combined);
-                    float value = boost::get<1>(combined);
-
-                    if (auto urdfName = armMsgToUrdf.forward(name)) {
-                        std::string const& name = urdfName.value();
-
-                        int linkIndex = rover.linkNameToMeta.at(name).index;
-
-                        auto* motor = std::bit_cast<btMultiBodyJointMotor*>(rover.physics->getLink(linkIndex).m_userPtr);
-                        assert(motor);
-                        function(motor, value);
-                    } else {
-                        ROS_WARN_STREAM_THROTTLE(1, std::format("Unknown arm joint name: {}. Either the wrong name was sent OR the simulator does not yet support it", name));
-                    }
-                }
-            }
-        }
 
         auto makeTextureAndView(int width, int height, wgpu::TextureFormat const& format, wgpu::TextureUsage const& usage, wgpu::TextureAspect const& aspect) -> std::pair<wgpu::Texture, wgpu::TextureView>;
 

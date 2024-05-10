@@ -176,7 +176,7 @@ mrover_add_node(heading_correcting_filter src/localization/heading_correcting_fi
 target_link_libraries(heading_correcting_filter PRIVATE lie)
 
 mrover_add_esw_bridge_node(arm_translator_bridge src/esw/arm_translator/*.cpp src/esw/arm_translator/*.hpp)
-mrover_add_esw_bridge_node(drive_bridge src/esw/differential_drive_controller/*.cpp)
+mrover_add_esw_bridge_node(differential_drive_controller src/esw/differential_drive_controller/*.cpp)
 mrover_add_esw_bridge_node(led_hw_bridge src/esw/led_hw_bridge/*.cpp)
 mrover_add_esw_bridge_node(led src/esw/led/*.cpp)
 mrover_add_esw_bridge_node(simple_bridge src/esw/simple_bridge/*.cpp)

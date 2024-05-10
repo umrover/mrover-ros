@@ -37,6 +37,22 @@ namespace mrover {
 
         initUrdfsFromParams();
 
+        {
+            auto addGroup = [&](std::string_view groupName, std::vector<std::string> const& names) {
+                MotorGroup& group = mMotorGroups.emplace_back();
+                group.updateTask = PeriodicTask{50};
+                group.jointStatePub = mNh.advertise<sensor_msgs::JointState>(std::format("{}_joint_data", groupName), 1);
+                group.controllerStatePub = mNh.advertise<ControllerState>(std::format("{}_controller_data", groupName), 1);
+                group.names = names;
+                group.throttleSub = mNh.subscribe<Throttle>(std::format("{}_throttle_cmd", groupName), 1, &SimulatorNodelet::throttlesCallback, this);
+                group.velocitySub = mNh.subscribe<Velocity>(std::format("{}_velocity_cmd", groupName), 1, &SimulatorNodelet::velocitiesCallback, this);
+                group.positionSub = mNh.subscribe<Position>(std::format("{}_position_cmd", groupName), 1, &SimulatorNodelet::positionsCallback, this);
+            };
+            addGroup("arm", {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll"});
+            addGroup("drive_left", {"front_left", "middle_left", "back_left"});
+            addGroup("drive_right", {"front_right", "middle_right", "back_right"});
+        }
+
         mRunThread = std::thread{&SimulatorNodelet::run, this};
 
     } catch (std::exception const& e) {
@@ -74,7 +90,7 @@ namespace mrover {
                 glfwPollEvents();
 #endif
                 // Comments this out while debugging segfaults, otherwise it captures your cursor
-                glfwSetInputMode(mWindow.get(), GLFW_CURSOR, mInGui ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
+                // glfwSetInputMode(mWindow.get(), GLFW_CURSOR, mInGui ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
             }
             mLoopProfiler.measureEvent("GLFW Events");
 
