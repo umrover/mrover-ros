@@ -196,12 +196,6 @@ mrover_nodelet_link_libraries(long_range_tag_detector opencv_core opencv_objdete
 mrover_add_nodelet(usb_camera src/perception/usb_camera/*.cpp src/perception/usb_camera src/perception/usb_camera/pch.hpp)
 mrover_nodelet_link_libraries(usb_camera opencv_core opencv_objdetect opencv_aruco opencv_imgproc opencv_highgui)
 
-if (CUDA_FOUND)
-    #    mrover_add_node(nv_vid_codec_h265_enc src/esw/nv_vid_codec_h265_enc/*.c*)
-    #    target_link_libraries(nv_vid_codec_h265_enc PUBLIC cuda nvidia-encode opencv_core opencv_imgproc streaming)
-    #    target_include_directories(nv_vid_codec_h265_enc SYSTEM PUBLIC deps/nvenc)
-endif ()
-
 if (Gst_FOUND AND GstApp_FOUND AND LibUsb_FOUND AND LibUdev_FOUND)
     mrover_add_nodelet(gst_websocket_streamer src/esw/gst_websocket_streamer/*.c* src/esw/gst_websocket_streamer src/esw/gst_websocket_streamer/pch.hpp)
     mrover_nodelet_link_libraries(gst_websocket_streamer PRIVATE websocket_server ${Gst_LIBRARIES} ${GstApp_LIBRARIES} ${LibUsb_LIBRARIES} ${LibUdev_LIBRARIES} opencv_core opencv_imgproc)
