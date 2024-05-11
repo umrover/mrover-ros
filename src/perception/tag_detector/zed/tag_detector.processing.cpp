@@ -10,7 +10,7 @@ namespace mrover {
      * @param u         X Pixel Position
      * @param v         Y Pixel Position
      */
-    auto TagDetectorNodelet::getTagInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t u, size_t v) -> std::optional<SE3d> {
+    auto TagDetectorNodelet::getTagInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, std::size_t u, std::size_t v) const -> std::optional<SE3d> {
         assert(cloudPtr);
 
         if (u >= cloudPtr->width || v >= cloudPtr->height) {
@@ -54,7 +54,7 @@ namespace mrover {
         auto* pixelPtr = reinterpret_cast<cv::Vec3b*>(mImg.data);
         auto* pointPtr = reinterpret_cast<Point const*>(msg->data.data());
         std::for_each(std::execution::par_unseq, pixelPtr, pixelPtr + mImg.total(), [&](cv::Vec3b& pixel) {
-            size_t i = &pixel - pixelPtr;
+            std::size_t i = &pixel - pixelPtr;
             pixel[0] = pointPtr[i].b;
             pixel[1] = pointPtr[i].g;
             pixel[2] = pointPtr[i].r;
@@ -72,7 +72,7 @@ namespace mrover {
         mProfiler.measureEvent("OpenCV Detect");
 
         // Update ID, image center, and increment hit count for all detected tags
-        for (size_t i = 0; i < mImmediateIds.size(); ++i) {
+        for (std::size_t i = 0; i < mImmediateIds.size(); ++i) {
             int id = mImmediateIds[i];
             Tag& tag = mTags[id];
             tag.hitCount = std::clamp(tag.hitCount + mTagIncrementWeight, 0, mMaxHitCount);
@@ -150,7 +150,7 @@ namespace mrover {
             mImgPub.publish(mImgMsg);
         }
 
-        size_t detectedCount = mImmediateIds.size();
+        std::size_t detectedCount = mImmediateIds.size();
         NODELET_INFO_COND(!mPrevDetectedCount.has_value() || detectedCount != mPrevDetectedCount.value(), "Detected %zu markers", detectedCount);
         mPrevDetectedCount = detectedCount;
 

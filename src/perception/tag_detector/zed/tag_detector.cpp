@@ -28,7 +28,7 @@ namespace mrover {
         mServiceEnableDetections = mNh.advertiseService("enable_detections", &TagDetectorNodelet::enableDetectionsCallback, this);
 
         // Lambda handles passing class pointer (implicit first parameter) to configCallback
-        mCallbackType = [this](mrover::DetectorParamsConfig& config, uint32_t level) { configCallback(config, level); };
+        mCallbackType = [this](DetectorParamsConfig& config, uint32_t level) { configCallback(config, level); };
         mConfigServer.setCallback(mCallbackType);
 
         mPnh.param<double>("adaptiveThreshConstant",

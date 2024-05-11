@@ -16,6 +16,11 @@ std::vector PUBLISHER_TOPICS{"joystick_cmd_vel"s, "controller_cmd_vel"s, "simula
 
 ros::Publisher finalTwistPub;
 
+template<class... Ts>
+struct overloaded : Ts... {
+    using Ts::operator()...;
+};
+
 struct InputPublisher {
     ros::Time lastReceived;
     ros::Subscriber sub;
@@ -38,18 +43,17 @@ auto main(int argc, char** argv) -> int {
 
     finalTwistPub = nh.advertise<geometry_msgs::Twist>("cmd_vel", 1);
 
-    ros::Timer controlTimer = nh.createTimer(ros::Duration(1.0 / CONTROL_HZ), [&](auto const&) {
+    ros::Timer controlTimer = nh.createTimer(ros::Duration{1.0 / CONTROL_HZ}, [&](auto const&) {
         geometry_msgs::Twist finalTwist;
         for (auto const& [_, inputPublisher]: inputPublishers) {
             if (ros::Time::now() - inputPublisher.lastReceived > EXPIRATION_DURATION) continue;
 
-            auto const& twist = std::get<geometry_msgs::Twist>(inputPublisher.input);
-            finalTwist.linear.x += twist.linear.x;
-            finalTwist.linear.y += twist.linear.y;
-            finalTwist.linear.z += twist.linear.z;
-            finalTwist.angular.x += twist.angular.x;
-            finalTwist.angular.y += twist.angular.y;
-            finalTwist.angular.z += twist.angular.z;
+            std::visit(overloaded{
+                               [&](geometry_msgs::Twist const& twist) {
+                                   finalTwist.linear.x += twist.linear.x;
+                                   finalTwist.angular.z += twist.angular.z;
+                               }},
+                       inputPublisher.input);
         }
         finalTwistPub.publish(finalTwist);
     });

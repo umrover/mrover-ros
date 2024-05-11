@@ -90,7 +90,10 @@ auto main(int argc, char** argv) -> int {
 
         // 3. Ensure the heading has not changed significantly (i.e. the rover is moving straight)
 
-        if (stdDevHeadingInMap > MIN_HEADING_STD_DEV) return;
+        if (stdDevHeadingInMap > MIN_HEADING_STD_DEV) {
+            ROS_INFO_STREAM(std::format("Rover is not moving straight enough: std dev = {}", stdDevHeadingInMap));
+            return;
+        }
 
         ROS_INFO_STREAM("Heading corrected");
         correctionRotation = Eigen::AngleAxisd(meanHeadingInMap, R3::UnitZ()) * currentOrientation.inverse();
