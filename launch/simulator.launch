@@ -4,10 +4,12 @@
 
   <rosparam command="load" file="$(find mrover)/config/simulator/simulator.yaml"/>
 
-  <include file="$(find mrover)/launch/autonomy.launch"/>
-
   <node pkg="nodelet" type="nodelet" name="perception_nodelet_manager" required="true"
         args="manager" output="screen"/>
+
+  <include file="$(find mrover)/launch/base.launch"/>
+
+  <include file="$(find mrover)/launch/autonomy.launch"/>
 
   <node pkg="nodelet" type="nodelet" name="simulator_nodelet"
         args="load mrover/SimulatorNodelet perception_nodelet_manager" output="screen">
@@ -20,8 +22,6 @@
   </node>
 
   <node name="arm_controller" pkg="mrover" type="arm_controller" output="screen"/>
-
-  <node name="differential_drive_controller" pkg="mrover" type="differential_drive_controller" output="screen"/>
 
   <group if="$(arg rviz)">
     <arg name="rvizconfig" default="$(find mrover)/config/rviz/auton_sim.rviz"/>

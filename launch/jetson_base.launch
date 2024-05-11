@@ -1,8 +1,10 @@
 <launch>
+  <rosparam command="load" file="$(find mrover)/config/esw.yaml"/>
+
   <node pkg="nodelet" type="nodelet" name="perception_nodelet_manager" required="true"
         args="manager" output="screen"/>
 
-  <rosparam command="load" file="$(find mrover)/config/esw.yaml"/>
+  <include file="$(find mrover)/launch/base.launch"/>
 
   <include file="$(find mrover)/launch/jetson_can.launch"/>
 

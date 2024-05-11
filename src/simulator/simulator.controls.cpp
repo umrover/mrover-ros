@@ -134,29 +134,24 @@ namespace mrover {
         else
             freeLook(dt);
 
-        std::optional<geometry_msgs::Twist> twist;
+        geometry_msgs::Twist twist;
         if (glfwGetKey(mWindow.get(), mRoverRightKey) == GLFW_PRESS) {
-            if (!twist) twist.emplace();
-            twist->angular.z = -mRoverAngularSpeed;
+            twist.angular.z = -mRoverAngularSpeed;
         }
         if (glfwGetKey(mWindow.get(), mRoverLeftKey) == GLFW_PRESS) {
-            if (!twist) twist.emplace();
-            twist->angular.z = mRoverAngularSpeed;
+            twist.angular.z = mRoverAngularSpeed;
         }
         if (glfwGetKey(mWindow.get(), mRoverForwardKey) == GLFW_PRESS) {
-            if (!twist) twist.emplace();
-            twist->linear.x = mRoverLinearSpeed;
+            twist.linear.x = mRoverLinearSpeed;
         }
         if (glfwGetKey(mWindow.get(), mRoverBackwardKey) == GLFW_PRESS) {
-            if (!twist) twist.emplace();
-            twist->linear.x = -mRoverLinearSpeed;
+            twist.linear.x = -mRoverLinearSpeed;
         }
         if (glfwGetKey(mWindow.get(), mRoverStopKey) == GLFW_PRESS) {
-            if (!twist) twist.emplace();
-            twist->linear.x = 0;
-            twist->angular.z = 0;
+            twist.linear.x = 0;
+            twist.angular.z = 0;
         }
-        // TODO: send twist
+        mCmdVelPub.publish(twist);
     }
 
 } // namespace mrover

@@ -31,6 +31,7 @@ ra_arm_mode = "disabled"
 
 def ra_timer_expired(_):
     global ra_arm_mode
+    rospy.logwarn("RA GUI timed out. Disabling...")
     ra_arm_mode = "disabled"
 
 
@@ -138,6 +139,8 @@ class GUIConsumer(JsonWebsocketConsumer):
         consumers.remove(self)
 
     def receive(self, text_data=None, bytes_data=None, **kwargs) -> None:
+        global ra_arm_mode, ra_timer
+
         if text_data is None:
             rospy.logwarn("Expecting text but received binary on GUI websocket...")
             return
@@ -150,14 +153,12 @@ class GUIConsumer(JsonWebsocketConsumer):
                 match message["type"]:
                     case "joystick_values":
                         send_joystick_twist(device_input)
-                        send_ra_controls(device_input)
+                        send_ra_controls(ra_arm_mode, device_input)
                     case "controller_values":
                         send_controller_twist(device_input)
                     case "keyboard_values":
                         send_mast_controls(device_input)
             case "arm_mode":
-                global ra_arm_mode, ra_timer
-
                 ra_arm_mode = message["mode"]
                 if ra_timer:
                     ra_timer.shutdown()

@@ -12,6 +12,8 @@ namespace mrover {
 
         mGroundTruthPub = mNh.advertise<nav_msgs::Odometry>("/ground_truth", 1);
 
+        mCmdVelPub = mNh.advertise<geometry_msgs::Twist>("/simulator_cmd_vel", 1);
+
         mIkTargetPub = mNh.advertise<IK>("/arm_ik", 1);
 
         mIsHeadless = mPnh.param<bool>("headless", false);

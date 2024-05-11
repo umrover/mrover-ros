@@ -348,7 +348,7 @@ class Context:
     def __init__(self):
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
-        self.vel_cmd_publisher = rospy.Publisher("cmd_vel", Twist, queue_size=1)
+        self.vel_cmd_publisher = rospy.Publisher("navigation_cmd_vel", Twist, queue_size=1)
         self.vis_publisher = rospy.Publisher("nav_vis", Marker, queue_size=1)
         self.search_point_publisher = rospy.Publisher("search_path", GPSPointList, queue_size=1)
         self.enable_auton_service = rospy.Service("enable_auton", EnableAuton, self.recv_enable_auton)

@@ -207,7 +207,7 @@ namespace mrover {
 
         float mFlySpeed = 5.0f;
         float mRoverLinearSpeed = 1.0f;
-        float mRoverAngularSpeed = 0.5f;
+        float mRoverAngularSpeed = 1.5f;
         float mLookSense = 0.004f;
         float mFovDegrees = 60.0f;
         btVector3 mGravityAcceleration{0.0f, 0.0f, -9.81f};
@@ -225,6 +225,8 @@ namespace mrover {
         ros::NodeHandle mNh, mPnh;
 
         ros::Publisher mGroundTruthPub;
+
+        ros::Publisher mCmdVelPub;
 
         tf2_ros::Buffer mTfBuffer;
         tf2_ros::TransformListener mTfListener{mTfBuffer};

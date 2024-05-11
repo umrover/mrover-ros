@@ -7,14 +7,16 @@
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
 
+#include <boost/circular_buffer.hpp>
+
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include <geometry_msgs/Twist.h>
 
 #include <lie.hpp>
 
-static ros::Duration const STEP{0.1}, WINDOW{1};
+static ros::Duration const STEP{0.5}, WINDOW{2.25};
 
-constexpr static float MIN_LINEAR_SPEED = 0.2, MAX_ANGULAR_SPEED = 0.1, MIN_HEADING_STD_DEV = 0.1;
+constexpr static float MIN_LINEAR_SPEED = 0.2, MAX_ANGULAR_SPEED = 0.1, MIN_HEADING_STD_DEV = 0.2;
 
 auto squared(auto const& x) { return x * x; }
 
@@ -56,11 +58,20 @@ auto main(int argc, char** argv) -> int {
 
         ros::Time end = ros::Time::now(), start = end - WINDOW;
         for (ros::Time t = start; t < end; t += STEP) {
-            auto roverInMapOld = SE3Conversions::fromTfTree(tfBuffer, rover_frame, map_frame, t);
-            auto roverInMapNew = SE3Conversions::fromTfTree(tfBuffer, rover_frame, map_frame, t + STEP);
-            R2 roverVelocityInMap = (roverInMapNew.translation() - roverInMapOld.translation()).head<2>();
-            roverVelocitiesInMap.push_back(roverVelocityInMap);
-            roverHeadingsInMap.push_back(std::atan2(roverVelocityInMap.y(), roverVelocityInMap.x()));
+            try {
+                auto roverInMapOld = SE3Conversions::fromTfTree(tfBuffer, rover_frame, map_frame, t - STEP);
+                auto roverInMapNew = SE3Conversions::fromTfTree(tfBuffer, rover_frame, map_frame, t);
+                R2 roverVelocityInMap = (roverInMapNew.translation() - roverInMapOld.translation()).head<2>();
+                roverVelocitiesInMap.push_back(roverVelocityInMap);
+                roverHeadingsInMap.push_back(std::atan2(roverVelocityInMap.y(), roverVelocityInMap.x()));
+            } catch (tf2::ConnectivityException const& e) {
+                ROS_WARN_STREAM(e.what());
+                return;
+            } catch (tf2::LookupException const& e) {
+                ROS_WARN_STREAM(e.what());
+                return;
+            } catch (tf2::ExtrapolationException const&) {
+            }
         }
 
         // 2. Ensure the rover has actually moved to avoid correcting while standing still
