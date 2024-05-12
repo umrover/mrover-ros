@@ -28,7 +28,7 @@ namespace mrover {
         mServiceEnableDetections = mNh.advertiseService("enable_detections", &TagDetectorNodelet::enableDetectionsCallback, this);
 
         // Lambda handles passing class pointer (implicit first parameter) to configCallback
-        mCallbackType = [this](DetectorParamsConfig& config, uint32_t level) { configCallback(config, level); };
+        mCallbackType = [this](DetectorParamsConfig const& config, uint32_t level) { configCallback(config, level); };
         mConfigServer.setCallback(mCallbackType);
 
         mPnh.param<double>("adaptiveThreshConstant",
@@ -93,7 +93,7 @@ namespace mrover {
         NODELET_INFO("Tag detection ready, use odom frame: %s, min hit count: %d, max hit count: %d, hit increment weight: %d, hit decrement weight: %d", mUseOdom ? "true" : "false", mMinHitCountBeforePublish, mMaxHitCount, mTagIncrementWeight, mTagDecrementWeight);
     }
 
-    auto TagDetectorNodelet::configCallback(DetectorParamsConfig& config, uint32_t level) -> void {
+    auto TagDetectorNodelet::configCallback(DetectorParamsConfig const& config, uint32_t level) const -> void {
         // Don't load initial config, since it will overwrite the rosparam settings
         if (level == std::numeric_limits<uint32_t>::max()) return;
 

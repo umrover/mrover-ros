@@ -14,26 +14,21 @@
 
 #include <lie.hpp>
 
-static ros::Duration const STEP{0.5}, WINDOW{2.25};
+static ros::Duration const STEP{0.5}, WINDOW{2 + STEP.toSec() / 2};
 
-constexpr static float MIN_LINEAR_SPEED = 0.2, MAX_ANGULAR_SPEED = 0.1, MIN_HEADING_STD_DEV = 0.2;
+constexpr static float MIN_LINEAR_SPEED = 0.2, MAX_ANGULAR_SPEED = 0.1, MAX_ANGULAR_CHANGE = 0.2;
 
 auto squared(auto const& x) { return x * x; }
-
-auto wrapAngle(double angle) -> double {
-    constexpr double pi = std::numbers::pi_v<double>;
-    return std::fmod(angle + pi, 2 * pi) - pi;
-}
 
 auto main(int argc, char** argv) -> int {
     ros::init(argc, argv, "heading_correcting_filter");
     ros::NodeHandle nh;
 
-    auto use_odom = nh.param<bool>("use_odom", false);
-    auto rover_frame = nh.param<std::string>("rover_frame", "base_link");
-    auto map_frame = nh.param<std::string>("map_frame", "map");
+    auto useOdomFrame = nh.param<bool>("use_odom", false);
+    auto roverFrame = nh.param<std::string>("rover_frame", "base_link");
+    auto mapFrame = nh.param<std::string>("map_frame", "map");
 
-    if (use_odom) throw std::runtime_error{"Not supported"};
+    if (useOdomFrame) throw std::runtime_error{"Not supported"};
 
     tf2_ros::Buffer tfBuffer;
     tf2_ros::TransformListener tfListener{tfBuffer};
@@ -42,7 +37,8 @@ auto main(int argc, char** argv) -> int {
 
     geometry_msgs::Twist currentTwist;
 
-    S3 currentOrientation = S3::Identity(), correctionRotation = S3::Identity();
+    SO3d uncorrectedOrientation = SO3d::Identity();
+    SO3d::Tangent correction;
 
     ros::Timer correctTimer = nh.createTimer(WINDOW, [&](ros::TimerEvent const&) {
         // 1. Ensure the rover is being commanded to move relatively straight forward
@@ -53,17 +49,20 @@ auto main(int argc, char** argv) -> int {
 
         // Compute the past velocities and headings of the rover in the map frame over a window of time
 
-        std::vector<R2> roverVelocitiesInMap;
-        std::vector<double> roverHeadingsInMap;
+        R2 roverVelocitySum{};
+        double roverHeadingSum = 0.0;
+        std::size_t readings = 0;
 
         ros::Time end = ros::Time::now(), start = end - WINDOW;
         for (ros::Time t = start; t < end; t += STEP) {
             try {
-                auto roverInMapOld = SE3Conversions::fromTfTree(tfBuffer, rover_frame, map_frame, t - STEP);
-                auto roverInMapNew = SE3Conversions::fromTfTree(tfBuffer, rover_frame, map_frame, t);
-                R2 roverVelocityInMap = (roverInMapNew.translation() - roverInMapOld.translation()).head<2>();
-                roverVelocitiesInMap.push_back(roverVelocityInMap);
-                roverHeadingsInMap.push_back(std::atan2(roverVelocityInMap.y(), roverVelocityInMap.x()));
+                auto roverInMapOld = SE3Conversions::fromTfTree(tfBuffer, roverFrame, mapFrame, t - STEP);
+                auto roverInMapNew = SE3Conversions::fromTfTree(tfBuffer, roverFrame, mapFrame, t);
+                R3 roverVelocityInMap = (roverInMapNew.translation() - roverInMapOld.translation()) / STEP.toSec();
+                R3 roverAngularVelocityInMap = (roverInMapNew.asSO3() - roverInMapOld.asSO3()).coeffs();
+                roverVelocitySum += roverVelocityInMap.head<2>();
+                roverHeadingSum += roverAngularVelocityInMap.z();
+                ++readings;
             } catch (tf2::ConnectivityException const& e) {
                 ROS_WARN_STREAM(e.what());
                 return;
@@ -76,27 +75,22 @@ auto main(int argc, char** argv) -> int {
 
         // 2. Ensure the rover has actually moved to avoid correcting while standing still
 
-        R2 meanVelocityInMap = std::accumulate(roverVelocitiesInMap.begin(), roverVelocitiesInMap.end(), R2{}) / roverVelocitiesInMap.size();
-        if (meanVelocityInMap.norm() < MIN_LINEAR_SPEED) return;
-
-        ROS_INFO("Rover is actually moving forward");
-
-        // Angles wrap around so the mean + variance must be treated specially
-        double meanHeadingInMap = std::atan2(meanVelocityInMap.y(), meanVelocityInMap.x());
-        double stdDevHeadingInMap = std::sqrt(std::accumulate(roverHeadingsInMap.begin(), roverHeadingsInMap.end(), double{}, [&](double sum, double heading) {
-                                                  return sum + squared(wrapAngle(heading - meanHeadingInMap));
-                                              }) /
-                                              static_cast<double>(roverHeadingsInMap.size()));
-
-        // 3. Ensure the heading has not changed significantly (i.e. the rover is moving straight)
-
-        if (stdDevHeadingInMap > MIN_HEADING_STD_DEV) {
-            ROS_INFO_STREAM(std::format("Rover is not moving straight enough: std dev = {}", stdDevHeadingInMap));
+        if (R2 meanVelocityInMap = roverVelocitySum / static_cast<double>(readings); meanVelocityInMap.norm() < MIN_LINEAR_SPEED) {
+            ROS_INFO_STREAM(std::format("Rover is not moving fast enough: speed = {} m/s", meanVelocityInMap.norm()));
             return;
         }
 
-        ROS_INFO_STREAM("Heading corrected");
-        correctionRotation = Eigen::AngleAxisd(meanHeadingInMap, R3::UnitZ()) * currentOrientation.inverse();
+        if (roverHeadingSum > MAX_ANGULAR_CHANGE) {
+            ROS_INFO_STREAM(std::format("Rover is not moving straight enough: heading change = {} rad", roverHeadingSum));
+            return;
+        }
+
+        double meanHeadingInMap = std::atan2(roverVelocitySum.y(), roverVelocitySum.x());
+        ROS_INFO_STREAM(meanHeadingInMap << roverVelocitySum);
+
+        correction = uncorrectedOrientation - SO3d{Eigen::AngleAxisd{meanHeadingInMap, R3::UnitZ()}};
+        correction.coeffs().x() = correction.coeffs().y() = 0; // Only correct yaw
+        ROS_INFO_STREAM(std::format("Correcting heading by: {}", correction.z()));
     });
 
     ros::Subscriber twistSubscriber = nh.subscribe<geometry_msgs::Twist>("/cmd_vel", 1, [&](geometry_msgs::TwistConstPtr const& twist) {
@@ -106,10 +100,12 @@ auto main(int argc, char** argv) -> int {
     ros::Subscriber poseSubscriber = nh.subscribe<geometry_msgs::PoseWithCovarianceStamped>("/linearized_pose", 1, [&](geometry_msgs::PoseWithCovarianceStampedConstPtr const& pose) {
         geometry_msgs::Quaternion const& o = pose->pose.pose.orientation;
         geometry_msgs::Point const& p = pose->pose.pose.position;
-        currentOrientation = S3{o.w, o.x, o.y, o.z};
-        S3 correctedOrientation = correctionRotation * currentOrientation;
-        Eigen::Vector3d position{p.x, p.y, p.z};
-        SE3Conversions::pushToTfTree(tfBroadcaster, rover_frame, map_frame, SE3d{position, correctedOrientation});
+        SE3d uncorrectedPose{R3{p.x, p.y, p.z}, S3{o.w, o.x, o.y, o.z}};
+        uncorrectedOrientation = uncorrectedPose.asSO3();
+
+        SE3d correctedPose = uncorrectedPose;
+        correctedPose.asSO3() += correction;
+        SE3Conversions::pushToTfTree(tfBroadcaster, roverFrame, mapFrame, correctedPose);
     });
 
     ros::spin();

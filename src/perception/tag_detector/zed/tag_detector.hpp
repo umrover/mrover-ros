@@ -11,7 +11,7 @@ namespace mrover {
         std::optional<SE3d> tagInCam;
     };
 
-    class TagDetectorNodelet : public nodelet::Nodelet {
+    class TagDetectorNodelet final : public nodelet::Nodelet {
 
         ros::NodeHandle mNh, mPnh;
 
@@ -45,8 +45,8 @@ namespace mrover {
         std::vector<std::vector<cv::Point2f>> mImmediateCorners;
         std::vector<int> mImmediateIds;
         std::unordered_map<int, Tag> mTags;
-        dynamic_reconfigure::Server<mrover::DetectorParamsConfig> mConfigServer;
-        dynamic_reconfigure::Server<mrover::DetectorParamsConfig>::CallbackType mCallbackType;
+        dynamic_reconfigure::Server<DetectorParamsConfig> mConfigServer;
+        dynamic_reconfigure::Server<DetectorParamsConfig>::CallbackType mCallbackType;
 
         LoopProfiler mProfiler{"Tag Detector"};
 
@@ -54,7 +54,7 @@ namespace mrover {
 
         auto publishThresholdedImage() -> void;
 
-        auto getTagInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t u, size_t v) -> std::optional<SE3d>;
+        auto getTagInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t u, size_t v) const -> std::optional<SE3d>;
 
     public:
         TagDetectorNodelet() = default;
@@ -63,7 +63,7 @@ namespace mrover {
 
         auto pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg) -> void;
 
-        auto configCallback(DetectorParamsConfig& config, uint32_t level) -> void;
+        auto configCallback(DetectorParamsConfig const& config, uint32_t level) const -> void;
 
         auto enableDetectionsCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) -> bool;
     };
