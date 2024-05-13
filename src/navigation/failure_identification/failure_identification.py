@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Tuple
 
 import numpy as np
 import pandas as pd
 
 import message_filters
 import rospy
-from geometry_msgs.msg import Twist
+import tf
+from geometry_msgs.msg import Twist, Pose
 from mrover.msg import StateMachineStateUpdate
 from nav_msgs.msg import Odometry
 from navigation.failure_identification.watchdog import WatchDog
@@ -19,6 +20,36 @@ from util.ros_utils import get_rosparam
 DATAFRAME_MAX_SIZE = get_rosparam("failure_identification/dataframe_max_size", 200)
 POST_RECOVERY_GRACE_PERIOD = get_rosparam("failure_identification/post_recovery_grace_period", 5.0)
 
+#helper to compute position and velocities between two frames
+def compute_pose_and_twist(listener: tf.TransformListener, from_frame: str, to_frame: str, dt: float = 1.0) -> Optional[Tuple[Pose, Twist]]:
+    try:
+        (trans, rot) = listener.lookupTransform(from_frame, to_frame, rospy.Time(dt))
+        (trans_prev, rot_prev) = listener.lookupTransform(from_frame, to_frame, rospy.Time.now() - rospy.Duration(1))
+    except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+        return None
+
+    # Compute differences
+    delta_trans = [trans[i] - trans_prev[i] for i in range(3)]
+    delta_rot = [rot[i] - rot_prev[i] for i in range(4)]
+
+    # Create Twist message
+    twist = Twist()
+    twist.linear.x, twist.linear.y, twist.linear.z = delta_trans
+    twist.angular.x, twist.angular.y, twist.angular.z = delta_rot
+
+    #Create pose message
+    pose = Pose()
+    pose.position.x = trans[0]
+    pose.position.y = trans[1]
+    pose.position.z = trans[2]
+    pose.orientation.x = rot[0]
+    pose.orientation.y = rot[1]
+    pose.orientation.z = rot[2]
+    pose.orientation.w = rot[3]
+
+    return pose, twist
+
+    
 
 class FailureIdentifier:
     """
@@ -36,14 +67,15 @@ class FailureIdentifier:
     data_collecting_mode: bool
     cols: list
     last_recorded_recovery_time: Optional[rospy.Time] = None
+    rover_transform_listener: tf.TransformListener
 
     def __init__(self):
         nav_status_sub = message_filters.Subscriber("nav_state", StateMachineStateUpdate)
         drive_status_sub = message_filters.Subscriber("drive_joint_data", JointState)
-        odometry_sub = message_filters.Subscriber("global_ekf/odometry", Odometry)
+        self.rover_transform_listener = tf.TransformListener()
 
         ts = message_filters.ApproximateTimeSynchronizer(
-            [nav_status_sub, drive_status_sub, odometry_sub], 10, 1.0, allow_headerless=True
+            [nav_status_sub, drive_status_sub], 10, 1.0, allow_headerless=True
         )
         ts.registerCallback(self.update)
 
@@ -98,16 +130,19 @@ class FailureIdentifier:
     def cmd_vel_update(self, cmd_vel: Twist) -> None:
         self.cur_cmd = cmd_vel
 
-    def update(self, nav_status: StateMachineStateUpdate, drive_status: JointState, odometry: Odometry) -> None:
+    def update(self, nav_status: StateMachineStateUpdate, drive_status: JointState) -> None:
         """
         Updates the current row of the data frame with the latest data from the rover
         then appends the row to the data frame
         @param nav_status: the current state of the rover, used to determine if the rover is already recovering
         @param drive_status: the current status of the rovers motors, has velocity and effort data
-        @param odometry: the current odometry of the rover, has position and velocity data
 
         publishes a message to the /nav_stuck topic indicating if the rover is stuck
         """
+
+        pose, twist = compute_pose_and_twist(self.rover_transform_listener, "map", "base_link")
+        if pose is None or twist is None:
+            return
 
         # test recovery state using the stuck button on the GUI rather than analyzing data
         TEST_RECOVERY_STATE = get_rosparam("failure_identification/test_recovery_state", False)
@@ -119,6 +154,7 @@ class FailureIdentifier:
             # return to not collect any data
             return
 
+        
         # create a new row for the data frame
         self.actively_collecting = True
         cur_row = {}
@@ -135,24 +171,25 @@ class FailureIdentifier:
         cur_row["cmd_vel_x"] = self.cur_cmd.linear.x
         cur_row["cmd_vel_twist"] = self.cur_cmd.angular.z
 
+
         # get the x, y, z position of the rover from odometry message
-        cur_row["x"] = odometry.pose.pose.position.x
-        cur_row["y"] = odometry.pose.pose.position.y
-        cur_row["z"] = odometry.pose.pose.position.z
+        cur_row["x"] = pose.position.x
+        cur_row["y"] = pose.position.y
+        cur_row["z"] = pose.position.z
 
         # get the x, y, z, w rotation of the rover from odometry message
-        cur_row["rot_x"] = odometry.pose.pose.orientation.x
-        cur_row["rot_y"] = odometry.pose.pose.orientation.y
-        cur_row["rot_z"] = odometry.pose.pose.orientation.z
-        cur_row["rot_w"] = odometry.pose.pose.orientation.w
+        cur_row["rot_x"] = pose.orientation.x
+        cur_row["rot_y"] = pose.orientation.y
+        cur_row["rot_z"] = pose.orientation.z
+        cur_row["rot_w"] = pose.orientation.w
 
         # get the linear and angular velocity of the rover from odometry message
         linear_velocity_norm = np.linalg.norm(
-            np.array([odometry.twist.twist.linear.x, odometry.twist.twist.linear.y, odometry.twist.twist.linear.z])
+            np.array([twist.linear.x, twist.linear.y, twist.linear.z])
         )
 
         cur_row["linear_velocity"] = linear_velocity_norm  # type: ignore
-        cur_row["angular_velocity"] = odometry.twist.twist.angular.z
+        cur_row["angular_velocity"] = twist.angular.z
 
         # get the wheel effort and velocity from the drive status message
         for wheel_num in range(6):
