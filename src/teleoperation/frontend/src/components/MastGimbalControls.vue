@@ -63,7 +63,8 @@ export default {
 
     publish: function() {
       this.sendMessage({
-        type: 'keyboard_values',
+        type: 'keyboard',
+        axes: [],
         buttons: this.keys
       })
     }

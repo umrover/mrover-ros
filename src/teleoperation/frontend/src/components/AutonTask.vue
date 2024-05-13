@@ -32,11 +32,9 @@
         <h4>Obstruction Detected</h4>
       </div>
     </div>
-    <div class='shadow p-3 rounded cameras'>
-      <Cameras :isSA='false' :mission="'auton'" />
-    </div>
     <div class='shadow p-3 rounded moteus'>
-      <ControllerDataTable msg-type='drive_state' header='Drive States' />
+      <ControllerDataTable msg-type='drive_left_state' header='Left Drive States' />
+      <ControllerDataTable msg-type='drive_right_state' header='Right Drive States' />
     </div>
   </div>
 </template>
@@ -45,7 +43,6 @@
 import { mapActions, mapGetters, mapState } from 'vuex'
 import AutonRoverMap from './AutonRoverMap.vue'
 import AutonWaypointEditor from './AutonWaypointEditor.vue'
-import Cameras from './Cameras.vue'
 import CameraFeed from './CameraFeed.vue'
 import OdometryReading from './OdometryReading.vue'
 import DriveControls from './DriveControls.vue'
@@ -62,7 +59,6 @@ export default defineComponent({
     DriveMoteusStateTable: ControllerDataTable,
     AutonRoverMap,
     AutonWaypointEditor,
-    Cameras,
     CameraFeed,
     OdometryReading,
     DriveControls,
@@ -134,12 +130,12 @@ export default defineComponent({
         else if (msg.blue) this.ledColor = 'bg-primary' //blue
       } else if (msg.type == 'nav_state') {
         this.navState = msg.state
-      } else if (msg.type == 'nav_sat_fix') {
+      } else if (msg.type == 'gps_fix') {
         this.odom.latitude_deg = msg.latitude
         this.odom.longitude_deg = msg.longitude
         this.odom.altitude = msg.altitude
       } else if (msg.type == 'orientation') {
-        this.odom.bearing_deg = quaternionToMapAngle(msg.rotation)
+        this.odom.bearing_deg = quaternionToMapAngle(msg.orientation)
       }
     }
   },
@@ -160,14 +156,13 @@ export default defineComponent({
   display: grid;
   grid-gap: 10px;
   grid-template-columns: auto 30% 30%;
-  grid-template-rows: repeat(6, auto);
+  grid-template-rows: repeat(5, auto);
   grid-template-areas:
     'header header header'
     'feed map waypoints'
     'data data waypoints'
     'data data conditions'
-    'moteus moteus moteus'
-    'cameras cameras cameras';
+    'moteus moteus moteus';
 
   font-family: sans-serif;
   height: auto;
@@ -265,10 +260,6 @@ h2 {
 
 .conditions {
   grid-area: conditions;
-}
-
-.cameras {
-  grid-area: cameras;
 }
 
 .moteus {

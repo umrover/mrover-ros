@@ -522,24 +522,24 @@ namespace mrover {
         }
     }
 
-    template<typename T>
-    struct Pool {
-        boost::container::static_vector<T*, 32> container;
-
-        auto borrowFrom() -> T* {
-            if (container.empty()) return new T{};
-            T* result = container.back();
-            container.pop_back();
-            return result;
-        }
-
-        auto returnTo(T* t) -> void {
-            container.push_back(t);
-        }
-    };
-
-    Pool<sensor_msgs::PointCloud2> pointCloudPool;
-    Pool<sensor_msgs::Image> imagePool;
+    // template<typename T>
+    // struct Pool {
+    //     boost::container::static_vector<T*, 32> container;
+    //
+    //     auto borrowFrom() -> T* {
+    //         if (container.empty()) return new T{};
+    //         T* result = container.back();
+    //         container.pop_back();
+    //         return result;
+    //     }
+    //
+    //     auto returnTo(T* t) -> void {
+    //         container.push_back(t);
+    //     }
+    // };
+    //
+    // Pool<sensor_msgs::PointCloud2> pointCloudPool;
+    // Pool<sensor_msgs::Image> imagePool;
 
     auto SimulatorNodelet::camerasUpdate(wgpu::CommandEncoder encoder, wgpu::RenderPassColorAttachment& colorAttachment, wgpu::RenderPassColorAttachment& normalAttachment, wgpu::RenderPassDepthStencilAttachment& depthStencilAttachment, wgpu::RenderPassDescriptor const& renderPassDescriptor) -> void {
         // TODO(quintin): Remote duplicate code
@@ -549,7 +549,8 @@ namespace mrover {
                 mWgpuInstance.processEvents();
                 if (stereoCamera.pointCloudStagingBuffer.getMapState() == wgpu::BufferMapState::Mapped && stereoCamera.base.stagingBuffer.getMapState() == wgpu::BufferMapState::Mapped) {
                     {
-                        auto pointCloud = boost::shared_ptr<sensor_msgs::PointCloud2>{pointCloudPool.borrowFrom(), [](sensor_msgs::PointCloud2* msg) { pointCloudPool.returnTo(msg); }};
+                        // auto pointCloud = boost::shared_ptr<sensor_msgs::PointCloud2>{pointCloudPool.borrowFrom(), [](sensor_msgs::PointCloud2* msg) { pointCloudPool.returnTo(msg); }};
+                        auto pointCloud = boost::make_shared<sensor_msgs::PointCloud2>();
                         pointCloud->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
                         pointCloud->is_dense = true;
                         pointCloud->width = stereoCamera.base.resolution.x();
@@ -567,7 +568,8 @@ namespace mrover {
                         stereoCamera.pcPub.publish(pointCloud);
                     }
                     {
-                        auto image = boost::shared_ptr<sensor_msgs::Image>{imagePool.borrowFrom(), [](sensor_msgs::Image* msg) { imagePool.returnTo(msg); }};
+                        // auto image = boost::shared_ptr<sensor_msgs::Image>{imagePool.borrowFrom(), [](sensor_msgs::Image* msg) { imagePool.returnTo(msg); }};
+                        auto image = boost::make_shared<sensor_msgs::Image>();
                         image->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
                         image->encoding = sensor_msgs::image_encodings::BGRA8;
                         image->width = stereoCamera.base.resolution.x();
@@ -635,7 +637,8 @@ namespace mrover {
             if (camera.callback) {
                 mWgpuInstance.processEvents();
                 if (camera.stagingBuffer.getMapState() == wgpu::BufferMapState::Mapped) {
-                    auto image = boost::shared_ptr<sensor_msgs::Image>{imagePool.borrowFrom(), [](sensor_msgs::Image* msg) { imagePool.returnTo(msg); }};
+                    // auto image = boost::shared_ptr<sensor_msgs::Image>{imagePool.borrowFrom(), [](sensor_msgs::Image* msg) { imagePool.returnTo(msg); }};
+                    auto image = boost::make_shared<sensor_msgs::Image>();
                     image->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
                     image->encoding = sensor_msgs::image_encodings::BGRA8;
                     image->width = camera.resolution.x();

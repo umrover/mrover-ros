@@ -240,7 +240,7 @@ export default {
 
     window.setTimeout(() => {
       // Timeout so websocket will be initialized
-      this.sendMessage({ type: 'get_basic_waypoint_list', data: null })
+      this.sendMessage({ type: 'get_basic_waypoint_list' })
     }, 250)
   },
 

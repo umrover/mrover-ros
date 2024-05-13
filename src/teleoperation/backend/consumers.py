@@ -1,8 +1,8 @@
 import json
-from functools import partial
-from math import isfinite
-from typing import Any
+import traceback
+from typing import Any, Type
 
+import yaml
 from channels.generic.websocket import JsonWebsocketConsumer
 
 import rospy
@@ -10,11 +10,12 @@ import tf2_ros
 from backend.drive_controls import send_controller_twist, send_joystick_twist
 from backend.input import DeviceInputs
 from backend.mast_controls import send_mast_controls
-from backend.models import BasicWaypoint
+from backend.models import BasicWaypoint, AutonWaypoint
 from backend.ra_controls import send_ra_controls
-from mrover.msg import CalibrationStatus
-from mrover.msg import ControllerState
+from mrover.msg import CalibrationStatus, ControllerState, StateMachineStateUpdate, LED, GPSWaypoint, WaypointType
+from mrover.srv import EnableAuton
 from sensor_msgs.msg import JointState, Temperature, NavSatFix
+from std_srvs.srv import SetBool
 from util.SE3 import SE3
 
 LOCALIZATION_INFO_HZ = 10
@@ -23,8 +24,6 @@ rospy.init_node("teleoperation", disable_signals=True)
 
 tf2_buffer = tf2_ros.Buffer()
 tf2_ros.TransformListener(tf2_buffer)
-
-consumers = []
 
 ra_arm_mode = "disabled"
 
@@ -38,105 +37,121 @@ def ra_timer_expired(_):
 ra_timer = None
 
 
-def send_message_to_all(message: Any) -> None:
-    """
-    @param message: Object to send to the frontend
-    """
-    for consumer in consumers:
-        consumer.send(text_data=json.dumps(message))
-
-
-def joint_state_callback(msg: JointState) -> None:
-    msg.position = [p if isfinite(p) else 0 for p in msg.position]
-    send_message_to_all({"type": "fk", "positions": msg.position})
-
-
-rospy.Subscriber("/arm_joint_data", JointState, joint_state_callback)
-
-
-def controller_state_callback(msg: ControllerState, msg_type: str) -> None:
-    send_message_to_all(
-        {
-            "type": msg_type,
-            "name": msg.name,
-            "state": msg.state,
-            "error": msg.error,
-            # Convert list of bit-packed integers to list of lists of booleans
-            "limit_hit": [[n & (1 << i) for i in range(4)] for n in msg.limit_hit],
-        }
-    )
-
-
-rospy.Subscriber("/arm_controller_data", ControllerState, partial(controller_state_callback, msg_type="arm_state"))
-rospy.Subscriber("/drive_controller_data", ControllerState, partial(controller_state_callback, msg_type="drive_state"))
-
-
-def send_orientation_callback(_) -> None:
-    try:
-        base_link_in_map = SE3.from_tf_tree(tf2_buffer, "map", "base_link")
-        send_message_to_all(
-            {
-                "type": "orientation",
-                "orientation": base_link_in_map.rotation.quaternion.tolist(),
-            }
-        )
-    except Exception as e:
-        rospy.logwarn_throttle(5, f"Failed to get bearing: {e}")
-
-
-rospy.Timer(rospy.Duration(1 / LOCALIZATION_INFO_HZ), send_orientation_callback)
-
-
-def send_gps_fix_callback(msg: NavSatFix) -> None:
-    send_message_to_all(
-        {"type": "nav_sat_fix", "latitude": msg.latitude, "longitude": msg.longitude, "altitude": msg.altitude}
-    )
-
-
-rospy.Subscriber("/gps/fix", NavSatFix, send_gps_fix_callback)
-
-
-def imu_calibration_callback(msg: CalibrationStatus) -> None:
-    send_message_to_all({"type": "calibration_status", "system_calibration": msg.system_calibration})
-
-
-rospy.Subscriber("/imu/calibration", CalibrationStatus, imu_calibration_callback)
-
-
-def imu_temperature_callback(msg: Temperature) -> None:
-    send_message_to_all({"type": "temperature", "temperature": msg.temperature})
-
-
-rospy.Subscriber("/imu/temperature", Temperature, imu_temperature_callback)
-
-
-def save_basic_waypoint_list(msg):
-    BasicWaypoint.objects.all().delete()
-    BasicWaypoint.objects.bulk_create(
-        [BasicWaypoint(drone=w["drone"], latitude=w["lat"], longitude=w["lon"], name=w["name"]) for w in msg["data"]]
-    )
-    send_message_to_all({"type": "save_basic_waypoint_list", "success": True})
-
-
-def send_basic_waypoint_list():
-    send_message_to_all(
-        {
-            "type": "get_basic_waypoint_list",
-            "data": [
-                {"name": w.name, "drone": w.drone, "lat": w.latitude, "lon": w.longitude}
-                for w in BasicWaypoint.objects.all()
-            ],
-        }
-    )
-
-
 class GUIConsumer(JsonWebsocketConsumer):
+    subscribers: list[rospy.Subscriber] = []
+    timers: list[rospy.Timer] = []
+    enable_auton: rospy.ServiceProxy
+    enable_teleop: rospy.ServiceProxy
+
     def connect(self) -> None:
         self.accept()
-        consumers.append(self)
+
+        self.forward_ros_topic("/imu/temperature", Temperature, "temperature")
+        self.forward_ros_topic("/imu/calibration", CalibrationStatus, "calibration")
+        self.forward_ros_topic("/gps/fix", NavSatFix, "gps_fix")
+        self.forward_ros_topic("/arm_joint_data", JointState, "fk")
+        self.forward_ros_topic("/arm_controller_data", ControllerState, "arm_state")
+        self.forward_ros_topic("/drive_left_controller_data", ControllerState, "drive_left_state")
+        self.forward_ros_topic("/drive_right_controller_data", ControllerState, "drive_right_state")
+        self.forward_ros_topic("/nav_state", StateMachineStateUpdate, "nav_state")
+        self.forward_ros_topic("/led", LED, "led")
+
+        self.enable_auton = rospy.ServiceProxy("enable_auton", EnableAuton)
+        self.enable_teleop = rospy.ServiceProxy("enable_teleop", SetBool)
+
+        self.timers.append(rospy.Timer(rospy.Duration(1 / LOCALIZATION_INFO_HZ), self.send_localization_callback))
 
     def disconnect(self, close_code) -> None:
-        consumers.remove(self)
+        for subscriber in self.subscribers:
+            subscriber.unregister()
+        for timer in self.timers:
+            timer.shutdown()
+
+    def forward_ros_topic(self, topic_name: str, topic_type: Type, gui_msg_type: str) -> None:
+        def callback(ros_message: Any):
+            # Formatting a ROS message as a string outputs YAML
+            # Parse it back into a dictionary, so we can send it as JSON
+            self.send_message_as_json({"type": gui_msg_type, **yaml.safe_load(str(ros_message))})
+
+        self.subscribers.append(rospy.Subscriber(topic_name, topic_type, callback))
+
+    def send_message_as_json(self, msg: dict):
+        try:
+            self.send(text_data=json.dumps(msg))
+        except Exception as e:
+            rospy.logwarn(f"Failed to send message: {e}")
+
+    def send_localization_callback(self, _):
+        try:
+            base_link_in_map = SE3.from_tf_tree(tf2_buffer, "map", "base_link")
+            self.send_message_as_json(
+                {
+                    "type": "orientation",
+                    "orientation": base_link_in_map.rotation.quaternion.tolist(),
+                }
+            )
+        except Exception as e:
+            rospy.logwarn_throttle(5, f"Failed to get bearing: {e}")
+
+    def save_basic_waypoint_list(self, waypoints: list[dict]) -> None:
+        BasicWaypoint.objects.all().delete()
+        BasicWaypoint.objects.bulk_create(
+            [BasicWaypoint(drone=w["drone"], latitude=w["lat"], longitude=w["lon"], name=w["name"]) for w in waypoints]
+        )
+        self.send_message_as_json({"type": "save_basic_waypoint_list", "success": True})
+
+    def get_basic_waypoint_list(self) -> None:
+        self.send_message_as_json(
+            {
+                "type": "get_basic_waypoint_list",
+                "data": [
+                    {"name": w.name, "drone": w.drone, "lat": w.latitude, "lon": w.longitude}
+                    for w in BasicWaypoint.objects.all()
+                ],
+            }
+        )
+
+    def save_auton_waypoint_list(self, waypoints: list[dict]) -> None:
+        AutonWaypoint.objects.all().delete()
+        AutonWaypoint.objects.bulk_create(
+            [
+                AutonWaypoint(
+                    tag_id=w["id"],
+                    type=w["type"],
+                    latitude=w["lat"],
+                    longitude=w["lon"],
+                    name=w["name"],
+                )
+                for w in waypoints
+            ]
+        )
+        self.send_message_as_json({"type": "save_auton_waypoint_list", "success": True})
+
+    def get_auton_waypoint_list(self) -> None:
+        self.send_message_as_json(
+            {
+                "type": "get_auton_waypoint_list",
+                "data": [
+                    {"name": w.name, "id": w.tag_id, "lat": w.latitude, "lon": w.longitude, "type": w.type}
+                    for w in AutonWaypoint.objects.all()
+                ],
+            }
+        )
+
+    def send_auton_command(self, waypoints: list[dict], enabled: bool) -> None:
+        rospy.loginfo("Staring auton...")
+        self.enable_auton(
+            enabled,
+            [
+                GPSWaypoint(
+                    waypoint["tag_id"],
+                    waypoint["latitude_degrees"],
+                    waypoint["longitude_degrees"],
+                    WaypointType(waypoint["type"]),
+                )
+                for waypoint in waypoints
+            ],
+        )
 
     def receive(self, text_data=None, bytes_data=None, **kwargs) -> None:
         global ra_arm_mode, ra_timer
@@ -145,28 +160,54 @@ class GUIConsumer(JsonWebsocketConsumer):
             rospy.logwarn("Expecting text but received binary on GUI websocket...")
             return
 
-        message = json.loads(text_data)
-        rospy.loginfo(message)
-        match message["type"]:
-            case "joystick_values" | "controller_values" | "keyboard_values":
-                device_input = DeviceInputs(message["axes"], message["buttons"])
-                match message["type"]:
-                    case "joystick_values":
-                        send_joystick_twist(device_input)
-                        send_ra_controls(ra_arm_mode, device_input)
-                    case "controller_values":
-                        send_controller_twist(device_input)
-                    case "keyboard_values":
-                        send_mast_controls(device_input)
-            case "arm_mode":
-                ra_arm_mode = message["mode"]
-                if ra_timer:
-                    ra_timer.shutdown()
-                ra_timer = rospy.Timer(rospy.Duration(1), ra_timer_expired, oneshot=True)
-            case "save_basic_waypoint_list":
-                save_basic_waypoint_list(message)
-            case "get_basic_waypoint_list":
-                send_basic_waypoint_list()
+        try:
+            message = json.loads(text_data)
+        except json.JSONDecodeError as e:
+            rospy.logwarn(f"Failed to decode JSON: {e}")
+            return
+
+        try:
+            match message:
+                case {
+                    "type": "joystick" | "controller" | "keyboard",
+                    "axes": axes,
+                    "buttons": buttons,
+                }:
+                    device_input = DeviceInputs(axes, buttons)
+                    match message["type"]:
+                        case "joystick":
+                            send_joystick_twist(device_input)
+                            send_ra_controls(ra_arm_mode, device_input)
+                        case "controller":
+                            send_controller_twist(device_input)
+                        case "keyboard":
+                            send_mast_controls(device_input)
+
+                case {"type": "arm_mode", "mode": ra_arm_mode}:
+                    ra_arm_mode = message["mode"]
+                    if ra_timer:
+                        ra_timer.shutdown()
+                    ra_timer = rospy.Timer(rospy.Duration(1), ra_timer_expired, oneshot=True)
+                case {"type": "auton_enable", "enabled": enabled, "waypoints": waypoints}:
+                    self.send_auton_command(waypoints, enabled)
+                case {"type": "teleop_enable", "enabled": enabled}:
+                    self.enable_teleop(enabled)
+                case {"type": "save_basic_waypoint_list", "data": waypoints}:
+                    self.save_basic_waypoint_list(waypoints)
+                case {"type": "save_auton_waypoint_list", "data": waypoints}:
+                    self.save_auton_waypoint_list(waypoints)
+                case _:
+                    match message["type"]:
+                        case "get_basic_waypoint_list":
+                            self.get_basic_waypoint_list()
+                        case "get_auton_waypoint_list":
+                            self.get_auton_waypoint_list()
+                        case _:
+                            rospy.logwarn(f"Unhandled message: {message}")
+
+        except:
+            rospy.logerr(f"Failed to handle message: {message}")
+            rospy.logerr(traceback.format_exc())
 
         # try:
         #     if message["type"] == "joystick_values":
@@ -556,3 +597,27 @@ class GUIConsumer(JsonWebsocketConsumer):
     #     with open(os.path.join(f"/home/{username}/Downloads/spectral_data_{current_time}.csv"), "w") as f:
     #         csv_writer = csv.writer(f)
     #         csv_writer.writerows(spectral_data)
+
+
+# def download_csv(msg: dict) -> None:
+#     now = datetime.now(pytz.timezone("US/Eastern"))
+#     current_time = now.strftime("%m-%d-%Y_%H:%M:%S")
+#     spectral_data = msg["data"]
+#
+#     site_names = ["0", "1", "2"]
+#     index = 0
+#
+#     for site_data in spectral_data:
+#         site_data.insert(0, f"Site {site_names[index]}")
+#         index = index + 1
+#
+#     time_row = ["Time", current_time]
+#     spectral_data.insert(0, time_row)
+#
+#     downloads_path = Path.home() / "Downloads"
+#     downloads_path.mkdir(exist_ok=True)
+#
+#     report_path = downloads_path / f"spectral_data_{current_time}.csv"
+#     with report_path.open("w") as f:
+#         csv_writer = csv.writer(f)
+#         csv_writer.writerows(spectral_data)

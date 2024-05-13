@@ -30,7 +30,8 @@ export default defineComponent({
   watch: {
     message(msg) {
       if (msg.type == 'fk') {
-        this.threeScene.fk(msg.positions)
+        msg.position = msg.position.map((x) => isNaN(x) ? 0 : x)
+        this.threeScene.fk(msg.position)
       } else if (msg.type == 'ik') {
         this.threeScene.ik(msg.target)
       }

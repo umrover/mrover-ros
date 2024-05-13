@@ -18,7 +18,6 @@
   </node>
 
   <!-- Interprets status from navigation and teleoperation to deliver the correct LED mode to the bridge -->
-  <node name="led" pkg="mrover" type="led" output="screen"/>
   <node name="arduino_led_hw_bridge" pkg="mrover" type="arduino_led_hw_bridge.py" output="screen"/>
 
   <node name="mast_gimbal_bridge" pkg="mrover" type="simple_bridge" output="screen">

@@ -23,7 +23,7 @@ export default {
       if (!gamepad) return
 
       this.sendMessage({
-        type: 'joystick_values',
+        type: 'joystick',
         axes: gamepad.axes,
         buttons: gamepad.buttons.map(button => button.value)
       })
