@@ -39,7 +39,7 @@ export default {
         case 'temperature':
           this.temperature = msg.temperature
           break
-        case 'calibration_status':
+        case 'calibration':
           this.calibration = msg.system_calibration
           break
       }

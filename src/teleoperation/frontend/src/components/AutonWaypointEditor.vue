@@ -273,7 +273,7 @@ export default {
     }, 1000)
     window.setTimeout(() => {
       // Timeout so websocket will be initialized
-      this.sendMessage({ type: 'get_auton_waypoint_list', data: null })
+      this.sendMessage({ type: 'get_auton_waypoint_list' })
     }, 250)
   },
 
@@ -294,8 +294,8 @@ export default {
     sendAutonCommand() {
       if (this.autonEnabled) {
         this.sendMessage({
-          type: 'auton_command',
-          is_enabled: true,
+          type: 'auton_enable',
+          enabled: true,
           waypoints: _.map(
             this.route,
             (waypoint) => {
@@ -313,7 +313,7 @@ export default {
         })
       } else {
         //if auton's not enabled, send an empty message
-        this.sendMessage({ type: 'auton_command', is_enabled: false, waypoints: [] })
+        this.sendMessage({ type: 'auton_enable', enabled: false, waypoints: [] })
       }
     },
 
@@ -362,7 +362,7 @@ export default {
 
     toggleTeleopMode: function () {
       this.teleopEnabledCheck = !this.teleopEnabledCheck
-      this.sendMessage({ type: 'teleop_enabled', data: this.teleopEnabledCheck })
+      this.sendMessage({ type: 'teleop_enabled', enabled: this.teleopEnabledCheck })
       this.$emit('toggleTeleop', this.teleopEnabledCheck)
     }
   }

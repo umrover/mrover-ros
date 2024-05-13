@@ -41,7 +41,7 @@ auto main(int argc, char** argv) -> int {
 
     ros::Timer correctTimer = nh.createTimer(WINDOW, [&](ros::TimerEvent const&) {
         // 1. Ensure the rover is being commanded to move relatively straight forward
-        if (std::fabs(currentTwist.linear.x) < MIN_LINEAR_SPEED) return;
+        if (currentTwist.linear.x < MIN_LINEAR_SPEED) return;
         if (std::fabs(currentTwist.angular.z) > MAX_ANGULAR_SPEED) return;
 
         ROS_INFO("Rover is being commanded forward");

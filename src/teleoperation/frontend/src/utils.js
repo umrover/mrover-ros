@@ -1,7 +1,6 @@
 // Function to convert coordinates between different odom formats
-import * as qte from 'quaternion-to-euler'
-import { store } from './store'
-const convertDMS = function (coord_in, odom_format) {
+
+const convertDMS = function(coord_in, odom_format) {
   const DEG_DECIMALS = 8
   const MIN_DECIMALS = 6
   const SEC_DECIMALS = 4
@@ -23,7 +22,7 @@ const convertDMS = function (coord_in, odom_format) {
   return coord_out
 }
 
-const quaternionToMapAngle = function (quaternion) {
+const quaternionToMapAngle = function(quaternion) {
   /*
     Convert a quaternion into euler display angles
   */
@@ -40,8 +39,4 @@ const quaternionToMapAngle = function (quaternion) {
   return (Math.PI / 2 - euler[0]) * (180 / Math.PI)
 }
 
-const disableAutonLED = function () {
-  store.dispatch('sendMessage', { type: 'disable_auton_led' })
-}
-
-export { convertDMS, quaternionToMapAngle, disableAutonLED }
+export { convertDMS, quaternionToMapAngle }

@@ -153,12 +153,12 @@ export default {
         this.moteusState.state = msg.state
         this.moteusState.error = msg.error
         this.moteusState.limit_hit = msg.limit_hit
-      } else if (msg.type == 'nav_sat_fix') {
+      } else if (msg.type == 'gps_fix') {
         this.odom.latitude_deg = msg.latitude
         this.odom.longitude_deg = msg.longitude
         this.odom.altitude = msg.altitude
       } else if (msg.type == 'orientation') {
-        this.odom.bearing_deg = quaternionToMapAngle(msg.rotation)
+        this.odom.bearing_deg = quaternionToMapAngle(msg.orientation)
       }
     }
   },

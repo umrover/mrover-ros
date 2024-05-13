@@ -5,7 +5,7 @@ from geometry_msgs.msg import Twist, Vector3
 
 rospy.init_node("teleoperation", disable_signals=True)
 
-joystick_twist_publisher = rospy.Publisher("/joy_cmd_vel", Twist, queue_size=1)
+joystick_twist_publisher = rospy.Publisher("/joystick_cmd_vel", Twist, queue_size=1)
 controller_twist_publisher = rospy.Publisher("/controller_cmd_vel", Twist, queue_size=1)
 
 JOYSTICK_MICRO_LINEAR = -0.1

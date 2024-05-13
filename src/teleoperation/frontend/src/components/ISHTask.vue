@@ -33,7 +33,6 @@ import AminoBenedict from './AminoBenedict.vue'
 import Cameras from './Cameras.vue'
 //   import CommReadout from "./CommReadout.vue";
 //   import MCUReset from "./MCUReset.vue"
-import { disableAutonLED } from '../utils.js'
 
 export default {
   components: {
