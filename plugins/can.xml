@@ -1,4 +1,4 @@
-<library path="lib/libcan_driver_nodelet">
+<library path="lib/libcan_bridge_nodelet">
     <class name="mrover/CanNodelet"
         type="mrover::CanNodelet"
         base_class_type="nodelet::Nodelet">

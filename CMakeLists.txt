@@ -159,9 +159,9 @@ mrover_add_library(motor_library src/esw/motor_library/*.cpp src/esw/motor_libra
 target_link_libraries(motor_library PUBLIC can_device moteus)
 
 if (NetLink_FOUND AND NetLinkRoute_FOUND)
-    mrover_add_nodelet(can_driver src/esw/can_bridge/*.cpp src/esw/can_bridge src/esw/can_bridge/pch.hpp)
-    mrover_nodelet_link_libraries(can_driver ${NetLink_LIBRARIES} ${NetLinkRoute_LIBRARIES})
-    mrover_nodelet_include_directories(can_driver ${NetLink_INCLUDE_DIRS} ${NetLinkRoute_INCLUDE_DIRS})
+    mrover_add_nodelet(can_bridge src/esw/can_bridge/*.cpp src/esw/can_bridge src/esw/can_bridge/pch.hpp)
+    mrover_nodelet_link_libraries(can_bridge ${NetLink_LIBRARIES} ${NetLinkRoute_LIBRARIES})
+    mrover_nodelet_include_directories(can_bridge ${NetLink_INCLUDE_DIRS} ${NetLinkRoute_INCLUDE_DIRS})
 endif ()
 
 macro(mrover_add_esw_bridge_node name sources)
