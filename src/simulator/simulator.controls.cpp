@@ -52,8 +52,8 @@ namespace mrover {
                     Eigen::Vector3d leftWithoutRoll = left;
                     leftWithoutRoll.z() = 0;
 
-                    auto q = Eigen::Quaterniond{}.setFromTwoVectors(left, leftWithoutRoll);
-                    mCameraInWorld.asSO3() = SO3d{q} * mCameraInWorld.asSO3();
+                    SO3d q = Eigen::Quaterniond{}.setFromTwoVectors(left, leftWithoutRoll);
+                    mCameraInWorld.asSO3() = q * mCameraInWorld.asSO3();
                 } else {
                     setCameraInRoverTarget();
                 }

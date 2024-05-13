@@ -37,8 +37,7 @@ auto main(int argc, char** argv) -> int {
 
     geometry_msgs::Twist currentTwist;
 
-    SO3d uncorrectedOrientation = SO3d::Identity();
-    SO3d::Tangent correction;
+    SO3d uncorrectedOrientation = SO3d::Identity(), correctionRotation = SO3d::Identity();
 
     ros::Timer correctTimer = nh.createTimer(WINDOW, [&](ros::TimerEvent const&) {
         // 1. Ensure the rover is being commanded to move relatively straight forward
@@ -85,12 +84,16 @@ auto main(int argc, char** argv) -> int {
             return;
         }
 
-        double meanHeadingInMap = std::atan2(roverVelocitySum.y(), roverVelocitySum.x());
-        ROS_INFO_STREAM(meanHeadingInMap << roverVelocitySum);
+        double correctedHeadingInMap = std::atan2(roverVelocitySum.y(), roverVelocitySum.x());
 
-        correction = uncorrectedOrientation - SO3d{Eigen::AngleAxisd{meanHeadingInMap, R3::UnitZ()}};
-        correction.coeffs().x() = correction.coeffs().y() = 0; // Only correct yaw
-        ROS_INFO_STREAM(std::format("Correcting heading by: {}", correction.z()));
+        R2 uncorrectedForward = uncorrectedOrientation.rotation().col(0).head<2>();
+        double estimatedHeadingInMap = std::atan2(uncorrectedForward.y(), uncorrectedForward.x());
+
+        double headingCorrectionDelta = correctedHeadingInMap - estimatedHeadingInMap;
+
+        correctionRotation = Eigen::AngleAxisd{headingCorrectionDelta, R3::UnitZ()};
+
+        ROS_INFO_STREAM(std::format("Correcting heading by: {}", correctionRotation.z()));
     });
 
     ros::Subscriber twistSubscriber = nh.subscribe<geometry_msgs::Twist>("/cmd_vel", 1, [&](geometry_msgs::TwistConstPtr const& twist) {
@@ -103,8 +106,7 @@ auto main(int argc, char** argv) -> int {
         SE3d uncorrectedPose{R3{p.x, p.y, p.z}, S3{o.w, o.x, o.y, o.z}};
         uncorrectedOrientation = uncorrectedPose.asSO3();
 
-        SE3d correctedPose = uncorrectedPose;
-        correctedPose.asSO3() += correction;
+        SE3d correctedPose{uncorrectedPose.translation(), correctionRotation * uncorrectedOrientation};
         SE3Conversions::pushToTfTree(tfBroadcaster, roverFrame, mapFrame, correctedPose);
     });
 
