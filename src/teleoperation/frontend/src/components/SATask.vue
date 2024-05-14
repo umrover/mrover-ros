@@ -28,7 +28,7 @@
       <BasicWaypointEditor :odom="odom" />
     </div>
     <div class="shadow p-3 rounded cameras">
-      <Cameras :isSA="true" :mission="'sa'" />
+      <Cameras :mission="'sa'" />
     </div>
     <div class="shadow p-3 rounded soildata">
       <SoilData />

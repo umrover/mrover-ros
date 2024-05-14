@@ -45,8 +45,11 @@
       <button class="btn btn-primary mx-auto my-2" @click="submit_positions">Submit</button>
     </div>
     <div class="controls-flex">
-      <button class="btn btn-primary" @click="zero">Zero Z</button>
-      <p>SA Z Position: {{ z_position }} inches</p>
+      <button class="btn btn-primary" @click="zero('sa_z', 0)">Zero Ground</button>
+      <p>Corer Position: {{ corer_position }} inches</p>
+      <button class="btn btn-primary" @click="zero('sensor_actuator', corer_position+sensor_height)">Zero Sensor</button>
+      <p>Plunger Position: {{ plunger_position-plunger_height }} inches</p>
+
       <MotorAdjust
         v-if="arm_mode == 'position'"
         :options="[
@@ -64,7 +67,6 @@
 <script lang="ts">
 import { defineComponent } from 'vue'
 import { mapActions, mapState } from 'vuex'
-import CalibrationCheckbox from './CalibrationCheckbox.vue'
 import MotorAdjust from './MotorAdjust.vue'
 
 // In seconds
@@ -74,7 +76,6 @@ let interval: number | undefined
 
 export default defineComponent({
   components: {
-    CalibrationCheckbox,
     MotorAdjust,
   },
   data() {
@@ -111,7 +112,11 @@ export default defineComponent({
       },
       positions: [],
       send_positions: false, // Only send after submit is clicked for the first time,
-      z_position: 0
+      corer_position: 0,
+      sensor_position: 0,
+      plunger_position: 0,
+      sensor_height: 5.36,
+      plunger_height: 5.5
     }
   },
 
@@ -155,8 +160,12 @@ export default defineComponent({
           alert('Toggling Arm Laser failed.')
         }
       }
-      else if (msg.type == 'sa_z') {
-        this.z_position = msg.sa_z * metersToInches
+      else if (msg.type == 'sa_joint') {
+        this.corer_position = msg.sa_z * metersToInches
+        this.sensor_position = msg.sensor * metersToInches
+      }
+      else if (msg.type == 'plunger') {
+        this.plunger_position = msg.plunger * metersToInches
       }
     },
     arm_mode(newMode) {
@@ -170,7 +179,7 @@ export default defineComponent({
   methods: {
     ...mapActions('websocket', ['sendMessage']),
 
-    validateInput: function (joint, event) {
+    validateInput: function (joint: { min: number; max: number; value: any }, event: { target: { value: number } }) {
       if (event.target.value < joint.min) {
         event.target.value = joint.min
       } else if (event.target.value > joint.max) {
@@ -200,8 +209,8 @@ export default defineComponent({
       this.publishJoystickMessage([], [], this.arm_mode, this.positions)
     },
 
-    zero: function() {
-      this.sendMessage({type: "arm_adjust", name: "sa_z", value: 0})
+    zero: function(name: string) {
+      this.sendMessage({type: "arm_adjust", name: name, value: 0})
     }
   }
 })

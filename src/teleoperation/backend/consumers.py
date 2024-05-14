@@ -114,6 +114,7 @@ class GUIConsumer(JsonWebsocketConsumer):
             )
             self.arm_joint_sub = rospy.Subscriber("/arm_joint_data", JointState, self.arm_joint_callback)
             self.sa_joint_sub = rospy.Subscriber("/sa_joint_data", JointState, self.sa_joint_callback)
+            self.corer_joint_sub = rospy.Subscriber("/corer_joint_data", JointState, self.corer_joint_callback)
             self.drive_moteus_sub = rospy.Subscriber(
                 "/drive_controller_data", ControllerState, self.drive_controller_callback
             )
@@ -501,7 +502,13 @@ class GUIConsumer(JsonWebsocketConsumer):
     def sa_joint_callback(self, msg):
         names = msg.name
         z = msg.position[names.index("sa_z")]
-        self.send(text_data=json.dumps({"type": "sa_z", "sa_z": z}))
+        sensor = msg.position[names.index("sensor_actuator")]
+        self.send(text_data=json.dumps({"type": "sa_joint", "sa_z": z, "sensor": sensor}))
+
+    def corer_joint_callback(self, msg):
+        names = msg.name
+        z = msg.position[names.index("corer")]
+        self.send(text_data=json.dumps({"type": "plunger", "plunger": z}))
 
     def drive_controller_callback(self, msg):
         hits = []

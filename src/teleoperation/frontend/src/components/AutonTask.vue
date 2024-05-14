@@ -47,7 +47,7 @@
       </div>
     </div>
     <div class="shadow p-3 rounded cameras">
-      <Cameras :isSA="false" :mission="'auton'"/>
+      <Cameras :mission="'auton'"/>
     </div>
     <div class="shadow p-3 rounded moteus">
       <DriveMoteusStateTable :moteus-state-data="moteusState" />
