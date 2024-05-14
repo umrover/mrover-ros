@@ -23,8 +23,8 @@ export default {
   watch: {
     message(msg) {
       if(msg.type == 'cmd_vel') {
-        this.linear_x = msg.linear_x;
-        this.angular_z = msg.angular_z;
+        this.linear_x = msg.linear.x;
+        this.angular_z = msg.angular.z;
       }
     }
   }

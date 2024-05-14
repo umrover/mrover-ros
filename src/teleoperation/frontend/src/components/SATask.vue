@@ -82,7 +82,7 @@ import MotorAdjust from './MotorAdjust.vue'
 import OdometryReading from './OdometryReading.vue'
 import ControllerDataTable from './ControllerDataTable.vue'
 import SAArmControls from './SAArmControls.vue'
-import { quaternionToMapAngle } from '../utils.js'
+import { quaternionToMapAngle } from '../utils'
 import { mapActions, mapState } from 'vuex'
 
 let interval: number

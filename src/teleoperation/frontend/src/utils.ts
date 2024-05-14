@@ -1,24 +1,39 @@
-// Function to convert coordinates between different odom formats
-const convertDMS = function (coord_in, odom_format) {
+const convertDMS = function(coordinate, format: string) {
   const DEG_DECIMALS = 8
   const MIN_DECIMALS = 6
   const SEC_DECIMALS = 4
-  const coord_total = coord_in.d + coord_in.m / 60 + coord_in.s / 3600
-  const coord_out = {}
-  if (odom_format === 'DMS') {
-    coord_out.d = Math.trunc(coord_total.toFixed(DEG_DECIMALS))
-    coord_out.m = Math.trunc(((coord_total - coord_out.d) * 60).toFixed(MIN_DECIMALS))
-    coord_out.s = +(((coord_total - coord_out.d) * 60 - coord_out.m) * 60).toFixed(SEC_DECIMALS)
-  } else if (odom_format === 'DM') {
-    coord_out.d = Math.trunc(coord_total.toFixed(DEG_DECIMALS))
-    coord_out.m = +((coord_total - coord_out.d) * 60).toFixed(MIN_DECIMALS)
-    coord_out.s = 0
-  } else {
-    coord_out.d = +coord_total.toFixed(DEG_DECIMALS)
-    coord_out.m = 0
-    coord_out.s = 0
+  const coordinate_total: number = coordinate.d + coordinate.m / 60 + coordinate.s / 3600
+  const result = {
+    d: 0,
+    m: 0,
+    s: 0
   }
-  return coord_out
+  switch (format) {
+    case 'DMS':
+      result.d = Math.trunc(Number(coordinate_total.toFixed(DEG_DECIMALS)))
+      result.m = Math.trunc(Number(((coordinate_total - result.d) * 60).toFixed(MIN_DECIMALS)))
+      result.s = +(((coordinate_total - result.d) * 60 - result.m) * 60).toFixed(SEC_DECIMALS)
+      break
+    case 'DM':
+      result.d = Math.trunc(Number(coordinate_total.toFixed(DEG_DECIMALS)))
+      result.m = +((coordinate_total - result.d) * 60).toFixed(MIN_DECIMALS)
+      result.s = 0
+      break
+    case 'D':
+      result.d = +coordinate_total.toFixed(DEG_DECIMALS)
+      result.m = 0
+      result.s = 0
+      break
+    default:
+      throw new Error('Invalid coordinate format. Supported: DMS, DM, D')
+  }
+  return result
 }
 
-export { convertDMS }
+const quaternionToMapAngle = function(quaternion: number[]): number {
+  const [qx, qy, qz, qw] = quaternion
+  const yaw = Math.atan2(2 * (qw * qz + qx * qy), 1 - 2 * (qy * qy + qz * qz))
+  return (Math.PI / 2 - yaw) * (180 / Math.PI)
+}
+
+export { convertDMS, quaternionToMapAngle }

@@ -98,7 +98,7 @@
 </template>
 
 <script lang="ts">
-import { convertDMS } from '../utils.js'
+import { convertDMS } from '../utils'
 import WaypointItem from './BasicWaypointItem.vue'
 import { mapMutations, mapGetters, mapActions, mapState } from 'vuex'
 import _ from 'lodash'

@@ -48,7 +48,7 @@ import OdometryReading from './OdometryReading.vue'
 import DriveControls from './DriveControls.vue'
 import MastGimbalControls from './MastGimbalControls.vue'
 import ControllerDataTable from './ControllerDataTable.vue'
-import { quaternionToMapAngle } from '../utils.js'
+import { quaternionToMapAngle } from '../utils'
 import { defineComponent } from 'vue'
 
 let interval: number
@@ -69,8 +69,8 @@ export default defineComponent({
     return {
       // Default coordinates are at MDRS
       odom: {
-        latitude_deg: 42.30008806193693,
-        longitude_deg: -83.6931540297569,
+        latitude_deg: 42.293195,
+        longitude_deg: -83.7096706,
         bearing_deg: 0,
         altitude: 0
       },

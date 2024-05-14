@@ -413,8 +413,7 @@ namespace mrover {
 
         auto velocitiesCallback(Velocity::ConstPtr const& msg) -> void;
 
-        auto throttlesCallback(Throttle::ConstPtr
-            const& msg) -> void;
+        auto throttlesCallback(Throttle::ConstPtr const& msg) -> void;
 
     public:
         SimulatorNodelet() = default;

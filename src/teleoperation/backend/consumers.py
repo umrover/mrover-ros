@@ -12,6 +12,7 @@ from backend.input import DeviceInputs
 from backend.mast_controls import send_mast_controls
 from backend.models import BasicWaypoint, AutonWaypoint
 from backend.ra_controls import send_ra_controls
+from geometry_msgs.msg import Twist
 from mrover.msg import CalibrationStatus, ControllerState, StateMachineStateUpdate, LED, GPSWaypoint, WaypointType
 from mrover.srv import EnableAuton
 from sensor_msgs.msg import JointState, Temperature, NavSatFix
@@ -55,6 +56,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.forward_ros_topic("/drive_right_controller_data", ControllerState, "drive_right_state")
         self.forward_ros_topic("/nav_state", StateMachineStateUpdate, "nav_state")
         self.forward_ros_topic("/led", LED, "led")
+        self.forward_ros_topic("/cmd_vel", Twist, "cmd_vel")
 
         self.enable_auton = rospy.ServiceProxy("enable_auton", EnableAuton)
         self.enable_teleop = rospy.ServiceProxy("enable_teleop", SetBool)
@@ -68,6 +70,14 @@ class GUIConsumer(JsonWebsocketConsumer):
             timer.shutdown()
 
     def forward_ros_topic(self, topic_name: str, topic_type: Type, gui_msg_type: str) -> None:
+        """
+        Subscribes to a ROS topic and forwards messages to the GUI as JSON
+
+        @param topic_name:      ROS topic name
+        @param topic_type:      ROS message type
+        @param gui_msg_type:    String to identify the message type in the GUI
+        """
+
         def callback(ros_message: Any):
             # Formatting a ROS message as a string outputs YAML
             # Parse it back into a dictionary, so we can send it as JSON
@@ -139,7 +149,6 @@ class GUIConsumer(JsonWebsocketConsumer):
         )
 
     def send_auton_command(self, waypoints: list[dict], enabled: bool) -> None:
-        rospy.loginfo("Staring auton...")
         self.enable_auton(
             enabled,
             [
