@@ -77,11 +77,12 @@ class GPSLinearization:
 
         :param msg: The NavSatFix message containing GPS data that was just received
         """
-
-        rospy.logdebug("using single gps")
-
         if np.any(np.isnan([msg.latitude, msg.longitude, msg.altitude])):
             return
+
+        self.last_gps_msg = msg
+
+        rospy.loginfo_once("Using single gps")
 
         msg.position_covariance = self.config_gps_covariance
 
@@ -98,8 +99,7 @@ class GPSLinearization:
         :param left_gps_msg: The NavSatFix message containing GPS data from the left antenna
         TODO: Handle invalid PVTs
         """
-
-        rospy.logdebug("using dual gps")
+        rospy.loginfo_once("Using dual gps")
 
         if np.any(np.isnan([right_gps_msg.latitude, right_gps_msg.longitude, right_gps_msg.altitude])):
             return
@@ -198,15 +198,15 @@ class GPSLinearization:
         :returns: The pose consisting of linearized GPS and IMU orientation, and the corresponding
                   covariance matrix as a 6x6 numpy array where each row is [x, y, z, roll, pitch, yaw]
         """
-        # linearize GPS coordinates into cartesian
+        # Linearize GPS coordinates into cartesian
         cartesian = np.array(geodetic2enu(gps_msg.latitude, gps_msg.longitude, gps_msg.altitude, *ref_coord, deg=True))
 
-        # ignore Z
+        # Ignore Z
         cartesian[2] = 0
 
         imu_quat = numpify(imu_msg.imu.orientation)
 
-        # normalize to avoid rounding errors
+        # Normalize to avoid rounding errors
         imu_quat = imu_quat / np.linalg.norm(imu_quat)
         pose = SE3.from_pos_quat(position=cartesian, quaternion=imu_quat)
 
@@ -218,7 +218,6 @@ class GPSLinearization:
 
 
 def main():
-    # start the node and spin to wait for messages to be received
     rospy.init_node("gps_linearization")
     GPSLinearization()
     rospy.spin()

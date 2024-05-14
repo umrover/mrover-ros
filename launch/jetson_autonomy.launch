@@ -14,5 +14,5 @@
 
   <node name="imu_driver" pkg="mrover" type="imu_driver" output="screen"/>
 
-  <node name="gps_driver" pkg="mrover" type="gps_driver.py" output="screen"/>
+  <node name="gps_driver" pkg="mrover" type="rover_gps_driver.py" output="screen"/>
 </launch>

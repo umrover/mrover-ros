@@ -19,7 +19,7 @@ from sensor_msgs.msg import NavSatFix
 from std_msgs.msg import Header
 
 
-class GPS_Driver:
+class GpsDriver:
     port: str
     baud: int
     base_station_sub: rospy.Subscriber
@@ -54,7 +54,7 @@ class GPS_Driver:
 
     # rospy subscriber automatically runs this callback in separate thread
     def process_rtcm(self, data) -> None:
-        rospy.loginfo("processing RTCM")
+        rospy.logdebug("Processing RTCM")
         with self.lock:
             self.ser.write(data.message)
 
@@ -63,15 +63,15 @@ class GPS_Driver:
             return
 
         if msg.identity == "RXM-RTCM":
-            rospy.loginfo("RXM")
+            rospy.logdebug("RXM")
             msg_used = msg.msgUsed
 
             if msg_used == 0:
-                rospy.logwarn("RTCM Usage unknown\n")
+                rospy.logwarn("RTCM usage unknown")
             elif msg_used == 1:
-                rospy.logwarn("RTCM message not used\n")
+                rospy.logwarn("RTCM message not used")
             elif msg_used == 2:
-                rospy.loginfo("RTCM message successfully used by receiver\n")
+                rospy.logdebug("RTCM message successfully used by receiver")
 
         elif msg.identity == "NAV-PVT":
             rospy.loginfo("PVT")
@@ -98,13 +98,13 @@ class GPS_Driver:
             self.rtk_fix_pub.publish(rtkStatus(msg.carrSoln))
 
             if msg.difSoln == 1:
-                rospy.loginfo_throttle(3, "Differential correction applied")
+                rospy.logdebug_throttle(3, "Differential correction applied")
             if msg.carrSoln == 0:
                 rospy.logwarn_throttle(3, "No RTK")
             elif msg.carrSoln == 1:
-                rospy.loginfo_throttle(3, "Floating RTK Fix")
+                rospy.logdebug_throttle(3, "Floating RTK Fix")
             elif msg.carrSoln == 2:
-                rospy.loginfo_throttle(3, "RTK FIX")
+                rospy.logdebug_throttle(3, "RTK FIX")
 
         elif msg.identity == "NAV-STATUS":
             pass
@@ -118,10 +118,10 @@ class GPS_Driver:
 
 
 def main():
-    rtk_manager = GPS_Driver()
-    rtk_manager.connect()
-    rtk_manager.gps_data_thread()
-    rtk_manager.exit()
+    driver = GpsDriver()
+    driver.connect()
+    driver.gps_data_thread()
+    driver.exit()
 
 
 if __name__ == "__main__":
