@@ -8,7 +8,7 @@
         name="passthrough_filter" pkg="mrover" type="passthrough_filter.py"/>
 
   <node if="$(arg correct_heading)"
-        name="heading_correcting_filter" pkg="mrover" type="heading_correcting_filter" output="screen"/>
+        name="imu_filter" pkg="mrover" type="imu_filter" output="screen"/>
 
   <!-- Linearize GPS from geodetic to ENU cartesian coords -->
   <node name="gps_linearization" pkg="mrover" type="gps_linearization.py" output="screen"/>
