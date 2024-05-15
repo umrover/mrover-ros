@@ -26,14 +26,18 @@ def main() -> None:
     imu_pub = rospy.Publisher("/imu/data", ImuAndMag, queue_size=1)
     calib_pub = rospy.Publisher("/imu/calibration", CalibrationStatus, queue_size=1)
 
+    rospy.loginfo("Initializing IMU I2C connection...")
+
     i2c = busio.I2C(board.SCL, board.SDA)
     bno = BNO08X_I2C(i2c, address=BN0085_I2C_ADDRESS)
 
+    rospy.loginfo("Starting IMU dynamic calibration...")
+
     bno.begin_calibration()
 
-    rospy.loginfo("Initialized the IMU")
-
     all_done = False
+
+    rospy.loginfo("Configuring IMU reports...")
 
     while not all_done and not rospy.is_shutdown():
         try:
@@ -45,7 +49,7 @@ def main() -> None:
         except Exception as e:
             rospy.logwarn(f"Failed to enable all features: {e}, retrying...")
 
-    rospy.loginfo("Configured the IMU over I2C")
+    rospy.loginfo("IMU armed")
 
     rate = rospy.Rate(50)
     while not rospy.is_shutdown():
