@@ -33,10 +33,10 @@ class GpsDriver:
 
     def __init__(self):
         rospy.init_node("gps_driver")
-        self.port = rospy.get_param("port")
-        self.baud = rospy.get_param("baud")
+        self.port = rospy.get_param("rover_gps_driver/port")
+        self.baud = rospy.get_param("rover_gps_driver/baud")
         self.base_station_sub = rospy.Subscriber("/rtcm", Message, self.process_rtcm)
-        self.gps_pub = rospy.Publisher("gps", NavSatFix, queue_size=1)
+        self.gps_pub = rospy.Publisher("gps/fix", NavSatFix, queue_size=1)
         self.rtk_fix_pub = rospy.Publisher("rtk_fix_status", rtkStatus, queue_size=1)
 
         self.lock = threading.Lock()
@@ -74,7 +74,6 @@ class GpsDriver:
                 rospy.logdebug("RTCM message successfully used by receiver")
 
         elif msg.identity == "NAV-PVT":
-            rospy.loginfo("PVT")
             parsed_latitude = msg.lat
             parsed_longitude = msg.lon
             parsed_altitude = msg.hMSL

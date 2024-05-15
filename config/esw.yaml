@@ -100,29 +100,29 @@ can:
 brushless_motors:
   controllers:
     front_left:
-      min_velocity: -1.00
-      max_velocity: 1.00
-      max_torque: 20.0
+      min_velocity: -2.0
+      max_velocity: 2.0
+      max_torque: 25.0
     front_right:
-      min_velocity: -1.00
-      max_velocity: 1.00
-      max_torque: 20.0
+      min_velocity: -2.0
+      max_velocity: 2.0
+      max_torque: 25.0
     middle_left:
-      min_velocity: -1.00
-      max_velocity: 1.00
-      max_torque: 20.0
+      min_velocity: -2.0
+      max_velocity: 2.0
+      max_torque: 25.0
     middle_right:
-      min_velocity: -1.00
-      max_velocity: 1.00
-      max_torque: 20.0
+      min_velocity: -2.0
+      max_velocity: 2.0
+      max_torque: 25.0
     back_left:
-      min_velocity: -1.00
-      max_velocity: 1.00
-      max_torque: 20.0
+      min_velocity: -2.0
+      max_velocity: 2.0
+      max_torque: 25.0
     back_right:
-      min_velocity: -1.00
-      max_velocity: 1.00
-      max_torque: 20.0
+      min_velocity: -2.0
+      max_velocity: 2.0
+      max_torque: 25.0
     joint_a:
       # 1236.8475 rad/meter, or 196.850393476 rev/meter, and we want a max vel of 40 meter/s.
       # gear ratio is currently at 0.005080 revolutions = 1 meter

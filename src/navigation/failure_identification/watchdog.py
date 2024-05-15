@@ -83,6 +83,7 @@ class WatchDog:
 
     def is_stuck(self, dataframe: pd.DataFrame) -> bool:
         if len(dataframe) > WINDOW_SIZE:
+            print("checking full window")
             dataframe_sliced = dataframe.tail(WINDOW_SIZE)
             # get the start and end position and rotation
             start_pos, end_pos = self.get_start_end_positions(dataframe_sliced)
@@ -100,4 +101,5 @@ class WatchDog:
                 delta_time, delta_pos, dataframe_sliced
             ):
                 return True
+        print("not enough data...")
         return False

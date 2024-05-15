@@ -2,15 +2,15 @@ drive:
   map:
     max_driving_effort: 1.0
     min_driving_effort: -1.0
-    max_turning_effort: 0.7
-    min_turning_effort: -0.7
+    max_turning_effort: 1.4
+    min_turning_effort: -1.4
     turning_p: 3.0
     driving_p: 20.0
   odom:
     max_driving_effort: 0.7
     min_driving_effort: -0.7
-    max_turning_effort: 0.5
-    min_turning_effort: -0.5
+    max_turning_effort: 1.4
+    min_turning_effort: -1.4
     turning_p: 3.0
     driving_p: 10.0
   lookahead_distance: 1.0

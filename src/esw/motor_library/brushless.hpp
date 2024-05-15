@@ -172,21 +172,7 @@ namespace mrover {
             assert(msg->source == mControllerName);
             assert(msg->destination == mMasterName);
             auto result = moteus::Query::Parse(msg->data.data(), msg->data.size());
-            // if (this->isJointDe()) {
-            //     ROS_INFO("controller: %s    %3d p/a/v/t=(%7.3f,%7.3f,%7.3f,%7.3f)  v/t/f=(%5.1f,%5.1f,%3d) GPIO: Aux1-%X , Aux2-%X",
-            //              mControllerName.c_str(),
-            //              result.mode,
-            //              result.position,
-            //              result.abs_position,
-            //              result.velocity,
-            //              result.torque,
-            //              result.voltage,
-            //              result.temperature,
-            //              result.fault,
-            //              result.aux1_gpio,
-            //              result.aux2_gpio);
-            // }
-
+            
             if (this->isJointDe()) {
                 mCurrentPosition = OutputPosition{result.extra[0].value}; // Get value of absolute encoder if its joint_de0/1
                 mCurrentVelocity = OutputVelocity{result.extra[1].value};

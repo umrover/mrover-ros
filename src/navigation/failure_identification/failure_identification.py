@@ -40,10 +40,10 @@ class FailureIdentifier:
     def __init__(self):
         nav_status_sub = message_filters.Subscriber("nav_state", StateMachineStateUpdate)
         drive_status_sub = message_filters.Subscriber("drive_joint_data", JointState)
-        odometry_sub = message_filters.Subscriber("global_ekf/odometry", Odometry)
+        odometry_sub = message_filters.Subscriber("/odometry", Odometry)
 
         ts = message_filters.ApproximateTimeSynchronizer(
-            [nav_status_sub, drive_status_sub, odometry_sub], 10, 1.0, allow_headerless=True
+            [nav_status_sub, odometry_sub], 10, 1.0, allow_headerless=True
         )
         ts.registerCallback(self.update)
 
@@ -98,7 +98,7 @@ class FailureIdentifier:
     def cmd_vel_update(self, cmd_vel: Twist) -> None:
         self.cur_cmd = cmd_vel
 
-    def update(self, nav_status: StateMachineStateUpdate, drive_status: JointState, odometry: Odometry) -> None:
+    def update(self, nav_status: StateMachineStateUpdate, odometry: Odometry) -> None:
         """
         Updates the current row of the data frame with the latest data from the rover
         then appends the row to the data frame
@@ -155,9 +155,9 @@ class FailureIdentifier:
         cur_row["angular_velocity"] = odometry.twist.twist.angular.z
 
         # get the wheel effort and velocity from the drive status message
-        for wheel_num in range(6):
-            cur_row[f"wheel_{wheel_num}_effort"] = drive_status.effort[wheel_num]
-            cur_row[f"wheel_{wheel_num}_velocity"] = drive_status.velocity[wheel_num]
+        # for wheel_num in range(6):
+        #     cur_row[f"wheel_{wheel_num}_effort"] = drive_status.effort[wheel_num]
+        #     cur_row[f"wheel_{wheel_num}_velocity"] = drive_status.velocity[wheel_num]
 
         # update the data frame with the cur row
         self._df = pd.concat([self._df, pd.DataFrame([cur_row])]) if self._df.size else pd.DataFrame([cur_row])
@@ -175,6 +175,7 @@ class FailureIdentifier:
                 self.last_recorded_recovery_time is None
                 or rospy.Time.now() - self.last_recorded_recovery_time > rospy.Duration(POST_RECOVERY_GRACE_PERIOD)
             ):
+                print("checking if stuck")
                 self.stuck_publisher.publish(Bool(self.watchdog.is_stuck(self._df)))
         else:
             self.stuck_publisher.publish(False)

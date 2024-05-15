@@ -11,6 +11,7 @@
 
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include <geometry_msgs/Twist.h>
+#include <nav_msgs/Odometry.h>
 
 #include <lie.hpp>
 
@@ -32,12 +33,16 @@ auto main(int argc, char** argv) -> int {
 
     tf2_ros::Buffer tfBuffer;
     tf2_ros::TransformListener tfListener{tfBuffer};
-
     tf2_ros::TransformBroadcaster tfBroadcaster;
+
+    ros::Publisher odometryPub = nh.advertise<nav_msgs::Odometry>("/odometry", 1);
 
     geometry_msgs::Twist currentTwist;
 
     SO3d uncorrectedOrientation = SO3d::Identity(), correctionRotation = SO3d::Identity();
+
+    std::optional<SE3d> lastPose;
+    std::optional<ros::Time> lastPoseTime;
 
     ros::Timer correctTimer = nh.createTimer(WINDOW, [&](ros::TimerEvent const&) {
         // 1. Ensure the rover is being commanded to move relatively straight forward
@@ -108,6 +113,31 @@ auto main(int argc, char** argv) -> int {
 
         SE3d correctedPose{uncorrectedPose.translation(), correctionRotation * uncorrectedOrientation};
         SE3Conversions::pushToTfTree(tfBroadcaster, roverFrame, mapFrame, correctedPose);
+
+        SE3d::Tangent twist;
+        if (lastPose && lastPoseTime) {
+            twist = (correctedPose - lastPose.value()) / (pose->header.stamp - lastPoseTime.value()).toSec();
+        }
+
+        nav_msgs::Odometry odometry;
+        odometry.header = pose->header;
+        odometry.pose.pose.position.x = correctedPose.translation().x();
+        odometry.pose.pose.position.y = correctedPose.translation().y();
+        odometry.pose.pose.position.z = correctedPose.translation().z();
+        odometry.pose.pose.orientation.w = correctedPose.quat().w();
+        odometry.pose.pose.orientation.x = correctedPose.quat().x();
+        odometry.pose.pose.orientation.y = correctedPose.quat().y();
+        odometry.pose.pose.orientation.z = correctedPose.quat().z();
+        odometry.twist.twist.linear.x = twist.coeffs()(0);
+        odometry.twist.twist.linear.y = twist.coeffs()(1);
+        odometry.twist.twist.linear.z = twist.coeffs()(2);
+        odometry.twist.twist.angular.x = twist.coeffs()(3);
+        odometry.twist.twist.angular.y = twist.coeffs()(4);
+        odometry.twist.twist.angular.z = twist.coeffs()(5);
+        odometryPub.publish(odometry);
+
+        lastPose = correctedPose;
+        lastPoseTime = pose->header.stamp;
     });
 
     ros::spin();

@@ -168,9 +168,6 @@ macro(mrover_add_esw_bridge_node name sources)
     target_link_libraries(${name} PRIVATE can_device motor_library)
 endmacro()
 
-mrover_add_node(imu_driver src/esw/imu_driver.cpp)
-target_link_libraries(imu_driver PRIVATE lie)
-
 mrover_add_node(heading_correcting_filter src/localization/heading_correcting_filter.cpp)
 target_link_libraries(heading_correcting_filter PRIVATE lie)
 
