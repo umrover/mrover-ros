@@ -1,15 +1,9 @@
 <launch>
-  <arg name="correct_heading" default="true"/>
-
   <rosparam command="load" file="$(find mrover)/config/localization.yaml"/>
   <rosparam command="load" file="$(find mrover)/config/esw.yaml"/>
 
-  <node unless="$(arg correct_heading)"
-        name="passthrough_filter" pkg="mrover" type="passthrough_filter.py"/>
-
-  <node if="$(arg correct_heading)"
-        name="imu_filter" pkg="mrover" type="imu_filter" output="screen"/>
-
   <!-- Linearize GPS from geodetic to ENU cartesian coords -->
   <node name="gps_linearization" pkg="mrover" type="gps_linearization.py" output="screen"/>
+
+  <node name="imu_filter" pkg="mrover" type="imu_filter" output="screen"/>
 </launch>

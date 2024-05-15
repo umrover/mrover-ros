@@ -15,7 +15,7 @@ from backend.ra_controls import send_ra_controls
 from geometry_msgs.msg import Twist
 from mrover.msg import CalibrationStatus, ControllerState, StateMachineStateUpdate, LED, GPSWaypoint, WaypointType
 from mrover.srv import EnableAuton
-from sensor_msgs.msg import JointState, Temperature, NavSatFix
+from sensor_msgs.msg import JointState, NavSatFix
 from std_srvs.srv import SetBool
 from util.SE3 import SE3
 
@@ -100,7 +100,7 @@ class GUIConsumer(JsonWebsocketConsumer):
                 }
             )
         except Exception as e:
-            rospy.logwarn_throttle(5, f"Failed to get bearing: {e}")
+            rospy.logwarn_throttle(5, f"Failed to get bearing: {e} Is localization running?")
 
     def save_basic_waypoint_list(self, waypoints: list[dict]) -> None:
         BasicWaypoint.objects.all().delete()

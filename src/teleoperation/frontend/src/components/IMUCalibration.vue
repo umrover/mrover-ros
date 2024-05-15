@@ -1,23 +1,26 @@
 <template>
   <div class="rounded bg-white wrap">
     <span class="px-2">IMU Calibration</span>
+    <span class="px-2">Magnetometer</span>
     <LEDIndicator
       class="px-2"
-      :name="magnetometer_calibration"
+      :name="mag_calibration"
       :show_name="true"
-      :connected="magnetometer_calibration == calibration_limit_master"
+      :connected="mag_calibration == calibration_limit_master"
     />
+    <span class="px-2">Gyroscope</span>
     <LEDIndicator
       class="px-2"
-      :name="gyroscope_calibration"
+      :name="gyro_calibration"
       :show_name="true"
-      :connected="gyroscope_calibration == calibration_limit_master"
+      :connected="gyro_calibration == calibration_limit_master"
     />
+    <span class="px-2">Accelerometer</span>
     <LEDIndicator
       class="px-2"
-      :name="acceleration_calibration"
+      :name="accel_calibration"
       :show_name="true"
-      :connected="acceleration_calibration == calibration_limit_master"
+      :connected="accel_calibration == calibration_limit_master"
     />
   </div>
 </template>
