@@ -15,6 +15,7 @@ d = generate_distutils_setup(
         "esw",
         "teleoperation.teleoperation",
         "teleoperation.arm_controller",
+        "esw.adafruit_bno08x",
     ],
     package_dir={"": "src"},
 )

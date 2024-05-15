@@ -1,2 +1,4 @@
 std_msgs/Header header
-uint8 system_calibration
+uint8 magnetomer_calibration
+uint8 gyro_calibration
+uint8 acceleration_calibration
