@@ -6,7 +6,7 @@
       :show_name="false"
       :connected="calibration == calibration_limit_master"
     />
-    <span class="px-2">IMU Temperature: {{ temperature }} °C</span>
+    <span class="px-2">IMU Temperature: {{ temperature.toFixed(1) }} °C</span>
   </div>
 </template>
 
