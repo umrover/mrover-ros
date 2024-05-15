@@ -12,7 +12,7 @@
     <arg name="object_detector" value="$(arg object_detector)"/>
   </include>
 
-  <node name="imu_driver" pkg="mrover" type="imu_driver" output="screen"/>
+  <node name="imu_driver" pkg="mrover" type="imu_driver.py" output="screen"/>
 
   <node name="gps_driver" pkg="mrover" type="rover_gps_driver.py" output="screen"/>
 </launch>
