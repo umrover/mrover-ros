@@ -47,7 +47,6 @@ class GUIConsumer(JsonWebsocketConsumer):
     def connect(self) -> None:
         self.accept()
 
-        self.forward_ros_topic("/imu/temperature", Temperature, "temperature")
         self.forward_ros_topic("/imu/calibration", CalibrationStatus, "calibration")
         self.forward_ros_topic("/gps/fix", NavSatFix, "gps_fix")
         self.forward_ros_topic("/arm_joint_data", JointState, "fk")
