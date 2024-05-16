@@ -9,5 +9,5 @@
 
   <include file="$(find mrover)/launch/navigation.launch"/>
 
-  <include file="$(find mrover)/launch/localization.launch"/>
+  <!-- <include file="$(find mrover)/launch/localization.launch"/> -->
 </launch>
