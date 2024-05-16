@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import board
 import busio
+import numpy as np
+
 from adafruit_bno08x import (
     BNO_REPORT_ACCELEROMETER,
     BNO_REPORT_GYROSCOPE,
@@ -12,7 +14,7 @@ from adafruit_bno08x.i2c import BNO08X_I2C
 
 import rospy
 from geometry_msgs.msg import Quaternion, Vector3
-from mrover.msg import ImuAndMag, CalibrationStatus
+from mrover.msg import CalibrationStatus
 from sensor_msgs.msg import Imu, MagneticField
 from std_msgs.msg import Header
 
@@ -24,8 +26,9 @@ def main() -> None:
 
     rospy.loginfo("IMU I2C driver starting...")
 
-    imu_pub = rospy.Publisher("/imu/data", ImuAndMag, queue_size=1)
+    calib_imu_pub = rospy.Publisher("/imu/data", Imu, queue_size=1)
     uncalib_pub = rospy.Publisher("/imu/data_raw", Imu, queue_size=1)
+    mag_pub = rospy.Publisher("/imu/mag", MagneticField, queue_size=1)
     calib_pub = rospy.Publisher("/imu/calibration", CalibrationStatus, queue_size=1)
 
     rospy.loginfo("Initializing IMU I2C connection...")
@@ -41,7 +44,7 @@ def main() -> None:
 
     rospy.loginfo("Configuring IMU reports...")
 
-    has_saved_calibration = False
+    # has_saved_calibration = False
 
     while not all_done and not rospy.is_shutdown():
         try:
@@ -49,6 +52,7 @@ def main() -> None:
             bno.enable_feature(BNO_REPORT_GYROSCOPE)
             bno.enable_feature(BNO_REPORT_MAGNETOMETER)
             bno.enable_feature(BNO_REPORT_ROTATION_VECTOR)
+            # Orientation with no reference heading
             bno.enable_feature(BNO_REPORT_GAME_ROTATION_VECTOR)
             all_done = True
         except Exception as e:
@@ -59,17 +63,13 @@ def main() -> None:
     rate = rospy.Rate(50)
     while not rospy.is_shutdown():
         header = Header(stamp=rospy.Time.now(), frame_id="imu_link")
-        imu_pub.publish(
-            ImuAndMag(
-                header,
-                Imu(
-                    header=header,
-                    orientation=Quaternion(*bno.quaternion),
-                    angular_velocity=Vector3(*bno.gyro),
-                    linear_acceleration=Vector3(*bno.acceleration),
-                ),
-                MagneticField(header=header, magnetic_field=Vector3(*bno.magnetic)),
-            )
+        calib_imu_pub.publish(
+            Imu(
+                header=header,
+                orientation=Quaternion(*bno.quaternion),
+                angular_velocity=Vector3(*bno.gyro),
+                linear_acceleration=Vector3(*bno.acceleration),
+            ),
         )
 
         uncalib_pub.publish(
@@ -79,13 +79,15 @@ def main() -> None:
             )
         )
 
+        mag_pub.publish(MagneticField(header=header, magnetic_field=Vector3(*bno.magnetic)))
+
         mag_calib, gyro_calib, accel_calib = bno.calibration_status
         calib_pub.publish(CalibrationStatus(header, mag_calib, gyro_calib, accel_calib))
 
-        if mag_calib == 3 and not has_saved_calibration:
-            bno.save_calibration_data()
-            rospy.loginfo("IMU calibration data saved")
-            has_saved_calibration = True
+        # if mag_calib == 3 and not has_saved_calibration:
+        #     bno.save_calibration_data()
+        #     rospy.loginfo("IMU calibration data saved")
+        #     has_saved_calibration = True
 
         rate.sleep()
 

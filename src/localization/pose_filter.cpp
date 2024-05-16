@@ -1,5 +1,4 @@
 #include <format>
-#include <numbers>
 #include <numeric>
 
 #include <ros/init.h>
@@ -12,9 +11,9 @@
 #include <geometry_msgs/Twist.h>
 #include <geometry_msgs/Vector3Stamped.h>
 #include <nav_msgs/Odometry.h>
+#include <sensor_msgs/Imu.h>
 
 #include <lie.hpp>
-#include <mrover/ImuAndMag.h>
 
 static ros::Duration const STEP{0.5}, WINDOW{2 + STEP.toSec() / 2};
 
@@ -22,8 +21,12 @@ constexpr static float MIN_LINEAR_SPEED = 0.2, MAX_ANGULAR_SPEED = 0.1, MAX_ANGU
 
 auto squared(auto const& x) { return x * x; }
 
+auto rosQuaternionToEigenQuaternion(geometry_msgs::Quaternion const& q) -> Eigen::Quaterniond {
+    return {q.w, q.x, q.y, q.z};
+}
+
 auto main(int argc, char** argv) -> int {
-    ros::init(argc, argv, "heading_correcting_filter");
+    ros::init(argc, argv, "pose_filter");
     ros::NodeHandle nh;
 
     auto useOdomFrame = nh.param<bool>("use_odom", false);
@@ -38,9 +41,8 @@ auto main(int argc, char** argv) -> int {
 
     ros::Publisher odometryPub = nh.advertise<nav_msgs::Odometry>("/odometry", 1);
 
-    geometry_msgs::Twist currentTwist;
-    mrover::ImuAndMag currentImuCalib;
-    sensor_msgs::Imu currentImuUncalib;
+    std::optional<geometry_msgs::Twist> currentTwist;
+    std::optional<sensor_msgs::Imu> currentImuCalib, currentImuUncalib;
 
     std::optional<SO3d> correctionRotation;
 
@@ -48,9 +50,11 @@ auto main(int argc, char** argv) -> int {
     std::optional<ros::Time> lastPoseTime;
 
     ros::Timer correctTimer = nh.createTimer(WINDOW, [&](ros::TimerEvent const&) {
+        if (!currentTwist || !currentImuUncalib) return;
+
         // 1. Ensure the rover is being commanded to move relatively straight forward
-        if (currentTwist.linear.x < MIN_LINEAR_SPEED) return;
-        if (std::fabs(currentTwist.angular.z) > MAX_ANGULAR_SPEED) return;
+        if (currentTwist->linear.x < MIN_LINEAR_SPEED) return;
+        if (std::fabs(currentTwist->angular.z) > MAX_ANGULAR_SPEED) return;
 
         ROS_INFO("Rover is being commanded forward");
 
@@ -94,7 +98,7 @@ auto main(int argc, char** argv) -> int {
 
         double correctedHeadingInMap = std::atan2(roverVelocitySum.y(), roverVelocitySum.x());
 
-        SO3d uncorrectedOrientation{currentImuUncalib.orientation.x, currentImuUncalib.orientation.y, currentImuUncalib.orientation.z, currentImuUncalib.orientation.w};
+        SO3d uncorrectedOrientation = rosQuaternionToEigenQuaternion(currentImuUncalib->orientation);
         R2 uncorrectedForward = uncorrectedOrientation.rotation().col(0).head<2>();
         double estimatedHeadingInMap = std::atan2(uncorrectedForward.y(), uncorrectedForward.x());
 
@@ -109,7 +113,7 @@ auto main(int argc, char** argv) -> int {
         currentTwist = *twist;
     });
 
-    ros::Subscriber imuCalibSubscriber = nh.subscribe<mrover::ImuAndMag>("/imu/data", 1, [&](mrover::ImuAndMagConstPtr const& imu) {
+    ros::Subscriber imuCalibSubscriber = nh.subscribe<sensor_msgs::Imu>("/imu/data", 1, [&](sensor_msgs::ImuConstPtr const& imu) {
         currentImuCalib = *imu;
     });
 
@@ -120,16 +124,17 @@ auto main(int argc, char** argv) -> int {
     ros::Subscriber poseSubscriber = nh.subscribe<geometry_msgs::Vector3Stamped>("/linearized_position", 1, [&](geometry_msgs::Vector3StampedConstPtr const& msg) {
         R3 position{msg->vector.x, msg->vector.y, msg->vector.z};
 
-        SE3d pose;
+        SE3d pose{position, SO3d::Identity()};
         pose.translation() = position;
-        if (correctionRotation) {
-            auto const& o = currentImuUncalib.orientation;
-            SO3d uncalibratedOrientation{o.x, o.y, o.z, o.w};
+        if (correctionRotation && currentImuUncalib) {
+            SO3d uncalibratedOrientation = rosQuaternionToEigenQuaternion(currentImuUncalib->orientation);
             pose.asSO3() = correctionRotation.value() * uncalibratedOrientation;
-        } else {
-            auto const& o = currentImuCalib.imu.orientation;
-            SO3d calibratedOrientation{o.x, o.y, o.z, o.w};
+        } else if (currentImuCalib) {
+            SO3d calibratedOrientation = rosQuaternionToEigenQuaternion(currentImuCalib->orientation);
             pose.asSO3() = calibratedOrientation;
+        } else {
+            ROS_WARN_THROTTLE(1, "No IMU data available");
+            return;
         }
         SE3Conversions::pushToTfTree(tfBroadcaster, roverFrame, mapFrame, pose);
 

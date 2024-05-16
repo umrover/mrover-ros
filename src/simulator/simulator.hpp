@@ -174,6 +174,7 @@ namespace mrover {
     };
 
     struct Imu : SensorBase {
+        ros::Publisher magPub, uncalibPub;
     };
 
     struct Gps : SensorBase {

@@ -28,7 +28,9 @@
 #include <nodelet/nodelet.h>
 #include <ros/package.h>
 #include <ros/serialization.h>
+#include <sensor_msgs/Imu.h>
 #include <sensor_msgs/Image.h>
+#include <sensor_msgs/MagneticField.h>
 #include <sensor_msgs/JointState.h>
 #include <sensor_msgs/NavSatFix.h>
 #include <sensor_msgs/PointCloud2.h>
@@ -79,7 +81,6 @@
 
 #include <mrover/ControllerState.h>
 #include <mrover/IK.h>
-#include <mrover/ImuAndMag.h>
 #include <mrover/Position.h>
 #include <mrover/Throttle.h>
 #include <mrover/Velocity.h>

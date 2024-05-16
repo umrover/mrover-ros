@@ -122,24 +122,21 @@ namespace mrover {
         return gpsMessage;
     }
 
-    auto computeImu(SO3d const& imuInMap, R3 const& imuAngularVelocity, R3 const& linearAcceleration, R3 const& magneticField) -> ImuAndMag {
-        ImuAndMag imuMessage;
+    auto computeImu(SO3d const& imuInMap, R3 const& imuAngularVelocity, R3 const& linearAcceleration) -> sensor_msgs::Imu {
+        sensor_msgs::Imu imuMessage;
         imuMessage.header.stamp = ros::Time::now();
         imuMessage.header.frame_id = "map";
         S3 q = imuInMap.quat();
-        imuMessage.imu.orientation.w = q.w();
-        imuMessage.imu.orientation.x = q.x();
-        imuMessage.imu.orientation.y = q.y();
-        imuMessage.imu.orientation.z = q.z();
-        imuMessage.imu.angular_velocity.x = imuAngularVelocity.x();
-        imuMessage.imu.angular_velocity.y = imuAngularVelocity.y();
-        imuMessage.imu.angular_velocity.z = imuAngularVelocity.z();
-        imuMessage.imu.linear_acceleration.x = linearAcceleration.x();
-        imuMessage.imu.linear_acceleration.y = linearAcceleration.y();
-        imuMessage.imu.linear_acceleration.z = linearAcceleration.z();
-        imuMessage.mag.magnetic_field.x = magneticField.x();
-        imuMessage.mag.magnetic_field.y = magneticField.y();
-        imuMessage.mag.magnetic_field.z = magneticField.z();
+        imuMessage.orientation.w = q.w();
+        imuMessage.orientation.x = q.x();
+        imuMessage.orientation.y = q.y();
+        imuMessage.orientation.z = q.z();
+        imuMessage.angular_velocity.x = imuAngularVelocity.x();
+        imuMessage.angular_velocity.y = imuAngularVelocity.y();
+        imuMessage.angular_velocity.z = imuAngularVelocity.z();
+        imuMessage.linear_acceleration.x = linearAcceleration.x();
+        imuMessage.linear_acceleration.y = linearAcceleration.y();
+        imuMessage.linear_acceleration.z = linearAcceleration.z();
         return imuMessage;
     }
 
@@ -183,15 +180,15 @@ namespace mrover {
                 gpsInMap += gpsNoise;
                 pub.publish(computeNavSatFix(gpsInMap, mGpsLinearizationReferencePoint, mGpsLinerizationReferenceHeading));
             }
-            for (auto& [link, updateTask, pub]: mImus) {
-                if (!updateTask.shouldUpdate()) continue;
+            for (Imu imu: mImus) {
+                if (!imu.updateTask.shouldUpdate()) continue;
 
                 auto dtS = std::chrono::duration_cast<std::chrono::duration<double>>(dt).count();
                 R3 roverAngularVelocity = btVector3ToR3(rover.physics->getBaseOmega());
                 R3 roverLinearVelocity = btVector3ToR3(rover.physics->getBaseVel());
                 R3 roverLinearAcceleration = (roverLinearVelocity - mRoverLinearVelocity) / dtS;
                 mRoverLinearVelocity = roverLinearVelocity;
-                SO3d imuInMap = btTransformToSe3(link->m_cachedWorldTransform).asSO3();
+                SO3d imuInMap = btTransformToSe3(imu.link->m_cachedWorldTransform).asSO3();
                 R3 roverMagVector = imuInMap.inverse().rotation().col(1);
 
                 R3
@@ -202,13 +199,23 @@ namespace mrover {
                 roverAngularVelocity += gyroNoise;
                 roverMagVector += magNoise;
 
+                imu.pub.publish(computeImu(imuInMap, roverAngularVelocity, roverLinearAcceleration));
+
                 constexpr double SEC_TO_MIN = 1.0 / 60.0;
                 mOrientationDrift += mOrientationDriftRate * SEC_TO_MIN * dtS;
                 SO3d::Tangent orientationNoise;
                 orientationNoise << mRollDist(mRNG), mPitchDist(mRNG), mYawDist(mRNG);
                 imuInMap += orientationNoise + mOrientationDrift;
 
-                pub.publish(computeImu(imuInMap, roverAngularVelocity, roverLinearAcceleration, roverMagVector));
+                imu.uncalibPub.publish(computeImu(imuInMap, roverAngularVelocity, roverLinearAcceleration));
+
+                sensor_msgs::MagneticField field;
+                field.header.stamp = ros::Time::now();
+                field.header.frame_id = "map";
+                field.magnetic_field.x = roverMagVector.x();
+                field.magnetic_field.y = roverMagVector.y();
+                field.magnetic_field.z = roverMagVector.z();
+                imu.magPub.publish(field);
             }
         }
     }

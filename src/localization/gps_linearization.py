@@ -7,9 +7,6 @@ import rospy
 from geometry_msgs.msg import Vector3Stamped, Vector3
 from sensor_msgs.msg import NavSatFix
 
-QUEUE_SIZE = 10
-SLOP = 0.5
-
 
 class GPSLinearization:
     def __init__(self):
@@ -19,8 +16,6 @@ class GPSLinearization:
         self.ref_alt = rospy.get_param("gps_linearization/reference_point_altitude")
         self.world_frame = rospy.get_param("world_frame")
 
-        self.config_gps_covariance = np.array(rospy.get_param("gps_covariance", None))
-
         rospy.Subscriber("gps/fix", NavSatFix, self.single_gps_callback)
         self.position_publisher = rospy.Publisher("linearized_position", Vector3Stamped, queue_size=1)
 
@@ -29,16 +24,10 @@ class GPSLinearization:
             rospy.logwarn("Received NaN GPS data, ignoring")
             return
 
-        self.position_publisher.publish(
-            Vector3Stamped(
-                msg.header,
-                Vector3(
-                    *geodetic2enu(
-                        msg.latitude, msg.longitude, msg.altitude, self.ref_lat, self.ref_lon, self.ref_alt, deg=True
-                    )
-                ),
-            )
+        x, y, _ = geodetic2enu(
+            msg.latitude, msg.longitude, msg.altitude, self.ref_lat, self.ref_lon, self.ref_alt, deg=True
         )
+        self.position_publisher.publish(Vector3Stamped(msg.header, Vector3(x=x, y=y)))
 
 
 def main():

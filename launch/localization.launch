@@ -5,5 +5,5 @@
   <!-- Linearize GPS from geodetic to ENU cartesian coords -->
   <node name="gps_linearization" pkg="mrover" type="gps_linearization.py" output="screen"/>
 
-  <node name="imu_filter" pkg="mrover" type="imu_filter" output="screen"/>
+  <node name="pose_filter" pkg="mrover" type="pose_filter" output="screen"/>
 </launch>
