@@ -7,12 +7,10 @@
   <include file="$(find mrover)/launch/zed.launch"/>
   <include file="$(find mrover)/launch/long_range_cam.launch"/>
 
-  <include file="$(find mrover)/launch/autonomy.launch">
+  <include file="$(find mrover)/launch/perception.launch">
     <arg name="tag_detector" value="$(arg tag_detector)"/>
     <arg name="object_detector" value="$(arg object_detector)"/>
   </include>
 
-  <node name="imu_driver" pkg="mrover" type="imu_driver.py" output="screen"/>
-
-  <node name="gps_driver" pkg="mrover" type="rover_gps_driver.py" output="screen"/>
+  <include file="$(find mrover)/launch/navigation.launch"/>
 </launch>

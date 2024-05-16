@@ -42,6 +42,8 @@ def main() -> None:
 
     rospy.loginfo("Configuring IMU reports...")
 
+    has_saved_calibration = False
+
     while not all_done and not rospy.is_shutdown():
         try:
             bno.enable_feature(BNO_REPORT_ACCELEROMETER)
@@ -61,6 +63,7 @@ def main() -> None:
     rate = rospy.Rate(50)
     while not rospy.is_shutdown():
         header = Header(stamp=rospy.Time.now(), frame_id="imu_link")
+        
         calib_imu_pub.publish(
             Imu(
                 header=header,
