@@ -40,11 +40,7 @@ def main() -> None:
 
     bno.begin_calibration()
 
-    all_done = False
-
     rospy.loginfo("Configuring IMU reports...")
-
-    # has_saved_calibration = False
 
     while not all_done and not rospy.is_shutdown():
         try:
@@ -56,7 +52,9 @@ def main() -> None:
             bno.enable_feature(BNO_REPORT_GAME_ROTATION_VECTOR)
             all_done = True
         except Exception as e:
+            # TODO: Toggle reset pin
             rospy.logwarn(f"Failed to enable all features: {e}, retrying...")
+            rospy.sleep(1)
 
     rospy.loginfo("IMU armed")
 
@@ -81,13 +79,7 @@ def main() -> None:
 
         mag_pub.publish(MagneticField(header=header, magnetic_field=Vector3(*bno.magnetic)))
 
-        mag_calib, gyro_calib, accel_calib = bno.calibration_status
-        calib_pub.publish(CalibrationStatus(header, mag_calib, gyro_calib, accel_calib))
-
-        # if mag_calib == 3 and not has_saved_calibration:
-        #     bno.save_calibration_data()
-        #     rospy.loginfo("IMU calibration data saved")
-        #     has_saved_calibration = True
+        calib_pub.publish(CalibrationStatus(header, *bno.calibration_status))
 
         rate.sleep()
 
