@@ -6,6 +6,7 @@ from adafruit_bno08x import (
     BNO_REPORT_GYROSCOPE,
     BNO_REPORT_MAGNETOMETER,
     BNO_REPORT_ROTATION_VECTOR,
+    BNO_REPORT_GAME_ROTATION_VECTOR,
 )
 from adafruit_bno08x.i2c import BNO08X_I2C
 
@@ -24,6 +25,7 @@ def main() -> None:
     rospy.loginfo("IMU I2C driver starting...")
 
     imu_pub = rospy.Publisher("/imu/data", ImuAndMag, queue_size=1)
+    uncalib_pub = rospy.Publisher("/imu/data_raw", Imu, queue_size=1)
     calib_pub = rospy.Publisher("/imu/calibration", CalibrationStatus, queue_size=1)
 
     rospy.loginfo("Initializing IMU I2C connection...")
@@ -39,12 +41,15 @@ def main() -> None:
 
     rospy.loginfo("Configuring IMU reports...")
 
+    has_saved_calibration = False
+
     while not all_done and not rospy.is_shutdown():
         try:
             bno.enable_feature(BNO_REPORT_ACCELEROMETER)
             bno.enable_feature(BNO_REPORT_GYROSCOPE)
             bno.enable_feature(BNO_REPORT_MAGNETOMETER)
             bno.enable_feature(BNO_REPORT_ROTATION_VECTOR)
+            bno.enable_feature(BNO_REPORT_GAME_ROTATION_VECTOR)
             all_done = True
         except Exception as e:
             rospy.logwarn(f"Failed to enable all features: {e}, retrying...")
@@ -67,7 +72,20 @@ def main() -> None:
             )
         )
 
-        calib_pub.publish(CalibrationStatus(header, *bno.calibration_status))
+        uncalib_pub.publish(
+            Imu(
+                header=header,
+                orientation=Quaternion(*bno.game_quaternion),
+            )
+        )
+
+        mag_calib, gyro_calib, accel_calib = bno.calibration_status
+        calib_pub.publish(CalibrationStatus(header, mag_calib, gyro_calib, accel_calib))
+
+        if mag_calib == 3 and not has_saved_calibration:
+            bno.save_calibration_data()
+            rospy.loginfo("IMU calibration data saved")
+            has_saved_calibration = True
 
         rate.sleep()
 
