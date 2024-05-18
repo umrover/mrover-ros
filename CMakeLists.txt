@@ -147,6 +147,9 @@ catkin_package()
 mrover_add_library(lie src/util/lie/*.cpp src/util/lie)
 target_link_libraries(lie PUBLIC MANIF::manif)
 
+mrover_add_library(learning src/util/learning/*.c* src/util/learning)
+target_link_libraries(learning PRIVATE opencv_core opencv_dnn opencv_imgproc lie nvinfer nvonnxparser tbb)
+
 ## ESW
 
 mrover_add_vendor_header_only_library(moteus deps/mjbots)
