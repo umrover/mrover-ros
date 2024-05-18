@@ -25,13 +25,15 @@ auto Learning::modelForwardPass(const cv::Mat& blob, std::vector<Detection>& det
 
 auto Learning::parseModelOutput(cv::Mat& output, std::vector<Detection>& detections, float modelScoreThreshold, float modelNMSThreshold) -> void{
     // Parse model specific dimensioning from the output 
-        int rows = output.rows;
-        int dimensions = output.cols;
+        
 
         // The input to this function is expecting a YOLOv8 style model, thus the dimensions should be > rows
-        if (dimensions <= rows) {
+        if (output.cols <= output.rows) {
             throw std::runtime_error("Something is wrong Model with interpretation");
         }
+
+        int rows = output.cols;
+        int dimensions = output.rows;
 
         // The output of the model is a batchSizex84x8400 matrix
         // This converts the model to a TODO: Check this dimensioning

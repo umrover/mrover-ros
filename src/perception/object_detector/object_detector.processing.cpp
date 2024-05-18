@@ -1,6 +1,7 @@
 #include "object_detector.hpp"
 #include "lie.hpp"
 #include <bitset>
+#include <sensor_msgs/Image.h>
 
 namespace mrover {
     auto ObjectDetectorNodelet::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg) -> void {
@@ -8,42 +9,42 @@ namespace mrover {
         assert(msg->height > 0);
         assert(msg->width > 0);
 
-        if constexpr (mEnableLoopProfiler) {
+        if constexpr (mEnableLoopProfilerPC) {
             if (ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Debug)) {
                 ros::console::notifyLoggerLevelsChanged();
             }
-            mLoopProfiler.beginLoop();
-            mLoopProfiler.measureEvent("Wait");
+            mLoopProfilerPC.beginLoop();
+            mLoopProfilerPC.measureEvent("Wait");
         }
 
         // Adjust the picture size to be in line with the expected img size from the Point Cloud
-        if (static_cast<int>(msg->height) != mImg.rows || static_cast<int>(msg->width) != mImg.cols) {
-            NODELET_INFO("Image size changed from [%d %d] to [%u %u]", mImg.cols, mImg.rows, msg->width, msg->height);
-            mImg = cv::Mat{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC4, cv::Scalar{0, 0, 0, 0}};
+        if (static_cast<int>(msg->height) != mImgPC.rows || static_cast<int>(msg->width) != mImgPC.cols) {
+            NODELET_INFO("Image size changed from [%d %d] to [%u %u]", mImgPC.cols, mImgPC.rows, msg->width, msg->height);
+            mImgPC = cv::Mat{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC4, cv::Scalar{0, 0, 0, 0}};
         }
 
         // Convert the pointcloud data into rgba image and store in mImg
-        convertPointCloudToRGBA(msg, mImg);
+        convertPointCloudToRGBA(msg, mImgPC);
 
         // Resize the image and change it from BGRA to BGR
         cv::Mat sizedImage;
         cv::Size imgSize{640, 640};
-        cv::resize(mImg, sizedImage, imgSize);
+        cv::resize(mImgPC, sizedImage, imgSize);
         cv::cvtColor(sizedImage, sizedImage, cv::COLOR_BGRA2BGR);
 
         // Create the blob from the resized image
-        cv::dnn::blobFromImage(sizedImage, mImageBlob, 1.0 / 255.0, imgSize, cv::Scalar{}, true, false);
+        cv::dnn::blobFromImage(sizedImage, mImageBlobPC, 1.0 / 255.0, imgSize, cv::Scalar{}, true, false);
 
-        if constexpr (mEnableLoopProfiler) {
-            mLoopProfiler.measureEvent("Convert Image");
+        if constexpr (mEnableLoopProfilerPC) {
+            mLoopProfilerPC.measureEvent("Convert Image");
         }
 
         // Run the blob through the model    
         std::vector<Detection> detections{};
-        mLearning.modelForwardPass(mImageBlob, detections);     
+        mLearningPC.modelForwardPass(mImageBlobPC, detections);     
         
-        if constexpr (mEnableLoopProfiler) {
-            mLoopProfiler.measureEvent("Execute on GPU");
+        if constexpr (mEnableLoopProfilerPC) {
+            mLoopProfilerPC.measureEvent("Execute on GPU");
         }
       
         // Increment Object hit counts if theyre seen
@@ -53,18 +54,81 @@ namespace mrover {
         // Draw the bounding boxes on the image
         drawOnImage(sizedImage, detections);        
 
-        if constexpr (mEnableLoopProfiler) {
-            mLoopProfiler.measureEvent("Push to TF");
+        if constexpr (mEnableLoopProfilerPC) {
+            mLoopProfilerPC.measureEvent("Push to TF");
         }
 
         // We only want to publish the debug image if there is something lsitening, to reduce the operations going on
-        if (mDebugImgPub.getNumSubscribers()) {
+        if (mDebugImgPubPC.getNumSubscribers()) {
             // Publishes the image to the debug publisher
             publishImg(sizedImage);
         }
 
-        if constexpr (mEnableLoopProfiler) {
-            mLoopProfiler.measureEvent("Publish Debug Img");
+        if constexpr (mEnableLoopProfilerPC) {
+            mLoopProfilerPC.measureEvent("Publish Debug Img");
+        }
+    }
+
+    auto ObjectDetectorNodelet::imageCallback(sensor_msgs::ImageConstPtr const& msg) -> void {
+        assert(msg);
+        assert(msg->height > 0);
+        assert(msg->width > 0);
+
+        if constexpr (mEnableLoopProfilerIMG) {
+            if (ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Debug)) {
+                ros::console::notifyLoggerLevelsChanged();
+            }
+            mLoopProfilerIMG.beginLoop();
+            mLoopProfilerIMG.measureEvent("Wait");
+        }
+
+        // Adjust the picture size to be in line with the expected img size from the Point Cloud
+        if (static_cast<int>(msg->height) != mImgIMG.rows || static_cast<int>(msg->width) != mImgIMG.cols) {
+            NODELET_INFO("Image size changed from [%d %d] to [%u %u]", mImgIMG.cols, mImgIMG.rows, msg->width, msg->height);
+            mImgIMG = cv::Mat{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC4, const_cast<std::uint8_t*>(msg->data.data())};
+        }
+
+        // Resize the image and change it from BGRA to BGR
+        cv::Mat sizedImage;
+        cv::Size imgSize{640, 640};
+        cv::resize(mImgIMG, sizedImage, imgSize);
+        cv::cvtColor(sizedImage, sizedImage, cv::COLOR_BGRA2BGR);
+
+        // Create the blob from the resized image
+        cv::dnn::blobFromImage(sizedImage, mImageBlobIMG, 1.0 / 255.0, imgSize, cv::Scalar{}, true, false);
+
+        if constexpr (mEnableLoopProfilerIMG) {
+            mLoopProfilerIMG.measureEvent("Convert Image");
+        }
+
+        // Run the blob through the model    
+        std::vector<Detection> detections{};
+        mLearningIMG.modelForwardPass(mImageBlobIMG, detections);     
+        
+        if constexpr (mEnableLoopProfilerIMG) {
+            mLoopProfilerIMG.measureEvent("Execute on GPU");
+        }
+      
+        // Increment Object hit counts if theyre seen
+        // Decrement Object hit counts if they're not seen
+        // TODO(LONG RANGE CAMERA): recreate this function to accept images
+        //updateHitsObject(msg, detections); 
+
+        // Draw the bounding boxes on the image
+        drawOnImage(sizedImage, detections);        
+
+        if constexpr (mEnableLoopProfilerIMG) {
+            mLoopProfilerIMG.measureEvent("Push to TF");
+        }
+
+        // We only want to publish the debug image if there is something lsitening, to reduce the operations going on
+        if (mDebugImgPubIMG.getNumSubscribers()) {
+            // Publishes the image to the debug publisher
+            publishImg(sizedImage);
+        }
+
+        if constexpr (mEnableLoopProfilerIMG) {
+            mLoopProfilerIMG.measureEvent("Publish Debug Img");
         }
     }
 
@@ -136,6 +200,18 @@ namespace mrover {
     }
 
     auto ObjectDetectorNodelet::convertPointCloudToRGBA(sensor_msgs::PointCloud2ConstPtr const& msg, cv::Mat& img) -> void {
+        auto* pixelPtr = reinterpret_cast<cv::Vec4b*>(img.data);
+        auto* pointPtr = reinterpret_cast<Point const*>(msg->data.data());
+        std::for_each(std::execution::par_unseq, pixelPtr, pixelPtr + img.total(), [&](cv::Vec4b& pixel) {
+            size_t const i = &pixel - pixelPtr;
+            pixel[0] = pointPtr[i].b;
+            pixel[1] = pointPtr[i].g;
+            pixel[2] = pointPtr[i].r;
+            pixel[3] = pointPtr[i].a;
+        });
+    }
+
+    auto ObjectDetectorNodelet::convertImageToRGBA(sensor_msgs::ImageConstPtr const& msg, cv::Mat& img) -> void {
         auto* pixelPtr = reinterpret_cast<cv::Vec4b*>(img.data);
         auto* pointPtr = reinterpret_cast<Point const*>(msg->data.data());
         std::for_each(std::execution::par_unseq, pixelPtr, pixelPtr + img.total(), [&](cv::Vec4b& pixel) {
@@ -220,7 +296,7 @@ namespace mrover {
         //Copy the data to the image
         std::memcpy(newDebugImageMessage.data.data(), imgPtr, size);
 
-        mDebugImgPub.publish(newDebugImageMessage);
+        mDebugImgPubPC.publish(newDebugImageMessage);
     }
 
 } // namespace mrover

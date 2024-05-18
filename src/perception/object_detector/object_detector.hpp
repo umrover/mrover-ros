@@ -5,32 +5,50 @@
 namespace mrover {
     //Data type for detection
     class ObjectDetectorNodelet : public nodelet::Nodelet {
-
-        std::string mModelName;
-
-        LoopProfiler mLoopProfiler{"Object Detector", 1};
-        static constexpr bool mEnableLoopProfiler = false;
-
-        Learning mLearning;
-
-        cv::Mat mImg;
-
         ros::NodeHandle mNh, mPnh;
-
-        ros::Publisher mDebugImgPub;
-
-        ros::Subscriber mImgSub;
-
-        cv::Mat mImageBlob;
-
-        dynamic_reconfigure::Server<ObjectDetectorParamsConfig> mConfigServer;
-        dynamic_reconfigure::Server<ObjectDetectorParamsConfig>::CallbackType mCallbackType;
 
         tf2_ros::Buffer mTfBuffer;
         tf2_ros::TransformListener mTfListener{mTfBuffer};
         tf2_ros::TransformBroadcaster mTfBroadcaster;
         std::string mCameraFrameId;
         std::string mMapFrame;
+
+        dynamic_reconfigure::Server<ObjectDetectorParamsConfig> mConfigServer;
+        dynamic_reconfigure::Server<ObjectDetectorParamsConfig>::CallbackType mCallbackType;
+
+        // PointCloud Vars
+        std::string mModelNamePC;
+
+        LoopProfiler mLoopProfilerPC{"Object Detector", 1};
+        static constexpr bool mEnableLoopProfilerPC = false;
+
+        Learning mLearningPC;
+
+        cv::Mat mImgPC;
+
+        ros::Publisher mDebugImgPubPC;
+
+        ros::Subscriber mImgSubPC;
+
+        cv::Mat mImageBlobPC;
+
+        // Image Vars
+        std::string mModelNameIMG;
+
+        LoopProfiler mLoopProfilerIMG{"Object Detector", 1};
+        static constexpr bool mEnableLoopProfilerIMG = false;
+
+        Learning mLearningIMG;
+
+        cv::Mat mImgIMG;
+
+        ros::Publisher mDebugImgPubIMG;
+
+        ros::Subscriber mImgSubIMG;
+
+        cv::Mat mImageBlobIMG;
+
+        // Both PointCloud and Image
 
         std::vector<int> mObjectHitCounts{0, 0};
 
@@ -54,6 +72,8 @@ namespace mrover {
                                size_t height) -> std::optional<SE3d>;
 
         static auto convertPointCloudToRGBA(sensor_msgs::PointCloud2ConstPtr const& msg, cv::Mat& img) -> void;
+
+        static auto convertImageToRGBA(sensor_msgs::ImageConstPtr const& msg, cv::Mat& img) -> void;
 
         auto updateHitsObject(sensor_msgs::PointCloud2ConstPtr const& msg,
                               const std::vector<Detection>& detections, 
