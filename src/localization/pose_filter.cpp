@@ -19,8 +19,6 @@ static ros::Duration const STEP{0.5}, WINDOW{2 + STEP.toSec() / 2};
 
 constexpr static float MIN_LINEAR_SPEED = 0.2, MAX_ANGULAR_SPEED = 0.1, MAX_ANGULAR_CHANGE = 0.2;
 
-auto squared(auto const& x) { return x * x; }
-
 auto rosQuaternionToEigenQuaternion(geometry_msgs::Quaternion const& q) -> Eigen::Quaterniond {
     return {q.w, q.x, q.y, q.z};
 }

@@ -37,6 +37,10 @@ namespace mrover {
                 for (Eigen::Index c = 0; c < msg->width; c += mDownSamplingFactor) {
                     auto* point = points + r * msg->width + c;
 
+                    // Points with no stereo correspondence are NaN's, so ignore them
+                    if (!std::isfinite(point->x) || !std::isfinite(point->y) || !std::isfinite(point->z)) continue;
+                    if (!std::isfinite(point->normal_x) || !std::isfinite(point->normal_y) || !std::isfinite(point->normal_z)) continue;
+
                     // Discard points too close to the camera
                     if (point->x < 1) continue;
 
