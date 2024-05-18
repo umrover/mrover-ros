@@ -6,14 +6,13 @@ location data to the rover over LCM (/gps). Subscribes to
 /rtcm and passes RTCM messages to the onboard gps to
 acquire an RTK fix.
 """
-import datetime
 import threading
 
 import serial
 from pyubx2 import UBXReader, UBX_PROTOCOL, RTCM3_PROTOCOL
 
 import rospy
-from mrover.msg import rtkStatus
+from mrover.msg import RTKStatus
 from rtcm_msgs.msg import Message
 from sensor_msgs.msg import NavSatFix
 from std_msgs.msg import Header
@@ -37,7 +36,7 @@ class GpsDriver:
         self.baud = rospy.get_param("rover_gps_driver/baud")
         self.base_station_sub = rospy.Subscriber("/rtcm", Message, self.process_rtcm)
         self.gps_pub = rospy.Publisher("gps/fix", NavSatFix, queue_size=1)
-        self.rtk_fix_pub = rospy.Publisher("rtk_fix_status", rtkStatus, queue_size=1)
+        self.rtk_fix_pub = rospy.Publisher("rtk_fix_status", RTKStatus, queue_size=1)
 
         self.lock = threading.Lock()
         self.valid_offset = False
@@ -95,7 +94,7 @@ class GpsDriver:
                     altitude=parsed_altitude,
                 )
             )
-            self.rtk_fix_pub.publish(rtkStatus(msg.carrSoln))
+            self.rtk_fix_pub.publish(RTKStatus(msg.carrSoln))
 
             if msg.difSoln == 1:
                 rospy.logdebug_throttle(3, "Differential correction applied")
