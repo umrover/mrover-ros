@@ -40,7 +40,7 @@ namespace mrover {
 
         // Run the blob through the model    
         std::vector<Detection> detections{};
-        modelForwardPass(mImageBlob, detections);        
+        mLearning.modelForwardPass(mImageBlob, detections);     
         
         if constexpr (mEnableLoopProfiler) {
             mLoopProfiler.measureEvent("Execute on GPU");
@@ -68,12 +68,6 @@ namespace mrover {
         }
     }
 
-    auto ObjectDetectorNodelet::modelForwardPass(cv::Mat& image, std::vector<Detection>& detections, const float modelScoreThreshold, const float modelNMSThreshold) -> void{
-            mInferenceWrapper.doDetections(image);
-            cv::Mat output = mInferenceWrapper.getOutputTensor();
-            parseModelOutput(output, detections, modelScoreThreshold, modelNMSThreshold);
-    }
-
     auto ObjectDetectorNodelet::drawOnImage(cv::Mat& image, const std::vector<Detection>& detections) -> void{
         // Draw the detected object's bounding boxes on the image for each of the objects detected
         const std::array fontColors{cv::Scalar{232, 115, 5}, cv::Scalar{0, 4, 227}};
@@ -87,82 +81,6 @@ namespace mrover {
             constexpr int fontSize = 1;
             constexpr int fontWeight = 2;
             putText(image, detections[i].className, textPosition, cv::FONT_HERSHEY_COMPLEX, fontSize, fontColor, fontWeight); // Putting the text in the matrix
-        }
-    }
-
-    auto ObjectDetectorNodelet::parseModelOutput(cv::Mat& output, std::vector<Detection>& detections, const float modelScoreThreshold, const float modelNMSThreshold) -> void{
-        // Parse model specific dimensioning from the output 
-        int rows = output.rows;
-        int dimensions = output.cols;
-
-        // The input to this function is expecting a YOLOv8 style model, thus the dimensions should be > rows
-        if (dimensions <= rows) {
-            throw std::runtime_error("Something is wrong Model with interpretation");
-        }
-
-        // The output of the model is a batchSizex84x8400 matrix
-        // This converts the model to a TODO: Check this dimensioning
-        cv::transpose(output.reshape(1, dimensions), output);
-
-        // This function expects the image to already be in the correct format thus no distrotion is needed
-        const float xFactor = 1.0;
-        const float yFactor = 1.0;
-
-        // Intermediate Storage Containers
-        std::vector<int> classIds;
-        std::vector<float> confidences;
-        std::vector<cv::Rect> boxes;
-
-        // Each row of the output is a detection with a bounding box and associated class scores
-        for (int r = 0; r < rows; ++r) {
-            // Skip first four values as they are the box data
-            cv::Mat scores = output.row(r).colRange(4, dimensions);
-
-            cv::Point classId;
-            double maxClassScore;
-            cv::minMaxLoc(scores, nullptr, &maxClassScore, nullptr, &classId);
-
-            // Determine if the class is an acceptable confidence level, otherwise disregard
-            if (maxClassScore <= modelScoreThreshold) continue;
-
-            confidences.push_back(static_cast<float>(maxClassScore));
-            classIds.push_back(classId.x);
-
-            // Get the bounding box data
-            cv::Mat box = output.row(r).colRange(0, 4);
-            auto x = box.at<float>(0);
-            auto y = box.at<float>(1);
-            auto w = box.at<float>(2);
-            auto h = box.at<float>(3);
-
-            // Cast the corners into integers to be used on pixels
-            auto left = static_cast<int>((x - 0.5 * w) * xFactor);
-            auto top = static_cast<int>((y - 0.5 * h) * yFactor);
-            auto width = static_cast<int>(w * xFactor);
-            auto height = static_cast<int>(h * yFactor);
-
-            // Push abck the box into storage
-            boxes.emplace_back(left, top, width, height);
-        }
-
-        //Coalesce the boxes into a smaller number of distinct boxes
-        std::vector<int> nmsResult;
-        cv::dnn::NMSBoxes(boxes, confidences, modelScoreThreshold, modelNMSThreshold, nmsResult);
-
-        // Fill in the output Detections Vector
-        for (int i: nmsResult) {
-            Detection result;
-
-            //Fill in the id and confidence for the class
-            result.classId = classIds[i];
-            result.confidence = confidences[i];
-
-            //Fill in the class name and box information
-            result.className = classes[result.classId];
-            result.box = boxes[i];
-
-            //Push back the detection into the for storagevector
-            detections.push_back(result);
         }
     }
 
@@ -239,8 +157,6 @@ namespace mrover {
             auto centerWidth = static_cast<std::size_t>(center.first * static_cast<double>(msg->width) / imgSize.width);
             auto centerHeight = static_cast<std::size_t>(center.second * static_cast<double>(msg->height) / imgSize.height);
 
-            assert(static_cast<std::size_t>(detection.classId) < seenObjects.size());
-            assert(static_cast<std::size_t>(detection.classId) < classes.size());
             assert(static_cast<std::size_t>(detection.classId) < mObjectHitCounts.size());
 
             if (seenObjects[detection.classId]) return;
@@ -250,7 +166,7 @@ namespace mrover {
             // Get the object's position in 3D from the point cloud and run this statement if the optional has a value
             if (std::optional<SE3d> objectInCamera = getObjectInCamFromPixel(msg, centerWidth, centerHeight, box.width, box.height)) {
                 try {
-                    std::string objectImmediateFrame = std::format("immediate{}", classes[detection.classId]);
+                    std::string objectImmediateFrame = std::format("immediate{}", detection.className);
                     // Push the immediate detections to the camera frame
                     SE3Conversions::pushToTfTree(mTfBroadcaster, objectImmediateFrame, mCameraFrameId, objectInCamera.value());
                     // Since the object is seen we need to increment the hit counter
@@ -258,7 +174,7 @@ namespace mrover {
 
                     // Only publish to permament if we are confident in the object
                     if (mObjectHitCounts[detection.classId] > mObjHitThreshold) {
-                        std::string objectPermanentFrame = classes[detection.classId];
+                        std::string objectPermanentFrame = detection.className;
                         // Grab the object inside of the camera frame and push it into the map frame
                         SE3d objectInMap = SE3Conversions::fromTfTree(mTfBuffer, objectImmediateFrame, mMapFrame);
                         SE3Conversions::pushToTfTree(mTfBroadcaster, objectPermanentFrame, mMapFrame, objectInMap);

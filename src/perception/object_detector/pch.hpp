@@ -45,5 +45,5 @@
 #include <mrover/ObjectDetectorParamsConfig.h>
 
 //Object Detector Includes
-#include "inference_wrapper.hpp"
 #include "point.hpp"
+#include <learning.hpp>

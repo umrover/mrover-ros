@@ -4,13 +4,6 @@
 
 namespace mrover {
     //Data type for detection
-    struct Detection {
-        int classId{};
-        std::string className;
-        float confidence{};
-        cv::Rect box;
-    };
-
     class ObjectDetectorNodelet : public nodelet::Nodelet {
 
         std::string mModelName;
@@ -18,13 +11,11 @@ namespace mrover {
         LoopProfiler mLoopProfiler{"Object Detector", 1};
         static constexpr bool mEnableLoopProfiler = false;
 
+        Learning mLearning;
+
         cv::Mat mImg;
 
-        std::vector<std::string> classes{"bottle", "hammer"};
-
         ros::NodeHandle mNh, mPnh;
-
-        InferenceWrapper mInferenceWrapper;
 
         ros::Publisher mDebugImgPub;
 
@@ -34,8 +25,6 @@ namespace mrover {
 
         dynamic_reconfigure::Server<ObjectDetectorParamsConfig> mConfigServer;
         dynamic_reconfigure::Server<ObjectDetectorParamsConfig>::CallbackType mCallbackType;
-
-        cv::dnn::Net mNet;
 
         tf2_ros::Buffer mTfBuffer;
         tf2_ros::TransformListener mTfListener{mTfBuffer};
@@ -72,17 +61,7 @@ namespace mrover {
 
         auto publishImg(cv::Mat const& img) -> void;
 
-        auto parseModelOutput(cv::Mat& output, 
-                              std::vector<Detection>& detections, 
-                              float modelScoreThreshold = 0.75, 
-                              float modelNMSThreshold = 0.5) -> void;
-
         static auto drawOnImage(cv::Mat& image, const std::vector<Detection>& detections) -> void;
-
-        auto modelForwardPass(cv::Mat& image, 
-                              std::vector<Detection>& detections, 
-                              float modelScoreThreshold = 0.75, 
-                              float modelNMSThreshold = 0.5) -> void;
 
     public:
         ObjectDetectorNodelet() = default;

@@ -3,6 +3,8 @@
 
 using namespace std;
 
+Learning::Learning() = default;
+
 Learning::Learning(string& modelName) : mModelName{std::move(modelName)}{
 
     //Init Model Path
@@ -13,7 +15,9 @@ Learning::Learning(string& modelName) : mModelName{std::move(modelName)}{
     mInferenceWrapper = InferenceWrapper{modelPath, mModelName};
 }
 
-auto Learning::modelForwardPass(cv::Mat& blob, std::vector<Detection>& detections, float modelScoreThreshold, float modelNMSThreshold) -> void{
+Learning::~Learning() = default;
+
+auto Learning::modelForwardPass(const cv::Mat& blob, std::vector<Detection>& detections, float modelScoreThreshold, float modelNMSThreshold) -> void{
     mInferenceWrapper.doDetections(blob);
     cv::Mat output = mInferenceWrapper.getOutputTensor();
     parseModelOutput(output, detections, modelScoreThreshold, modelNMSThreshold);
@@ -31,7 +35,8 @@ auto Learning::parseModelOutput(cv::Mat& output, std::vector<Detection>& detecti
 
         // The output of the model is a batchSizex84x8400 matrix
         // This converts the model to a TODO: Check this dimensioning
-        cv::transpose(output.reshape(1, dimensions), output);
+        output = output.reshape(1, dimensions);
+        cv::transpose(output, output);
 
         // This function expects the image to already be in the correct format thus no distrotion is needed
         const float xFactor = 1.0;

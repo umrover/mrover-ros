@@ -24,10 +24,13 @@ private:
                           float modelNMSThreshold = 0.5) -> void;
 
 public:
+    Learning();
+
     Learning(std::string& modelName);
+
     ~Learning();
 
-    auto modelForwardPass(cv::Mat& blob, 
+    auto modelForwardPass(const cv::Mat& blob, 
                           std::vector<Detection>& detections, 
                           float modelScoreThreshold = 0.75, 
                           float modelNMSThreshold = 0.5) -> void;
