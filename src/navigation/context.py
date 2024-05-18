@@ -372,6 +372,7 @@ class Context:
 
         # change all unidentified points to have a slight cost
         self.env.cost_map.data[self.env.cost_map.data == -1.0] = 0.1  # TODO: find optimal value
+        self.env.cost_map.data[self.env.cost_map.data >= 1] = 1
         self.env.cost_map.data = np.rot90(self.env.cost_map.data, k=3, axes=(0, 1))  # rotate 90 degrees clockwise
 
         # apply kernel to average the map with zero padding

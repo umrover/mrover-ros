@@ -77,14 +77,15 @@ class GpsDriver:
             parsed_latitude = msg.lat
             parsed_longitude = msg.lon
             parsed_altitude = msg.hMSL
-            time = datetime.datetime(year=msg.year, month=msg.month, day=msg.day, hour=msg.hour, second=msg.second)
-            time = rospy.Time(secs=time.timestamp() + (msg.nano / 1e6))
-            if not self.valid_offset:
-                self.time_offset = rospy.Time.now() - time
-                self.valid_offset = True
-
-            time = time + self.time_offset
-            message_header = Header(stamp=time, frame_id="base_link")
+            # TODO(quintin): Use the time from the GPS message
+            # time = datetime.datetime(year=msg.year, month=msg.month, day=msg.day, hour=msg.hour, second=msg.second)
+            # time = rospy.Time(secs=time.timestamp() + (msg.nano / 1e6))
+            # if not self.valid_offset:
+            #     self.time_offset = rospy.Time.now() - time
+            #     self.valid_offset = True
+            #
+            # time = time + self.time_offset
+            message_header = Header(stamp=rospy.Time.now(), frame_id="base_link")
 
             self.gps_pub.publish(
                 NavSatFix(

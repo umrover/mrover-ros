@@ -6,7 +6,7 @@ namespace mrover {
 
     class CostMapNodelet final : public nodelet::Nodelet {
 
-        constexpr static std::int8_t UNKNOWN_COST = -1, FREE_COST = 0, OCCUPIED_COST = 1;
+        constexpr static std::int8_t UNKNOWN_COST = -1, FREE_COST = 0, OCCUPIED_COST = 100;
 
         ros::NodeHandle mNh, mPnh, mCmt;
         ros::Publisher mCostMapPub;
@@ -17,8 +17,12 @@ namespace mrover {
         float mDimension{};     // Dimensions of the square costmap in meters
         double mNormalThreshold = 0.9;
         int mDownSamplingFactor = 4;
-        Eigen::MatrixXf mPointsInMap;
-        Eigen::MatrixXf mNormalsInMap;
+
+        struct CostMapPoint {
+            R3f pointInMap;
+            R3f normalInMap;
+        };
+        std::vector<CostMapPoint> mPointsInMap;
 
         tf2_ros::Buffer mTfBuffer;
         tf2_ros::TransformListener mTfListener{mTfBuffer};

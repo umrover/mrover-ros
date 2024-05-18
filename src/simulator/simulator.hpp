@@ -250,7 +250,8 @@ namespace mrover {
                 mYawDist{0, 0.01};
 
         // drift rate in rad/minute about each axis
-        R3 mOrientationDriftRate{0.0, 0.0, 1.0};
+        // R3 mOrientationDriftRate{0.0, 0.0, 1.0};
+        R3 mOrientationDriftRate = R3::Zero();
         R3 mOrientationDrift = R3::Zero();
 
         bool mIsHeadless{};

@@ -1,4 +1,5 @@
 <launch>
+  <arg name="cost_map" default="true"/>
   <arg name="tag_detector" default="true"/>
   <arg name="object_detector" default="true"/>
 
@@ -13,4 +14,8 @@
   <node if="$(arg object_detector)"
         pkg="nodelet" type="nodelet" name="object_detector" respawn="true"
         args="load mrover/ObjectDetectorNodelet perception_nodelet_manager" output="screen"/>
+
+  <node if="$(arg cost_map)"
+        pkg="nodelet" type="nodelet" name="cost_map"
+        args="load mrover/CostMapNodelet perception_nodelet_manager" output="screen"/>
 </launch>

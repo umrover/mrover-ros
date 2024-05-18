@@ -19,6 +19,10 @@ using R2 = Eigen::Vector2d;
 using R3 = Eigen::Vector3d;
 using S3 = Eigen::Quaterniond;
 
+using R2f = Eigen::Vector2f;
+using R3f = Eigen::Vector3f;
+using S3f = Eigen::Quaternionf;
+
 class SE3Conversions {
 public:
     static auto fromTf(geometry_msgs::Transform const& transform) -> SE3d;
