@@ -9,8 +9,6 @@ namespace mrover {
         auto defaultDetectorParams = cv::makePtr<cv::aruco::DetectorParameters>();
         int dictionaryNumber;
 
-        mNh.param<bool>("use_odom_frame", mUseOdom, false);
-        mNh.param<std::string>("odom_frame", mOdomFrameId, "odom");
         mNh.param<std::string>("world_frame", mMapFrameId, "map");
         mNh.param<std::string>("camera_frame", mCameraFrameId, "zed_left_camera_frame");
 
@@ -90,7 +88,7 @@ namespace mrover {
                            mDetectorParams->polygonalApproxAccuracyRate,
                            defaultDetectorParams->polygonalApproxAccuracyRate);
 
-        NODELET_INFO("Tag detection ready, use odom frame: %s, min hit count: %d, max hit count: %d, hit increment weight: %d, hit decrement weight: %d", mUseOdom ? "true" : "false", mMinHitCountBeforePublish, mMaxHitCount, mTagIncrementWeight, mTagDecrementWeight);
+        NODELET_INFO("Tag detection ready, min hit count: %d, max hit count: %d, hit increment weight: %d, hit decrement weight: %d", mMinHitCountBeforePublish, mMaxHitCount, mTagIncrementWeight, mTagDecrementWeight);
     }
 
     auto TagDetectorNodelet::configCallback(DetectorParamsConfig const& config, uint32_t level) const -> void {

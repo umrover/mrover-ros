@@ -82,7 +82,7 @@ namespace mrover {
 
             if (tag.tagInCam) {
                 // Publish tag to immediate
-                std::string immediateFrameId = std::format("immediateFiducial{}", tag.id);
+                std::string immediateFrameId = std::format("immediateTag{}", tag.id);
                 SE3Conversions::pushToTfTree(mTfBroadcaster, immediateFrameId, mCameraFrameId, tag.tagInCam.value());
             }
         }
@@ -106,11 +106,11 @@ namespace mrover {
         for (auto const& [id, tag]: mTags) {
             if (tag.hitCount >= mMinHitCountBeforePublish && tag.tagInCam) {
                 try {
-                    std::string immediateFrameId = std::format("immediateFiducial{}", tag.id);
-                    // Publish tag to odom
-                    std::string const& parentFrameId = mUseOdom ? mOdomFrameId : mMapFrameId;
-                    SE3d tagInParent = SE3Conversions::fromTfTree(mTfBuffer, immediateFrameId, parentFrameId);
-                    SE3Conversions::pushToTfTree(mTfBroadcaster, std::format("fiducial{}", tag.id), parentFrameId, tagInParent);
+                    // Use the TF tree to transform the tag from the camera frame to the map frame
+                    // Then publish it in the map frame persistently
+                    std::string immediateFrameId = std::format("immediateTag{}", tag.id);
+                    SE3d tagInParent = SE3Conversions::fromTfTree(mTfBuffer, immediateFrameId, mMapFrameId);
+                    SE3Conversions::pushToTfTree(mTfBroadcaster, std::format("tag{}", tag.id), mMapFrameId, tagInParent);
                 } catch (tf2::ExtrapolationException const&) {
                     NODELET_WARN("Old data for immediate tag");
                 } catch (tf2::LookupException const&) {

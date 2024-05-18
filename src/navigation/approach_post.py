@@ -1,12 +1,10 @@
-import tf2_ros
-
-from util.ros_utils import get_rosparam
-from util.state_lib.state import State
 from typing import Optional
+
 import numpy as np
 
 from navigation import state, recovery
 from navigation.approach_target_base import ApproachTargetBaseState
+from util.state_lib.state import State
 
 
 class ApproachPostState(ApproachTargetBaseState):
@@ -23,14 +21,14 @@ class ApproachPostState(ApproachTargetBaseState):
     def on_exit(self, context):
         pass
 
-    def get_target_pos(self, context) -> Optional[np.ndarray]:
-        # return fid_pos, either position or None
-        fid_pos = context.env.current_target_pos()
-        return fid_pos
+    def get_target_position(self, context) -> Optional[np.ndarray]:
+        tag_position = context.env.current_target_pos()
+        return tag_position
 
-    def determine_next(self, context, finished: bool) -> State:
-        if finished:
+    def determine_next(self, context, is_finished: bool) -> State:
+        if is_finished:
             return state.DoneState()
+
         if context.rover.stuck:
             context.rover.previous_state = self
             return recovery.RecoveryState()

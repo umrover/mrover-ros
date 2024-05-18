@@ -26,8 +26,7 @@ namespace mrover {
         tf2_ros::TransformBroadcaster mTfBroadcaster;
 
         bool mEnableDetections = true;
-        bool mUseOdom{};
-        std::string mOdomFrameId, mMapFrameId, mCameraFrameId;
+        std::string mMapFrameId, mCameraFrameId;
         bool mPublishImages{}; // If set, we publish the images with the tags drawn on top
         int mMinHitCountBeforePublish{};
         int mMaxHitCount{};

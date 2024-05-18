@@ -1,15 +1,16 @@
 from __future__ import annotations
+
 from dataclasses import dataclass, field
+from typing import Tuple
 
 import numpy as np
-import tf2_ros
-import rospy
 
-from .np_utils import numpify
+import rospy
+import tf2_ros
 from geometry_msgs.msg import TransformStamped, Vector3, Quaternion
 from std_msgs.msg import Time
-from typing import Tuple
 from .SO3 import SO3
+from .np_utils import numpify
 
 
 @dataclass(frozen=True)

@@ -1,17 +1,17 @@
-import tf2_ros
+from typing import ClassVar
 
-from util.ros_utils import get_rosparam
+import rospy
+from navigation import search, recovery, post_backup, state
+from navigation.context import Context
 from util.state_lib.state import State
-
-from navigation import search, recovery, approach_post, post_backup, state, approach_object, long_range
 
 
 class WaypointState(State):
-    STOP_THRESH = get_rosparam("waypoint/stop_thresh", 0.5)
-    DRIVE_FWD_THRESH = get_rosparam("waypoint/drive_fwd_thresh", 0.34)  # 20 degrees
-    NO_FIDUCIAL = get_rosparam("waypoint/no_fiducial", -1)
+    STOP_THRESHOLD = rospy.get_param("waypoint/stop_threshold")
+    DRIVE_FORWARD_THRESHOLD = rospy.get_param("waypoint/drive_forward_threshold")
+    NO_TAG: ClassVar[int] = -1
 
-    def on_enter(self, context) -> None:
+    def on_enter(self, context: Context) -> None:
         context.env.arrived_at_waypoint = False
 
     def on_exit(self, context) -> None:
@@ -40,34 +40,26 @@ class WaypointState(State):
             return approach_state
 
         # Attempt to find the waypoint in the TF tree and drive to it
-        try:
-            waypoint_pos = context.course.current_waypoint_pose().position
-            cmd_vel, arrived = context.rover.driver.get_drive_command(
-                waypoint_pos,
-                context.rover.get_pose(),
-                self.STOP_THRESH,
-                self.DRIVE_FWD_THRESH,
-            )
-            if arrived:
-                context.env.arrived_at_waypoint = True
-                if not context.course.look_for_post() and not context.course.look_for_object():
-                    # We finished a regular waypoint, go onto the next one
-                    context.course.increment_waypoint()
-                else:
-                    # We finished a waypoint associated with a post or mallet, but we have not seen it yet.
-                    return search.SearchState()
+        waypoint_pos = context.course.current_waypoint_pose().position
+        cmd_vel, arrived = context.rover.driver.get_drive_command(
+            waypoint_pos,
+            context.rover.get_pose(),
+            self.STOP_THRESHOLD,
+            self.DRIVE_FORWARD_THRESHOLD,
+        )
+        if arrived:
+            context.env.arrived_at_waypoint = True
+            if not context.course.look_for_post() and not context.course.look_for_object():
+                # We finished a regular waypoint, go onto the next one
+                context.course.increment_waypoint()
+            else:
+                # We finished a waypoint associated with a post or mallet, but we have not seen it yet.
+                return search.SearchState()
 
-            if context.rover.stuck:
-                context.rover.previous_state = self
-                return recovery.RecoveryState()
+        if context.rover.stuck:
+            context.rover.previous_state = self
+            return recovery.RecoveryState()
 
-            context.rover.send_drive_command(cmd_vel)
-
-        except (
-            tf2_ros.LookupException,
-            tf2_ros.ConnectivityException,
-            tf2_ros.ExtrapolationException,
-        ):
-            pass
+        context.rover.send_drive_command(cmd_vel)
 
         return self

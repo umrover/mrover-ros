@@ -19,21 +19,19 @@ from mrover.msg import (
     LongRangeTags,
 )
 from mrover.srv import EnableAuton, EnableAutonRequest, EnableAutonResponse
-from navigation.drive import DriveController
 from navigation import approach_post, long_range, approach_object
+from navigation.drive import DriveController
 from std_msgs.msg import Time, Bool
 from util.SE3 import SE3
-from visualization_msgs.msg import Marker
-from util.ros_utils import get_rosparam
 from util.state_lib.state import State
 
-TAG_EXPIRATION_TIME_SECONDS = 60
+TARGET_EXPIRATION_DURATION = rospy.Duration(60)
 
-LONG_RANGE_TAG_EXPIRATION_TIME_SECONDS = get_rosparam("long_range/time_threshold", 5)
-INCREMENT_WEIGHT = get_rosparam("long_range/increment_weight", 5)
-DECREMENT_WEIGHT = get_rosparam("long_range/decrement_weight", 1)
-MIN_HITS = get_rosparam("long_range/min_hits", 3)
-MAX_HITS = get_rosparam("long_range/max_hits", 10)
+LONG_RANGE_TAG_EXPIRATION_DURATION = rospy.Duration(rospy.get_param("long_range/time_threshold"))
+INCREMENT_WEIGHT = rospy.get_param("long_range/increment_weight")
+DECREMENT_WEIGHT = rospy.get_param("long_range/decrement_weight")
+MIN_HITS = rospy.get_param("long_range/min_hits")
+MAX_HITS = rospy.get_param("long_range/max_hits")
 
 REF_LAT = rospy.get_param("gps_linearization/reference_point_latitude")
 REF_LON = rospy.get_param("gps_linearization/reference_point_longitude")
@@ -48,15 +46,8 @@ class Rover:
     previous_state: str
     driver: DriveController = DriveController()
 
-    def get_pose(self, in_odom_frame: bool = False) -> SE3:
-        if in_odom_frame and self.ctx.use_odom:
-            return SE3.from_tf_tree(
-                self.ctx.tf_buffer, parent_frame=self.ctx.odom_frame, child_frame=self.ctx.rover_frame
-            )
-        else:
-            return SE3.from_tf_tree(
-                self.ctx.tf_buffer, parent_frame=self.ctx.world_frame, child_frame=self.ctx.rover_frame
-            )
+    def get_pose(self) -> SE3:
+        return SE3.from_tf_tree(self.ctx.tf_buffer, parent_frame=self.ctx.world_frame, child_frame=self.ctx.rover_frame)
 
     def send_drive_command(self, twist: Twist):
         self.ctx.vel_cmd_publisher.publish(twist)
@@ -75,55 +66,48 @@ class Environment:
     Information such as locations of tags or obstacles
     """
 
+    NO_TAG: ClassVar[int] = -1
+
     ctx: Context
     long_range_tags: LongRangeTagStore
-    NO_FIDUCIAL: ClassVar[int] = -1
     arrived_at_target: bool = False
     arrived_at_waypoint: bool = False
     last_target_location: Optional[np.ndarray] = None
 
-    def get_target_pos(self, id: str, in_odom_frame: bool = True) -> Optional[np.ndarray]:
+    def get_target_position(self, frame: str) -> Optional[np.ndarray]:
         """
-        Retrieves the pose of the given target from the TF tree in the odom frame (if in_odom_frame is True otherwise in
-        the world frame) if it exists and is more recent than TAG_EXPIRATION_TIME_SECONDS, otherwise returns None
-        :param id: id of what we want from the TF tree. Could be for a fiducial, the hammer, or the water bottle
-        :param in_odom_frame: bool for if we are in the odom fram or world frame
-        :return: pose of the target or None
+        Retrieves the pose of the target in the world frame if:
+        1) It exists
+        2) It is not too old (older than TARGET_EXPIRATION_TIME_SECONDS)
+        :param frame:   Target frame name. Could be for a tag, the hammer, or the water bottle.
+        :return:        Pose of the target or None.
         """
         try:
-            parent_frame = self.ctx.odom_frame if in_odom_frame else self.ctx.world_frame
-            target_pose, time = SE3.from_tf_time(self.ctx.tf_buffer, parent_frame=parent_frame, child_frame=id)
-            now = rospy.Time.now()
-            if now.to_sec() - time.to_sec() >= TAG_EXPIRATION_TIME_SECONDS:
-                return None
-        except (
-            tf2_ros.LookupException,
-            tf2_ros.ConnectivityException,
-            tf2_ros.ExtrapolationException,
-        ):
+            target_pose, time = SE3.from_tf_time(
+                self.ctx.tf_buffer, parent_frame=self.ctx.world_frame, child_frame=frame
+            )
+        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
+            return None
+
+        if rospy.Time.now() - time > TARGET_EXPIRATION_DURATION:
             return None
         return target_pose.position
 
-    def current_target_pos(self, odom_override: bool = True) -> Optional[np.ndarray]:
-        """
-        Retrieves the position of the current fiducial or object (and we are looking for it)
-        :param odom_override: if false will force it to be in the map frame
-        """
-        assert self.ctx.course
-        in_odom = self.ctx.use_odom and odom_override
+    def current_target_pos(self) -> Optional[np.ndarray]:
         current_waypoint = self.ctx.course.current_waypoint()
         if current_waypoint is None:
             rospy.logwarn("Current waypoint is empty!")
             return None
 
-        if current_waypoint.type.val == WaypointType.POST:
-            return self.get_target_pos(f"fiducial{current_waypoint.tag_id}", in_odom)
-        elif current_waypoint.type.val == WaypointType.MALLET:
-            return self.get_target_pos("hammer", in_odom)
-        elif current_waypoint.type.val == WaypointType.WATER_BOTTLE:
-            return self.get_target_pos("bottle", in_odom)
-        else:
-            return None
+        match current_waypoint.type.val:
+            case WaypointType.POST:
+                return self.get_target_position(f"tag{current_waypoint.tag_id}")
+            case WaypointType.MALLET:
+                return self.get_target_position("hammer")
+            case WaypointType.WATER_BOTTLE:
+                return self.get_target_position("bottle")
+            case _:
+                return None
 
 
 class LongRangeTagStore:
@@ -137,16 +121,16 @@ class LongRangeTagStore:
         tag: LongRangeTag
         time: rospy.Time
 
-    ctx: Context
-    __data: dict[int, TagData]
-    min_hits: int
-    max_hits: int
+    _data: dict[int, TagData]
+    _context: Context
+    _min_hits: int
+    _max_hits: int
 
-    def __init__(self, ctx: Context, min_hits: int = MIN_HITS, max_hits: int = MAX_HITS) -> None:
-        self.ctx = ctx
-        self.__data = {}
-        self.min_hits = min_hits
-        self.max_hits = max_hits
+    def __init__(self, context: Context, min_hits: int = MIN_HITS, max_hits: int = MAX_HITS) -> None:
+        self._data = {}
+        self._context = context
+        self._min_hits = min_hits
+        self._max_hits = max_hits
 
     def push_frame(self, tags: List[LongRangeTag]) -> None:
         """
@@ -154,53 +138,47 @@ class LongRangeTagStore:
         If it does include it, we will increment our hit count for that tag id, store the new tag information, and reset the time we saw it.
         If it does not include it, we will decrement our hit count for that tag id, and if the hit count becomes zero, then we remove it from our stored list.
         If there are tag ids in the new message that we don't have stored, we will add it to our stored list.
-        :param tags: a list of LongRangeTags sent by perception, which includes an id and bearing for each tag in the list
+        :param tags: A list of LongRangeTags sent by perception, which includes an id and bearing for each tag in the list
         """
         # Update our current tags
         tags_ids = [tag.id for tag in tags]
-        for _, cur_tag in list(self.__data.items()):
-            # if we don't see one of our tags in the new message, decrement its hit count
+        for _, cur_tag in list(self._data.items()):
+            # If we don't see one of our tags in the new message, decrement its hit count
             if cur_tag.tag.id not in tags_ids:
                 cur_tag.hit_count -= DECREMENT_WEIGHT
                 if cur_tag.hit_count <= 0:
                     cur_tag.hit_count = 0
-                    # if we haven't seen the tag in a while, remove it from our list
-                    time_difference = rospy.get_time() - cur_tag.time
-                    if time_difference > LONG_RANGE_TAG_EXPIRATION_TIME_SECONDS:
-                        del self.__data[cur_tag.tag.id]
-            # if we do see one of our tags in the new message, increment its hit count
+                    # If we haven't seen the tag in a while, remove it from our list
+                    time_difference = rospy.Time.now() - cur_tag.time
+                    if time_difference > LONG_RANGE_TAG_EXPIRATION_DURATION:
+                        del self._data[cur_tag.tag.id]
+            # If we do see one of our tags in the new message, increment its hit count
             else:
                 cur_tag.hit_count += INCREMENT_WEIGHT
-                if cur_tag.hit_count > self.max_hits:
-                    cur_tag.hit_count = self.max_hits
+                if cur_tag.hit_count > self._max_hits:
+                    cur_tag.hit_count = self._max_hits
 
         # Add newly seen tags to our data structure and update current tag's information
         for tag in tags:
-            if tag.id not in self.__data:
-                self.__data[tag.id] = self.TagData(hit_count=INCREMENT_WEIGHT, tag=tag, time=rospy.get_time())
+            if tag.id not in self._data:
+                self._data[tag.id] = self.TagData(hit_count=INCREMENT_WEIGHT, tag=tag, time=rospy.Time.now())
             else:
-                self.__data[tag.id].tag = tag
-                self.__data[tag.id].time = rospy.get_time()
+                self._data[tag.id].tag = tag
+                self._data[tag.id].time = rospy.Time.now()
 
-    def get(self, tag_id: int) -> Optional[LongRangeTag]:
+    def query(self, tag_id: int) -> Optional[TagData]:
         """
         Returns the corresponding tag if the tag has been seen by the long range camera enough times recently
-        :param tag_id: id corresponding to the tag we want to return
-        :return: LongRangeTag if we have seen the tag enough times recently in the long range camera, otherwise return None
+        :param tag_id:  ID corresponding to the tag we want to return
+        :return:        LongRangeTag if we have seen the tag enough times recently in the long range camera, otherwise return None
         """
-        if len(self.__data) == 0:
+        if not self._data:
             return None
-        if tag_id not in self.__data:
+        if tag_id not in self._data:
             return None
-        time_difference = rospy.get_time() - self.__data[tag_id].time
-        if (
-            # self.__data[tag_id].hit_count >= self.min_hits and
-            time_difference
-            <= LONG_RANGE_TAG_EXPIRATION_TIME_SECONDS
-        ):
-            return self.__data[tag_id].tag
-        else:
+        if rospy.Time.now() - self._data[tag_id].time >= LONG_RANGE_TAG_EXPIRATION_DURATION:
             return None
+        return self._data[tag_id]
 
 
 @dataclass
@@ -213,67 +191,57 @@ class Course:
     def increment_waypoint(self):
         self.waypoint_index += 1
 
-    def waypoint_pose(self, wp_idx: int) -> SE3:
-        """
-        Gets the pose of the waypoint with the given index
-        """
-        waypoint_frame = f"course{wp_idx}"
+    def waypoint_pose(self, index: int) -> SE3:
+        waypoint_frame = f"course{index}"
         return SE3.from_tf_tree(self.ctx.tf_buffer, parent_frame="map", child_frame=waypoint_frame)
 
     def current_waypoint_pose(self) -> SE3:
-        """
-        Gets the pose of the current waypoint
-        """
         return self.waypoint_pose(self.waypoint_index)
 
     def current_waypoint(self) -> Optional[Waypoint]:
         """
-        Returns the currently active waypoint
-
-        :return:    Next waypoint to reach if we have an active course
+        :return: The currently active waypoint if we have an active course
         """
-        if self.course_data is None or self.waypoint_index >= len(self.course_data.waypoints):
+        if self.course_data is None:
+            return None
+        if self.waypoint_index >= len(self.course_data.waypoints):
             return None
         return self.course_data.waypoints[self.waypoint_index]
 
     def look_for_post(self) -> bool:
         """
-        Returns whether the currently active waypoint (if it exists) indicates
-        that we should go to a post
+        :return: Whether the currently active waypoint is a post (if it exists)
         """
-        waypoint = self.current_waypoint()
-        if waypoint is not None:
-            return waypoint.type.val == WaypointType.POST
-        else:
-            return False
+        current_waypoint = self.current_waypoint()
+        return current_waypoint is not None and current_waypoint.type.val == WaypointType.POST
 
     def look_for_object(self) -> bool:
         """
-        Returns whether the currently active waypoint (if it exists) indicates
-        that we should go to either the mallet or the water bottle.
+        :return: Whether the currently active waypoint is an object (if it exists).
+                 Either the mallet or the water bottle.
         """
-        waypoint = self.current_waypoint()
-        if waypoint is not None:
-            return waypoint.type.val == WaypointType.MALLET or waypoint.type.val == WaypointType.WATER_BOTTLE
-        else:
-            return False
+        current_waypoint = self.current_waypoint()
+        return current_waypoint is not None and current_waypoint.type.val in {
+            WaypointType.MALLET,
+            WaypointType.WATER_BOTTLE,
+        }
 
     def is_complete(self) -> bool:
         return self.waypoint_index == len(self.course_data.waypoints)
 
     def get_approach_target_state(self) -> Optional[State]:
         """
-        Returns one of the approach states (ApproachPostState, LongRangeState, or ApproachObjectState)
-        if we are looking for a post or object and we see it in one of the cameras (ZED or long range)
+        :return: One of the approach states (ApproachPostState, LongRangeState, or ApproachObjectState)
+                 if we are looking for a post or object, and we see it in one of the cameras (ZED or long range)
         """
         current_waypoint = self.current_waypoint()
         if self.look_for_post():
-            # if we see the tag in the ZED, go to ApproachPostState
+            # If we see the tag in the ZED, go to ApproachPostState
             if self.ctx.env.current_target_pos() is not None:
                 return approach_post.ApproachPostState()
-            # if we see the tag in the long range camera, go to LongRangeState
+            # If we see the tag in the long range camera, go to LongRangeState
             assert current_waypoint is not None
-            if self.ctx.env.long_range_tags.get(current_waypoint.tag_id) is not None:
+            if self.ctx.env.long_range_tags.query(current_waypoint.tag_id) is not None:
                 return long_range.LongRangeState()
         elif self.look_for_object():
             if self.ctx.env.current_target_pos() is not None:
@@ -283,29 +251,28 @@ class Course:
 
 def setup_course(ctx: Context, waypoints: List[Tuple[Waypoint, SE3]]) -> Course:
     all_waypoint_info = []
-    for wp_idx, (waypoint_info, pose) in enumerate(waypoints):
+    for index, (waypoint_info, pose) in enumerate(waypoints):
         all_waypoint_info.append(waypoint_info)
-        pose.publish_to_tf_tree(tf_broadcaster, "map", f"course{wp_idx}")
-    # make the course out of just the pure waypoint objects which is the 0th elt in the tuple
-    return Course(ctx=ctx, course_data=CourseMsg([waypoint[0] for waypoint in waypoints]))
+        pose.publish_to_tf_tree(tf_broadcaster, "map", f"course{index}")
+    # Make the course out of just the pure waypoint objects which is the 0th element in the tuple
+    return Course(ctx=ctx, course_data=CourseMsg([waypoint for waypoint, _ in waypoints]))
 
 
 def convert_gps_to_cartesian(waypoint: GPSWaypoint) -> Tuple[Waypoint, SE3]:
     """
     Converts a GPSWaypoint into a "Waypoint" used for publishing to the CourseService.
     """
-    # Create odom position based on GPS latitude and longitude
-    odom = np.array(
+    # Create a cartesian position based on GPS latitude and longitude
+    position = np.array(
         pymap3d.geodetic2enu(
             waypoint.latitude_degrees, waypoint.longitude_degrees, 0.0, REF_LAT, REF_LON, 0.0, deg=True
         )
     )
-    # zero the z-coordinate of the odom because even though the altitudes are set to zero,
-    # two points on a sphere are not going to have the same z coordinate
-    # navigation algorithms currently require all coordinates to have zero as the z coordinate
-    odom[2] = 0
-
-    return Waypoint(tag_id=waypoint.tag_id, type=waypoint.type), SE3(position=odom)
+    # Zero the z-coordinate because even though the altitudes are set to zero,
+    # Two points on a sphere are not going to have the same z-coordinate.
+    # Navigation algorithms currently require all coordinates to have zero as the z-coordinate.
+    position[2] = 0
+    return Waypoint(tag_id=waypoint.tag_id, type=waypoint.type), SE3(position=position)
 
 
 def convert_cartesian_to_gps(coordinate: np.ndarray) -> GPSWaypoint:
@@ -328,7 +295,6 @@ class Context:
     tf_listener: tf2_ros.TransformListener
     vel_cmd_publisher: rospy.Publisher
     search_point_publisher: rospy.Publisher
-    vis_publisher: rospy.Publisher
     course_listener: rospy.Subscriber
     stuck_listener: rospy.Subscriber
     tag_data_listener: rospy.Subscriber
@@ -340,16 +306,13 @@ class Context:
     disable_requested: bool
 
     # ROS Params from localization.yaml
-    use_odom: bool
     world_frame: str
-    odom_frame: str
     rover_frame: str
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
         self.vel_cmd_publisher = rospy.Publisher("navigation_cmd_vel", Twist, queue_size=1)
-        self.vis_publisher = rospy.Publisher("nav_vis", Marker, queue_size=1)
         self.search_point_publisher = rospy.Publisher("search_path", GPSPointList, queue_size=1)
         self.enable_auton_service = rospy.Service("enable_auton", EnableAuton, self.recv_enable_auton)
         self.stuck_listener = rospy.Subscriber("nav_stuck", Bool, self.stuck_callback)
@@ -357,9 +320,7 @@ class Context:
         self.rover = Rover(self, False, "")
         self.env = Environment(self, long_range_tags=LongRangeTagStore(self))
         self.disable_requested = False
-        self.use_odom = rospy.get_param("use_odom_frame")
         self.world_frame = rospy.get_param("world_frame")
-        self.odom_frame = rospy.get_param("odom_frame")
         self.rover_frame = rospy.get_param("rover_frame")
         self.tag_data_listener = rospy.Subscriber("tags", LongRangeTags, self.tag_data_callback)
 
@@ -370,7 +331,7 @@ class Context:
             self.disable_requested = True
         return EnableAutonResponse(True)
 
-    def stuck_callback(self, msg: Bool):
+    def stuck_callback(self, msg: Bool) -> None:
         self.rover.stuck = msg.data
 
     def tag_data_callback(self, tags: LongRangeTags) -> None:

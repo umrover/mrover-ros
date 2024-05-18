@@ -29,11 +29,8 @@ auto main(int argc, char** argv) -> int {
     ros::init(argc, argv, "pose_filter");
     ros::NodeHandle nh;
 
-    auto useOdomFrame = nh.param<bool>("use_odom", false);
     auto roverFrame = nh.param<std::string>("rover_frame", "base_link");
     auto mapFrame = nh.param<std::string>("map_frame", "map");
-
-    if (useOdomFrame) throw std::runtime_error{"Not supported"};
 
     tf2_ros::Buffer tfBuffer;
     tf2_ros::TransformListener tfListener{tfBuffer};

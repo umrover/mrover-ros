@@ -5,13 +5,12 @@ import numpy as np
 
 import rospy
 from util.np_utils import rotate_2d
-from util.ros_utils import get_rosparam
 from util.state_lib.state import State
 
-STOP_THRESH = get_rosparam("recovery/stop_thresh", 0.2)
-DRIVE_FWD_THRESH = get_rosparam("recovery/drive_fwd_thresh", 0.34)  # 20 degrees
-RECOVERY_DISTANCE = get_rosparam("recovery/recovery_distance", 1.0)
-GIVE_UP_TIME = get_rosparam("recovery/give_up_time", 10.0)
+STOP_THRESH = rospy.get_param("recovery/stop_threshold")
+DRIVE_FWD_THRESH = rospy.get_param("recovery/drive_forward_threshold")
+RECOVERY_DISTANCE = rospy.get_param("recovery/recovery_distance")
+GIVE_UP_TIME = rospy.get_param("recovery/give_up_time")
 
 
 class JTurnAction(Enum):

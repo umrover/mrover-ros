@@ -4,24 +4,19 @@ from dataclasses import dataclass
 from typing import Optional
 
 import numpy as np
-import rospy
-import tf2_ros
 from shapely.geometry import Point, LineString
 
-from util.SE3 import SE3
-from util.np_utils import perpendicular_2d
-from util.ros_utils import get_rosparam
-from util.state_lib.state import State
-
+import rospy
 from navigation import waypoint, recovery
 from navigation.trajectory import Trajectory
+from util.SE3 import SE3
+from util.np_utils import perpendicular_2d
+from util.state_lib.state import State
 
-POST_RADIUS = get_rosparam("single_fiducial/post_radius", 0.7) * get_rosparam(
-    "single_fiducial/post_avoidance_multiplier", 1.42
-)
-BACKUP_DISTANCE = get_rosparam("recovery/recovery_distance", 2.0)
-STOP_THRESH = get_rosparam("search/stop_thresh", 0.2)
-DRIVE_FWD_THRESH = get_rosparam("search/drive_fwd_thresh", 0.34)
+POST_RADIUS = rospy.get_param("single_tag/post_radius") * rospy.get_param("single_tag/post_avoidance_multiplier")
+BACKUP_DISTANCE = rospy.get_param("recovery/recovery_distance")
+STOP_THRESH = rospy.get_param("search/stop_threshold")
+DRIVE_FWD_THRESH = rospy.get_param("search/drive_forward_threshold")
 
 
 @dataclass
@@ -47,7 +42,6 @@ class AvoidPostTrajectory(Trajectory):
         Then the trajectory is backup_point, avoidance_point where we drive backwards to
         the backup_point and forwards to the avoidance_point.
         """
-
         rover_pos = rover_pose.position
         rover_direction = rover_pose.rotation.direction_vector()
 
@@ -109,39 +103,32 @@ class PostBackupState(State):
             self.traj.cur_pt = 0
 
     def on_loop(self, context) -> State:
-        try:
-            if self.traj is None:
+        if self.traj is None:
+            return waypoint.WaypointState()
+
+        target_pos = self.traj.get_cur_pt()
+
+        # we drive backwards to the first point in this trajectory
+        point_index = self.traj.cur_pt
+        drive_backwards = point_index == 0
+
+        cmd_vel, arrived = context.rover.driver.get_drive_command(
+            target_pos,
+            context.rover.get_pose(),
+            STOP_THRESH,
+            DRIVE_FWD_THRESH,
+            drive_back=drive_backwards,
+        )
+        if arrived:
+            rospy.loginfo(f"Arrived at point indexed: {point_index}")
+            if self.traj.increment_point():
+                self.traj = None
                 return waypoint.WaypointState()
 
-            target_pos = self.traj.get_cur_pt()
+        if context.rover.stuck:
+            context.rover.previous_state = self
+            self.traj = None
+            return recovery.RecoveryState()
 
-            # we drive backwards to the first point in this trajectory
-            point_index = self.traj.cur_pt
-            drive_backwards = point_index == 0
-
-            cmd_vel, arrived = context.rover.driver.get_drive_command(
-                target_pos,
-                context.rover.get_pose(),
-                STOP_THRESH,
-                DRIVE_FWD_THRESH,
-                drive_back=drive_backwards,
-            )
-            if arrived:
-                rospy.loginfo(f"Arrived at point indexed: {point_index}")
-                if self.traj.increment_point():
-                    self.traj = None
-                    return waypoint.WaypointState()
-
-            if context.rover.stuck:
-                context.rover.previous_state = self
-                self.traj = None
-                return recovery.RecoveryState()
-
-            context.rover.send_drive_command(cmd_vel)
-            return self
-        except (
-            tf2_ros.LookupException,
-            tf2_ros.ConnectivityException,
-            tf2_ros.ExtrapolationException,
-        ):
-            return self
+        context.rover.send_drive_command(cmd_vel)
+        return self

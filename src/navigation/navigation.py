@@ -1,21 +1,18 @@
 #!/usr/bin/env python3
-
 import threading
 
 import rospy
-
 from util.state_lib.state_machine import StateMachine
 from util.state_lib.state_publisher_server import StatePublisher
-
+from navigation.approach_object import ApproachObjectState
 from navigation.approach_post import ApproachPostState
 from navigation.context import Context
+from navigation.long_range import LongRangeState
 from navigation.post_backup import PostBackupState
 from navigation.recovery import RecoveryState
 from navigation.search import SearchState
 from navigation.state import DoneState, OffState, off_check
 from navigation.waypoint import WaypointState
-from navigation.approach_object import ApproachObjectState
-from navigation.long_range import LongRangeState
 
 
 class Navigation(threading.Thread):

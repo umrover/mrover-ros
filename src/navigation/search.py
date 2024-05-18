@@ -4,21 +4,19 @@ from dataclasses import dataclass
 from typing import Optional
 
 import numpy as np
+
+import rospy
 from mrover.msg import GPSPointList, WaypointType
-
-
-from util.ros_utils import get_rosparam
-from util.state_lib.state import State
-
-from navigation import approach_post, approach_object, recovery, waypoint, long_range
+from navigation import recovery, waypoint
 from navigation.context import convert_cartesian_to_gps
 from navigation.trajectory import Trajectory
+from util.state_lib.state import State
 
 
 @dataclass
 class SearchTrajectory(Trajectory):
-    # Associated fiducial for this trajectory
-    fid_id: int
+    # Associated tag for this trajectory
+    tag_id: int
 
     @classmethod
     def gen_spiral_coordinates(
@@ -54,7 +52,7 @@ class SearchTrajectory(Trajectory):
         coverage_radius: float,
         distance_between_spirals: float,
         segments_per_rotation: int,
-        fid_id: int,
+        tag_id: int,
     ) -> SearchTrajectory:
         """
         Generates a square spiral search pattern around a center position, assumes rover is at the center position
@@ -62,7 +60,7 @@ class SearchTrajectory(Trajectory):
         :param coverage_radius:     radius of the spiral search pattern (float)
         :param distance_between_spirals:    distance between each spiral (float)
         :param segments_per_rotation:     number of segments per spiral (int), for example, 4 segments per rotation would be a square spiral, 8 segments per rotation would be an octagonal spiral
-        :param fid_id:      tag id to associate with this trajectory (int)
+        :param tag_id:      tag id to associate with this trajectory (int)
         :return:    SearchTrajectory object
         """
         zero_centered_spiral_r2 = cls.gen_spiral_coordinates(
@@ -77,7 +75,7 @@ class SearchTrajectory(Trajectory):
         )
         return SearchTrajectory(
             spiral_coordinates_r3,
-            fid_id,
+            tag_id,
         )
 
 
@@ -86,14 +84,14 @@ class SearchState(State):
     prev_target: Optional[np.ndarray] = None
     is_recovering: bool = False
 
-    STOP_THRESH = get_rosparam("search/stop_thresh", 0.5)
-    DRIVE_FWD_THRESH = get_rosparam("search/drive_fwd_thresh", 0.34)  # 20 degrees
-    SPIRAL_COVERAGE_RADIUS = get_rosparam("search/coverage_radius", 20)
-    SEGMENTS_PER_ROTATION = get_rosparam("search/segments_per_rotation", 8)
-    DISTANCE_BETWEEN_SPIRALS = get_rosparam("search/distance_between_spirals", 3)
+    STOP_THRESH = rospy.get_param("search/stop_threshold")
+    DRIVE_FORWARD_THRESHOLD = rospy.get_param("search/drive_forward_threshold")
+    SPIRAL_COVERAGE_RADIUS = rospy.get_param("search/coverage_radius")
+    SEGMENTS_PER_ROTATION = rospy.get_param("search/segments_per_rotation")
+    DISTANCE_BETWEEN_SPIRALS = rospy.get_param("search/distance_between_spirals")
 
-    OBJECT_SPIRAL_COVERAGE_RADIUS = get_rosparam("object_search/coverage_radius", 10)
-    OBJECT_DISTANCE_BETWEEN_SPIRALS = get_rosparam("object_search/distance_between_spirals", 3)
+    OBJECT_SPIRAL_COVERAGE_RADIUS = rospy.get_param("object_search/coverage_radius")
+    OBJECT_DISTANCE_BETWEEN_SPIRALS = rospy.get_param("object_search/distance_between_spirals")
 
     def on_enter(self, context) -> None:
         search_center = context.course.current_waypoint()
@@ -127,12 +125,12 @@ class SearchState(State):
             target_pos,
             context.rover.get_pose(),
             self.STOP_THRESH,
-            self.DRIVE_FWD_THRESH,
+            self.DRIVE_FORWARD_THRESHOLD,
             path_start=self.prev_target,
         )
         if arrived:
             self.prev_target = target_pos
-            # if we finish the spiral without seeing the fiducial, move on with course
+            # If we finish the spiral without seeing the tag, move on with course
             if self.traj.increment_point():
                 return waypoint.WaypointState()
 

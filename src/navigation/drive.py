@@ -4,56 +4,44 @@ from enum import Enum
 from typing import Tuple, Optional
 
 import numpy as np
-from geometry_msgs.msg import Twist
-
-from util.SE3 import SE3
-from util.np_utils import angle_to_rotate, normalized
-from util.ros_utils import get_rosparam
 
 import rospy
+from geometry_msgs.msg import Twist
+from util.SE3 import SE3
+from util.np_utils import angle_to_rotate, normalized
 
-default_constants = {
-    "max_driving_effort": 1.0,
-    "min_driving_effort": -1.0,
-    "turning_p": 10.0,
-    "max_turning_effort": 1.0,
-    "min_turning_effort": -1.0,
-    "driving_p": 1.0,
-}
-ODOM_CONSTANTS = get_rosparam("drive/odom", default_constants)
-MAP_CONSTANTS = get_rosparam("drive/map", default_constants)
-LOOKAHEAD_DISTANCE = get_rosparam("drive/lookahead_distance", 3.0)
+MAX_DRIVING_EFFORT = rospy.get_param("drive/max_driving_effort")
+MIN_DRIVING_EFFORT = rospy.get_param("drive/min_driving_effort")
+MAX_TURNING_EFFORT = rospy.get_param("drive/max_turning_effort")
+MIN_TURNING_EFFORT = rospy.get_param("drive/min_turning_effort")
+TURNING_P = rospy.get_param("drive/turning_p")
+DRIVING_P = rospy.get_param("drive/driving_p")
+LOOKAHEAD_DISTANCE = rospy.get_param("drive/lookahead_distance")
 
 
 class DriveController:
-    _last_angular_error: Optional[float] = None
-    _last_target: Optional[np.ndarray] = None
-
     class DriveMode(Enum):
         TURN_IN_PLACE = 1
         DRIVE_FORWARD = 2
         STOPPED = 3
 
+    _last_angular_error: Optional[float] = None
+    _last_target: Optional[np.ndarray] = None
     _driver_state: DriveMode = DriveMode.STOPPED
 
     def reset(self) -> None:
-        """
-        Resets the drive controller.
-        """
         self._driver_state = self.DriveMode.STOPPED
         self._last_angular_error = None
 
     def _get_state_machine_output(
         self,
-        in_odom: bool,
         angular_error: float,
         linear_error: float,
         completion_thresh: float,
         turn_in_place_thresh: float,
     ) -> Tuple[Twist, bool]:
         """
-        Gets the state machine `output for a given angular and linear error.
-        :param in_odom: whether the angular and linear error are in the odom frame
+        Gets the state machine output for a given angular and linear error.
         :param angular_error: the angular error to the target
         :param linear_error: the linear error to the target
         :param completion_thresh: the threshold for when we are close enough to the target to consider it reached
@@ -61,15 +49,6 @@ class DriveController:
         :return: a tuple of the command to send to the rover and a boolean indicating whether we are at the target
         :modifies: self._driver_state
         """
-
-        # get the correct constants based on whether we are driving in the odom or map frame
-        constants = ODOM_CONSTANTS if in_odom else MAP_CONSTANTS
-        MAX_DRIVING_EFFORT = constants["max_driving_effort"]
-        MIN_DRIVING_EFFORT = constants["min_driving_effort"]
-        MAX_TURNING_EFFORT = constants["max_turning_effort"]
-        MIN_TURNING_EFFORT = constants["min_turning_effort"]
-        TURNING_P = constants["turning_p"]
-        DRIVING_P = constants["driving_p"]
 
         # if we are at the target position, reset the controller and return a zero command
         if abs(linear_error) < completion_thresh:
@@ -91,7 +70,7 @@ class DriveController:
                 return Twist(), False
 
             # IVT (Intermediate Value Theorem) check. If the sign of the angular error has changed, this means we've crossed through 0 error
-            # in order to prevent osciallation, we 'give up' and just switch to the drive forward state
+            # in order to prevent oscillation, we 'give up' and just switch to the drive forward state
             elif self._last_angular_error is not None and np.sign(self._last_angular_error) != np.sign(angular_error):
                 self._driver_state = self.DriveMode.DRIVE_FORWARD
                 return Twist(), False
@@ -125,8 +104,8 @@ class DriveController:
         else:
             raise ValueError(f"Invalid drive state {self._driver_state}")
 
-    def get_lookahead_pt(
-        self: DriveController,
+    @staticmethod
+    def compute_lookahead_point(
         path_start: np.ndarray,
         path_end: np.ndarray,
         rover_pos: np.ndarray,
@@ -134,7 +113,7 @@ class DriveController:
     ) -> np.ndarray:
         """
         Returns a point that the rover should target on the path from the previous target position to the current target position
-        The point is computed by first projecting the rovers position onto the path and then propogating ahead by the lookahead distance
+        The point is computed by first projecting the rovers position onto the path and then propagating ahead by the lookahead distance
         if the target is closer than that then it is returned instead
         :param path_start: the start of the line segment on which to calculate a lookahead point
         :param path_end: the current target position (end of the line segment on which to calculate a lookahead point)
@@ -162,7 +141,6 @@ class DriveController:
         rover_pose: SE3,
         completion_thresh: float,
         turn_in_place_thresh: float,
-        in_odom: bool = False,
         drive_back: bool = False,
         path_start: Optional[np.ndarray] = None,
     ) -> Tuple[Twist, bool]:
@@ -172,7 +150,6 @@ class DriveController:
         :param rover_pose: The current pose of the rover.
         :param completion_thresh: The distance threshold to consider the rover at the target position.
         :param turn_in_place_thresh: The angle threshold to consider the rover facing the target position and ready to drive forward towards it.
-        :param in_odom: Whether to use odom constants or map constants.
         :param drive_back: True if rover should drive backwards, false otherwise.
         :param path_start: If you want the rover to drive on a line segment (and actively try to stay on the line), pass the start of the line segment as this param, otherwise pass None.
         :return: A tuple of the drive command and a boolean indicating whether the rover is at the target position.
@@ -195,7 +172,7 @@ class DriveController:
             return Twist(), True
 
         if path_start is not None:
-            target_pos = self.get_lookahead_pt(path_start, target_pos, rover_pos, LOOKAHEAD_DISTANCE)
+            target_pos = self.compute_lookahead_point(path_start, target_pos, rover_pos, LOOKAHEAD_DISTANCE)
 
         target_dir = target_pos - rover_pos
 
@@ -204,12 +181,10 @@ class DriveController:
             self.reset()
 
         # compute errors
-        linear_error = float(np.linalg.norm(target_dir))
+        linear_error = np.linalg.norm(target_dir)
         angular_error = angle_to_rotate(rover_dir, target_dir)
 
-        output = self._get_state_machine_output(
-            in_odom, angular_error, linear_error, completion_thresh, turn_in_place_thresh
-        )
+        output = self._get_state_machine_output(angular_error, linear_error, completion_thresh, turn_in_place_thresh)
 
         if drive_back:
             output[0].linear.x *= -1
