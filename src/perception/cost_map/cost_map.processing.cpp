@@ -1,5 +1,3 @@
-#include <utility>
-
 #include "cost_map.hpp"
 
 namespace mrover {
@@ -11,25 +9,29 @@ namespace mrover {
 
         if (!mPublishCostMap) return;
 
+        std::uint32_t numPoints = msg->height * msg->width / mDownSamplingFactor / mDownSamplingFactor;
+        mPointsInMap.resize(3, numPoints);
+        mNormalsInMap.resize(3, numPoints);
+
         try {
             SE3f cameraToMap = SE3Conversions::fromTfTree(mTfBuffer, "zed_left_camera_frame", "map").cast<float>();
             auto* points = reinterpret_cast<Point const*>(msg->data.data());
             for (std::size_t i = 0, r = 0; r < msg->height; r += mDownSamplingFactor) {
                 for (std::size_t c = 0; c < msg->width; c += mDownSamplingFactor) {
                     auto* point = points + r * msg->width + c;
-                    Eigen::Vector4f pointInCamera{point->x, point->y, point->z, 1};
-                    Eigen::Vector4f normalInCamera{point->normal_x, point->normal_y, point->normal_z, 0};
+                    Eigen::Vector3f pointInCamera{point->x, point->y, point->z};
+                    Eigen::Vector3f normalInCamera{point->normal_x, point->normal_y, point->normal_z};
 
-                    mPointsInMap.col(static_cast<Eigen::Index>(i)) = cameraToMap.transform() * pointInCamera;
-                    mNormalsInMap.col(static_cast<Eigen::Index>(i)) = cameraToMap.transform() * normalInCamera;
+                    mPointsInMap.col(static_cast<Eigen::Index>(i)) = cameraToMap.act(pointInCamera);
+                    mNormalsInMap.col(static_cast<Eigen::Index>(i)) = cameraToMap.asSO3().act(normalInCamera); // Normal is a direction as should not be affected by translation
                     i++;
                 }
             }
 
-            for (Eigen::Index i = 0; i < mNumPoints; i++) {
+            for (Eigen::Index i = 0; i < numPoints; i++) {
                 double xInMap = mPointsInMap.col(i).x();
                 double yInMap = mPointsInMap.col(i).y();
-                Eigen::Vector3f normalInMap = mNormalsInMap.col(i).head<3>();
+                Eigen::Vector3f normalInMap = mNormalsInMap.col(i);
 
                 if (xInMap >= mGlobalGridMsg.info.origin.position.x && xInMap <= mGlobalGridMsg.info.origin.position.x + mDimension &&
                     yInMap >= mGlobalGridMsg.info.origin.position.y && yInMap <= mGlobalGridMsg.info.origin.position.y + mDimension) {
@@ -45,8 +47,8 @@ namespace mrover {
                 }
             }
             mCostMapPub.publish(mGlobalGridMsg);
-        } catch (...) {
-            // TODO(neven): Catch TF exceptions only, and log warn them
+        } catch (tf2::TransformException const& e) {
+            ROS_WARN_STREAM(std::format("TF tree error processing point cloud: {}", e.what()));
         }
     }
 

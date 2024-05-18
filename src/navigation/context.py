@@ -40,6 +40,7 @@ REF_LON = rospy.get_param("gps_linearization/reference_point_longitude")
 
 tf_broadcaster: tf2_ros.StaticTransformBroadcaster = tf2_ros.StaticTransformBroadcaster()
 
+
 @dataclass
 class Rover:
     ctx: Context
@@ -365,7 +366,9 @@ class Context:
         self.env.cost_map.resolution = msg.info.resolution  # meters/cell
         self.env.cost_map.height = msg.info.height  # cells
         self.env.cost_map.width = msg.info.width  # cells
-        self.env.cost_map.data = np.array(msg.data).reshape((int(self.env.cost_map.height), int(self.env.cost_map.width))).astype(np.float32)
+        self.env.cost_map.data = (
+            np.array(msg.data).reshape((int(self.env.cost_map.height), int(self.env.cost_map.width))).astype(np.float32)
+        )
 
         # change all unidentified points to have a slight cost
         self.env.cost_map.data[self.env.cost_map.data == -1.0] = 0.1  # TODO: find optimal value

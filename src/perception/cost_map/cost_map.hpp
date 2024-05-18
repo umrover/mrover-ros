@@ -17,9 +17,8 @@ namespace mrover {
         float mDimension{};     // Dimensions of the square costmap in meters
         double mNormalThreshold = 0.9;
         int mDownSamplingFactor = 4;
-        std::uint32_t mNumPoints = 640 * 480 / mDownSamplingFactor / mDownSamplingFactor;
-        Eigen::MatrixXf mPointsInMap{4, mNumPoints};
-        Eigen::MatrixXf mNormalsInMap{4, mNumPoints};
+        Eigen::MatrixXf mPointsInMap;
+        Eigen::MatrixXf mNormalsInMap;
 
         tf2_ros::Buffer mTfBuffer;
         tf2_ros::TransformListener mTfListener{mTfBuffer};

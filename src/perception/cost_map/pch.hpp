@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <execution>
+#include <format>
 
 #include <Eigen/Core>
 
@@ -17,5 +18,5 @@
 #include <tf2_ros/transform_listener.h>
 
 #include <lie.hpp>
-#include <point.hpp>
 #include <mrover/MoveCostMap.h>
+#include <point.hpp>
