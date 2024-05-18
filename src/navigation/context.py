@@ -70,7 +70,7 @@ class Environment:
     """
 
     ctx: Context
-    long_range_tags: LongRangeTagStore
+    image_targets: ImageTargetsStore
     cost_map: CostMap
 
     NO_TAG: int = -1
@@ -81,11 +81,8 @@ class Environment:
 
     def get_target_position(self, frame: str) -> Optional[np.ndarray]:
         """
-        Retrieves the pose of the target in the world frame if:
-        1) It exists
-        2) It is not too old (older than TARGET_EXPIRATION_TIME_SECONDS)
         :param frame:   Target frame name. Could be for a tag, the hammer, or the water bottle.
-        :return:        Pose of the target or None.
+        :return:        Pose of the target in the world frame if it exists and is not too old, otherwise None
         """
         try:
             target_pose, time = SE3.from_tf_tree_with_time(
@@ -117,19 +114,18 @@ class Environment:
                 return None
 
 
-class LongRangeTagStore:
+class ImageTargetsStore:
     """
     Context class to represent the tags seen in the long range camera
     """
 
     @dataclass
-    class TagData:
+    class TargetData:
         hit_count: int
-        tag_id: int
-        bearing: float
+        target: ImageTarget
         time: rospy.Time
 
-    _data: dict[int, TagData]
+    _data: dict[str, TargetData]
     _context: Context
     _min_hits: int
     _max_hits: int
@@ -140,23 +136,24 @@ class LongRangeTagStore:
         self._min_hits = min_hits
         self._max_hits = max_hits
 
-    def push_frame(self, tags: List[ImageTarget]) -> None:
+    def push_frame(self, targets: List[ImageTarget]) -> None:
         """
         Loops through our current list of our stored tags and checks if the new message includes each tag or doesn't.
         If it does include it, we will increment our hit count for that tag id, store the new tag information, and reset the time we saw it.
         If it does not include it, we will decrement our hit count for that tag id, and if the hit count becomes zero, then we remove it from our stored list.
         If there are tag ids in the new message that we don't have stored, we will add it to our stored list.
-        :param tags: A list of LongRangeTags sent by perception, which includes an id and bearing for each tag in the list
+        :param targets: A list of image targets sent by perception, which includes an id and bearing for each tag in the list
         """
         # Update our current tags
-        tag_ids = [int(tag.name[3:]) for tag in tags]
+        # Collect the iterator in to a list first since we will be modifying the dictionary
+        target_names = {tag.name for tag in targets}
         for _, stored_tag in list(self._data.items()):
             # If we do see one of our tags in the new message, increment its hit count
-            if stored_tag.tag_id in tag_ids:
+            if stored_tag.target.name in target_names:
                 stored_tag.hit_count += INCREMENT_WEIGHT
                 if stored_tag.hit_count > self._max_hits:
                     stored_tag.hit_count = self._max_hits
-            # If we don't see one of our tags in the new message, decrement its hit count
+            # If we do not see one of our tags in the new message, decrement its hit count
             else:
                 stored_tag.hit_count -= DECREMENT_WEIGHT
                 if stored_tag.hit_count <= 0:
@@ -164,28 +161,25 @@ class LongRangeTagStore:
                     # If we haven't seen the tag in a while, remove it from our list
                     time_difference = rospy.Time.now() - stored_tag.time
                     if time_difference > LONG_RANGE_TAG_EXPIRATION_DURATION:
-                        del self._data[stored_tag.tag_id]
+                        del self._data[stored_tag.target.name]
 
         # Add newly seen tags to our data structure or update current tag's information
-        for tag_id, tag in zip(tag_ids, tags):
-            hit_count = self._data[tag_id].hit_count if tag_id in self._data else INCREMENT_WEIGHT
-            self._data[tag_id] = self.TagData(
-                hit_count=hit_count, tag_id=tag_id, bearing=tag.bearing, time=rospy.Time.now()
-            )
+        for target in targets:
+            hit_count = self._data[target.name].hit_count if target.name in self._data else INCREMENT_WEIGHT
+            self._data[target.name] = self.TargetData(hit_count=hit_count, target=target, time=rospy.Time.now())
 
-    def query(self, tag_id: int) -> Optional[TagData]:
+    def query(self, name: str) -> Optional[TargetData]:
         """
-        Returns the corresponding tag if the tag has been seen by the long range camera enough times recently
-        :param tag_id:  ID corresponding to the tag we want to return
-        :return:        LongRangeTag if we have seen the tag enough times recently in the long range camera, otherwise return None
+        :param name:    Image target name
+        :return:        Image target if it exists and has been seen repeatedly recently, otherwise None
         """
         if not self._data:
             return None
-        if tag_id not in self._data:
+        if name not in self._data:
             return None
-        if rospy.Time.now() - self._data[tag_id].time >= LONG_RANGE_TAG_EXPIRATION_DURATION:
+        if rospy.Time.now() - self._data[name].time >= LONG_RANGE_TAG_EXPIRATION_DURATION:
             return None
-        return self._data[tag_id]
+        return self._data[name]
 
 
 class CostMap:
@@ -261,7 +255,7 @@ class Course:
                 return approach_post.ApproachPostState()
             # If we see the tag in the long range camera, go to LongRangeState
             assert current_waypoint is not None
-            if self.ctx.env.long_range_tags.query(current_waypoint.tag_id) is not None:
+            if self.ctx.env.image_targets.query(f"tag{current_waypoint.tag_id}") is not None:
                 return long_range.LongRangeState()
         elif self.look_for_object():
             if self.ctx.env.current_target_pos() is not None:
@@ -341,7 +335,7 @@ class Context:
         self.stuck_listener = rospy.Subscriber("nav_stuck", Bool, self.stuck_callback)
         self.course = None
         self.rover = Rover(self, False, OffState())
-        self.env = Environment(self, long_range_tags=LongRangeTagStore(self), cost_map=CostMap())
+        self.env = Environment(self, image_targets=ImageTargetsStore(self), cost_map=CostMap())
         self.disable_requested = False
         self.world_frame = rospy.get_param("world_frame")
         self.rover_frame = rospy.get_param("rover_frame")
@@ -359,7 +353,7 @@ class Context:
         self.rover.stuck = msg.data
 
     def tag_data_callback(self, tags: ImageTargets) -> None:
-        self.env.long_range_tags.push_frame(tags.targets)
+        self.env.image_targets.push_frame(tags.targets)
 
     def costmap_callback(self, msg: OccupancyGrid) -> None:
         """
