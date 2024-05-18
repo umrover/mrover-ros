@@ -186,9 +186,7 @@ _INITIAL_REPORTS = {
     BNO_REPORT_GEOMAGNETIC_ROTATION_VECTOR: (0.0, 0.0, 0.0, 0.0),
 }
 
-_ENABLED_ACTIVITIES = (
-    0x1FF  # All activities; 1 bit set for each of 8 activities, + Unknown
-)
+_ENABLED_ACTIVITIES = 0x1FF  # All activities; 1 bit set for each of 8 activities, + Unknown
 
 DATA_BUFFER_SIZE = const(512)  # data buffer size. obviously eats ram
 PacketHeader = namedtuple(
@@ -250,9 +248,7 @@ def _parse_step_couter_report(report_bytes: bytearray) -> int:
 
 def _parse_stability_classifier_report(report_bytes: bytearray) -> str:
     classification_bitfield = unpack_from("<B", report_bytes, offset=4)[0]
-    return ["Unknown", "On Table", "Stationary", "Stable", "In motion"][
-        classification_bitfield
-    ]
+    return ["Unknown", "On Table", "Stationary", "Stable", "In motion"][classification_bitfield]
 
 
 # report_id
@@ -342,8 +338,7 @@ def _insert_command_request_report(
 ) -> None:
     if command_params and len(command_params) > 9:
         raise AttributeError(
-            "Command request reports can only have up to 9 arguments but %d were given"
-            % len(command_params)
+            "Command request reports can only have up to 9 arguments but %d were given" % len(command_params)
         )
     for _i in range(12):
         buffer[_i] = 0
@@ -413,25 +408,15 @@ class Packet:
                     self.report_id,
                 )
             else:
-                outstr += "DBG::\t\t \t** UNKNOWN Report Type **: %s\n" % hex(
-                    self.report_id
-                )
+                outstr += "DBG::\t\t \t** UNKNOWN Report Type **: %s\n" % hex(self.report_id)
 
-            if (
-                self.report_id > 0xF0
-                and len(self.data) >= 6
-                and self.data[5] in reports
-            ):
+            if self.report_id > 0xF0 and len(self.data) >= 6 and self.data[5] in reports:
                 outstr += "DBG::\t\t \tSensor Report Type: %s(%s)\n" % (
                     reports[self.data[5]],
                     hex(self.data[5]),
                 )
 
-            if (
-                self.report_id == 0xFC
-                and len(self.data) >= 6
-                and self.data[1] in reports
-            ):
+            if self.report_id == 0xFC and len(self.data) >= 6 and self.data[1] in reports:
                 outstr += "DBG::\t\t \tEnabled Feature: %s(%s)\n" % (
                     reports[self.data[1]],
                     hex(self.data[5]),
@@ -469,9 +454,7 @@ class Packet:
         sequence_number = unpack_from("<B", packet_bytes, offset=3)[0]
         data_length = max(0, packet_byte_count - 4)
 
-        header = PacketHeader(
-            channel_number, sequence_number, data_length, packet_byte_count
-        )
+        header = PacketHeader(channel_number, sequence_number, data_length, packet_byte_count)
         return header
 
     @classmethod
@@ -492,9 +475,7 @@ class BNO08X:  # pylint: disable=too-many-instance-attributes, too-many-public-m
 
     """
 
-    def __init__(
-        self, reset: Optional[DigitalInOut] = None, debug: bool = False
-    ) -> None:
+    def __init__(self, reset: Optional[DigitalInOut] = None, debug: bool = False) -> None:
         self._debug: bool = debug
         self._reset: Optional[DigitalInOut] = reset
         self._dbg("********** __init__ *************")
@@ -556,9 +537,7 @@ class BNO08X:  # pylint: disable=too-many-instance-attributes, too-many-public-m
         try:
             return self._readings[BNO_REPORT_GEOMAGNETIC_ROTATION_VECTOR]
         except KeyError:
-            raise RuntimeError(
-                "No geomag quaternion report found, is it enabled?"
-            ) from None
+            raise RuntimeError("No geomag quaternion report found, is it enabled?") from None
 
     @property
     def game_quaternion(self) -> Optional[Tuple[float, float, float, float]]:
@@ -570,9 +549,7 @@ class BNO08X:  # pylint: disable=too-many-instance-attributes, too-many-public-m
         try:
             return self._readings[BNO_REPORT_GAME_ROTATION_VECTOR]
         except KeyError:
-            raise RuntimeError(
-                "No game quaternion report found, is it enabled?"
-            ) from None
+            raise RuntimeError("No game quaternion report found, is it enabled?") from None
 
     @property
     def steps(self) -> Optional[int]:
@@ -659,9 +636,7 @@ class BNO08X:  # pylint: disable=too-many-instance-attributes, too-many-public-m
             stability_classification = self._readings[BNO_REPORT_STABILITY_CLASSIFIER]
             return stability_classification
         except KeyError:
-            raise RuntimeError(
-                "No stability classification report found, is it enabled?"
-            ) from None
+            raise RuntimeError("No stability classification report found, is it enabled?") from None
 
     @property
     def activity_classification(self) -> Optional[dict]:
@@ -684,9 +659,7 @@ class BNO08X:  # pylint: disable=too-many-instance-attributes, too-many-public-m
             activity_classification = self._readings[BNO_REPORT_ACTIVITY_CLASSIFIER]
             return activity_classification
         except KeyError:
-            raise RuntimeError(
-                "No activity classification report found, is it enabled?"
-            ) from None
+            raise RuntimeError("No activity classification report found, is it enabled?") from None
 
     @property
     def raw_acceleration(self) -> Optional[Tuple[int, int, int]]:
@@ -696,9 +669,7 @@ class BNO08X:  # pylint: disable=too-many-instance-attributes, too-many-public-m
             raw_acceleration = self._readings[BNO_REPORT_RAW_ACCELEROMETER]
             return raw_acceleration
         except KeyError:
-            raise RuntimeError(
-                "No raw acceleration report found, is it enabled?"
-            ) from None
+            raise RuntimeError("No raw acceleration report found, is it enabled?") from None
 
     @property
     def raw_gyro(self) -> Optional[Tuple[int, int, int]]:
@@ -882,9 +853,7 @@ class BNO08X:  # pylint: disable=too-many-instance-attributes, too-many-public-m
         if report_id == _GET_FEATURE_RESPONSE:
             get_feature_report = _parse_get_feature_response_report(report_bytes)
             _report_id, feature_report_id, *_remainder = get_feature_report
-            self._readings[feature_report_id] = _INITIAL_REPORTS.get(
-                feature_report_id, (0.0, 0.0, 0.0)
-            )
+            self._readings[feature_report_id] = _INITIAL_REPORTS.get(feature_report_id, (0.0, 0.0, 0.0))
         if report_id == _COMMAND_RESPONSE:
             self._handle_command_response(report_bytes)
 
@@ -984,9 +953,7 @@ class BNO08X:  # pylint: disable=too-many-instance-attributes, too-many-public-m
         self._dbg("\n********** Enabling feature id:", feature_id, "**********")
 
         if feature_id == BNO_REPORT_ACTIVITY_CLASSIFIER:
-            set_feature_report = self._get_feature_enable_report(
-                feature_id, sensor_specific_config=_ENABLED_ACTIVITIES
-            )
+            set_feature_report = self._get_feature_enable_report(feature_id, sensor_specific_config=_ENABLED_ACTIVITIES)
         else:
             set_feature_report = self._get_feature_enable_report(feature_id)
 
@@ -1019,9 +986,7 @@ class BNO08X:  # pylint: disable=too-many-instance-attributes, too-many-public-m
         self._dbg("\n** Waiting for packet **")
         # _a_ packet arrived, but which one?
         while True:
-            self._wait_for_packet_type(
-                _BNO_CHANNEL_CONTROL, _SHTP_REPORT_PRODUCT_ID_RESPONSE
-            )
+            self._wait_for_packet_type(_BNO_CHANNEL_CONTROL, _SHTP_REPORT_PRODUCT_ID_RESPONSE)
             sensor_id = self._parse_sensor_id()
             if sensor_id:
                 self._id_read = True

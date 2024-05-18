@@ -63,7 +63,7 @@ def main() -> None:
     rate = rospy.Rate(50)
     while not rospy.is_shutdown():
         header = Header(stamp=rospy.Time.now(), frame_id="imu_link")
-        
+
         calib_imu_pub.publish(
             Imu(
                 header=header,

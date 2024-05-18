@@ -94,6 +94,10 @@ class Environment:
         return target_pose.position
 
     def current_target_pos(self) -> Optional[np.ndarray]:
+        if self.ctx.course is None:
+            rospy.logwarn("Trying to get target while there is no course!")
+            return None
+
         current_waypoint = self.ctx.course.current_waypoint()
         if current_waypoint is None:
             rospy.logwarn("Current waypoint is empty!")

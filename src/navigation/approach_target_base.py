@@ -5,7 +5,6 @@ import numpy as np
 
 import rospy
 from navigation import search, waypoint
-from navigation.long_range import LongRangeState
 from util.state_lib.state import State
 
 STOP_THRESHOLD = rospy.get_param("single_tag/stop_threshold")
@@ -32,7 +31,7 @@ class ApproachTargetBaseState(State, ABC):
         target_pos = self.get_target_position(context)
         if target_pos is None:
             # TODO(quintin): Clean this up
-            if type(self) is LongRangeState and not context.env.arrived_at_waypoint:
+            if self.__class__.__name__ == "LongRangeState" and not context.env.arrived_at_waypoint:
                 return waypoint.WaypointState()
             return search.SearchState()
 

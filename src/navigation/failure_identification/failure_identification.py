@@ -42,9 +42,7 @@ class FailureIdentifier:
         drive_status_sub = message_filters.Subscriber("drive_joint_data", JointState)
         odometry_sub = message_filters.Subscriber("/odometry", Odometry)
 
-        ts = message_filters.ApproximateTimeSynchronizer(
-            [nav_status_sub, odometry_sub], 10, 1.0, allow_headerless=True
-        )
+        ts = message_filters.ApproximateTimeSynchronizer([nav_status_sub, odometry_sub], 10, 1.0, allow_headerless=True)
         ts.registerCallback(self.update)
 
         self.stuck_publisher = rospy.Publisher("/nav_stuck", Bool, queue_size=1)

@@ -181,7 +181,7 @@ class DriveController:
             self.reset()
 
         # compute errors
-        linear_error = np.linalg.norm(target_dir)
+        linear_error = float(np.linalg.norm(target_dir))
         angular_error = angle_to_rotate(rover_dir, target_dir)
 
         output = self._get_state_machine_output(angular_error, linear_error, completion_thresh, turn_in_place_thresh)

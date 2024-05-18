@@ -33,9 +33,7 @@ class BNO08X_SPI(BNO08X):
     def __init__(
         self, spi_bus, cspin, intpin, resetpin, baudrate=1000000, debug=False
     ):  # pylint:disable=too-many-arguments
-        self._spi = spi_device.SPIDevice(
-            spi_bus, cspin, baudrate=baudrate, polarity=1, phase=1
-        )
+        self._spi = spi_device.SPIDevice(spi_bus, cspin, baudrate=baudrate, polarity=1, phase=1)
         self._int = intpin
         super().__init__(resetpin, debug)
 
@@ -115,10 +113,7 @@ class BNO08X_SPI(BNO08X):
         if packet_byte_count == 0:
             raise PacketError("No packet available")
 
-        self._dbg(
-            "channel %d has %d bytes available"
-            % (channel_number, packet_byte_count - 4)
-        )
+        self._dbg("channel %d has %d bytes available" % (channel_number, packet_byte_count - 4))
 
         if packet_byte_count > DATA_BUFFER_SIZE:
             self._data_buffer = bytearray(packet_byte_count)
