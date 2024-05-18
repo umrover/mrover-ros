@@ -1,9 +1,11 @@
 import heapq
 import random
 from threading import Lock
+from typing import List
 
 import numpy as np
 
+import rospy
 from navigation.context import Context
 
 
@@ -165,9 +167,9 @@ class AStar:
             print(f"start: {start}, end: {end}")
             print(f"startij: {startij}, endij: {endij}")
 
-            # initialize both open and closed list
-            open_list = []
-            closed_list = []
+            # Initialize both open and closed list
+            open_list: List[AStar.Node] = []
+            closed_list: List[AStar.Node] = []
 
             # heapify the open_list and add the start node
             heapq.heapify(open_list)
@@ -186,16 +188,15 @@ class AStar:
                 # randomize the order of the adjacent_squares_pick_index to avoid a decision making bias
                 random.shuffle(adjacent_square_pick_index)
 
-                outer_iterations += 1
-
-                if outer_iterations > max_iterations:
-                    # if we hit this point return the path such as it is. It will not contain the destination
-                    print("giving up on pathfinding too many iterations")
-                    return self.return_path(current_node)
-
                 # get the current node
                 current_node = heapq.heappop(open_list)
                 closed_list.append(current_node)
+
+                outer_iterations += 1
+                if outer_iterations > max_iterations:
+                    # If we hit this point return the path such as it is. It will not contain the destination
+                    rospy.logwarn("Giving up on pathfinding, too many iterations")
+                    return self.return_path(current_node)
 
                 # found the goal
                 if current_node == end_node:
@@ -252,5 +253,5 @@ class AStar:
                     # add the child to the open list
                     heapq.heappush(open_list, child)
 
-            print("Couldn't find a path to destination")
+            rospy.logwarn("Couldn't find a path to destination")
             raise NoPath()
