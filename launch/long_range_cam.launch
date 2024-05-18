@@ -5,8 +5,8 @@
     <param name="height" value="1080"/>
     <param name="framerate" value="5"/>
     <param name="device" value="/dev/arducam"/>
-    <param name="image_topic" value="/long_range_image"/>
-    <param name="camera_info_topic" value="/long_range_image/camera_info"/>
+    <param name="image_topic" value="/long_range_camera/image"/>
+    <param name="camera_info_topic" value="/long_range_camera/info"/>
   </node>
 </launch>
   

@@ -271,7 +271,7 @@ namespace mrover {
             try {
                 std::string objectImmediateFrame = std::format("immediate{}", classes[detection.classId]);
                 // Push the immediate detections to the camera frame
-                SE3Conversions::pushToTfTree(mTfBroadcaster, objectImmediateFrame, mCameraFrameId, objectInCamera.value());
+                SE3Conversions::pushToTfTree(mTfBroadcaster, objectImmediateFrame, mCameraFrame, objectInCamera.value());
                 // Since the object is seen we need to increment the hit counter
                 mObjectHitCounts[detection.classId] = std::min(mObjMaxHitcount, mObjectHitCounts[detection.classId] + mObjIncrementWeight);
 
@@ -279,8 +279,8 @@ namespace mrover {
                 if (mObjectHitCounts[detection.classId] > mObjHitThreshold) {
                     std::string objectPermanentFrame = classes[detection.classId];
                     // Grab the object inside of the camera frame and push it into the map frame
-                    SE3d objectInMap = SE3Conversions::fromTfTree(mTfBuffer, objectImmediateFrame, mMapFrame);
-                    SE3Conversions::pushToTfTree(mTfBroadcaster, objectPermanentFrame, mMapFrame, objectInMap);
+                    SE3d objectInMap = SE3Conversions::fromTfTree(mTfBuffer, objectImmediateFrame, mWorldFrame);
+                    SE3Conversions::pushToTfTree(mTfBroadcaster, objectPermanentFrame, mWorldFrame, objectInMap);
                 }
 
             } catch (tf2::ExtrapolationException const&) {

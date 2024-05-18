@@ -2,28 +2,27 @@
 
 namespace mrover {
 
-    auto TagDetectorNodelet::onInit() -> void {
+    auto TagDetectorNodeletBase::onInit() -> void {
         mNh = getMTNodeHandle();
         mPnh = getMTPrivateNodeHandle();
+
         mDetectorParams = cv::makePtr<cv::aruco::DetectorParameters>();
         auto defaultDetectorParams = cv::makePtr<cv::aruco::DetectorParameters>();
-        int dictionaryNumber;
 
         mNh.param<std::string>("world_frame", mMapFrameId, "map");
         mNh.param<std::string>("camera_frame", mCameraFrameId, "zed_left_camera_frame");
 
-        mPnh.param<bool>("publish_images", mPublishImages, true);
+        int dictionaryNumber;
         mPnh.param<int>("dictionary", dictionaryNumber, static_cast<int>(cv::aruco::DICT_4X4_50));
         mPnh.param<int>("min_hit_count_before_publish", mMinHitCountBeforePublish, 5);
         mPnh.param<int>("max_hit_count", mMaxHitCount, 5);
         mPnh.param<int>("tag_increment_weight", mTagIncrementWeight, 2);
         mPnh.param<int>("tag_decrement_weight", mTagDecrementWeight, 1);
-
-        mImgPub = mNh.advertise<sensor_msgs::Image>("tag_detection", 1);
         mDictionary = cv::makePtr<cv::aruco::Dictionary>(cv::aruco::getPredefinedDictionary(dictionaryNumber));
 
-        mPcSub = mNh.subscribe("camera/left/points", 1, &TagDetectorNodelet::pointCloudCallback, this);
-        mServiceEnableDetections = mNh.advertiseService("enable_detections", &TagDetectorNodelet::enableDetectionsCallback, this);
+        mImgPub = mNh.advertise<sensor_msgs::Image>("tag_detection", 1);
+
+        mServiceEnableDetections = mNh.advertiseService("enable_detections", &TagDetectorNodeletBase::enableDetectionsCallback, this);
 
         // Lambda handles passing class pointer (implicit first parameter) to configCallback
         mCallbackType = [this](DetectorParamsConfig const& config, uint32_t level) { configCallback(config, level); };
@@ -90,8 +89,10 @@ namespace mrover {
 
         NODELET_INFO("Tag detection ready, min hit count: %d, max hit count: %d, hit increment weight: %d, hit decrement weight: %d", mMinHitCountBeforePublish, mMaxHitCount, mTagIncrementWeight, mTagDecrementWeight);
     }
+    auto TagDetectorNodeletBase::sensorCallback(std::variant<sensor_msgs::PointCloud2ConstPtr, sensor_msgs::ImageConstPtr> const& msg) -> void {
+    }
 
-    auto TagDetectorNodelet::configCallback(DetectorParamsConfig const& config, uint32_t level) const -> void {
+    auto TagDetectorNodeletBase::configCallback(DetectorParamsConfig const& config, uint32_t level) const -> void {
         // Don't load initial config, since it will overwrite the rosparam settings
         if (level == std::numeric_limits<uint32_t>::max()) return;
 
@@ -125,18 +126,34 @@ namespace mrover {
         mDetectorParams->polygonalApproxAccuracyRate = config.polygonalApproxAccuracyRate;
     }
 
-    auto TagDetectorNodelet::enableDetectionsCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) -> bool {
+    auto TagDetectorNodeletBase::enableDetectionsCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) -> bool {
         mEnableDetections = req.data;
         if (mEnableDetections) {
-            res.message = "Enabled tag detections.";
-            NODELET_INFO("Enabled tag detections.");
+            res.message = "Enabled tag detections";
+            NODELET_INFO("Enabled tag detections");
         } else {
-            res.message = "Disabled tag detections.";
-            NODELET_INFO("Disabled tag detections.");
+            res.message = "Disabled tag detections";
+            NODELET_INFO("Disabled tag detections");
         }
 
         res.success = true;
         return true;
     }
+
+    auto StereoTagDetectorNodelet::onInit() -> void {
+        TagDetectorNodeletBase::onInit();
+
+        mPcSub = mNh.subscribe("camera/left/points", 1, &StereoTagDetectorNodelet::pointCloudCallback, this);
+    }
+
+    auto ImageTagDetectorNodelet::onInit() -> void {
+        TagDetectorNodeletBase::onInit();
+
+        mImgSub = mNh.subscribe("long_range_camera/image", 1, &ImageTagDetectorNodelet::imageCallback, this);
+        mPnh.param<float>("long_range_camera/fov", mCameraHorizontalFov, 80.0);
+
+        mTargetsPub = mNh.advertise<ImageTargets>("tags", 1);
+    }
+
 
 } // namespace mrover

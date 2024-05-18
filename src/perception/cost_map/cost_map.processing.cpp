@@ -73,7 +73,7 @@ namespace mrover {
             }
             mCostMapPub.publish(mGlobalGridMsg);
         } catch (tf2::TransformException const& e) {
-            ROS_WARN_STREAM(std::format("TF tree error processing point cloud: {}", e.what()));
+            ROS_WARN_STREAM_THROTTLE(1, std::format("TF tree error processing point cloud: {}", e.what()));
         }
     }
 

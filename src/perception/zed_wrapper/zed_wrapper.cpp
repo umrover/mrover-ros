@@ -33,6 +33,7 @@ namespace mrover {
             // MT means multithreaded
             mNh = getMTNodeHandle();
             mPnh = getMTPrivateNodeHandle();
+
             mPcPub = mNh.advertise<sensor_msgs::PointCloud2>("camera/left/points", 1);
             mImuPub = mNh.advertise<sensor_msgs::Imu>("imu", 1);
             mMagPub = mNh.advertise<sensor_msgs::MagneticField>("mag", 1);

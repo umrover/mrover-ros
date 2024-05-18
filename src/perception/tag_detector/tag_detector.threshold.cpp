@@ -2,26 +2,20 @@
 
 namespace mrover {
 
-    void threshold(cv::InputArray in, cv::OutputArray out, int windowSize, double constant) {
+    auto threshold(cv::InputArray in, cv::OutputArray out, int windowSize, double constant) -> void {
         CV_Assert(windowSize >= 3);
 
-        if (windowSize % 2 == 0) windowSize++; // win size must be odd
+        if (windowSize % 2 == 0) windowSize++; // Window size must be odd
         cv::adaptiveThreshold(in, out, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV, windowSize, constant);
     }
 
-    /**
-     * Detect tags from raw image using OpenCV and calculate their screen space centers.
-     * Tag pose information relative to the camera in 3D space is filled in when we receive point cloud data.
-     *
-     * @param msg
-     */
-    void TagDetectorNodelet::publishThresholdedImage() {
-        cvtColor(mImg, mGrayImg, cv::COLOR_BGR2GRAY);
+    auto TagDetectorNodeletBase::publishThresholdedImage() -> void {
+        cvtColor(mBgrImage, mGrayImg, cv::COLOR_BGR2GRAY);
 
-        // number of window sizes (scales) to apply adaptive thresholding
+        // Number of window sizes (scales) to apply adaptive thresholding
         int scaleCount = (mDetectorParams->adaptiveThreshWinSizeMax - mDetectorParams->adaptiveThreshWinSizeMin) / mDetectorParams->adaptiveThreshWinSizeStep + 1;
 
-        // for each value in the interval of thresholding window sizes
+        // For each value in the interval of thresholding window sizes
         for (int scale = 0; scale < scaleCount; ++scale) {
             auto it = mThreshPubs.find(scale);
             if (it == mThreshPubs.end()) {

@@ -4,12 +4,14 @@
   <arg name="object_detector" default="true"/>
 
   <node if="$(arg tag_detector)"
-        pkg="nodelet" type="nodelet" name="zed_tag_detector"
-        args="load mrover/TagDetectorNodelet perception_nodelet_manager" output="screen"/>
+        pkg="nodelet" type="nodelet" name="stereo_tag_detector"
+        args="load mrover/StereoTagDetectorNodelet perception_nodelet_manager" output="screen"/>
 
   <node if="$(arg tag_detector)"
         pkg="nodelet" type="nodelet" name="long_range_tag_detector"
-        args="load mrover/LongRangeTagDetectorNodelet perception_nodelet_manager" output="screen"/>
+        args="load mrover/ImageTagDetectorNodelet perception_nodelet_manager" output="screen">
+    <remap from="tag_detection" to="long_range_tag_detection"/>
+  </node>
 
   <node if="$(arg object_detector)"
         pkg="nodelet" type="nodelet" name="object_detector" respawn="true"

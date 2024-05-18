@@ -27,9 +27,3 @@ zed_nodelet:
   texture_confidence: 100
   use_area_memory: false
   depth_maximum_distance: 12.0
-
-tag_detector:
-  tag_increment_weight: 2
-  tag_decrement_weight: 1
-  min_hit_count_before_publish: 3
-  max_hit_count: 3

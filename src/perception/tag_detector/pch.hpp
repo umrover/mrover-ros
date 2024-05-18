@@ -29,6 +29,8 @@
 #include <tf2_ros/transform_listener.h>
 
 #include <mrover/DetectorParamsConfig.h>
+#include <mrover/ImageTarget.h>
+#include <mrover/ImageTargets.h>
 
 #include <lie.hpp>
 #include <loop_profiler.hpp>

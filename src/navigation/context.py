@@ -16,8 +16,8 @@ from mrover.msg import (
     WaypointType,
     GPSPointList,
     Course as CourseMsg,
-    LongRangeTag,
-    LongRangeTags,
+    ImageTarget,
+    ImageTargets,
 )
 from mrover.srv import EnableAuton, EnableAutonRequest, EnableAutonResponse
 from nav_msgs.msg import OccupancyGrid
@@ -125,7 +125,8 @@ class LongRangeTagStore:
     @dataclass
     class TagData:
         hit_count: int
-        tag: LongRangeTag
+        tag_id: int
+        bearing: float
         time: rospy.Time
 
     _data: dict[int, TagData]
@@ -139,7 +140,7 @@ class LongRangeTagStore:
         self._min_hits = min_hits
         self._max_hits = max_hits
 
-    def push_frame(self, tags: List[LongRangeTag]) -> None:
+    def push_frame(self, tags: List[ImageTarget]) -> None:
         """
         Loops through our current list of our stored tags and checks if the new message includes each tag or doesn't.
         If it does include it, we will increment our hit count for that tag id, store the new tag information, and reset the time we saw it.
@@ -148,30 +149,29 @@ class LongRangeTagStore:
         :param tags: A list of LongRangeTags sent by perception, which includes an id and bearing for each tag in the list
         """
         # Update our current tags
-        tags_ids = [tag.id for tag in tags]
-        for _, cur_tag in list(self._data.items()):
-            # If we don't see one of our tags in the new message, decrement its hit count
-            if cur_tag.tag.id not in tags_ids:
-                cur_tag.hit_count -= DECREMENT_WEIGHT
-                if cur_tag.hit_count <= 0:
-                    cur_tag.hit_count = 0
-                    # If we haven't seen the tag in a while, remove it from our list
-                    time_difference = rospy.Time.now() - cur_tag.time
-                    if time_difference > LONG_RANGE_TAG_EXPIRATION_DURATION:
-                        del self._data[cur_tag.tag.id]
+        tag_ids = [int(tag.name[3:]) for tag in tags]
+        for _, stored_tag in list(self._data.items()):
             # If we do see one of our tags in the new message, increment its hit count
+            if stored_tag.tag_id in tag_ids:
+                stored_tag.hit_count += INCREMENT_WEIGHT
+                if stored_tag.hit_count > self._max_hits:
+                    stored_tag.hit_count = self._max_hits
+            # If we don't see one of our tags in the new message, decrement its hit count
             else:
-                cur_tag.hit_count += INCREMENT_WEIGHT
-                if cur_tag.hit_count > self._max_hits:
-                    cur_tag.hit_count = self._max_hits
+                stored_tag.hit_count -= DECREMENT_WEIGHT
+                if stored_tag.hit_count <= 0:
+                    stored_tag.hit_count = 0
+                    # If we haven't seen the tag in a while, remove it from our list
+                    time_difference = rospy.Time.now() - stored_tag.time
+                    if time_difference > LONG_RANGE_TAG_EXPIRATION_DURATION:
+                        del self._data[stored_tag.tag_id]
 
-        # Add newly seen tags to our data structure and update current tag's information
-        for tag in tags:
-            if tag.id not in self._data:
-                self._data[tag.id] = self.TagData(hit_count=INCREMENT_WEIGHT, tag=tag, time=rospy.Time.now())
-            else:
-                self._data[tag.id].tag = tag
-                self._data[tag.id].time = rospy.Time.now()
+        # Add newly seen tags to our data structure or update current tag's information
+        for tag_id, tag in zip(tag_ids, tags):
+            hit_count = self._data[tag_id].hit_count if tag_id in self._data else INCREMENT_WEIGHT
+            self._data[tag_id] = self.TagData(
+                hit_count=hit_count, tag_id=tag_id, bearing=tag.bearing, time=rospy.Time.now()
+            )
 
     def query(self, tag_id: int) -> Optional[TagData]:
         """
@@ -345,7 +345,7 @@ class Context:
         self.disable_requested = False
         self.world_frame = rospy.get_param("world_frame")
         self.rover_frame = rospy.get_param("rover_frame")
-        self.tag_data_listener = rospy.Subscriber("tags", LongRangeTags, self.tag_data_callback)
+        self.tag_data_listener = rospy.Subscriber("tags", ImageTargets, self.tag_data_callback)
         self.costmap_listener = rospy.Subscriber("costmap", OccupancyGrid, self.costmap_callback)
 
     def recv_enable_auton(self, req: EnableAutonRequest) -> EnableAutonResponse:
@@ -358,8 +358,8 @@ class Context:
     def stuck_callback(self, msg: Bool) -> None:
         self.rover.stuck = msg.data
 
-    def tag_data_callback(self, tags: LongRangeTags) -> None:
-        self.env.long_range_tags.push_frame(tags.longRangeTags)
+    def tag_data_callback(self, tags: ImageTargets) -> None:
+        self.env.long_range_tags.push_frame(tags.targets)
 
     def costmap_callback(self, msg: OccupancyGrid) -> None:
         """

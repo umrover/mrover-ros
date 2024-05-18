@@ -216,7 +216,7 @@ namespace mrover {
                     simulator.mStereoCameras.emplace_back(std::move(stereoCamera));
                 } else {
                     camera.frameId = "long_range_camera_link";
-                    camera.pub = simulator.mNh.advertise<sensor_msgs::Image>("long_range_image", 1);
+                    camera.pub = simulator.mNh.advertise<sensor_msgs::Image>("long_range_camera/image", 1);
                     camera.fov = 15;
                     simulator.mCameras.push_back(std::move(camera));
                 }

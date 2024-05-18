@@ -40,8 +40,8 @@ namespace mrover {
         tf2_ros::Buffer mTfBuffer;
         tf2_ros::TransformListener mTfListener{mTfBuffer};
         tf2_ros::TransformBroadcaster mTfBroadcaster;
-        std::string mCameraFrameId;
-        std::string mMapFrame;
+        std::string mCameraFrame;
+        std::string mWorldFrame;
 
         std::vector<int> mObjectHitCounts{0, 0};
 

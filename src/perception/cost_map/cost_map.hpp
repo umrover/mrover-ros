@@ -17,6 +17,7 @@ namespace mrover {
         float mDimension{};     // Dimensions of the square costmap in meters
         double mNormalThreshold = 0.9;
         int mDownSamplingFactor = 4;
+        std::string mWorldFrame;
 
         struct CostMapPoint {
             R3f pointInMap;

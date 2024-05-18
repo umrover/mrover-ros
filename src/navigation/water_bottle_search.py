@@ -42,8 +42,9 @@ class WaterBottleSearchState(State):
     def find_endpoint(self, context: Context, end: np.ndarray) -> np.ndarray:
         """
         A-STAR Algorithm: f(n) = g(n) + h(n) to find a path from the given start to the given end in the given costmap
-        :param end: next point in the spiral from traj in cartesian coordinates
-        :return: the end point in cartesian coordinates
+        :param context: Context
+        :param end:     Next point in the spiral from traj in cartesian coordinates
+        :return:        The end point in cartesian coordinates
         """
         costmap_2d = context.env.cost_map.data
         # convert end to occupancy grid coordinates then node

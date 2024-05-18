@@ -172,7 +172,7 @@ class DriveController:
             self.reset()
             return Twist(), True
 
-        if path_start is not None:
+        if path_start is not None and np.linalg.norm(path_start - target_pos) > LOOKAHEAD_DISTANCE:
             target_pos = self.compute_lookahead_point(path_start, target_pos, rover_pos, LOOKAHEAD_DISTANCE)
 
         target_dir = target_pos - rover_pos
