@@ -26,7 +26,6 @@ dependencies = [
     "daphne==4.0.0",
     "channels==4.0.0",
     "pyubx2==1.2.35",
-    "opencv-python==4.9.0.80",
 ]
 
 [project.optional-dependencies]

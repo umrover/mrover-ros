@@ -2,6 +2,7 @@
 
 #define GLFW_INCLUDE_NONE
 
+#include <bit>
 #include <charconv>
 #include <chrono>
 #include <execution>
