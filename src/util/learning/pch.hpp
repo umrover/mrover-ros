@@ -1,13 +1,13 @@
 #pragma once
 
 // STL
-#include <string>
-#include <memory>
-#include <filesystem>
-#include <vector>
 #include <array>
 #include <exception>
+#include <filesystem>
 #include <fstream>
+#include <memory>
+#include <string>
+#include <vector>
 
 #include <opencv2/core.hpp>
 #include <opencv2/dnn.hpp>
@@ -29,5 +29,4 @@
 
 #include <loop_profiler.hpp>
 
-// Inference
 #include "inference_wrapper.hpp"

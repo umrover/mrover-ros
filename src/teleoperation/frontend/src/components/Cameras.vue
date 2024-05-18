@@ -1,13 +1,12 @@
 <template>
   <div class="wrap row">
     <div class="col">
-      <h3>Cameras ({{ num_available }} available)</h3>
       <div class="row justify-content-md-left">
         <div class="form-group col-md-4">
           <label for="Camera Name">Camera name</label>
           <input
             v-model="cameraName"
-            type="message"
+            type="text"
             class="form-control"
             id="CameraName"
             placeholder="Enter Camera Name"
@@ -40,12 +39,12 @@
     <div class="col">
       <h3>All Cameras</h3>
       <div class="d-flex justify-content-end" v-if="isSA">
-        <button class="btn btn-primary btn-lg custom-btn" @click="takePanorama()">
+        <button class="btn btn-primary btn-lg" @click="takePanorama()">
           Take Panorama
         </button>
       </div>
     </div>
-    <CameraDisplay :streamOrder="streamOrder" :mission="mission" :names="names" :qualities="qualities"></CameraDisplay>
+    <CameraDisplay :streamOrder="streamOrder" :mission="mission" :names="names" />
   </div>
 </template>
 
@@ -62,10 +61,6 @@ export default {
   },
 
   props: {
-    primary: {
-      type: Boolean,
-      required: true
-    },
     isSA: {
       type: Boolean,
       required: true
@@ -82,61 +77,37 @@ export default {
       cameraIdx: 0,
       cameraName: '',
       capacity: 4,
-      qualities: reactive(new Array(9).fill(-1)),
-      streamOrder: reactive([]),
-
-      num_available: -1
+      streamOrder: [-1, -1, -1, -1]
     }
   },
 
   watch: {
-    message(msg) {
-      if (msg.type == 'max_streams') {
-        this.streamOrder = new Array(msg.streams).fill(-1)
-      }
-    },
-    capacity: function (newCap, oldCap) {
+    capacity: function(newCap, oldCap) {
       if (newCap < oldCap) {
-        var numStreaming = this.streamOrder.filter((index) => index != -1)
-        var ind = numStreaming.length - 1
-        this.setCamIndex(numStreaming[ind])
+        const numStreaming = this.streamOrder.filter(index => index != -1)
+        const index = numStreaming.length - 1
+        this.setCamIndex(numStreaming[index])
       }
     }
   },
 
   computed: {
     ...mapState('websocket', ['message']),
-    color: function () {
+    color: function() {
       return this.camsEnabled ? 'btn-success' : 'btn-secondary'
     }
-  },
-
-  created: function () {
-    window.setTimeout(() => {
-      this.sendMessage({ type: 'max_streams' })
-    }, 250)
   },
 
   methods: {
     ...mapActions('websocket', ['sendMessage']),
 
-    setCamIndex: function (index: number) {
+    setCamIndex: function(index: number) {
       // every time a button is pressed, it changes cam status and adds/removes from stream
       this.camsEnabled[index] = !this.camsEnabled[index]
-      if (this.camsEnabled[index]) this.qualities[index] = 2 //if enabling camera, turn on medium quality
       this.changeStream(index)
     },
 
-    sendCameras: function (index: number) {
-      this.sendMessage({
-        type: 'sendCameras',
-        primary: this.primary,
-        device: index,
-        resolution: this.qualities[index]
-      })
-    },
-
-    addCameraName: function () {
+    addCameraName: function() {
       this.names[this.cameraIdx] = this.cameraName
     },
 
@@ -145,9 +116,7 @@ export default {
       if (found) {
         this.streamOrder.splice(this.streamOrder.indexOf(index), 1)
         this.streamOrder.push(-1)
-        this.qualities[index] = -1 //close the stream when sending it to comms
       } else this.streamOrder[this.streamOrder.indexOf(-1)] = index
-      this.sendCameras(index)
     },
 
     takePanorama() {

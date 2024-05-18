@@ -1,6 +1,0 @@
-<launch>
-  <rosparam command="load" file="$(find mrover)/config/esw.yaml" />
-
-  <node name="arm_hw_bridge" pkg="mrover" type="arm_hw_bridge"/>
-  <node name="arm_translator_bridge" pkg="mrover" type="arm_translator_bridge"/>
-</launch>

@@ -1,16 +1,15 @@
-import tf2_ros
-import rospy
-
-from util.ros_utils import get_rosparam
-from util.state_lib.state import State
-from util.np_utils import normalized
 from typing import Optional
 
+import numpy as np
+from scipy.spatial.transform import Rotation
+
+import rospy
 from navigation import approach_post, recovery
 from navigation.approach_target_base import ApproachTargetBaseState
-import numpy as np
+from navigation.context import Context
+from util.state_lib.state import State
 
-DIST_AHEAD = get_rosparam("long_range/distance_ahead", 20)
+DISTANCE_AHEAD = rospy.get_param("long_range/distance_ahead")
 
 
 class LongRangeState(ApproachTargetBaseState):
@@ -23,17 +22,23 @@ class LongRangeState(ApproachTargetBaseState):
     -Stuck?
     """
 
-    def on_enter(self, context):
+    def on_enter(self, context: Context) -> None:
         pass
 
-    def on_exit(self, context):
+    def on_exit(self, context: Context) -> None:
         pass
 
-    def get_target_pos(self, context) -> Optional[np.ndarray]:
-        tag_id = context.course.current_waypoint().tag_id
-        tag = context.env.long_range_tags.get(tag_id)
+    def get_target_position(self, context: Context) -> Optional[np.ndarray]:
+        assert context.course is not None
+
+        current_waypoint = context.course.current_waypoint()
+        assert current_waypoint is not None
+
+        tag_id = current_waypoint.tag_id
+        tag = context.env.image_targets.query(f"tag{tag_id}")
         if tag is None:
             return None
+
         pose = context.rover.get_pose()
         if pose is None:
             return None
@@ -41,25 +46,26 @@ class LongRangeState(ApproachTargetBaseState):
         rover_position = pose.position
         rover_direction = pose.rotation.direction_vector()
 
-        bearing_to_tag = np.radians(tag.bearing)
+        bearing_to_tag = tag.target.bearing
+        # If you have not seen the tag in a while but are waiting until the expiration time is up,
+        # keep going towards where it was last seen (the direction you are heading), don't use an old bearing value
+        if tag.hit_count <= 0:
+            bearing_to_tag = 0
 
-        # rover_direction rotated by bearing to tag
-        bearing_rotation_mat = np.array(
-            [[np.cos(bearing_to_tag), -np.sin(bearing_to_tag)], [np.sin(bearing_to_tag), np.cos(bearing_to_tag)]]
-        )
+        bearing_rotation_mat = Rotation.from_rotvec([0, 0, bearing_to_tag]).as_matrix()
 
-        direction_to_tag = bearing_rotation_mat @ rover_direction[:2]
+        direction_to_tag = bearing_rotation_mat[:2, :2] @ rover_direction[:2]
 
-        direction_to_tag = normalized(direction_to_tag)
-        distance = DIST_AHEAD
+        distance = DISTANCE_AHEAD
         direction_to_tag = np.array([direction_to_tag[0], direction_to_tag[1], 0.0])
         tag_position = rover_position + direction_to_tag * distance
         return tag_position
 
-    def determine_next(self, context, finished: bool) -> State:
-        fid_pos = context.env.current_target_pos()
-        if fid_pos is None:
+    def determine_next(self, context: Context, is_finished: bool) -> State:
+        tag_position = context.env.current_target_pos()
+        if tag_position is None:
             return self
+
         if context.rover.stuck:
             context.rover.previous_state = self
             return recovery.RecoveryState()

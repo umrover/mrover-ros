@@ -33,6 +33,7 @@ namespace mrover {
             // MT means multithreaded
             mNh = getMTNodeHandle();
             mPnh = getMTPrivateNodeHandle();
+
             mPcPub = mNh.advertise<sensor_msgs::PointCloud2>("camera/left/points", 1);
             mImuPub = mNh.advertise<sensor_msgs::Imu>("imu", 1);
             mMagPub = mNh.advertise<sensor_msgs::MagneticField>("mag", 1);
@@ -71,6 +72,7 @@ namespace mrover {
 
             mImageResolution = sl::Resolution(imageWidth, imageHeight);
             mPointResolution = sl::Resolution(imageWidth, imageHeight);
+            mNormalsResolution = sl::Resolution(imageWidth, imageHeight);
 
             NODELET_INFO("Resolution: %s image: %zux%zu points: %zux%zu",
                          grabResolutionString.c_str(), mImageResolution.width, mImageResolution.height, mPointResolution.width, mPointResolution.height);
@@ -142,7 +144,7 @@ namespace mrover {
                     mIsSwapReady = false;
                     mPcThreadProfiler.measureEvent("Wait");
 
-                    fillPointCloudMessageFromGpu(mPcMeasures.leftPoints, mPcMeasures.leftImage, mPointCloudGpu, pointCloudMsg);
+                    fillPointCloudMessageFromGpu(mPcMeasures.leftPoints, mPcMeasures.leftImage, mPcMeasures.leftNormals, mPointCloudGpu, pointCloudMsg);
                     pointCloudMsg->header.stamp = mPcMeasures.time;
                     pointCloudMsg->header.frame_id = "zed_left_camera_frame";
                     mPcThreadProfiler.measureEvent("Fill Message");
@@ -223,6 +225,8 @@ namespace mrover {
                     throw std::runtime_error("ZED failed to retrieve left image");
                 if (mZed.retrieveMeasure(mGrabMeasures.leftPoints, sl::MEASURE::XYZ, sl::MEM::GPU, mPointResolution) != sl::ERROR_CODE::SUCCESS)
                     throw std::runtime_error("ZED failed to retrieve point cloud");
+                if (mZed.retrieveMeasure(mGrabMeasures.leftNormals, sl::MEASURE::NORMALS, sl::MEM::GPU, mNormalsResolution) != sl::ERROR_CODE::SUCCESS)
+                    throw std::runtime_error("ZED failed to retrieve point cloud normals");
 
                 assert(mGrabMeasures.leftImage.timestamp == mGrabMeasures.leftPoints.timestamp);
 
@@ -307,6 +311,7 @@ namespace mrover {
         sl::Mat::swap(other.leftImage, leftImage);
         sl::Mat::swap(other.rightImage, rightImage);
         sl::Mat::swap(other.leftPoints, leftPoints);
+        sl::Mat::swap(other.leftNormals, leftNormals);
         std::swap(time, other.time);
         return *this;
     }

@@ -92,7 +92,7 @@ export default {
     }
   },
 
-  created: function () {
+  created: function() {
     this.locationIcon = L.icon({
       iconUrl: '/location_marker_icon.png',
       iconSize: [64, 64],
@@ -119,7 +119,7 @@ export default {
   },
 
   methods: {
-    onMapReady: function () {
+    onMapReady: function() {
       // Pull objects from refs to be able to access data and change w functions
       this.$nextTick(() => {
         this.map = this.$refs.map.leafletObject
@@ -127,16 +127,14 @@ export default {
       })
     },
     // Event listener for setting store values to get data to waypoint Editor
-    getClickedLatLon: function (e: any) {
+    getClickedLatLon: function(e: any) {
       this.setClickPoint({
         lat: e.latlng.lat,
         lon: e.latlng.lng
       })
     },
-    getWaypointIcon: function (isDrone: boolean) {
-      if (this.index === this.highlightedWaypoint) {
-        return this.highlightedWaypointIcon
-      } else if (isDrone) {
+    getWaypointIcon: function(isDrone: boolean) {
+      if (isDrone) {
         return this.droneWaypointIcon
       } else {
         return this.waypointIcon
@@ -156,11 +154,11 @@ export default {
     }),
 
     // Convert to latLng object for Leaflet to use
-    odomLatLng: function () {
+    odomLatLng: function() {
       return L.latLng(this.odom.latitude_deg, this.odom.longitude_deg)
     },
 
-    polylinePath: function () {
+    polylinePath: function() {
       return [this.odomLatLng].concat(this.route.map((waypoint: any) => waypoint.latLng))
     }
   },
@@ -174,7 +172,7 @@ export default {
 
   watch: {
     odom: {
-      handler: function (val) {
+      handler: function(val) {
         // Trigger every time rover odom is changed
 
         const lat = val.latitude_deg
@@ -184,15 +182,16 @@ export default {
         const latLng = L.latLng(lat, lng)
 
         // Move to rover on first odom message
-        if (!this.findRover) {
+        if (!this.findRover && this.map) {
           this.findRover = true
-          this.center = latLng
+          this.map.setView(latLng, 22)
         }
 
         // Update the rover marker using bearing angle
-        this.roverMarker.setRotationAngle(angle)
-
-        this.roverMarker.setLatLng(latLng)
+        if (this.roverMarker) {
+          this.roverMarker.setRotationAngle(angle)
+          this.roverMarker.setLatLng(latLng)
+        }
 
         // Update the rover path
         this.odomCount++
@@ -217,6 +216,7 @@ export default {
   height: 100%;
   width: 100%;
 }
+
 .wrap {
   display: flex;
   align-items: center;

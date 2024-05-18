@@ -1,2 +1,0 @@
---- # Service that returns all packages with messages currently in the workspace
-string[] packages

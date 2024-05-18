@@ -238,9 +238,14 @@
   <xacro:arm_revolute_joint parent="arm_c" child="arm_d"
                             x="0.546033" y="0" z="0.088594"
                             lower="-2.35619" upper="2.35619"/>
-  <xacro:arm_revolute_joint parent="arm_d" child="arm_e"
-                            x="0.044886" y="0" z="0"
-                            lower="-2.35619" upper="2.35619"/>
+
+  <joint name="arm_d_link_to_arm_e_link" type="revolute">
+    <origin xyz="0.044886 0 0"/>
+    <parent link="arm_d_link"/>
+    <child link="arm_e_link"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="-2.35619" upper="2.35619" effort="0" velocity="0"/>
+  </joint>
 
   <xacro:wheels side="left" reflect="1"/>
   <xacro:wheels side="right" reflect="-1"/>
@@ -260,6 +265,14 @@
   </joint>
 
   <link name="right_gps"/>
+
+    <joint name="chassis_link_to_center_gps" type="fixed">
+      <origin xyz="0 0 1"/>
+      <parent link="chassis_link"/>
+      <child link="center_gps"/>
+    </joint>
+
+    <link name="center_gps"/>
 
   <joint name="chassis_link_to_imu" type="fixed">
     <origin xyz="0 0 0"/>
@@ -298,6 +311,24 @@
       </geometry>
     </collision>
   </link>
+
+  <joint name="chassis_link_to_mast_link" type="fixed">
+    <origin xyz="0.0505 -0.086 0.558"/>
+    <parent link="chassis_link"/>
+    <child link="mast_link"/>
+  </joint>
+
+  <link name="mast_link"/>
+
+  <joint name="mast_link_to_zed_mini_camera" type="continuous">
+    <origin xyz="0.05 0 0.0"/>
+    <parent link="mast_link"/>
+    <child link="zed_mini_camera"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="2.68" velocity="0"/>
+  </joint>
+
+  <link name="zed_mini_camera"/>
 
   <!--  <xacro:include filename="$(find mrover)/urdf/rover/rover_gazebo_plugins.urdf.xacro"/>-->
 

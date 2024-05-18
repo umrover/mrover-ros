@@ -1,8 +1,6 @@
 from geometry_msgs.msg import Twist
-
-from util.state_lib.state import State
-
 from navigation import waypoint
+from util.state_lib.state import State
 
 
 class DoneState(State):
@@ -12,9 +10,9 @@ class DoneState(State):
     def on_exit(self, context) -> None:
         pass
 
-    def on_loop(self, context):
+    def on_loop(self, context) -> State:
         # Check if we have a course to traverse
-        if context.course and (not context.course.is_complete()):
+        if context.course and not context.course.is_complete():
             return waypoint.WaypointState()
 
         # Stop rover
@@ -30,7 +28,7 @@ class OffState(State):
     def on_exit(self, context) -> None:
         pass
 
-    def on_loop(self, context):
+    def on_loop(self, context) -> State:
         if context.course and (not context.course.is_complete()):
             return waypoint.WaypointState()
 

@@ -3,7 +3,6 @@ project(mrover VERSION 2024.0.0 LANGUAGES CXX)
 
 option(MROVER_IS_CI "Build for CI" OFF)
 option(MROVER_RUN_CLANG_TIDY "Run clang-tidy" OFF)
-option(MROVER_IS_JETSON "Build for the Jetson" OFF)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -16,15 +15,14 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # Generate compile_commands.json for clang
 if (APPLE)
     # Ensures that homebrew packages are never used over miniforge packages
     set(CMAKE_IGNORE_PATH /opt/homebrew)
-    # Boost uses deprecated C++ library features
-    # Thankfully libcxx has a compatibility mode for this
     add_definitions(
+            # Boost uses deprecated C++ library features
+            # Thankfully libcxx has a compatibility mode for this
             -D_LIBCPP_ENABLE_CXX20_REMOVED_ALLOCATOR_MEMBERS
             -D_LIBCPP_ENABLE_CXX20_REMOVED_ALLOCATOR_VOID_SPECIALIZATION
+            # We override these
+            -D_LIBCPP___TYPE_TRAITS_IS_EXECUTION_POLICY_H
     )
-
-    find_package(fmt REQUIRED)
-    link_libraries(fmt::fmt)
 else ()
     # TODO(quintin): Fix this
     find_package(TBB QUIET)
@@ -33,19 +31,28 @@ else ()
     endif ()
 endif ()
 
-if (NOT APPLE AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang") # Link with LLVM lld instead of GNU ld when using Clang on Linux, it is faster
-    add_link_options(-fuse-ld=lld)
-endif ()
-
-if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    set(MROVER_CPP_COMPILE_OPTIONS -Wall -Wextra -pedantic -Wno-missing-field-initializers)
-    if (MROVER_IS_CI) # Make warnings errors in CI
-        list(APPEND MROVER_CPP_COMPILE_OPTIONS -Werror)
+if (NOT APPLE)
+    find_program(MOLD mold)
+    if (MOLD)
+        set(MROVER_LINKER_OPTIONS -fuse-ld=mold)
+        message(STATUS "Using mold as linker")
+    elseif (NOT APPLE)
+        find_program(LLD lld)
+        if (LLD)
+            set(MROVER_LINKER_OPTIONS -fuse-ld=lld)
+            message(STATUS "Using lld as linker")
+        endif ()
     endif ()
 endif ()
 
-if (MROVER_IS_JETSON)
-    add_definitions(-DMROVER_IS_JETSON)
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    set(MROVER_COMPILE_OPTIONS -Wall -Wextra -pedantic -Wno-missing-field-initializers)
+    if (MROVER_IS_CI) # Make warnings errors in CI
+        list(APPEND MROVER_COMPILE_OPTIONS -Werror)
+    endif ()
+    if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        list(APPEND MROVER_COMPILE_OPTIONS -Wno-subobject-linkage)
+    endif ()
 endif ()
 
 # Inject header files that get included before anything else, including system headers
@@ -158,9 +165,9 @@ mrover_add_library(motor_library src/esw/motor_library/*.cpp src/esw/motor_libra
 target_link_libraries(motor_library PUBLIC can_device moteus)
 
 if (NetLink_FOUND AND NetLinkRoute_FOUND)
-    mrover_add_nodelet(can_driver src/esw/can_driver/*.cpp src/esw/can_driver src/esw/can_driver/pch.hpp)
-    mrover_nodelet_link_libraries(can_driver ${NetLink_LIBRARIES} ${NetLinkRoute_LIBRARIES})
-    mrover_nodelet_include_directories(can_driver ${NetLink_INCLUDE_DIRS} ${NetLinkRoute_INCLUDE_DIRS})
+    mrover_add_nodelet(can_bridge src/esw/can_bridge/*.cpp src/esw/can_bridge src/esw/can_bridge/pch.hpp)
+    mrover_nodelet_link_libraries(can_bridge ${NetLink_LIBRARIES} ${NetLinkRoute_LIBRARIES})
+    mrover_nodelet_include_directories(can_bridge ${NetLink_INCLUDE_DIRS} ${NetLinkRoute_INCLUDE_DIRS})
 endif ()
 
 macro(mrover_add_esw_bridge_node name sources)
@@ -168,43 +175,32 @@ macro(mrover_add_esw_bridge_node name sources)
     target_link_libraries(${name} PRIVATE can_device motor_library)
 endmacro()
 
-mrover_add_esw_bridge_node(arm_hw_bridge src/esw/arm_hw_bridge/*.cpp)
-mrover_add_esw_bridge_node(arm_translator_bridge src/esw/arm_translator_bridge/*.cpp src/esw/arm_translator_bridge/*.hpp)
-mrover_add_esw_bridge_node(cache_bridge src/esw/cache_bridge/*.cpp)
-mrover_add_esw_bridge_node(drive_bridge src/esw/drive_bridge/*.cpp)
-mrover_add_esw_bridge_node(led_hw_bridge src/esw/led_hw_bridge/*.cpp)
-mrover_add_esw_bridge_node(led src/esw/led/*.cpp)
-mrover_add_esw_bridge_node(mast_gimbal_bridge src/esw/mast_gimbal_bridge/*.cpp)
-mrover_add_esw_bridge_node(pdb_bridge src/esw/pdb_bridge/*.cpp)
-mrover_add_esw_bridge_node(sa_bridge src/esw/sa_bridge/*.cpp)
-mrover_add_esw_bridge_node(science_bridge src/esw/science_bridge/*.cpp)
-mrover_add_esw_bridge_node(brushless_test_bridge src/esw/brushless_test_bridge/*.cpp)
-mrover_add_esw_bridge_node(brushed_test_bridge src/esw/brushed_test_bridge/*.cpp)
-mrover_add_esw_bridge_node(science_test_bridge src/esw/science_test_bridge/*.cpp)
-mrover_add_esw_bridge_node(test_arm_bridge src/esw/test_arm_bridge/*.cpp)
-mrover_add_esw_bridge_node(pdb_test_bridge src/esw/pdb_test_bridge/*.cpp)
-# mrover_add_esw_bridge_node(arm_position_test_bridge src/esw/arm_position_test_bridge/*.cpp)
-# mrover_add_esw_bridge_node(sa_sensor src/esw/fw/dirt_sensor/dirt_sensor_ros/dirt_sensor_ros.ino)
+mrover_add_node(pose_filter src/localization/pose_filter.cpp)
+target_link_libraries(pose_filter PRIVATE lie)
+
+mrover_add_esw_bridge_node(arm_translator_bridge src/esw/arm_translator/*.cpp src/esw/arm_translator/*.hpp)
+mrover_add_esw_bridge_node(differential_drive_controller src/esw/differential_drive_controller.cpp)
+mrover_add_esw_bridge_node(led_hw_bridge src/esw/led_hw_bridge.cpp)
+mrover_add_esw_bridge_node(led src/esw/led.cpp)
+mrover_add_esw_bridge_node(simple_bridge src/esw/simple_bridge.cpp)
+mrover_add_esw_bridge_node(science_bridge src/esw/science_bridge.cpp)
 
 ## Perception
+
+mrover_add_nodelet(costmap src/perception/cost_map/*.cpp src/perception/cost_map src/perception/cost_map/pch.hpp)
+mrover_nodelet_link_libraries(costmap lie)
 
 mrover_add_library(websocket_server src/esw/websocket_server/*.cpp src/esw/websocket_server)
 target_compile_definitions(websocket_server PUBLIC BOOST_ASIO_NO_DEPRECATED)
 
-mrover_add_nodelet(zed_tag_detector src/perception/tag_detector/zed/*.cpp src/perception/tag_detector/zed src/perception/tag_detector/zed/pch.hpp)
-mrover_nodelet_link_libraries(zed_tag_detector opencv_core opencv_objdetect opencv_aruco opencv_imgproc lie)
+mrover_add_nodelet(tag_detector src/perception/tag_detector/*.cpp src/perception/tag_detector src/perception/tag_detector/pch.hpp)
+mrover_nodelet_link_libraries(tag_detector opencv_core opencv_objdetect opencv_aruco opencv_imgproc lie)
 
-mrover_add_nodelet(long_range_tag_detector src/perception/tag_detector/long_range_cam/*.cpp src/perception/tag_detector/long_range_cam src/perception/tag_detector/long_range_cam/pch.hpp)
-mrover_nodelet_link_libraries(long_range_tag_detector opencv_core opencv_objdetect opencv_aruco opencv_imgproc lie)
+#mrover_add_nodelet(long_range_tag_detector src/perception/tag_detector/long_range_cam/*.cpp src/perception/tag_detector/long_range_cam src/perception/tag_detector/long_range_cam/pch.hpp)
+#mrover_nodelet_link_libraries(long_range_tag_detector opencv_core opencv_objdetect opencv_aruco opencv_imgproc lie)
 
 mrover_add_nodelet(usb_camera src/perception/usb_camera/*.cpp src/perception/usb_camera src/perception/usb_camera/pch.hpp)
 mrover_nodelet_link_libraries(usb_camera opencv_core opencv_objdetect opencv_aruco opencv_imgproc opencv_highgui)
-
-if (CUDA_FOUND)
-    #    mrover_add_node(nv_vid_codec_h265_enc src/esw/nv_vid_codec_h265_enc/*.c*)
-    #    target_link_libraries(nv_vid_codec_h265_enc PUBLIC cuda nvidia-encode opencv_core opencv_imgproc streaming)
-    #    target_include_directories(nv_vid_codec_h265_enc SYSTEM PUBLIC deps/nvenc)
-endif ()
 
 if (Gst_FOUND AND GstApp_FOUND AND LibUsb_FOUND AND LibUdev_FOUND)
     mrover_add_nodelet(gst_websocket_streamer src/esw/gst_websocket_streamer/*.c* src/esw/gst_websocket_streamer src/esw/gst_websocket_streamer/pch.hpp)
@@ -245,6 +241,10 @@ if (MROVER_BUILD_SIM)
     mrover_nodelet_link_libraries(simulator ${ASSIMP_LIBRARIES} ${BULLET_LIBRARIES} glfw3webgpu webgpu glfw opencv_core opencv_imgcodecs opencv_imgproc webgpu_hpp imgui lie)
     mrover_nodelet_defines(simulator BOOST_THREAD_PROVIDES_FUTURE)
 endif ()
+
+### General
+
+mrover_add_node(superstructure src/superstructure.cpp)
 
 ### ======= ###
 ### Testing ###

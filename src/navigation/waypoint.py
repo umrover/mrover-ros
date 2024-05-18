@@ -1,23 +1,40 @@
-import tf2_ros
-
-from util.ros_utils import get_rosparam
+import rospy
+from mrover.msg import WaypointType
+from mrover.srv import MoveCostMap
+from navigation import (
+    search,
+    recovery,
+    post_backup,
+    state,
+    water_bottle_search,
+)
+from navigation.context import Context
 from util.state_lib.state import State
-
-from navigation import search, recovery, approach_post, post_backup, state, approach_object, long_range
 
 
 class WaypointState(State):
-    STOP_THRESH = get_rosparam("waypoint/stop_thresh", 0.5)
-    DRIVE_FWD_THRESH = get_rosparam("waypoint/drive_fwd_thresh", 0.34)  # 20 degrees
-    NO_FIDUCIAL = get_rosparam("waypoint/no_fiducial", -1)
+    STOP_THRESHOLD: float = rospy.get_param("waypoint/stop_threshold")
+    DRIVE_FORWARD_THRESHOLD: float = rospy.get_param("waypoint/drive_forward_threshold")
+    NO_TAG: int = -1
 
-    def on_enter(self, context) -> None:
+    def on_enter(self, context: Context) -> None:
+        assert context.course is not None
+
+        current_waypoint = context.course.current_waypoint()
+        assert current_waypoint is not None
+
+        if current_waypoint.type.val == WaypointType.WATER_BOTTLE:
+            rospy.wait_for_service("move_cost_map")
+            move_cost_map = rospy.ServiceProxy("move_cost_map", MoveCostMap)
+            try:
+                move_cost_map(f"course{context.course.waypoint_index}")
+            except rospy.ServiceException as exc:
+                rospy.logerr(f"Service call failed: {exc}")
+
+    def on_exit(self, context: Context) -> None:
         pass
 
-    def on_exit(self, context) -> None:
-        pass
-
-    def on_loop(self, context) -> State:
+    def on_loop(self, context: Context) -> State:
         """
         Handle driving to a waypoint defined by a linearized cartesian position.
         If the waypoint is associated with a tag id, go into that state early if we see it,
@@ -25,6 +42,8 @@ class WaypointState(State):
         :param ud:  State machine user data
         :return:    Next state
         """
+        assert context.course is not None
+
         current_waypoint = context.course.current_waypoint()
         if current_waypoint is None:
             return state.DoneState()
@@ -35,37 +54,34 @@ class WaypointState(State):
             return post_backup.PostBackupState()
 
         # returns either ApproachPostState, LongRangeState, ApproachObjectState, or None
-        if context.course.check_approach() is not None:
-            return context.course.check_approach()
+        approach_state = context.course.get_approach_target_state()
+        if approach_state is not None:
+            return approach_state
 
         # Attempt to find the waypoint in the TF tree and drive to it
-        try:
-            waypoint_pos = context.course.current_waypoint_pose().position
-            cmd_vel, arrived = context.rover.driver.get_drive_command(
-                waypoint_pos,
-                context.rover.get_pose(),
-                self.STOP_THRESH,
-                self.DRIVE_FWD_THRESH,
-            )
-            if arrived:
-                if not context.course.look_for_post() and not context.course.look_for_object():
-                    # We finished a regular waypoint, go onto the next one
-                    context.course.increment_waypoint()
-                elif context.course.look_for_post() or context.course.look_for_object():
-                    # We finished a waypoint associated with a post or mallet, but we have not seen it yet.
-                    return search.SearchState()
+        waypoint_pos = context.course.current_waypoint_pose().position
+        cmd_vel, arrived = context.rover.driver.get_drive_command(
+            waypoint_pos,
+            context.rover.get_pose(),
+            self.STOP_THRESHOLD,
+            self.DRIVE_FORWARD_THRESHOLD,
+        )
+        if arrived:
+            context.env.arrived_at_waypoint = True
+            if not context.course.look_for_post() and not context.course.look_for_object():
+                # We finished a regular waypoint, go onto the next one
+                context.course.increment_waypoint()
+            elif current_waypoint.type.val == WaypointType.WATER_BOTTLE:
+                # We finished a waypoint associated with the water bottle, but we have not seen it yet
+                return water_bottle_search.WaterBottleSearchState()
+            else:
+                # We finished a waypoint associated with a post or mallet, but we have not seen it yet.
+                return search.SearchState()
 
-            if context.rover.stuck:
-                context.rover.previous_state = self
-                return recovery.RecoveryState()
+        if context.rover.stuck:
+            context.rover.previous_state = self
+            return recovery.RecoveryState()
 
-            context.rover.send_drive_command(cmd_vel)
-
-        except (
-            tf2_ros.LookupException,
-            tf2_ros.ConnectivityException,
-            tf2_ros.ExtrapolationException,
-        ):
-            pass
+        context.rover.send_drive_command(cmd_vel)
 
         return self

@@ -172,21 +172,7 @@ namespace mrover {
             assert(msg->source == mControllerName);
             assert(msg->destination == mMasterName);
             auto result = moteus::Query::Parse(msg->data.data(), msg->data.size());
-            // if (this->isJointDe()) {
-            //     ROS_INFO("controller: %s    %3d p/a/v/t=(%7.3f,%7.3f,%7.3f,%7.3f)  v/t/f=(%5.1f,%5.1f,%3d) GPIO: Aux1-%X , Aux2-%X",
-            //              mControllerName.c_str(),
-            //              result.mode,
-            //              result.position,
-            //              result.abs_position,
-            //              result.velocity,
-            //              result.torque,
-            //              result.voltage,
-            //              result.temperature,
-            //              result.fault,
-            //              result.aux1_gpio,
-            //              result.aux2_gpio);
-            // }
-
+            
             if (this->isJointDe()) {
                 mCurrentPosition = OutputPosition{result.extra[0].value}; // Get value of absolute encoder if its joint_de0/1
                 mCurrentVelocity = OutputVelocity{result.extra[1].value};
@@ -373,8 +359,14 @@ namespace mrover {
                     return "Motor Stopped";
                 case moteus::Mode::kFault:
                     return "Motor Fault";
+                case moteus::Mode::kEnabling:
+                    return "Motor Enabling";
+                case moteus::Mode::kCalibrating:
+                    return "Motor Calibrating";
+                case moteus::Mode::kCalibrationComplete:
+                    return "Motor Calibration Complete";
                 case moteus::Mode::kPwm:
-                    return "PWM Operating Mode";
+                    return "Motor Pwm";
                 case moteus::Mode::kVoltage:
                     return "Voltage Operating Mode";
                 case moteus::Mode::kVoltageFoc:
@@ -389,6 +381,12 @@ namespace mrover {
                     return "Position Timeout";
                 case moteus::Mode::kZeroVelocity:
                     return "Zero Velocity";
+                case moteus::Mode::kStayWithin:
+                    return "Motor Stay Within";
+                case moteus::Mode::kMeasureInd:
+                    return "Measure Ind";
+                case moteus::Mode::kBrake:
+                    return "Motor Brake";
                 default:
                     return "Unknown Mode";
             }

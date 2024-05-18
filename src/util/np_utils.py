@@ -1,7 +1,8 @@
-import numpy as np
-import collections
-from geometry_msgs.msg import Vector3, Quaternion, Point
 from typing import Union
+
+import numpy as np
+
+from geometry_msgs.msg import Vector3, Quaternion, Point
 
 
 def _translation_to_numpy(translation: Vector3) -> np.ndarray:
@@ -59,11 +60,12 @@ def angle_to_rotate(v1, v2):
 
 
 def numpify(msg: Union[Vector3, Quaternion, Point]) -> np.ndarray:
-    if msg.__class__ == Vector3:
-        return _translation_to_numpy(msg)
-    elif msg.__class__ == Quaternion:
-        return _rotation_to_numpy(msg)
-    elif msg.__class__ == Point:
-        return _point_to_numpy(msg)
-    else:
-        raise Exception("type of msg must be either Vector3 or Quaternion!!!")
+    match msg:
+        case Vector3():
+            return _translation_to_numpy(msg)
+        case Quaternion():
+            return _rotation_to_numpy(msg)
+        case Point():
+            return _point_to_numpy(msg)
+        case _:
+            raise Exception("type of msg must be either Vector3 or Quaternion!!!")

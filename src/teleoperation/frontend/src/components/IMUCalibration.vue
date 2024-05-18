@@ -1,12 +1,26 @@
 <template>
   <div class="rounded bg-white wrap">
     <span class="px-2">IMU Calibration</span>
-    <span class="px-2">{{ system_val }}</span>
+    <span class="px-2">Magnetometer</span>
     <LEDIndicator
       class="px-2"
-      :name="'System'"
+      :name="mag_calibration"
       :show_name="true"
-      :connected="system_val == calibration_limit_master"
+      :connected="mag_calibration == calibration_limit_master"
+    />
+    <span class="px-2">Gyroscope</span>
+    <LEDIndicator
+      class="px-2"
+      :name="gyro_calibration"
+      :show_name="true"
+      :connected="gyro_calibration == calibration_limit_master"
+    />
+    <span class="px-2">Accelerometer</span>
+    <LEDIndicator
+      class="px-2"
+      :name="accel_calibration"
+      :show_name="true"
+      :connected="accel_calibration == calibration_limit_master"
     />
   </div>
 </template>
@@ -24,7 +38,9 @@ export default {
 
   data() {
     return {
-      system_val: 0,
+      mag_calibration: 0,
+      gyro_calibration: 0,
+      accel_calibration: 0,
       calibration_limit_master: calibration_limit
     }
   },
@@ -35,8 +51,12 @@ export default {
 
   watch: {
     message(msg) {
-      if (msg.type == 'calibration_status') {
-        this.system_val = msg.system_calibration
+      switch (msg.type) {
+        case 'calibration':
+          this.mag_calibration = msg.magnetometer_calibration
+          this.gyro_calibration = msg.gyroscope_calibration
+          this.accel_calibration = msg.acceleration_calibration
+          break
       }
     }
   }

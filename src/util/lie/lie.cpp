@@ -12,8 +12,8 @@ auto SIM3::position() const -> R3 {
     return mTransform.translation();
 }
 
-auto SE3Conversions::fromTfTree(tf2_ros::Buffer const& buffer, std::string const& fromFrame, std::string const& toFrame) -> SE3d {
-    geometry_msgs::TransformStamped transform = buffer.lookupTransform(toFrame, fromFrame, ros::Time{});
+auto SE3Conversions::fromTfTree(tf2_ros::Buffer const& buffer, std::string const& fromFrame, std::string const& toFrame, ros::Time const& time) -> SE3d {
+    geometry_msgs::TransformStamped transform = buffer.lookupTransform(toFrame, fromFrame, time);
     return fromTf(transform.transform);
 }
 

@@ -1,21 +1,13 @@
 <launch>
-  <arg name="run_tag_detector" default="true" />
-  <arg name="run_object_detector" default="false" />
-
-  <arg name="sim" default="false" />
-  <arg name="use_ekf" default="true" />
-  <arg name="ekf_start_delay" default="0" />
+  <arg name="tag_detector" default="true"/>
+  <arg name="object_detector" default="false"/>
 
   <include file="$(find mrover)/launch/perception.launch">
-    <arg name="run_tag_detector" value="$(arg run_tag_detector)" />
-    <arg name="run_object_detector" value="$(arg run_object_detector)" />
+    <arg name="tag_detector" value="$(arg tag_detector)"/>
+    <arg name="object_detector" value="$(arg object_detector)"/>
   </include>
 
-  <include file="$(find mrover)/launch/navigation.launch" />
+  <include file="$(find mrover)/launch/navigation.launch"/>
 
-  <include file="$(find mrover)/launch/localization.launch">
-    <arg name="sim" value="$(arg sim)" />
-    <arg name="use_ekf" value="$(arg use_ekf)" />
-    <arg name="ekf_start_delay" value="$(arg ekf_start_delay)" />
-  </include>
+  <!-- <include file="$(find mrover)/launch/localization.launch"/> -->
 </launch>

@@ -49,7 +49,7 @@
 </template>
 
 <script lang="ts">
-// import html2canvas from "html2canvas";
+import html2canvas from "html2canvas";
 import ToggleButton from "./ToggleButton.vue";
 import { mapState, mapActions } from 'vuex'
 
@@ -115,11 +115,12 @@ export default {
       .then(canvas => {
         const image = canvas.toDataURL('image/png')
         const a = document.createElement('a')
-        a.setAttribute('download', 'chlorophyll.png')
+        a.setAttribute('download', 'chlorophyll_' + new Date(Date.now()).toString() + '.png')
         a.setAttribute('href', image)
         a.click()
         canvas.remove()
       })
+      alert("Downloaded report!")
     },
   },
 

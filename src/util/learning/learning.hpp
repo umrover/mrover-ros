@@ -2,7 +2,6 @@
 
 #include "pch.hpp"
 
-//Data type for detection
 struct Detection {
     int classId{};
     std::string className;
@@ -11,28 +10,26 @@ struct Detection {
 };
 
 class Learning {
-private:
     std::string mModelName;
 
     std::vector<std::string> classes{"bottle", "hammer"};
 
     InferenceWrapper mInferenceWrapper;
 
-    auto parseModelOutput(cv::Mat& output, 
-                          std::vector<Detection>& detections, 
-                          float modelScoreThreshold = 0.75, 
+    auto parseModelOutput(cv::Mat& output,
+                          std::vector<Detection>& detections,
+                          float modelScoreThreshold = 0.75,
                           float modelNMSThreshold = 0.5) -> void;
 
 public:
     Learning();
 
-    Learning(std::string& modelName);
+    explicit Learning(std::string& modelName);
 
     ~Learning();
 
-    auto modelForwardPass(const cv::Mat& blob, 
-                          std::vector<Detection>& detections, 
-                          float modelScoreThreshold = 0.75, 
+    auto modelForwardPass(cv::Mat const& blob,
+                          std::vector<Detection>& detections,
+                          float modelScoreThreshold = 0.75,
                           float modelNMSThreshold = 0.5) -> void;
-
 };

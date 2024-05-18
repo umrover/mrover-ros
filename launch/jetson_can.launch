@@ -1,0 +1,27 @@
+<launch>
+  <rosparam command="load" file="$(find mrover)/config/esw.yaml"/>
+
+  <!-- Can bridges forward ROS CAN messages to/from the Linux SocketCAN interface -->
+  <!-- These correspond one-to-one with the SocketCAN interfaces outputted when running "ip link" -->
+
+  <!-- We use the PEAK PCAN-miniPCIe FD card for interfacing with the CAN bus -->
+  <!-- It has four buses, but can0 has a broken connector so is not used -->
+  <!-- This driver: https://www.peak-system.com/fileadmin/media/linux/index.htm was compiled on the Jetson -->
+  <!-- It makes the SocketCAN interfaces show up in "ip link" -->
+
+  <node name="can_bridge_1" pkg="mrover" type="can_bridge"
+        respawn="true" respawn_delay="2"
+        output="screen">
+    <param name="interface" value="can1"/>
+  </node>
+  <node name="can_bridge_2" pkg="mrover" type="can_bridge"
+        respawn="true" respawn_delay="2"
+        output="screen">
+    <param name="interface" value="can2"/>
+  </node>
+  <node name="can_bridge_3" pkg="mrover" type="can_bridge"
+        respawn="true" respawn_delay="2"
+        output="screen">
+    <param name="interface" value="can3"/>
+  </node>
+</launch>

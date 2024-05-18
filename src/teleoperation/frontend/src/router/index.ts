@@ -1,9 +1,10 @@
-import { createWebHistory, createRouter } from 'vue-router'
+import { createRouter, createWebHistory } from 'vue-router'
 import Menu from '../components/Menu.vue'
 import DMESTask from '../components/DMESTask.vue'
 import AutonTask from '../components/AutonTask.vue'
 import ISHTask from '../components/ISHTask.vue'
 import SATask from '../components/SATask.vue'
+import Cameras from '../components/Cameras.vue'
 import Rover3D from '../components/Rover3D.vue'
 
 const routes = [
@@ -44,11 +45,19 @@ const routes = [
     component: ISHTask
   },
   {
-    path: "/Control",
-    name: "Control",
-    component: Rover3D,
+    path: '/Cameras',
+    name: 'Cameras',
+    component: Cameras,
+    props: {
+      isSA: false,
+      mission: 'other'
+    }
   },
-
+  {
+    path: '/Control',
+    name: 'Control',
+    component: Rover3D
+  }
 ]
 const router = createRouter({
   history: createWebHistory(),

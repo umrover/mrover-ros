@@ -149,19 +149,20 @@ namespace mrover {
                 // This also includes when going to zero from a non-zero value (since signum(0) == 0), helpful for when you want to stop moving quickly on input release
                 m_throttled_output = 0_percent;
             }
-
-            if (abs(delta) < applied_delta) {
-                // We are very close to the desired output, just set it
-                m_throttled_output = output_after_limit;
-            } else {
-                m_throttled_output += applied_delta * signum(delta);
+            else {
+				if (abs(delta) < applied_delta) {
+					// We are very close to the desired output, just set it
+					m_throttled_output = output_after_limit;
+				} else {
+					m_throttled_output += applied_delta * signum(delta);
+				}
             }
+
 
             m_motor_driver.write(m_throttled_output);
         }
 
         auto process_command(AdjustCommand const& message) -> void {
-            // TODO: verify this is correct
             if (m_uncalib_position && m_state_after_config) {
                 m_state_after_calib = StateAfterCalib{
                         .offset_position = m_uncalib_position.value() - message.position,
@@ -174,6 +175,8 @@ namespace mrover {
 
             if (message.enc_info.quad_present) {
                 if (!m_relative_encoder) m_relative_encoder.emplace(m_encoder_timer, message.enc_info.quad_ratio, m_encoder_elapsed_timer);
+                EncoderReading enc_read = m_relative_encoder->read().value();
+                m_uncalib_position = enc_read.position;  // usually but not always 0
             }
             if (message.enc_info.abs_present) {
                 if (!m_absolute_encoder) m_absolute_encoder.emplace(AbsoluteEncoderReader::AS5048B_Bus{m_absolute_encoder_i2c}, message.enc_info.abs_offset, message.enc_info.abs_ratio, m_encoder_elapsed_timer);

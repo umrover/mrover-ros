@@ -10,20 +10,9 @@ namespace mrover {
         mSaveTask = PeriodicTask{mPnh.param<float>("save_rate", 5)};
         mSaveHistory = boost::circular_buffer<SaveData>{static_cast<std::size_t>(mPnh.param<int>("save_history", 4096))};
 
-        mTwistSub = mNh.subscribe<geometry_msgs::Twist>("/cmd_vel", 1, &SimulatorNodelet::twistCallback, this);
-        mArmPositionsSub = mNh.subscribe<Position>("/arm_position_cmd", 1, &SimulatorNodelet::armPositionsCallback, this);
-        mArmVelocitiesSub = mNh.subscribe<Velocity>("/arm_velocity_cmd", 1, &SimulatorNodelet::armVelocitiesCallback, this);
-        mArmThrottlesSub = mNh.subscribe<Throttle>("/arm_throttle_cmd", 1, &SimulatorNodelet::armThrottlesCallback, this);
-
         mGroundTruthPub = mNh.advertise<nav_msgs::Odometry>("/ground_truth", 1);
-        mGpsPub = mNh.advertise<sensor_msgs::NavSatFix>("/gps/fix", 1);
-        mImuPub = mNh.advertise<ImuAndMag>("/imu/data", 1);
-        mGpsTask = PeriodicTask{mPnh.param<float>("gps_rate", 10)};
-        mImuTask = PeriodicTask{mPnh.param<float>("imu_rate", 100)};
-        mMotorStatusPub = mNh.advertise<MotorsStatus>("/drive_status", 1);
-        mDriveControllerStatePub = mNh.advertise<ControllerState>("/drive_controller_data", 1);
-        mArmControllerStatePub = mNh.advertise<ControllerState>("/arm_controller_data", 1);
-        mArmJointStatePub = mNh.advertise<sensor_msgs::JointState>("/arm_joint_data", 1);
+
+        mCmdVelPub = mNh.advertise<geometry_msgs::Twist>("/simulator_cmd_vel", 1);
 
         mIkTargetPub = mNh.advertise<IK>("/arm_ik", 1);
 
@@ -50,7 +39,21 @@ namespace mrover {
 
         initUrdfsFromParams();
 
-        twistCallback(boost::make_shared<geometry_msgs::Twist>());
+        {
+            auto addGroup = [&](std::string_view groupName, std::vector<std::string> const& names) {
+                MotorGroup& group = mMotorGroups.emplace_back();
+                group.updateTask = PeriodicTask{50};
+                group.jointStatePub = mNh.advertise<sensor_msgs::JointState>(std::format("{}_joint_data", groupName), 1);
+                group.controllerStatePub = mNh.advertise<ControllerState>(std::format("{}_controller_data", groupName), 1);
+                group.names = names;
+                group.throttleSub = mNh.subscribe<Throttle>(std::format("{}_throttle_cmd", groupName), 1, &SimulatorNodelet::throttlesCallback, this);
+                group.velocitySub = mNh.subscribe<Velocity>(std::format("{}_velocity_cmd", groupName), 1, &SimulatorNodelet::velocitiesCallback, this);
+                group.positionSub = mNh.subscribe<Position>(std::format("{}_position_cmd", groupName), 1, &SimulatorNodelet::positionsCallback, this);
+            };
+            addGroup("arm", {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll"});
+            addGroup("drive_left", {"front_left", "middle_left", "back_left"});
+            addGroup("drive_right", {"front_right", "middle_right", "back_right"});
+        }
 
         mRunThread = std::thread{&SimulatorNodelet::run, this};
 
@@ -89,7 +92,7 @@ namespace mrover {
                 glfwPollEvents();
 #endif
                 // Comments this out while debugging segfaults, otherwise it captures your cursor
-                glfwSetInputMode(mWindow.get(), GLFW_CURSOR, mInGui ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
+                // glfwSetInputMode(mWindow.get(), GLFW_CURSOR, mInGui ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
             }
             mLoopProfiler.measureEvent("GLFW Events");
 

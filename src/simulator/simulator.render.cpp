@@ -208,6 +208,7 @@ namespace mrover {
         mWindow = GlfwPointer<GLFWwindow, glfwCreateWindow, glfwDestroyWindow>{w, h, WINDOW_NAME, nullptr, nullptr};
         NODELET_INFO_STREAM(std::format("Created window of size: {}x{}", w, h));
 
+#ifndef __APPLE__
         if (cv::Mat logo = imread(std::filesystem::path{std::source_location::current().file_name()}.parent_path() / "mrover_logo.png", cv::IMREAD_UNCHANGED);
             logo.type() == CV_8UC4) {
             cvtColor(logo, logo, cv::COLOR_BGRA2RGBA);
@@ -220,6 +221,7 @@ namespace mrover {
         } else {
             ROS_WARN_STREAM("Failed to load logo image");
         }
+#endif
 
         if (glfwRawMouseMotionSupported()) glfwSetInputMode(mWindow.get(), GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
 
@@ -286,7 +288,23 @@ namespace mrover {
             ROS_INFO_STREAM(std::format("\tWGPU Adapter Driver: {}", properties.driverDescription));
         }
 
-        mDevice = mAdapter.createDevice();
+        wgpu::SupportedLimits limits;
+        mAdapter.getLimits(&limits);
+
+        wgpu::RequiredLimits requiredLimits = wgpu::Default;
+        requiredLimits.limits.maxVertexAttributes = 4;
+        requiredLimits.limits.maxVertexBuffers = 8;
+        requiredLimits.limits.maxBindGroups = 2;
+        requiredLimits.limits.maxUniformBuffersPerShaderStage = 4;
+        requiredLimits.limits.maxUniformBufferBindingSize = 1024;
+        requiredLimits.limits.maxComputeWorkgroupsPerDimension = 2048;
+        requiredLimits.limits.minUniformBufferOffsetAlignment = 256;
+        requiredLimits.limits.minStorageBufferOffsetAlignment = 256;
+
+        wgpu::DeviceDescriptor deviceDescriptor;
+        deviceDescriptor.requiredLimits = &requiredLimits;
+
+        mDevice = mAdapter.requestDevice(deviceDescriptor);
         if (!mDevice) throw std::runtime_error("Failed to create WGPU device");
 
         mErrorCallback = mDevice.setUncapturedErrorCallback([](wgpu::ErrorType type, char const* message) {
@@ -504,24 +522,24 @@ namespace mrover {
         }
     }
 
-    template<typename T>
-    struct Pool {
-        boost::container::static_vector<T*, 32> container;
-
-        auto borrowFrom() -> T* {
-            if (container.empty()) return new T{};
-            T* result = container.back();
-            container.pop_back();
-            return result;
-        }
-
-        auto returnTo(T* t) -> void {
-            container.push_back(t);
-        }
-    };
-
-    Pool<sensor_msgs::PointCloud2> pointCloudPool;
-    Pool<sensor_msgs::Image> imagePool;
+    // template<typename T>
+    // struct Pool {
+    //     boost::container::static_vector<T*, 32> container;
+    //
+    //     auto borrowFrom() -> T* {
+    //         if (container.empty()) return new T{};
+    //         T* result = container.back();
+    //         container.pop_back();
+    //         return result;
+    //     }
+    //
+    //     auto returnTo(T* t) -> void {
+    //         container.push_back(t);
+    //     }
+    // };
+    //
+    // Pool<sensor_msgs::PointCloud2> pointCloudPool;
+    // Pool<sensor_msgs::Image> imagePool;
 
     auto SimulatorNodelet::camerasUpdate(wgpu::CommandEncoder encoder, wgpu::RenderPassColorAttachment& colorAttachment, wgpu::RenderPassColorAttachment& normalAttachment, wgpu::RenderPassDepthStencilAttachment& depthStencilAttachment, wgpu::RenderPassDescriptor const& renderPassDescriptor) -> void {
         // TODO(quintin): Remote duplicate code
@@ -531,7 +549,8 @@ namespace mrover {
                 mWgpuInstance.processEvents();
                 if (stereoCamera.pointCloudStagingBuffer.getMapState() == wgpu::BufferMapState::Mapped && stereoCamera.base.stagingBuffer.getMapState() == wgpu::BufferMapState::Mapped) {
                     {
-                        auto pointCloud = boost::shared_ptr<sensor_msgs::PointCloud2>{pointCloudPool.borrowFrom(), [](sensor_msgs::PointCloud2* msg) { pointCloudPool.returnTo(msg); }};
+                        // auto pointCloud = boost::shared_ptr<sensor_msgs::PointCloud2>{pointCloudPool.borrowFrom(), [](sensor_msgs::PointCloud2* msg) { pointCloudPool.returnTo(msg); }};
+                        auto pointCloud = boost::make_shared<sensor_msgs::PointCloud2>();
                         pointCloud->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
                         pointCloud->is_dense = true;
                         pointCloud->width = stereoCamera.base.resolution.x();
@@ -549,7 +568,8 @@ namespace mrover {
                         stereoCamera.pcPub.publish(pointCloud);
                     }
                     {
-                        auto image = boost::shared_ptr<sensor_msgs::Image>{imagePool.borrowFrom(), [](sensor_msgs::Image* msg) { imagePool.returnTo(msg); }};
+                        // auto image = boost::shared_ptr<sensor_msgs::Image>{imagePool.borrowFrom(), [](sensor_msgs::Image* msg) { imagePool.returnTo(msg); }};
+                        auto image = boost::make_shared<sensor_msgs::Image>();
                         image->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
                         image->encoding = sensor_msgs::image_encodings::BGRA8;
                         image->width = stereoCamera.base.resolution.x();
@@ -617,7 +637,8 @@ namespace mrover {
             if (camera.callback) {
                 mWgpuInstance.processEvents();
                 if (camera.stagingBuffer.getMapState() == wgpu::BufferMapState::Mapped) {
-                    auto image = boost::shared_ptr<sensor_msgs::Image>{imagePool.borrowFrom(), [](sensor_msgs::Image* msg) { imagePool.returnTo(msg); }};
+                    // auto image = boost::shared_ptr<sensor_msgs::Image>{imagePool.borrowFrom(), [](sensor_msgs::Image* msg) { imagePool.returnTo(msg); }};
+                    auto image = boost::make_shared<sensor_msgs::Image>();
                     image->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
                     image->encoding = sensor_msgs::image_encodings::BGRA8;
                     image->width = camera.resolution.x();
@@ -750,6 +771,23 @@ namespace mrover {
 
         wgpu::CommandBuffer commands = encoder.finish();
         mQueue.submit(commands);
+
+#ifdef __APPLE__
+        {
+            // Temporary fix...
+            // See: https://issues.chromium.org/issues/338710345
+            // This only happens on M2/M3 (M1 is fine)
+            bool isWorkDone = false;
+            auto workDoneCallback = mQueue.onSubmittedWorkDone([&isWorkDone](wgpu::QueueWorkDoneStatus const& status) {
+                if (status == wgpu::QueueWorkDoneStatus::Success) {
+                    isWorkDone = true;
+                }
+            });
+            while (!isWorkDone) {
+                mDevice.tick();
+            }
+        }
+#endif
 
         if (!mIsHeadless) mSwapChain.present();
 

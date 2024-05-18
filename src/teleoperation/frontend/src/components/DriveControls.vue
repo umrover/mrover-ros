@@ -1,49 +1,33 @@
 <template>
-  <div class="drive">
-    <!-- This component is for capturing joystick inputs -->
-  </div>
+  <div class='drive' />
 </template>
 
-<script lang="ts">
+<script lang='ts'>
 import { mapActions } from 'vuex'
 
-let interval: number
+const UPDATE_HZ = 20
 
 export default {
-  data() {
-    return {}
-  },
-
   methods: {
     ...mapActions('websocket', ['sendMessage'])
   },
 
-  beforeUnmount: function () {
-    window.clearInterval(interval)
+  beforeUnmount: function() {
+    window.clearInterval(this.interval)
   },
 
-  created: function () {
-    const UPDATE_RATE = 50 //100 Hz
-
-    interval = window.setInterval(() => {
+  created: function() {
+    this.interval = window.setInterval(() => {
       const gamepads = navigator.getGamepads()
-      for (let i = 0; i < 4; i++) {
-        const gamepad = gamepads[i]
-        if (gamepad && (gamepad.id.includes('Logitech') || gamepad.id.includes('Thrustmaster'))) {
-          let buttons = gamepad.buttons.map((button) => {
-            return button.value
-          })
+      const gamepad = gamepads.find(gamepad => gamepad && gamepad.id.includes('Thrustmaster'))
+      if (!gamepad) return
 
-          const joystickData = {
-            type: 'joystick_values',
-            axes: gamepad.axes,
-            buttons: buttons
-          }
-
-          this.sendMessage(joystickData)
-        }
-      }
-    }, UPDATE_RATE)
+      this.sendMessage({
+        type: 'joystick',
+        axes: gamepad.axes,
+        buttons: gamepad.buttons.map(button => button.value)
+      })
+    }, 1000 / UPDATE_HZ)
   }
 }
 </script>

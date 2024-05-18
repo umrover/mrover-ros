@@ -1,21 +1,19 @@
 #!/usr/bin/env python3
-
 import threading
 
 import rospy
-
 from util.state_lib.state_machine import StateMachine
 from util.state_lib.state_publisher_server import StatePublisher
-
+from navigation.approach_object import ApproachObjectState
 from navigation.approach_post import ApproachPostState
 from navigation.context import Context
+from navigation.long_range import LongRangeState
 from navigation.post_backup import PostBackupState
 from navigation.recovery import RecoveryState
 from navigation.search import SearchState
 from navigation.state import DoneState, OffState, off_check
+from navigation.water_bottle_search import WaterBottleSearchState
 from navigation.waypoint import WaypointState
-from navigation.approach_object import ApproachObjectState
-from navigation.long_range import LongRangeState
 
 
 class Navigation(threading.Thread):
@@ -53,6 +51,7 @@ class Navigation(threading.Thread):
                 PostBackupState(),
                 ApproachPostState(),
                 ApproachObjectState(),
+                WaterBottleSearchState(),
                 LongRangeState(),
                 SearchState(),
                 RecoveryState(),
@@ -60,8 +59,13 @@ class Navigation(threading.Thread):
             ],
         )
         self.state_machine.add_transitions(ApproachObjectState(), [DoneState(), SearchState(), RecoveryState()])
-        self.state_machine.add_transitions(LongRangeState(), [ApproachPostState(), SearchState(), RecoveryState()])
+        self.state_machine.add_transitions(
+            LongRangeState(), [ApproachPostState(), SearchState(), WaypointState(), RecoveryState()]
+        )
         self.state_machine.add_transitions(OffState(), [WaypointState(), DoneState()])
+        self.state_machine.add_transitions(
+            WaterBottleSearchState(), [WaypointState(), RecoveryState(), ApproachObjectState()]
+        )
         self.state_machine.configure_off_switch(OffState(), off_check)
         self.state_machine_server = StatePublisher(self.state_machine, "nav_structure", 1, "nav_state", 10)
 

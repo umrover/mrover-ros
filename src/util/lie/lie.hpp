@@ -8,12 +8,20 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 #include <Eigen/Geometry>
+#include <manif/SE2.h>
 #include <manif/SE3.h>
+#include <manif/SO2.h>
+#include <manif/SO3.h>
 
-using manif::SE3d, manif::SO3d, manif::SE3f, manif::SO3f;
+using manif::SE3d, manif::SO3d, manif::SE3f, manif::SO3f, manif::SE2d, manif::SO2d, manif::SE2f, manif::SO2f;
 
+using R2 = Eigen::Vector2d;
 using R3 = Eigen::Vector3d;
 using S3 = Eigen::Quaterniond;
+
+using R2f = Eigen::Vector2f;
+using R3f = Eigen::Vector3f;
+using S3f = Eigen::Quaternionf;
 
 class SE3Conversions {
 public:
@@ -38,9 +46,10 @@ public:
      * \param buffer    ROS TF Buffer, make sure a listener is attached
      * \param fromFrame From (transform) or child (pose) frame
      * \param toFrame   To (transform) or parent (pose) frame
+     * \param time      Time to query the transform at, default is the latest
      * \return          The transform or pose represented by an SE3 lie group element
      */
-    [[nodiscard]] static auto fromTfTree(tf2_ros::Buffer const& buffer, std::string const& fromFrame, std::string const& toFrame) -> SE3d;
+    [[nodiscard]] static auto fromTfTree(tf2_ros::Buffer const& buffer, std::string const& fromFrame, std::string const& toFrame, ros::Time const& time = ros::Time{}) -> SE3d;
 
     /**
      * \brief             Push a transform to the TF tree between two frames

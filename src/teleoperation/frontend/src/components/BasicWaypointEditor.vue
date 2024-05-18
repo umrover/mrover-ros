@@ -98,7 +98,7 @@
 </template>
 
 <script lang="ts">
-import { convertDMS } from '../utils.js'
+import { convertDMS } from '../utils'
 import WaypointItem from './BasicWaypointItem.vue'
 import { mapMutations, mapGetters, mapActions, mapState } from 'vuex'
 import _ from 'lodash'
@@ -240,7 +240,7 @@ export default {
 
     window.setTimeout(() => {
       // Timeout so websocket will be initialized
-      this.sendMessage({ type: 'get_basic_waypoint_list', data: null })
+      this.sendMessage({ type: 'get_basic_waypoint_list' })
     }, 250)
   },
 
@@ -289,10 +289,6 @@ export default {
   width: 50%;
   height: 100%;
   margin-right: 20px;
-}
-
-.dragArea {
-  height: 100%;
 }
 
 .all-waypoints {
