@@ -7,9 +7,6 @@ namespace mrover {
         mNh = getMTNodeHandle();
         mPnh = getMTPrivateNodeHandle();
 
-        //Loop profiler param
-        mNh.param<bool>("enable_loop_profiler", mEnableLoopProfiler, false);
-
         //TF Params
         mNh.param<std::string>("camera_frame", mCameraFrameId, "zed_left_camera_frame");
         mNh.param<std::string>("world_frame", mMapFrame, "map");

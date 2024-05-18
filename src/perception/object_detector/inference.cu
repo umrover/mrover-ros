@@ -164,7 +164,7 @@ namespace mrover {
         auto const [nbDims, d] = mEngine->getTensorShape(OUTPUT_BINDING_NAME);
         for (int i = 0; i < nbDims; i++) {
             std::array<char, 512> message;
-            std::snprintf(message.data(), message.size(), "Size %d %d", i, d[i]);
+            std::snprintf(message.data(), message.size(), "Size %d %zu", i, d[i]);
             mLogger.log(ILogger::Severity::kINFO, message.data());
         }
 

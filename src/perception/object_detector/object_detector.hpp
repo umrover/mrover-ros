@@ -16,7 +16,7 @@ namespace mrover {
         std::string mModelName;
 
         LoopProfiler mLoopProfiler{"Object Detector", 1};
-        bool mEnableLoopProfiler{};
+        static constexpr bool mEnableLoopProfiler = false;
 
         cv::Mat mImg;
 
@@ -53,25 +53,45 @@ namespace mrover {
         auto onInit() -> void override;
 
         auto getObjectInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr,
-                                     size_t u, size_t v, size_t width, size_t height) -> std::optional<SE3d>;
+                                     size_t u, 
+                                     size_t v, 
+                                     size_t width, 
+                                     size_t height) -> std::optional<SE3d>;
 
         auto spiralSearchInImg(sensor_msgs::PointCloud2ConstPtr const& cloudPtr,
-                               size_t xCenter, size_t yCenter, size_t width, size_t height) -> std::optional<SE3d>;
+                               size_t xCenter, 
+                               size_t yCenter, 
+                               size_t width, 
+                               size_t height) -> std::optional<SE3d>;
 
         static auto convertPointCloudToRGBA(sensor_msgs::PointCloud2ConstPtr const& msg, cv::Mat& img) -> void;
 
         auto updateHitsObject(sensor_msgs::PointCloud2ConstPtr const& msg,
-                              Detection const& detection, std::vector<bool>& seenObjects,
+                              const std::vector<Detection>& detections, 
                               cv::Size const& imgSize = {640, 640}) -> void;
 
         auto publishImg(cv::Mat const& img) -> void;
+
+        auto parseModelOutput(cv::Mat& output, 
+                              std::vector<Detection>& detections, 
+                              float modelScoreThreshold = 0.75, 
+                              float modelNMSThreshold = 0.5) -> void;
+
+        static auto drawOnImage(cv::Mat& image, const std::vector<Detection>& detections) -> void;
+
+        auto modelForwardPass(cv::Mat& image, 
+                              std::vector<Detection>& detections, 
+                              float modelScoreThreshold = 0.75, 
+                              float modelNMSThreshold = 0.5) -> void;
 
     public:
         ObjectDetectorNodelet() = default;
 
         ~ObjectDetectorNodelet() override = default;
 
-        auto imageCallback(sensor_msgs::PointCloud2ConstPtr const& msg) -> void;
+        auto pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg) -> void;
+
+        auto imageCallback(sensor_msgs::ImageConstPtr const& msg) -> void;
     };
 
 } // namespace mrover
