@@ -122,6 +122,7 @@ class DriveController:
         :return: the lookahead point
         """
         # compute the vector from the previous target position to the current target position
+
         path_vec = path_end - path_start
         # compute the vector from the previous target position to the rover position
         rover_vec = rover_pos - path_start

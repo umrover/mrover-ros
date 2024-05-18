@@ -182,6 +182,9 @@ mrover_add_esw_bridge_node(science_bridge src/esw/science_bridge.cpp)
 
 ## Perception
 
+mrover_add_nodelet(costmap src/perception/cost_map/*.cpp src/perception/cost_map src/perception/cost_map/pch.hpp)
+mrover_nodelet_link_libraries(costmap lie)
+
 mrover_add_library(websocket_server src/esw/websocket_server/*.cpp src/esw/websocket_server)
 target_compile_definitions(websocket_server PUBLIC BOOST_ASIO_NO_DEPRECATED)
 

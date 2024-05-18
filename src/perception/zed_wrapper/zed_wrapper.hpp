@@ -12,6 +12,7 @@ namespace mrover {
             sl::Mat leftImage;
             sl::Mat rightImage;
             sl::Mat leftPoints;
+            sl::Mat leftNormals;
 
             Measures() = default;
 
@@ -31,7 +32,7 @@ namespace mrover {
 
         PointCloudGpu mPointCloudGpu;
 
-        sl::Resolution mImageResolution, mPointResolution;
+        sl::Resolution mImageResolution, mPointResolution, mNormalsResolution;
         sl::String mSvoPath;
         int mGrabTargetFps{};
         int mDepthConfidence{};
@@ -68,7 +69,7 @@ namespace mrover {
 
     auto slTime2Ros(sl::Timestamp t) -> ros::Time;
 
-    auto fillPointCloudMessageFromGpu(sl::Mat& xyzGpu, sl::Mat& bgraGpu, PointCloudGpu& pcGpu, sensor_msgs::PointCloud2Ptr const& msg) -> void;
+    void fillPointCloudMessageFromGpu(sl::Mat& xyzGpu, sl::Mat& bgraGpu, sl::Mat& normalsGpu, PointCloudGpu& pcGpu, sensor_msgs::PointCloud2Ptr const& msg);
 
     auto fillCameraInfoMessages(sl::CalibrationParameters& calibration, sl::Resolution const& resolution,
                                 sensor_msgs::CameraInfoPtr const& leftInfoMsg, sensor_msgs::CameraInfoPtr const& rightInfoMsg) -> void;

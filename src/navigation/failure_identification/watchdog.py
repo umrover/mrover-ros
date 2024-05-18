@@ -1,15 +1,14 @@
 from typing import Tuple
 
-import rospy
 import numpy as np
 import pandas as pd
 
+import rospy
 from util.SO3 import SO3
-from util.ros_utils import get_rosparam
 
-WINDOW_SIZE = get_rosparam("watchdog/window_size", 100)
-ANGULAR_THRESHOLD = get_rosparam("watchdog/angular_threshold", 0.001)
-LINEAR_THRESHOLD = get_rosparam("watchdog/linear_threshold", 0.55)
+WINDOW_SIZE = rospy.get_param("watchdog/window_size")
+ANGULAR_THRESHOLD = rospy.get_param("watchdog/angular_threshold")
+LINEAR_THRESHOLD = rospy.get_param("watchdog/linear_threshold")
 
 
 class WatchDog:

@@ -14,6 +14,13 @@ search:
   segments_per_rotation: 8
   distance_between_spirals: 3
 
+water_bottle_search:
+  stop_threshold: 0.5
+  drive_forward_threshold: 0.34
+  coverage_radius: 10
+  segments_per_rotation: 10
+  distance_between_spirals: 3
+
 object_search:
   coverage_radius: 10
   distance_between_spirals: 3

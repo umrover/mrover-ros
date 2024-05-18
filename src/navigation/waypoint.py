@@ -1,18 +1,32 @@
-from typing import ClassVar
-
 import rospy
-from navigation import search, recovery, post_backup, state
-from navigation.context import Context
+from mrover.msg import WaypointType
+from mrover.srv import MoveCostMap
+from navigation import (
+    search,
+    recovery,
+    post_backup,
+    state,
+    water_bottle_search,
+)
 from util.state_lib.state import State
 
 
 class WaypointState(State):
-    STOP_THRESHOLD = rospy.get_param("waypoint/stop_threshold")
-    DRIVE_FORWARD_THRESHOLD = rospy.get_param("waypoint/drive_forward_threshold")
-    NO_TAG: ClassVar[int] = -1
+    STOP_THRESHOLD: float = rospy.get_param("waypoint/stop_threshold")
+    DRIVE_FORWARD_THRESHOLD: float = rospy.get_param("waypoint/drive_forward_threshold")
+    NO_TAG: int = -1
 
-    def on_enter(self, context: Context) -> None:
-        context.env.arrived_at_waypoint = False
+    def on_enter(self, context) -> None:
+        # TODO: In context find the access for type of waypoint
+
+        current_waypoint = context.course.current_waypoint()
+        if current_waypoint.type.val == WaypointType.WATER_BOTTLE:
+            rospy.wait_for_service("move_cost_map")
+            move_cost_map = rospy.ServiceProxy("move_cost_map", MoveCostMap)
+            try:
+                move_cost_map(f"course{context.course.waypoint_index}")
+            except rospy.ServiceException as exc:
+                rospy.logerr(f"Service call failed: {exc}")
 
     def on_exit(self, context) -> None:
         pass
@@ -52,6 +66,9 @@ class WaypointState(State):
             if not context.course.look_for_post() and not context.course.look_for_object():
                 # We finished a regular waypoint, go onto the next one
                 context.course.increment_waypoint()
+            elif current_waypoint.type.val == WaypointType.WATER_BOTTLE:
+                # We finished a waypoint associated with the water bottle, but we have not seen it yet
+                return water_bottle_search.WaterBottleSearchState()
             else:
                 # We finished a waypoint associated with a post or mallet, but we have not seen it yet.
                 return search.SearchState()

@@ -1,11 +1,11 @@
 from typing import Optional
 
 import numpy as np
+from scipy.spatial.transform import Rotation
 
 import rospy
 from navigation import approach_post, recovery
 from navigation.approach_target_base import ApproachTargetBaseState
-from util.np_utils import normalized
 from util.state_lib.state import State
 
 DISTANCE_AHEAD = rospy.get_param("long_range/distance_ahead")
@@ -46,14 +46,10 @@ class LongRangeState(ApproachTargetBaseState):
         if tag.hit_count <= 0:
             bearing_to_tag = 0
 
-        # rover_direction rotated by bearing to tag
-        bearing_rotation_mat = np.array(
-            [[np.cos(bearing_to_tag), -np.sin(bearing_to_tag)], [np.sin(bearing_to_tag), np.cos(bearing_to_tag)]]
-        )
+        bearing_rotation_mat = Rotation.from_rotvec([0, 0, bearing_to_tag]).as_matrix()
 
-        direction_to_tag = bearing_rotation_mat @ rover_direction[:2]
+        direction_to_tag = bearing_rotation_mat[:2, :2] @ rover_direction[:2]
 
-        direction_to_tag = normalized(direction_to_tag)
         distance = DISTANCE_AHEAD
         direction_to_tag = np.array([direction_to_tag[0], direction_to_tag[1], 0.0])
         tag_position = rover_position + direction_to_tag * distance

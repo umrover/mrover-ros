@@ -12,12 +12,13 @@ from geometry_msgs.msg import Twist
 from mrover.msg import StateMachineStateUpdate
 from nav_msgs.msg import Odometry
 from navigation.failure_identification.watchdog import WatchDog
-from sensor_msgs.msg import JointState
 from std_msgs.msg import Bool
-from util.ros_utils import get_rosparam
 
-DATAFRAME_MAX_SIZE = get_rosparam("failure_identification/dataframe_max_size", 200)
-POST_RECOVERY_GRACE_PERIOD = get_rosparam("failure_identification/post_recovery_grace_period", 5.0)
+DATAFRAME_MAX_SIZE = rospy.get_param("failure_identification/dataframe_max_size")
+POST_RECOVERY_GRACE_PERIOD = rospy.get_param("failure_identification/post_recovery_grace_period")
+
+# test recovery state using the stuck button on the GUI rather than analyzing data
+TEST_RECOVERY_STATE = rospy.get_param("failure_identification/test_recovery_state", False)
 
 
 class FailureIdentifier:
@@ -39,7 +40,6 @@ class FailureIdentifier:
 
     def __init__(self):
         nav_status_sub = message_filters.Subscriber("nav_state", StateMachineStateUpdate)
-        drive_status_sub = message_filters.Subscriber("drive_joint_data", JointState)
         odometry_sub = message_filters.Subscriber("/odometry", Odometry)
 
         ts = message_filters.ApproximateTimeSynchronizer([nav_status_sub, odometry_sub], 10, 1.0, allow_headerless=True)
@@ -101,14 +101,11 @@ class FailureIdentifier:
         Updates the current row of the data frame with the latest data from the rover
         then appends the row to the data frame
         @param nav_status: the current state of the rover, used to determine if the rover is already recovering
-        @param drive_status: the current status of the rovers motors, has velocity and effort data
         @param odometry: the current odometry of the rover, has position and velocity data
 
         publishes a message to the /nav_stuck topic indicating if the rover is stuck
         """
 
-        # test recovery state using the stuck button on the GUI rather than analyzing data
-        TEST_RECOVERY_STATE = get_rosparam("failure_identification/test_recovery_state", False)
         # if the state is 'done' or 'off', write the data frame to a csv file if we were collecting
         if nav_status.state == "DoneState" or nav_status.state == "OffState":
             self.write_to_csv()

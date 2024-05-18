@@ -24,7 +24,7 @@ class State(ABC):
         """
         Called exactly once when the state is exited.
         No cleanup of internal state is necessary since this state will be destroyed.
-        An example usecase of this may be to write to an external log or send a service call to an external system.
+        An example use case of this may be to write to an external log or send a service call to an external system.
         :param context: The context object that is passed to the state machine.
         """
         raise NotImplementedError
@@ -54,8 +54,11 @@ class State(ABC):
         return not self.__eq__(other)
 
 
-##state to be returned to signfy that the state machine should exit
 class ExitState(State):
+    """
+    State to be returned to signify that the state machine should exit.
+    """
+
     def on_enter(self, ctx):
         pass
 

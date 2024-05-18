@@ -12,6 +12,7 @@ from navigation.post_backup import PostBackupState
 from navigation.recovery import RecoveryState
 from navigation.search import SearchState
 from navigation.state import DoneState, OffState, off_check
+from navigation.water_bottle_search import WaterBottleSearchState
 from navigation.waypoint import WaypointState
 
 
@@ -50,6 +51,7 @@ class Navigation(threading.Thread):
                 PostBackupState(),
                 ApproachPostState(),
                 ApproachObjectState(),
+                WaterBottleSearchState(),
                 LongRangeState(),
                 SearchState(),
                 RecoveryState(),
@@ -61,6 +63,9 @@ class Navigation(threading.Thread):
             LongRangeState(), [ApproachPostState(), SearchState(), WaypointState(), RecoveryState()]
         )
         self.state_machine.add_transitions(OffState(), [WaypointState(), DoneState()])
+        self.state_machine.add_transitions(
+            WaterBottleSearchState(), [WaypointState(), RecoveryState(), ApproachObjectState()]
+        )
         self.state_machine.configure_off_switch(OffState(), off_check)
         self.state_machine_server = StatePublisher(self.state_machine, "nav_structure", 1, "nav_state", 10)
 
