@@ -4,6 +4,7 @@ from typing import Optional
 import numpy as np
 
 import rospy
+from navigation.context import Context
 from util.np_utils import rotate_2d
 from util.state_lib.state import State
 
@@ -24,26 +25,27 @@ class RecoveryState(State):
     start_time: Optional[rospy.Time] = None
     waypoint_calculated: bool
 
-    def reset(self, context) -> None:
+    def reset(self, context: Context) -> None:
         self.waypoint_calculated = False
         self.waypoint_behind = None
         self.current_action = JTurnAction.MOVING_BACK
         context.rover.stuck = False
         self.start_time = None
 
-    def on_enter(self, context) -> None:
+    def on_enter(self, context: Context) -> None:
         self.reset(context)
         self.start_time = rospy.Time.now()
 
-    def on_exit(self, context) -> None:
+    def on_exit(self, context: Context) -> None:
         self.reset(context)
 
-    def on_loop(self, context) -> State:
+    def on_loop(self, context: Context) -> State:
         if rospy.Time.now() - self.start_time > rospy.Duration(GIVE_UP_TIME):
             return context.rover.previous_state
+
         # Making waypoint behind the rover to go backwards
         pose = context.rover.get_pose()
-        # if first round, set a waypoint directly behind the rover and command it to
+        # If first round, set a waypoint directly behind the rover and command it to
         # drive backwards toward it until it arrives at that point.
         if self.current_action == JTurnAction.MOVING_BACK:
             # Only set waypoint_behind once so that it doesn't get overwritten and moved
@@ -62,7 +64,7 @@ class RecoveryState(State):
                 self.waypoint_behind = None
                 context.rover.driver.reset()
 
-        # if second round, set a waypoint off to the side of the rover and command it to
+        # If second round, set a waypoint off to the side of the rover and command it to
         # turn and drive backwards towards it until it arrives at that point. So it will begin
         # by turning then it will drive backwards.
         if self.current_action == JTurnAction.J_TURNING:

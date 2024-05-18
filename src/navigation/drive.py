@@ -121,8 +121,8 @@ class DriveController:
         :param lookahead_dist: the distance to look ahead on the path
         :return: the lookahead point
         """
-        # compute the vector from the previous target position to the current target position
 
+        # Compute the vector from the previous target position to the current target position
         path_vec = path_end - path_start
         # compute the vector from the previous target position to the rover position
         rover_vec = rover_pos - path_start
@@ -157,7 +157,7 @@ class DriveController:
         :modifies: self._last_angular_error
         """
 
-        # get the direction vector of the rover and the target position, zero the Z components of both since our controller only assumes motion and control over the Rover in the XY plane
+        # Get the direction vector of the rover and the target position, zero the Z components of both since our controller only assumes motion and control over the Rover in the XY plane
         rover_dir = rover_pose.rotation.direction_vector()
         rover_dir[2] = 0
 
@@ -177,11 +177,11 @@ class DriveController:
 
         target_dir = target_pos - rover_pos
 
-        # if the target is farther than completion distance away from the last one, reset the controller
+        # If the target is farther than completion distance away from the last one, reset the controller
         if self._last_target is not None and np.linalg.norm(target_pos - self._last_target) > completion_thresh:
             self.reset()
 
-        # compute errors
+        # Compute errors
         linear_error = float(np.linalg.norm(target_dir))
         angular_error = angle_to_rotate(rover_dir, target_dir)
 

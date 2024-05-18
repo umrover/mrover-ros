@@ -21,9 +21,8 @@ from mrover.msg import (
 )
 from mrover.srv import EnableAuton, EnableAutonRequest, EnableAutonResponse
 from nav_msgs.msg import OccupancyGrid
-from navigation import approach_post, long_range, approach_object
 from navigation.drive import DriveController
-from std_msgs.msg import Time, Bool
+from std_msgs.msg import Bool
 from util.SE3 import SE3
 from util.state_lib.state import State
 
@@ -45,20 +44,22 @@ tf_broadcaster: tf2_ros.StaticTransformBroadcaster = tf2_ros.StaticTransformBroa
 class Rover:
     ctx: Context
     stuck: bool
-    previous_state: str
+    previous_state: State
     driver: DriveController = DriveController()
 
     def get_pose(self) -> SE3:
-        return SE3.from_tf_tree(self.ctx.tf_buffer, parent_frame=self.ctx.world_frame, child_frame=self.ctx.rover_frame)
+        try:
+            return SE3.from_tf_tree(
+                self.ctx.tf_buffer, parent_frame=self.ctx.world_frame, child_frame=self.ctx.rover_frame
+            )
+        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
+            raise Exception("Navigation failed to get rover pose. Is localization running?")
 
-    def send_drive_command(self, twist: Twist):
+    def send_drive_command(self, twist: Twist) -> None:
         self.ctx.vel_cmd_publisher.publish(twist)
 
-    def send_drive_stop(self):
+    def send_drive_stop(self) -> None:
         self.send_drive_command(Twist())
-
-    def get_pose_with_time(self) -> Tuple[SE3, Time]:
-        return SE3.from_tf_time(self.ctx.tf_buffer, parent_frame="map", child_frame="base_link")
 
 
 @dataclass
@@ -87,7 +88,7 @@ class Environment:
         :return:        Pose of the target or None.
         """
         try:
-            target_pose, time = SE3.from_tf_time(
+            target_pose, time = SE3.from_tf_tree_with_time(
                 self.ctx.tf_buffer, parent_frame=self.ctx.world_frame, child_frame=frame
             )
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
@@ -98,9 +99,7 @@ class Environment:
         return target_pose.position
 
     def current_target_pos(self) -> Optional[np.ndarray]:
-        if self.ctx.course is None:
-            rospy.logwarn("Trying to get target while there is no course!")
-            return None
+        assert self.ctx.course
 
         current_waypoint = self.ctx.course.current_waypoint()
         if current_waypoint is None:
@@ -207,7 +206,7 @@ class Course:
     # Currently active waypoint
     waypoint_index: int = 0
 
-    def increment_waypoint(self):
+    def increment_waypoint(self) -> None:
         self.waypoint_index += 1
 
     def waypoint_pose(self, index: int) -> SE3:
@@ -253,6 +252,8 @@ class Course:
         :return: One of the approach states (ApproachPostState, LongRangeState, or ApproachObjectState)
                  if we are looking for a post or object, and we see it in one of the cameras (ZED or long range)
         """
+        from navigation import approach_post, long_range, approach_object
+
         current_waypoint = self.current_waypoint()
         if self.look_for_post():
             # If we see the tag in the ZED, go to ApproachPostState
@@ -330,6 +331,8 @@ class Context:
     rover_frame: str
 
     def __init__(self) -> None:
+        from navigation.state import OffState
+
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
         self.vel_cmd_publisher = rospy.Publisher("navigation_cmd_vel", Twist, queue_size=1)
@@ -337,7 +340,7 @@ class Context:
         self.enable_auton_service = rospy.Service("enable_auton", EnableAuton, self.recv_enable_auton)
         self.stuck_listener = rospy.Subscriber("nav_stuck", Bool, self.stuck_callback)
         self.course = None
-        self.rover = Rover(self, False, "")
+        self.rover = Rover(self, False, OffState())
         self.env = Environment(self, long_range_tags=LongRangeTagStore(self), cost_map=CostMap())
         self.disable_requested = False
         self.world_frame = rospy.get_param("world_frame")
@@ -358,7 +361,7 @@ class Context:
     def tag_data_callback(self, tags: LongRangeTags) -> None:
         self.env.long_range_tags.push_frame(tags.longRangeTags)
 
-    def costmap_callback(self, msg: OccupancyGrid):
+    def costmap_callback(self, msg: OccupancyGrid) -> None:
         """
         Callback function for the occupancy grid perception sends
         :param msg: Occupancy Grid representative of a 30 x 30m square area with origin at GNSS waypoint. Values are 0, 1, -1

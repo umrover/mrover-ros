@@ -25,7 +25,6 @@ class WaterBottleSearchState(State):
     star_traj: Trajectory  # returned by astar
     prev_target: Optional[np.ndarray] = None
     is_recovering: bool = False
-    context: Context
     time_last_updated: rospy.Time
     path_pub: rospy.Publisher
     astar: AStar
@@ -40,13 +39,13 @@ class WaterBottleSearchState(State):
         "water_bottle_search/distance_between_spirals"
     )  # TODO: after testing, might need to change
 
-    def find_endpoint(self, end: np.ndarray) -> np.ndarray:
+    def find_endpoint(self, context: Context, end: np.ndarray) -> np.ndarray:
         """
         A-STAR Algorithm: f(n) = g(n) + h(n) to find a path from the given start to the given end in the given costmap
         :param end: next point in the spiral from traj in cartesian coordinates
         :return: the end point in cartesian coordinates
         """
-        costmap_2d = self.context.env.cost_map.data
+        costmap_2d = context.env.cost_map.data
         # convert end to occupancy grid coordinates then node
         end_ij = self.astar.cartesian_to_ij(end)
         end_node = self.astar.Node(None, (end_ij[0], end_ij[1]))
@@ -65,9 +64,12 @@ class WaterBottleSearchState(State):
                 print(f"End has high cost! new end: {end_ij}")
         return self.traj.get_cur_pt()
 
-    def on_enter(self, context) -> None:
-        self.context = context
+    def on_enter(self, context: Context) -> None:
+        assert context.course is not None
+
         search_center = context.course.current_waypoint()
+        assert search_center is not None
+
         if not self.is_recovering:
             self.traj = SearchTrajectory.spiral_traj(
                 context.rover.get_pose().position[0:2],
@@ -79,23 +81,24 @@ class WaterBottleSearchState(State):
             )
             origin = context.rover.get_pose().position[0:2]
             self.astar = AStar(origin, context)
-            print(f"ORIGIN: {origin}")
+            rospy.loginfo(f"Origin: {origin}")
             self.prev_target = None
         self.star_traj = Trajectory(np.array([]))
         self.time_last_updated = rospy.Time.now()
         self.path_pub = rospy.Publisher("path", Path, queue_size=10)
 
-    def on_exit(self, context) -> None:
-        self.context.costmap_listener.unregister()
+    def on_exit(self, context: Context) -> None:
+        context.costmap_listener.unregister()
 
-    def on_loop(self, context) -> State:
-        # only update our costmap every 1 second
+    def on_loop(self, context: Context) -> State:
+        assert context.course is not None
+
+        # Only update our costmap every 1 second
         if rospy.Time.now() - self.time_last_updated > rospy.Duration(1):
-            cur_rover_pose = self.context.rover.get_pose().position[0:2]
-            end_point = self.find_endpoint(self.traj.get_cur_pt()[0:2])
+            cur_rover_pose = context.rover.get_pose().position[0:2]
+            end_point = self.find_endpoint(context, self.traj.get_cur_pt()[0:2])
 
-            # call A-STAR
-            print("RUN ASTAR")
+            rospy.loginfo("Running A*...")
             try:
                 occupancy_list = self.astar.a_star(cur_rover_pose, end_point[0:2])
             except SpiralEnd:
@@ -112,7 +115,7 @@ class WaterBottleSearchState(State):
                 self.star_traj = Trajectory(np.array([]))
             else:
                 cartesian_coords = self.astar.ij_to_cartesian(np.array(occupancy_list))
-                print(f"{cartesian_coords}, shape: {cartesian_coords.shape}")
+                rospy.loginfo(f"{cartesian_coords}, shape: {cartesian_coords.shape}")
                 self.star_traj = Trajectory(
                     np.hstack((cartesian_coords, np.zeros((cartesian_coords.shape[0], 1))))
                 )  # current point gets set back to 0
@@ -153,17 +156,18 @@ class WaterBottleSearchState(State):
             self.prev_target = target_pos
             # if our target was the search spiral point, only increment the spiral path
             if traj_target:
-                print("arrived at spiral point")
+                rospy.loginfo("Arrived at spiral point")
                 # if we finish the spiral without seeing the object, move on with course
                 if self.traj.increment_point():
                     return waypoint.WaypointState()
             else:  # otherwise, increment the astar path
                 # if we finish the astar path, then reset astar and increment the spiral path
                 if self.star_traj.increment_point():
-                    print("arrived at end of astar")
+                    rospy.loginfo("Arrived at end of astar")
                     self.star_traj = Trajectory(np.array([]))
                     if self.traj.increment_point():
                         return waypoint.WaypointState()
+
         if context.rover.stuck:
             context.rover.previous_state = self
             self.is_recovering = True
@@ -177,4 +181,5 @@ class WaterBottleSearchState(State):
 
         if context.env.current_target_pos() is not None and context.course.look_for_object():
             return approach_object.ApproachObjectState()
+
         return self

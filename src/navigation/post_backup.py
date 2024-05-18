@@ -8,6 +8,7 @@ from shapely.geometry import Point, LineString
 
 import rospy
 from navigation import waypoint, recovery
+from navigation.context import Context
 from navigation.trajectory import Trajectory
 from util.SE3 import SE3
 from util.np_utils import perpendicular_2d
@@ -88,10 +89,12 @@ class AvoidPostTrajectory(Trajectory):
 class PostBackupState(State):
     traj: Optional[AvoidPostTrajectory]
 
-    def on_exit(self, context):
+    def on_exit(self, context: Context) -> None:
         self.traj = None
 
-    def on_enter(self, context) -> None:
+    def on_enter(self, context: Context) -> None:
+        assert context.course is not None
+
         if context.env.last_target_location is None:
             self.traj = None
         else:
@@ -102,7 +105,7 @@ class PostBackupState(State):
             )
             self.traj.cur_pt = 0
 
-    def on_loop(self, context) -> State:
+    def on_loop(self, context: Context) -> State:
         if self.traj is None:
             return waypoint.WaypointState()
 

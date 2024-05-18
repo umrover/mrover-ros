@@ -5,7 +5,7 @@ import numpy as np
 import rospy
 from mrover.msg import GPSPointList, WaypointType
 from navigation import recovery, waypoint
-from navigation.context import convert_cartesian_to_gps
+from navigation.context import convert_cartesian_to_gps, Context
 from navigation.trajectory import SearchTrajectory
 from util.state_lib.state import State
 
@@ -24,8 +24,11 @@ class SearchState(State):
     OBJECT_SPIRAL_COVERAGE_RADIUS = rospy.get_param("object_search/coverage_radius")
     OBJECT_DISTANCE_BETWEEN_SPIRALS = rospy.get_param("object_search/distance_between_spirals")
 
-    def on_enter(self, context) -> None:
+    def on_enter(self, context: Context) -> None:
+        assert context.course is not None
+
         search_center = context.course.current_waypoint()
+        assert search_center is not None
 
         if not self.is_recovering:
             if search_center.type.val == WaypointType.POST:
@@ -48,10 +51,10 @@ class SearchState(State):
                 )
             self.prev_target = None
 
-    def on_exit(self, context) -> None:
+    def on_exit(self, context: Context) -> None:
         pass
 
-    def on_loop(self, context) -> State:
+    def on_loop(self, context: Context) -> State:
         # continue executing the path from wherever it left off
         target_pos = self.traj.get_cur_pt()
         cmd_vel, arrived = context.rover.driver.get_drive_command(
@@ -80,6 +83,7 @@ class SearchState(State):
         context.rover.send_drive_command(cmd_vel)
 
         # returns either ApproachPostState, LongRangeState, ApproachObjectState, or None
+        assert context.course is not None
         approach_state = context.course.get_approach_target_state()
         if approach_state is not None:
             return approach_state

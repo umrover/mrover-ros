@@ -8,6 +8,7 @@ from navigation import (
     state,
     water_bottle_search,
 )
+from navigation.context import Context
 from util.state_lib.state import State
 
 
@@ -16,10 +17,12 @@ class WaypointState(State):
     DRIVE_FORWARD_THRESHOLD: float = rospy.get_param("waypoint/drive_forward_threshold")
     NO_TAG: int = -1
 
-    def on_enter(self, context) -> None:
-        # TODO: In context find the access for type of waypoint
+    def on_enter(self, context: Context) -> None:
+        assert context.course is not None
 
         current_waypoint = context.course.current_waypoint()
+        assert current_waypoint is not None
+
         if current_waypoint.type.val == WaypointType.WATER_BOTTLE:
             rospy.wait_for_service("move_cost_map")
             move_cost_map = rospy.ServiceProxy("move_cost_map", MoveCostMap)
@@ -28,10 +31,10 @@ class WaypointState(State):
             except rospy.ServiceException as exc:
                 rospy.logerr(f"Service call failed: {exc}")
 
-    def on_exit(self, context) -> None:
+    def on_exit(self, context: Context) -> None:
         pass
 
-    def on_loop(self, context) -> State:
+    def on_loop(self, context: Context) -> State:
         """
         Handle driving to a waypoint defined by a linearized cartesian position.
         If the waypoint is associated with a tag id, go into that state early if we see it,
@@ -39,6 +42,8 @@ class WaypointState(State):
         :param ud:  State machine user data
         :return:    Next state
         """
+        assert context.course is not None
+
         current_waypoint = context.course.current_waypoint()
         if current_waypoint is None:
             return state.DoneState()

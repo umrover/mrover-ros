@@ -6,6 +6,7 @@ from scipy.spatial.transform import Rotation
 import rospy
 from navigation import approach_post, recovery
 from navigation.approach_target_base import ApproachTargetBaseState
+from navigation.context import Context
 from util.state_lib.state import State
 
 DISTANCE_AHEAD = rospy.get_param("long_range/distance_ahead")
@@ -21,14 +22,19 @@ class LongRangeState(ApproachTargetBaseState):
     -Stuck?
     """
 
-    def on_enter(self, context) -> None:
+    def on_enter(self, context: Context) -> None:
         pass
 
-    def on_exit(self, context) -> None:
+    def on_exit(self, context: Context) -> None:
         pass
 
-    def get_target_position(self, context) -> Optional[np.ndarray]:
-        tag_id = context.course.current_waypoint().tag_id
+    def get_target_position(self, context: Context) -> Optional[np.ndarray]:
+        assert context.course is not None
+
+        current_waypoint = context.course.current_waypoint()
+        assert current_waypoint is not None
+
+        tag_id = current_waypoint.tag_id
         tag = context.env.long_range_tags.query(tag_id)
         if tag is None:
             return None
@@ -55,7 +61,7 @@ class LongRangeState(ApproachTargetBaseState):
         tag_position = rover_position + direction_to_tag * distance
         return tag_position
 
-    def determine_next(self, context, is_finished: bool) -> State:
+    def determine_next(self, context: Context, is_finished: bool) -> State:
         tag_position = context.env.current_target_pos()
         if tag_position is None:
             return self

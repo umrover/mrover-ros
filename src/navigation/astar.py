@@ -253,5 +253,5 @@ class AStar:
                     # add the child to the open list
                     heapq.heappush(open_list, child)
 
-            rospy.logwarn("Couldn't find a path to destination")
+            rospy.logwarn("Could not find a path to destination")
             raise NoPath()
