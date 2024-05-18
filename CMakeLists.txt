@@ -15,15 +15,14 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # Generate compile_commands.json for clang
 if (APPLE)
     # Ensures that homebrew packages are never used over miniforge packages
     set(CMAKE_IGNORE_PATH /opt/homebrew)
-    # Boost uses deprecated C++ library features
-    # Thankfully libcxx has a compatibility mode for this
     add_definitions(
+            # Boost uses deprecated C++ library features
+            # Thankfully libcxx has a compatibility mode for this
             -D_LIBCPP_ENABLE_CXX20_REMOVED_ALLOCATOR_MEMBERS
             -D_LIBCPP_ENABLE_CXX20_REMOVED_ALLOCATOR_VOID_SPECIALIZATION
+            # We override these
+            -D_LIBCPP___TYPE_TRAITS_IS_EXECUTION_POLICY_H
     )
-
-    find_package(fmt REQUIRED)
-    link_libraries(fmt::fmt)
 else ()
     # TODO(quintin): Fix this
     find_package(TBB QUIET)
