@@ -1,6 +1,6 @@
 <launch>
   <arg name="tag_detector" default="true"/>
-  <arg name="object_detector" default="false"/>
+  <arg name="object_detector" default="true"/>
   <arg name="stuck_detection" default="true"/>
 
   <include file="$(find mrover)/launch/jetson_base.launch"/>

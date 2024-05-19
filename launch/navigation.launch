@@ -6,5 +6,5 @@
   <node name="navigation" pkg="mrover" type="navigation.py" output="screen"/>
 
   <node if="$(arg stuck_detection)"
-        name="stuck_detection" pkg="mrover" type="stuck_detection.py"/>
+        name="stuck_detection" pkg="mrover" type="stuck_detector.py"/>
 </launch>

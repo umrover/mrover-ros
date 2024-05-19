@@ -140,7 +140,7 @@ namespace mrover {
         float xNormalized = center.x / static_cast<float>(image.cols());
         float xRecentered = 0.5f - xNormalized;
         float bearingDegrees = xRecentered * mCameraHorizontalFov;
-        return bearingDegrees;
+        return bearingDegrees * std::numbers::pi_v<float> / 180.0f;
     }
 
     auto ObjectDetectorNodeletBase::spiralSearchForValidPoint(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, std::size_t u, std::size_t v, std::size_t width, std::size_t height) const -> std::optional<SE3d> {
