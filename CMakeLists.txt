@@ -36,7 +36,7 @@ if (NOT APPLE)
     if (MOLD)
         set(MROVER_LINKER_OPTIONS -fuse-ld=mold)
         message(STATUS "Using mold as linker")
-    elseif (NOT APPLE)
+    elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
         find_program(LLD lld)
         if (LLD)
             set(MROVER_LINKER_OPTIONS -fuse-ld=lld)
@@ -154,8 +154,10 @@ catkin_package()
 mrover_add_library(lie src/util/lie/*.cpp src/util/lie)
 target_link_libraries(lie PUBLIC MANIF::manif)
 
-mrover_add_library(learning src/util/learning/*.c* src/util/learning)
-target_link_libraries(learning PRIVATE opencv_core opencv_dnn opencv_imgproc lie nvinfer nvonnxparser tbb)
+if (ZED_FOUND)
+    mrover_add_library(learning src/util/learning/*.c* src/util/learning)
+    target_link_libraries(learning PRIVATE opencv_core opencv_dnn opencv_imgproc lie nvinfer nvonnxparser tbb)
+endif ()
 
 ## ESW
 

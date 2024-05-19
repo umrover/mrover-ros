@@ -75,14 +75,7 @@ class GpsDriver:
                 if msg.lat == 0 or msg.lon == 0:
                     rospy.logwarn_throttle(1, "Zero satellite fix. Are we inside?")
                     return
-                # TODO(quintin): Use the time from the GPS message
-                # time = datetime.datetime(year=msg.year, month=msg.month, day=msg.day, hour=msg.hour, second=msg.second)
-                # time = rospy.Time(secs=time.timestamp() + (msg.nano / 1e6))
-                # if not self.valid_offset:
-                #     self.time_offset = rospy.Time.now() - time
-                #     self.valid_offset = True
-                #
-                # time = time + self.time_offset
+
                 self.gps_pub.publish(
                     NavSatFix(
                         header=Header(stamp=rospy.Time.now(), frame_id="base_link"),
