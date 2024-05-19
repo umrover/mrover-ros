@@ -1,5 +1,6 @@
 #pragma once
 
+#include <span>
 #include <algorithm>
 #include <cassert>
 #include <cmath>
@@ -8,6 +9,7 @@
 #include <format>
 #include <limits>
 #include <numeric>
+#include <numbers>
 #include <optional>
 #include <string>
 #include <type_traits>
