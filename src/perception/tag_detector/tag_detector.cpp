@@ -87,7 +87,8 @@ namespace mrover {
                            mDetectorParams->polygonalApproxAccuracyRate,
                            defaultDetectorParams->polygonalApproxAccuracyRate);
 
-        NODELET_INFO("Tag detection ready, min hit count: %d, max hit count: %d, hit increment weight: %d, hit decrement weight: %d", mMinHitCountBeforePublish, mMaxHitCount, mTagIncrementWeight, mTagDecrementWeight);
+        NODELET_INFO_STREAM(std::format("Tag detection ready, min hit count: {}, max hit count: {}, hit increment weight: {}, hit decrement weight: {}",
+                                        mMinHitCountBeforePublish, mMaxHitCount, mTagIncrementWeight, mTagDecrementWeight));
     }
 
     auto TagDetectorNodeletBase::configCallback(DetectorParamsConfig const& config, uint32_t level) const -> void {

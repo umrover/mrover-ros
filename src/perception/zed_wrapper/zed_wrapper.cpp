@@ -74,10 +74,9 @@ namespace mrover {
             mPointResolution = sl::Resolution(imageWidth, imageHeight);
             mNormalsResolution = sl::Resolution(imageWidth, imageHeight);
 
-            NODELET_INFO("Resolution: %s image: %zux%zu points: %zux%zu",
-                         grabResolutionString.c_str(), mImageResolution.width, mImageResolution.height, mPointResolution.width, mPointResolution.height);
-            NODELET_INFO("Use builtin visual odometry: %s", mUseBuiltinPosTracking ? "true" : "false");
-
+            NODELET_INFO_STREAM(std::format("Resolution: {} image: {}x{} points: {}x{}",
+                                            grabResolutionString, mImageResolution.width, mImageResolution.height, mPointResolution.width, mPointResolution.height));
+            NODELET_INFO_STREAM(std::format("Use builtin visual odometry: {}", mUseBuiltinPosTracking ? "true" : "false"));
             sl::InitParameters initParameters;
             if (mSvoPath) {
                 initParameters.input.setFromSVOFile(mSvoPath);
@@ -107,14 +106,14 @@ namespace mrover {
 
             cudaDeviceProp prop{};
             cudaGetDeviceProperties(&prop, 0);
-            ROS_INFO("MP count: %d, Max threads/MP: %d, Max blocks/MP: %d, max threads/block: %d",
-                     prop.multiProcessorCount, prop.maxThreadsPerMultiProcessor, prop.maxBlocksPerMultiProcessor, prop.maxThreadsPerBlock);
+            NODELET_INFO_STREAM(std::format("MP count: {}, Max threads/MP: {}, Max blocks/MP: {}, max threads/block: {}",
+                                            prop.multiProcessorCount, prop.maxThreadsPerMultiProcessor, prop.maxBlocksPerMultiProcessor, prop.maxThreadsPerBlock));
 
             mGrabThread = std::thread(&ZedNodelet::grabUpdate, this);
             mPointCloudThread = std::thread(&ZedNodelet::pointCloudUpdate, this);
 
         } catch (std::exception const& e) {
-            NODELET_FATAL("Exception while starting: %s", e.what());
+            NODELET_FATAL_STREAM(std::format("Exception while starting: {}", e.what()));
             ros::shutdown();
         }
     }
@@ -188,7 +187,7 @@ namespace mrover {
             NODELET_INFO("Tag thread finished");
 
         } catch (std::exception const& e) {
-            NODELET_FATAL("Exception while running tag thread: %s", e.what());
+            NODELET_FATAL_STREAM(std::format("Exception while running point cloud thread: {}", e.what()));
             ros::shutdown();
             std::exit(EXIT_FAILURE);
         }
@@ -290,7 +289,7 @@ namespace mrover {
             NODELET_INFO("Grab thread finished");
 
         } catch (std::exception const& e) {
-            NODELET_FATAL("Exception while running grab thread: %s", e.what());
+            NODELET_FATAL_STREAM(std::format("Exception while running grab thread: {}", e.what()));
             mZed.close();
             ros::shutdown();
             std::exit(EXIT_FAILURE);

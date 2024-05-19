@@ -19,7 +19,7 @@ namespace mrover {
         for (int scale = 0; scale < scaleCount; ++scale) {
             auto it = mThreshPubs.find(scale);
             if (it == mThreshPubs.end()) {
-                ROS_INFO("Creating new publisher for thresholded scale %d", scale);
+                ROS_INFO_STREAM(std::format("Creating new publisher for thresholded scale {}", scale));
                 std::tie(it, std::ignore) = mThreshPubs.emplace(scale, mNh.advertise<sensor_msgs::Image>("tag_detection_threshold_" + std::to_string(scale), 1));
             }
             auto& [_, publisher] = *it;

@@ -88,6 +88,8 @@ namespace mrover {
                 }
             }
         }
+        mProfiler.measureEvent("Filtration");
+
         publishDetectedTags();
         mProfiler.measureEvent("Publication");
     }
@@ -151,9 +153,16 @@ namespace mrover {
             mDetectedImagePub.publish(mDetectionsImageMessage);
         }
 
-        std::size_t detectedCount = mImmediateIds.size();
-        NODELET_INFO_COND(!mPrevDetectedCount.has_value() || detectedCount != mPrevDetectedCount.value(), "Detected %zu markers", detectedCount);
-        mPrevDetectedCount = detectedCount;
+        if (std::size_t detectedCount = mImmediateIds.size(); !mPrevDetectedCount.has_value() || detectedCount != mPrevDetectedCount.value()) {
+            // Note(quintin): Replace this with "formatting ranges" when it is available
+            std::ostringstream messageStream;
+            messageStream << std::format("Detected {} immediate tags: ", detectedCount);
+            messageStream << "{ ";
+            std::ranges::copy(mImmediateIds, std::ostream_iterator<int>{messageStream, " "});
+            messageStream << "}";
+            NODELET_INFO_STREAM(messageStream.str());
+            mPrevDetectedCount = detectedCount;
+        }
     }
 
     /**
@@ -166,14 +175,14 @@ namespace mrover {
         assert(cloudPtr);
 
         if (u >= cloudPtr->width || v >= cloudPtr->height) {
-            NODELET_WARN("Tag center out of bounds: [%zu %zu]", u, v);
+            NODELET_WARN_STREAM(std::format("Tag center out of bounds: [{}, {}]", u, v));
             return std::nullopt;
         }
 
         Point const& point = reinterpret_cast<Point const*>(cloudPtr->data.data())[u + v * cloudPtr->width];
 
         if (!std::isfinite(point.x) || !std::isfinite(point.y) || !std::isfinite(point.z)) {
-            NODELET_WARN("Tag center point not finite: [%f %f %f]", point.x, point.y, point.z);
+            NODELET_WARN_STREAM(std::format("Tag center point not finite: [{}, {}, {}]", point.x, point.y, point.z));
             return std::nullopt;
         }
 
