@@ -96,19 +96,14 @@ class Environment:
         return target_pose.position
 
     def current_target_pos(self) -> Optional[np.ndarray]:
-        assert self.ctx.course
+        assert self.ctx.course is not None
 
-        current_waypoint = self.ctx.course.current_waypoint()
-        if current_waypoint is None:
-            rospy.logwarn("Current waypoint is empty!")
-            return None
-
-        match current_waypoint.type.val:
-            case WaypointType.POST:
-                return self.get_target_position(f"tag{current_waypoint.tag_id}")
-            case WaypointType.MALLET:
+        match self.ctx.course.current_waypoint():
+            case Waypoint(type=WaypointType(val=WaypointType.POST), tag_id=tag_id):
+                return self.get_target_position(f"tag{tag_id}")
+            case Waypoint(type=WaypointType(val=WaypointType.MALLET)):
                 return self.get_target_position("hammer")
-            case WaypointType.WATER_BOTTLE:
+            case Waypoint(type=WaypointType(val=WaypointType.WATER_BOTTLE)):
                 return self.get_target_position("bottle")
             case _:
                 return None
