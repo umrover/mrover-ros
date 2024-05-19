@@ -15,9 +15,9 @@
 
 using manif::SE3d, manif::SO3d, manif::SE3f, manif::SO3f, manif::SE2d, manif::SO2d, manif::SE2f, manif::SO2f;
 
-using R2 = Eigen::Vector2d;
-using R3 = Eigen::Vector3d;
-using S3 = Eigen::Quaterniond;
+using R2d = Eigen::Vector2d;
+using R3d = Eigen::Vector3d;
+using S3d = Eigen::Quaterniond;
 
 using R2f = Eigen::Vector2f;
 using R3f = Eigen::Vector3f;
@@ -70,9 +70,9 @@ class SIM3 {
 public:
     SIM3() = default;
 
-    SIM3(SE3d const& se3, R3 const& scale);
+    SIM3(SE3d const& se3, R3d const& scale);
 
     [[nodiscard]] auto matrix() const -> Eigen::Matrix4d;
 
-    [[nodiscard]] auto position() const -> R3;
+    [[nodiscard]] auto position() const -> R3d;
 };

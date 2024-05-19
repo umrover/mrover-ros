@@ -8,7 +8,7 @@ namespace mrover {
     }
 
     auto yawSo3(double r) -> SO3d {
-        auto q = Eigen::Quaterniond{Eigen::AngleAxisd{r, R3::UnitY()}};
+        auto q = Eigen::Quaterniond{Eigen::AngleAxisd{r, R3d::UnitY()}};
         return {q.normalized()};
     }
 

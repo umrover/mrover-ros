@@ -2,7 +2,7 @@
 
 namespace mrover {
 
-    auto r3ToBtVector3(R3 const& r3) -> btVector3 {
+    auto r3ToBtVector3(R3d const& r3) -> btVector3 {
         return btVector3{static_cast<btScalar>(r3.x()), static_cast<btScalar>(r3.y()), static_cast<btScalar>(r3.z())};
     }
 
@@ -97,14 +97,14 @@ namespace mrover {
 
                 {
                     SE3d baseLinkInMap = rover.linkInWorld("base_link");
-                    R3 p = baseLinkInMap.translation();
-                    S3 q = baseLinkInMap.quat();
+                    R3d p = baseLinkInMap.translation();
+                    S3d q = baseLinkInMap.quat();
                     ImGui::Text("Rover Position: (%.2f, %.2f, %.2f)", p.x(), p.y(), p.z());
                     ImGui::Text("Rover Orientation: (%.2f, %.2f, %.2f, %.2f)", q.w(), q.x(), q.y(), q.z());
                 }
                 {
-                    R3 p = mCameraInWorld.translation();
-                    S3 q = mCameraInWorld.quat();
+                    R3d p = mCameraInWorld.translation();
+                    S3d q = mCameraInWorld.quat();
                     ImGui::Text("Camera Position: (%.2f, %.2f, %.2f)", p.x(), p.y(), p.z());
                     ImGui::Text("Camera Orientation: (%.2f, %.2f, %.2f, %.2f)", q.w(), q.x(), q.y(), q.z());
                 }

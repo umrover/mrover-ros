@@ -167,7 +167,7 @@ namespace mrover {
                     continue;
                 }
 
-                return std::make_optional<SE3d>(R3{point.x, point.y, point.z}, SO3d::Identity());
+                return std::make_optional<SE3d>(R3d{point.x, point.y, point.z}, SO3d::Identity());
             }
 
             if (sx == sy || (sx < 0 && sx == -sy) || (sx > 0 && sx == 1 - sy)) {

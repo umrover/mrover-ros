@@ -55,7 +55,7 @@ auto main(int argc, char** argv) -> int {
 
         // Compute the past velocities and headings of the rover in the map frame over a window of time
 
-        R2 roverVelocitySum{};
+        R2d roverVelocitySum{};
         double roverHeadingSum = 0.0;
         std::size_t readings = 0;
 
@@ -64,8 +64,8 @@ auto main(int argc, char** argv) -> int {
             try {
                 auto roverInMapOld = SE3Conversions::fromTfTree(tfBuffer, roverFrame, mapFrame, t - STEP);
                 auto roverInMapNew = SE3Conversions::fromTfTree(tfBuffer, roverFrame, mapFrame, t);
-                R3 roverVelocityInMap = (roverInMapNew.translation() - roverInMapOld.translation()) / STEP.toSec();
-                R3 roverAngularVelocityInMap = (roverInMapNew.asSO3() - roverInMapOld.asSO3()).coeffs();
+                R3d roverVelocityInMap = (roverInMapNew.translation() - roverInMapOld.translation()) / STEP.toSec();
+                R3d roverAngularVelocityInMap = (roverInMapNew.asSO3() - roverInMapOld.asSO3()).coeffs();
                 roverVelocitySum += roverVelocityInMap.head<2>();
                 roverHeadingSum += roverAngularVelocityInMap.z();
                 ++readings;
@@ -81,7 +81,7 @@ auto main(int argc, char** argv) -> int {
 
         // 2. Ensure the rover has actually moved to avoid correcting while standing still
 
-        if (R2 meanVelocityInMap = roverVelocitySum / static_cast<double>(readings); meanVelocityInMap.norm() < MIN_LINEAR_SPEED) {
+        if (R2d meanVelocityInMap = roverVelocitySum / static_cast<double>(readings); meanVelocityInMap.norm() < MIN_LINEAR_SPEED) {
             ROS_INFO_STREAM(std::format("Rover is not moving fast enough: speed = {} m/s", meanVelocityInMap.norm()));
             return;
         }
@@ -94,12 +94,12 @@ auto main(int argc, char** argv) -> int {
         double correctedHeadingInMap = std::atan2(roverVelocitySum.y(), roverVelocitySum.x());
 
         SO3d uncorrectedOrientation = rosQuaternionToEigenQuaternion(currentImuUncalib->orientation);
-        R2 uncorrectedForward = uncorrectedOrientation.rotation().col(0).head<2>();
+        R2d uncorrectedForward = uncorrectedOrientation.rotation().col(0).head<2>();
         double estimatedHeadingInMap = std::atan2(uncorrectedForward.y(), uncorrectedForward.x());
 
         double headingCorrectionDelta = correctedHeadingInMap - estimatedHeadingInMap;
 
-        correctionRotation = Eigen::AngleAxisd{headingCorrectionDelta, R3::UnitZ()};
+        correctionRotation = Eigen::AngleAxisd{headingCorrectionDelta, R3d::UnitZ()};
 
         ROS_INFO_STREAM(std::format("Correcting heading by: {}", correctionRotation->z()));
     });
@@ -117,10 +117,9 @@ auto main(int argc, char** argv) -> int {
     });
 
     ros::Subscriber poseSubscriber = nh.subscribe<geometry_msgs::Vector3Stamped>("/linearized_position", 1, [&](geometry_msgs::Vector3StampedConstPtr const& msg) {
-        R3 position{msg->vector.x, msg->vector.y, msg->vector.z};
+        R3d position{msg->vector.x, msg->vector.y, msg->vector.z};
 
         SE3d pose{position, SO3d::Identity()};
-        pose.translation() = position;
         if (correctionRotation && currentImuUncalib) {
             SO3d uncalibratedOrientation = rosQuaternionToEigenQuaternion(currentImuUncalib->orientation);
             pose.asSO3() = correctionRotation.value() * uncalibratedOrientation;

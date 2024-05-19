@@ -186,7 +186,7 @@ namespace mrover {
             return std::nullopt;
         }
 
-        return std::make_optional<SE3d>(R3{point.x, point.y, point.z}, SO3d::Identity());
+        return std::make_optional<SE3d>(R3d{point.x, point.y, point.z}, SO3d::Identity());
     }
 
     auto ImageTagDetectorNodelet::getTagBearing(cv::InputArray image, std::span<cv::Point2f const> tagCorners) const -> float {

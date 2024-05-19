@@ -67,7 +67,7 @@ namespace mrover {
         };
 
         float flySpeed = mFlySpeed * std::chrono::duration_cast<std::chrono::duration<float>>(dt).count();
-        R3 keyDelta = R3{axis(mCamForwardKey, mCamBackwardKey), axis(mCamLeftKey, mCamRightKey), axis(mCamUpKey, mCamDownKey)} * flySpeed;
+        R3d keyDelta = R3d{axis(mCamForwardKey, mCamBackwardKey), axis(mCamLeftKey, mCamRightKey), axis(mCamUpKey, mCamDownKey)} * flySpeed;
 
         Eigen::Vector2i windowSize;
         glfwGetWindowSize(mWindow.get(), &windowSize.x(), &windowSize.y());

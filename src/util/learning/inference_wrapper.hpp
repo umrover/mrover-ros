@@ -19,4 +19,3 @@ public:
     // Retrieve the output tensor from the previous forward pass
     [[nodiscard]] auto getOutputTensor() const -> cv::Mat;
 };
-

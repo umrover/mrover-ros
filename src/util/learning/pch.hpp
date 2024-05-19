@@ -1,9 +1,9 @@
 #pragma once
 
+#include <algorithm>
 #include <array>
 #include <exception>
 #include <filesystem>
-#include <algorithm>
 #include <fstream>
 #include <memory>
 #include <string>

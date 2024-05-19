@@ -3,7 +3,6 @@ from typing import Union, Optional
 
 
 class SinglePoleLowPass:
-
     """
     Infinite impulse response first order lowpass filter.
 
