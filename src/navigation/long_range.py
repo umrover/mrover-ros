@@ -4,15 +4,15 @@ import numpy as np
 from scipy.spatial.transform import Rotation
 
 import rospy
-from navigation import approach_post, recovery
-from navigation.approach_target_base import ApproachTargetBaseState
+from navigation import recovery
+from navigation.approach_target import ApproachTargetState
 from navigation.context import Context
 from util.state_lib.state import State
 
 DISTANCE_AHEAD = rospy.get_param("long_range/distance_ahead")
 
 
-class LongRangeState(ApproachTargetBaseState):
+class LongRangeState(ApproachTargetState):
     """
     State for when the tag is seen only in the long range camera.
     Transitions:
@@ -69,4 +69,4 @@ class LongRangeState(ApproachTargetBaseState):
             context.rover.previous_state = self
             return recovery.RecoveryState()
 
-        return approach_post.ApproachPostState()
+        return ApproachTargetState()

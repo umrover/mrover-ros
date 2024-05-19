@@ -6,7 +6,7 @@ import rospy
 from geometry_msgs.msg import Pose, PoseStamped, Point, Quaternion
 from mrover.msg import GPSPointList
 from nav_msgs.msg import Path
-from navigation import approach_object, recovery, waypoint
+from navigation import approach_target, recovery, waypoint
 from navigation.astar import AStar, SpiralEnd, NoPath
 from navigation.context import convert_cartesian_to_gps, Context
 from navigation.trajectory import Trajectory, SearchTrajectory
@@ -181,6 +181,6 @@ class WaterBottleSearchState(State):
         context.rover.send_drive_command(cmd_vel)
 
         if context.env.current_target_pos() is not None and context.course.look_for_object():
-            return approach_object.ApproachObjectState()
+            return approach_target.ApproachTargetState()
 
         return self

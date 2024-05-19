@@ -1,4 +1,3 @@
-from abc import ABC
 from typing import Optional
 
 import numpy as np
@@ -14,7 +13,7 @@ TAG_STOP_THRESHOLD = rospy.get_param("single_tag/tag_stop_threshold")
 DRIVE_FORWARD_THRESHOLD = rospy.get_param("waypoint/drive_forward_threshold")
 
 
-class ApproachTargetBaseState(State, ABC):
+class ApproachTargetState(State):
     def on_enter(self, context: Context) -> None:
         pass
 

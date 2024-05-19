@@ -253,19 +253,19 @@ class Course:
         :return: One of the approach states (ApproachPostState, LongRangeState, or ApproachObjectState)
                  if we are looking for a post or object, and we see it in one of the cameras (ZED or long range)
         """
-        from navigation import approach_post, long_range, approach_object
+        from navigation import long_range, approach_target
 
         if self.look_for_post():
             # If we see the tag in the ZED, go to ApproachPostState
             if self.ctx.env.current_target_pos() is not None:
-                return approach_post.ApproachPostState()
+                return approach_target.ApproachTargetState()
             # If we see the tag in the long range camera, go to LongRangeState
             assert self.ctx.course is not None
             if self.ctx.env.image_targets.query(self.ctx.course.image_target_name()) is not None:
                 return long_range.LongRangeState()
         elif self.look_for_object():
             if self.ctx.env.current_target_pos() is not None:
-                return approach_object.ApproachObjectState()
+                return approach_target.ApproachTargetState()
             assert self.ctx.course is not None
             if self.ctx.env.image_targets.query(self.ctx.course.image_target_name()) is not None:
                 return long_range.LongRangeState()

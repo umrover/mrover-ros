@@ -31,7 +31,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     # If you update these, be sure to update the correspondig version checkers in style.sh
-    "black==23.9.1",
+    "black==24.4.2",
     "mypy==1.10.0",
 ]
 
