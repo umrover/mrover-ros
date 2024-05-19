@@ -64,8 +64,8 @@ class WaypointState(State):
         cmd_vel, arrived = context.rover.driver.get_drive_command(
             waypoint_pos,
             context.rover.get_pose(),
-            self.STOP_THRESH,
-            self.DRIVE_FWD_THRESH,
+            self.STOP_THRESHOLD,
+            self.DRIVE_FORWARD_THRESHOLD,
         )
         if arrived:
             context.env.arrived_at_waypoint = True
