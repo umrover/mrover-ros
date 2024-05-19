@@ -72,9 +72,9 @@ class GpsDriver:
                         rospy.logdebug("RTCM message successfully used by receiver")
 
             case "NAV-PVT":
-                parsed_latitude = msg.lat
-                parsed_longitude = msg.lon
-                parsed_altitude = msg.hMSL
+                if msg.lat == 0 or msg.lon == 0:
+                    rospy.logwarn_throttle(1, "Zero satellite fix. Are we inside?")
+                    return
                 # TODO(quintin): Use the time from the GPS message
                 # time = datetime.datetime(year=msg.year, month=msg.month, day=msg.day, hour=msg.hour, second=msg.second)
                 # time = rospy.Time(secs=time.timestamp() + (msg.nano / 1e6))
@@ -83,14 +83,12 @@ class GpsDriver:
                 #     self.valid_offset = True
                 #
                 # time = time + self.time_offset
-                message_header = Header(stamp=rospy.Time.now(), frame_id="base_link")
-
                 self.gps_pub.publish(
                     NavSatFix(
-                        header=message_header,
-                        latitude=parsed_latitude,
-                        longitude=parsed_longitude,
-                        altitude=parsed_altitude,
+                        header=Header(stamp=rospy.Time.now(), frame_id="base_link"),
+                        latitude=msg.lat,
+                        longitude=msg.lon,
+                        altitude=msg.hMSL,
                     )
                 )
                 self.rtk_fix_pub.publish(RTKStatus(msg.carrSoln))

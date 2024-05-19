@@ -42,7 +42,7 @@ def main() -> None:
 
     rospy.loginfo("Configuring IMU reports...")
 
-    has_saved_calibration = False
+    all_done = False
 
     while not all_done and not rospy.is_shutdown():
         try:
