@@ -11,7 +11,7 @@ from util.state_lib.state import State
 
 
 class SearchState(State):
-    traj: SearchTrajectory
+    traj: SearchTrajectory = None
     prev_target: Optional[np.ndarray] = None
     is_recovering: bool = False
 
@@ -27,36 +27,16 @@ class SearchState(State):
     def on_enter(self, context: Context) -> None:
         assert context.course is not None
 
-        search_center = context.course.current_waypoint()
-        assert search_center is not None
-
-        if not self.is_recovering:
-            if search_center.type.val == WaypointType.POST:
-                self.traj = SearchTrajectory.spiral_traj(
-                    context.rover.get_pose().position[0:2],
-                    self.SPIRAL_COVERAGE_RADIUS,
-                    self.DISTANCE_BETWEEN_SPIRALS,
-                    self.SEGMENTS_PER_ROTATION,
-                    search_center.tag_id,
-                    False,
-                )
-            else:  # water bottle or mallet
-                self.traj = SearchTrajectory.spiral_traj(
-                    context.rover.get_pose().position[0:2],
-                    self.OBJECT_SPIRAL_COVERAGE_RADIUS,
-                    self.OBJECT_DISTANCE_BETWEEN_SPIRALS,
-                    self.SEGMENTS_PER_ROTATION,
-                    search_center.tag_id,
-                    False,
-                )
-            self.prev_target = None
+    def on_enter(self, context) -> None:
+        if SearchState.traj is None:
+            self.new_traj(context)
 
     def on_exit(self, context: Context) -> None:
         pass
 
     def on_loop(self, context: Context) -> State:
         # continue executing the path from wherever it left off
-        target_pos = self.traj.get_cur_pt()
+        target_pos = SearchState.traj.get_cur_pt()
         cmd_vel, arrived = context.rover.driver.get_drive_command(
             target_pos,
             context.rover.get_pose(),
@@ -67,7 +47,7 @@ class SearchState(State):
         if arrived:
             self.prev_target = target_pos
             # If we finish the spiral without seeing the tag, move on with course
-            if self.traj.increment_point():
+            if SearchState.traj.increment_point():
                 return waypoint.WaypointState()
 
         if context.rover.stuck:
@@ -78,7 +58,7 @@ class SearchState(State):
             self.is_recovering = False
 
         context.search_point_publisher.publish(
-            GPSPointList([convert_cartesian_to_gps(pt) for pt in self.traj.coordinates])
+            GPSPointList([convert_cartesian_to_gps(pt) for pt in SearchState.traj.coordinates])
         )
         context.rover.send_drive_command(cmd_vel)
 
@@ -89,3 +69,26 @@ class SearchState(State):
             return approach_state
 
         return self
+
+    def new_traj(self, context) -> None:
+        search_center = context.course.current_waypoint()
+
+        if not self.is_recovering:
+            if search_center.type.val == WaypointType.POST:
+                SearchState.traj = SearchTrajectory.spiral_traj(
+                    context.course.current_waypoint_pose().position[0:2],
+                    self.SPIRAL_COVERAGE_RADIUS,
+                    self.DISTANCE_BETWEEN_SPIRALS,
+                    self.SEGMENTS_PER_ROTATION,
+                    search_center.tag_id,
+                )
+            else:  # water bottle or mallet
+                SearchState.traj = SearchTrajectory.spiral_traj(
+                    context.course.current_waypoint_pose().position[0:2],
+                    self.OBJECT_SPIRAL_COVERAGE_RADIUS,
+                    self.OBJECT_DISTANCE_BETWEEN_SPIRALS,
+                    self.SEGMENTS_PER_ROTATION,
+                    search_center.tag_id,
+                )
+            self.prev_target = None
+

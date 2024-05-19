@@ -1,4 +1,5 @@
 import rospy
+import tf2_ros
 from mrover.msg import WaypointType
 from mrover.srv import MoveCostMap
 from navigation import (
@@ -58,13 +59,13 @@ class WaypointState(State):
         if approach_state is not None:
             return approach_state
 
-        # Attempt to find the waypoint in the TF tree and drive to it
+        # Attempt to find the waypoint in the TF tree and drive to it        
         waypoint_pos = context.course.current_waypoint_pose().position
         cmd_vel, arrived = context.rover.driver.get_drive_command(
             waypoint_pos,
             context.rover.get_pose(),
-            self.STOP_THRESHOLD,
-            self.DRIVE_FORWARD_THRESHOLD,
+            self.STOP_THRESH,
+            self.DRIVE_FWD_THRESH,
         )
         if arrived:
             context.env.arrived_at_waypoint = True
@@ -76,12 +77,14 @@ class WaypointState(State):
                 return water_bottle_search.WaterBottleSearchState()
             else:
                 # We finished a waypoint associated with a post or mallet, but we have not seen it yet.
-                return search.SearchState()
-
+                search_state = search.SearchState()
+                search_state.new_traj(context)
+                return search_state
+            
         if context.rover.stuck:
             context.rover.previous_state = self
             return recovery.RecoveryState()
 
-        context.rover.send_drive_command(cmd_vel)
+        context.rover.send_drive_command(cmd_vel)       
 
         return self
