@@ -69,13 +69,7 @@ class AStar:
         :param cart_coord: array of x and y cartesian coordinates
         :return: array of i and j coordinates for the occupancy grid
         """
-        width = self.context.env.cost_map.width * self.context.env.cost_map.resolution
-        height = self.context.env.cost_map.height * self.context.env.cost_map.resolution
-        width_height = np.array([-1 * width / 2, height / 2])  # [-W/2, H/2]
-        converted_coord = np.floor(
-            (cart_coord[0:2] - (self.origin + width_height)) / self.context.env.cost_map.resolution
-        )
-        return converted_coord.astype(np.int8) * np.array([1, -1])
+        return np.floor((cart_coord[0:2] - self.context.env.cost_map.origin) / self.context.env.cost_map.resolution).astype(np.int8)
 
     def ij_to_cartesian(self, ij_coords: np.ndarray) -> np.ndarray:
         """
@@ -87,17 +81,7 @@ class AStar:
         :param ij_coords: array of i and j occupancy grid coordinates
         :return: array of x and y coordinates in the real world
         """
-        width = self.context.env.cost_map.width * self.context.env.cost_map.resolution
-        height = self.context.env.cost_map.height * self.context.env.cost_map.resolution
-        width_height = np.array([width / 2, height / 2])  # [W/2, H/2]
-        resolution_conversion = ij_coords * [
-            self.context.env.cost_map.resolution,
-            self.context.env.cost_map.resolution,
-        ]  # [j * r, i * r]
-        half_res = np.array(
-            [self.context.env.cost_map.resolution / 2, -1 * self.context.env.cost_map.resolution / 2]
-        )  # [r/2, -r/2]
-        return ((self.origin - width_height) + resolution_conversion + half_res) * np.array([1, -1])
+        return self.context.env.cost_map.origin + ij_coords * self.context.env.cost_map.resolution
 
     def return_path(self, current_node: Node) -> list:
         """

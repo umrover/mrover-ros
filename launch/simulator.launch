@@ -2,6 +2,7 @@
   <arg name="headless" default="false"/>
   <arg name="rviz" default="true"/>
   <arg name="object_detector" default="false"/>
+  <arg name="cost_map" default="true"/>
 
   <rosparam command="load" file="$(find mrover)/config/simulator/simulator.yaml"/>
 
@@ -12,6 +13,7 @@
 
   <include file="$(find mrover)/launch/autonomy.launch">
     <arg name="object_detector" value="$(arg object_detector)"/>
+    <arg name="cost_map" value="$(arg cost_map)"/>
   </include>
 
   <node pkg="nodelet" type="nodelet" name="simulator"

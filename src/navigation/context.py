@@ -184,7 +184,8 @@ class CostMap:
     """
 
     data: np.ndarray
-    resolution: int
+    origin: np.ndarray
+    resolution: float
     height: int
     width: int
 
@@ -370,17 +371,17 @@ class Context:
         Callback function for the occupancy grid perception sends
         :param msg: Occupancy Grid representative of a 30 x 30m square area with origin at GNSS waypoint. Values are 0, 1, -1
         """
+        self.env.cost_map.origin = np.array([msg.info.origin.position.x, msg.info.origin.position.y])
         self.env.cost_map.resolution = msg.info.resolution  # meters/cell
         self.env.cost_map.height = msg.info.height  # cells
         self.env.cost_map.width = msg.info.width  # cells
         self.env.cost_map.data = (
             np.array(msg.data).reshape((int(self.env.cost_map.height), int(self.env.cost_map.width))).astype(np.float32)
-        )
+        ).T
 
         # change all unidentified points to have a slight cost
         self.env.cost_map.data[self.env.cost_map.data == -1.0] = 0.1  # TODO: find optimal value
         self.env.cost_map.data[self.env.cost_map.data >= 1] = 1
-        self.env.cost_map.data = np.rot90(self.env.cost_map.data, k=3, axes=(0, 1))  # rotate 90 degrees clockwise
 
         # apply kernel to average the map with zero padding
         kernel_shape = (7, 7)  # TODO: find optimal kernel size

@@ -21,6 +21,7 @@ namespace mrover {
         mGlobalGridMsg.info.width = static_cast<int>(mDimension / mResolution);
         mGlobalGridMsg.info.height = static_cast<int>(mDimension / mResolution);
         // Center the map at (0, 0)
+        mGlobalGridMsg.header.frame_id = mWorldFrame;
         mGlobalGridMsg.info.origin.position.x = -mDimension / 2;
         mGlobalGridMsg.info.origin.position.y = -mDimension / 2;
 

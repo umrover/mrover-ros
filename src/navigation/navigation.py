@@ -36,6 +36,7 @@ class Navigation(threading.Thread):
                 PostBackupState(),
                 ApproachTargetState(),
                 LongRangeState(),
+                WaterBottleSearchState(),
             ],
         )
         self.state_machine.add_transitions(
