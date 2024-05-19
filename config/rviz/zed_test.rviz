@@ -10,8 +10,9 @@ Panels:
         - /Perception1
         - /Perception1/ZED Pointcloud1
         - /Perception1/ZED Camera1
+        - /Perception1/ZED Camera1/Status1
       Splitter Ratio: 0.5
-    Tree Height: 1550
+    Tree Height: 465
   - Class: rviz/Selection
     Name: Selection
   - Class: rviz/Tool Properties
@@ -57,37 +58,33 @@ Visualization Manager:
       Value: true
     - Class: rviz/TF
       Enabled: true
+      Filter (blacklist): ""
+      Filter (whitelist): ""
       Frame Timeout: 15
       Frames:
         All Enabled: false
         base_link:
           Value: true
+        hammer:
+          Value: true
+        immediatehammer:
+          Value: true
         map:
           Value: true
-        odom:
-          Value: false
-        zed2i_baro_link:
-          Value: false
-        zed2i_base_link:
-          Value: false
-        zed2i_camera_center:
-          Value: false
+        zed_base_link:
+          Value: true
+        zed_camera_center:
+          Value: true
         zed_left_camera_frame:
           Value: false
-        zed2i_left_camera_optical_frame:
-          Value: false
-        zed2i_mag_link:
-          Value: false
-        zed2i_right_camera_frame:
-          Value: false
-        zed2i_right_camera_optical_frame:
-          Value: false
-        zed2i_temp_left_link:
-          Value: false
-        zed2i_temp_right_link:
-          Value: false
+        zed_left_camera_optical_frame:
+          Value: true
         zed_mount_link:
           Value: false
+        zed_right_camera_frame:
+          Value: true
+        zed_right_camera_optical_frame:
+          Value: true
       Marker Alpha: 1
       Marker Scale: 1
       Name: TF
@@ -96,26 +93,21 @@ Visualization Manager:
       Show Names: true
       Tree:
         map:
-          odom:
-            base_link:
-              zed2i_base_link:
-                zed2i_camera_center:
-                  zed2i_baro_link:
+          base_link:
+            zed_base_link:
+              zed_camera_center:
+                zed_left_camera_frame:
+                  immediatehammer:
                     {}
-                  zed_left_camera_frame:
-                    zed2i_left_camera_optical_frame:
-                      {}
-                    zed2i_temp_left_link:
-                      {}
-                  zed2i_mag_link:
+                  zed_left_camera_optical_frame:
                     {}
-                  zed2i_right_camera_frame:
-                    zed2i_right_camera_optical_frame:
-                      {}
-                    zed2i_temp_right_link:
-                      {}
-              zed_mount_link:
-                {}
+                zed_right_camera_frame:
+                  zed_right_camera_optical_frame:
+                    {}
+            zed_mount_link:
+              {}
+          hammer:
+            {}
       Update Interval: 0
       Value: true
     - Alpha: 1
@@ -123,7 +115,8 @@ Visualization Manager:
       Collision Enabled: false
       Enabled: true
       Links:
-        All Links Enabled: true
+        All Links Enabled:
+          {}
         Expand Joint Details: false
         Expand Link Details: false
         Expand Tree: false
@@ -132,44 +125,27 @@ Visualization Manager:
           Alpha: 1
           Show Axes: false
           Show Trail: false
-        zed2i_baro_link:
+        zed_base_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
-        zed2i_base_link:
+        zed_camera_center:
           Alpha: 1
           Show Axes: false
           Show Trail: false
-        zed2i_camera_center:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
         zed_left_camera_frame:
           Alpha: 1
           Show Axes: false
           Show Trail: false
-        zed2i_left_camera_optical_frame:
+        zed_left_camera_optical_frame:
           Alpha: 1
           Show Axes: false
           Show Trail: false
-        zed2i_mag_link:
+        zed_right_camera_frame:
           Alpha: 1
           Show Axes: false
           Show Trail: false
-        zed2i_right_camera_frame:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        zed2i_right_camera_optical_frame:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        zed2i_temp_left_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        zed2i_temp_right_link:
+        zed_right_camera_optical_frame:
           Alpha: 1
           Show Axes: false
           Show Trail: false
@@ -242,10 +218,10 @@ Visualization Manager:
           Name: ZED Camera
           Normalize Range: true
           Queue Size: 1
-          Transport Hint: compressed
+          Transport Hint: raw
           Unreliable: true
           Value: true
-      Enabled: false
+      Enabled: true
       Name: Perception
   Enabled: true
   Global Options:
@@ -275,7 +251,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 2.6632628440856934
+      Distance: 5.256808757781982
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -291,17 +267,17 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.5802031755447388
+      Pitch: 0.46520328521728516
       Target Frame: <Fixed Frame>
-      Yaw: 2.4885611534118652
+      Yaw: 2.583562135696411
     Saved: ~
 Window Geometry:
   Displays:
     collapsed: false
-  Height: 2116
+  Height: 1372
   Hide Left Dock: false
   Hide Right Dock: true
-  QMainWindow State: 000000ff00000000fd00000004000000000000049100000718fc0200000009fb0000001200530065006c0065006300740069006f006e00000001e10000009b000000b900fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000b9fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c0061007900730100000077000007180000019400fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261fb00000014005a00450044002000430061006d0065007200610000000439000003560000002f00ffffff00000001000001000000035dfc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073000000003b0000035d0000014d00fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e1000001970000000300000f0000000072fc0100000002fb0000000800540069006d0065010000000000000f00000006a400fffffffb0000000800540069006d0065010000000000000450000000000000000000000a630000071800000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  QMainWindow State: 000000ff00000000fd00000004000000000000049100000488fc0200000009fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000005c00fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000b9fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c006100790073010000003e00000299000000ca00fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261fb00000014005a00450044002000430061006d00650072006101000002dd000001e90000001600ffffff00000001000001000000035dfc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073000000003b0000035d000000a600fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e1000001970000000300000d1800000072fc0100000002fb0000000800540069006d0065010000000000000d180000039500fffffffb0000000800540069006d00650100000000000004500000000000000000000008810000048800000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
   Selection:
     collapsed: false
   Time:
@@ -310,8 +286,8 @@ Window Geometry:
     collapsed: false
   Views:
     collapsed: true
-  Width: 3840
-  X: 0
-  Y: 56
+  Width: 3352
+  X: 88
+  Y: 32
   ZED Camera:
     collapsed: false
