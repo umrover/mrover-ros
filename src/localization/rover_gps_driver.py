@@ -6,6 +6,8 @@ location data to the rover over LCM (/gps). Subscribes to
 /rtcm and passes RTCM messages to the onboard gps to
 acquire an RTK fix.
 """
+from __future__ import annotations
+
 import threading
 
 import serial
@@ -30,7 +32,7 @@ class GpsDriver:
     ser: serial.Serial
     reader: UBXReader
 
-    def __init__(self):
+    def __init__(self) -> None:
         rospy.init_node("gps_driver")
         self.port = rospy.get_param("rover_gps_driver/port")
         self.baud = rospy.get_param("rover_gps_driver/baud")
@@ -42,18 +44,16 @@ class GpsDriver:
         self.valid_offset = False
         self.time_offset = -1
 
-    def connect(self):
+    def connect(self) -> GpsDriver:
         self.ser = serial.Serial(self.port, self.baud)
         self.reader = UBXReader(self.ser, protfilter=(UBX_PROTOCOL | RTCM3_PROTOCOL))
-
         return self
 
     def exit(self) -> None:
         self.ser.close()
 
     # rospy subscriber automatically runs this callback in separate thread
-    def process_rtcm(self, data) -> None:
-        rospy.logdebug("Processing RTCM")
+    def process_rtcm(self, data: Message) -> None:
         with self.lock:
             self.ser.write(data.message)
 
@@ -61,52 +61,51 @@ class GpsDriver:
         if not msg:
             return
 
-        if msg.identity == "RXM-RTCM":
-            rospy.logdebug("RXM")
-            msg_used = msg.msgUsed
+        match msg.identity:
+            case "RXM-RTCM":
+                match msg.msgUsed:
+                    case 0:
+                        rospy.logwarn("RTCM usage unknown")
+                    case 1:
+                        rospy.logwarn("RTCM message not used")
+                    case 2:
+                        rospy.logdebug("RTCM message successfully used by receiver")
 
-            if msg_used == 0:
-                rospy.logwarn("RTCM usage unknown")
-            elif msg_used == 1:
-                rospy.logwarn("RTCM message not used")
-            elif msg_used == 2:
-                rospy.logdebug("RTCM message successfully used by receiver")
+            case "NAV-PVT":
+                parsed_latitude = msg.lat
+                parsed_longitude = msg.lon
+                parsed_altitude = msg.hMSL
+                # TODO(quintin): Use the time from the GPS message
+                # time = datetime.datetime(year=msg.year, month=msg.month, day=msg.day, hour=msg.hour, second=msg.second)
+                # time = rospy.Time(secs=time.timestamp() + (msg.nano / 1e6))
+                # if not self.valid_offset:
+                #     self.time_offset = rospy.Time.now() - time
+                #     self.valid_offset = True
+                #
+                # time = time + self.time_offset
+                message_header = Header(stamp=rospy.Time.now(), frame_id="base_link")
 
-        elif msg.identity == "NAV-PVT":
-            parsed_latitude = msg.lat
-            parsed_longitude = msg.lon
-            parsed_altitude = msg.hMSL
-            # TODO(quintin): Use the time from the GPS message
-            # time = datetime.datetime(year=msg.year, month=msg.month, day=msg.day, hour=msg.hour, second=msg.second)
-            # time = rospy.Time(secs=time.timestamp() + (msg.nano / 1e6))
-            # if not self.valid_offset:
-            #     self.time_offset = rospy.Time.now() - time
-            #     self.valid_offset = True
-            #
-            # time = time + self.time_offset
-            message_header = Header(stamp=rospy.Time.now(), frame_id="base_link")
-
-            self.gps_pub.publish(
-                NavSatFix(
-                    header=message_header,
-                    latitude=parsed_latitude,
-                    longitude=parsed_longitude,
-                    altitude=parsed_altitude,
+                self.gps_pub.publish(
+                    NavSatFix(
+                        header=message_header,
+                        latitude=parsed_latitude,
+                        longitude=parsed_longitude,
+                        altitude=parsed_altitude,
+                    )
                 )
-            )
-            self.rtk_fix_pub.publish(RTKStatus(msg.carrSoln))
+                self.rtk_fix_pub.publish(RTKStatus(msg.carrSoln))
 
-            if msg.difSoln == 1:
-                rospy.logdebug_throttle(3, "Differential correction applied")
-            if msg.carrSoln == 0:
-                rospy.logwarn_throttle(3, "No RTK")
-            elif msg.carrSoln == 1:
-                rospy.logdebug_throttle(3, "Floating RTK Fix")
-            elif msg.carrSoln == 2:
-                rospy.logdebug_throttle(3, "RTK FIX")
+                if msg.difSoln == 1:
+                    rospy.logdebug_throttle(3, "Differential correction applied")
+                if msg.carrSoln == 0:
+                    rospy.logwarn_throttle(3, "No RTK")
+                elif msg.carrSoln == 1:
+                    rospy.logdebug_throttle(3, "Floating RTK Fix")
+                elif msg.carrSoln == 2:
+                    rospy.logdebug_throttle(3, "RTK FIX")
 
-        elif msg.identity == "NAV-STATUS":
-            pass
+            case "NAV-STATUS":
+                pass
 
     def gps_data_thread(self) -> None:
         while not rospy.is_shutdown():

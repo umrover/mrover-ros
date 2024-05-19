@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-import rospy
-from serial import Serial
 from pyubx2 import UBXReader, UBX_PROTOCOL, RTCM3_PROTOCOL, protocol
+from serial import Serial
+
+import rospy
 from rtcm_msgs.msg import Message
 
 

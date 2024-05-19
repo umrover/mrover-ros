@@ -14,10 +14,14 @@ namespace mrover {
         mPnh.param<int>("hitcount_threshold", mObjHitThreshold, 5);
         mPnh.param<int>("hitcount_max", mObjMaxHitcount, 10);
         mPnh.param<std::string>("model_name", mModelName, "yolov8n_mallet_bottle_better");
+        mPnh.param<float>("model_score_threshold", mModelScoreThreshold, 0.75);
+        mPnh.param<float>("model_nms_threshold", mModelNmsThreshold, 0.5);
 
         mLearning = Learning{mModelName};
 
         mDebugImagePub = mNh.advertise<sensor_msgs::Image>("object_detection", 1);
+
+        ROS_INFO_STREAM(std::format("Object detector initialized with model: {} and thresholds: {} and {}", mModelName, mModelScoreThreshold, mModelNmsThreshold));
     }
 
     auto StereoObjectDetectorNodelet::onInit() -> void {
@@ -31,7 +35,7 @@ namespace mrover {
 
         mPnh.param<float>("long_range_camera/fov", mCameraHorizontalFov, 80.0);
 
-        mSensorSub = mNh.subscribe("/long_range_camera/image", 1, &ImageObjectDetectorNodelet::imageCallback, this);
+        mSensorSub = mNh.subscribe("long_range_camera/image", 1, &ImageObjectDetectorNodelet::imageCallback, this);
 
         mTargetsPub = mNh.advertise<ImageTargets>("objects", 1);
     }

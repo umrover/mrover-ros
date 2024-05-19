@@ -1,4 +1,4 @@
-zed_nodelet:
+zed:
   # HD2K    2208*1242 (x2) fps: 15
   # HD1080  1920*1080 (x2) fps: 15, 30
   # HD720   1280*720  (x2) fps: 15, 30, 60
@@ -19,11 +19,16 @@ zed_nodelet:
   # Decreasing this value will remove depth data from both objects edges and low textured areas, to keep only confident depth estimation data.
   # Pixels with a value close to 100 are not to be trusted. Accurate depth pixels tends to be closer to lower values.
   # It can be seen as a probability of error, scaled to 100.
-  depth_confidence: 100
+  depth_confidence: 70
   # Threshold to reject depth values based on their texture confidence. The texture confidence range is [1,100].
   # By default, the texture confidence threshold is set at 100, meaning that no depth pixel will be rejected.
   # Decreasing this value will remove depth data from image areas which are uniform.
   # Pixels with a value close to 100 are not to be trusted. Accurate depth pixels tends to be closer to lower values.
   texture_confidence: 100
-  use_area_memory: false
   depth_maximum_distance: 12.0
+
+stereo_object_detector:
+  model_score_threshold: 0.6
+
+long_range_object_detector:
+  model_score_threshold: 0.6

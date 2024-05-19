@@ -38,6 +38,8 @@ namespace mrover {
         int mObjDecrementWeight{};
         int mObjHitThreshold{};
         int mObjMaxHitcount{};
+        float mModelScoreThreshold{};
+        float mModelNmsThreshold{};
 
         auto onInit() -> void override;
 
