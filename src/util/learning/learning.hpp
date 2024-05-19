@@ -19,7 +19,7 @@ class Learning {
     auto parseModelOutput(cv::Mat& output,
                           std::vector<Detection>& detections,
                           float modelScoreThreshold = 0.75,
-                          float modelNMSThreshold = 0.5) -> void;
+                          float modelNMSThreshold = 0.5) const -> void;
 
 public:
     Learning();
@@ -31,5 +31,5 @@ public:
     auto modelForwardPass(cv::Mat const& blob,
                           std::vector<Detection>& detections,
                           float modelScoreThreshold = 0.75,
-                          float modelNMSThreshold = 0.5) -> void;
+                          float modelNMSThreshold = 0.5) const -> void;
 };

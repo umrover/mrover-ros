@@ -1,6 +1,7 @@
 <launch>
   <arg name="headless" default="false"/>
   <arg name="rviz" default="true"/>
+  <arg name="object_detector" default="false"/>
 
   <rosparam command="load" file="$(find mrover)/config/simulator/simulator.yaml"/>
 
@@ -9,16 +10,18 @@
 
   <include file="$(find mrover)/launch/base.launch"/>
 
-  <include file="$(find mrover)/launch/autonomy.launch"/>
+  <include file="$(find mrover)/launch/autonomy.launch">
+    <arg name="object_detector" value="$(arg object_detector)"/>
+  </include>
 
-  <node pkg="nodelet" type="nodelet" name="simulator_nodelet"
+  <node pkg="nodelet" type="nodelet" name="simulator"
         args="load mrover/SimulatorNodelet perception_nodelet_manager" output="screen">
     <param name="headless" value="$(arg headless)"/>
   </node>
 
-  <node pkg="nodelet" type="nodelet" name="streamer_nodelet"
+  <node pkg="nodelet" type="nodelet" name="simulator_streamer"
         args="load mrover/GstWebsocketStreamerNodelet perception_nodelet_manager" output="screen">
-    <param name="image_topic" value="/camera/left/image"/>
+    <param name="image_topic" value="/tag_detection"/>
   </node>
 
   <node name="arm_controller" pkg="mrover" type="arm_controller" output="screen"/>

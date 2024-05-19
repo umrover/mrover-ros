@@ -36,7 +36,7 @@ namespace mrover {
         // Detect the tag vertices in screen space and their respective ids
         // {mImmediateCorneres, mImmediateIds} are the outputs from OpenCV
         cv::aruco::detectMarkers(mBgrImage, mDictionary, mImmediateCorners, mImmediateIds, mDetectorParams);
-        mProfiler.measureEvent("OpenCV Detect");
+        mProfiler.measureEvent("Detection");
 
         publishThresholdedImage();
         mProfiler.measureEvent("Threshold");
@@ -89,7 +89,7 @@ namespace mrover {
             }
         }
         publishDetectedTags();
-        mProfiler.measureEvent("Publish");
+        mProfiler.measureEvent("Publication");
     }
 
     auto ImageTagDetectorNodelet::imageCallback(sensor_msgs::ImageConstPtr const& msg) -> void {
@@ -107,7 +107,7 @@ namespace mrover {
         // Detect the tag vertices in screen space and their respective ids
         // {mImmediateCorneres, mImmediateIds} are the outputs from OpenCV
         cv::aruco::detectMarkers(mBgrImage, mDictionary, mImmediateCorners, mImmediateIds, mDetectorParams);
-        mProfiler.measureEvent("OpenCV Detect");
+        mProfiler.measureEvent("Detection");
 
         ImageTargets targets;
         for (std::size_t i = 0; i < mImmediateIds.size(); ++i) {
@@ -118,11 +118,11 @@ namespace mrover {
         }
         mTargetsPub.publish(targets);
         publishDetectedTags();
-        mProfiler.measureEvent("Publish");
+        mProfiler.measureEvent("Publication");
     }
 
     auto TagDetectorNodeletBase::publishDetectedTags() -> void {
-        if (mImgPub.getNumSubscribers()) {
+        if (mDetectedImagePub.getNumSubscribers()) {
             cv::aruco::drawDetectedMarkers(mBgrImage, mImmediateCorners, mImmediateIds);
             // Max number of tags the hit counter can display = 10;
             if (!mTags.empty()) {
@@ -137,17 +137,18 @@ namespace mrover {
                     ++tagCount;
                 }
             }
-            mImgMsg.header.stamp = ros::Time::now();
-            mImgMsg.header.frame_id = "zed_left_camera_frame";
-            mImgMsg.height = mBgrImage.rows;
-            mImgMsg.width = mBgrImage.cols;
-            mImgMsg.encoding = sensor_msgs::image_encodings::BGR8;
-            mImgMsg.step = mBgrImage.step;
-            mImgMsg.is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
-            std::size_t size = mImgMsg.step * mImgMsg.height;
-            mImgMsg.data.resize(size);
-            std::memcpy(mImgMsg.data.data(), mBgrImage.data, size);
-            mImgPub.publish(mImgMsg);
+            mDetectionsImageMessage.header.stamp = ros::Time::now();
+            mDetectionsImageMessage.header.frame_id = "zed_left_camera_frame";
+            mDetectionsImageMessage.height = mBgrImage.rows;
+            mDetectionsImageMessage.width = mBgrImage.cols;
+            mDetectionsImageMessage.encoding = sensor_msgs::image_encodings::BGRA8;
+            mDetectionsImageMessage.is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
+            mDetectionsImageMessage.step = 4 * mDetectionsImageMessage.width;
+            mDetectionsImageMessage.data.resize(mDetectionsImageMessage.step * mDetectionsImageMessage.height);
+            cv::Mat imageMessageWrapper{mBgrImage.rows, mBgrImage.cols, CV_8UC4, mDetectionsImageMessage.data.data()};
+            cv::cvtColor(mBgrImage, imageMessageWrapper, cv::COLOR_BGR2BGRA);
+
+            mDetectedImagePub.publish(mDetectionsImageMessage);
         }
 
         std::size_t detectedCount = mImmediateIds.size();
@@ -169,7 +170,7 @@ namespace mrover {
             return std::nullopt;
         }
 
-        Point point = reinterpret_cast<Point const*>(cloudPtr->data.data())[u + v * cloudPtr->width];
+        Point const& point = reinterpret_cast<Point const*>(cloudPtr->data.data())[u + v * cloudPtr->width];
 
         if (!std::isfinite(point.x) || !std::isfinite(point.y) || !std::isfinite(point.z)) {
             NODELET_WARN("Tag center point not finite: [%f %f %f]", point.x, point.y, point.z);
@@ -179,11 +180,13 @@ namespace mrover {
         return std::make_optional<SE3d>(R3{point.x, point.y, point.z}, SO3d::Identity());
     }
 
-    auto ImageTagDetectorNodelet::getTagBearing(cv::InputArray image, std::span<cv::Point2f> const& tagCorners) const -> float {
+    auto ImageTagDetectorNodelet::getTagBearing(cv::InputArray image, std::span<cv::Point2f const> tagCorners) const -> float {
         // Takes the average of the corners
         cv::Point2f center = std::reduce(tagCorners.begin(), tagCorners.end()) / static_cast<float>(tagCorners.size());
-        float bearing = -1.0f * (center.x - static_cast<float>(image.cols()) / 2.0f) / static_cast<float>(image.cols()) * mCameraHorizontalFov * std::numbers::pi_v<float> / 180.0f;
-        return bearing;
+        float xNormalized = center.x / static_cast<float>(image.cols());
+        float xRecentered = 0.5f - xNormalized;
+        float bearingDegrees = xRecentered * mCameraHorizontalFov;
+        return bearingDegrees * std::numbers::pi_v<float> / 180.0f;
     }
 
 } // namespace mrover

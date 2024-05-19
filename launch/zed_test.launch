@@ -1,40 +1,35 @@
 <launch>
-      <arg name="rviz" default="true" />
-      <arg name="dynamic_reconfigure" default="true" />
-      <arg name="rqt_tf_tree" default="true" />
+  <arg name="rviz" default="true"/>
+  <arg name="dynamic_reconfigure" default="true"/>
+  <arg name="rqt_tf_tree" default="true"/>
 
-      <arg name="tag_detector" default="true" />
-      <arg name="object_detector" default="true" />
-      <arg name="use_builtin_visual_odom" default="false" />
+  <arg name="tag_detector" default="true"/>
+  <arg name="object_detector" default="true"/>
+  <arg name="use_builtin_visual_odom" default="false"/>
 
-      <arg name="obj_increment_weight" default="3" />
-      <arg name="obj_decrement_weight" default="1" />
-      <arg name="obj_hitcount_threshold" default="50" />
-      <arg name="obj_hitcount_max" default="500" />
+  <include file="$(find mrover)/launch/zed.launch">
+    <arg name="use_builtin_visual_odom" value="$(arg use_builtin_visual_odom)"/>
+  </include>
 
-      <include file="$(find mrover)/launch/zed.launch">
-            <arg name="use_builtin_visual_odom" value="$(arg use_builtin_visual_odom)" />
-      </include>
+  <include file="$(find mrover)/launch/perception.launch">
+    <arg name="tag_detector" value="$(arg tag_detector)"/>
+    <arg name="object_detector" value="$(arg object_detector)"/>
+  </include>
 
-      <include file="$(find mrover)/launch/perception.launch">
-            <arg name="tag_detector" value="$(arg tag_detector)" />
-            <arg name="object_detector" value="$(arg object_detector)" />
-      </include>
+  <group if="$(arg rviz)">
+    <arg name="rvizconfig" default="$(find mrover)/config/rviz/zed_test.rviz"/>
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)"/>
+  </group>
 
-      <group if="$(arg rviz)">
-            <arg name="rvizconfig" default="$(find mrover)/config/rviz/zed_test.rviz" />
-            <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" />
-      </group>
+  <node pkg="nodelet" type="nodelet" name="perception_nodelet_manager" required="true"
+        args="manager" output="screen"/>
 
-      <node pkg="nodelet" type="nodelet" name="perception_nodelet_manager" required="true"
-            args="manager" output="screen" />
+  <node if="$(arg rqt_tf_tree)"
+        name="rqt_tf_tree" pkg="rqt_tf_tree" type="rqt_tf_tree" output="screen"/>
 
-      <node if="$(arg rqt_tf_tree)"
-            name="rqt_tf_tree" pkg="rqt_tf_tree" type="rqt_tf_tree" output="screen" />
+  <node if="$(arg dynamic_reconfigure)"
+        name="rqt_reconfigure" pkg="rqt_reconfigure" type="rqt_reconfigure"/>
 
-      <node if="$(arg dynamic_reconfigure)"
-            name="rqt_reconfigure" pkg="rqt_reconfigure" type="rqt_reconfigure" />
-
-      <node pkg="tf" type="static_transform_publisher" name="base_link_publisher"
-            args="0 0 0 0 0 0 map base_link 100" />
+  <node pkg="tf" type="static_transform_publisher" name="base_link_publisher"
+        args="0 0 0 0 0 0 map base_link 100"/>
 </launch>

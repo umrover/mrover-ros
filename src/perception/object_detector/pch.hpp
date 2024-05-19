@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <execution>
 #include <filesystem>
+#include <format>
 #include <fstream>
 #include <iostream>
 #include <limits>
@@ -42,8 +43,9 @@
 #include <lie.hpp>
 #include <loop_profiler.hpp>
 
+#include <mrover/ImageTarget.h>
+#include <mrover/ImageTargets.h>
 #include <mrover/ObjectDetectorParamsConfig.h>
 
-//Object Detector Includes
 #include "point.hpp"
 #include <learning.hpp>

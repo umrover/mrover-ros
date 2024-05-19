@@ -3,8 +3,10 @@
 #include "pch.hpp"
 
 namespace mrover {
-    //Data type for detection
-    class ObjectDetectorNodelet : public nodelet::Nodelet {
+
+    class ObjectDetectorNodeletBase : public nodelet::Nodelet {
+
+    protected:
         ros::NodeHandle mNh, mPnh;
 
         tf2_ros::Buffer mTfBuffer;
@@ -16,40 +18,20 @@ namespace mrover {
         dynamic_reconfigure::Server<ObjectDetectorParamsConfig> mConfigServer;
         dynamic_reconfigure::Server<ObjectDetectorParamsConfig>::CallbackType mCallbackType;
 
-        // PointCloud Vars
-        std::string mModelNamePC;
+        std::string mModelName;
 
-        LoopProfiler mLoopProfilerPC{"Object Detector", 1};
-        static constexpr bool mEnableLoopProfilerPC = false;
+        LoopProfiler mLoopProfiler{"Object Detector", 1};
 
-        Learning mLearningPC;
+        Learning mLearning;
 
-        cv::Mat mImgPC;
+        cv::Mat mImage, mImageBlob;
+        sensor_msgs::Image mDetectionsImageMessage;
 
-        ros::Publisher mDebugImgPubPC;
+        ros::Publisher mDebugImagePub;
 
-        ros::Subscriber mImgSubPC;
+        ros::Subscriber mSensorSub;
 
-        cv::Mat mImageBlobPC;
-
-        // Image Vars
-        std::string mModelNameIMG;
-
-        LoopProfiler mLoopProfilerIMG{"Object Detector", 1};
-        static constexpr bool mEnableLoopProfilerIMG = false;
-
-        Learning mLearningIMG;
-
-        cv::Mat mImgIMG;
-
-        ros::Publisher mDebugImgPubIMG;
-
-        ros::Subscriber mImgSubIMG;
-
-        cv::Mat mImageBlobIMG;
-
-        // Both PointCloud and Image
-
+        // TODO(quintin): Do not hard code exactly two classes
         std::vector<int> mObjectHitCounts{0, 0};
 
         int mObjIncrementWeight{};
@@ -59,36 +41,40 @@ namespace mrover {
 
         auto onInit() -> void override;
 
-        auto getObjectInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr,
-                                     size_t u,
-                                     size_t v,
-                                     size_t width,
-                                     size_t height) -> std::optional<SE3d>;
-
-        auto spiralSearchInImg(sensor_msgs::PointCloud2ConstPtr const& cloudPtr,
-                               size_t xCenter,
-                               size_t yCenter,
-                               size_t width,
-                               size_t height) -> std::optional<SE3d>;
-
-        static auto convertPointCloudToRGBA(sensor_msgs::PointCloud2ConstPtr const& msg, cv::Mat& img) -> void;
-
-        static auto convertImageToRGBA(sensor_msgs::ImageConstPtr const& msg, cv::Mat& img) -> void;
+        auto spiralSearchForValidPoint(sensor_msgs::PointCloud2ConstPtr const& cloudPtr,
+                                       std::size_t u, std::size_t v,
+                                       std::size_t width, std::size_t height) const -> std::optional<SE3d>;
 
         auto updateHitsObject(sensor_msgs::PointCloud2ConstPtr const& msg,
-                              std::vector<Detection> const& detections,
-                              cv::Size const& imgSize = {640, 640}) -> void;
+                              std::span<Detection const> detections,
+                              cv::Size const& imageSize = {640, 640}) -> void;
 
-        auto publishImg(cv::Mat const& img) -> void;
+        auto publishDetectedObjects(cv::InputArray image) -> void;
 
-        static auto drawOnImage(cv::Mat& image, std::vector<Detection> const& detections) -> void;
+        static auto drawDetectionBoxes(cv::InputOutputArray image, std::span<Detection const> detections) -> void;
 
     public:
-        ObjectDetectorNodelet() = default;
+        ObjectDetectorNodeletBase() = default;
 
-        ~ObjectDetectorNodelet() override = default;
+        ~ObjectDetectorNodeletBase() override = default;
+    };
+
+    class StereoObjectDetectorNodelet final : public ObjectDetectorNodeletBase {
+        auto onInit() -> void override;
+
+        static auto convertPointCloudToRGB(sensor_msgs::PointCloud2ConstPtr const& msg, cv::Mat const& image) -> void;
 
         auto pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg) -> void;
+    };
+
+    class ImageObjectDetectorNodelet final : public ObjectDetectorNodeletBase {
+        ros::Publisher mTargetsPub;
+
+        float mCameraHorizontalFov{};
+
+        auto onInit() -> void override;
+
+        auto getTagBearing(cv::InputArray image, cv::Rect const& box) const -> float;
 
         auto imageCallback(sensor_msgs::ImageConstPtr const& msg) -> void;
     };

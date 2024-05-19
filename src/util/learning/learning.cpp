@@ -1,5 +1,4 @@
 #include "learning.hpp"
-#include <algorithm>
 
 using namespace std;
 
@@ -7,25 +6,23 @@ Learning::Learning() = default;
 
 Learning::Learning(string& modelName) : mModelName{std::move(modelName)} {
 
-    //Init Model Path
     std::filesystem::path packagePath = ros::package::getPath("mrover");
-    std::filesystem::path modelPath = packagePath / "data" / (mModelName + ".onnx");
+    std::filesystem::path modelFileName = mModelName + ".onnx";
+    std::filesystem::path modelPath = packagePath / "data" / modelFileName;
 
-    //Wrapper
     mInferenceWrapper = InferenceWrapper{modelPath, mModelName};
 }
 
 Learning::~Learning() = default;
 
-auto Learning::modelForwardPass(cv::Mat const& blob, std::vector<Detection>& detections, float modelScoreThreshold, float modelNMSThreshold) -> void {
+auto Learning::modelForwardPass(cv::Mat const& blob, std::vector<Detection>& detections, float modelScoreThreshold, float modelNMSThreshold) const -> void {
     mInferenceWrapper.doDetections(blob);
     cv::Mat output = mInferenceWrapper.getOutputTensor();
     parseModelOutput(output, detections, modelScoreThreshold, modelNMSThreshold);
 }
 
-auto Learning::parseModelOutput(cv::Mat& output, std::vector<Detection>& detections, float modelScoreThreshold, float modelNMSThreshold) -> void {
+auto Learning::parseModelOutput(cv::Mat& output, std::vector<Detection>& detections, float modelScoreThreshold, float modelNMSThreshold) const -> void {
     // Parse model specific dimensioning from the output
-
 
     // The input to this function is expecting a YOLOv8 style model, thus the dimensions should be > rows
     if (output.cols <= output.rows) {

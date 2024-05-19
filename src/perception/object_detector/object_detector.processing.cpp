@@ -1,256 +1,120 @@
 #include "object_detector.hpp"
-#include "lie.hpp"
-#include <bitset>
-#include <sensor_msgs/Image.h>
 
 namespace mrover {
-    auto ObjectDetectorNodelet::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg) -> void {
+
+    auto StereoObjectDetectorNodelet::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg) -> void {
         assert(msg);
         assert(msg->height > 0);
         assert(msg->width > 0);
 
-        if constexpr (mEnableLoopProfilerPC) {
-            if (ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Debug)) {
-                ros::console::notifyLoggerLevelsChanged();
-            }
-            mLoopProfilerPC.beginLoop();
-            mLoopProfilerPC.measureEvent("Wait");
-        }
+        mLoopProfiler.beginLoop();
 
         // Adjust the picture size to be in line with the expected img size from the Point Cloud
-        if (static_cast<int>(msg->height) != mImgPC.rows || static_cast<int>(msg->width) != mImgPC.cols) {
-            NODELET_INFO("Image size changed from [%d %d] to [%u %u]", mImgPC.cols, mImgPC.rows, msg->width, msg->height);
-            mImgPC = cv::Mat{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC4, cv::Scalar{0, 0, 0, 0}};
+        if (static_cast<int>(msg->height) != mImage.rows || static_cast<int>(msg->width) != mImage.cols) {
+            NODELET_INFO_STREAM(std::format("Image size changed from [{}, {}] to [{}, {}]", mImage.cols, mImage.rows, msg->width, msg->height));
+            mImage = cv::Mat{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC3, cv::Scalar{0, 0, 0, 0}};
         }
+        convertPointCloudToRGB(msg, mImage);
 
-        // Convert the pointcloud data into rgba image and store in mImg
-        convertPointCloudToRGBA(msg, mImgPC);
+        // TODO(quintin): Avoid hard coding blob size
+        cv::Size blobSize{640, 640};
+        cv::Mat blobSizedImage;
+        cv::resize(mImage, blobSizedImage, blobSize);
+        cv::dnn::blobFromImage(blobSizedImage, mImageBlob, 1.0 / 255.0, blobSize, cv::Scalar{}, false, false);
 
-        // Resize the image and change it from BGRA to BGR
-        cv::Mat sizedImage;
-        cv::Size imgSize{640, 640};
-        cv::resize(mImgPC, sizedImage, imgSize);
-        cv::cvtColor(sizedImage, sizedImage, cv::COLOR_BGRA2BGR);
+        mLoopProfiler.measureEvent("Conversion");
 
-        // Create the blob from the resized image
-        cv::dnn::blobFromImage(sizedImage, mImageBlobPC, 1.0 / 255.0, imgSize, cv::Scalar{}, true, false);
-
-        if constexpr (mEnableLoopProfilerPC) {
-            mLoopProfilerPC.measureEvent("Convert Image");
-        }
-
-        // Run the blob through the model    
+        // Run the blob through the model
         std::vector<Detection> detections{};
-        mLearningPC.modelForwardPass(mImageBlobPC, detections);     
-        
-        if constexpr (mEnableLoopProfilerPC) {
-            mLoopProfilerPC.measureEvent("Execute on GPU");
-        }
-      
+        mLearning.modelForwardPass(mImageBlob, detections);
+
+        mLoopProfiler.measureEvent("Execution");
+
         // Increment Object hit counts if theyre seen
         // Decrement Object hit counts if they're not seen
-        updateHitsObject(msg, detections); 
+        updateHitsObject(msg, detections);
 
         // Draw the bounding boxes on the image
-        drawOnImage(sizedImage, detections);        
+        drawDetectionBoxes(blobSizedImage, detections);
+        publishDetectedObjects(blobSizedImage);
 
-        if constexpr (mEnableLoopProfilerPC) {
-            mLoopProfilerPC.measureEvent("Push to TF");
-        }
-
-        // We only want to publish the debug image if there is something lsitening, to reduce the operations going on
-        if (mDebugImgPubPC.getNumSubscribers()) {
-            // Publishes the image to the debug publisher
-            publishImg(sizedImage);
-        }
-
-        if constexpr (mEnableLoopProfilerPC) {
-            mLoopProfilerPC.measureEvent("Publish Debug Img");
-        }
+        mLoopProfiler.measureEvent("Publication");
     }
 
-    auto ObjectDetectorNodelet::imageCallback(sensor_msgs::ImageConstPtr const& msg) -> void {
+    // TODO(quintin): Remove code duplication here
+
+    auto ImageObjectDetectorNodelet::imageCallback(sensor_msgs::ImageConstPtr const& msg) -> void {
         assert(msg);
         assert(msg->height > 0);
         assert(msg->width > 0);
+        assert(msg->encoding == sensor_msgs::image_encodings::BGRA8);
 
-        if constexpr (mEnableLoopProfilerIMG) {
-            if (ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Debug)) {
-                ros::console::notifyLoggerLevelsChanged();
-            }
-            mLoopProfilerIMG.beginLoop();
-            mLoopProfilerIMG.measureEvent("Wait");
+        mLoopProfiler.beginLoop();
+
+        if (static_cast<int>(msg->height) != mImage.rows || static_cast<int>(msg->width) != mImage.cols) {
+            NODELET_INFO("Image size changed from [%d %d] to [%u %u]", mImage.cols, mImage.rows, msg->width, msg->height);
+            mImage = cv::Mat{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC4, const_cast<std::uint8_t*>(msg->data.data())};
         }
 
-        // Adjust the picture size to be in line with the expected img size from the Point Cloud
-        if (static_cast<int>(msg->height) != mImgIMG.rows || static_cast<int>(msg->width) != mImgIMG.cols) {
-            NODELET_INFO("Image size changed from [%d %d] to [%u %u]", mImgIMG.cols, mImgIMG.rows, msg->width, msg->height);
-            mImgIMG = cv::Mat{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC4, const_cast<std::uint8_t*>(msg->data.data())};
-        }
+        cv::Size blobSize{640, 640};
+        cv::Mat blobSizedImage;
+        cv::resize(mImage, blobSizedImage, blobSize);
+        cv::cvtColor(blobSizedImage, blobSizedImage, cv::COLOR_BGRA2RGB);
 
-        // Resize the image and change it from BGRA to BGR
-        cv::Mat sizedImage;
-        cv::Size imgSize{640, 640};
-        cv::resize(mImgIMG, sizedImage, imgSize);
-        cv::cvtColor(sizedImage, sizedImage, cv::COLOR_BGRA2BGR);
+        cv::dnn::blobFromImage(blobSizedImage, mImageBlob, 1.0 / 255.0, blobSize, cv::Scalar{}, false, false);
 
-        // Create the blob from the resized image
-        cv::dnn::blobFromImage(sizedImage, mImageBlobIMG, 1.0 / 255.0, imgSize, cv::Scalar{}, true, false);
+        mLoopProfiler.measureEvent("Conversion");
 
-        if constexpr (mEnableLoopProfilerIMG) {
-            mLoopProfilerIMG.measureEvent("Convert Image");
-        }
-
-        // Run the blob through the model    
         std::vector<Detection> detections{};
-        mLearningIMG.modelForwardPass(mImageBlobIMG, detections);     
-        
-        if constexpr (mEnableLoopProfilerIMG) {
-            mLoopProfilerIMG.measureEvent("Execute on GPU");
-        }
-      
-        // Increment Object hit counts if theyre seen
-        // Decrement Object hit counts if they're not seen
-        // TODO(LONG RANGE CAMERA): recreate this function to accept images
-        //updateHitsObject(msg, detections); 
+        mLearning.modelForwardPass(mImageBlob, detections);
 
-        // Draw the bounding boxes on the image
-        drawOnImage(sizedImage, detections);        
+        mLoopProfiler.measureEvent("Execution");
 
-        if constexpr (mEnableLoopProfilerIMG) {
-            mLoopProfilerIMG.measureEvent("Push to TF");
+        ImageTargets targets;
+        for (auto const& [classId, className, confidence, box]: detections) {
+            ImageTarget target;
+            target.name = className;
+            target.bearing = getTagBearing(blobSizedImage, box);
+            targets.targets.push_back(target);
         }
+        mTargetsPub.publish(targets);
 
-        // We only want to publish the debug image if there is something lsitening, to reduce the operations going on
-        if (mDebugImgPubIMG.getNumSubscribers()) {
-            // Publishes the image to the debug publisher
-            publishImg(sizedImage);
-        }
+        drawDetectionBoxes(blobSizedImage, detections);
+        publishDetectedObjects(blobSizedImage);
 
-        if constexpr (mEnableLoopProfilerIMG) {
-            mLoopProfilerIMG.measureEvent("Publish Debug Img");
-        }
+        mLoopProfiler.measureEvent("Publication");
     }
 
-    auto ObjectDetectorNodelet::drawOnImage(cv::Mat& image, const std::vector<Detection>& detections) -> void{
-        // Draw the detected object's bounding boxes on the image for each of the objects detected
-        const std::array fontColors{cv::Scalar{232, 115, 5}, cv::Scalar{0, 4, 227}};
-        for (std::size_t i = 0; i < detections.size(); i++) {
-            // Font color will change for each different detection
-            const cv::Scalar& fontColor = fontColors.at(detections[i].classId);
-            cv::rectangle(image, detections[i].box, fontColor, 1, cv::LINE_8, 0);
-
-            // Put the text on the image
-            cv::Point textPosition(80, static_cast<int>(80 * (i + 1)));
-            constexpr int fontSize = 1;
-            constexpr int fontWeight = 2;
-            putText(image, detections[i].className, textPosition, cv::FONT_HERSHEY_COMPLEX, fontSize, fontColor, fontWeight); // Putting the text in the matrix
-        }
-    }
-
-    auto ObjectDetectorNodelet::getObjectInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t u, size_t v, size_t width, size_t height) -> std::optional<SE3d> {
-        assert(cloudPtr);
-        if (u >= cloudPtr->width || v >= cloudPtr->height) {
-            NODELET_WARN("Tag center out of bounds: [%zu %zu]", u, v);
-            return std::nullopt;
-        }
-
-        //Search for the pnt in a spiral pattern
-        return spiralSearchInImg(cloudPtr, u, v, width, height);
-    }
-
-    auto ObjectDetectorNodelet::spiralSearchInImg(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t xCenter, size_t yCenter, size_t width, size_t height) -> std::optional<SE3d> {
-        std::size_t currX = xCenter;
-        std::size_t currY = yCenter;
-        std::size_t radius = 0;
-        int t = 0;
-        constexpr int numPts = 16;
-        bool isPointInvalid = true;
-        Point point{};
-
-        // Find the smaller of the two box dimensions so we know the max spiral radius
-        std::size_t smallDim = std::min(width / 2, height / 2);
-
-        while (isPointInvalid) {
-            // This is the parametric equation to spiral around the center pnt
-            currX = static_cast<size_t>(static_cast<double>(xCenter) + std::cos(t * 1.0 / numPts * 2 * M_PI) * static_cast<double>(radius));
-            currY = static_cast<size_t>(static_cast<double>(yCenter) + std::sin(t * 1.0 / numPts * 2 * M_PI) * static_cast<double>(radius));
-
-            // Grab the point from the pntCloud and determine if its a finite pnt
-            point = reinterpret_cast<Point const*>(cloudPtr->data.data())[currX + currY * cloudPtr->width];
-            isPointInvalid = !std::isfinite(point.x) || !std::isfinite(point.y) || !std::isfinite(point.z);
-            if (isPointInvalid)
-                NODELET_WARN("Tag center point not finite: [%f %f %f]", point.x, point.y, point.z);
-
-            // After a full circle increase the radius
-            if (t % numPts == 0) {
-                radius++;
-            }
-
-            // Increase the parameter
-            t++;
-
-            // If we reach the edge of the box we stop spiraling
-            if (radius >= smallDim) {
-                return std::nullopt;
-            }
-        }
-
-        return std::make_optional<SE3d>(R3{point.x, point.y, point.z}, SO3d::Identity());
-    }
-
-    auto ObjectDetectorNodelet::convertPointCloudToRGBA(sensor_msgs::PointCloud2ConstPtr const& msg, cv::Mat& img) -> void {
-        auto* pixelPtr = reinterpret_cast<cv::Vec4b*>(img.data);
-        auto* pointPtr = reinterpret_cast<Point const*>(msg->data.data());
-        std::for_each(std::execution::par_unseq, pixelPtr, pixelPtr + img.total(), [&](cv::Vec4b& pixel) {
-            size_t const i = &pixel - pixelPtr;
-            pixel[0] = pointPtr[i].b;
-            pixel[1] = pointPtr[i].g;
-            pixel[2] = pointPtr[i].r;
-            pixel[3] = pointPtr[i].a;
-        });
-    }
-
-    auto ObjectDetectorNodelet::convertImageToRGBA(sensor_msgs::ImageConstPtr const& msg, cv::Mat& img) -> void {
-        auto* pixelPtr = reinterpret_cast<cv::Vec4b*>(img.data);
-        auto* pointPtr = reinterpret_cast<Point const*>(msg->data.data());
-        std::for_each(std::execution::par_unseq, pixelPtr, pixelPtr + img.total(), [&](cv::Vec4b& pixel) {
-            size_t const i = &pixel - pixelPtr;
-            pixel[0] = pointPtr[i].b;
-            pixel[1] = pointPtr[i].g;
-            pixel[2] = pointPtr[i].r;
-            pixel[3] = pointPtr[i].a;
-        });
-    }
-
-    auto ObjectDetectorNodelet::updateHitsObject(sensor_msgs::PointCloud2ConstPtr const& msg, const std::vector<Detection>& detections, cv::Size const& imgSize) -> void {
+    auto ObjectDetectorNodeletBase::updateHitsObject(sensor_msgs::PointCloud2ConstPtr const& msg, std::span<Detection const> detections, cv::Size const& imageSize) -> void {
         // Set of flags indicating if the given object has been seen
+        // TODO(quintin): Do not hard code exactly two classes
         std::bitset<2> seenObjects{0b00};
-        for (Detection const& detection: detections) {
-            cv::Rect const& box = detection.box;
-            auto center = std::pair(box.x + box.width / 2, box.y + box.height / 2);
-            // Resize from {640, 640} image space to {720,1280} image space
-            auto centerWidth = static_cast<std::size_t>(center.first * static_cast<double>(msg->width) / imgSize.width);
-            auto centerHeight = static_cast<std::size_t>(center.second * static_cast<double>(msg->height) / imgSize.height);
+        for (auto const& [classId, className, confidence, box]: detections) {
+            // Resize from blob space to image space
+            cv::Point2f centerInBlob = cv::Point2f{box.tl()} + cv::Point2f{box.size()} / 2;
+            float xRatio = static_cast<float>(msg->width) / static_cast<float>(imageSize.width);
+            float yRatio = static_cast<float>(msg->height) / static_cast<float>(imageSize.height);
+            std::size_t centerXInImage = std::lround(centerInBlob.x * xRatio);
+            std::size_t centerYInImage = std::lround(centerInBlob.y * yRatio);
 
-            assert(static_cast<std::size_t>(detection.classId) < mObjectHitCounts.size());
+            assert(static_cast<std::size_t>(classId) < mObjectHitCounts.size());
 
-            if (seenObjects[detection.classId]) return;
+            if (seenObjects[classId]) return;
 
-            seenObjects[detection.classId] = true;
+            seenObjects[classId] = true;
 
             // Get the object's position in 3D from the point cloud and run this statement if the optional has a value
-            if (std::optional<SE3d> objectInCamera = getObjectInCamFromPixel(msg, centerWidth, centerHeight, box.width, box.height)) {
+            if (std::optional<SE3d> objectInCamera = spiralSearchForValidPoint(msg, centerXInImage, centerYInImage, box.width, box.height)) {
                 try {
-                    std::string objectImmediateFrame = std::format("immediate{}", detection.className);
+                    std::string objectImmediateFrame = std::format("immediate{}", className);
                     // Push the immediate detections to the camera frame
                     SE3Conversions::pushToTfTree(mTfBroadcaster, objectImmediateFrame, mCameraFrame, objectInCamera.value());
                     // Since the object is seen we need to increment the hit counter
-                    mObjectHitCounts[detection.classId] = std::min(mObjMaxHitcount, mObjectHitCounts[detection.classId] + mObjIncrementWeight);
+                    mObjectHitCounts[classId] = std::min(mObjMaxHitcount, mObjectHitCounts[classId] + mObjIncrementWeight);
 
                     // Only publish to permament if we are confident in the object
-                    if (mObjectHitCounts[detection.classId] > mObjHitThreshold) {
-                        std::string objectPermanentFrame = detection.className;
+                    if (mObjectHitCounts[classId] > mObjHitThreshold) {
+                        std::string objectPermanentFrame = className;
                         // Grab the object inside of the camera frame and push it into the map frame
                         SE3d objectInMap = SE3Conversions::fromTfTree(mTfBuffer, objectImmediateFrame, mWorldFrame);
                         SE3Conversions::pushToTfTree(mTfBroadcaster, objectPermanentFrame, mWorldFrame, objectInMap);
@@ -274,29 +138,93 @@ namespace mrover {
         }
     }
 
-    auto ObjectDetectorNodelet::publishImg(cv::Mat const& img) -> void {
-        sensor_msgs::Image newDebugImageMessage; // I chose regular msg not ptr so it can be used outside of this process
+    auto ImageObjectDetectorNodelet::getTagBearing(cv::InputArray image, cv::Rect const& box) const -> float {
+        cv::Point2f center = cv::Point2f{box.tl()} + cv::Point2f{box.size()} / 2;
+        float xNormalized = center.x / static_cast<float>(image.cols());
+        float xRecentered = 0.5f - xNormalized;
+        float bearingDegrees = xRecentered * mCameraHorizontalFov;
+        return bearingDegrees;
+    }
 
-        // Convert the image back to BGRA for ROS
-        cv::Mat bgraImg;
-        cv::cvtColor(img, bgraImg, cv::COLOR_BGR2BGRA);
+    auto ObjectDetectorNodeletBase::spiralSearchForValidPoint(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, std::size_t u, std::size_t v, std::size_t width, std::size_t height) const -> std::optional<SE3d> {
+        // See: https://stackoverflow.com/a/398302
+        auto xc = static_cast<int>(u), yc = static_cast<int>(v);
+        auto sw = static_cast<int>(width), sh = static_cast<int>(height);
+        auto ih = static_cast<int>(cloudPtr->height), iw = static_cast<int>(cloudPtr->width);
+        int sx = 0, sy = 0; // Spiral coordinates starting at (0, 0)
+        int dx = 0, dy = -1;
+        std::size_t bigger = std::max(width, height);
+        std::size_t maxIterations = bigger * bigger;
+        for (std::size_t i = 0; i < maxIterations; i++) {
+            if (-sw / 2 < sx && sx <= sw / 2 && -sh / 2 < sy && sy <= sh / 2) {
+                int ix = xc + sx, iy = yc + sy; // Image coordinates
 
-        newDebugImageMessage.height = bgraImg.rows;
-        newDebugImageMessage.width = bgraImg.cols;
-        newDebugImageMessage.encoding = sensor_msgs::image_encodings::BGRA8;
-        newDebugImageMessage.step = bgraImg.channels() * bgraImg.cols;
-        newDebugImageMessage.is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
+                if (ix < 0 || ix >= iw || iy < 0 || iy >= ih) {
+                    NODELET_WARN_STREAM(std::format("Spiral query is outside the image: [{}, {}]", ix, iy));
+                    continue;
+                }
 
-        auto imgPtr = bgraImg.data;
+                Point const& point = reinterpret_cast<Point const*>(cloudPtr->data.data())[ix + iy * cloudPtr->width];
+                if (!std::isfinite(point.x) || !std::isfinite(point.y) || !std::isfinite(point.z)) {
+                    NODELET_WARN_STREAM("Point at spiral query had a non-finite component");
+                    continue;
+                }
 
-        //Calculate the image size
-        size_t size = newDebugImageMessage.step * newDebugImageMessage.height;
-        newDebugImageMessage.data.resize(size);
+                return std::make_optional<SE3d>(R3{point.x, point.y, point.z}, SO3d::Identity());
+            }
 
-        //Copy the data to the image
-        std::memcpy(newDebugImageMessage.data.data(), imgPtr, size);
+            if (sx == sy || (sx < 0 && sx == -sy) || (sx > 0 && sx == 1 - sy)) {
+                dy = -dy;
+                std::swap(dx, dy);
+            }
 
-        mDebugImgPubPC.publish(newDebugImageMessage);
+            sx += dx;
+            sy += dy;
+        }
+        return std::nullopt;
+    }
+
+    auto ObjectDetectorNodeletBase::drawDetectionBoxes(cv::InputOutputArray image, std::span<Detection const> detections) -> void {
+        // Draw the detected object's bounding boxes on the image for each of the objects detected
+        std::array const fontColors{cv::Scalar{232, 115, 5}, cv::Scalar{0, 4, 227}};
+        for (std::size_t i = 0; i < detections.size(); i++) {
+            // Font color will change for each different detection
+            cv::Scalar const& fontColor = fontColors.at(detections[i].classId);
+            cv::rectangle(image, detections[i].box, fontColor, 1, cv::LINE_8, 0);
+
+            // Put the text on the image
+            cv::Point textPosition(80, static_cast<int>(80 * (i + 1)));
+            constexpr int fontSize = 1;
+            constexpr int fontWeight = 2;
+            putText(image, detections[i].className, textPosition, cv::FONT_HERSHEY_COMPLEX, fontSize, fontColor, fontWeight); // Putting the text in the matrix
+        }
+    }
+
+    auto ObjectDetectorNodeletBase::publishDetectedObjects(cv::InputArray image) -> void {
+        if (!mDebugImagePub.getNumSubscribers()) return;
+
+        mDetectionsImageMessage.header.stamp = ros::Time::now();
+        mDetectionsImageMessage.height = image.rows();
+        mDetectionsImageMessage.width = image.cols();
+        mDetectionsImageMessage.encoding = sensor_msgs::image_encodings::BGRA8;
+        mDetectionsImageMessage.is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
+        mDetectionsImageMessage.step = 4 * mDetectionsImageMessage.width;
+        mDetectionsImageMessage.data.resize(mDetectionsImageMessage.step * mDetectionsImageMessage.height);
+        cv::Mat debugImageWrapper{image.size(), CV_8UC4, mDetectionsImageMessage.data.data()};
+        cv::cvtColor(image, debugImageWrapper, cv::COLOR_RGB2BGRA);
+
+        mDebugImagePub.publish(mDetectionsImageMessage);
+    }
+
+    auto StereoObjectDetectorNodelet::convertPointCloudToRGB(sensor_msgs::PointCloud2ConstPtr const& msg, cv::Mat const& image) -> void {
+        auto* pixelPtr = reinterpret_cast<cv::Vec3b*>(image.data);
+        auto* pointPtr = reinterpret_cast<Point const*>(msg->data.data());
+        std::for_each(std::execution::par_unseq, pixelPtr, pixelPtr + image.total(), [&](cv::Vec3b& pixel) {
+            std::size_t const i = &pixel - pixelPtr;
+            pixel[0] = pointPtr[i].r;
+            pixel[1] = pointPtr[i].g;
+            pixel[2] = pointPtr[i].b;
+        });
     }
 
 } // namespace mrover

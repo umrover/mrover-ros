@@ -1,9 +1,9 @@
 #pragma once
 
-// STL
 #include <array>
 #include <exception>
 #include <filesystem>
+#include <algorithm>
 #include <fstream>
 #include <memory>
 #include <string>

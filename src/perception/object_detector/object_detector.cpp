@@ -1,43 +1,39 @@
 #include "object_detector.hpp"
-#include "learning.hpp"
 
 namespace mrover {
 
-    void ObjectDetectorNodelet::onInit() {
+    auto ObjectDetectorNodeletBase::onInit() -> void {
         mNh = getMTNodeHandle();
         mPnh = getMTPrivateNodeHandle();
 
-        //TF Params
         mNh.param<std::string>("camera_frame", mCameraFrame, "zed_left_camera_frame");
         mNh.param<std::string>("world_frame", mWorldFrame, "map");
 
-        // Hit count params
-        mNh.param<int>("obj_increment_weight", mObjIncrementWeight, 2);
-        mNh.param<int>("obj_decrement_weight", mObjDecrementWeight, 1);
-        mNh.param<int>("obj_hitcount_threshold", mObjHitThreshold, 5);
-        mNh.param<int>("obj_hitcount_max", mObjMaxHitcount, 10);
+        mPnh.param<int>("increment_weight", mObjIncrementWeight, 2);
+        mPnh.param<int>("decrement_weight", mObjDecrementWeight, 1);
+        mPnh.param<int>("hitcount_threshold", mObjHitThreshold, 5);
+        mPnh.param<int>("hitcount_max", mObjMaxHitcount, 10);
+        mPnh.param<std::string>("model_name", mModelName, "yolov8n_mallet_bottle_better");
 
-        // Point Cloud
-        // Model Params
-        mNh.param<std::string>("model_name_point_cloud", mModelNamePC, "yolov8n_mallet_bottle_better");
+        mLearning = Learning{mModelName};
 
-        // Learning
-        mLearningPC = Learning{mModelNamePC};
+        mDebugImagePub = mNh.advertise<sensor_msgs::Image>("object_detection", 1);
+    }
 
-        // Pub and Sub
-        mImgSubPC = mNh.subscribe("/camera/left/points", 1, &ObjectDetectorNodelet::pointCloudCallback, this);
-        mDebugImgPubPC = mNh.advertise<sensor_msgs::Image>("/object_detector/debug_point_cloud_img", 1);
+    auto StereoObjectDetectorNodelet::onInit() -> void {
+        ObjectDetectorNodeletBase::onInit();
 
-        // Image TODO(LONG RANGE CAMERA): update the pub sub section to have the correct
-        // Model Params
-        mNh.param<std::string>("model_name_image", mModelNameIMG, "yolov8n_mallet_bottle_better");
+        mSensorSub = mNh.subscribe("/camera/left/points", 1, &StereoObjectDetectorNodelet::pointCloudCallback, this);
+    }
 
-        // Learning
-        mLearningIMG = Learning{mModelNameIMG};
+    auto ImageObjectDetectorNodelet::onInit() -> void {
+        ObjectDetectorNodeletBase::onInit();
 
-        // Pub and Sub
-        mImgSubIMG = mNh.subscribe("/long_range_image", 1, &ObjectDetectorNodelet::imageCallback, this);
-        mDebugImgPubIMG = mNh.advertise<sensor_msgs::Image>("/object_detector/debug_image_img", 1);
+        mPnh.param<float>("long_range_camera/fov", mCameraHorizontalFov, 80.0);
+
+        mSensorSub = mNh.subscribe("/long_range_camera/image", 1, &ImageObjectDetectorNodelet::imageCallback, this);
+
+        mTargetsPub = mNh.advertise<ImageTargets>("objects", 1);
     }
 
 } // namespace mrover

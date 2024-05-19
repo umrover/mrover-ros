@@ -16,13 +16,14 @@ namespace mrover {
     protected:
         ros::NodeHandle mNh, mPnh;
 
-        ros::Publisher mImgPub;
+        ros::Publisher mDetectedImagePub;
         std::unordered_map<int, ros::Publisher> mThreshPubs; // Map from threshold scale to publisher
         ros::ServiceServer mServiceEnableDetections;
 
         tf2_ros::Buffer mTfBuffer;
         tf2_ros::TransformListener mTfListener{mTfBuffer};
         tf2_ros::TransformBroadcaster mTfBroadcaster;
+        ros::Subscriber mSensorSub;
 
         bool mEnableDetections = true;
         std::string mMapFrameId, mCameraFrameId;
@@ -34,9 +35,8 @@ namespace mrover {
         cv::Ptr<cv::aruco::DetectorParameters> mDetectorParams;
         cv::Ptr<cv::aruco::Dictionary> mDictionary;
 
-        cv::Mat mBgrImage, mGrayImg;
-        sensor_msgs::Image mImgMsg;
-        sensor_msgs::Image mThreshMsg;
+        cv::Mat mBgrImage, mGrayImage;
+        sensor_msgs::Image mDetectionsImageMessage, mThresholdImageMessage;
         std::optional<size_t> mPrevDetectedCount; // Log spam prevention
         std::vector<std::vector<cv::Point2f>> mImmediateCorners;
         std::vector<int> mImmediateIds;
@@ -63,8 +63,6 @@ namespace mrover {
     };
 
     class StereoTagDetectorNodelet final : public TagDetectorNodeletBase {
-        ros::Subscriber mPcSub;
-
         auto onInit() -> void override;
 
         auto pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg) -> void;
@@ -73,15 +71,13 @@ namespace mrover {
     };
 
     class ImageTagDetectorNodelet final : public TagDetectorNodeletBase {
-        ros::Subscriber mImgSub;
-
         ros::Publisher mTargetsPub;
 
         float mCameraHorizontalFov{};
 
         auto onInit() -> void override;
 
-        auto getTagBearing(cv::InputArray image, std::span<cv::Point2f> const& tagCorners) const -> float;
+        auto getTagBearing(cv::InputArray image, std::span<cv::Point2f const> tagCorners) const -> float;
 
         auto imageCallback(sensor_msgs::ImageConstPtr const& msg) -> void;
     };

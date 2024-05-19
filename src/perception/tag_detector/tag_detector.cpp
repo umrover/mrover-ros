@@ -16,11 +16,11 @@ namespace mrover {
         mPnh.param<int>("dictionary", dictionaryNumber, static_cast<int>(cv::aruco::DICT_4X4_50));
         mPnh.param<int>("min_hit_count_before_publish", mMinHitCountBeforePublish, 5);
         mPnh.param<int>("max_hit_count", mMaxHitCount, 5);
-        mPnh.param<int>("tag_increment_weight", mTagIncrementWeight, 2);
-        mPnh.param<int>("tag_decrement_weight", mTagDecrementWeight, 1);
+        mPnh.param<int>("increment_weight", mTagIncrementWeight, 2);
+        mPnh.param<int>("decrement_weight", mTagDecrementWeight, 1);
         mDictionary = cv::makePtr<cv::aruco::Dictionary>(cv::aruco::getPredefinedDictionary(dictionaryNumber));
 
-        mImgPub = mNh.advertise<sensor_msgs::Image>("tag_detection", 1);
+        mDetectedImagePub = mNh.advertise<sensor_msgs::Image>("tag_detection", 1);
 
         mServiceEnableDetections = mNh.advertiseService("enable_detections", &TagDetectorNodeletBase::enableDetectionsCallback, this);
 
@@ -141,14 +141,15 @@ namespace mrover {
     auto StereoTagDetectorNodelet::onInit() -> void {
         TagDetectorNodeletBase::onInit();
 
-        mPcSub = mNh.subscribe("camera/left/points", 1, &StereoTagDetectorNodelet::pointCloudCallback, this);
+        mSensorSub = mNh.subscribe("camera/left/points", 1, &StereoTagDetectorNodelet::pointCloudCallback, this);
     }
 
     auto ImageTagDetectorNodelet::onInit() -> void {
         TagDetectorNodeletBase::onInit();
 
-        mImgSub = mNh.subscribe("long_range_camera/image", 1, &ImageTagDetectorNodelet::imageCallback, this);
         mPnh.param<float>("long_range_camera/fov", mCameraHorizontalFov, 80.0);
+
+        mSensorSub = mNh.subscribe("long_range_camera/image", 1, &ImageTagDetectorNodelet::imageCallback, this);
 
         mTargetsPub = mNh.advertise<ImageTargets>("tags", 1);
     }

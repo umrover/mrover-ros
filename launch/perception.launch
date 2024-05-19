@@ -14,8 +14,14 @@
   </node>
 
   <node if="$(arg object_detector)"
-        pkg="nodelet" type="nodelet" name="object_detector" respawn="true"
-        args="load mrover/ObjectDetectorNodelet perception_nodelet_manager" output="screen"/>
+        pkg="nodelet" type="nodelet" name="stereo_object_detector" respawn="true"
+        args="load mrover/StereoObjectDetectorNodelet perception_nodelet_manager" output="screen"/>
+
+  <node if="$(arg object_detector)"
+        pkg="nodelet" type="nodelet" name="image_object_detector" respawn="true"
+        args="load mrover/ImageObjectDetectorNodelet perception_nodelet_manager" output="screen">
+    <remap from="object_detection" to="long_range_object_detection"/>
+  </node>
 
   <node if="$(arg cost_map)"
         pkg="nodelet" type="nodelet" name="cost_map"

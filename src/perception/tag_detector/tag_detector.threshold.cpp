@@ -10,7 +10,7 @@ namespace mrover {
     }
 
     auto TagDetectorNodeletBase::publishThresholdedImage() -> void {
-        cvtColor(mBgrImage, mGrayImg, cv::COLOR_BGR2GRAY);
+        cvtColor(mBgrImage, mGrayImage, cv::COLOR_BGR2GRAY);
 
         // Number of window sizes (scales) to apply adaptive thresholding
         int scaleCount = (mDetectorParams->adaptiveThreshWinSizeMax - mDetectorParams->adaptiveThreshWinSizeMin) / mDetectorParams->adaptiveThreshWinSizeStep + 1;
@@ -27,20 +27,20 @@ namespace mrover {
             if (publisher.getNumSubscribers() == 0) continue;
 
             int windowSize = mDetectorParams->adaptiveThreshWinSizeMin + scale * mDetectorParams->adaptiveThreshWinSizeStep;
-            threshold(mGrayImg, mGrayImg, windowSize, mDetectorParams->adaptiveThreshConstant);
+            threshold(mGrayImage, mGrayImage, windowSize, mDetectorParams->adaptiveThreshConstant);
 
-            mThreshMsg.header.stamp = ros::Time::now();
-            mThreshMsg.header.frame_id = "zed_left_camera_frame";
-            mThreshMsg.height = mGrayImg.rows;
-            mThreshMsg.width = mGrayImg.cols;
-            mThreshMsg.encoding = sensor_msgs::image_encodings::MONO8;
-            mThreshMsg.step = mGrayImg.step;
-            mThreshMsg.is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
-            size_t size = mThreshMsg.step * mThreshMsg.height;
-            mThreshMsg.data.resize(size);
-            std::memcpy(mThreshMsg.data.data(), mGrayImg.data, size);
+            mThresholdImageMessage.header.stamp = ros::Time::now();
+            mThresholdImageMessage.header.frame_id = "zed_left_camera_frame";
+            mThresholdImageMessage.height = mGrayImage.rows;
+            mThresholdImageMessage.width = mGrayImage.cols;
+            mThresholdImageMessage.encoding = sensor_msgs::image_encodings::MONO8;
+            mThresholdImageMessage.step = mGrayImage.step;
+            mThresholdImageMessage.is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
+            size_t size = mThresholdImageMessage.step * mThresholdImageMessage.height;
+            mThresholdImageMessage.data.resize(size);
+            std::memcpy(mThresholdImageMessage.data.data(), mGrayImage.data, size);
 
-            publisher.publish(mThreshMsg);
+            publisher.publish(mThresholdImageMessage);
         }
     }
 
