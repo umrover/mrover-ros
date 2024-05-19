@@ -28,7 +28,7 @@ from util.state_lib.state import State
 
 TARGET_EXPIRATION_DURATION = rospy.Duration(60)
 
-LONG_RANGE_TAG_EXPIRATION_DURATION = rospy.Duration(rospy.get_param("long_range/time_threshold"))
+LONG_RANGE_EXPIRATION_DURATION = rospy.Duration(rospy.get_param("long_range/time_threshold"))
 INCREMENT_WEIGHT = rospy.get_param("long_range/increment_weight")
 DECREMENT_WEIGHT = rospy.get_param("long_range/decrement_weight")
 MIN_HITS = rospy.get_param("long_range/min_hits")
@@ -158,13 +158,14 @@ class ImageTargetsStore:
                 stored_tag.hit_count -= DECREMENT_WEIGHT
                 if stored_tag.hit_count <= 0:
                     stored_tag.hit_count = 0
-                    # If we haven't seen the tag in a while, remove it from our list
+                    # If we haven't seen the target in a while, remove it from our list
                     time_difference = rospy.Time.now() - stored_tag.time
-                    if time_difference > LONG_RANGE_TAG_EXPIRATION_DURATION:
+                    if time_difference > LONG_RANGE_EXPIRATION_DURATION:
                         del self._data[stored_tag.target.name]
 
-        # Add newly seen tags to our data structure or update current tag's information
+        # Add or update seen targets
         for target in targets:
+            # Keep hit count if already in the list, otherwise initialize
             hit_count = self._data[target.name].hit_count if target.name in self._data else INCREMENT_WEIGHT
             self._data[target.name] = self.TargetData(hit_count=hit_count, target=target, time=rospy.Time.now())
 
@@ -177,7 +178,7 @@ class ImageTargetsStore:
             return None
         if name not in self._data:
             return None
-        if rospy.Time.now() - self._data[name].time >= LONG_RANGE_TAG_EXPIRATION_DURATION:
+        if rospy.Time.now() - self._data[name].time >= LONG_RANGE_EXPIRATION_DURATION:
             return None
         return self._data[name]
 
@@ -238,6 +239,17 @@ class Course:
             WaypointType.WATER_BOTTLE,
         }
 
+    def image_target_name(self) -> str:
+        match self.current_waypoint():
+            case Waypoint(tag_id=tag_id, type=WaypointType(val=WaypointType.POST)):
+                return f"tag{tag_id}"
+            case Waypoint(type=WaypointType(val=WaypointType.MALLET)):
+                return "hammer"
+            case Waypoint(type=WaypointType(val=WaypointType.WATER_BOTTLE)):
+                return "bottle"
+            case _:
+                assert False
+
     def is_complete(self) -> bool:
         return self.waypoint_index == len(self.course_data.waypoints)
 
@@ -248,18 +260,18 @@ class Course:
         """
         from navigation import approach_post, long_range, approach_object
 
-        current_waypoint = self.current_waypoint()
         if self.look_for_post():
             # If we see the tag in the ZED, go to ApproachPostState
             if self.ctx.env.current_target_pos() is not None:
                 return approach_post.ApproachPostState()
             # If we see the tag in the long range camera, go to LongRangeState
-            assert current_waypoint is not None
-            if self.ctx.env.image_targets.query(f"tag{current_waypoint.tag_id}") is not None:
+            if self.ctx.env.image_targets.query(self.ctx.course.image_target_name()) is not None:
                 return long_range.LongRangeState()
         elif self.look_for_object():
             if self.ctx.env.current_target_pos() is not None:
-                return approach_object.ApproachObjectState()  # if we see the object
+                return approach_object.ApproachObjectState()
+            if self.ctx.env.image_targets.query(self.ctx.course.image_target_name()) is not None:
+                return long_range.LongRangeState()
         return None
 
 
@@ -339,7 +351,8 @@ class Context:
         self.disable_requested = False
         self.world_frame = rospy.get_param("world_frame")
         self.rover_frame = rospy.get_param("rover_frame")
-        self.tag_data_listener = rospy.Subscriber("tags", ImageTargets, self.tag_data_callback)
+        self.tag_data_listener = rospy.Subscriber("tags", ImageTargets, self.image_targets_callback)
+        self.tag_data_listener = rospy.Subscriber("objects", ImageTargets, self.image_targets_callback)
         self.costmap_listener = rospy.Subscriber("costmap", OccupancyGrid, self.costmap_callback)
 
     def recv_enable_auton(self, req: EnableAutonRequest) -> EnableAutonResponse:
@@ -352,7 +365,7 @@ class Context:
     def stuck_callback(self, msg: Bool) -> None:
         self.rover.stuck = msg.data
 
-    def tag_data_callback(self, tags: ImageTargets) -> None:
+    def image_targets_callback(self, tags: ImageTargets) -> None:
         self.env.image_targets.push_frame(tags.targets)
 
     def costmap_callback(self, msg: OccupancyGrid) -> None:

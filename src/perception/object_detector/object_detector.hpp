@@ -24,7 +24,7 @@ namespace mrover {
 
         Learning mLearning;
 
-        cv::Mat mImage, mImageBlob;
+        cv::Mat mRgbImage, mImageBlob;
         sensor_msgs::Image mDetectionsImageMessage;
 
         ros::Publisher mDebugImagePub;

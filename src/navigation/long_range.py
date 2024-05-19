@@ -34,9 +34,8 @@ class LongRangeState(ApproachTargetBaseState):
         current_waypoint = context.course.current_waypoint()
         assert current_waypoint is not None
 
-        tag_id = current_waypoint.tag_id
-        tag = context.env.image_targets.query(f"tag{tag_id}")
-        if tag is None:
+        target = context.env.image_targets.query(context.course.image_target_name())
+        if target is None:
             return None
 
         pose = context.rover.get_pose()
@@ -46,10 +45,10 @@ class LongRangeState(ApproachTargetBaseState):
         rover_position = pose.position
         rover_direction = pose.rotation.direction_vector()
 
-        bearing_to_tag = tag.target.bearing
+        bearing_to_tag = target.target.bearing
         # If you have not seen the tag in a while but are waiting until the expiration time is up,
         # keep going towards where it was last seen (the direction you are heading), don't use an old bearing value
-        if tag.hit_count <= 0:
+        if target.hit_count <= 0:
             bearing_to_tag = 0
 
         bearing_rotation_mat = Rotation.from_rotvec([0, 0, bearing_to_tag]).as_matrix()

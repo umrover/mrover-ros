@@ -10,16 +10,16 @@ namespace mrover {
         mLoopProfiler.beginLoop();
 
         // Adjust the picture size to be in line with the expected img size from the Point Cloud
-        if (static_cast<int>(msg->height) != mImage.rows || static_cast<int>(msg->width) != mImage.cols) {
-            NODELET_INFO_STREAM(std::format("Image size changed from [{}, {}] to [{}, {}]", mImage.cols, mImage.rows, msg->width, msg->height));
-            mImage = cv::Mat{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC3, cv::Scalar{0, 0, 0, 0}};
+        if (static_cast<int>(msg->height) != mRgbImage.rows || static_cast<int>(msg->width) != mRgbImage.cols) {
+            NODELET_INFO_STREAM(std::format("Image size changed from [{}, {}] to [{}, {}]", mRgbImage.cols, mRgbImage.rows, msg->width, msg->height));
+            mRgbImage = cv::Mat{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC3, cv::Scalar{0, 0, 0, 0}};
         }
-        convertPointCloudToRGB(msg, mImage);
+        convertPointCloudToRGB(msg, mRgbImage);
 
         // TODO(quintin): Avoid hard coding blob size
         cv::Size blobSize{640, 640};
         cv::Mat blobSizedImage;
-        cv::resize(mImage, blobSizedImage, blobSize);
+        cv::resize(mRgbImage, blobSizedImage, blobSize);
         cv::dnn::blobFromImage(blobSizedImage, mImageBlob, 1.0 / 255.0, blobSize, cv::Scalar{}, false, false);
 
         mLoopProfiler.measureEvent("Conversion");
@@ -51,15 +51,12 @@ namespace mrover {
 
         mLoopProfiler.beginLoop();
 
-        if (static_cast<int>(msg->height) != mImage.rows || static_cast<int>(msg->width) != mImage.cols) {
-            NODELET_INFO("Image size changed from [%d %d] to [%u %u]", mImage.cols, mImage.rows, msg->width, msg->height);
-            mImage = cv::Mat{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC4, const_cast<std::uint8_t*>(msg->data.data())};
-        }
+        cv::Mat bgraImage{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC4, const_cast<uint8_t*>(msg->data.data())};
+        cv::cvtColor(bgraImage, mRgbImage, cv::COLOR_BGRA2RGB);
 
         cv::Size blobSize{640, 640};
         cv::Mat blobSizedImage;
-        cv::resize(mImage, blobSizedImage, blobSize);
-        cv::cvtColor(blobSizedImage, blobSizedImage, cv::COLOR_BGRA2RGB);
+        cv::resize(mRgbImage, blobSizedImage, blobSize);
 
         cv::dnn::blobFromImage(blobSizedImage, mImageBlob, 1.0 / 255.0, blobSize, cv::Scalar{}, false, false);
 
