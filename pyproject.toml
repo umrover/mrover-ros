@@ -3,7 +3,7 @@ name = "mrover"
 version = "2024.0.0"
 description = "MRover Python Code"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license = { file = "LICENSE.md" }
 maintainers = [
     { name = "Michigan Mars Rover Team" }
@@ -11,14 +11,11 @@ maintainers = [
 dependencies = [
     # ROS dependencies
     "rospkg==1.5.0",
-    "netifaces==0.11.0",
-    "defusedxml==0.7.1",
     # MRover dependencies
-    "Django==4.2.11",
+    "pyyaml==6.0.1",
+    "Django==5.0.6",
     "numpy==1.26.4",
     "scipy==1.13.0",
-    "pandas==2.2.0",
-    "pyarrow==15.0.0",
     "shapely==2.0.1",
     "pyserial==3.5",
     "moteus==0.3.69",
@@ -30,6 +27,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
+    # If you update these, be sure to update the correspondig version checkers in style.sh
     "black==23.9.1",
     "mypy==1.10.0",
 ]

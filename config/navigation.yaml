@@ -38,18 +38,14 @@ waypoint:
 recovery:
   stop_threshold: 0.2
   drive_forward_threshold: 0.34
-  recovery_distance: 2.0 # distance the rover moves back in each leg of j-turn
+  recovery_distance: 2.0 # Distance the rover moves back in each leg of j-turn
   give_up_time: 10.0
 
-failure_identification:
-  dataframe_max_size: 200
-  test_recovery_state: False
+stuck_detector:
+  window_size: 30
   post_recovery_grace_period: 5.0
-
-watchdog:
-  window_size: 100 #size of window we are looking at for being stuck
-  angular_threshold: 0.1
-  linear_threshold: 0.2
+  angular_threshold: 0.08 # rad/s
+  linear_threshold: 0.16 # m/s
 
 long_range:
   distance_ahead: 20
