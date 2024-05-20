@@ -1,6 +1,6 @@
 #pragma once
 constexpr static float RESISTANCE_25 = 10000.0f;
-constexpr static float BIAS_RESISTOR = 984.0f;  // diagram is ground - thermistor - analog input - bias resistor - 3.3v
+constexpr static float BIAS_RESISTOR = 10000.0f;  // diagram is ground - thermistor - analog input - bias resistor - 3.3v
 constexpr static float THRM_A = 3.3540170E-03;
 constexpr static float THRM_B = 2.5617244E-04;
 constexpr static float THRM_C = 2.1400943E-06;
