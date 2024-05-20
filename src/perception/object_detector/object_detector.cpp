@@ -13,7 +13,7 @@ namespace mrover {
         mPnh.param<int>("decrement_weight", mObjDecrementWeight, 1);
         mPnh.param<int>("hitcount_threshold", mObjHitThreshold, 5);
         mPnh.param<int>("hitcount_max", mObjMaxHitcount, 10);
-        mPnh.param<std::string>("model_name", mModelName, "yolov8n_mallet_bottle_better");
+        mPnh.param<std::string>("model_name", mModelName, "yolov8s_mallet_bottle");
         mPnh.param<float>("model_score_threshold", mModelScoreThreshold, 0.75);
         mPnh.param<float>("model_nms_threshold", mModelNmsThreshold, 0.5);
 
