@@ -19,6 +19,8 @@ namespace mrover {
             auto device = mPnh.param<std::string>("device", "/dev/video0");
             auto imageTopicName = mPnh.param<std::string>("image_topic", "/image");
             auto cameraInfoTopicName = mPnh.param<std::string>("camera_info_topic", "/camera_info");
+            auto watchdogTimeout = mPnh.param<double>("watchdog_timeout", 1.0);
+            mRestartDelay = mPnh.param<double>("restart_delay", 2.0);
 
             mImgPub = mNh.advertise<sensor_msgs::Image>(imageTopicName, 1);
             mCamInfoPub = mNh.advertise<sensor_msgs::CameraInfo>(cameraInfoTopicName, 1);
@@ -52,6 +54,8 @@ namespace mrover {
             if (gst_element_set_state(mPipeline, GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE)
                 throw std::runtime_error{"Failed to play GStreamer pipeline"};
 
+            mWatchdogTimer = mNh.createTimer(ros::Duration{watchdogTimeout}, &UsbCameraNodelet::watchdogTriggered, this);
+
             NODELET_INFO_STREAM("Initialized and started GStreamer pipeline");
 
         } catch (std::exception const& e) {
@@ -60,8 +64,25 @@ namespace mrover {
         }
     }
 
-    auto UsbCameraNodelet::pullSampleLoop() const -> void {
+    auto UsbCameraNodelet::watchdogTriggered(ros::TimerEvent const&) -> void {
+        mWatchdogTimer.stop();
+        ROS_ERROR("Watchdog hit! Attemping to restart...");
+
+        // Attempt to restart the pipeline
+        if (gst_element_set_state(mPipeline, GST_STATE_READY) == GST_STATE_CHANGE_FAILURE ||
+            gst_element_set_state(mPipeline, GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE)
+            ROS_ERROR_STREAM("Failed to restart GStreamer pipeline");
+
+        ros::Duration{mRestartDelay}.sleep();
+        mWatchdogTimer.start();
+    }
+
+
+    auto UsbCameraNodelet::pullSampleLoop() -> void {
         while (GstSample* sample = gst_app_sink_pull_sample(GST_APP_SINK(mStreamSink))) {
+            mWatchdogTimer.stop();
+            mWatchdogTimer.start();
+
             GstBuffer* buffer = gst_sample_get_buffer(sample);
             GstMapInfo map;
             gst_buffer_map(buffer, &map, GST_MAP_READ);
