@@ -74,7 +74,11 @@ namespace mrover {
             image.width = mWidth;
             image.step = mWidth * 4;
             image.data.resize(image.step * mHeight);
-            cv::cvtColor(cv::Mat{mHeight, mWidth, CV_8UC2, map.data}, cv::Mat{mHeight, mWidth, CV_8UC4, image.data.data()}, cv::COLOR_YUV2BGRA_YUY2);
+            // These do not clone the data (due to passing the pointer), just provide a way for OpenCV to access it
+            // We are converting directly from GStreamer YUV2 memory to the ROS image BGRA memory
+            cv::Mat yuvView{mHeight, mWidth, CV_8UC2, map.data};
+            cv::Mat bgraView{mHeight, mWidth, CV_8UC4, image.data.data()};
+            cv::cvtColor(yuvView, bgraView, cv::COLOR_YUV2BGRA_YUY2);
             mImgPub.publish(image);
 
             gst_buffer_unmap(buffer, &map);
