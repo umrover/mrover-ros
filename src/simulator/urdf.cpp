@@ -149,6 +149,20 @@ namespace mrover {
         return finalShape;
     }
 
+    auto URDF::makeCameraForLink(SimulatorNodelet& simulator, btMultibodyLink const* link) -> Camera {
+        Camera camera;
+        camera.link = link;
+        camera.resolution = {640, 480};
+        camera.updateTask = PeriodicTask{20};
+        // TODO(quintin): Why do I have to cast this
+        wgpu::TextureUsage usage = static_cast<wgpu::TextureUsage::W>(wgpu::TextureUsage::RenderAttachment | wgpu::TextureUsage::TextureBinding);
+        wgpu::TextureUsage colorUsage = static_cast<wgpu::TextureUsage::W>(usage | wgpu::TextureUsage::CopySrc);
+        std::tie(camera.colorTexture, camera.colorTextureView) = simulator.makeTextureAndView(camera.resolution.x(), camera.resolution.y(), COLOR_FORMAT, colorUsage, wgpu::TextureAspect::All);
+        std::tie(camera.normalTexture, camera.normalTextureView) = simulator.makeTextureAndView(camera.resolution.x(), camera.resolution.y(), NORMAL_FORMAT, usage, wgpu::TextureAspect::All);
+        std::tie(camera.depthTexture, camera.depthTextureView) = simulator.makeTextureAndView(camera.resolution.x(), camera.resolution.y(), DEPTH_FORMAT, usage, wgpu::TextureAspect::DepthOnly);
+        return camera;
+    }
+
     URDF::URDF(SimulatorNodelet& simulator, XmlRpc::XmlRpcValue const& init) {
         auto urdfUri = xmlRpcValueToTypeOrDefault<std::string>(init, "uri");
         if (!model.initString(performXacro(uriToPath(urdfUri)))) throw std::runtime_error{std::format("Failed to parse URDF from URI: {}", urdfUri)};
@@ -179,7 +193,7 @@ namespace mrover {
             auto [it, was_inserted] = linkNameToMeta.emplace(link->name, linkIndex);
             assert(was_inserted);
 
-            // TODO(quintin): Configure this from a plugins XML file
+            // TODO(quintin): Configure this from a plugins XML file?
             if (link->name.contains("camera"sv)) {
                 Camera camera = makeCameraForLink(simulator, &multiBody->getLink(linkIndex));
                 if (link->name.contains("zed"sv)) {
@@ -206,6 +220,24 @@ namespace mrover {
                     camera.fov = 15;
                     simulator.mCameras.push_back(std::move(camera));
                 }
+            } else if (link->name.contains("imu"sv)) {
+                Imu& imu = simulator.mImus.emplace_back();
+                imu.link = &multiBody->getLink(linkIndex);
+                imu.updateTask = PeriodicTask{50};
+                imu.pub = simulator.mNh.advertise<ImuAndMag>("imu/data", 1);
+            } else if (link->name.contains("gps"sv)) {
+                Gps& gps = simulator.mGps.emplace_back();
+                gps.link = &multiBody->getLink(linkIndex);
+                gps.updateTask = PeriodicTask{10};
+                std::string topic;
+                if (link->name.contains("left")) {
+                    topic = "right_gps/fix";
+                } else if (link->name.contains("right")) {
+                    topic = "left_gps/fix";
+                } else {
+                    topic = "gps/fix";
+                }
+                gps.pub = simulator.mNh.advertise<sensor_msgs::NavSatFix>(topic, 1);
             }
 
             for (urdf::VisualSharedPtr const& visual: link->visual_array) {

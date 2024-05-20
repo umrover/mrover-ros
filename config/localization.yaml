@@ -9,3 +9,11 @@ gps_linearization:
   reference_point_altitude: 234.1
   reference_heading: 90.0
   use_both_gps: false
+
+gps_covariance: [ [ 0.1, 0, 0 ],
+                  [ 0, 0.1, 0 ],
+                  [ 0, 0, 0.1 ] ]
+
+imu_orientation_covariance: [ [ 0.1, 0, 0 ],
+                              [ 0, 0.1, 0 ],
+                              [ 0, 0, 0.1 ] ]

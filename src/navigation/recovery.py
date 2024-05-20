@@ -1,9 +1,9 @@
+from enum import Enum
 from typing import Optional
 
 import numpy as np
-import rospy
-from aenum import Enum
 
+import rospy
 from util.np_utils import rotate_2d
 from util.ros_utils import get_rosparam
 from util.state_lib.state import State
@@ -15,8 +15,8 @@ GIVE_UP_TIME = get_rosparam("recovery/give_up_time", 10.0)
 
 
 class JTurnAction(Enum):
-    moving_back: Enum = 0
-    j_turning: Enum = 1
+    MOVING_BACK = 0
+    J_TURNING = 1
 
 
 class RecoveryState(State):
@@ -28,7 +28,7 @@ class RecoveryState(State):
     def reset(self, context) -> None:
         self.waypoint_calculated = False
         self.waypoint_behind = None
-        self.current_action = JTurnAction.moving_back
+        self.current_action = JTurnAction.MOVING_BACK
         context.rover.stuck = False
         self.start_time = None
 
@@ -46,7 +46,7 @@ class RecoveryState(State):
         pose = context.rover.get_pose()
         # if first round, set a waypoint directly behind the rover and command it to
         # drive backwards toward it until it arrives at that point.
-        if self.current_action == JTurnAction.moving_back:
+        if self.current_action == JTurnAction.MOVING_BACK:
             # Only set waypoint_behind once so that it doesn't get overwritten and moved
             # further back every iteration
             if self.waypoint_behind is None:
@@ -59,14 +59,14 @@ class RecoveryState(State):
             context.rover.send_drive_command(cmd_vel)
 
             if arrived_back:
-                self.current_action = JTurnAction.j_turning  # move to second part of turn
+                self.current_action = JTurnAction.J_TURNING  # move to second part of turn
                 self.waypoint_behind = None
                 context.rover.driver.reset()
 
         # if second round, set a waypoint off to the side of the rover and command it to
         # turn and drive backwards towards it until it arrives at that point. So it will begin
         # by turning then it will drive backwards.
-        if self.current_action == JTurnAction.j_turning:
+        if self.current_action == JTurnAction.J_TURNING:
             if self.waypoint_behind is None:
                 dir_vector = pose.rotation.direction_vector()
                 # the waypoint will be 45 degrees to the left of the rover behind it.

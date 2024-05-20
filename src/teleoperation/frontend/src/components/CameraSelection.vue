@@ -4,7 +4,6 @@
       <template v-for="i in 3" :key="i">
         <button
           :class="['btn', color(i, j), 'mx-1', 'my-1']"
-          :disabled="maxedOut && !camsEnabled[i - 1 + 3 * (j - 1)]"
           @click="$emit('cam_index', i - 1 + 3 * (j - 1))"
         >
           <span>{{ names[i - 1 + 3 * (j - 1)] }}</span>
@@ -37,25 +36,13 @@ export default {
   },
 
   methods: {
-    color: function (i: number, j: number) {
+    color: function(i: number, j: number) {
       return this.camsEnabled[i - 1 + 3 * (j - 1)] ? 'btn-success' : 'btn-secondary'
     }
   },
 
-  computed: {
-    maxedOut() {
-      let num_enabled = 0
-      for (let i = 0; i < this.camsEnabled.length; i++) {
-        if (this.camsEnabled[i]) {
-          num_enabled++
-        }
-      }
-      return num_enabled == this.capacity
-    }
-  },
-
   watch: {
-    camsEnabled: function () {
+    camsEnabled: function() {
       for (let i = 0; i < this.camsEnabled.length; i++) {
         this.camsEnabled[i] ? (this.opacities[i] = 0.55) : (this.opacities[i] = 1.0)
       }

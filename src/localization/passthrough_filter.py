@@ -77,8 +77,7 @@ class PassthroughFilter:
 
 
 def main():
-    # start the node and spin to wait for messages to be received
-    rospy.init_node("gps_linearization")
+    rospy.init_node("passthrough_filter")
     PassthroughFilter()
     rospy.spin()
 

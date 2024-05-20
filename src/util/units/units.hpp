@@ -325,6 +325,10 @@ namespace mrover {
         return make_no_conversion<root<U>>(std::sqrt(u.rep));
     }
 
+    constexpr auto square(IsUnit auto const& u) {
+        return u * u;
+    }
+
     template<IsUnit U>
     constexpr auto abs(U const& u) {
         return make_no_conversion<U>(std::fabs(u.rep));

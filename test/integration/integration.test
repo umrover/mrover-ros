@@ -9,7 +9,5 @@
     <arg name="run_rviz" value="false"/>
   </include>
 
-  <node name="led" pkg="mrover" type="led" />
-
   <test test-name="integration" pkg="mrover" type="integration.py"/>
 </launch>

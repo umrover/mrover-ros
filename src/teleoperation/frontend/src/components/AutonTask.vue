@@ -1,73 +1,53 @@
 <template>
-  <div class="wrapper">
-    <div class="shadow p-3 mb-5 header">
-      <img class="logo" src="/mrover.png" alt="MRover" title="MRover" width="200" />
+  <div class='wrapper'>
+    <div class='shadow p-3 mb-5 header'>
+      <img class='logo' src='/mrover.png' alt='MRover' title='MRover' width='200' />
       <h1>Auton Dashboard</h1>
-      <!-- <MCUReset class="mcu_reset"></MCUReset>
-        <CommReadout class="comms"></CommReadout> -->
-      <div class="help">
-        <img src="/help.png" alt="Help" title="Help" width="48" height="48" />
-      </div>
-      <div class="helpscreen"></div>
-      <div class="helpimages" style="display: flex; align-items: center; justify-content: space-evenly">
-        <img src="/joystick.png" alt="Joystick" title="Joystick Controls"
-          style="width: auto; height: 70%; display: inline-block" />
-      </div>
     </div>
     <div :class="['shadow p-3 rounded data', ledColor]">
       <h2>Nav State: {{ navState }}</h2>
-      <div style="display: inline-block; vertical-align: top">
-        <p style="margin-top: 6px">Joystick Values</p>
-        <JoystickValues />
-      </div>
-      <OdometryReading :odom="odom" />
+      <OdometryReading :odom='odom' />
     </div>
-    <div class="shadow p-3 rounded feed">
-        <CameraFeed :mission="'ZED'" :id="0" :name="'ZED'"></CameraFeed>
+    <div class='shadow p-3 rounded feed'>
+      <CameraFeed :mission="'ZED'" :id='0' :name="'ZED'"></CameraFeed>
     </div>
-    <div class="shadow p-3 rounded map">
-      <AutonRoverMap :odom="odom" />
+    <div class='shadow p-3 rounded map'>
+      <AutonRoverMap :odom='odom' />
     </div>
-    <div class="shadow p-3 rounded waypoints">
-      <AutonWaypointEditor :odom="odom" @toggleTeleop="teleopEnabledCheck = $event" />
+    <div class='shadow p-3 rounded waypoints'>
+      <AutonWaypointEditor :odom='odom' @toggleTeleop='teleopEnabledCheck = $event' />
     </div>
     <!--Enable the drive controls if auton is off-->
-    <div v-if="!autonEnabled && teleopEnabledCheck" v-show="false" class="driveControls">
+    <div v-if='!autonEnabled && teleopEnabledCheck' v-show='false' class='driveControls'>
       <DriveControls />
     </div>
-    <div v-show="false">
+    <div v-show='false'>
       <MastGimbalControls></MastGimbalControls>
     </div>
-    <div class="conditions">
-      <div v-if="!stuck_status" class="shadow p-3 rounded bg-success text-center">
+    <div class='conditions'>
+      <div v-if='!stuck_status' class='shadow p-3 rounded bg-success text-center'>
         <h4>Nominal Conditions</h4>
       </div>
-      <div v-else class="shadow p-3 rounded bg-danger text-center">
+      <div v-else class='shadow p-3 rounded bg-danger text-center'>
         <h4>Obstruction Detected</h4>
       </div>
     </div>
-    <div class="shadow p-3 rounded cameras">
-      <Cameras :mission="'auton'"/>
-    </div>
-    <div class="shadow p-3 rounded moteus">
-      <DriveMoteusStateTable :moteus-state-data="moteusState" />
-      <MotorsStatusTable :motor-data="motorData" :vertical="true" />
+    <div class='shadow p-3 rounded moteus'>
+      <ControllerDataTable msg-type='drive_left_state' header='Left Drive States' />
+      <ControllerDataTable msg-type='drive_right_state' header='Right Drive States' />
     </div>
   </div>
 </template>
 
-<script lang="ts">
-import { mapActions, mapState, mapGetters } from 'vuex'
-import DriveMoteusStateTable from './DriveMoteusStateTable.vue'
+<script lang='ts'>
+import { mapActions, mapGetters, mapState } from 'vuex'
 import AutonRoverMap from './AutonRoverMap.vue'
 import AutonWaypointEditor from './AutonWaypointEditor.vue'
-import Cameras from './Cameras.vue'
 import CameraFeed from './CameraFeed.vue'
-import MotorsStatusTable from './MotorsStatusTable.vue'
 import OdometryReading from './OdometryReading.vue'
-import JoystickValues from './JoystickValues.vue'
 import DriveControls from './DriveControls.vue'
 import MastGimbalControls from './MastGimbalControls.vue'
+import ControllerDataTable from './ControllerDataTable.vue'
 import { quaternionToMapAngle } from '../utils.js'
 import { defineComponent } from 'vue'
 
@@ -75,14 +55,11 @@ let interval: number
 
 export default defineComponent({
   components: {
-    DriveMoteusStateTable,
+    ControllerDataTable,
     AutonRoverMap,
     AutonWaypointEditor,
-    Cameras,
     CameraFeed,
-    MotorsStatusTable,
     OdometryReading,
-    JoystickValues,
     DriveControls,
     MastGimbalControls
   },
@@ -152,15 +129,12 @@ export default defineComponent({
         else if (msg.blue) this.ledColor = 'bg-primary' //blue
       } else if (msg.type == 'nav_state') {
         this.navState = msg.state
-      } else if (msg.type == 'nav_sat_fix') {
+      } else if (msg.type == 'gps_fix') {
         this.odom.latitude_deg = msg.latitude
         this.odom.longitude_deg = msg.longitude
         this.odom.altitude = msg.altitude
-      } else if (msg.type == 'bearing') {
-        this.odom.bearing_deg = quaternionToMapAngle(msg.rotation)
-      } else if (msg.type == "center_map") {
-        this.odom.latitude_deg = msg.latitude
-        this.odom.longitude_deg = msg.longitude
+      } else if (msg.type == 'orientation') {
+        this.odom.bearing_deg = quaternionToMapAngle(msg.orientation)
       }
     }
   },
@@ -169,20 +143,10 @@ export default defineComponent({
     ...mapActions('websocket', ['sendMessage'])
   },
 
-  beforeUnmount: function () {
+  beforeUnmount: function() {
     this.ledColor = 'bg-white'
     window.clearInterval(interval)
-  },
-
-  created: function () {
-    window.setTimeout(() => {
-      this.sendMessage({ "type": "center_map" });
-    }, 250)
-    interval = setInterval(() => {
-      this.sendMessage({ type: 'bearing' })
-    }, 1000)
-  },
-
+  }
 })
 </script>
 
@@ -191,14 +155,13 @@ export default defineComponent({
   display: grid;
   grid-gap: 10px;
   grid-template-columns: auto 30% 30%;
-  grid-template-rows: repeat(6, auto);
+  grid-template-rows: repeat(5, auto);
   grid-template-areas:
     'header header header'
     'feed map waypoints'
     'data data waypoints'
     'data data conditions'
-    'moteus moteus moteus'
-    'cameras cameras cameras';
+    'moteus moteus moteus';
 
   font-family: sans-serif;
   height: auto;
@@ -289,16 +252,13 @@ h2 {
 .map {
   grid-area: map;
 }
+
 .waypoints {
   grid-area: waypoints;
 }
 
 .conditions {
   grid-area: conditions;
-}
-
-.cameras {
-  grid-area: cameras;
 }
 
 .moteus {

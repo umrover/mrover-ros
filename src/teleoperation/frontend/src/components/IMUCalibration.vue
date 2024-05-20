@@ -1,13 +1,12 @@
 <template>
   <div class="rounded bg-white wrap">
-    <span class="px-2">IMU Calibration</span>
-    <span class="px-2">{{ system_val }}</span>
+    <span class="px-2">IMU Calibration: {{ calibration }}</span>
     <LEDIndicator
       class="px-2"
-      :name="'System'"
-      :show_name="true"
-      :connected="system_val == calibration_limit_master"
+      :show_name="false"
+      :connected="calibration == calibration_limit_master"
     />
+    <span class="px-2">IMU Temperature: {{ temperature }} °C</span>
   </div>
 </template>
 
@@ -24,7 +23,8 @@ export default {
 
   data() {
     return {
-      system_val: 0,
+      calibration: 0,
+      temperature: 0,
       calibration_limit_master: calibration_limit
     }
   },
@@ -35,8 +35,13 @@ export default {
 
   watch: {
     message(msg) {
-      if (msg.type == 'calibration_status') {
-        this.system_val = msg.system_calibration
+      switch (msg.type) {
+        case 'temperature':
+          this.temperature = msg.temperature
+          break
+        case 'calibration':
+          this.calibration = msg.system_calibration
+          break
       }
     }
   }

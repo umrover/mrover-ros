@@ -63,7 +63,6 @@
       - rsync
       - python3-rosdep
       - python3-catkin-tools
-      - clang-16
       - clang-tidy-16
       - clang-format-16
       - lld-16
@@ -142,22 +141,6 @@
     path: /usr/bin/gcc-13
     link: /usr/bin/gcc
     priority: 130
-
-- name: Set Clang++ 16 as Default
-  become: True
-  alternatives:
-    name: clang++
-    path: /usr/bin/clang++-16
-    link: /usr/bin/clang++
-    priority: 160
-
-- name: Set Clang 16 as Default
-  become: True
-  alternatives:
-    name: clang
-    path: /usr/bin/clang-16
-    link: /usr/bin/clang
-    priority: 160
 
 #- name: Set clangd 16 as Default
 #  become: True

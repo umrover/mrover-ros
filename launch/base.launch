@@ -1,0 +1,10 @@
+<launch>
+  <rosparam command="load" file="$(find mrover)/config/esw.yaml"/>
+
+  <node name="differential_drive_controller" pkg="mrover" type="differential_drive_controller" output="screen"/>
+
+  <node name="superstructure" pkg="mrover" type="superstructure" output="screen"/>
+
+  <node name="led" pkg="mrover" type="led" />
+
+</launch>

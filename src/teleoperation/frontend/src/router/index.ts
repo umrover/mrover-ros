@@ -1,4 +1,4 @@
-import { createWebHistory, createRouter } from 'vue-router'
+import { createRouter, createWebHistory } from 'vue-router'
 import Menu from '../components/Menu.vue'
 import DMESTask from '../components/DMESTask.vue'
 import AutonTask from '../components/AutonTask.vue'
@@ -54,10 +54,10 @@ const routes = [
     }
   },
   {
-    path: "/Control",
-    name: "Control",
-    component: Rover3D,
-  },
+    path: '/Control',
+    name: 'Control',
+    component: Rover3D
+  }
 ]
 const router = createRouter({
   history: createWebHistory(),

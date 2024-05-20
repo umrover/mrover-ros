@@ -1,20 +1,22 @@
 #!/usr/bin/env python3
+
 """
 Reads and parses NMEA messages from the onboard GPS to provide
 location data to the rover over LCM (/gps). Subscribes to
 /rtcm and passes RTCM messages to the onboard gps to
 acquire an RTK fix.
 """
-import serial
-import rospy
-import threading
-import rospy
-from pyubx2 import UBXReader, UBX_PROTOCOL, RTCM3_PROTOCOL
-from std_msgs.msg import Header
-from sensor_msgs.msg import NavSatFix
-from rtcm_msgs.msg import Message
-from mrover.msg import rtkStatus
 import datetime
+import threading
+
+import serial
+from pyubx2 import UBXReader, UBX_PROTOCOL, RTCM3_PROTOCOL
+
+import rospy
+from mrover.msg import rtkStatus
+from rtcm_msgs.msg import Message
+from sensor_msgs.msg import NavSatFix
+from std_msgs.msg import Header
 
 
 class GPS_Driver:
@@ -34,7 +36,7 @@ class GPS_Driver:
         self.port = rospy.get_param("port")
         self.baud = rospy.get_param("baud")
         self.base_station_sub = rospy.Subscriber("/rtcm", Message, self.process_rtcm)
-        self.gps_pub = rospy.Publisher("fix", NavSatFix, queue_size=1)
+        self.gps_pub = rospy.Publisher("gps", NavSatFix, queue_size=1)
         self.rtk_fix_pub = rospy.Publisher("rtk_fix_status", rtkStatus, queue_size=1)
 
         self.lock = threading.Lock()
@@ -42,14 +44,12 @@ class GPS_Driver:
         self.time_offset = -1
 
     def connect(self):
-        # open connection to rover GPS
         self.ser = serial.Serial(self.port, self.baud)
         self.reader = UBXReader(self.ser, protfilter=(UBX_PROTOCOL | RTCM3_PROTOCOL))
 
         return self
 
     def exit(self) -> None:
-        # close connection
         self.ser.close()
 
     # rospy subscriber automatically runs this callback in separate thread
@@ -59,7 +59,6 @@ class GPS_Driver:
             self.ser.write(data.message)
 
     def parse_ubx_message(self, msg) -> None:
-        # skip if message could not be parsed
         if not msg:
             return
 
@@ -73,7 +72,6 @@ class GPS_Driver:
                 rospy.logwarn("RTCM message not used\n")
             elif msg_used == 2:
                 rospy.loginfo("RTCM message successfully used by receiver\n")
-            # rospy.loginfo(vars(rover_gps_data))
 
         elif msg.identity == "NAV-PVT":
             rospy.loginfo("PVT")
@@ -87,7 +85,6 @@ class GPS_Driver:
                 self.valid_offset = True
 
             time = time + self.time_offset
-            # rospy.loginfo_throttle(3, f"{time} {rospy.Time.now()} {time-rospy.Time.now()} {self.time_offset}")
             message_header = Header(stamp=time, frame_id="base_link")
 
             self.gps_pub.publish(

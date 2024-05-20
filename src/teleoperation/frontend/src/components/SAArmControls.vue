@@ -161,11 +161,11 @@ export default defineComponent({
         }
       }
       else if (msg.type == 'sa_joint') {
-        this.corer_position = msg.sa_z * metersToInches
-        this.sensor_position = msg.sensor * metersToInches
+        this.corer_position = msg.position[msg.name.indexOf("sa_z")] * metersToInches
+        this.sensor_position = msg.position[msg.name.indexOf("sensor_actuator")] * metersToInches
       }
       else if (msg.type == 'plunger') {
-        this.plunger_position = msg.plunger * metersToInches
+        this.plunger_position = msg.position[msg.name.indexOf("corer")] * metersToInches
       }
     },
     arm_mode(newMode) {
