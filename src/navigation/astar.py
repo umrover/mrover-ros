@@ -1,7 +1,6 @@
 import heapq
 import random
 from threading import Lock
-from typing import List
 
 import numpy as np
 
@@ -69,7 +68,9 @@ class AStar:
         :param cart_coord: array of x and y cartesian coordinates
         :return: array of i and j coordinates for the occupancy grid
         """
-        return np.floor((cart_coord[0:2] - self.context.env.cost_map.origin) / self.context.env.cost_map.resolution).astype(np.int8)
+        return np.floor(
+            (cart_coord[0:2] - self.context.env.cost_map.origin) / self.context.env.cost_map.resolution
+        ).astype(np.int8)
 
     def ij_to_cartesian(self, ij_coords: np.ndarray) -> np.ndarray:
         """
@@ -152,8 +153,8 @@ class AStar:
             print(f"startij: {startij}, endij: {endij}")
 
             # Initialize both open and closed list
-            open_list: List[AStar.Node] = []
-            closed_list: List[AStar.Node] = []
+            open_list: list[AStar.Node] = []
+            closed_list: list[AStar.Node] = []
 
             # heapify the open_list and add the start node
             heapq.heapify(open_list)

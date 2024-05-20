@@ -44,7 +44,7 @@ JOINT_SCALES = [
 
 JOINT_DE_POSITION_SCALE = 1
 
-DEADZONE = 0.18
+CONTROLLER_STICK_DEADZONE = 0.18
 
 # Positions reported by the arm sensors
 joint_positions: Union[JointState, None] = None
@@ -64,19 +64,19 @@ def compute_manual_joint_controls(controller: DeviceInputs) -> list[float]:
             safe_index(controller.axes, ControllerAxis.LEFT_X),
             quadratic=True,
             scale=JOINT_SCALES[Joint.A.value],
-            deadzone=DEADZONE,
+            deadzone=CONTROLLER_STICK_DEADZONE,
         ),
         filter_input(
             safe_index(controller.axes, ControllerAxis.LEFT_Y),
             quadratic=True,
             scale=JOINT_SCALES[Joint.B.value],
-            deadzone=DEADZONE,
+            deadzone=CONTROLLER_STICK_DEADZONE,
         ),
         filter_input(
             safe_index(controller.axes, ControllerAxis.RIGHT_Y),
             quadratic=True,
             scale=JOINT_SCALES[Joint.C.value],
-            deadzone=DEADZONE,
+            deadzone=CONTROLLER_STICK_DEADZONE,
         ),
         filter_input(
             simulated_axis(controller.buttons, ControllerButton.RIGHT_TRIGGER, ControllerButton.LEFT_TRIGGER),

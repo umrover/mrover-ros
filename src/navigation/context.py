@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional, List, Tuple
+from typing import Optional, Tuple
 
 import numpy as np
 import pymap3d
@@ -47,13 +47,14 @@ class Rover:
     previous_state: State
     driver: DriveController = DriveController()
 
-    def get_pose(self) -> SE3:
+    def get_pose_in_map(self) -> Optional[SE3]:
         try:
             return SE3.from_tf_tree(
                 self.ctx.tf_buffer, parent_frame=self.ctx.world_frame, child_frame=self.ctx.rover_frame
             )
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
-            raise Exception("Navigation failed to get rover pose. Is localization running?")
+            rospy.logwarn_throttle(1, "Navigation failed to get rover pose. Is localization running?")
+            return None
 
     def send_drive_command(self, twist: Twist) -> None:
         self.ctx.vel_cmd_publisher.publish(twist)
@@ -131,7 +132,7 @@ class ImageTargetsStore:
         self._min_hits = min_hits
         self._max_hits = max_hits
 
-    def push_frame(self, targets: List[ImageTarget]) -> None:
+    def push_frame(self, targets: list[ImageTarget]) -> None:
         """
         Loops through our current list of our stored tags and checks if the new message includes each tag or doesn't.
         If it does include it, we will increment our hit count for that tag id, store the new tag information, and reset the time we saw it.
@@ -204,7 +205,7 @@ class Course:
         waypoint_frame = f"course{index}"
         return SE3.from_tf_tree(self.ctx.tf_buffer, parent_frame="map", child_frame=waypoint_frame)
 
-    def current_waypoint_pose(self) -> SE3:
+    def current_waypoint_pose_in_map(self) -> SE3:
         return self.waypoint_pose(self.waypoint_index)
 
     def current_waypoint(self) -> Optional[Waypoint]:
@@ -273,7 +274,7 @@ class Course:
         return None
 
 
-def setup_course(ctx: Context, waypoints: List[Tuple[Waypoint, SE3]]) -> Course:
+def setup_course(ctx: Context, waypoints: list[Tuple[Waypoint, SE3]]) -> Course:
     all_waypoint_info = []
     for index, (waypoint_info, pose) in enumerate(waypoints):
         all_waypoint_info.append(waypoint_info)

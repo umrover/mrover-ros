@@ -12,10 +12,11 @@ from backend.input import DeviceInputs
 from backend.mast_controls import send_mast_controls
 from backend.models import BasicWaypoint, AutonWaypoint
 from backend.ra_controls import send_ra_controls
+from backend.sa_controls import send_sa_controls
 from geometry_msgs.msg import Twist
 from mrover.msg import CalibrationStatus, ControllerState, StateMachineStateUpdate, LED, GPSWaypoint, WaypointType
 from mrover.srv import EnableAuton
-from sensor_msgs.msg import JointState, NavSatFix
+from sensor_msgs.msg import JointState, NavSatFix, RelativeHumidity, Temperature
 from std_srvs.srv import SetBool
 from util.SE3 import SE3
 
@@ -26,16 +27,26 @@ rospy.init_node("teleoperation", disable_signals=True)
 tf2_buffer = tf2_ros.Buffer()
 tf2_ros.TransformListener(tf2_buffer)
 
-ra_arm_mode = "disabled"
+ra_mode = "disabled"
+sa_mode = "disabled"
 
 
 def ra_timer_expired(_):
-    global ra_arm_mode
+    global ra_mode
     rospy.logwarn("RA GUI timed out. Disabling...")
-    ra_arm_mode = "disabled"
+    ra_mode = "disabled"
 
 
 ra_timer = None
+
+
+def sa_timer_expired(_):
+    global sa_mode
+    rospy.logwarn("SA GUI timed out. Disabling...")
+    sa_mode = "disabled"
+
+
+sa_timer = None
 
 
 class GUIConsumer(JsonWebsocketConsumer):
@@ -56,6 +67,8 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.forward_ros_topic("/nav_state", StateMachineStateUpdate, "nav_state")
         self.forward_ros_topic("/led", LED, "led")
         self.forward_ros_topic("/cmd_vel", Twist, "cmd_vel")
+        self.forward_ros_topic("/sa_humidity_data", RelativeHumidity, "soil_humidity")
+        self.forward_ros_topic("/sa_temp_data", Temperature, "soil_temp")
 
         self.enable_auton = rospy.ServiceProxy("enable_auton", EnableAuton)
         self.enable_teleop = rospy.ServiceProxy("enable_teleop", SetBool)
@@ -162,7 +175,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         )
 
     def receive(self, text_data=None, bytes_data=None, **kwargs) -> None:
-        global ra_arm_mode, ra_timer
+        global ra_mode, ra_timer, sa_mode, sa_timer
 
         if text_data is None:
             rospy.logwarn("Expecting text but received binary on GUI websocket...")
@@ -185,21 +198,47 @@ class GUIConsumer(JsonWebsocketConsumer):
                     match message["type"]:
                         case "joystick":
                             send_joystick_twist(device_input)
-                            send_ra_controls(ra_arm_mode, device_input)
                         case "controller":
                             send_controller_twist(device_input)
+                            if ra_mode != "disabled":
+                                send_ra_controls(ra_mode, device_input)
+                            if sa_mode != "disabled":
+                                send_sa_controls(device_input)
                         case "keyboard":
                             send_mast_controls(device_input)
 
-                case {"type": "arm_mode", "mode": ra_arm_mode}:
-                    ra_arm_mode = message["mode"]
+                case {"type": "ra_mode", "mode": new_ra_mode}:
+                    ra_mode = new_ra_mode
                     if ra_timer:
                         ra_timer.shutdown()
                     ra_timer = rospy.Timer(rospy.Duration(1), ra_timer_expired, oneshot=True)
+                case {"type": "sa_mode", "mode": new_sa_mode}:
+                    sa_mode = new_sa_mode
+                    if sa_timer:
+                        sa_timer.shutdown()
+                    sa_timer = rospy.Timer(rospy.Duration(1), sa_timer_expired, oneshot=True)
                 case {"type": "auton_enable", "enabled": enabled, "waypoints": waypoints}:
                     self.send_auton_command(waypoints, enabled)
                 case {"type": "teleop_enable", "enabled": enabled}:
                     self.enable_teleop(enabled)
+                case {"type": "enable_white_leds", "data": data}:
+                    for i in range(3):
+                        led_service = rospy.ServiceProxy(f"science_enable_white_led_{i}", SetBool)
+                        led_service(data=data)
+                        led_service.close()
+                case {"type": "enable_uv_leds", "data": data}:
+                    for i in range(3):
+                        led_service = rospy.ServiceProxy(f"science_enable_uv_led_{i}", SetBool)
+                        led_service(data=data)
+                        led_service.close()
+                case {"type": "heater_enable", "heater": heater, "enabled": enabled}:
+                    heater_service = rospy.ServiceProxy(f"science_enable_heater_{heater}", SetBool)
+                    heater_service(data=enabled)
+                    heater_service.close()
+                case {"type": "auto_shutoff", "shutoff": shutoff}:
+                    auto_shutoff_service = rospy.ServiceProxy("heater_auto_shutoff", SetBool)
+                    auto_shutoff_service(data=shutoff)
+                    auto_shutoff_service.close()
                 case {"type": "save_basic_waypoint_list", "data": waypoints}:
                     self.save_basic_waypoint_list(waypoints)
                 case {"type": "save_auton_waypoint_list", "data": waypoints}:

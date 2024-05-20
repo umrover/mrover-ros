@@ -44,18 +44,20 @@ class RecoveryState(State):
             return context.rover.previous_state
 
         # Making waypoint behind the rover to go backwards
-        pose = context.rover.get_pose()
+        rover_in_map = context.rover.get_pose_in_map()
+        assert rover_in_map is not None
+
         # If first round, set a waypoint directly behind the rover and command it to
         # drive backwards toward it until it arrives at that point.
         if self.current_action == JTurnAction.MOVING_BACK:
             # Only set waypoint_behind once so that it doesn't get overwritten and moved
             # further back every iteration
             if self.waypoint_behind is None:
-                dir_vector = -1 * RECOVERY_DISTANCE * pose.rotation.direction_vector()
-                self.waypoint_behind = pose.position + dir_vector
+                dir_vector = -1 * RECOVERY_DISTANCE * rover_in_map.rotation.direction_vector()
+                self.waypoint_behind = rover_in_map.position + dir_vector
 
             cmd_vel, arrived_back = context.rover.driver.get_drive_command(
-                self.waypoint_behind, pose, STOP_THRESH, DRIVE_FWD_THRESH, drive_back=True
+                self.waypoint_behind, rover_in_map, STOP_THRESH, DRIVE_FWD_THRESH, drive_back=True
             )
             context.rover.send_drive_command(cmd_vel)
 
@@ -69,13 +71,13 @@ class RecoveryState(State):
         # by turning then it will drive backwards.
         if self.current_action == JTurnAction.J_TURNING:
             if self.waypoint_behind is None:
-                dir_vector = pose.rotation.direction_vector()
+                dir_vector = rover_in_map.rotation.direction_vector()
                 # the waypoint will be 45 degrees to the left of the rover behind it.
                 dir_vector[:2] = RECOVERY_DISTANCE * rotate_2d(dir_vector[:2], 3 * np.pi / 4)
-                self.waypoint_behind = pose.position + dir_vector
+                self.waypoint_behind = rover_in_map.position + dir_vector
 
             cmd_vel, arrived_turn = context.rover.driver.get_drive_command(
-                self.waypoint_behind, pose, STOP_THRESH, DRIVE_FWD_THRESH, drive_back=True
+                self.waypoint_behind, rover_in_map, STOP_THRESH, DRIVE_FWD_THRESH, drive_back=True
             )
             context.rover.send_drive_command(cmd_vel)
 

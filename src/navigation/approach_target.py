@@ -49,9 +49,12 @@ class ApproachTargetState(State):
                 return waypoint.WaypointState()
             return search.SearchState()
 
+        rover_in_map = context.rover.get_pose_in_map()
+        assert rover_in_map is not None
+
         cmd_vel, arrived = context.rover.driver.get_drive_command(
             target_pos,
-            context.rover.get_pose(),
+            rover_in_map,
             STOP_THRESHOLD,
             DRIVE_FORWARD_THRESHOLD,
         )

@@ -147,16 +147,16 @@ export default {
         heaterName = "n"
       }
       heaterName += id
-      this.sendMessage({ type: "heaterEnable", enabled: this.heaters[id].enabled, heater: heaterName});
+      this.sendMessage({ type: "heater_enable", enabled: this.heaters[id].enabled, heater: heaterName});
     },
 
     sendAutoShutdownCmd: function () {
       this.autoShutdownEnabled = !this.autoShutdownEnabled;
-      this.sendMessage({ type: "autoShutoff", shutoff: this.autoShutdownEnabled });
+      this.sendMessage({ type: "auto_shutoff", shutoff: this.autoShutdownEnabled });
     },
 
     capturePhoto() {
-      this.sendMessage({ type: "capturePhoto" }); 
+      this.sendMessage({ type: "capture_photo" });
     }
   }
 };

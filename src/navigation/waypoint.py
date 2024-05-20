@@ -1,5 +1,4 @@
 import rospy
-import tf2_ros
 from mrover.msg import WaypointType
 from mrover.srv import MoveCostMap
 from navigation import (
@@ -49,21 +48,24 @@ class WaypointState(State):
         if current_waypoint is None:
             return state.DoneState()
 
-        # if we are at a post currently (from a previous leg), backup to avoid collision
+        # If we are at a post currently (from a previous leg), backup to avoid collision
         if context.env.arrived_at_target:
             context.env.arrived_at_target = False
             return post_backup.PostBackupState()
 
-        # returns either ApproachPostState, LongRangeState, ApproachObjectState, or None
         approach_state = context.course.get_approach_target_state()
         if approach_state is not None:
             return approach_state
 
-        # Attempt to find the waypoint in the TF tree and drive to it        
-        waypoint_pos = context.course.current_waypoint_pose().position
+        rover_in_map = context.rover.get_pose_in_map()
+        if rover_in_map is None:
+            return self
+
+        # Attempt to find the waypoint in the TF tree and drive to it
+        waypoint_position_in_map = context.course.current_waypoint_pose_in_map().position
         cmd_vel, arrived = context.rover.driver.get_drive_command(
-            waypoint_pos,
-            context.rover.get_pose(),
+            waypoint_position_in_map,
+            rover_in_map,
             self.STOP_THRESHOLD,
             self.DRIVE_FORWARD_THRESHOLD,
         )
@@ -78,13 +80,13 @@ class WaypointState(State):
             else:
                 # We finished a waypoint associated with a post or mallet, but we have not seen it yet.
                 search_state = search.SearchState()
-                search_state.new_traj(context)
+                search_state.new_trajectory(context)
                 return search_state
-            
+
         if context.rover.stuck:
             context.rover.previous_state = self
             return recovery.RecoveryState()
 
-        context.rover.send_drive_command(cmd_vel)       
+        context.rover.send_drive_command(cmd_vel)
 
         return self

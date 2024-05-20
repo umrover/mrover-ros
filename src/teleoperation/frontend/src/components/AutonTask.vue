@@ -156,7 +156,6 @@ export default defineComponent({
   display: grid;
   grid-gap: 10px;
   grid-template-columns: auto 30% 30%;
-  grid-template-rows: repeat(5, auto);
   grid-template-areas:
     'header header header'
     'feed map waypoints'

@@ -87,50 +87,57 @@ class AvoidPostTrajectory(Trajectory):
 
 
 class PostBackupState(State):
-    traj: Optional[AvoidPostTrajectory]
+    trajectory: Optional[AvoidPostTrajectory]
 
     def on_exit(self, context: Context) -> None:
-        self.traj = None
+        self.trajectory = None
 
     def on_enter(self, context: Context) -> None:
         assert context.course is not None
 
         if context.env.last_target_location is None:
-            self.traj = None
-        else:
-            self.traj = AvoidPostTrajectory.avoid_post_trajectory(
-                context.rover.get_pose(),
-                context.env.last_target_location,
-                context.course.current_waypoint_pose().position,
-            )
-            self.traj.cur_pt = 0
+            self.trajectory = None
+            return
+
+        rover_in_map = context.rover.get_pose_in_map()
+        assert rover_in_map is not None
+
+        self.trajectory = AvoidPostTrajectory.avoid_post_trajectory(
+            rover_in_map,
+            context.env.last_target_location,
+            context.course.current_waypoint_pose_in_map().position,
+        )
+        self.trajectory.cur_pt = 0
 
     def on_loop(self, context: Context) -> State:
-        if self.traj is None:
+        if self.trajectory is None:
             return waypoint.WaypointState()
 
-        target_pos = self.traj.get_cur_pt()
+        target_pos = self.trajectory.get_current_point()
 
         # we drive backwards to the first point in this trajectory
-        point_index = self.traj.cur_pt
+        point_index = self.trajectory.cur_pt
         drive_backwards = point_index == 0
+
+        rover_in_map = context.rover.get_pose_in_map()
+        assert rover_in_map is not None
 
         cmd_vel, arrived = context.rover.driver.get_drive_command(
             target_pos,
-            context.rover.get_pose(),
+            rover_in_map,
             STOP_THRESH,
             DRIVE_FWD_THRESH,
             drive_back=drive_backwards,
         )
         if arrived:
             rospy.loginfo(f"Arrived at point indexed: {point_index}")
-            if self.traj.increment_point():
-                self.traj = None
+            if self.trajectory.increment_point():
+                self.trajectory = None
                 return waypoint.WaypointState()
 
         if context.rover.stuck:
             context.rover.previous_state = self
-            self.traj = None
+            self.trajectory = None
             return recovery.RecoveryState()
 
         context.rover.send_drive_command(cmd_vel)

@@ -34,7 +34,7 @@ const UPDATE_HZ = 20
 
 export default defineComponent({
   components: {
-    ToggleButton,
+    ToggleButton
   },
   data() {
     return {
@@ -50,11 +50,6 @@ export default defineComponent({
     document.addEventListener('keydown', this.keyDown)
   },
 
-  beforeUnmount: function() {
-    window.clearInterval(this.interval)
-    document.removeEventListener('keydown', this.keyDown)
-  },
-
   created: function() {
     this.interval = window.setInterval(() => {
       const gamepads = navigator.getGamepads()
@@ -68,10 +63,15 @@ export default defineComponent({
       })
 
       this.sendMessage({
-        type: 'arm_mode',
+        type: 'ra_mode',
         mode: this.mode
       })
     }, 1000 / UPDATE_HZ)
+  },
+
+  beforeUnmount: function() {
+    window.clearInterval(this.interval)
+    document.removeEventListener('keydown', this.keyDown)
   },
 
   methods: {

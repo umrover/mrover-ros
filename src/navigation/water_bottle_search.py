@@ -21,7 +21,7 @@ class WaterBottleSearchState(State):
     Follows a search spiral but uses A* to avoid obstacles
     """
 
-    traj: SearchTrajectory  # spiral
+    trajectory: SearchTrajectory  # spiral
     star_traj: Trajectory  # returned by astar
     prev_target: Optional[np.ndarray] = None
     is_recovering: bool = False
@@ -57,13 +57,13 @@ class WaterBottleSearchState(State):
         ] >= 0:
             while costmap_2d[end_node.position[0], end_node.position[1]] >= 0.2:  # TODO: find optimal value
                 # True if the trajectory is finished
-                if self.traj.increment_point():
+                if self.trajectory.increment_point():
                     raise SpiralEnd()
                 # update end point to be the next point in the search spiral
-                end_ij = self.astar.cartesian_to_ij(self.traj.get_cur_pt())
+                end_ij = self.astar.cartesian_to_ij(self.trajectory.get_current_point())
                 end_node = self.astar.Node(None, (end_ij[0], end_ij[1]))
                 print(f"End has high cost! new end: {end_ij}")
-        return self.traj.get_cur_pt()
+        return self.trajectory.get_current_point()
 
     def on_enter(self, context: Context) -> None:
         assert context.course is not None
@@ -72,17 +72,20 @@ class WaterBottleSearchState(State):
         assert search_center is not None
 
         if not self.is_recovering:
-            self.traj = SearchTrajectory.spiral_traj(
-                context.rover.get_pose().position[0:2],
+            rover_in_map = context.rover.get_pose_in_map()
+            assert rover_in_map is not None
+
+            self.trajectory = SearchTrajectory.spiral_traj(
+                rover_in_map.position[0:2],
                 self.SPIRAL_COVERAGE_RADIUS,
                 self.DISTANCE_BETWEEN_SPIRALS,
                 self.SEGMENTS_PER_ROTATION,
                 search_center.tag_id,
                 True,
             )
-            origin = context.rover.get_pose().position[0:2]
-            self.astar = AStar(origin, context)
-            rospy.loginfo(f"Origin: {origin}")
+            origin_in_map = rover_in_map.position[0:2]
+            self.astar = AStar(origin_in_map, context)
+            rospy.loginfo(f"Origin: {origin_in_map}")
             self.prev_target = None
         self.star_traj = Trajectory(np.array([]))
         self.time_last_updated = rospy.Time.now()
@@ -94,23 +97,26 @@ class WaterBottleSearchState(State):
     def on_loop(self, context: Context) -> State:
         assert context.course is not None
 
+        rover_in_map = context.rover.get_pose_in_map()
+        assert rover_in_map is not None
+
         # Only update our costmap every 1 second
         if rospy.Time.now() - self.time_last_updated > rospy.Duration(1):
-            cur_rover_pose = context.rover.get_pose().position[0:2]
-            end_point = self.find_endpoint(context, self.traj.get_cur_pt()[0:2])
+            rover_position_in_map = rover_in_map.position[0:2]
+            end_point = self.find_endpoint(context, self.trajectory.get_current_point()[0:2])
 
             rospy.loginfo("Running A*...")
             try:
-                occupancy_list = self.astar.a_star(cur_rover_pose, end_point[0:2])
+                occupancy_list = self.astar.a_star(rover_position_in_map, end_point[0:2])
             except SpiralEnd:
                 # TODO: what to do in this case
-                self.traj.reset()
+                self.trajectory.reset()
                 occupancy_list = None
             except NoPath:
                 # increment end point
-                if self.traj.increment_point():
+                if self.trajectory.increment_point():
                     # TODO: what to do in this case
-                    self.traj.reset()
+                    self.trajectory.reset()
                 occupancy_list = None
             if occupancy_list is None:
                 self.star_traj = Trajectory(np.array([]))
@@ -140,15 +146,15 @@ class WaterBottleSearchState(State):
             self.time_last_updated = rospy.Time.now()
 
         # continue executing the path from wherever it left off
-        target_pos = self.traj.get_cur_pt()
+        target_pos = self.trajectory.get_current_point()
         traj_target = True
         # if there is an alternate path we need to take to avoid the obstacle, use that trajectory
         if len(self.star_traj.coordinates) != 0:
-            target_pos = self.star_traj.get_cur_pt()
+            target_pos = self.star_traj.get_current_point()
             traj_target = False
         cmd_vel, arrived = context.rover.driver.get_drive_command(
             target_pos,
-            context.rover.get_pose(),
+            rover_in_map,
             self.STOP_THRESH,
             self.DRIVE_FWD_THRESH,
             path_start=self.prev_target,
@@ -159,14 +165,14 @@ class WaterBottleSearchState(State):
             if traj_target:
                 rospy.loginfo("Arrived at spiral point")
                 # if we finish the spiral without seeing the object, move on with course
-                if self.traj.increment_point():
+                if self.trajectory.increment_point():
                     return waypoint.WaypointState()
             else:  # otherwise, increment the astar path
                 # if we finish the astar path, then reset astar and increment the spiral path
                 if self.star_traj.increment_point():
                     rospy.loginfo("Arrived at end of astar")
                     self.star_traj = Trajectory(np.array([]))
-                    if self.traj.increment_point():
+                    if self.trajectory.increment_point():
                         return waypoint.WaypointState()
 
         if context.rover.stuck:
@@ -176,7 +182,7 @@ class WaterBottleSearchState(State):
         else:
             self.is_recovering = False
         context.search_point_publisher.publish(
-            GPSPointList([convert_cartesian_to_gps(pt) for pt in self.traj.coordinates])
+            GPSPointList([convert_cartesian_to_gps(pt) for pt in self.trajectory.coordinates])
         )
         context.rover.send_drive_command(cmd_vel)
 

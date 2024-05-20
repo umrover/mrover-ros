@@ -4,21 +4,21 @@
     <span class="px-2">Magnetometer</span>
     <LEDIndicator
       class="px-2"
-      :name="mag_calibration"
+      :name="mag_calibration.toString()"
       :show_name="true"
       :connected="mag_calibration == calibration_limit_master"
     />
     <span class="px-2">Gyroscope</span>
     <LEDIndicator
       class="px-2"
-      :name="gyro_calibration"
+      :name="gyro_calibration.toString()"
       :show_name="true"
       :connected="gyro_calibration == calibration_limit_master"
     />
     <span class="px-2">Accelerometer</span>
     <LEDIndicator
       class="px-2"
-      :name="accel_calibration"
+      :name="accel_calibration.toString()"
       :show_name="true"
       :connected="accel_calibration == calibration_limit_master"
     />

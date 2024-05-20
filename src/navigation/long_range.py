@@ -38,12 +38,11 @@ class LongRangeState(ApproachTargetState):
         if target is None:
             return None
 
-        pose = context.rover.get_pose()
-        if pose is None:
-            return None
+        rover_in_map = context.rover.get_pose_in_map()
+        assert rover_in_map is not None
 
-        rover_position = pose.position
-        rover_direction = pose.rotation.direction_vector()
+        rover_position = rover_in_map.position
+        rover_direction = rover_in_map.rotation.direction_vector()
 
         bearing_to_tag = target.target.bearing
         # If you have not seen the tag in a while but are waiting until the expiration time is up,
