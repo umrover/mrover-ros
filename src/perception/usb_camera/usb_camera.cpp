@@ -9,46 +9,55 @@ namespace mrover {
     }
 
     auto UsbCameraNodelet::onInit() -> void {
-        mNh = getMTNodeHandle();
-        mPnh = getMTPrivateNodeHandle();
+        try {
+            mNh = getMTNodeHandle();
+            mPnh = getMTPrivateNodeHandle();
 
-        mWidth = mPnh.param<int>("width", 640);
-        mHeight = mPnh.param<int>("height", 480);
-        auto framerate = mPnh.param<int>("framerate", 30);
-        auto device = mPnh.param<std::string>("device", "/dev/video0");
-        auto imageTopicName = mPnh.param<std::string>("image_topic", "/image");
-        auto cameraInfoTopicName = mPnh.param<std::string>("camera_info_topic", "/camera_info");
+            mWidth = mPnh.param<int>("width", 640);
+            mHeight = mPnh.param<int>("height", 480);
+            auto framerate = mPnh.param<int>("framerate", 30);
+            auto device = mPnh.param<std::string>("device", "/dev/video0");
+            auto imageTopicName = mPnh.param<std::string>("image_topic", "/image");
+            auto cameraInfoTopicName = mPnh.param<std::string>("camera_info_topic", "/camera_info");
 
-        mImgPub = mNh.advertise<sensor_msgs::Image>(imageTopicName, 1);
-        mCamInfoPub = mNh.advertise<sensor_msgs::CameraInfo>(cameraInfoTopicName, 1);
+            mImgPub = mNh.advertise<sensor_msgs::Image>(imageTopicName, 1);
+            mCamInfoPub = mNh.advertise<sensor_msgs::CameraInfo>(cameraInfoTopicName, 1);
 
-        gst_init(nullptr, nullptr);
+            gst_init(nullptr, nullptr);
 
-        mMainLoop = gstCheck(g_main_loop_new(nullptr, FALSE));
+            mMainLoop = gstCheck(g_main_loop_new(nullptr, FALSE));
 
-        std::string captureFormat = std::format("video/x-raw,format=YUY2,width={},height={},framerate={}/1", mWidth, mHeight, framerate);
-        std::string launch = std::format("v4l2src device={} ! {} ! appsink name=streamSink sync=false", device, captureFormat);
-        NODELET_INFO_STREAM(std::format("GStreamer launch string: {}", launch));
-        mPipeline = gstCheck(gst_parse_launch(launch.c_str(), nullptr));
+            std::string captureFormat = std::format("video/x-raw,format=YUY2,width={},height={},framerate={}/1", mWidth, mHeight, framerate);
+            std::string launch = std::format("v4l2src device={} ! {} ! appsink name=streamSink sync=false", device, captureFormat);
+            NODELET_INFO_STREAM(std::format("GStreamer launch string: {}", launch));
+            mPipeline = gstCheck(gst_parse_launch(launch.c_str(), nullptr));
 
-        mStreamSink = gstCheck(gst_bin_get_by_name(GST_BIN(mPipeline), "streamSink"));
+            mStreamSink = gstCheck(gst_bin_get_by_name(GST_BIN(mPipeline), "streamSink"));
 
-        mMainLoopThread = std::thread{[this] {
-            ROS_INFO("Started GStreamer main loop");
-            g_main_loop_run(mMainLoop);
-            std::cout << "Stopped GStreamer main loop" << std::endl;
-        }};
+            if (gst_element_set_state(mPipeline, GST_STATE_PAUSED) == GST_STATE_CHANGE_FAILURE)
+                throw std::runtime_error{"Failed initial pause on GStreamer pipeline"};
 
-        mStreamSinkThread = std::thread{[this] {
-            ROS_INFO("Started stream sink thread");
-            pullSampleLoop();
-            std::cout << "Stopped stream sink thread" << std::endl;
-        }};
+            mMainLoopThread = std::thread{[this] {
+                ROS_INFO("Started GStreamer main loop");
+                g_main_loop_run(mMainLoop);
+                std::cout << "Stopped GStreamer main loop" << std::endl;
+            }};
 
-        if (gst_element_set_state(mPipeline, GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE)
-            throw std::runtime_error{"Failed to play GStreamer pipeline"};
+            mStreamSinkThread = std::thread{[this] {
+                ROS_INFO("Started stream sink thread");
+                pullSampleLoop();
+                std::cout << "Stopped stream sink thread" << std::endl;
+            }};
 
-        NODELET_INFO_STREAM("Initialized and started GStreamer pipeline");
+            if (gst_element_set_state(mPipeline, GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE)
+                throw std::runtime_error{"Failed to play GStreamer pipeline"};
+
+            NODELET_INFO_STREAM("Initialized and started GStreamer pipeline");
+
+        } catch (std::exception const& e) {
+            ROS_ERROR_STREAM(std::format("Exception initializing USB camera: {}", e.what()));
+            ros::requestShutdown();
+        }
     }
 
     auto UsbCameraNodelet::pullSampleLoop() const -> void {

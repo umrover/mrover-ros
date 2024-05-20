@@ -256,7 +256,7 @@ namespace mrover {
             }
 
         } catch (std::exception const& e) {
-            ROS_ERROR_STREAM(std::format("Exception initializing gstreamer websocket streamer: {}", e.what()));
+            ROS_ERROR_STREAM(std::format("Exception initializing GStreamer websocket streamer: {}", e.what()));
             ros::requestShutdown();
         }
     }
