@@ -201,8 +201,11 @@ mrover_nodelet_link_libraries(tag_detector opencv_core opencv_objdetect opencv_a
 #mrover_add_nodelet(long_range_tag_detector src/perception/tag_detector/long_range_cam/*.cpp src/perception/tag_detector/long_range_cam src/perception/tag_detector/long_range_cam/pch.hpp)
 #mrover_nodelet_link_libraries(long_range_tag_detector opencv_core opencv_objdetect opencv_aruco opencv_imgproc lie)
 
-mrover_add_nodelet(usb_camera src/perception/usb_camera/*.cpp src/perception/usb_camera src/perception/usb_camera/pch.hpp)
-mrover_nodelet_link_libraries(usb_camera opencv_core opencv_objdetect opencv_aruco opencv_imgproc opencv_highgui)
+if (Gst_FOUND AND GstApp_FOUND)
+    mrover_add_nodelet(usb_camera src/perception/usb_camera/*.cpp src/perception/usb_camera src/perception/usb_camera/pch.hpp)
+    mrover_nodelet_link_libraries(usb_camera PRIVATE opencv_core opencv_imgproc ${Gst_LIBRARIES} ${GstApp_LIBRARIES})
+    mrover_nodelet_include_directories(usb_camera ${Gst_INCLUDE_DIRS} ${GstApp_INCLUDE_DIRS})
+endif ()
 
 if (Gst_FOUND AND GstApp_FOUND AND LibUsb_FOUND AND LibUdev_FOUND)
     mrover_add_nodelet(gst_websocket_streamer src/esw/gst_websocket_streamer/*.c* src/esw/gst_websocket_streamer src/esw/gst_websocket_streamer/pch.hpp)

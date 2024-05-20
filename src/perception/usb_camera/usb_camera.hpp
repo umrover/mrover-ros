@@ -4,14 +4,19 @@
 
 namespace mrover {
 
-    class UsbCameraNodelet : public nodelet::Nodelet {
+    class UsbCameraNodelet final : public nodelet::Nodelet {
 
         ros::NodeHandle mNh, mPnh;
 
         ros::Publisher mCamInfoPub;
         ros::Publisher mImgPub;
 
-        std::jthread mGrabThread;
+        int mWidth{}, mHeight{};
+
+        GstElement *mStreamSink{}, *mPipeline{};
+        GMainLoop* mMainLoop{};
+
+        std::thread mMainLoopThread, mStreamSinkThread;
 
         LoopProfiler mGrabThreadProfiler{"Long Range Cam Grab"};
 
@@ -22,7 +27,7 @@ namespace mrover {
 
         ~UsbCameraNodelet() override;
 
-        auto grabUpdate() -> void;
+        auto pullSampleLoop() const -> void;
     };
 
 } // namespace mrover

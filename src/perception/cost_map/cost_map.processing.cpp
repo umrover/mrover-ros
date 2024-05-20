@@ -2,6 +2,10 @@
 
 namespace mrover {
 
+    auto remap(double x, double inMin, double inMax, double outMin, double outMax) -> double {
+        return (x - inMin) * (outMax - outMin) / (inMax - inMin) + outMin;
+    }
+
     auto CostMapNodelet::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg) -> void {
         assert(msg);
         assert(msg->height > 0);
@@ -67,7 +71,16 @@ namespace mrover {
 
                 // Z is the vertical component of the normal
                 // A small Z component indicates largely horizontal normal (surface is vertical)
-                std::int8_t cost = normalInMap.z() < mNormalThreshold ? OCCUPIED_COST : FREE_COST;
+                // std::int8_t cost = normalInMap.z() < mNormalThreshold ? OCCUPIED_COST : FREE_COST;
+                std::int8_t cost;
+                double z = normalInMap.z();
+                if (z < 0) {
+                    cost = OCCUPIED_COST;
+                } else if (z < mNormalThreshold) {
+                    cost = std::lround(remap(z, 0, mNormalThreshold, FREE_COST, OCCUPIED_COST));
+                } else {
+                    cost = FREE_COST;
+                }
 
                 // Low pass filter
                 constexpr double alpha = 0.1;

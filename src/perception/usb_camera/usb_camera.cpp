@@ -2,77 +2,89 @@
 
 namespace mrover {
 
+    template<typename T>
+    auto gstCheck(T* t) -> T* {
+        if (!t) throw std::runtime_error{"Failed to create"};
+        return t;
+    }
+
     auto UsbCameraNodelet::onInit() -> void {
-        mGrabThread = std::jthread(&UsbCameraNodelet::grabUpdate, this);
+        mNh = getMTNodeHandle();
+        mPnh = getMTPrivateNodeHandle();
+
+        mWidth = mPnh.param<int>("width", 640);
+        mHeight = mPnh.param<int>("height", 480);
+        auto framerate = mPnh.param<int>("framerate", 30);
+        auto device = mPnh.param<std::string>("device", "/dev/video0");
+        auto imageTopicName = mPnh.param<std::string>("image_topic", "/image");
+        auto cameraInfoTopicName = mPnh.param<std::string>("camera_info_topic", "/camera_info");
+
+        mImgPub = mNh.advertise<sensor_msgs::Image>(imageTopicName, 1);
+        mCamInfoPub = mNh.advertise<sensor_msgs::CameraInfo>(cameraInfoTopicName, 1);
+
+        gst_init(nullptr, nullptr);
+
+        mMainLoop = gstCheck(g_main_loop_new(nullptr, FALSE));
+
+        std::string captureFormat = std::format("video/x-raw,format=YUY2,width={},height={},framerate={}/1", mWidth, mHeight, framerate);
+        std::string launch = std::format("v4l2src device={} ! {} ! appsink name=streamSink sync=false", device, captureFormat);
+        NODELET_INFO_STREAM(std::format("GStreamer launch string: {}", launch));
+        mPipeline = gstCheck(gst_parse_launch(launch.c_str(), nullptr));
+
+        mStreamSink = gstCheck(gst_bin_get_by_name(GST_BIN(mPipeline), "streamSink"));
+
+        mMainLoopThread = std::thread{[this] {
+            ROS_INFO("Started GStreamer main loop");
+            g_main_loop_run(mMainLoop);
+            std::cout << "Stopped GStreamer main loop" << std::endl;
+        }};
+
+        mStreamSinkThread = std::thread{[this] {
+            ROS_INFO("Started stream sink thread");
+            pullSampleLoop();
+            std::cout << "Stopped stream sink thread" << std::endl;
+        }};
+
+        if (gst_element_set_state(mPipeline, GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE)
+            throw std::runtime_error{"Failed to play GStreamer pipeline"};
+
+        NODELET_INFO_STREAM("Initialized and started GStreamer pipeline");
     }
 
-    auto fillImageMessage(cv::Mat const& bgraImage, sensor_msgs::ImagePtr const& imageMessage) -> void {
-        assert(!bgraImage.empty());
-        assert(bgraImage.isContinuous());
-        assert(bgraImage.type() == CV_8UC4);
-        assert(imageMessage);
+    auto UsbCameraNodelet::pullSampleLoop() const -> void {
+        while (GstSample* sample = gst_app_sink_pull_sample(GST_APP_SINK(mStreamSink))) {
+            GstBuffer* buffer = gst_sample_get_buffer(sample);
+            GstMapInfo map;
+            gst_buffer_map(buffer, &map, GST_MAP_READ);
 
-        imageMessage->height = bgraImage.rows;
-        imageMessage->width = bgraImage.cols;
-        imageMessage->encoding = sensor_msgs::image_encodings::BGRA8;
-        imageMessage->step = bgraImage.step;
-        imageMessage->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
-        size_t size = imageMessage->step * imageMessage->height;
-        imageMessage->data.resize(size);
-        std::memcpy(imageMessage->data.data(), bgraImage.data, size);
-    }
+            sensor_msgs::Image image;
+            image.header.stamp = ros::Time::now();
+            image.encoding = sensor_msgs::image_encodings::BGRA8;
+            image.is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
+            image.height = mHeight;
+            image.width = mWidth;
+            image.step = mWidth * 4;
+            image.data.resize(image.step * mHeight);
+            cv::cvtColor(cv::Mat{mHeight, mWidth, CV_8UC2, map.data}, cv::Mat{mHeight, mWidth, CV_8UC4, image.data.data()}, cv::COLOR_YUV2BGRA_YUY2);
+            mImgPub.publish(image);
 
-    auto UsbCameraNodelet::grabUpdate() -> void {
-        try {
-            NODELET_INFO("Starting USB grab thread...");
-
-            // See: http://wiki.ros.org/roscpp/Overview/NodeHandles for public vs. private node handle
-            // MT means multithreaded
-            mNh = getMTNodeHandle();
-            mPnh = getMTPrivateNodeHandle();
-
-            auto width = mPnh.param<int>("width", 640);
-            auto height = mPnh.param<int>("height", 480);
-            auto framerate = mPnh.param<int>("framerate", 30);
-            auto device = mPnh.param<std::string>("device", "/dev/video0");
-            auto imageTopicName = mPnh.param<std::string>("image_topic", "/image");
-            auto cameraInfoTopicName = mPnh.param<std::string>("camera_info_topic", "/camera_info");
-
-            mImgPub = mNh.advertise<sensor_msgs::Image>(imageTopicName, 1);
-            mCamInfoPub = mNh.advertise<sensor_msgs::CameraInfo>(cameraInfoTopicName, 1);
-
-            std::string captureFormat = std::format("video/x-raw,format=YUY2,width={},height={},framerate={}/1", width, height, framerate);
-            std::string gstString = std::format("v4l2src device={} ! {} ! appsink", device, captureFormat);
-            NODELET_INFO_STREAM(std::format("GStreamer string: {}", gstString));
-            cv::VideoCapture capture{gstString, cv::CAP_GSTREAMER};
-            if (!capture.isOpened()) throw std::runtime_error{"USB camera failed to open"};
-
-            NODELET_INFO_STREAM(std::format("USB camera opened: {}x{} @ {} fps", width, height, framerate));
-
-            cv::Mat frame;
-            while (ros::ok()) {
-                capture.read(frame);
-                if (frame.empty()) break;
-
-                if (mImgPub.getNumSubscribers()) {
-                    auto imageMessage = boost::make_shared<sensor_msgs::Image>();
-                    cv::Mat bgra;
-                    cvtColor(frame, bgra, cv::COLOR_YUV2BGRA_YUY2);
-                    fillImageMessage(bgra, imageMessage);
-                    imageMessage->header.frame_id = "long_range_cam_frame";
-                    imageMessage->header.stamp = ros::Time::now();
-                    mImgPub.publish(imageMessage);
-                }
-            }
-
-        } catch (std::exception const& e) {
-            NODELET_FATAL_STREAM(std::format("USB camera exception: {}", e.what()));
-            ros::requestShutdown();
+            gst_buffer_unmap(buffer, &map);
+            gst_sample_unref(sample);
         }
     }
 
     UsbCameraNodelet::~UsbCameraNodelet() {
-        NODELET_INFO("Long range cam node shutting down");
+        if (mMainLoop) {
+            g_main_loop_quit(mMainLoop);
+            mMainLoopThread.join();
+            g_main_loop_unref(mMainLoop);
+        }
+
+        if (mPipeline) {
+            gst_element_set_state(mPipeline, GST_STATE_NULL);
+            mStreamSinkThread.join();
+            gst_object_unref(mPipeline);
+        }
     }
 
 } // namespace mrover
