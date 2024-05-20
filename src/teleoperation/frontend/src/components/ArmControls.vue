@@ -57,7 +57,7 @@ export default defineComponent({
       if (!gamepad) return
 
       this.sendMessage({
-        type: 'controller',
+        type: 'ra_controller',
         axes: gamepad.axes,
         buttons: gamepad.buttons.map(button => button.value)
       })

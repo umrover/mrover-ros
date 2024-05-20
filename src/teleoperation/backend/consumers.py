@@ -7,6 +7,7 @@ from channels.generic.websocket import JsonWebsocketConsumer
 
 import rospy
 import tf2_ros
+from backend.cache_controls import send_cache_controls
 from backend.drive_controls import send_controller_twist, send_joystick_twist
 from backend.input import DeviceInputs
 from backend.mast_controls import send_mast_controls
@@ -200,14 +201,15 @@ class GUIConsumer(JsonWebsocketConsumer):
                     match message["type"]:
                         case "joystick":
                             send_joystick_twist(device_input)
-                        case "controller":
+                        case "ra_controller":
                             send_controller_twist(device_input)
-                            if ra_mode != "disabled":
-                                send_ra_controls(ra_mode, device_input)
-                            if sa_mode != "disabled":
-                                send_sa_controls(device_input)
-                        case "keyboard":
+                            send_ra_controls(ra_mode, device_input)
+                        case "sa_controller":
+                            send_sa_controls(device_input)
+                        case "mast_keyboard":
                             send_mast_controls(device_input)
+                        case "cache_keyboard":
+                            send_cache_controls(device_input)
 
                 case {"type": "ra_mode", "mode": new_ra_mode}:
                     ra_mode = new_ra_mode

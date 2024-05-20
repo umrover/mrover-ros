@@ -15,13 +15,13 @@ const UPDATE_HZ = 20
 export default {
   data() {
     return {
-      keys: [0, 0, 0, 0],
       mappings: {
         w: 0,
         a: 1,
         s: 2,
         d: 3
-      }
+      },
+      keys: Array(this.mappings.length).fill(0)
     }
   },
 
@@ -63,7 +63,7 @@ export default {
 
     publish: function() {
       this.sendMessage({
-        type: 'keyboard',
+        type: 'mast_keyboard',
         axes: [],
         buttons: this.keys
       })
