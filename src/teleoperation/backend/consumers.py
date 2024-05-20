@@ -70,8 +70,9 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.forward_ros_topic("/cmd_vel", Twist, "cmd_vel")
         self.forward_ros_topic("/sa_humidity_data", RelativeHumidity, "soil_humidity")
         self.forward_ros_topic("/sa_temp_data", Temperature, "soil_temp")
-        self.forward_ros_topic("sa_joint_data", JointState, "sa_joint")
-        self.forward_ros_topic("corer_joint_data", JointState, "plunger")
+        self.forward_ros_topic("/sa_thermistor_data", Temperature, "soil_therm_temp")
+        self.forward_ros_topic("/sa_joint_data", JointState, "sa_joint")
+        self.forward_ros_topic("/corer_joint_data", JointState, "plunger")
 
         self.enable_auton = rospy.ServiceProxy("enable_auton", EnableAuton)
         self.enable_teleop = rospy.ServiceProxy("enable_teleop", SetBool)
