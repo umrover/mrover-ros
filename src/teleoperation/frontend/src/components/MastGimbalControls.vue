@@ -21,7 +21,7 @@ export default {
         s: 2,
         d: 3
       },
-      keys: Array(this.mappings.length).fill(0)
+      keys: Array(4).fill(0)
     }
   },
 

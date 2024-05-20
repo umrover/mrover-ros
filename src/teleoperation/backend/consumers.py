@@ -194,7 +194,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         try:
             match message:
                 case {
-                    "type": "joystick" | "controller" | "keyboard",
+                    "type": "joystick" | "ra_controller" | "sa_controller" | "mast_keyboard" | "cache_keyboard",
                     "axes": axes,
                     "buttons": buttons,
                 }:

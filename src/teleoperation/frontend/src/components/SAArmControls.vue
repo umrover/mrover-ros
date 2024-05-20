@@ -83,30 +83,6 @@ export default defineComponent({
     ...mapState('websocket', ['message'])
   },
 
-  watch: {
-    message(msg) {
-      if (msg.type == 'laser_service') {
-        if (!msg.result) {
-          this.laser_enabled = !this.laser_enabled
-          alert('Toggling Arm Laser failed.')
-        }
-      }
-      else if (msg.type == 'sa_joint') {
-        this.corer_position = msg.position[msg.name.indexOf("sa_z")] * metersToInches
-        this.sensor_position = msg.position[msg.name.indexOf("sensor_actuator")] * metersToInches
-      }
-      else if (msg.type == 'plunger') {
-        this.plunger_position = msg.position[msg.name.indexOf("corer")] * metersToInches
-      }
-    },
-    arm_mode(newMode) {
-      if (newMode !== 'position') {
-        this.positions = []
-        this.send_positions = false
-      }
-    }
-  },
-
   methods: {
     ...mapActions('websocket', ['sendMessage']),
 
