@@ -10,11 +10,12 @@ throttle_publisher = rospy.Publisher("/cache_throttle_cmd", Throttle, queue_size
 SCALE = 1.0
 
 
-def send_cache_controls(keyboard: DeviceInputs) -> None:
-    buttons = keyboard.buttons
-
+def send_cache_controls(mode: str, keyboard: DeviceInputs) -> None:
+    if mode == "disabled":
+        return
+    
     throttle = filter_input(
-        simulated_axis(buttons, KeyboardButton.D, KeyboardButton.A),
+        simulated_axis(keyboard.buttons, KeyboardButton.D, KeyboardButton.A),
         scale=SCALE,
     )
     throttle_publisher.publish(Throttle(["cache_motor"], [throttle]))

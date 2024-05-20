@@ -100,6 +100,11 @@ export default defineComponent({
         axes: [],
         buttons: this.keys
       })
+
+      this.sendMessage({
+        type: 'cache_mode',
+        mode: this.mode
+      })
     }
   }
 })

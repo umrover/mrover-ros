@@ -30,6 +30,7 @@ tf2_ros.TransformListener(tf2_buffer)
 
 ra_mode = "disabled"
 sa_mode = "disabled"
+cache_mode = "disabled"
 
 
 def ra_timer_expired(_):
@@ -48,6 +49,13 @@ def sa_timer_expired(_):
 
 
 sa_timer = None
+
+
+def cache_timer_expired(_) -> None:
+    global cache_mode
+    rospy.logwarn("Cache GUI timed out. Disabling...")
+
+cache_timer = None
 
 
 class GUIConsumer(JsonWebsocketConsumer):
@@ -179,7 +187,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         )
 
     def receive(self, text_data=None, bytes_data=None, **kwargs) -> None:
-        global ra_mode, ra_timer, sa_mode, sa_timer
+        global ra_mode, ra_timer, sa_mode, sa_timer, cache_mode, cache_timer
 
         if text_data is None:
             rospy.logwarn("Expecting text but received binary on GUI websocket...")
@@ -210,7 +218,7 @@ class GUIConsumer(JsonWebsocketConsumer):
                         case "mast_keyboard":
                             send_mast_controls(device_input)
                         case "cache_keyboard":
-                            send_cache_controls(device_input)
+                            send_cache_controls(cache_mode, device_input)
 
                 case {"type": "ra_mode", "mode": new_ra_mode}:
                     ra_mode = new_ra_mode
@@ -222,6 +230,11 @@ class GUIConsumer(JsonWebsocketConsumer):
                     if sa_timer:
                         sa_timer.shutdown()
                     sa_timer = rospy.Timer(rospy.Duration(1), sa_timer_expired, oneshot=True)
+                case {"type": "cache_mode", "mode": new_cache_mode}:
+                    cache_mode = new_cache_mode
+                    if cache_timer:
+                        cache_timer.shutdown()
+                    cache_timer = rospy.Timer(rospy.Duration(1), cache_timer_expired, oneshot=True)
                 case {"type": "auton_enable", "enabled": enabled, "waypoints": waypoints}:
                     self.send_auton_command(waypoints, enabled)
                 case {"type": "teleop_enable", "enabled": enabled}:
