@@ -46,10 +46,11 @@ namespace mrover {
                     if (!std::isfinite(point->normal_x) || !std::isfinite(point->normal_y) || !std::isfinite(point->normal_z)) continue;
 
                     // Discard points too close to the camera
-                    if (point->x < 1) continue;
+                    if (point->x < 1.5) continue;
 
                     R3f pointInCamera{point->x, point->y, point->z};
                     R3f normalInCamera{point->normal_x, point->normal_y, point->normal_z};
+                    normalInCamera.normalize();
 
                     // Normal is a direction as should not be affected by translation
                     mPointsInMap.emplace_back(cameraToMap.act(pointInCamera), cameraToMap.asSO3().act(normalInCamera));
@@ -77,7 +78,7 @@ namespace mrover {
                 if (z < 0) {
                     cost = OCCUPIED_COST;
                 } else if (z < mNormalThreshold) {
-                    cost = std::lround(remap(z, 0, mNormalThreshold, FREE_COST, OCCUPIED_COST));
+                    cost = std::lround(remap(z, 0, mNormalThreshold, OCCUPIED_COST, FREE_COST));
                 } else {
                     cost = FREE_COST;
                 }

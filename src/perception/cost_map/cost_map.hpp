@@ -15,7 +15,7 @@ namespace mrover {
         bool mPublishCostMap{}; // If set, publish the global costmap
         float mResolution{};    // Meters per cell
         float mDimension{};     // Dimensions of the square costmap in meters
-        double mNormalThreshold = 0.8;
+        double mNormalThreshold = 0.7;
         int mDownSamplingFactor = 4;
         std::string mWorldFrame;
 

@@ -162,10 +162,7 @@ namespace mrover {
                 }
 
                 Point const& point = reinterpret_cast<Point const*>(cloudPtr->data.data())[ix + iy * cloudPtr->width];
-                if (!std::isfinite(point.x) || !std::isfinite(point.y) || !std::isfinite(point.z)) {
-                    NODELET_WARN_STREAM("Point at spiral query had a non-finite component");
-                    continue;
-                }
+                if (!std::isfinite(point.x) || !std::isfinite(point.y) || !std::isfinite(point.z)) continue;
 
                 return std::make_optional<SE3d>(R3d{point.x, point.y, point.z}, SO3d::Identity());
             }

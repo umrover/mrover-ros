@@ -396,7 +396,7 @@ brushed_motors:
       limit_0_readjust_position: 0.0 # radians
       limit_1_readjust_position: 0.0 # radians
       driver_voltage: 10.5 # used to calculate max pwm
-      motor_max_voltage: 6.0 # used to calculate max pwm
+      motor_max_voltage: 12.0 # used to calculate max pwm
 
 rover:
   length: 0.86
