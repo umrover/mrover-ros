@@ -24,9 +24,6 @@ class SearchState(State):
     OBJECT_SPIRAL_COVERAGE_RADIUS = rospy.get_param("object_search/coverage_radius")
     OBJECT_DISTANCE_BETWEEN_SPIRALS = rospy.get_param("object_search/distance_between_spirals")
 
-    def on_enter(self, context: Context) -> None:
-        assert context.course is not None
-
     def on_enter(self, context) -> None:
         if SearchState.traj is None:
             self.new_traj(context)
