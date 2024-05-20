@@ -32,7 +32,7 @@ JOINT_NAMES = [
 ]
 
 JOINT_SCALES = [
-    1.0,
+    -1.0,
     1.0,
     1.0,
     1.0,

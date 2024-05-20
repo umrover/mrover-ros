@@ -172,7 +172,7 @@ class GUIConsumer(JsonWebsocketConsumer):
                     waypoint["tag_id"],
                     waypoint["latitude_degrees"],
                     waypoint["longitude_degrees"],
-                    WaypointType(waypoint["type"]),
+                    WaypointType(int(waypoint["type"])),
                 )
                 for waypoint in waypoints
             ],
