@@ -1,18 +1,19 @@
 <launch>
   <arg name="tag_detector" default="true"/>
-  <arg name="object_detector" default="false"/>
+  <arg name="object_detector" default="true"/>
+  <arg name="stuck_detection" default="true"/>
 
   <include file="$(find mrover)/launch/jetson_base.launch"/>
 
   <include file="$(find mrover)/launch/zed.launch"/>
   <include file="$(find mrover)/launch/long_range_cam.launch"/>
 
-  <include file="$(find mrover)/launch/autonomy.launch">
+  <include file="$(find mrover)/launch/perception.launch">
     <arg name="tag_detector" value="$(arg tag_detector)"/>
     <arg name="object_detector" value="$(arg object_detector)"/>
   </include>
 
-  <node name="imu_driver" pkg="mrover" type="imu_driver" output="screen"/>
-
-  <node name="gps_driver" pkg="mrover" type="gps_driver.py" output="screen"/>
+  <include file="$(find mrover)/launch/navigation.launch">
+    <arg name="stuck_detection" value="$(arg stuck_detection)"/>
+  </include>
 </launch>

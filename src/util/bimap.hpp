@@ -19,17 +19,17 @@ namespace mrover {
             for (auto const& [t, u]: list) emplace(t, u);
         }
 
-        void emplace(T const& t, U const& u) {
+        auto emplace(T const& t, U const& u) -> void {
             m_forward.emplace(t, u);
             m_reverse.emplace(u, t);
         }
 
-        optional_ref<U> forward(T const& t) {
+        auto forward(T const& t) -> optional_ref<U> {
             auto it = m_forward.find(t);
             return it == m_forward.end() ? std::nullopt : std::make_optional(std::ref(it->second));
         }
 
-        optional_ref<T> backward(U const& u) {
+        auto backward(U const& u) -> optional_ref<T> {
             auto it = m_reverse.find(u);
             return it == m_reverse.end() ? std::nullopt : std::make_optional(std::ref(it->second));
         }

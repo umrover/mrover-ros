@@ -36,7 +36,7 @@ namespace mrover {
     }
 
     auto GstWebsocketStreamerNodelet::initPipeline() -> void {
-        ROS_INFO("Initializing and starting GStreamer pipeline...");
+        NODELET_INFO_STREAM("Initializing and starting GStreamer pipeline...");
 
         mMainLoop = gstCheck(g_main_loop_new(nullptr, FALSE));
 
@@ -98,7 +98,7 @@ namespace mrover {
         // sync=false is needed to avoid weirdness, going from playing => ready => playing will not work otherwise
         launch += "! appsink name=streamSink sync=false";
 
-        ROS_INFO_STREAM(std::format("GStreamer launch: {}", launch));
+        NODELET_INFO_STREAM(std::format("GStreamer launch string: {}", launch));
         mPipeline = gstCheck(gst_parse_launch(launch.c_str(), nullptr));
 
         if (mDeviceNode.empty()) mImageSource = gstCheck(gst_bin_get_by_name(GST_BIN(mPipeline), "imageSource"));
@@ -108,18 +108,18 @@ namespace mrover {
             throw std::runtime_error{"Failed initial pause on GStreamer pipeline"};
 
         mMainLoopThread = std::thread{[this] {
-            ROS_INFO("Started GStreamer main loop");
+            NODELET_INFO_STREAM("Started GStreamer main loop");
             g_main_loop_run(mMainLoop);
             std::cout << "Stopped GStreamer main loop" << std::endl;
         }};
 
         mStreamSinkThread = std::thread{[this] {
-            ROS_INFO("Started stream sink thread");
+            NODELET_INFO_STREAM("Started stream sink thread");
             pullStreamSamplesLoop();
             std::cout << "Stopped stream sink thread" << std::endl;
         }};
 
-        ROS_INFO("Initialized and started GStreamer pipeline");
+        NODELET_INFO_STREAM("Initialized and started GStreamer pipeline");
     }
 
     auto GstWebsocketStreamerNodelet::imageCallback(sensor_msgs::ImageConstPtr const& msg) -> void {
@@ -133,7 +133,7 @@ namespace mrover {
 
             if (cv::Size targetSize{static_cast<int>(mImageWidth), static_cast<int>(mImageHeight)};
                 receivedSize != targetSize) {
-                ROS_WARN_ONCE("Image size does not match pipeline app source size, will resize");
+                NODELET_WARN_ONCE("Image size does not match pipeline app source size, will resize");
                 resize(bgraFrame, bgraFrame, targetSize);
             }
 
@@ -148,7 +148,7 @@ namespace mrover {
             gst_app_src_push_buffer(GST_APP_SRC(mImageSource), buffer);
 
         } catch (std::exception const& e) {
-            ROS_ERROR_STREAM(std::format("Exception encoding frame: {}", e.what()));
+            NODELET_ERROR_STREAM(std::format("Exception encoding frame: {}", e.what()));
             ros::requestShutdown();
         }
     }
@@ -231,7 +231,7 @@ namespace mrover {
                     // Paused will not re-generate I-frames
                     // Null tears down too much and would require a full reinitialization
                     [this] {
-                        ROS_INFO("Client connected");
+                        NODELET_INFO_STREAM("Client connected");
                         if (mStreamServer->clientCount() > 1)
                             // Ensure new clients get an I-frame as their first frame
                             if (gst_element_set_state(mPipeline, GST_STATE_READY) == GST_STATE_CHANGE_FAILURE)
@@ -239,16 +239,16 @@ namespace mrover {
                         if (gst_element_set_state(mPipeline, GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE)
                             throw std::runtime_error{"Failed to play GStreamer pipeline"};
 
-                        ROS_INFO("Playing GStreamer pipeline");
+                        NODELET_INFO_STREAM("Playing GStreamer pipeline");
                     },
                     [this] {
-                        ROS_INFO("Client disconnected");
+                        NODELET_INFO_STREAM("Client disconnected");
                         // Stop the pipeline only if there are no more clients
                         if (mStreamServer->clientCount() == 0)
                             if (gst_element_set_state(mPipeline, GST_STATE_READY) == GST_STATE_CHANGE_FAILURE)
                                 throw std::runtime_error{"Failed to pause GStreamer pipeline"};
 
-                        ROS_INFO("Stopped GStreamer pipeline");
+                        NODELET_INFO_STREAM("Stopped GStreamer pipeline");
                     });
 
             if (mDeviceNode.empty()) {
@@ -256,7 +256,7 @@ namespace mrover {
             }
 
         } catch (std::exception const& e) {
-            ROS_ERROR_STREAM(std::format("Exception initializing gstreamer websocket streamer: {}", e.what()));
+            ROS_ERROR_STREAM(std::format("Exception initializing GStreamer websocket streamer: {}", e.what()));
             ros::requestShutdown();
         }
     }

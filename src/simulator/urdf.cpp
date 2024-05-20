@@ -216,7 +216,7 @@ namespace mrover {
                     simulator.mStereoCameras.emplace_back(std::move(stereoCamera));
                 } else {
                     camera.frameId = "long_range_camera_link";
-                    camera.pub = simulator.mNh.advertise<sensor_msgs::Image>("long_range_image", 1);
+                    camera.pub = simulator.mNh.advertise<sensor_msgs::Image>("long_range_camera/image", 1);
                     camera.fov = 15;
                     simulator.mCameras.push_back(std::move(camera));
                 }
@@ -224,7 +224,9 @@ namespace mrover {
                 Imu& imu = simulator.mImus.emplace_back();
                 imu.link = &multiBody->getLink(linkIndex);
                 imu.updateTask = PeriodicTask{50};
-                imu.pub = simulator.mNh.advertise<ImuAndMag>("imu/data", 1);
+                imu.pub = simulator.mNh.advertise<sensor_msgs::Imu>("imu/data", 1);
+                imu.magPub = simulator.mNh.advertise<sensor_msgs::MagneticField>("imu/mag", 1);
+                imu.uncalibPub = simulator.mNh.advertise<sensor_msgs::Imu>("imu/data_raw", 1);
             } else if (link->name.contains("gps"sv)) {
                 Gps& gps = simulator.mGps.emplace_back();
                 gps.link = &multiBody->getLink(linkIndex);

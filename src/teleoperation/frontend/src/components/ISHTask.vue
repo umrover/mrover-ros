@@ -63,7 +63,6 @@ export default {
   display: grid;
   grid-gap: 10px;
   grid-template-columns: repeat(2, auto);
-  grid-template-rows: repeat(5, auto);
   grid-template-areas:
     'header header'
     'cache siteSelect'

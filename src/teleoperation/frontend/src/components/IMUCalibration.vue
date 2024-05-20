@@ -1,12 +1,27 @@
 <template>
   <div class="rounded bg-white wrap">
-    <span class="px-2">IMU Calibration: {{ calibration }}</span>
+    <span class="px-2">IMU Calibration</span>
+    <span class="px-2">Magnetometer</span>
     <LEDIndicator
       class="px-2"
-      :show_name="false"
-      :connected="calibration == calibration_limit_master"
+      :name="mag_calibration.toString()"
+      :show_name="true"
+      :connected="mag_calibration == calibration_limit_master"
     />
-    <span class="px-2">IMU Temperature: {{ temperature }} °C</span>
+    <span class="px-2">Gyroscope</span>
+    <LEDIndicator
+      class="px-2"
+      :name="gyro_calibration.toString()"
+      :show_name="true"
+      :connected="gyro_calibration == calibration_limit_master"
+    />
+    <span class="px-2">Accelerometer</span>
+    <LEDIndicator
+      class="px-2"
+      :name="accel_calibration.toString()"
+      :show_name="true"
+      :connected="accel_calibration == calibration_limit_master"
+    />
   </div>
 </template>
 
@@ -23,8 +38,9 @@ export default {
 
   data() {
     return {
-      calibration: 0,
-      temperature: 0,
+      mag_calibration: 0,
+      gyro_calibration: 0,
+      accel_calibration: 0,
       calibration_limit_master: calibration_limit
     }
   },
@@ -36,11 +52,10 @@ export default {
   watch: {
     message(msg) {
       switch (msg.type) {
-        case 'temperature':
-          this.temperature = msg.temperature
-          break
         case 'calibration':
-          this.calibration = msg.system_calibration
+          this.mag_calibration = msg.magnetometer_calibration
+          this.gyro_calibration = msg.gyroscope_calibration
+          this.accel_calibration = msg.acceleration_calibration
           break
       }
     }

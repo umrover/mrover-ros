@@ -1,6 +1,6 @@
 #include "lie.hpp"
 
-SIM3::SIM3(SE3d const& se3, R3 const& scale) {
+SIM3::SIM3(SE3d const& se3, R3d const& scale) {
     mTransform.fromPositionOrientationScale(se3.translation(), se3.rotation(), scale);
 }
 
@@ -8,7 +8,7 @@ auto SIM3::matrix() const -> Eigen::Matrix4d {
     return mTransform.matrix();
 }
 
-auto SIM3::position() const -> R3 {
+auto SIM3::position() const -> R3d {
     return mTransform.translation();
 }
 

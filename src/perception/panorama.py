@@ -77,7 +77,9 @@ class Panorama:
 
         try:
             for i in range(3):
-                zed_in_base = SE3.transform_matrix(SE3.from_tf_time(self.tf_buffer, "odom", "zed_base_link")[0])
+                zed_in_base = SE3.transform_matrix(
+                    SE3.from_tf_tree_with_time(self.tf_buffer, "odom", "zed_base_link")[0]
+                )
                 break
         except:
             rospy.loginfo("Failed to get transform from map to zed_base_link")
@@ -98,7 +100,9 @@ class Panorama:
             self.mast_throttle.publish(Throttle(["mast_gimbal_z"], [0.0]))
 
             try:
-                zed_in_base_current = SE3.transform_matrix(SE3.from_tf_time(self.tf_buffer, "odom", "zed_base_link")[0])
+                zed_in_base_current = SE3.transform_matrix(
+                    SE3.from_tf_tree_with_time(self.tf_buffer, "odom", "zed_base_link")[0]
+                )
                 tf_diff = np.linalg.inv(zed_in_base) @ zed_in_base_current
 
                 if self._as.is_preempt_requested():

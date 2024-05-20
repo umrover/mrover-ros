@@ -1,38 +1,43 @@
 #include "object_detector.hpp"
-#include "inference_wrapper.hpp"
 
 namespace mrover {
 
-    void ObjectDetectorNodelet::onInit() {
+    auto ObjectDetectorNodeletBase::onInit() -> void {
         mNh = getMTNodeHandle();
         mPnh = getMTPrivateNodeHandle();
 
-        //Loop profiler param
-        mNh.param<bool>("enable_loop_profiler", mEnableLoopProfiler, false);
+        mNh.param<std::string>("camera_frame", mCameraFrame, "zed_left_camera_frame");
+        mNh.param<std::string>("world_frame", mWorldFrame, "map");
 
-        //TF Params
-        mNh.param<std::string>("camera_frame", mCameraFrameId, "zed_left_camera_frame");
-        mNh.param<std::string>("world_frame", mMapFrame, "map");
+        mPnh.param<int>("increment_weight", mObjIncrementWeight, 2);
+        mPnh.param<int>("decrement_weight", mObjDecrementWeight, 1);
+        mPnh.param<int>("hitcount_threshold", mObjHitThreshold, 5);
+        mPnh.param<int>("hitcount_max", mObjMaxHitcount, 10);
+        mPnh.param<std::string>("model_name", mModelName, "yolov8s_mallet_bottle");
+        mPnh.param<float>("model_score_threshold", mModelScoreThreshold, 0.75);
+        mPnh.param<float>("model_nms_threshold", mModelNmsThreshold, 0.5);
 
-        //Hit count params
-        mNh.param<int>("obj_increment_weight", mObjIncrementWeight, 2);
-        mNh.param<int>("obj_decrement_weight", mObjDecrementWeight, 1);
-        mNh.param<int>("obj_hitcount_threshold", mObjHitThreshold, 5);
-        mNh.param<int>("obj_hitcount_max", mObjMaxHitcount, 10);
+        mLearning = Learning{mModelName};
 
-        //Model Params
-        mNh.param<std::string>("model_name", mModelName, "yolov8n_mallet_bottle_better");
+        mDebugImagePub = mNh.advertise<sensor_msgs::Image>("object_detection", 1);
 
-        //Init Model Path
-        std::filesystem::path packagePath = ros::package::getPath("mrover");
-        std::filesystem::path modelPath = packagePath / "data" / (mModelName + ".onnx");
+        ROS_INFO_STREAM(std::format("Object detector initialized with model: {} and thresholds: {} and {}", mModelName, mModelScoreThreshold, mModelNmsThreshold));
+    }
 
-        //Wrapper
-        mInferenceWrapper = InferenceWrapper{modelPath, mModelName};
+    auto StereoObjectDetectorNodelet::onInit() -> void {
+        ObjectDetectorNodeletBase::onInit();
 
-        //Pub sub
-        mImgSub = mNh.subscribe("/camera/left/points", 1, &ObjectDetectorNodelet::imageCallback, this);
-        mDebugImgPub = mNh.advertise<sensor_msgs::Image>("/object_detector/debug_img", 1);
+        mSensorSub = mNh.subscribe("/camera/left/points", 1, &StereoObjectDetectorNodelet::pointCloudCallback, this);
+    }
+
+    auto ImageObjectDetectorNodelet::onInit() -> void {
+        ObjectDetectorNodeletBase::onInit();
+
+        mPnh.param<float>("long_range_camera/fov", mCameraHorizontalFov, 80.0);
+
+        mSensorSub = mNh.subscribe("long_range_camera/image", 1, &ImageObjectDetectorNodelet::imageCallback, this);
+
+        mTargetsPub = mNh.advertise<ImageTargets>("objects", 1);
     }
 
 } // namespace mrover

@@ -1,12 +1,10 @@
 <template>
   <div>
-    <!-- <p>pitch: {{pitch.toFixed(2)}}</p>
-      <p>roll: {{roll.toFixed(2)}}</p> -->
-    <Attitude :size="200" :pitch="pitch" :roll="roll"></Attitude>
+    <Attitude :size='200' :pitch='pitch' :roll='roll' />
   </div>
 </template>
 
-<script lang="ts">
+<script lang='ts'>
 import { Attitude } from 'vue-flight-indicators'
 import { mapState } from 'vuex'
 
@@ -16,7 +14,7 @@ export default {
   },
   data() {
     return {
-      // Pitch and Roll in Degrees
+      // Degrees
       pitch: 0,
       roll: 0
     }
@@ -28,9 +26,10 @@ export default {
 
   watch: {
     message(msg) {
-      if (msg.type == 'flight_attitude') {
-        this.pitch = msg.pitch
-        this.roll = msg.roll
+      if (msg.type == 'orientation') {
+        const [qx, qy, qz, qw] = msg.orientation
+        this.pitch = Math.asin(2 * (qx * qz - qy * qw)) * 180 / Math.PI
+        this.roll = Math.atan2(2 * (qy * qz + qx * qw), 1 - 2 * (qx * qx + qy * qy)) * 180 / Math.PI
       }
     }
   }

@@ -33,6 +33,7 @@ namespace mrover {
             // MT means multithreaded
             mNh = getMTNodeHandle();
             mPnh = getMTPrivateNodeHandle();
+
             mPcPub = mNh.advertise<sensor_msgs::PointCloud2>("camera/left/points", 1);
             mImuPub = mNh.advertise<sensor_msgs::Imu>("imu", 1);
             mMagPub = mNh.advertise<sensor_msgs::MagneticField>("mag", 1);
@@ -71,11 +72,11 @@ namespace mrover {
 
             mImageResolution = sl::Resolution(imageWidth, imageHeight);
             mPointResolution = sl::Resolution(imageWidth, imageHeight);
+            mNormalsResolution = sl::Resolution(imageWidth, imageHeight);
 
-            NODELET_INFO("Resolution: %s image: %zux%zu points: %zux%zu",
-                         grabResolutionString.c_str(), mImageResolution.width, mImageResolution.height, mPointResolution.width, mPointResolution.height);
-            NODELET_INFO("Use builtin visual odometry: %s", mUseBuiltinPosTracking ? "true" : "false");
-
+            NODELET_INFO_STREAM(std::format("Resolution: {} image: {}x{} points: {}x{}",
+                                            grabResolutionString, mImageResolution.width, mImageResolution.height, mPointResolution.width, mPointResolution.height));
+            NODELET_INFO_STREAM(std::format("Use builtin visual odometry: {}", mUseBuiltinPosTracking ? "true" : "false"));
             sl::InitParameters initParameters;
             if (mSvoPath) {
                 initParameters.input.setFromSVOFile(mSvoPath);
@@ -105,14 +106,14 @@ namespace mrover {
 
             cudaDeviceProp prop{};
             cudaGetDeviceProperties(&prop, 0);
-            ROS_INFO("MP count: %d, Max threads/MP: %d, Max blocks/MP: %d, max threads/block: %d",
-                     prop.multiProcessorCount, prop.maxThreadsPerMultiProcessor, prop.maxBlocksPerMultiProcessor, prop.maxThreadsPerBlock);
+            NODELET_INFO_STREAM(std::format("MP count: {}, Max threads/MP: {}, Max blocks/MP: {}, max threads/block: {}",
+                                            prop.multiProcessorCount, prop.maxThreadsPerMultiProcessor, prop.maxBlocksPerMultiProcessor, prop.maxThreadsPerBlock));
 
             mGrabThread = std::thread(&ZedNodelet::grabUpdate, this);
             mPointCloudThread = std::thread(&ZedNodelet::pointCloudUpdate, this);
 
         } catch (std::exception const& e) {
-            NODELET_FATAL("Exception while starting: %s", e.what());
+            NODELET_FATAL_STREAM(std::format("Exception while starting: {}", e.what()));
             ros::shutdown();
         }
     }
@@ -142,7 +143,7 @@ namespace mrover {
                     mIsSwapReady = false;
                     mPcThreadProfiler.measureEvent("Wait");
 
-                    fillPointCloudMessageFromGpu(mPcMeasures.leftPoints, mPcMeasures.leftImage, mPointCloudGpu, pointCloudMsg);
+                    fillPointCloudMessageFromGpu(mPcMeasures.leftPoints, mPcMeasures.leftImage, mPcMeasures.leftNormals, mPointCloudGpu, pointCloudMsg);
                     pointCloudMsg->header.stamp = mPcMeasures.time;
                     pointCloudMsg->header.frame_id = "zed_left_camera_frame";
                     mPcThreadProfiler.measureEvent("Fill Message");
@@ -186,7 +187,7 @@ namespace mrover {
             NODELET_INFO("Tag thread finished");
 
         } catch (std::exception const& e) {
-            NODELET_FATAL("Exception while running tag thread: %s", e.what());
+            NODELET_FATAL_STREAM(std::format("Exception while running point cloud thread: {}", e.what()));
             ros::shutdown();
             std::exit(EXIT_FAILURE);
         }
@@ -223,6 +224,8 @@ namespace mrover {
                     throw std::runtime_error("ZED failed to retrieve left image");
                 if (mZed.retrieveMeasure(mGrabMeasures.leftPoints, sl::MEASURE::XYZ, sl::MEM::GPU, mPointResolution) != sl::ERROR_CODE::SUCCESS)
                     throw std::runtime_error("ZED failed to retrieve point cloud");
+                if (mZed.retrieveMeasure(mGrabMeasures.leftNormals, sl::MEASURE::NORMALS, sl::MEM::GPU, mNormalsResolution) != sl::ERROR_CODE::SUCCESS)
+                    throw std::runtime_error("ZED failed to retrieve point cloud normals");
 
                 assert(mGrabMeasures.leftImage.timestamp == mGrabMeasures.leftPoints.timestamp);
 
@@ -286,7 +289,7 @@ namespace mrover {
             NODELET_INFO("Grab thread finished");
 
         } catch (std::exception const& e) {
-            NODELET_FATAL("Exception while running grab thread: %s", e.what());
+            NODELET_FATAL_STREAM(std::format("Exception while running grab thread: {}", e.what()));
             mZed.close();
             ros::shutdown();
             std::exit(EXIT_FAILURE);
@@ -307,6 +310,7 @@ namespace mrover {
         sl::Mat::swap(other.leftImage, leftImage);
         sl::Mat::swap(other.rightImage, rightImage);
         sl::Mat::swap(other.leftPoints, leftPoints);
+        sl::Mat::swap(other.leftNormals, leftNormals);
         std::swap(time, other.time);
         return *this;
     }

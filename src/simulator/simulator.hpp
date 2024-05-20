@@ -174,6 +174,7 @@ namespace mrover {
     };
 
     struct Imu : SensorBase {
+        ros::Publisher magPub, uncalibPub;
     };
 
     struct Gps : SensorBase {
@@ -236,7 +237,7 @@ namespace mrover {
         Eigen::Vector3f mIkTarget{0.382, 0.01, -0.217};
         ros::Publisher mIkTargetPub;
 
-        R3 mGpsLinearizationReferencePoint{};
+        R3d mGpsLinearizationReferencePoint{};
         double mGpsLinerizationReferenceHeading{};
 
         std::default_random_engine mRNG;
@@ -249,8 +250,9 @@ namespace mrover {
                 mYawDist{0, 0.01};
 
         // drift rate in rad/minute about each axis
-        R3 mOrientationDriftRate{0.0, 0.0, 1.0};
-        R3 mOrientationDrift = R3::Zero();
+        // R3 mOrientationDriftRate{0.0, 0.0, 1.0};
+        R3d mOrientationDriftRate = R3d::Zero();
+        R3d mOrientationDrift = R3d::Zero();
 
         bool mIsHeadless{};
 
@@ -323,7 +325,7 @@ namespace mrover {
             return rawPointer;
         }
 
-        R3 mRoverLinearVelocity{};
+        R3d mRoverLinearVelocity{};
 
         // Scene
 
@@ -331,7 +333,7 @@ namespace mrover {
 
         auto getUrdf(std::string const& name) -> std::optional<std::reference_wrapper<URDF>>;
 
-        SE3d mCameraInWorld{R3{-3.0, 0.0, 1.5}, SO3d::Identity()};
+        SE3d mCameraInWorld{R3d{-3.0, 0.0, 1.5}, SO3d::Identity()};
 
         std::optional<SE3d> mCameraInRoverTarget;
 
@@ -413,8 +415,7 @@ namespace mrover {
 
         auto velocitiesCallback(Velocity::ConstPtr const& msg) -> void;
 
-        auto throttlesCallback(Throttle::ConstPtr
-            const& msg) -> void;
+        auto throttlesCallback(Throttle::ConstPtr const& msg) -> void;
 
     public:
         SimulatorNodelet() = default;

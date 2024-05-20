@@ -32,6 +32,14 @@ if __name__ == "__main__":
                     Waypoint(tag_id=1, type=WaypointType(val=WaypointType.POST)),
                     SE3(position=np.array([11, -10, 0])),
                 ),
+                (
+                    Waypoint(tag_id=1, type=WaypointType(val=WaypointType.MALLET)),
+                    SE3(position=np.array([5, 1, 0])),
+                ),
+                (
+                    Waypoint(tag_id=-1, type=WaypointType(val=WaypointType.WATER_BOTTLE)),
+                    SE3(position=np.array([0, 0, 0])),
+                ),
             ]
         ]
     )

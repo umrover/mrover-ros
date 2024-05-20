@@ -15,15 +15,14 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # Generate compile_commands.json for clang
 if (APPLE)
     # Ensures that homebrew packages are never used over miniforge packages
     set(CMAKE_IGNORE_PATH /opt/homebrew)
-    # Boost uses deprecated C++ library features
-    # Thankfully libcxx has a compatibility mode for this
     add_definitions(
+            # Boost uses deprecated C++ library features
+            # Thankfully libcxx has a compatibility mode for this
             -D_LIBCPP_ENABLE_CXX20_REMOVED_ALLOCATOR_MEMBERS
             -D_LIBCPP_ENABLE_CXX20_REMOVED_ALLOCATOR_VOID_SPECIALIZATION
+            # We override these
+            -D_LIBCPP___TYPE_TRAITS_IS_EXECUTION_POLICY_H
     )
-
-    find_package(fmt REQUIRED)
-    link_libraries(fmt::fmt)
 else ()
     # TODO(quintin): Fix this
     find_package(TBB QUIET)
@@ -32,22 +31,27 @@ else ()
     endif ()
 endif ()
 
-find_program(MOLD mold)
-if (MOLD)
-    set(MROVER_LINKER_OPTIONS -fuse-ld=mold)
-    message(STATUS "Using mold as linker")
-elseif (NOT APPLE)
-    find_program(LLD lld)
-    if (LLD)
-        set(MROVER_LINKER_OPTIONS -fuse-ld=lld)
-        message(STATUS "Using lld as linker")
+if (NOT APPLE)
+    find_program(MOLD mold)
+    if (MOLD)
+        set(MROVER_LINKER_OPTIONS -fuse-ld=mold)
+        message(STATUS "Using mold as linker")
+    elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+        find_program(LLD lld)
+        if (LLD)
+            set(MROVER_LINKER_OPTIONS -fuse-ld=lld)
+            message(STATUS "Using lld as linker")
+        endif ()
     endif ()
 endif ()
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    set(MROVER_COMPILE_OPTIONS -Wall -Wextra -pedantic -Wno-missing-field-initializers -Wno-subobject-linkage)
+    set(MROVER_COMPILE_OPTIONS -Wall -Wextra -pedantic -Wno-missing-field-initializers)
     if (MROVER_IS_CI) # Make warnings errors in CI
         list(APPEND MROVER_COMPILE_OPTIONS -Werror)
+    endif ()
+    if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        list(APPEND MROVER_COMPILE_OPTIONS -Wno-subobject-linkage)
     endif ()
 endif ()
 
@@ -150,6 +154,11 @@ catkin_package()
 mrover_add_library(lie src/util/lie/*.cpp src/util/lie)
 target_link_libraries(lie PUBLIC MANIF::manif)
 
+if (ZED_FOUND)
+    mrover_add_library(learning src/util/learning/*.c* src/util/learning)
+    target_link_libraries(learning PRIVATE opencv_core opencv_dnn opencv_imgproc lie nvinfer nvonnxparser tbb)
+endif ()
+
 ## ESW
 
 mrover_add_vendor_header_only_library(moteus deps/mjbots)
@@ -168,11 +177,8 @@ macro(mrover_add_esw_bridge_node name sources)
     target_link_libraries(${name} PRIVATE can_device motor_library)
 endmacro()
 
-mrover_add_node(imu_driver src/esw/imu_driver.cpp)
-target_link_libraries(imu_driver PRIVATE lie)
-
-mrover_add_node(heading_correcting_filter src/localization/heading_correcting_filter.cpp)
-target_link_libraries(heading_correcting_filter PRIVATE lie)
+mrover_add_node(pose_filter src/localization/pose_filter.cpp)
+target_link_libraries(pose_filter PRIVATE lie)
 
 mrover_add_esw_bridge_node(arm_translator_bridge src/esw/arm_translator/*.cpp src/esw/arm_translator/*.hpp)
 mrover_add_esw_bridge_node(differential_drive_controller src/esw/differential_drive_controller.cpp)
@@ -183,17 +189,23 @@ mrover_add_esw_bridge_node(science_bridge src/esw/science_bridge.cpp)
 
 ## Perception
 
+mrover_add_nodelet(costmap src/perception/cost_map/*.cpp src/perception/cost_map src/perception/cost_map/pch.hpp)
+mrover_nodelet_link_libraries(costmap lie)
+
 mrover_add_library(websocket_server src/esw/websocket_server/*.cpp src/esw/websocket_server)
 target_compile_definitions(websocket_server PUBLIC BOOST_ASIO_NO_DEPRECATED)
 
-mrover_add_nodelet(zed_tag_detector src/perception/tag_detector/zed/*.cpp src/perception/tag_detector/zed src/perception/tag_detector/zed/pch.hpp)
-mrover_nodelet_link_libraries(zed_tag_detector opencv_core opencv_objdetect opencv_aruco opencv_imgproc lie)
+mrover_add_nodelet(tag_detector src/perception/tag_detector/*.cpp src/perception/tag_detector src/perception/tag_detector/pch.hpp)
+mrover_nodelet_link_libraries(tag_detector opencv_core opencv_objdetect opencv_aruco opencv_imgproc lie)
 
-mrover_add_nodelet(long_range_tag_detector src/perception/tag_detector/long_range_cam/*.cpp src/perception/tag_detector/long_range_cam src/perception/tag_detector/long_range_cam/pch.hpp)
-mrover_nodelet_link_libraries(long_range_tag_detector opencv_core opencv_objdetect opencv_aruco opencv_imgproc lie)
+#mrover_add_nodelet(long_range_tag_detector src/perception/tag_detector/long_range_cam/*.cpp src/perception/tag_detector/long_range_cam src/perception/tag_detector/long_range_cam/pch.hpp)
+#mrover_nodelet_link_libraries(long_range_tag_detector opencv_core opencv_objdetect opencv_aruco opencv_imgproc lie)
 
-mrover_add_nodelet(usb_camera src/perception/usb_camera/*.cpp src/perception/usb_camera src/perception/usb_camera/pch.hpp)
-mrover_nodelet_link_libraries(usb_camera opencv_core opencv_objdetect opencv_aruco opencv_imgproc opencv_highgui)
+if (Gst_FOUND AND GstApp_FOUND)
+    mrover_add_nodelet(usb_camera src/perception/usb_camera/*.cpp src/perception/usb_camera src/perception/usb_camera/pch.hpp)
+    mrover_nodelet_link_libraries(usb_camera PRIVATE opencv_core opencv_imgproc ${Gst_LIBRARIES} ${GstApp_LIBRARIES})
+    mrover_nodelet_include_directories(usb_camera ${Gst_INCLUDE_DIRS} ${GstApp_INCLUDE_DIRS})
+endif ()
 
 if (Gst_FOUND AND GstApp_FOUND AND LibUsb_FOUND AND LibUdev_FOUND)
     mrover_add_nodelet(gst_websocket_streamer src/esw/gst_websocket_streamer/*.c* src/esw/gst_websocket_streamer src/esw/gst_websocket_streamer/pch.hpp)
@@ -203,7 +215,7 @@ endif ()
 
 if (ZED_FOUND)
     mrover_add_nodelet(object_detector src/perception/object_detector/*.c* src/perception/object_detector src/perception/object_detector/pch.hpp)
-    mrover_nodelet_link_libraries(object_detector PRIVATE opencv_core opencv_dnn opencv_imgproc lie nvinfer nvonnxparser tbb)
+    mrover_nodelet_link_libraries(object_detector PRIVATE opencv_core opencv_dnn opencv_imgproc lie tbb learning)
     mrover_nodelet_defines(object_detector
             __CUDA_INCLUDE_COMPILER_INTERNAL_HEADERS__ # Eigen includes some files it should not, ignore
     )

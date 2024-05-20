@@ -1,7 +1,10 @@
 <launch>
+  <arg name="stuck_detection" default="true"/>
+
   <rosparam command="load" file="$(find mrover)/config/navigation.yaml"/>
 
   <node name="navigation" pkg="mrover" type="navigation.py" output="screen"/>
 
-  <!--   <node name="failure_identification" pkg="mrover" type="failure_identification.py"/> -->
+  <node if="$(arg stuck_detection)"
+        name="stuck_detection" pkg="mrover" type="stuck_detector.py"/>
 </launch>

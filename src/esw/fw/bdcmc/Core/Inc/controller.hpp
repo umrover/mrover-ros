@@ -144,7 +144,7 @@ namespace mrover {
 
             Percent applied_delta = m_throttle_rate * dt;
 
-            if (signum(output_after_limit) != signum(m_throttled_output)) {
+            if (signum(output_after_limit) != signum(m_throttled_output) && signum(m_throttled_output) != 0) {
                 // If we are changing directions, go straight to zero
                 // This also includes when going to zero from a non-zero value (since signum(0) == 0), helpful for when you want to stop moving quickly on input release
                 m_throttled_output = 0_percent;

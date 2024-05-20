@@ -44,8 +44,8 @@ function find_executable() {
 ## Check that all tools are installed
 
 readonly CLANG_FORMAT_PATH=$(find_executable clang-format-16 16.0)
-readonly BLACK_PATH=$(find_executable black 23.9.1)
-readonly MYPY_PATH=$(find_executable mypy 1.5.1)
+readonly BLACK_PATH=$(find_executable black 24.4.2)
+readonly MYPY_PATH=$(find_executable mypy 1.10.0)
 
 ## Run checks
 

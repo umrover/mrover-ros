@@ -21,6 +21,9 @@ struct overloaded : Ts... {
     using Ts::operator()...;
 };
 
+template<class... Ts>
+overloaded(Ts...) -> overloaded<Ts...>;
+
 struct InputPublisher {
     ros::Time lastReceived;
     ros::Subscriber sub;

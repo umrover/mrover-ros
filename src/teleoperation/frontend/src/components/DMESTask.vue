@@ -46,7 +46,7 @@ import OdometryReading from './OdometryReading.vue'
 import DriveControls from './DriveControls.vue'
 import MastGimbalControls from './MastGimbalControls.vue'
 import Rover3D from './Rover3D.vue'
-import { quaternionToMapAngle } from '../utils.js'
+import { quaternionToMapAngle } from '../utils'
 
 export default defineComponent({
   components: {
@@ -117,7 +117,6 @@ export default defineComponent({
   display: grid;
   gap: 10px;
   grid-template-columns: 50% 50%;
-  grid-template-rows: repeat(4, auto);
   grid-template-areas:
     'header header'
     'arm-controls arm-controls'
@@ -131,7 +130,6 @@ export default defineComponent({
   display: grid;
   gap: 10px;
   grid-template-columns: repeat(2, auto);
-  grid-template-rows: repeat(3, auto);
   grid-template-areas:
     'header header'
     'arm-controls arm-controls'

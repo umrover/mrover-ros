@@ -1,7 +1,5 @@
 world_frame: "map"
-odom_frame: "odom"
 rover_frame: "base_link"
-use_odom_frame: false
 
 gps_linearization:
   reference_point_latitude: 42.293195
@@ -13,6 +11,10 @@ gps_linearization:
 gps_covariance: [ [ 0.1, 0, 0 ],
                   [ 0, 0.1, 0 ],
                   [ 0, 0, 0.1 ] ]
+
+rtk_gps_covariance: [ [ 0.01, 0, 0 ],
+                      [ 0, 0.01, 0 ],
+                      [ 0, 0, 0.01 ] ]
 
 imu_orientation_covariance: [ [ 0.1, 0, 0 ],
                               [ 0, 0.1, 0 ],

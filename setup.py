@@ -11,10 +11,11 @@ d = generate_distutils_setup(
         "util",
         "util.state_lib",
         "navigation",
-        "navigation.failure_identification",
+        "navigation.stuck_detector",
         "esw",
         "teleoperation.teleoperation",
         "teleoperation.arm_controller",
+        "esw.adafruit_bno08x",
     ],
     package_dir={"": "src"},
 )

@@ -362,7 +362,7 @@ export default {
 
     toggleTeleopMode: function () {
       this.teleopEnabledCheck = !this.teleopEnabledCheck
-      this.sendMessage({ type: 'teleop_enabled', enabled: this.teleopEnabledCheck })
+      this.sendMessage({ type: 'teleop_enable', enabled: this.teleopEnabledCheck })
       this.$emit('toggleTeleop', this.teleopEnabledCheck)
     }
   }

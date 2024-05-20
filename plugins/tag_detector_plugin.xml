@@ -1,6 +1,10 @@
-<library path="lib/libzed_tag_detector_nodelet">
-    <class name="mrover/TagDetectorNodelet"
-        type="mrover::TagDetectorNodelet"
-        base_class_type="nodelet::Nodelet">
+<library path="lib/libtag_detector_nodelet">
+    <class name="mrover/StereoTagDetectorNodelet"
+           type="mrover::StereoTagDetectorNodelet"
+           base_class_type="nodelet::Nodelet">
+    </class>
+    <class name="mrover/ImageTagDetectorNodelet"
+           type="mrover::ImageTagDetectorNodelet"
+           base_class_type="nodelet::Nodelet">
     </class>
 </library>

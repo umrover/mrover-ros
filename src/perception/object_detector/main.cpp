@@ -3,9 +3,8 @@
 auto main(int argc, char** argv) -> int {
     ros::init(argc, argv, "object_detector");
 
-    // Start the ZED Nodelet
     nodelet::Loader nodelet;
-    nodelet.load(ros::this_node::getName(), "mrover/ObjectDetectorNodelet", ros::names::getRemappings(), {});
+    nodelet.load(ros::this_node::getName(), "mrover/StereoObjectDetectorNodelet", ros::names::getRemappings(), {});
 
     ros::spin();
 
@@ -14,5 +13,6 @@ auto main(int argc, char** argv) -> int {
 
 #ifdef MROVER_IS_NODELET
 #include <pluginlib/class_list_macros.h>
-PLUGINLIB_EXPORT_CLASS(mrover::ObjectDetectorNodelet, nodelet::Nodelet)
+PLUGINLIB_EXPORT_CLASS(mrover::StereoObjectDetectorNodelet, nodelet::Nodelet)
+PLUGINLIB_EXPORT_CLASS(mrover::ImageObjectDetectorNodelet, nodelet::Nodelet)
 #endif

@@ -1,13 +1,15 @@
 <launch>
   <arg name="tag_detector" default="true"/>
   <arg name="object_detector" default="false"/>
+  <arg name="cost_map" default="true"/>
 
   <include file="$(find mrover)/launch/perception.launch">
     <arg name="tag_detector" value="$(arg tag_detector)"/>
     <arg name="object_detector" value="$(arg object_detector)"/>
+    <arg name="cost_map" value="$(arg cost_map)"/>
   </include>
 
   <include file="$(find mrover)/launch/navigation.launch"/>
 
-  <include file="$(find mrover)/launch/localization.launch"/>
+  <!-- <include file="$(find mrover)/launch/localization.launch"/> -->
 </launch>

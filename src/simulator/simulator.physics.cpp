@@ -16,7 +16,7 @@ namespace mrover {
         btQuaternion const& q = transform.getRotation();
         // Note: Must convert the Bullet quaternion (floats) to a normalized Eigen quaternion (doubles).
         //       Otherwise the normality check will fail in the SO3 constructor.
-        return SE3d{R3{p.x(), p.y(), p.z()}, Eigen::Quaterniond{q.w(), q.x(), q.y(), q.z()}.normalized()};
+        return SE3d{R3d{p.x(), p.y(), p.z()}, Eigen::Quaterniond{q.w(), q.x(), q.y(), q.z()}.normalized()};
     }
 
     auto SimulatorNodelet::initPhysics() -> void {
@@ -88,8 +88,8 @@ namespace mrover {
                 }
                 // TODO(quintin): This is kind of hacky
                 if (name.contains("tag"sv) || name.contains("hammer"sv) || name.contains("bottle"sv)) {
-                    SE3d modelInMap = btTransformToSe3(urdf.physics->getBaseWorldTransform());
-                    SE3Conversions::pushToTfTree(mTfBroadcaster, std::format("{}_truth", name), "map", modelInMap);
+                    //SE3d modelInMap = btTransformToSe3(urdf.physics->getBaseWorldTransform());
+                    //SE3Conversions::pushToTfTree(mTfBroadcaster, std::format("{}_truth", name), "map", modelInMap);
                 }
 
                 for (urdf::JointSharedPtr const& child_joint: link->child_joints) {
@@ -109,10 +109,10 @@ namespace mrover {
                     SE3d modelInMap = btTransformToSe3(model.physics->getBaseWorldTransform());
                     SE3d roverInMap = btTransformToSe3(rover.physics->getBaseWorldTransform());
 
-                    R3 roverToModel = modelInMap.translation() - roverInMap.translation();
+                    R3d roverToModel = modelInMap.translation() - roverInMap.translation();
                     double roverDistanceToModel = roverToModel.norm();
                     roverToModel /= roverDistanceToModel;
-                    R3 roverForward = roverInMap.rotation().matrix().col(0);
+                    R3d roverForward = roverInMap.rotation().matrix().col(0);
                     double roverDotModel = roverToModel.dot(roverForward);
 
                     if (roverDotModel > 0 && roverDistanceToModel < threshold) {
