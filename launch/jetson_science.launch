@@ -1,5 +1,9 @@
 <launch>
-  <include file="$(find mrover)/launch/jetson_base.launch"/>
+  <arg name="cameras" default="true"/>
+
+  <include file="$(find mrover)/launch/jetson_base.launch">
+    <arg name="cameras" value="$(arg cameras)"/>
+  </include>
 
   <node name="cache_bridge" pkg="mrover" type="simple_bridge">
     <param name="group_name" value="cache"/>
@@ -9,24 +13,26 @@
   </node>
   <node name="science_bridge" pkg="mrover" type="science_bridge"/>
 
-  <node pkg="nodelet" type="nodelet" name="streamer_nodelet_ish_1"
-        args="load mrover/GstWebsocketStreamerNodelet perception_nodelet_manager"
-        output="screen">
-    <param name="dev_path" value="/devices/platform/3610000.xhci/usb1/1-1/1-1.4/1-1.4.4"/>
-    <param name="port" value="8084"/>
-  </node>
+  <group if="$(arg cameras)">
+    <node pkg="nodelet" type="nodelet" name="streamer_nodelet_ish_1"
+          args="load mrover/GstWebsocketStreamerNodelet perception_nodelet_manager"
+          output="screen">
+      <param name="dev_path" value="/devices/platform/3610000.xhci/usb1/1-1/1-1.4/1-1.4.4"/>
+      <param name="port" value="8084"/>
+    </node>
 
-  <node pkg="nodelet" type="nodelet" name="streamer_nodelet_ish_2"
-        args="load mrover/GstWebsocketStreamerNodelet perception_nodelet_manager"
-        output="screen">
-    <param name="dev_path" value="/devices/platform/3610000.xhci/usb1/1-1/1-1.4/1-1.4.3"/>
-    <param name="port" value="8085"/>
-  </node>
+    <node pkg="nodelet" type="nodelet" name="streamer_nodelet_ish_2"
+          args="load mrover/GstWebsocketStreamerNodelet perception_nodelet_manager"
+          output="screen">
+      <param name="dev_path" value="/devices/platform/3610000.xhci/usb1/1-1/1-1.4/1-1.4.3"/>
+      <param name="port" value="8085"/>
+    </node>
 
-  <node pkg="nodelet" type="nodelet" name="streamer_nodelet_ish_3"
-        args="load mrover/GstWebsocketStreamerNodelet perception_nodelet_manager"
-        output="screen">
-    <param name="dev_path" value="/devices/platform/3610000.xhci/usb1/1-1/1-1.4/1-1.4.2"/>
-    <param name="port" value="8086"/>
-  </node>
+    <node pkg="nodelet" type="nodelet" name="streamer_nodelet_ish_3"
+          args="load mrover/GstWebsocketStreamerNodelet perception_nodelet_manager"
+          output="screen">
+      <param name="dev_path" value="/devices/platform/3610000.xhci/usb1/1-1/1-1.4/1-1.4.2"/>
+      <param name="port" value="8086"/>
+    </node>
+  </group>
 </launch>
