@@ -14,22 +14,19 @@
   <node name="science_bridge" pkg="mrover" type="science_bridge"/>
 
   <group if="$(arg cameras)">
-    <node pkg="nodelet" type="nodelet" name="streamer_nodelet_ish_1"
-          args="load mrover/GstWebsocketStreamerNodelet perception_nodelet_manager"
+    <node pkg="mrover" type="gst_websocket_streamer" name="ish_1_streamer"
           output="screen">
       <param name="dev_path" value="/devices/platform/3610000.xhci/usb1/1-1/1-1.4/1-1.4.4"/>
       <param name="port" value="8084"/>
     </node>
 
-    <node pkg="nodelet" type="nodelet" name="streamer_nodelet_ish_2"
-          args="load mrover/GstWebsocketStreamerNodelet perception_nodelet_manager"
+    <node pkg="mrover" type="gst_websocket_streamer" name="ish_2_streamer"
           output="screen">
       <param name="dev_path" value="/devices/platform/3610000.xhci/usb1/1-1/1-1.4/1-1.4.3"/>
       <param name="port" value="8085"/>
     </node>
 
-    <node pkg="nodelet" type="nodelet" name="streamer_nodelet_ish_3"
-          args="load mrover/GstWebsocketStreamerNodelet perception_nodelet_manager"
+    <node pkg="mrover" type="gst_websocket_streamer" name="ish_3_streamer"
           output="screen">
       <param name="dev_path" value="/devices/platform/3610000.xhci/usb1/1-1/1-1.4/1-1.4.2"/>
       <param name="port" value="8086"/>

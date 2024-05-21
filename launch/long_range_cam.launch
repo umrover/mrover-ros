@@ -1,6 +1,6 @@
 <launch>
   <node pkg="nodelet" type="nodelet" name="long_range_cam" respawn="true"
-        args="load mrover/UsbCameraNodelet perception_nodelet_manager" output="screen">
+        args="load mrover/UsbCameraNodelet perception_lr_nodelet_manager" output="screen">
     <param name="width" value="1280"/>
     <param name="height" value="720"/>
     <param name="framerate" value="10"/>

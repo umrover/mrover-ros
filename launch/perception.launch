@@ -11,7 +11,7 @@
 
   <node if="$(arg tag_detector)"
         pkg="nodelet" type="nodelet" name="long_range_tag_detector"
-        args="load mrover/ImageTagDetectorNodelet perception_nodelet_manager" output="screen">
+        args="load mrover/ImageTagDetectorNodelet perception_lr_nodelet_manager" output="screen">
     <remap from="tag_detection" to="long_range_tag_detection"/>
   </node>
 
@@ -21,7 +21,7 @@
 
   <node if="$(arg object_detector)"
         pkg="nodelet" type="nodelet" name="long_range_object_detector" respawn="true"
-        args="load mrover/ImageObjectDetectorNodelet perception_nodelet_manager" output="screen">
+        args="load mrover/ImageObjectDetectorNodelet perception_lr_nodelet_manager" output="screen">
     <remap from="object_detection" to="long_range_object_detection"/>
   </node>
 
