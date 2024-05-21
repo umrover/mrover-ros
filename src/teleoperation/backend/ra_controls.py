@@ -2,6 +2,8 @@ from enum import Enum
 from math import pi
 from typing import Union
 
+import numpy as np
+
 import rospy
 from backend.input import filter_input, simulated_axis, safe_index, DeviceInputs
 from backend.mappings import ControllerAxis, ControllerButton
@@ -22,6 +24,8 @@ class Joint(Enum):
     C = 2
     DE_PITCH = 3
     DE_ROLL = 4
+    ALLEN_KEY = 5
+    GRIPPER = 6
 
 
 # The following are indexed with the values of the enum
@@ -32,17 +36,23 @@ JOINT_NAMES = [
     "joint_c",
     "joint_de_pitch",
     "joint_de_roll",
+    "allen_key",
+    "gripper",
 ]
 
 JOINT_SCALES = [
+    -1.0,
+    0.8,
     1.0,
-    1.0,
+    -1.0,
     1.0,
     1.0,
     1.0,
 ]
 
 JOINT_DE_POSITION_SCALE = 1
+
+JOINT_A_MICRO_SCALE = 0.7
 
 CONTROLLER_STICK_DEADZONE = 0.18
 
@@ -65,6 +75,10 @@ def compute_manual_joint_controls(controller: DeviceInputs) -> list[float]:
             quadratic=True,
             scale=JOINT_SCALES[Joint.A.value],
             deadzone=CONTROLLER_STICK_DEADZONE,
+        )
+        + filter_input(
+            simulated_axis(controller.buttons, ControllerButton.DPAD_LEFT, ControllerButton.DPAD_RIGHT),
+            scale=JOINT_A_MICRO_SCALE,
         ),
         filter_input(
             safe_index(controller.axes, ControllerAxis.LEFT_Y),
@@ -85,6 +99,14 @@ def compute_manual_joint_controls(controller: DeviceInputs) -> list[float]:
         filter_input(
             simulated_axis(controller.buttons, ControllerButton.RIGHT_BUMPER, ControllerButton.LEFT_BUMPER),
             scale=JOINT_SCALES[Joint.DE_ROLL.value],
+        ),
+        filter_input(
+            simulated_axis(controller.buttons, ControllerButton.Y, ControllerButton.A),
+            scale=JOINT_SCALES[Joint.ALLEN_KEY.value],
+        ),
+        filter_input(
+            simulated_axis(controller.buttons, ControllerButton.B, ControllerButton.X),
+            scale=JOINT_SCALES[Joint.GRIPPER.value],
         ),
     ]
 
@@ -133,10 +155,20 @@ def send_ra_controls(ra_mode: str, inputs: DeviceInputs) -> None:
                                     names,
                                     [
                                         # Extend out like a carrot on a stick
-                                        joint_de_pitch + de_pitch_throttle * JOINT_DE_POSITION_SCALE,
-                                        joint_de_roll + de_roll_throttle * JOINT_DE_POSITION_SCALE,
+                                        np.clip(
+                                            joint_de_pitch + de_pitch_throttle * JOINT_DE_POSITION_SCALE,
+                                            -TAU / 4,
+                                            TAU / 4,
+                                        ),
+                                        np.clip(
+                                            joint_de_roll + de_roll_throttle * JOINT_DE_POSITION_SCALE,
+                                            -TAU / 4,
+                                            TAU / 4,
+                                        ),
                                     ],
                                 )
                             )
             else:
-                position_publisher.publish(Position(["joint_de_roll"], [de_roll]))
+                if joint_positions:
+                    de_pitch = joint_positions.position[joint_positions.name.index("joint_de_pitch")]
+                    position_publisher.publish(Position(["joint_de_roll", "joint_de_pitch"], [de_roll, de_pitch]))

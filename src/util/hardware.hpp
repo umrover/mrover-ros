@@ -101,11 +101,11 @@ namespace mrover {
             return m_valid && m_enabled && m_used_for_readjustment;
         }
 
-        void enable() {
+        auto enable() -> void {
             m_enabled = true;
         }
 
-        void disable() {
+        auto disable() -> void {
             m_enabled = false;
             m_is_pressed = false;
         }
@@ -211,7 +211,7 @@ namespace mrover {
             return {};
         }
 
-        auto broadcast(IsFdcanSerializable auto const& send) -> void {
+        auto broadcast(IsFdcanSerializable auto const& send) -> bool {
             MessageId messageId{
                     .destination = m_destination,
                     .source = m_source,
@@ -233,11 +233,18 @@ namespace mrover {
             if (HAL_FDCAN_GetTxFifoFreeLevel(m_fdcan)) {
                 // Free space in the mailbox
                 check(HAL_FDCAN_AddMessageToTxFifoQ(m_fdcan, &header, address_of<std::uint8_t>(send)) == HAL_OK, Error_Handler);
+                return true;
             } else {
                 // Abort oldest message in the mailbox to make room for the new message
                 // TODO: somehow convey that this is an error
                 HAL_FDCAN_AbortTxRequest(m_fdcan, FDCAN_TX_BUFFER0);
+                return false;
             }
+        }
+
+        auto reset() -> void {
+            HAL_FDCAN_Stop(m_fdcan);
+            HAL_FDCAN_Start(m_fdcan);
         }
 
     private:

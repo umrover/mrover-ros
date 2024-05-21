@@ -29,6 +29,7 @@ extern TIM_HandleTypeDef htim8;
 extern TIM_HandleTypeDef htim15;
 extern TIM_HandleTypeDef htim16;
 extern TIM_HandleTypeDef htim17;
+// extern WWDG_HandleTypeDef hwwdg;
 
 #define QUADRATURE_TICK_TIMER_1 &htim3      // Special encoder timer which externally reads quadrature encoder ticks
 // #define QUADRATURE_TIMER_2 &htim4
@@ -144,6 +145,7 @@ void HAL_PostInit() {
  * \note Timers have to be started with "HAL_TIM_Base_Start_IT" for this interrupt to work for them.
  */
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim) {
+    // HAL_WWDG_Refresh(&hwwdg);
     if (htim == SEND_TIMER) {
         mrover::send_callback();
     } else if (htim == FDCAN_WATCHDOG_TIMER) {

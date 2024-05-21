@@ -8,9 +8,9 @@ rospy.init_node("teleoperation", disable_signals=True)
 joystick_twist_publisher = rospy.Publisher("/joystick_cmd_vel", Twist, queue_size=1)
 controller_twist_publisher = rospy.Publisher("/controller_cmd_vel", Twist, queue_size=1)
 
-JOYSTICK_MICRO_LINEAR = -0.1
+JOYSTICK_MICRO_LINEAR = -0.05
 JOYSTICK_MICRO_ANGULAR = -0.1
-CONTROLLER_LINEAR = 0.1
+CONTROLLER_LINEAR = 0.05
 CONTROLLER_ANGULAR = -0.1
 
 MAX_LINEAR_SPEED = rospy.get_param("rover/max_speed")
@@ -69,6 +69,6 @@ def send_controller_twist(controller: DeviceInputs) -> None:
     controller_twist_publisher.publish(
         Twist(
             linear=Vector3(x=controller_linear),
-            angular=Vector3(z=controller_angular),
+            # angular=Vector3(z=controller_angular),
         )
     )

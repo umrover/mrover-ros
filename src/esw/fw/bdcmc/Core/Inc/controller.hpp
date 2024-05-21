@@ -125,11 +125,11 @@ namespace mrover {
             if (m_state_after_config) {
                 // TODO: verify this is correct
                 bool limit_forward = m_desired_output > 0_percent && (std::ranges::any_of(m_limit_switches, &LimitSwitch::limit_forward)
-                                                                      //|| m_uncalib_position > m_state_after_config->max_position
-                                                                     );
+                                         //|| m_uncalib_position > m_state_after_config->max_position
+                                     );
                 bool limit_backward = m_desired_output < 0_percent && (std::ranges::any_of(m_limit_switches, &LimitSwitch::limit_backward)
-                                                                       //|| m_uncalib_position < m_state_after_config->min_position
-                                                                      );
+                                          //|| m_uncalib_position < m_state_after_config->min_position
+                                      );
                 if (limit_forward || limit_backward) {
                     m_error = BDCMCErrorInfo::OUTPUT_SET_TO_ZERO_SINCE_EXCEEDING_LIMITS;
                 } else {
@@ -148,14 +148,13 @@ namespace mrover {
                 // If we are changing directions, go straight to zero
                 // This also includes when going to zero from a non-zero value (since signum(0) == 0), helpful for when you want to stop moving quickly on input release
                 m_throttled_output = 0_percent;
-            }
-            else {
-				if (abs(delta) < applied_delta) {
-					// We are very close to the desired output, just set it
-					m_throttled_output = output_after_limit;
-				} else {
-					m_throttled_output += applied_delta * signum(delta);
-				}
+            } else {
+                if (abs(delta) < applied_delta) {
+                    // We are very close to the desired output, just set it
+                    m_throttled_output = output_after_limit;
+                } else {
+                    m_throttled_output += applied_delta * signum(delta);
+                }
             }
 
 
@@ -176,7 +175,7 @@ namespace mrover {
             if (message.enc_info.quad_present) {
                 if (!m_relative_encoder) m_relative_encoder.emplace(m_encoder_timer, message.enc_info.quad_ratio, m_encoder_elapsed_timer);
                 EncoderReading enc_read = m_relative_encoder->read().value();
-                m_uncalib_position = enc_read.position;  // usually but not always 0
+                m_uncalib_position = enc_read.position; // usually but not always 0
             }
             if (message.enc_info.abs_present) {
                 if (!m_absolute_encoder) m_absolute_encoder.emplace(AbsoluteEncoderReader::AS5048B_Bus{m_absolute_encoder_i2c}, message.enc_info.abs_offset, message.enc_info.abs_ratio, m_encoder_elapsed_timer);
@@ -320,8 +319,7 @@ namespace mrover {
               m_throttle_timer{throttle_timer},
               m_pidf_timer{pid_timer},
               m_absolute_encoder_i2c{absolute_encoder_i2c},
-              m_limit_switches{limit_switches} {
-        }
+              m_limit_switches{limit_switches} {}
 
         template<typename Command>
         auto process_command(Command const& command) -> void {
@@ -447,7 +445,9 @@ namespace mrover {
          */
         auto send() -> void {
             update();
-            m_fdcan.broadcast(m_outbound);
+            if (bool success = m_fdcan.broadcast(m_outbound); !success) {
+                m_fdcan.reset();
+            }
         }
 
 
