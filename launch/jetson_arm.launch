@@ -6,10 +6,9 @@
   </node>
   <node name="arm_translator_bridge" pkg="mrover" type="arm_translator_bridge"/>
 
-  <!-- <node pkg="nodelet" type="nodelet" name="streamer_nodelet_boom"
-        args="load mrover/GstWebsocketStreamerNodelet perception_nodelet_manager"
+  <node pkg="mrover" type="gst_websocket_streamer" name="boom_streamer"
         output="screen">
     <param name="dev_node" value="/dev/boomcam"/>
     <param name="port" value="8084"/>
-  </node> -->
+  </node>
 </launch>

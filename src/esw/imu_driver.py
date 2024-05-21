@@ -26,6 +26,8 @@ def main() -> None:
 
     rospy.loginfo("IMU I2C driver starting...")
 
+    frame_id = rospy.get_param("imu_driver/frame_id")
+
     calib_imu_pub = rospy.Publisher("/imu/data", Imu, queue_size=1)
     uncalib_pub = rospy.Publisher("/imu/data_raw", Imu, queue_size=1)
     mag_pub = rospy.Publisher("/imu/mag", MagneticField, queue_size=1)
@@ -62,7 +64,7 @@ def main() -> None:
 
     rate = rospy.Rate(50)
     while not rospy.is_shutdown():
-        header = Header(stamp=rospy.Time.now(), frame_id="imu_link")
+        header = Header(stamp=rospy.Time.now(), frame_id=frame_id)
 
         calib_imu_pub.publish(
             Imu(
