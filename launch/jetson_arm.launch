@@ -2,7 +2,7 @@
   <rosparam command="load" file="$(find mrover)/config/esw.yaml"/>
 
   <node name="arm_direct_bridge" pkg="mrover" type="simple_bridge">
-    <param name="group_name" value="arm"/>
+    <param name="group_name" value="arm_direct"/>
   </node>
   <node name="arm_translator_bridge" pkg="mrover" type="arm_translator_bridge"/>
 

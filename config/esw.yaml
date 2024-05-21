@@ -407,7 +407,7 @@ wheel:
   radius: 0.13
 
 motors_group:
-  arm:
+  arm_direct:
     - "joint_a"
     - "joint_b"
     - "joint_c"

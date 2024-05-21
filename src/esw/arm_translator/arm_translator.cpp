@@ -27,11 +27,11 @@ namespace mrover {
         mThrottleSub = nh.subscribe<Throttle>("arm_throttle_cmd", 1, &ArmTranslator::processThrottleCmd, this);
         mVelocitySub = nh.subscribe<Velocity>("arm_velocity_cmd", 1, &ArmTranslator::processVelocityCmd, this);
         mPositionSub = nh.subscribe<Position>("arm_position_cmd", 1, &ArmTranslator::processPositionCmd, this);
-        mJointDataSub = nh.subscribe<sensor_msgs::JointState>("arm_hw_joint_data", 1, &ArmTranslator::processJointState, this);
+        mJointDataSub = nh.subscribe<sensor_msgs::JointState>("arm_direct_joint_data", 1, &ArmTranslator::processJointState, this);
 
-        mThrottlePub = std::make_unique<ros::Publisher>(nh.advertise<Throttle>("arm_hw_throttle_cmd", 1));
-        mVelocityPub = std::make_unique<ros::Publisher>(nh.advertise<Velocity>("arm_hw_velocity_cmd", 1));
-        mPositionPub = std::make_unique<ros::Publisher>(nh.advertise<Position>("arm_hw_position_cmd", 1));
+        mThrottlePub = std::make_unique<ros::Publisher>(nh.advertise<Throttle>("arm_direct_throttle_cmd", 1));
+        mVelocityPub = std::make_unique<ros::Publisher>(nh.advertise<Velocity>("arm_direct_velocity_cmd", 1));
+        mPositionPub = std::make_unique<ros::Publisher>(nh.advertise<Position>("arm_direct_position_cmd", 1));
         mJointDataPub = std::make_unique<ros::Publisher>(nh.advertise<sensor_msgs::JointState>("arm_joint_data", 1));
 
         mDeOffsetTimer = nh.createTimer(ros::Duration{DE_OFFSET_TIMER_PERIOD}, &ArmTranslator::updateDeOffsets, this);
