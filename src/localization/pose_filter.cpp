@@ -36,27 +36,36 @@ auto main(int argc, char** argv) -> int {
 
     ros::Publisher odometryPub = nh.advertise<nav_msgs::Odometry>("/odometry", 1);
 
-    std::optional<geometry_msgs::Twist> currentTwist;
-    std::optional<sensor_msgs::Imu> currentImuCalib, currentImuUncalib;
+    std::vector<geometry_msgs::Twist> twists;
 
-    std::optional<SO3d> correctionRotation;
+    std::optional<sensor_msgs::Imu> currentImuCalib, currentImuUncalib;
 
     std::optional<SE3d> lastPose;
     std::optional<ros::Time> lastPoseTime;
 
-    ros::Timer correctTimer = nh.createTimer(WINDOW, [&](ros::TimerEvent const&) {
-        if (!currentTwist || !currentImuUncalib) return;
+    std::optional<SO3d> correctionRotation;
 
+    ros::Timer correctTimer = nh.createTimer(WINDOW, [&](ros::TimerEvent const&) {
         // 1. Ensure the rover is being commanded to move relatively straight forward
-        if (currentTwist->linear.x < MIN_LINEAR_SPEED) return;
-        if (std::fabs(currentTwist->angular.z) > MAX_ANGULAR_SPEED) return;
+
+        geometry_msgs::Twist meanTwist;
+        for (auto total = static_cast<double>(twists.size()); auto const& twist: twists) {
+            meanTwist.linear.x += twist.linear.x / total;
+            meanTwist.angular.z += twist.angular.z / total;
+        }
+        twists.clear();
+
+        if (!currentImuUncalib) return;
+
+        if (meanTwist.linear.x < MIN_LINEAR_SPEED) return;
+        if (std::fabs(meanTwist.angular.z) > MAX_ANGULAR_SPEED) return;
 
         ROS_INFO("Rover is being commanded forward");
 
         // Compute the past velocities and headings of the rover in the map frame over a window of time
 
         R2d roverVelocitySum{};
-        double roverHeadingSum = 0.0;
+        double roverHeadingChange = 0.0;
         std::size_t readings = 0;
 
         ros::Time end = ros::Time::now(), start = end - WINDOW;
@@ -67,7 +76,7 @@ auto main(int argc, char** argv) -> int {
                 R3d roverVelocityInMap = (roverInMapNew.translation() - roverInMapOld.translation()) / STEP.toSec();
                 R3d roverAngularVelocityInMap = (roverInMapNew.asSO3() - roverInMapOld.asSO3()).coeffs();
                 roverVelocitySum += roverVelocityInMap.head<2>();
-                roverHeadingSum += roverAngularVelocityInMap.z();
+                roverHeadingChange += std::fabs(roverAngularVelocityInMap.z());
                 ++readings;
             } catch (tf2::ConnectivityException const& e) {
                 ROS_WARN_STREAM(e.what());
@@ -86,8 +95,8 @@ auto main(int argc, char** argv) -> int {
             return;
         }
 
-        if (roverHeadingSum > MAX_ANGULAR_CHANGE) {
-            ROS_INFO_STREAM(std::format("Rover is not moving straight enough: heading change = {} rad", roverHeadingSum));
+        if (roverHeadingChange > MAX_ANGULAR_CHANGE) {
+            ROS_INFO_STREAM(std::format("Rover is not moving straight enough: heading change = {} rad", roverHeadingChange));
             return;
         }
 
@@ -105,7 +114,7 @@ auto main(int argc, char** argv) -> int {
     });
 
     ros::Subscriber twistSubscriber = nh.subscribe<geometry_msgs::Twist>("/cmd_vel", 1, [&](geometry_msgs::TwistConstPtr const& twist) {
-        currentTwist = *twist;
+        twists.push_back(*twist);
     });
 
     ros::Subscriber imuCalibSubscriber = nh.subscribe<sensor_msgs::Imu>("/imu/data", 1, [&](sensor_msgs::ImuConstPtr const& imu) {
