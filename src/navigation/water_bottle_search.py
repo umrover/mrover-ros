@@ -145,30 +145,30 @@ class WaterBottleSearchState(State):
 
             self.time_last_updated = rospy.Time.now()
 
-        # continue executing the path from wherever it left off
-        target_pos = self.trajectory.get_current_point()
+        # Continue executing the path from wherever it left off
+        target_position_in_map = self.trajectory.get_current_point()
         traj_target = True
-        # if there is an alternate path we need to take to avoid the obstacle, use that trajectory
+        # If there is an alternate path we need to take to avoid the obstacle, use that trajectory
         if len(self.star_traj.coordinates) != 0:
-            target_pos = self.star_traj.get_current_point()
+            target_position_in_map = self.star_traj.get_current_point()
             traj_target = False
         cmd_vel, arrived = context.rover.driver.get_drive_command(
-            target_pos,
+            target_position_in_map,
             rover_in_map,
             self.STOP_THRESH,
             self.DRIVE_FWD_THRESH,
             path_start=self.prev_target,
         )
         if arrived:
-            self.prev_target = target_pos
-            # if our target was the search spiral point, only increment the spiral path
+            self.prev_target = target_position_in_map
+            # If our target was the search spiral point, only increment the spiral path
             if traj_target:
                 rospy.loginfo("Arrived at spiral point")
-                # if we finish the spiral without seeing the object, move on with course
+                # If we finish the spiral without seeing the object, move on with course
                 if self.trajectory.increment_point():
                     return waypoint.WaypointState()
-            else:  # otherwise, increment the astar path
-                # if we finish the astar path, then reset astar and increment the spiral path
+            else:  # Otherwise, increment the astar path
+                # If we finish the astar path, then reset astar and increment the spiral path
                 if self.star_traj.increment_point():
                     rospy.loginfo("Arrived at end of astar")
                     self.star_traj = Trajectory(np.array([]))

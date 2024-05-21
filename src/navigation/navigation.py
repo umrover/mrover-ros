@@ -56,7 +56,6 @@ class Navigation(threading.Thread):
                 DoneState(),
             ],
         )
-        self.state_machine.add_transitions(ApproachTargetState(), [DoneState(), SearchState(), RecoveryState()])
         self.state_machine.add_transitions(
             LongRangeState(), [ApproachTargetState(), SearchState(), WaypointState(), RecoveryState()]
         )

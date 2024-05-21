@@ -21,8 +21,7 @@ class ApproachTargetState(State):
         pass
 
     def get_target_position(self, context: Context) -> Optional[np.ndarray]:
-        tag_position = context.env.current_target_pos()
-        return tag_position
+        return context.env.current_target_pos()
 
     def determine_next(self, context: Context, is_finished: bool) -> State:
         if is_finished:
@@ -36,7 +35,7 @@ class ApproachTargetState(State):
 
     def on_loop(self, context: Context) -> State:
         """
-        Drive towards a target based on what gets returned from get_target_pos().
+        Drive towards a target based on what gets returned from get_target_position().
         Return to search if there is no target position.
         :return: Next state
         """

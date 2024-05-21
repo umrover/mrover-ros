@@ -15,6 +15,7 @@ from util.state_lib.state import State
 class WaypointState(State):
     STOP_THRESHOLD: float = rospy.get_param("waypoint/stop_threshold")
     DRIVE_FORWARD_THRESHOLD: float = rospy.get_param("waypoint/drive_forward_threshold")
+    USE_COSTMAP: bool = rospy.get_param("water_bottle_search/use_costmap")
     NO_TAG: int = -1
 
     def on_enter(self, context: Context) -> None:
@@ -53,7 +54,8 @@ class WaypointState(State):
             context.env.arrived_at_target = False
             return post_backup.PostBackupState()
 
-        approach_state = context.course.get_approach_target_state()
+        # Returns either ApproachTargetState, LongRangeState, or None
+        approach_state = context.course.get_approach_state()
         if approach_state is not None:
             return approach_state
 
@@ -74,11 +76,11 @@ class WaypointState(State):
             if not context.course.look_for_post() and not context.course.look_for_object():
                 # We finished a regular waypoint, go onto the next one
                 context.course.increment_waypoint()
-            elif current_waypoint.type.val == WaypointType.WATER_BOTTLE:
-                # We finished a waypoint associated with the water bottle, but we have not seen it yet
+            elif current_waypoint.type.val == WaypointType.WATER_BOTTLE and self.USE_COSTMAP:
+                # We finished a waypoint associated with the water bottle, but we have not seen it yet and are using the costmap to search
                 return water_bottle_search.WaterBottleSearchState()
             else:
-                # We finished a waypoint associated with a post or mallet, but we have not seen it yet.
+                # We finished a waypoint associated with a post, mallet, or water bottle, but we have not seen it yet (no costmap for search).
                 search_state = search.SearchState()
                 search_state.new_trajectory(context)
                 return search_state

@@ -69,9 +69,9 @@ class SearchState(State):
         )
         context.rover.send_drive_command(cmd_vel)
 
-        # returns either ApproachPostState, LongRangeState, ApproachObjectState, or None
+        # Returns either ApproachTargetState, LongRangeState, or None
         assert context.course is not None
-        approach_state = context.course.get_approach_target_state()
+        approach_state = context.course.get_approach_state()
         if approach_state is not None:
             return approach_state
 

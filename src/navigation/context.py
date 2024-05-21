@@ -112,7 +112,7 @@ class Environment:
 
 class ImageTargetsStore:
     """
-    Context class to represent the tags seen in the long range camera
+    Context class to represent the targets seen in the long range camera
     """
 
     @dataclass
@@ -134,22 +134,22 @@ class ImageTargetsStore:
 
     def push_frame(self, targets: list[ImageTarget]) -> None:
         """
-        Loops through our current list of our stored tags and checks if the new message includes each tag or doesn't.
-        If it does include it, we will increment our hit count for that tag id, store the new tag information, and reset the time we saw it.
-        If it does not include it, we will decrement our hit count for that tag id, and if the hit count becomes zero, then we remove it from our stored list.
-        If there are tag ids in the new message that we don't have stored, we will add it to our stored list.
-        :param targets: A list of image targets sent by perception, which includes an id and bearing for each tag in the list
+        Loops through our current list of our stored targets and checks if the new message includes each target or doesn't.
+        If it does include it, we will increment our hit count for that target, store the new information, and reset the time we saw it.
+        If it does not include it, we will decrement our hit count for that target, and if the hit count becomes zero, then we remove it from our stored list.
+        If there are targets in the new message that we don't have stored, we will add it to our stored list.
+        :param targets: A list of image targets sent by perception, which includes an id/name and bearing for each target in the list
         """
-        # Update our current tags
+        # Update our current targets
         # Collect the iterator in to a list first since we will be modifying the dictionary
         target_names = {tag.name for tag in targets}
         for _, stored_tag in list(self._data.items()):
-            # If we do see one of our tags in the new message, increment its hit count
+            # If we do see one of our targets in the new message, increment its hit count
             if stored_tag.target.name in target_names:
                 stored_tag.hit_count += INCREMENT_WEIGHT
                 if stored_tag.hit_count > self._max_hits:
                     stored_tag.hit_count = self._max_hits
-            # If we do not see one of our tags in the new message, decrement its hit count
+            # If we do not see one of our targets in the new message, decrement its hit count
             else:
                 stored_tag.hit_count -= DECREMENT_WEIGHT
                 if stored_tag.hit_count <= 0:
@@ -250,27 +250,20 @@ class Course:
     def is_complete(self) -> bool:
         return self.waypoint_index == len(self.course_data.waypoints)
 
-    def get_approach_target_state(self) -> Optional[State]:
+    def get_approach_state(self) -> Optional[State]:
         """
-        :return: One of the approach states (ApproachPostState, LongRangeState, or ApproachObjectState)
+        :return: One of the approach states (ApproachTargetState or LongRangeState)
                  if we are looking for a post or object, and we see it in one of the cameras (ZED or long range)
         """
         from navigation import long_range, approach_target
 
-        if self.look_for_post():
-            # If we see the tag in the ZED, go to ApproachPostState
-            if self.ctx.env.current_target_pos() is not None:
-                return approach_target.ApproachTargetState()
-            # If we see the tag in the long range camera, go to LongRangeState
-            assert self.ctx.course is not None
-            if self.ctx.env.image_targets.query(self.ctx.course.image_target_name()) is not None:
-                return long_range.LongRangeState()
-        elif self.look_for_object():
-            if self.ctx.env.current_target_pos() is not None:
-                return approach_target.ApproachTargetState()
-            assert self.ctx.course is not None
-            if self.ctx.env.image_targets.query(self.ctx.course.image_target_name()) is not None:
-                return long_range.LongRangeState()
+        # If we see the target in the ZED, go to ApproachTargetState
+        if self.ctx.env.current_target_pos() is not None:
+            return approach_target.ApproachTargetState()
+        # If we see the target in the long range camera, go to LongRangeState
+        assert self.ctx.course is not None
+        if self.ctx.env.image_targets.query(self.ctx.course.image_target_name()) is not None:
+            return long_range.LongRangeState()
         return None
 
 
@@ -322,7 +315,6 @@ class Context:
     search_point_publisher: rospy.Publisher
     course_listener: rospy.Subscriber
     stuck_listener: rospy.Subscriber
-    tag_data_listener: rospy.Subscriber
     costmap_listener: rospy.Subscriber
 
     # Use these as the primary interfaces in states
@@ -350,8 +342,8 @@ class Context:
         self.disable_requested = False
         self.world_frame = rospy.get_param("world_frame")
         self.rover_frame = rospy.get_param("rover_frame")
-        self.tag_data_listener = rospy.Subscriber("tags", ImageTargets, self.image_targets_callback)
-        self.tag_data_listener = rospy.Subscriber("objects", ImageTargets, self.image_targets_callback)
+        rospy.Subscriber("tags", ImageTargets, self.image_targets_callback)
+        rospy.Subscriber("objects", ImageTargets, self.image_targets_callback)
         self.costmap_listener = rospy.Subscriber("costmap", OccupancyGrid, self.costmap_callback)
 
     def recv_enable_auton(self, req: EnableAutonRequest) -> EnableAutonResponse:

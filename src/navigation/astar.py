@@ -100,7 +100,6 @@ class AStar:
         print("ij:", reversed_path[1:])
 
         # Print visual of costmap with path and start (S) and end (E) points
-        # The lighter the block, the more costly it is
         for step in reversed_path:
             costmap_2d[step[0]][step[1]] = 2  # path (.)
         costmap_2d[reversed_path[0][0]][reversed_path[0][1]] = 3  # start
@@ -136,6 +135,7 @@ class AStar:
         :param end: next point in the spiral from traj in cartesian coordinates
         :return: list of A-STAR coordinates in the occupancy grid coordinates (i,j)
         """
+        TRAVERSABLE_COST = rospy.get_param("water_bottle_search/traversable_cost")
         with self.costmap_lock:
             costmap2d = self.context.env.cost_map.data
             # convert start and end to occupancy grid coordinates
@@ -204,8 +204,8 @@ class AStar:
                     ):
                         continue
 
-                    # make sure it is traversable terrain (not too high of a cost)
-                    if costmap2d[node_position[0]][node_position[1]] >= 0.2:  # TODO: find optimal value
+                    # make sure it is traversable terrain (not too high of a cost), skip if greater than or equal to traversable cost
+                    if costmap2d[node_position[0]][node_position[1]] >= TRAVERSABLE_COST:  # TODO: find optimal value
                         continue
 
                     # create new node and append it
