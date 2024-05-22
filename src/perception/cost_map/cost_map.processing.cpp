@@ -64,8 +64,8 @@ namespace mrover {
                 if (xInMap < mGlobalGridMsg.info.origin.position.x || xInMap > mGlobalGridMsg.info.origin.position.x + mDimension ||
                     yInMap < mGlobalGridMsg.info.origin.position.y || yInMap > mGlobalGridMsg.info.origin.position.y + mDimension) continue;
 
-                int xIndex = std::floor((xInMap - mGlobalGridMsg.info.origin.position.x) / mGlobalGridMsg.info.resolution);
-                int yIndex = std::floor((yInMap - mGlobalGridMsg.info.origin.position.y) / mGlobalGridMsg.info.resolution);
+                auto xIndex = static_cast<int>(std::lround((xInMap - mGlobalGridMsg.info.origin.position.x) / mGlobalGridMsg.info.resolution));
+                auto yIndex = static_cast<int>(std::lround((yInMap - mGlobalGridMsg.info.origin.position.y) / mGlobalGridMsg.info.resolution));
                 int costMapIndex = static_cast<int>(mGlobalGridMsg.info.width) * yIndex + xIndex;
 
                 // if (costMapIndex < 0 || costMapIndex >= mGlobalGridMsg.data.size()) continue;
@@ -74,11 +74,10 @@ namespace mrover {
                 // A small Z component indicates largely horizontal normal (surface is vertical)
                 // std::int8_t cost = normalInMap.z() < mNormalThreshold ? OCCUPIED_COST : FREE_COST;
                 std::int8_t cost;
-                double z = normalInMap.z();
-                if (z < 0) {
+                if (double z = normalInMap.z(); z < 0) {
                     cost = OCCUPIED_COST;
                 } else if (z < mNormalThreshold) {
-                    cost = std::lround(remap(z, 0, mNormalThreshold, OCCUPIED_COST, FREE_COST));
+                    cost = static_cast<std::int8_t>(std::lround(remap(z, 0, mNormalThreshold, OCCUPIED_COST, FREE_COST)));
                 } else {
                     cost = FREE_COST;
                 }
