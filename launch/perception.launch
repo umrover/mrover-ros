@@ -5,6 +5,9 @@
 
   <rosparam command="load" file="$(find mrover)/config/perception.yaml" />
 
+  <node pkg="nodelet" type="nodelet" name="perception_lr_nodelet_manager" required="true"
+        args="manager" output="screen"/>
+
   <node if="$(arg tag_detector)"
         pkg="nodelet" type="nodelet" name="stereo_tag_detector"
         args="load mrover/StereoTagDetectorNodelet perception_nodelet_manager" output="screen"/>

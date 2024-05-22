@@ -3,9 +3,6 @@
   <arg name="object_detector" default="true"/>
   <arg name="stuck_detection" default="true"/>
 
-  <node pkg="nodelet" type="nodelet" name="perception_lr_nodelet_manager" required="true"
-        args="manager" output="screen"/>
-
   <include file="$(find mrover)/launch/jetson_base.launch"/>
 
   <include file="$(find mrover)/launch/zed.launch"/>
