@@ -72,6 +72,7 @@ class WaypointState(State):
             rover_in_map,
             self.STOP_THRESHOLD,
             self.DRIVE_FORWARD_THRESHOLD,
+            waypoint_state=True
         )
         if arrived:
             context.env.arrived_at_waypoint = True

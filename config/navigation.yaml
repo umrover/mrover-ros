@@ -1,4 +1,5 @@
 drive:
+  max_driving_effort_waypoint: 1.0
   max_driving_effort: 0.7
   min_driving_effort: -0.7
   max_turning_effort: 1.2
