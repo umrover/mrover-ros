@@ -88,8 +88,8 @@ namespace mrover {
                 }
                 // TODO(quintin): This is kind of hacky
                 if (name.contains("tag"sv) || name.contains("hammer"sv) || name.contains("bottle"sv)) {
-                    //SE3d modelInMap = btTransformToSe3(urdf.physics->getBaseWorldTransform());
-                    //SE3Conversions::pushToTfTree(mTfBroadcaster, std::format("{}_truth", name), "map", modelInMap);
+                    SE3d modelInMap = btTransformToSe3(urdf.physics->getBaseWorldTransform());
+                    SE3Conversions::pushToTfTree(mTfBroadcaster, std::format("{}_truth", name), "map", modelInMap);
                 }
 
                 for (urdf::JointSharedPtr const& child_joint: link->child_joints) {
@@ -101,6 +101,8 @@ namespace mrover {
 
         if (auto roverOpt = getUrdf("rover")) {
             URDF const& rover = *roverOpt;
+
+            ImageTargets targets;
 
             auto publishModel = [&](std::string const& modelName, double threshold) {
                 if (auto modelOpt = getUrdf(modelName)) {
@@ -118,11 +120,23 @@ namespace mrover {
                     if (roverDotModel > 0 && roverDistanceToModel < threshold) {
                         SE3Conversions::pushToTfTree(mTfBroadcaster, modelName, "map", modelInMap);
                     }
+
+                    if (roverDotModel > 0 && roverDistanceToModel < threshold * 2) {
+                        double angleToModel = std::acos(roverDotModel);
+
+                        ImageTarget target;
+                        target.name = modelName;
+                        target.bearing = static_cast<float>(angleToModel);
+
+                        targets.targets.push_back(target);
+                    }
                 }
             };
 
             if (mPublishBottleDistanceThreshold > 0) publishModel("bottle", mPublishBottleDistanceThreshold);
             if (mPublishHammerDistanceThreshold > 0) publishModel("hammer", mPublishHammerDistanceThreshold);
+
+            mImageTargetsPub.publish(targets);
         }
     }
 

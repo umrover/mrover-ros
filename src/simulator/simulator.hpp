@@ -229,6 +229,8 @@ namespace mrover {
 
         ros::Publisher mCmdVelPub;
 
+        ros::Publisher mImageTargetsPub;
+
         tf2_ros::Buffer mTfBuffer;
         tf2_ros::TransformListener mTfListener{mTfBuffer};
         tf2_ros::TransformBroadcaster mTfBroadcaster;

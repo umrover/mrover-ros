@@ -1,5 +1,4 @@
 #include "simulator.hpp"
-#include <sensor_msgs/JointState.h>
 
 namespace mrover {
 
@@ -13,6 +12,8 @@ namespace mrover {
         mGroundTruthPub = mNh.advertise<nav_msgs::Odometry>("/ground_truth", 1);
 
         mCmdVelPub = mNh.advertise<geometry_msgs::Twist>("/simulator_cmd_vel", 1);
+
+        mImageTargetsPub = mNh.advertise<ImageTargets>("/objects", 1);
 
         mIkTargetPub = mNh.advertise<IK>("/arm_ik", 1);
 
