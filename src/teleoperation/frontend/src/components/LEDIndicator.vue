@@ -1,5 +1,5 @@
 <template>
-  <div class="wrap">
+  <div class="d-flex flex-row align-items-center">
     <span :class="['led', color]"></span>
     <span class="mx-1" v-if="show_name">{{ name }}</span>
   </div>

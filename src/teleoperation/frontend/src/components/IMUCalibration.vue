@@ -1,5 +1,5 @@
 <template>
-  <div class="rounded bg-white wrap">
+  <div class="rounded bg-white d-flex flex-row align-items-center">
     <span class="px-2">IMU Calibration</span>
     <span class="px-2">Magnetometer</span>
     <LEDIndicator
