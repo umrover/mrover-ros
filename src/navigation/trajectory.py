@@ -70,7 +70,7 @@ class SearchTrajectory(Trajectory):
                 unit_vector = vector / magnitude
                 count = 0.0
                 while count < magnitude - 3.5:
-                    all_points.append(all_points[-1] + (unit_vector * 2.5))
+                    all_points.append(all_points[-1] + (unit_vector * 2.5)) # TODO: figure out how far apart to insert
                     count += 2.5
             # print("ALL POINTS:")
             # print(repr(np.array(all_points)))

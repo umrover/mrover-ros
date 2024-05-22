@@ -38,6 +38,7 @@ class WaterBottleSearchState(State):
     DISTANCE_BETWEEN_SPIRALS = rospy.get_param(
         "water_bottle_search/distance_between_spirals"
     )  # TODO: after testing, might need to change
+    TRAVERSABLE_COST = rospy.get_param("water_bottle_search/traversable_cost")
 
     def find_endpoint(self, context: Context, end: np.ndarray) -> np.ndarray:
         """
@@ -55,7 +56,7 @@ class WaterBottleSearchState(State):
         if (costmap_2d.shape[0] - 1) >= end_node.position[0] >= 0 and (costmap_2d.shape[1] - 1) >= end_node.position[
             1
         ] >= 0:
-            while costmap_2d[end_node.position[0], end_node.position[1]] >= 0.2:  # TODO: find optimal value
+            while costmap_2d[end_node.position[0], end_node.position[1]] >= self.TRAVERSABLE_COST:  # TODO: find optimal value
                 # True if the trajectory is finished
                 if WaterBottleSearchState.trajectory.increment_point():
                     raise SpiralEnd()

@@ -227,7 +227,7 @@ class AStar:
                     child.g = current_node.g + costmap2d[child.position[0], child.position[1]]
                     child.h = ((child.position[0] - end_node.position[0]) ** 2) + (
                         (child.position[1] - end_node.position[1]) ** 2
-                    )
+                    ) * 2
                     child.f = child.g + child.h
                     # child is already in the open list
                     if (
