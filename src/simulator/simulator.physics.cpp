@@ -117,18 +117,22 @@ namespace mrover {
                     R3d roverForward = roverInMap.rotation().matrix().col(0);
                     double roverDotModel = roverToModel.dot(roverForward);
 
-                    if (roverDotModel > 0 && roverDistanceToModel < threshold) {
-                        SE3Conversions::pushToTfTree(mTfBroadcaster, modelName, "map", modelInMap);
-                    }
+                    double angleToModel = std::acos(roverDotModel);
+                    angleToModel = std::copysign(angleToModel, roverForward.cross(roverToModel).z());
 
-                    if (roverDotModel > 0 && roverDistanceToModel < threshold * 2) {
-                        double angleToModel = std::acos(roverDotModel);
+                    if (angleToModel < TAU / 8 && angleToModel > -TAU / 8) {
 
-                        ImageTarget target;
-                        target.name = modelName;
-                        target.bearing = static_cast<float>(angleToModel); // TODO: make bearing negative if needed
-                        if (angleToModel < 0.25 && angleToModel > -0.25) {
-                            targets.targets.push_back(target);
+                        if (roverDistanceToModel < threshold) {
+                            SE3Conversions::pushToTfTree(mTfBroadcaster, modelName, "map", modelInMap);
+                        }
+
+                        if (roverDistanceToModel < threshold * 2) {
+                            ImageTarget target;
+                            target.name = modelName;
+                            target.bearing = static_cast<float>(angleToModel); // TODO: make bearing negative if needed
+                            if (angleToModel < TAU / 8 && angleToModel > -TAU / 8) {
+                                targets.targets.push_back(target);
+                            }
                         }
                     }
                 }
@@ -137,7 +141,7 @@ namespace mrover {
             if (mPublishBottleDistanceThreshold > 0) publishModel("bottle", mPublishBottleDistanceThreshold);
             if (mPublishHammerDistanceThreshold > 0) publishModel("hammer", mPublishHammerDistanceThreshold);
 
-            // mImageTargetsPub.publish(targets);
+            mImageTargetsPub.publish(targets);
         }
     }
 

@@ -50,9 +50,6 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clan
     if (MROVER_IS_CI) # Make warnings errors in CI
         list(APPEND MROVER_COMPILE_OPTIONS -Werror)
     endif ()
-    if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-        list(APPEND MROVER_COMPILE_OPTIONS -Wno-deprecated-declarations)
-    endif ()
     if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         list(APPEND MROVER_COMPILE_OPTIONS -Wno-subobject-linkage)
     endif ()
