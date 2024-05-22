@@ -44,11 +44,12 @@ namespace mrover {
                     // Points with no stereo correspondence are NaN's, so ignore them
                     if (!std::isfinite(point->x) || !std::isfinite(point->y) || !std::isfinite(point->z)) continue;
                     if (!std::isfinite(point->normal_x) || !std::isfinite(point->normal_y) || !std::isfinite(point->normal_z)) continue;
-
-                    // Discard points too close to the camera
-                    if (point->x < 1.5) continue;
+                    if (point->normal_z < -std::numeric_limits<float>::epsilon()) continue;
 
                     R3f pointInCamera{point->x, point->y, point->z};
+
+                    if (double distSq = pointInCamera.squaredNorm(); distSq < 1 * 1 || distSq > 8 * 8) continue;
+
                     R3f normalInCamera{point->normal_x, point->normal_y, point->normal_z};
                     normalInCamera.normalize();
 
@@ -57,35 +58,49 @@ namespace mrover {
                 }
             }
 
+            std::vector<std::vector<double>> binAngles;
+            binAngles.resize(mGlobalGridMsg.data.size());
+
             for (auto const& [pointInMap, normalInMap]: mPointsInMap) {
                 double xInMap = pointInMap.x();
                 double yInMap = pointInMap.y();
 
-                if (xInMap < mGlobalGridMsg.info.origin.position.x || xInMap > mGlobalGridMsg.info.origin.position.x + mDimension ||
-                    yInMap < mGlobalGridMsg.info.origin.position.y || yInMap > mGlobalGridMsg.info.origin.position.y + mDimension) continue;
+                // if (xInMap < mGlobalGridMsg.info.origin.position.x || xInMap > mGlobalGridMsg.info.origin.position.x + mDimension ||
+                // yInMap < mGlobalGridMsg.info.origin.position.y || yInMap > mGlobalGridMsg.info.origin.position.y + mDimension) continue;
 
                 auto xIndex = static_cast<int>(std::lround((xInMap - mGlobalGridMsg.info.origin.position.x) / mGlobalGridMsg.info.resolution));
                 auto yIndex = static_cast<int>(std::lround((yInMap - mGlobalGridMsg.info.origin.position.y) / mGlobalGridMsg.info.resolution));
                 int costMapIndex = static_cast<int>(mGlobalGridMsg.info.width) * yIndex + xIndex;
 
-                // if (costMapIndex < 0 || costMapIndex >= mGlobalGridMsg.data.size()) continue;
+                if (costMapIndex < 0 || costMapIndex >= static_cast<int>(mGlobalGridMsg.data.size())) continue;
 
-                // Z is the vertical component of the normal
-                // A small Z component indicates largely horizontal normal (surface is vertical)
-                // std::int8_t cost = normalInMap.z() < mNormalThreshold ? OCCUPIED_COST : FREE_COST;
-                std::int8_t cost;
-                if (double z = normalInMap.z(); z < 0) {
-                    cost = OCCUPIED_COST;
-                } else if (z < mNormalThreshold) {
-                    cost = static_cast<std::int8_t>(std::lround(remap(z, 0, mNormalThreshold, OCCUPIED_COST, FREE_COST)));
-                } else {
-                    cost = FREE_COST;
-                }
+                double angleToUp = std::acos(normalInMap.z());
 
-                // Low pass filter
-                constexpr double alpha = 0.1;
-                mGlobalGridMsg.data[costMapIndex] = static_cast<std::int8_t>(alpha * cost + (1 - alpha) * mGlobalGridMsg.data[costMapIndex]);
+                binAngles[costMapIndex].push_back(angleToUp);
+
+                // auto cost = static_cast<std::int8_t>(std::lround(remap(angleToUp, 0, TAU / 4, FREE_COST, OCCUPIED_COST)));
+                //
+                // constexpr double alpha = 0.1;
+                // mGlobalGridMsg.data[costMapIndex] = static_cast<std::int8_t>(alpha * cost + (1 - alpha) * mGlobalGridMsg.data[costMapIndex]);
             }
+
+            for (std::size_t i = 0; i < mGlobalGridMsg.data.size(); i++) {
+                auto& bin = binAngles[i];
+
+                if (bin.empty()) continue;
+
+                std::ranges::sort(bin);
+                // take mean of inner 80% of the angles
+                auto start = bin.begin() + bin.size() / 10;
+                auto end = bin.end() - bin.size() / 10;
+                double mean = std::accumulate(start, end, 0.0) / std::distance(start, end);
+                auto newCost = static_cast<std::int8_t>(std::lround(remap(mean, 0, TAU / 4, FREE_COST, OCCUPIED_COST)));
+
+                constexpr double alpha = 0.1;
+                auto& cost = mGlobalGridMsg.data[i];
+                cost = static_cast<std::int8_t>(alpha * newCost + (1 - alpha) * cost);
+            }
+
             mCostMapPub.publish(mGlobalGridMsg);
         } catch (tf2::TransformException const& e) {
             ROS_WARN_STREAM_THROTTLE(1, std::format("TF tree error processing point cloud: {}", e.what()));

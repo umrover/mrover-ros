@@ -8,6 +8,8 @@ namespace mrover {
 
         constexpr static std::int8_t UNKNOWN_COST = -1, FREE_COST = 0, OCCUPIED_COST = 100;
 
+        constexpr static double TAU = 2 * std::numbers::pi;
+
         ros::NodeHandle mNh, mPnh, mCmt;
         ros::Publisher mCostMapPub;
         ros::Subscriber mPcSub;
@@ -15,7 +17,6 @@ namespace mrover {
         bool mPublishCostMap{}; // If set, publish the global costmap
         float mResolution{};    // Meters per cell
         float mDimension{};     // Dimensions of the square costmap in meters
-        double mNormalThreshold = 0.7;
         int mDownSamplingFactor = 4;
         std::string mWorldFrame;
 
