@@ -11,8 +11,9 @@ from util.state_lib.state import State
 
 
 class SearchState(State):
-    trajectory: Optional[SearchTrajectory]
-    prev_target_pos_in_map: Optional[np.ndarray]
+    trajectory: Optional[SearchTrajectory] = None
+    prev_target_pos_in_map: Optional[np.ndarray] = None
+    is_recovering: bool = False
 
     STOP_THRESH = rospy.get_param("search/stop_threshold")
     DRIVE_FORWARD_THRESHOLD = rospy.get_param("search/drive_forward_threshold")
@@ -23,14 +24,8 @@ class SearchState(State):
     OBJECT_SPIRAL_COVERAGE_RADIUS = rospy.get_param("object_search/coverage_radius")
     OBJECT_DISTANCE_BETWEEN_SPIRALS = rospy.get_param("object_search/distance_between_spirals")
 
-    def __init__(self):
-        super().__init__()
-        self.trajectory = None
-        self.prev_target_pos_in_map = None
-        self.is_recovering = False
-
-    def on_enter(self, context) -> None:
-        if self.trajectory is None:
+    def on_enter(self, context: Context) -> None:
+        if SearchState.trajectory is None:
             self.new_trajectory(context)
 
     def on_exit(self, context: Context) -> None:
@@ -40,10 +35,10 @@ class SearchState(State):
         rover_in_map = context.rover.get_pose_in_map()
 
         assert rover_in_map is not None
-        assert self.trajectory is not None
+        assert SearchState.trajectory is not None
 
         # Continue executing the path from wherever it left off
-        target_position_in_map = self.trajectory.get_current_point()
+        target_position_in_map = SearchState.trajectory.get_current_point()
         cmd_vel, arrived = context.rover.driver.get_drive_command(
             target_position_in_map,
             rover_in_map,
@@ -54,7 +49,7 @@ class SearchState(State):
         if arrived:
             self.prev_target_pos_in_map = target_position_in_map
             # If we finish the spiral without seeing the tag, move on with course
-            if self.trajectory.increment_point():
+            if SearchState.trajectory.increment_point():
                 return waypoint.WaypointState()
 
         if context.rover.stuck:
@@ -65,7 +60,7 @@ class SearchState(State):
             self.is_recovering = False
 
         context.search_point_publisher.publish(
-            GPSPointList([convert_cartesian_to_gps(pt) for pt in self.trajectory.coordinates])
+            GPSPointList([convert_cartesian_to_gps(pt) for pt in SearchState.trajectory.coordinates])
         )
         context.rover.send_drive_command(cmd_vel)
 
@@ -78,11 +73,12 @@ class SearchState(State):
         return self
 
     def new_trajectory(self, context) -> None:
+        assert context.course is not None
         search_center = context.course.current_waypoint()
 
         if not self.is_recovering:
             if search_center.type.val == WaypointType.POST:
-                self.trajectory = SearchTrajectory.spiral_traj(
+                SearchState.trajectory = SearchTrajectory.spiral_traj(
                     context.course.current_waypoint_pose_in_map().position[0:2],
                     self.SPIRAL_COVERAGE_RADIUS,
                     self.DISTANCE_BETWEEN_SPIRALS,
@@ -91,7 +87,7 @@ class SearchState(State):
                     False,
                 )
             else:  # water bottle or mallet
-                self.trajectory = SearchTrajectory.spiral_traj(
+                SearchState.trajectory = SearchTrajectory.spiral_traj(
                     context.course.current_waypoint_pose_in_map().position[0:2],
                     self.OBJECT_SPIRAL_COVERAGE_RADIUS,
                     self.OBJECT_DISTANCE_BETWEEN_SPIRALS,

@@ -24,6 +24,8 @@ class WaypointState(State):
         current_waypoint = context.course.current_waypoint()
         assert current_waypoint is not None
 
+        context.env.arrived_at_waypoint = False
+
         if current_waypoint.type.val == WaypointType.WATER_BOTTLE:
             rospy.wait_for_service("move_cost_map")
             move_cost_map = rospy.ServiceProxy("move_cost_map", MoveCostMap)
@@ -78,11 +80,13 @@ class WaypointState(State):
                 context.course.increment_waypoint()
             elif current_waypoint.type.val == WaypointType.WATER_BOTTLE and self.USE_COSTMAP:
                 # We finished a waypoint associated with the water bottle, but we have not seen it yet and are using the costmap to search
-                return water_bottle_search.WaterBottleSearchState()
+                water_bottle_search_state = water_bottle_search.WaterBottleSearchState()
+                water_bottle_search_state.new_trajectory(context) # reset trajectory
+                return water_bottle_search_state
             else:
                 # We finished a waypoint associated with a post, mallet, or water bottle, but we have not seen it yet (no costmap for search).
                 search_state = search.SearchState()
-                search_state.new_trajectory(context)
+                search_state.new_trajectory(context) # reset trajectory
                 return search_state
 
         if context.rover.stuck:

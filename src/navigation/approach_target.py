@@ -3,7 +3,8 @@ from typing import Optional
 import numpy as np
 
 import rospy
-from navigation import search, waypoint, state, recovery
+from mrover.msg import WaypointType
+from navigation import search, waypoint, state, recovery, water_bottle_search
 from navigation.context import Context
 from util.state_lib.state import State
 
@@ -11,6 +12,7 @@ STOP_THRESHOLD = rospy.get_param("single_tag/stop_threshold")
 STOP_THRESH_WAYPOINT = rospy.get_param("waypoint/stop_threshold")
 TAG_STOP_THRESHOLD = rospy.get_param("single_tag/tag_stop_threshold")
 DRIVE_FORWARD_THRESHOLD = rospy.get_param("waypoint/drive_forward_threshold")
+USE_COSTMAP: bool = rospy.get_param("water_bottle_search/use_costmap")
 
 
 class ApproachTargetState(State):
@@ -46,6 +48,8 @@ class ApproachTargetState(State):
             # TODO(quintin): Clean this up
             if self.__class__.__name__ == "LongRangeState" and not context.env.arrived_at_waypoint:
                 return waypoint.WaypointState()
+            elif context.course.current_waypoint().type.val == WaypointType.WATER_BOTTLE and USE_COSTMAP:
+                return water_bottle_search.WaterBottleSearchState()
             return search.SearchState()
 
         rover_in_map = context.rover.get_pose_in_map()

@@ -82,7 +82,8 @@ class AStar:
         :param ij_coords: array of i and j occupancy grid coordinates
         :return: array of x and y coordinates in the real world
         """
-        return self.context.env.cost_map.origin + ij_coords * self.context.env.cost_map.resolution
+        half_res = np.array([self.context.env.cost_map.resolution / 2, self.context.env.cost_map.resolution / 2])
+        return self.context.env.cost_map.origin + ij_coords * self.context.env.cost_map.resolution + half_res
 
     def return_path(self, current_node: Node) -> list:
         """
@@ -99,8 +100,13 @@ class AStar:
         reversed_path = path[::-1]
         print("ij:", reversed_path[1:])
 
+        filtered_path = []
+        for i, x in enumerate(reversed_path[1:]):
+            if i % 2 == 0:
+                filtered_path.append(x)
+
         # Print visual of costmap with path and start (S) and end (E) points
-        for step in reversed_path:
+        for step in filtered_path:
             costmap_2d[step[0]][step[1]] = 2  # path (.)
         costmap_2d[reversed_path[0][0]][reversed_path[0][1]] = 3  # start
         costmap_2d[reversed_path[-1][0]][reversed_path[-1][1]] = 4  # end
@@ -126,7 +132,7 @@ class AStar:
                     line.append("E")
             print("".join(line))
 
-        return reversed_path[1:]
+        return filtered_path
 
     def a_star(self, start: np.ndarray, end: np.ndarray) -> list | None:
         """

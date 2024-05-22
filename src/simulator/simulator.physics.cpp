@@ -126,9 +126,10 @@ namespace mrover {
 
                         ImageTarget target;
                         target.name = modelName;
-                        target.bearing = static_cast<float>(angleToModel);
-
-                        targets.targets.push_back(target);
+                        target.bearing = static_cast<float>(angleToModel); // TODO: make bearing negative if needed
+                        if (angleToModel < 0.25 && angleToModel > -0.25) {
+                            targets.targets.push_back(target);
+                        }
                     }
                 }
             };
@@ -136,7 +137,7 @@ namespace mrover {
             if (mPublishBottleDistanceThreshold > 0) publishModel("bottle", mPublishBottleDistanceThreshold);
             if (mPublishHammerDistanceThreshold > 0) publishModel("hammer", mPublishHammerDistanceThreshold);
 
-            mImageTargetsPub.publish(targets);
+            // mImageTargetsPub.publish(targets);
         }
     }
 
