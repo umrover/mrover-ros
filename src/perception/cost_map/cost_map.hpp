@@ -10,7 +10,7 @@ namespace mrover {
 
         constexpr static double TAU = 2 * std::numbers::pi;
 
-        ros::NodeHandle mNh, mPnh, mCmt;
+        ros::NodeHandle mNh, mPnh;
         ros::Publisher mCostMapPub;
         ros::Subscriber mPcSub;
 
@@ -19,12 +19,6 @@ namespace mrover {
         float mDimension{};     // Dimensions of the square costmap in meters
         int mDownSamplingFactor = 4;
         std::string mWorldFrame;
-
-        struct CostMapPoint {
-            R3f pointInMap;
-            R3f normalInMap;
-        };
-        std::vector<CostMapPoint> mPointsInMap;
 
         tf2_ros::Buffer mTfBuffer;
         tf2_ros::TransformListener mTfListener{mTfBuffer};
@@ -42,6 +36,7 @@ namespace mrover {
         ~CostMapNodelet() override = default;
 
         auto pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg) -> void;
+
         auto moveCostMapCallback(MoveCostMap::Request& req, MoveCostMap::Response& res) -> bool;
     };
 
