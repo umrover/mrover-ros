@@ -80,7 +80,7 @@ auto main(int argc, char** argv) -> int {
 
         // Compute the past velocities and headings of the rover in the map frame over a window of time
 
-        R2d roverVelocitySum{};
+        R2d roverVelocitySum = R2d::Zero();
         double roverHeadingChange = 0.0;
         std::size_t readings = 0;
 

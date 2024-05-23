@@ -58,11 +58,6 @@ namespace mrover {
                 Bin& bin = bins[i];
                 if (bin.empty()) continue;
 
-                // R3f pointInCameraMean = std::accumulate(bin.begin(), bin.end(), R3f{}, [](R3f const& sum, BinEntry const& entry) {
-                //                             return sum + entry.pointInCamera;
-                //                         }) /
-                //                         bin.size();
-
                 std::size_t pointsHigh = std::ranges::count_if(bin, [](BinEntry const& entry) {
                     return entry.pointInCamera.z() > 0;
                 });
