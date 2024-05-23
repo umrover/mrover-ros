@@ -156,6 +156,8 @@ target_link_libraries(lie PUBLIC MANIF::manif)
 
 if (ZED_FOUND)
     mrover_add_library(learning src/util/learning/*.c* src/util/learning)
+    # TODO(john): Update to use the new API
+    target_compile_options(learning PRIVATE -Wno-deprecated-declarations)
     target_link_libraries(learning PRIVATE opencv_core opencv_dnn opencv_imgproc lie nvinfer nvonnxparser tbb)
 endif ()
 
@@ -219,8 +221,6 @@ if (ZED_FOUND)
     mrover_nodelet_defines(object_detector
             __CUDA_INCLUDE_COMPILER_INTERNAL_HEADERS__ # Eigen includes some files it should not, ignore
     )
-    # TODO(john): Update object detector to use new API
-    target_compile_options(object_detector_nodelet PRIVATE -Wno-deprecated-declarations)
     # Temporary
     mrover_nodelet_link_libraries(object_detector PRIVATE opencv_imgcodecs opencv_highgui)
 

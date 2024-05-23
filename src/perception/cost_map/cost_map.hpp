@@ -14,11 +14,11 @@ namespace mrover {
         ros::Publisher mCostMapPub;
         ros::Subscriber mPcSub;
 
-        bool mPublishCostMap{}; // If set, publish the global costmap
-        float mResolution{};    // Meters per cell
-        float mDimension{};     // Dimensions of the square costmap in meters
+        float mNearClip{}, mFarClip{};
+        float mResolution{}; // Meters per cell
+        float mSize{};       // Size of the square costmap in meters
         int mDownSamplingFactor = 4;
-        std::string mWorldFrame;
+        std::string mMapFrame;
 
         tf2_ros::Buffer mTfBuffer;
         tf2_ros::TransformListener mTfListener{mTfBuffer};

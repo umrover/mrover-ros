@@ -6,10 +6,11 @@ namespace mrover {
         mNh = getMTNodeHandle();
         mPnh = getMTPrivateNodeHandle();
 
-        mPublishCostMap = mNh.param<bool>("publish_cost_map", true);
         mResolution = mNh.param<float>("resolution", 0.5);
-        mDimension = mNh.param<float>("map_width", 30);
-        mWorldFrame = mNh.param<std::string>("map_frame", "map");
+        mSize = mNh.param<float>("size", 30);
+        mMapFrame = mNh.param<std::string>("map_frame", "map");
+        mNearClip = mNh.param<float>("near_clip", 1);
+        mFarClip = mNh.param<float>("far_clip", 3);
 
         mCostMapPub = mNh.advertise<nav_msgs::OccupancyGrid>("costmap", 1); // We publish our results to "costmap"
 
@@ -18,12 +19,12 @@ namespace mrover {
         mPcSub = mNh.subscribe("camera/left/points", 1, &CostMapNodelet::pointCloudCallback, this);
 
         mGlobalGridMsg.info.resolution = mResolution;
-        mGlobalGridMsg.info.width = static_cast<int>(mDimension / mResolution);
-        mGlobalGridMsg.info.height = static_cast<int>(mDimension / mResolution);
+        mGlobalGridMsg.info.width = static_cast<int>(mSize / mResolution);
+        mGlobalGridMsg.info.height = static_cast<int>(mSize / mResolution);
         // Center the map at (0, 0)
-        mGlobalGridMsg.header.frame_id = mWorldFrame;
-        mGlobalGridMsg.info.origin.position.x = -mDimension / 2;
-        mGlobalGridMsg.info.origin.position.y = -mDimension / 2;
+        mGlobalGridMsg.header.frame_id = mMapFrame;
+        mGlobalGridMsg.info.origin.position.x = -mSize / 2;
+        mGlobalGridMsg.info.origin.position.y = -mSize / 2;
 
         mGlobalGridMsg.data.resize(mGlobalGridMsg.info.width * mGlobalGridMsg.info.height, UNKNOWN_COST);
     }
