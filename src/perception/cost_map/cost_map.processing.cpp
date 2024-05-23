@@ -48,7 +48,7 @@ namespace mrover {
                     R3f pointInMap = cameraToMap.act(pointInCamera);
 
                     long index = mapToGrid(pointInMap, mGlobalGridMsg);
-                    if (index < 0 || index > static_cast<long>(mGlobalGridMsg.data.size())) continue;
+                    if (index < 0 || index >= static_cast<long>(mGlobalGridMsg.data.size())) continue;
 
                     bins[index].emplace_back(BinEntry{pointInCamera, pointInMap});
                 }
@@ -80,8 +80,8 @@ namespace mrover {
     auto CostMapNodelet::moveCostMapCallback(MoveCostMap::Request& req, MoveCostMap::Response& res) -> bool {
         SE3d centerInMap = SE3Conversions::fromTfTree(mTfBuffer, req.course, mMapFrame);
         std::ranges::fill(mGlobalGridMsg.data, UNKNOWN_COST);
-        mGlobalGridMsg.info.origin.position.x = centerInMap.x() - mSize / 2 + mResolution / 2;
-        mGlobalGridMsg.info.origin.position.y = centerInMap.y() - mSize / 2 + mResolution / 2;
+        mGlobalGridMsg.info.origin.position.x = centerInMap.x() - mSize / 2;
+        mGlobalGridMsg.info.origin.position.y = centerInMap.y() - mSize / 2;
         return res.success = true;
     }
 
