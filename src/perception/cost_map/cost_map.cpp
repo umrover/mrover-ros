@@ -23,8 +23,8 @@ namespace mrover {
         mGlobalGridMsg.info.height = static_cast<int>(mSize / mResolution);
         // Center the map at (0, 0)
         mGlobalGridMsg.header.frame_id = mMapFrame;
-        mGlobalGridMsg.info.origin.position.x = -mSize / 2;
-        mGlobalGridMsg.info.origin.position.y = -mSize / 2;
+        mGlobalGridMsg.info.origin.position.x = -mSize / 2 + mResolution / 2;
+        mGlobalGridMsg.info.origin.position.y = -mSize / 2 + mResolution / 2;
 
         mGlobalGridMsg.data.resize(mGlobalGridMsg.info.width * mGlobalGridMsg.info.height, UNKNOWN_COST);
     }
