@@ -11,8 +11,8 @@ namespace mrover {
     auto mapToGrid(Eigen::Vector3f const& positionInMap, nav_msgs::OccupancyGrid const& grid) -> long {
         Eigen::Vector2f origin{grid.info.origin.position.x, grid.info.origin.position.y};
         Eigen::Vector2f gridFloat = (positionInMap.head<2>() - origin) / grid.info.resolution;
-        long gridX = std::lround(gridFloat.x());
-        long gridY = std::lround(gridFloat.y());
+        long gridX = std::floor(gridFloat.x());
+        long gridY = std::floor(gridFloat.y());
         return gridY * grid.info.width + gridX;
     }
 
@@ -56,12 +56,7 @@ namespace mrover {
 
             for (std::size_t i = 0; i < mGlobalGridMsg.data.size(); ++i) {
                 Bin& bin = bins[i];
-                if (bin.empty()) continue;
-
-                // R3f pointInCameraMean = std::accumulate(bin.begin(), bin.end(), R3f{}, [](R3f const& sum, BinEntry const& entry) {
-                //                             return sum + entry.pointInCamera;
-                //                         }) /
-                //                         bin.size();
+                if (bin.size() < 16) continue;
 
                 std::size_t pointsHigh = std::ranges::count_if(bin, [](BinEntry const& entry) {
                     return entry.pointInCamera.z() > 0;
@@ -72,9 +67,8 @@ namespace mrover {
 
                 // Update cell with EWMA acting as a low-pass filter
                 auto& cell = mGlobalGridMsg.data[i];
-                // constexpr double alpha = 0.1;
-                // cell = static_cast<std::int8_t>(alpha * cost + (1 - alpha) * cell);
-                cell = cost;
+                constexpr double alpha = 0.05;
+                cell = static_cast<std::int8_t>(alpha * cost + (1 - alpha) * cell);
             }
 
             mCostMapPub.publish(mGlobalGridMsg);
@@ -86,8 +80,8 @@ namespace mrover {
     auto CostMapNodelet::moveCostMapCallback(MoveCostMap::Request& req, MoveCostMap::Response& res) -> bool {
         SE3d centerInMap = SE3Conversions::fromTfTree(mTfBuffer, req.course, mMapFrame);
         std::ranges::fill(mGlobalGridMsg.data, UNKNOWN_COST);
-        mGlobalGridMsg.info.origin.position.x = centerInMap.x() - mSize / 2;
-        mGlobalGridMsg.info.origin.position.y = centerInMap.y() - mSize / 2;
+        mGlobalGridMsg.info.origin.position.x = centerInMap.x() - mSize / 2 + mResolution / 2;
+        mGlobalGridMsg.info.origin.position.y = centerInMap.y() - mSize / 2 + mResolution / 2;
         return res.success = true;
     }
 
