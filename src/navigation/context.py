@@ -364,6 +364,31 @@ class Context:
     def image_targets_callback(self, tags: ImageTargets) -> None:
         self.env.image_targets.push_frame(tags.targets)
 
+    def update_grid(self, grid):
+        """
+        Update the grid such that if a cell contains 1, then all surrounding cells become 1.
+        
+        Args:
+        - grid (numpy array): The input grid represented as a 2D array of floats.
+        
+        Returns:
+        - updated_grid (numpy array): The updated grid with surrounding cells modified.
+        """    
+        rows, cols = grid.shape
+        directions = [(1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (-1, 1), (1, -1), (-1, -1)]
+        updated_grid = np.zeros_like(grid)
+
+        for i in range(rows):
+            for j in range(cols):
+                if grid[i, j] == 1:
+                    updated_grid[i, j] = 1  # Update the cell itself to 1
+                    for dx, dy in directions:
+                        ni, nj = i + dx, j + dy
+                        if 0 <= ni < rows and 0 <= nj < cols:
+                            updated_grid[ni, nj] = 1
+
+        return updated_grid
+
     def costmap_callback(self, msg: OccupancyGrid) -> None:
         """
         Callback function for the occupancy grid perception sends
@@ -378,10 +403,12 @@ class Context:
         ).T
 
         # change all unidentified points to have a slight cost
-        self.env.cost_map.data[self.env.cost_map.data == -1.0] = 10.0  # TODO: find optimal value
-        self.env.cost_map.data /= 100.0
+        self.env.cost_map.data[self.env.cost_map.data == -1.0] = 0.1  # TODO: find optimal value
+        self.env.cost_map.data[self.env.cost_map.data == 100.0] = 1.0  # TODO: find optimal value
 
-        # apply kernel to average the map with zero padding
-        kernel_shape = (7, 7)  # TODO: find optimal kernel size
-        kernel = np.ones(kernel_shape, dtype=np.float32) / (kernel_shape[0] * kernel_shape[1])
-        self.env.cost_map.data = convolve2d(self.env.cost_map.data, kernel, mode="same")
+        self.env.cost_map.data = self.update_grid(self.env.cost_map.data)
+
+        # # apply kernel to average the map with zero padding
+        # kernel_shape = (3, 3)  # TODO: find optimal kernel size
+        # kernel = np.ones(kernel_shape, dtype=np.float32) / (kernel_shape[0] * kernel_shape[1])
+        # self.env.cost_map.data = convolve2d(self.env.cost_map.data, kernel, mode="same")

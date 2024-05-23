@@ -71,6 +71,14 @@ class WaterBottleSearchState(State):
     def avg_cell_cost(self, context: Context, start: np.ndarray, end: np.ndarray) -> float:
         startij = self.astar.cartesian_to_ij(start)
         endij = self.astar.cartesian_to_ij(end)
+        if np.array_equal(startij, endij):
+            return 0.0
+
+        vector = endij - startij
+        magnitude = np.linalg.norm(vector)
+        unit_vector = vector / magnitude
+        endij += np.round(unit_vector*2).astype(np.int8)
+        
         points = []
         x0 = startij[0]
         x1 = endij[0]
@@ -127,7 +135,7 @@ class WaterBottleSearchState(State):
             end_point = self.find_endpoint(context, WaterBottleSearchState.trajectory.get_current_point()[0:2])
 
             # If path to next sprial point has minimal cost per cell, continue normally to next spiral point
-            if self.avg_cell_cost(context, rover_position_in_map, end_point[0:2]) < self.TRAVERSABLE_COST:
+            if self.avg_cell_cost(context, rover_position_in_map, end_point[0:2]) < self.TRAVERSABLE_COST/2:
                 self.star_traj = Trajectory(np.array([]))
             else: # Otherwise, create a path planned through the cost
                 rospy.loginfo("Running A*...")
