@@ -21,7 +21,7 @@ class WaterBottleSearchState(State):
     Follows a search spiral but uses A* to avoid obstacles
     """
 
-    trajectory: Optional[SearchTrajectory] = None # spiral
+    trajectory: Optional[SearchTrajectory] = None  # spiral
     star_traj: Trajectory  # returned by astar
     prev_target_pos_in_map: Optional[np.ndarray] = None
     is_recovering: bool = False
@@ -56,7 +56,9 @@ class WaterBottleSearchState(State):
         if (costmap_2d.shape[0] - 1) >= end_node.position[0] >= 0 and (costmap_2d.shape[1] - 1) >= end_node.position[
             1
         ] >= 0:
-            while costmap_2d[end_node.position[0], end_node.position[1]] >= self.TRAVERSABLE_COST:  # TODO: find optimal value
+            while (
+                costmap_2d[end_node.position[0], end_node.position[1]] >= self.TRAVERSABLE_COST
+            ):  # TODO: find optimal value
                 # True if the trajectory is finished
                 if WaterBottleSearchState.trajectory.increment_point():
                     raise SpiralEnd()
