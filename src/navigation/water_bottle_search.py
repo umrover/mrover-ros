@@ -3,7 +3,7 @@ from typing import Optional
 import numpy as np
 
 import rospy
-from geometry_msgs.msg import Pose, PoseStamped, Point, Quaternion
+from geometry_msgs.msg import Pose, PoseStamped, Point, Quaternion, Twist
 from mrover.msg import GPSPointList
 from nav_msgs.msg import Path
 from navigation import approach_target, recovery, waypoint
@@ -66,6 +66,36 @@ class WaterBottleSearchState(State):
                 print(f"End has high cost! new end: {end_ij}")
         return WaterBottleSearchState.trajectory.get_current_point()
 
+    def avg_cell_cost(self, context: Context, start: np.ndarray, end: np.ndarray) -> float:
+        startij = self.astar.cartesian_to_ij(start)
+        endij = self.astar.cartesian_to_ij(end)
+        points = []
+        x0 = startij[0]
+        x1 = endij[0]
+        y0 = startij[1]
+        y1 = endij[1]
+        dx = abs(x1 - x0)
+        dy = abs(y1 - y0)
+        sx = 1 if x0 < x1 else -1
+        sy = 1 if y0 < y1 else -1
+        err = dx - dy
+        while (x0 != x1) or (y0 != y1):
+            points.append((x0, y0))
+            err2 = 2 * err
+            if err2 > -dy:
+                err -= dy
+                x0 += sx
+            if err2 < dx:
+                err += dx
+                y0 += sy
+        points.append((x1, y1))
+        total_cost = 0
+        count = 0
+        for i,j in points:
+            total_cost += context.env.cost_map.data[i][j]
+            count += 1
+        return total_cost/count
+
     def on_enter(self, context: Context) -> None:
         if WaterBottleSearchState.trajectory is None:
             self.new_trajectory(context)
@@ -89,50 +119,55 @@ class WaterBottleSearchState(State):
         rover_in_map = context.rover.get_pose_in_map()
         assert rover_in_map is not None
 
-        # Only update our costmap every 1 second
+        # Only update our costmap every so often
         if rospy.Time.now() - self.time_last_updated > rospy.Duration(2):
             rover_position_in_map = rover_in_map.position[0:2]
             end_point = self.find_endpoint(context, WaterBottleSearchState.trajectory.get_current_point()[0:2])
 
-            rospy.loginfo("Running A*...")
-            try:
-                occupancy_list = self.astar.a_star(rover_position_in_map, end_point[0:2])
-            except SpiralEnd:
-                # TODO: what to do in this case
-                WaterBottleSearchState.trajectory.reset()
-                occupancy_list = None
-            except NoPath:
-                # increment end point
-                if WaterBottleSearchState.trajectory.increment_point():
+            # If path to next sprial point has minimal cost per cell, continue normally to next spiral point
+            if self.avg_cell_cost(context, rover_position_in_map, end_point[0:2]) < self.TRAVERSABLE_COST:
+                self.star_traj = Trajectory(np.array([]))
+            else: # Otherwise, create a path planned through the cost
+                rospy.loginfo("Running A*...")
+                context.rover.send_drive_command(Twist())  # stop while planning
+                try:
+                    occupancy_list = self.astar.a_star(rover_position_in_map, end_point[0:2])
+                except SpiralEnd:
                     # TODO: what to do in this case
                     WaterBottleSearchState.trajectory.reset()
-                occupancy_list = None
-            if occupancy_list is None:
-                self.star_traj = Trajectory(np.array([]))
-            else:
-                cartesian_coords = self.astar.ij_to_cartesian(np.array(occupancy_list))
-                rospy.loginfo(f"{cartesian_coords}, shape: {cartesian_coords.shape}")
-                self.star_traj = Trajectory(
-                    np.hstack((cartesian_coords, np.zeros((cartesian_coords.shape[0], 1))))
-                )  # current point gets set back to 0
+                    occupancy_list = None
+                except NoPath:
+                    # increment end point
+                    if WaterBottleSearchState.trajectory.increment_point():
+                        # TODO: what to do in this case
+                        WaterBottleSearchState.trajectory.reset()
+                    occupancy_list = None
+                if occupancy_list is None:
+                    self.star_traj = Trajectory(np.array([]))
+                else:
+                    cartesian_coords = self.astar.ij_to_cartesian(np.array(occupancy_list))
+                    rospy.loginfo(f"{cartesian_coords}, shape: {cartesian_coords.shape}")
+                    self.star_traj = Trajectory(
+                        np.hstack((cartesian_coords, np.zeros((cartesian_coords.shape[0], 1))))
+                    )  # current point gets set back to 0
 
-                # create path type to publish planned path segments to see in rviz
-                path = Path()
-                poses = []
-                path.header = Header()
-                path.header.frame_id = "map"
-                for coord in cartesian_coords:
-                    pose_stamped = PoseStamped()
-                    pose_stamped.header = Header()
-                    pose_stamped.header.frame_id = "map"
-                    point = Point(coord[0], coord[1], 0)
-                    quat = Quaternion(0, 0, 0, 1)
-                    pose_stamped.pose = Pose(point, quat)
-                    poses.append(pose_stamped)
-                path.poses = poses
-                self.path_pub.publish(path)
+                    # create path type to publish planned path segments to see in rviz
+                    path = Path()
+                    poses = []
+                    path.header = Header()
+                    path.header.frame_id = "map"
+                    for coord in cartesian_coords:
+                        pose_stamped = PoseStamped()
+                        pose_stamped.header = Header()
+                        pose_stamped.header.frame_id = "map"
+                        point = Point(coord[0], coord[1], 0)
+                        quat = Quaternion(0, 0, 0, 1)
+                        pose_stamped.pose = Pose(point, quat)
+                        poses.append(pose_stamped)
+                    path.poses = poses
+                    self.path_pub.publish(path)
 
-            self.time_last_updated = rospy.Time.now()
+                self.time_last_updated = rospy.Time.now()
 
         # Continue executing the path from wherever it left off
         target_position_in_map = WaterBottleSearchState.trajectory.get_current_point()

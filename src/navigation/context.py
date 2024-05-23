@@ -382,6 +382,6 @@ class Context:
         self.env.cost_map.data /= 100.0
 
         # apply kernel to average the map with zero padding
-        kernel_shape = (5, 5)  # TODO: find optimal kernel size
+        kernel_shape = (7, 7)  # TODO: find optimal kernel size
         kernel = np.ones(kernel_shape, dtype=np.float32) / (kernel_shape[0] * kernel_shape[1])
         self.env.cost_map.data = convolve2d(self.env.cost_map.data, kernel, mode="same")
