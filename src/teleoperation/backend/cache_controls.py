@@ -13,7 +13,7 @@ SCALE = 1.0
 def send_cache_controls(mode: str, keyboard: DeviceInputs) -> None:
     if mode == "disabled":
         return
-    
+
     throttle = filter_input(
         simulated_axis(keyboard.buttons, KeyboardButton.D, KeyboardButton.A),
         scale=SCALE,

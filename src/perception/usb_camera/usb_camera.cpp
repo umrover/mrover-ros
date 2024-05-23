@@ -69,7 +69,7 @@ namespace mrover {
         ROS_ERROR("Watchdog hit! Attemping to restart...");
 
         // Attempt to restart the pipeline
-        if (gst_element_set_state(mPipeline, GST_STATE_READY) == GST_STATE_CHANGE_FAILURE ||
+        if (gst_element_set_state(mPipeline, GST_STATE_NULL) == GST_STATE_CHANGE_FAILURE ||
             gst_element_set_state(mPipeline, GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE)
             ROS_ERROR_STREAM("Failed to restart GStreamer pipeline");
 

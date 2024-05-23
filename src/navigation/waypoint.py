@@ -72,7 +72,7 @@ class WaypointState(State):
             rover_in_map,
             self.STOP_THRESHOLD,
             self.DRIVE_FORWARD_THRESHOLD,
-            waypoint_state=True
+            waypoint_state=True,
         )
         if arrived:
             context.env.arrived_at_waypoint = True
@@ -82,12 +82,12 @@ class WaypointState(State):
             elif current_waypoint.type.val == WaypointType.WATER_BOTTLE and self.USE_COSTMAP:
                 # We finished a waypoint associated with the water bottle, but we have not seen it yet and are using the costmap to search
                 water_bottle_search_state = water_bottle_search.WaterBottleSearchState()
-                water_bottle_search_state.new_trajectory(context) # reset trajectory
+                water_bottle_search_state.new_trajectory(context)  # reset trajectory
                 return water_bottle_search_state
             else:
                 # We finished a waypoint associated with a post, mallet, or water bottle, but we have not seen it yet (no costmap for search).
                 search_state = search.SearchState()
-                search_state.new_trajectory(context) # reset trajectory
+                search_state.new_trajectory(context)  # reset trajectory
                 return search_state
 
         if context.rover.stuck:

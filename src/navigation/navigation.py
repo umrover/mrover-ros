@@ -28,7 +28,8 @@ class Navigation(threading.Thread):
         self.name = "NavigationThread"
         self.state_machine = StateMachine[Context](OffState(), "NavStateMachine", context)
         self.state_machine.add_transitions(
-            ApproachTargetState(), [WaypointState(), SearchState(), WaterBottleSearchState(), RecoveryState(), DoneState()]
+            ApproachTargetState(),
+            [WaypointState(), SearchState(), WaterBottleSearchState(), RecoveryState(), DoneState()],
         )
         self.state_machine.add_transitions(PostBackupState(), [WaypointState(), RecoveryState()])
         self.state_machine.add_transitions(
@@ -60,7 +61,8 @@ class Navigation(threading.Thread):
             ],
         )
         self.state_machine.add_transitions(
-            LongRangeState(), [ApproachTargetState(), SearchState(), WaterBottleSearchState(), WaypointState(), RecoveryState()]
+            LongRangeState(),
+            [ApproachTargetState(), SearchState(), WaterBottleSearchState(), WaypointState(), RecoveryState()],
         )
         self.state_machine.add_transitions(OffState(), [WaypointState(), DoneState()])
         self.state_machine.add_transitions(

@@ -19,7 +19,7 @@
 - name: Add LLVM APT List
   become: True
   apt_repository:
-    repo: deb http://apt.llvm.org/{{ ubuntu_release }}/ llvm-toolchain-{{ ubuntu_release }}-16 main
+    repo: deb http://apt.llvm.org/{{ ubuntu_release }}/ llvm-toolchain-{{ ubuntu_release }}-18 main
     filename: llvm
 
 - name: Add CMake APT Key
@@ -75,11 +75,12 @@
       - python3-rosdep
       - python3-catkin-tools
       - python3-virtualenvwrapper
-      - clangd-16
-      - clang-tidy-16
-      - clang-format-16
-      - lld-16
-      - lldb-16
+      - clang-18
+      - clangd-18
+      - clang-tidy-18
+      - clang-format-18
+      - lld-18
+      - lldb-18
       - gcc-13
       - g++-13
       - python3.10
@@ -159,29 +160,29 @@
     link: /usr/bin/gcc
     priority: 130
 
-- name: Set clangd 16 as Default
+- name: Set clangd 18 as Default
   become: True
   alternatives:
     name: clangd
-    path: /usr/bin/clangd-16
+    path: /usr/bin/clangd-18
     link: /usr/bin/clangd
-    priority: 160
+    priority: 180
 
-- name: Set LLD 16 as Default
+- name: Set LLD 18 as Default
   become: True
   alternatives:
     name: lld
-    path: /usr/bin/lld-16
+    path: /usr/bin/lld-18
     link: /usr/bin/lld
-    priority: 160
+    priority: 180
 
-- name: Set clang-tidy 16 as Default
+- name: Set clang-tidy 18 as Default
   become: True
   alternatives:
     name: clang-tidy
-    path: /usr/bin/clang-tidy-16
+    path: /usr/bin/clang-tidy-18
     link: /usr/bin/clang-tidy
-    priority: 160
+    priority: 180
 
 - name: Setup Python Virtual Environment
   pip:

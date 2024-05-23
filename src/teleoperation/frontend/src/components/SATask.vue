@@ -21,6 +21,10 @@
     <div class='shadow p-3 rounded moteus'>
       <ControllerDataTable msg-type='drive_state' header='Drive States' />
     </div>
+    <div class='shadow p-3 rounded joints'>
+      <JointStateDataTable msg-type='sa_joint' header='SA Joints' />
+      <JointStateDataTable msg-type='plunger' header='Plunger (w/o offset)' />
+    </div>
     <!--    <div class='shadow p-3 rounded limit'>-->
     <!--      <h3>Limit Switches</h3>-->
     <!--      <LimitSwitch :service_name="'sa_enable_limit_switch_sa_x'" :display_name="'SA X Switch'" />-->
@@ -68,13 +72,12 @@ import SoilData from './SoilData.vue'
 import BasicWaypointEditor from './BasicWaypointEditor.vue'
 import DriveControls from './DriveControls.vue'
 import MastGimbalControls from './MastGimbalControls.vue'
-import PDBFuse from './PDBFuse.vue'
-import Cameras from './Cameras.vue'
 import LimitSwitch from './LimitSwitch.vue'
 import CalibrationCheckbox from './CalibrationCheckbox.vue'
 import OdometryReading from './OdometryReading.vue'
 import ControllerDataTable from './ControllerDataTable.vue'
 import SAArmControls from './SAArmControls.vue'
+import JointStateDataTable from './JointStateDataTable.vue'
 import { quaternionToMapAngle } from '../utils'
 import { mapActions, mapState } from 'vuex'
 
@@ -84,16 +87,15 @@ export default {
     BasicMap,
     SoilData,
     BasicWaypointEditor,
-    Cameras,
     DriveControls,
     MastGimbalControls,
-    PDBFuse,
     SAArmControls,
     LimitSwitch,
     CalibrationCheckbox,
     //   CommReadout,
     //   MCUReset,
     OdometryReading,
+    JointStateDataTable
   },
   data() {
     return {
@@ -145,7 +147,8 @@ export default {
     'header header'
     'arm soilData'
     'map waypoints'
-    'map odom';
+    'map odom'
+    'moteus joints';
   font-family: sans-serif;
   height: auto;
 }
@@ -221,6 +224,10 @@ export default {
 
 .moteus {
   grid-area: moteus;
+}
+
+.joints {
+  grid-area: joints;
 }
 
 .limit {

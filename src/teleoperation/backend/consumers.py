@@ -55,6 +55,7 @@ def cache_timer_expired(_) -> None:
     global cache_mode
     rospy.logwarn("Cache GUI timed out. Disabling...")
 
+
 cache_timer = None
 
 

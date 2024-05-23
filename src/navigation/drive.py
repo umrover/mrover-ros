@@ -40,7 +40,7 @@ class DriveController:
         linear_error: float,
         completion_thresh: float,
         turn_in_place_thresh: float,
-        waypoint_state: bool
+        waypoint_state: bool,
     ) -> Tuple[Twist, bool]:
         """
         Gets the state machine output for a given angular and linear error.
@@ -101,7 +101,9 @@ class DriveController:
             else:
                 cmd_vel = Twist()
                 if waypoint_state:
-                    cmd_vel.linear.x = np.clip(linear_error * DRIVING_P, MIN_DRIVING_EFFORT, MAX_DRIVING_EFFORT_WAYPOINT)
+                    cmd_vel.linear.x = np.clip(
+                        linear_error * DRIVING_P, MIN_DRIVING_EFFORT, MAX_DRIVING_EFFORT_WAYPOINT
+                    )
                 else:
                     cmd_vel.linear.x = np.clip(linear_error * DRIVING_P, MIN_DRIVING_EFFORT, MAX_DRIVING_EFFORT)
                 cmd_vel.angular.z = np.clip(angular_error * TURNING_P, MIN_TURNING_EFFORT, MAX_TURNING_EFFORT)
@@ -149,7 +151,7 @@ class DriveController:
         turn_in_place_thresh: float,
         drive_back: bool = False,
         path_start: Optional[np.ndarray] = None,
-        waypoint_state: bool = False
+        waypoint_state: bool = False,
     ) -> Tuple[Twist, bool]:
         """
         Returns a drive command to get the rover to the target position, calls the state machine to do so and updates the last angular error in the process
@@ -191,7 +193,9 @@ class DriveController:
         linear_error = float(np.linalg.norm(target_dir))
         angular_error = angle_to_rotate(rover_dir, target_dir)
 
-        output = self._get_state_machine_output(angular_error, linear_error, completion_thresh, turn_in_place_thresh, waypoint_state)
+        output = self._get_state_machine_output(
+            angular_error, linear_error, completion_thresh, turn_in_place_thresh, waypoint_state
+        )
 
         if drive_back:
             output[0].linear.x *= -1

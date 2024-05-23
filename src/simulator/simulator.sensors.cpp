@@ -125,7 +125,7 @@ namespace mrover {
     auto computeImu(SO3d const& imuInMap, R3d const& imuAngularVelocity, R3d const& linearAcceleration) -> sensor_msgs::Imu {
         sensor_msgs::Imu imuMessage;
         imuMessage.header.stamp = ros::Time::now();
-        imuMessage.header.frame_id = "map";
+        imuMessage.header.frame_id = "base_link";
         S3d q = imuInMap.quat();
         imuMessage.orientation.w = q.w();
         imuMessage.orientation.x = q.x();
@@ -209,9 +209,15 @@ namespace mrover {
 
                 imu.uncalibPub.publish(computeImu(imuInMap, roverAngularVelocity, roverLinearAcceleration));
 
+                CalibrationStatus calibrationStatus;
+                calibrationStatus.header.stamp = ros::Time::now();
+                calibrationStatus.header.frame_id = "base_link";
+                calibrationStatus.magnetometer_calibration = 3;
+                imu.calibStatusPub.publish(calibrationStatus);
+
                 sensor_msgs::MagneticField field;
                 field.header.stamp = ros::Time::now();
-                field.header.frame_id = "map";
+                field.header.frame_id = "base_link";
                 field.magnetic_field.x = roverMagVector.x();
                 field.magnetic_field.y = roverMagVector.y();
                 field.magnetic_field.z = roverMagVector.z();
