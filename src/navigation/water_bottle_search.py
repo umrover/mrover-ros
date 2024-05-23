@@ -90,7 +90,7 @@ class WaterBottleSearchState(State):
         assert rover_in_map is not None
 
         # Only update our costmap every 1 second
-        if rospy.Time.now() - self.time_last_updated > rospy.Duration(1):
+        if rospy.Time.now() - self.time_last_updated > rospy.Duration(2):
             rover_position_in_map = rover_in_map.position[0:2]
             end_point = self.find_endpoint(context, WaterBottleSearchState.trajectory.get_current_point()[0:2])
 

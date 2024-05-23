@@ -20,7 +20,7 @@ from mrover.msg import (
     ImageTargets,
 )
 from mrover.srv import EnableAuton, EnableAutonRequest, EnableAutonResponse
-from nav_msgs.msg import OccupancyGrid
+from nav_msgs.msg import OccupancyGrid, Path
 from navigation.drive import DriveController
 from std_msgs.msg import Bool
 from util.SE3 import SE3
@@ -45,6 +45,7 @@ class Rover:
     ctx: Context
     stuck: bool
     previous_state: State
+    path_history: Path
     driver: DriveController = DriveController()
 
     def get_pose_in_map(self) -> Optional[SE3]:
@@ -318,6 +319,7 @@ class Context:
     course_listener: rospy.Subscriber
     stuck_listener: rospy.Subscriber
     costmap_listener: rospy.Subscriber
+    path_history_publisher: rospy.Publisher
 
     # Use these as the primary interfaces in states
     course: Optional[Course]
@@ -336,10 +338,11 @@ class Context:
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
         self.vel_cmd_publisher = rospy.Publisher("navigation_cmd_vel", Twist, queue_size=1)
         self.search_point_publisher = rospy.Publisher("search_path", GPSPointList, queue_size=1)
+        self.path_history_publisher = rospy.Publisher("ground_truth_path", Path, queue_size=10)
         self.enable_auton_service = rospy.Service("enable_auton", EnableAuton, self.recv_enable_auton)
         self.stuck_listener = rospy.Subscriber("nav_stuck", Bool, self.stuck_callback)
         self.course = None
-        self.rover = Rover(self, False, OffState())
+        self.rover = Rover(self, False, OffState(), Path())
         self.env = Environment(self, image_targets=ImageTargetsStore(self), cost_map=CostMap())
         self.disable_requested = False
         self.world_frame = rospy.get_param("world_frame")
@@ -347,7 +350,7 @@ class Context:
         rospy.Subscriber("tags", ImageTargets, self.image_targets_callback)
         rospy.Subscriber("objects", ImageTargets, self.image_targets_callback)
         self.costmap_listener = rospy.Subscriber("costmap", OccupancyGrid, self.costmap_callback)
-
+        
     def recv_enable_auton(self, req: EnableAutonRequest) -> EnableAutonResponse:
         if req.enable:
             self.course = convert_and_get_course(self, req)
@@ -375,10 +378,10 @@ class Context:
         ).T
 
         # change all unidentified points to have a slight cost
-        self.env.cost_map.data[self.env.cost_map.data == -1.0] = 0.1  # TODO: find optimal value
-        self.env.cost_map.data[self.env.cost_map.data >= 1] = 1
+        self.env.cost_map.data[self.env.cost_map.data == -1.0] = 10.0  # TODO: find optimal value
+        self.env.cost_map.data /= 100.0
 
         # apply kernel to average the map with zero padding
-        kernel_shape = (7, 7)  # TODO: find optimal kernel size
+        kernel_shape = (5, 5)  # TODO: find optimal kernel size
         kernel = np.ones(kernel_shape, dtype=np.float32) / (kernel_shape[0] * kernel_shape[1])
         self.env.cost_map.data = convolve2d(self.env.cost_map.data, kernel, mode="same")
