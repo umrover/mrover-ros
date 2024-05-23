@@ -8,12 +8,12 @@ namespace mrover {
 
     auto square(auto x) -> auto { return x * x; }
 
-    auto mapToGrid(Eigen::Vector3f const& positionInMap, nav_msgs::OccupancyGrid const& grid) -> long {
+    auto mapToGrid(Eigen::Vector3f const& positionInMap, nav_msgs::OccupancyGrid const& grid) -> int {
         Eigen::Vector2f origin{grid.info.origin.position.x, grid.info.origin.position.y};
         Eigen::Vector2f gridFloat = (positionInMap.head<2>() - origin) / grid.info.resolution;
-        long gridX = std::floor(gridFloat.x());
-        long gridY = std::floor(gridFloat.y());
-        return gridY * grid.info.width + gridX;
+        int gridX = std::floor(gridFloat.x());
+        int gridY = std::floor(gridFloat.y());
+        return gridY * static_cast<int>(grid.info.width) + gridX;
     }
 
     auto CostMapNodelet::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg) -> void {
@@ -47,8 +47,8 @@ namespace mrover {
 
                     R3f pointInMap = cameraToMap.act(pointInCamera);
 
-                    long index = mapToGrid(pointInMap, mGlobalGridMsg);
-                    if (index < 0 || index >= static_cast<long>(mGlobalGridMsg.data.size())) continue;
+                    int index = mapToGrid(pointInMap, mGlobalGridMsg);
+                    if (index < 0 || index >= static_cast<int>(mGlobalGridMsg.data.size())) continue;
 
                     bins[index].emplace_back(BinEntry{pointInCamera, pointInMap});
                 }
@@ -71,7 +71,11 @@ namespace mrover {
                 cell = static_cast<std::int8_t>(alpha * cost + (1 - alpha) * cell);
             }
 
-            mCostMapPub.publish(mGlobalGridMsg);
+            nav_msgs::OccupancyGrid clipped = mGlobalGridMsg;
+            for (std::int8_t& cell: clipped.data) {
+                if (cell > FREE_COST) cell = OCCUPIED_COST;
+            }
+            mCostMapPub.publish(clipped);
         } catch (tf2::TransformException const& e) {
             ROS_WARN_STREAM_THROTTLE(1, std::format("TF tree error processing point cloud: {}", e.what()));
         }
