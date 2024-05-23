@@ -220,10 +220,8 @@ class WaterBottleSearchState(State):
         )
         context.rover.send_drive_command(cmd_vel)
 
-        # Returns either ApproachTargetState, LongRangeState, or None
-        approach_state = context.course.get_approach_state()
-        if approach_state is not None:
-            return approach_state
+        if context.env.current_target_pos() is not None and context.course.look_for_object():
+            return approach_target.ApproachTargetState()
 
         return self
 
