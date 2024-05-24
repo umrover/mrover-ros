@@ -22,9 +22,9 @@ namespace mrover {
         pcGpuPtr[i].g = bgraGpuPtr[i].g;
         pcGpuPtr[i].r = bgraGpuPtr[i].b;
         pcGpuPtr[i].a = bgraGpuPtr[i].a;
-        pcGpuPtr[i].normal_x = normalsGpuPtr[i].x;
-        pcGpuPtr[i].normal_y = normalsGpuPtr[i].y;
-        pcGpuPtr[i].normal_z = normalsGpuPtr[i].z;
+        // pcGpuPtr[i].normal_x = normalsGpuPtr[i].x;
+        // pcGpuPtr[i].normal_y = normalsGpuPtr[i].y;
+        // pcGpuPtr[i].normal_z = normalsGpuPtr[i].z;
     }
 
     /**

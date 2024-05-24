@@ -73,6 +73,13 @@ namespace mrover {
             gst_element_set_state(mPipeline, GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE)
             ROS_ERROR_STREAM("Failed to restart GStreamer pipeline");
 
+        if (mStreamSinkThread.joinable()) mStreamSinkThread.join();
+        mStreamSinkThread = std::thread{[this] {
+            ROS_INFO("Started stream sink thread");
+            pullSampleLoop();
+            std::cout << "Stopped stream sink thread" << std::endl;
+        }};
+
         ros::Duration{mRestartDelay}.sleep();
         mWatchdogTimer.start();
     }
