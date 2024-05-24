@@ -75,17 +75,15 @@ namespace mrover {
             }
 
             nav_msgs::OccupancyGrid postProcesed = mGlobalGridMsg;
+            std::array<std::ptrdiff_t, 9> dis{0,
+                                              -1, +1, -postProcesed.info.width, +postProcesed.info.width,
+                                              -1 - postProcesed.info.width, +1 - postProcesed.info.width,
+                                              -1 + postProcesed.info.width, +1 + postProcesed.info.width};
             for (std::size_t i = 0; i < mGlobalGridMsg.data.size(); ++i) {
-                std::size_t left = i - 1;
-                std::size_t right = i + 1;
-                std::size_t up = i - postProcesed.info.width;
-                std::size_t down = i + postProcesed.info.width;
-                if (mGlobalGridMsg.data[i] > FREE_COST ||
-                    (left < mGlobalGridMsg.data.size() && mGlobalGridMsg.data[left] > FREE_COST) ||
-                    (right < mGlobalGridMsg.data.size() && mGlobalGridMsg.data[right] > FREE_COST) ||
-                    (up < mGlobalGridMsg.data.size() && mGlobalGridMsg.data[up] > FREE_COST) ||
-                    (down < mGlobalGridMsg.data.size() && mGlobalGridMsg.data[down] > FREE_COST))
-                    postProcesed.data[i] = OCCUPIED_COST;
+                if (std::ranges::any_of(dis, [&](std::ptrdiff_t di) {
+                        std::size_t j = i + di;
+                        return j < mGlobalGridMsg.data.size() && mGlobalGridMsg.data[j] > FREE_COST;
+                    })) postProcesed.data[i] = OCCUPIED_COST;
             }
             mCostMapPub.publish(postProcesed);
         } catch (tf2::TransformException const& e) {
