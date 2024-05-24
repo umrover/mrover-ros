@@ -380,4 +380,3 @@ class Context:
         self.env.cost_map.data[cost_map_data == -1] = 10.0  # TODO: find optimal value
         # normalize to [0, 1]
         self.env.cost_map.data /= 100.0
-

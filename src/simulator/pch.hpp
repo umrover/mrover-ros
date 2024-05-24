@@ -80,11 +80,11 @@
 #include <point.hpp>
 #include <units/units.hpp>
 
+#include <mrover/CalibrationStatus.h>
 #include <mrover/ControllerState.h>
 #include <mrover/IK.h>
+#include <mrover/ImageTarget.h>
+#include <mrover/ImageTargets.h>
 #include <mrover/Position.h>
 #include <mrover/Throttle.h>
 #include <mrover/Velocity.h>
-#include <mrover/ImageTarget.h>
-#include <mrover/ImageTargets.h>
-#include <mrover/CalibrationStatus.h>
