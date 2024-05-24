@@ -39,6 +39,8 @@ class WaterBottleSearchState(State):
         "water_bottle_search/distance_between_spirals"
     )  # TODO: after testing, might need to change
     TRAVERSABLE_COST = rospy.get_param("water_bottle_search/traversable_cost")
+    UPDATE_DELAY = rospy.get_param("water_bottle_search/update_delay")
+    SAFE_APPROACH_DISTANCE = rospy.get_param("water_bottle_search/safe_approach_distance")
 
     def find_endpoint(self, context: Context, end: np.ndarray) -> np.ndarray:
         """
@@ -65,31 +67,33 @@ class WaterBottleSearchState(State):
                 # update end point to be the next point in the search spiral
                 end_ij = self.astar.cartesian_to_ij(WaterBottleSearchState.trajectory.get_current_point())
                 end_node = self.astar.Node(None, (end_ij[0], end_ij[1]))
-                print(f"End has high cost! new end: {end_ij}")
+                rospy.loginfo(f"End has high cost! new end: {end_ij}")
         return WaterBottleSearchState.trajectory.get_current_point()
 
     def avg_cell_cost(self, context: Context, start: np.ndarray, end: np.ndarray) -> float:
-        startij = self.astar.cartesian_to_ij(start)
-        endij = self.astar.cartesian_to_ij(end)
-        if np.array_equal(startij, endij):
+        start_ij = self.astar.cartesian_to_ij(start)
+        end_ij = self.astar.cartesian_to_ij(end)
+        if np.array_equal(start_ij, end_ij):
             return 0.0
 
-        vector = endij - startij
+        vector = end_ij - start_ij
         magnitude = np.linalg.norm(vector)
         unit_vector = vector / magnitude
-        endij += np.round(unit_vector*2).astype(np.int8)
-        
+        end_ij += np.round(unit_vector * 2).astype(np.int8)
+
         points = []
-        x0 = startij[0]
-        x1 = endij[0]
-        y0 = startij[1]
-        y1 = endij[1]
+        x0 = start_ij[0]
+        x1 = end_ij[0]
+        y0 = start_ij[1]
+        y1 = end_ij[1]
         dx = abs(x1 - x0)
         dy = abs(y1 - y0)
         sx = 1 if x0 < x1 else -1
         sy = 1 if y0 < y1 else -1
         err = dx - dy
-        while (x0 != x1) or (y0 != y1):
+        i = 0
+        max_iter = 1000
+        while i < max_iter and ((x0 != x1) or (y0 != y1)):
             points.append((x0, y0))
             err2 = 2 * err
             if err2 > -dy:
@@ -98,13 +102,14 @@ class WaterBottleSearchState(State):
             if err2 < dx:
                 err += dx
                 y0 += sy
+            i += 1
         points.append((x1, y1))
         total_cost = 0
         count = 0
-        for i,j in points:
+        for i, j in points:
             total_cost += context.env.cost_map.data[i][j]
             count += 1
-        return total_cost/count
+        return total_cost / count
 
     def on_enter(self, context: Context) -> None:
         if WaterBottleSearchState.trajectory is None:
@@ -129,19 +134,29 @@ class WaterBottleSearchState(State):
         rover_in_map = context.rover.get_pose_in_map()
         assert rover_in_map is not None
 
-        # Only update our costmap every so often
-        if rospy.Time.now() - self.time_last_updated > rospy.Duration(2):
-            rover_position_in_map = rover_in_map.position[0:2]
-            end_point = self.find_endpoint(context, WaterBottleSearchState.trajectory.get_current_point()[0:2])
+        bottle_in_map = context.env.current_target_pos()
 
-            # If path to next sprial point has minimal cost per cell, continue normally to next spiral point
-            if self.avg_cell_cost(context, rover_position_in_map, end_point[0:2]) < self.TRAVERSABLE_COST/2:
+        # Only update our costmap every so often
+        if rospy.Time.now() - self.time_last_updated > rospy.Duration(self.UPDATE_DELAY):
+            rover_position_in_map = rover_in_map.position[0:2]
+
+            if bottle_in_map is None:
+                end_point_in_map = self.find_endpoint(
+                    context, WaterBottleSearchState.trajectory.get_current_point()[0:2]
+                )
+            else:
+                end_point_in_map = bottle_in_map
+
+            # If path to next spiral point has minimal cost per cell, continue normally to next spiral point
+            if self.avg_cell_cost(context, rover_position_in_map, end_point_in_map[0:2]) < self.TRAVERSABLE_COST / 2:
                 self.star_traj = Trajectory(np.array([]))
-            else: # Otherwise, create a path planned through the cost
+                rospy.loginfo_throttle(1, "NOT running A*, path ahead is clear!")
+            # Otherwise, create a path planned through the cost
+            else:
                 rospy.loginfo("Running A*...")
                 context.rover.send_drive_command(Twist())  # stop while planning
                 try:
-                    occupancy_list = self.astar.a_star(rover_position_in_map, end_point[0:2])
+                    occupancy_list = self.astar.a_star(rover_position_in_map, end_point_in_map[0:2])
                 except SpiralEnd:
                     # TODO: what to do in this case
                     WaterBottleSearchState.trajectory.reset()
@@ -156,7 +171,6 @@ class WaterBottleSearchState(State):
                     self.star_traj = Trajectory(np.array([]))
                 else:
                     cartesian_coords = self.astar.ij_to_cartesian(np.array(occupancy_list))
-                    rospy.loginfo(f"{cartesian_coords}, shape: {cartesian_coords.shape}")
                     self.star_traj = Trajectory(
                         np.hstack((cartesian_coords, np.zeros((cartesian_coords.shape[0], 1))))
                     )  # current point gets set back to 0
@@ -220,7 +234,10 @@ class WaterBottleSearchState(State):
         )
         context.rover.send_drive_command(cmd_vel)
 
-        if context.env.current_target_pos() is not None and context.course.look_for_object():
+        if (
+            bottle_in_map is not None
+            and np.linalg.norm(rover_in_map.position[0:2] - bottle_in_map[0:2]) < self.SAFE_APPROACH_DISTANCE
+        ):
             return approach_target.ApproachTargetState()
 
         return self

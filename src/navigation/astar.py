@@ -7,6 +7,8 @@ import numpy as np
 import rospy
 from navigation.context import Context
 
+TRAVERSABLE_COST = rospy.get_param("water_bottle_search/traversable_cost")
+
 
 class SpiralEnd(Exception):
     """
@@ -98,7 +100,6 @@ class AStar:
             path.append(current.position)
             current = current.parent
         reversed_path = path[::-1]
-        print("ij:", reversed_path[1:])
 
         filtered_path = []
         for i, x in enumerate(reversed_path[1:]):
@@ -110,27 +111,27 @@ class AStar:
             costmap_2d[step[0]][step[1]] = 2  # path (.)
         costmap_2d[reversed_path[0][0]][reversed_path[0][1]] = 3  # start
         costmap_2d[reversed_path[-1][0]][reversed_path[-1][1]] = 4  # end
-
-        for row in costmap_2d:
-            line = []
-            for col in row:
-                if col == 1.0:
-                    line.append("\u2588")
-                elif 1.0 > col >= 0.8:
-                    line.append("\u2593")
-                elif 0.8 > col >= 0.5:
-                    line.append("\u2592")
-                elif 0.5 > col >= 0.2:
-                    line.append("\u2591")
-                elif col < 0.2:
-                    line.append(" ")
-                elif col == 2:
-                    line.append(".")
-                elif col == 3:
-                    line.append("S")
-                elif col == 4:
-                    line.append("E")
-            print("".join(line))
+        #
+        # for row in costmap_2d:
+        #     line = []
+        #     for col in row:
+        #         if col == 1.0:
+        #             line.append("\u2588")
+        #         elif 1.0 > col >= 0.8:
+        #             line.append("\u2593")
+        #         elif 0.8 > col >= 0.5:
+        #             line.append("\u2592")
+        #         elif 0.5 > col >= 0.2:
+        #             line.append("\u2591")
+        #         elif col < 0.2:
+        #             line.append(" ")
+        #         elif col == 2:
+        #             line.append(".")
+        #         elif col == 3:
+        #             line.append("S")
+        #         elif col == 4:
+        #             line.append("E")
+        #     print("".join(line))
 
         return filtered_path
 
@@ -141,22 +142,18 @@ class AStar:
         :param end: next point in the spiral from traj in cartesian coordinates
         :return: list of A-STAR coordinates in the occupancy grid coordinates (i,j)
         """
-        TRAVERSABLE_COST = rospy.get_param("water_bottle_search/traversable_cost")
         with self.costmap_lock:
             costmap2d = self.context.env.cost_map.data
             # convert start and end to occupancy grid coordinates
-            startij = self.cartesian_to_ij(start)
-            endij = self.cartesian_to_ij(end)
+            start_ij = self.cartesian_to_ij(start)
+            end_ij = self.cartesian_to_ij(end)
 
             # initialize start and end nodes
-            start_node = self.Node(None, (startij[0], startij[1]))
-            end_node = self.Node(None, (endij[0], endij[1]))
+            start_node = self.Node(None, (start_ij[0], start_ij[1]))
+            end_node = self.Node(None, (end_ij[0], end_ij[1]))
 
             if start_node == end_node:
                 return None
-
-            print(f"start: {start}, end: {end}")
-            print(f"startij: {startij}, endij: {endij}")
 
             # Initialize both open and closed list
             open_list: list[AStar.Node] = []
@@ -176,7 +173,7 @@ class AStar:
 
             # loop until you find the end
             while len(open_list) > 0:
-                # randomize the order of the adjacent_squares_pick_index to avoid a decision making bias
+                # randomize the order of the adjacent_squares_pick_index to avoid a decision-making bias
                 random.shuffle(adjacent_square_pick_index)
 
                 # get the current node

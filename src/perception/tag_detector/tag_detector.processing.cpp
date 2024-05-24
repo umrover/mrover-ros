@@ -46,9 +46,11 @@ namespace mrover {
             int id = mImmediateIds[i];
             Tag& tag = mTags[id];
             tag.hitCount = std::clamp(tag.hitCount + mTagIncrementWeight, 0, mMaxHitCount);
+            tag.hitCount = std::clamp(tag.hitCount + mTagIncrementWeight, 0, mMaxHitCount);
             tag.id = id;
             tag.imageCenter = std::reduce(mImmediateCorners[i].begin(), mImmediateCorners[i].end()) / static_cast<float>(mImmediateCorners[i].size());
-            tag.tagInCam = getTagInCamFromPixel(msg, std::lround(tag.imageCenter.x), std::lround(tag.imageCenter.y));
+            auto approximateSize = static_cast<std::size_t>(std::sqrt(cv::contourArea(mImmediateCorners[i])));
+            tag.tagInCam = spiralSearchForValidPoint(msg, std::lround(tag.imageCenter.x), std::lround(tag.imageCenter.y), approximateSize, approximateSize);
 
             if (!tag.tagInCam) continue;
 
@@ -165,28 +167,39 @@ namespace mrover {
         }
     }
 
-    /**
-     * @brief           Retrieve the pose of the tag in camera space
-     * @param cloudPtr  3D Point Cloud with points stored relative to the camera
-     * @param u         X Pixel Position
-     * @param v         Y Pixel Position
-     */
-    auto StereoTagDetectorNodelet::getTagInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, std::size_t u, std::size_t v) const -> std::optional<SE3d> {
-        assert(cloudPtr);
+    auto StereoTagDetectorNodelet::spiralSearchForValidPoint(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, std::size_t u, std::size_t v, std::size_t width, std::size_t height) const -> std::optional<SE3d> {
+        // See: https://stackoverflow.com/a/398302
+        auto xc = static_cast<int>(u), yc = static_cast<int>(v);
+        auto sw = static_cast<int>(width), sh = static_cast<int>(height);
+        auto ih = static_cast<int>(cloudPtr->height), iw = static_cast<int>(cloudPtr->width);
+        int sx = 0, sy = 0; // Spiral coordinates starting at (0, 0)
+        int dx = 0, dy = -1;
+        std::size_t bigger = std::max(width, height);
+        std::size_t maxIterations = bigger * bigger;
+        for (std::size_t i = 0; i < maxIterations; i++) {
+            if (-sw / 2 < sx && sx <= sw / 2 && -sh / 2 < sy && sy <= sh / 2) {
+                int ix = xc + sx, iy = yc + sy; // Image coordinates
 
-        if (u >= cloudPtr->width || v >= cloudPtr->height) {
-            NODELET_WARN_STREAM(std::format("Tag center out of bounds: [{}, {}]", u, v));
-            return std::nullopt;
+                if (ix < 0 || ix >= iw || iy < 0 || iy >= ih) {
+                    NODELET_WARN_STREAM(std::format("Spiral query is outside the image: [{}, {}]", ix, iy));
+                    continue;
+                }
+
+                Point const& point = reinterpret_cast<Point const*>(cloudPtr->data.data())[ix + iy * cloudPtr->width];
+                if (!std::isfinite(point.x) || !std::isfinite(point.y) || !std::isfinite(point.z)) continue;
+
+                return std::make_optional<SE3d>(R3d{point.x, point.y, point.z}, SO3d::Identity());
+            }
+
+            if (sx == sy || (sx < 0 && sx == -sy) || (sx > 0 && sx == 1 - sy)) {
+                dy = -dy;
+                std::swap(dx, dy);
+            }
+
+            sx += dx;
+            sy += dy;
         }
-
-        Point const& point = reinterpret_cast<Point const*>(cloudPtr->data.data())[u + v * cloudPtr->width];
-
-        if (!std::isfinite(point.x) || !std::isfinite(point.y) || !std::isfinite(point.z)) {
-            NODELET_WARN_STREAM(std::format("Tag center point not finite: [{}, {}, {}]", point.x, point.y, point.z));
-            return std::nullopt;
-        }
-
-        return std::make_optional<SE3d>(R3d{point.x, point.y, point.z}, SO3d::Identity());
+        return std::nullopt;
     }
 
     auto ImageTagDetectorNodelet::getTagBearing(cv::InputArray image, std::span<cv::Point2f const> tagCorners) const -> float {

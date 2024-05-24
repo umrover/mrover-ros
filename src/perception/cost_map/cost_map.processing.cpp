@@ -2,6 +2,8 @@
 
 namespace mrover {
 
+    constexpr static double IMU_WATCHDOG_TIMEOUT = 0.3;
+
     auto remap(double x, double inMin, double inMax, double outMin, double outMax) -> double {
         return (x - inMin) * (outMax - outMin) / (inMax - inMin) + outMin;
     }
@@ -20,6 +22,8 @@ namespace mrover {
         assert(msg);
         assert(msg->height > 0);
         assert(msg->width > 0);
+
+        if (!mLastImuTime || ros::Time::now() - mLastImuTime.value() > ros::Duration{IMU_WATCHDOG_TIMEOUT}) return;
 
         try {
             SE3f cameraToMap = SE3Conversions::fromTfTree(mTfBuffer, "zed_left_camera_frame", "map").cast<float>();
@@ -58,24 +62,32 @@ namespace mrover {
                 Bin& bin = bins[i];
                 if (bin.size() < 16) continue;
 
-                std::size_t pointsHigh = std::ranges::count_if(bin, [](BinEntry const& entry) {
-                    return entry.pointInCamera.z() > 0;
+                std::size_t pointsHigh = std::ranges::count_if(bin, [this](BinEntry const& entry) {
+                    return entry.pointInCamera.z() > mZThreshold;
                 });
                 double percent = static_cast<double>(pointsHigh) / static_cast<double>(bin.size());
 
-                std::int8_t cost = percent > 0.25 ? OCCUPIED_COST : FREE_COST;
+                std::int8_t cost = percent > mZPercent ? OCCUPIED_COST : FREE_COST;
 
                 // Update cell with EWMA acting as a low-pass filter
                 auto& cell = mGlobalGridMsg.data[i];
-                constexpr double alpha = 0.05;
-                cell = static_cast<std::int8_t>(alpha * cost + (1 - alpha) * cell);
+                cell = static_cast<std::int8_t>(mAlpha * cost + (1 - mAlpha) * cell);
             }
 
-            nav_msgs::OccupancyGrid clipped = mGlobalGridMsg;
-            for (std::int8_t& cell: clipped.data) {
-                if (cell > FREE_COST) cell = OCCUPIED_COST;
+            nav_msgs::OccupancyGrid postProcesed = mGlobalGridMsg;
+            for (std::size_t i = 0; i < mGlobalGridMsg.data.size(); ++i) {
+                std::size_t left = i - 1;
+                std::size_t right = i + 1;
+                std::size_t up = i - postProcesed.info.width;
+                std::size_t down = i + postProcesed.info.width;
+                if (mGlobalGridMsg.data[i] > FREE_COST ||
+                    (left < mGlobalGridMsg.data.size() && mGlobalGridMsg.data[left] > FREE_COST) ||
+                    (right < mGlobalGridMsg.data.size() && mGlobalGridMsg.data[right] > FREE_COST) ||
+                    (up < mGlobalGridMsg.data.size() && mGlobalGridMsg.data[up] > FREE_COST) ||
+                    (down < mGlobalGridMsg.data.size() && mGlobalGridMsg.data[down] > FREE_COST))
+                    postProcesed.data[i] = OCCUPIED_COST;
             }
-            mCostMapPub.publish(clipped);
+            mCostMapPub.publish(postProcesed);
         } catch (tf2::TransformException const& e) {
             ROS_WARN_STREAM_THROTTLE(1, std::format("TF tree error processing point cloud: {}", e.what()));
         }

@@ -5,7 +5,6 @@ from typing import Optional, Tuple
 
 import numpy as np
 import pymap3d
-from scipy.signal import convolve2d
 
 import rospy
 import tf2_ros
@@ -350,7 +349,7 @@ class Context:
         rospy.Subscriber("tags", ImageTargets, self.image_targets_callback)
         rospy.Subscriber("objects", ImageTargets, self.image_targets_callback)
         self.costmap_listener = rospy.Subscriber("costmap", OccupancyGrid, self.costmap_callback)
-        
+
     def recv_enable_auton(self, req: EnableAutonRequest) -> EnableAutonResponse:
         if req.enable:
             self.course = convert_and_get_course(self, req)
@@ -364,51 +363,21 @@ class Context:
     def image_targets_callback(self, tags: ImageTargets) -> None:
         self.env.image_targets.push_frame(tags.targets)
 
-    def update_grid(self, grid):
-        """
-        Update the grid such that if a cell contains 1, then all surrounding cells become 1.
-        
-        Args:
-        - grid (numpy array): The input grid represented as a 2D array of floats.
-        
-        Returns:
-        - updated_grid (numpy array): The updated grid with surrounding cells modified.
-        """    
-        rows, cols = grid.shape
-        directions = [(1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (-1, 1), (1, -1), (-1, -1)]
-        updated_grid = np.zeros_like(grid)
-
-        for i in range(rows):
-            for j in range(cols):
-                if grid[i, j] == 1:
-                    updated_grid[i, j] = 1  # Update the cell itself to 1
-                    for dx, dy in directions:
-                        ni, nj = i + dx, j + dy
-                        if 0 <= ni < rows and 0 <= nj < cols:
-                            updated_grid[ni, nj] = 1
-
-        return updated_grid
-
     def costmap_callback(self, msg: OccupancyGrid) -> None:
         """
         Callback function for the occupancy grid perception sends
-        :param msg: Occupancy Grid representative of a 30 x 30m square area with origin at GNSS waypoint. Values are 0, 1, -1
+        :param msg: Occupancy Grid representative of a 32m x 32m square area with origin at GNSS waypoint. Values are 0, 1, -1
         """
+        cost_map_data = np.array(msg.data).reshape((msg.info.height, msg.info.width)).T
+
         self.env.cost_map.origin = np.array([msg.info.origin.position.x, msg.info.origin.position.y])
         self.env.cost_map.resolution = msg.info.resolution  # meters/cell
         self.env.cost_map.height = msg.info.height  # cells
         self.env.cost_map.width = msg.info.width  # cells
-        self.env.cost_map.data = (
-            np.array(msg.data).reshape((int(self.env.cost_map.height), int(self.env.cost_map.width))).astype(np.float32)
-        ).T
+        self.env.cost_map.data = cost_map_data.astype(np.float32)
 
         # change all unidentified points to have a slight cost
-        self.env.cost_map.data[self.env.cost_map.data == -1.0] = 0.1  # TODO: find optimal value
-        self.env.cost_map.data[self.env.cost_map.data == 100.0] = 1.0  # TODO: find optimal value
+        self.env.cost_map.data[cost_map_data == -1] = 10.0  # TODO: find optimal value
+        # normalize to [0, 1]
+        self.env.cost_map.data /= 100.0
 
-        self.env.cost_map.data = self.update_grid(self.env.cost_map.data)
-
-        # # apply kernel to average the map with zero padding
-        # kernel_shape = (3, 3)  # TODO: find optimal kernel size
-        # kernel = np.ones(kernel_shape, dtype=np.float32) / (kernel_shape[0] * kernel_shape[1])
-        # self.env.cost_map.data = convolve2d(self.env.cost_map.data, kernel, mode="same")

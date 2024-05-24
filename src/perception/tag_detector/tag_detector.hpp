@@ -67,7 +67,9 @@ namespace mrover {
 
         auto pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg) -> void;
 
-        auto getTagInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, std::size_t u, std::size_t v) const -> std::optional<SE3d>;
+        auto spiralSearchForValidPoint(sensor_msgs::PointCloud2ConstPtr const& cloudPtr,
+                               std::size_t u, std::size_t v,
+                               std::size_t width, std::size_t height) const -> std::optional<SE3d>;
     };
 
     class ImageTagDetectorNodelet final : public TagDetectorNodeletBase {

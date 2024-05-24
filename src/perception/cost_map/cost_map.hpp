@@ -14,6 +14,12 @@ namespace mrover {
         ros::Publisher mCostMapPub;
         ros::Subscriber mPcSub;
 
+        // TODO(quintin): This is a hack
+        ros::Subscriber mImuSub;
+        std::optional<ros::Time> mLastImuTime;
+
+        float mZPercent{}, mZThreshold{};
+        double mAlpha{};
         float mNearClip{}, mFarClip{};
         float mResolution{}; // Meters per cell
         float mSize{};       // Size of the square costmap in meters

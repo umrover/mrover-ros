@@ -4,9 +4,8 @@ Panels:
     Name: Displays
     Property Tree Widget:
       Expanded:
-        - /Perception1
+        - /Estimated Path1
         - /Perception1/ZED Camera1
-        - /Map1
       Splitter Ratio: 0.5
     Tree Height: 546
   - Class: rviz/Selection
@@ -97,11 +96,17 @@ Visualization Manager:
           Value: false
         chassis_link:
           Value: true
+        course0:
+          Value: true
         front_left_wheel_link:
           Value: false
         front_right_wheel_link:
           Value: false
+        hammer:
+          Value: true
         hammer_truth:
+          Value: true
+        immediateTag0:
           Value: true
         imu:
           Value: true
@@ -122,6 +127,8 @@ Visualization Manager:
         right_gps:
           Value: true
         right_rocker_link:
+          Value: true
+        tag0:
           Value: true
         tag_0_truth:
           Value: true
@@ -185,10 +192,17 @@ Visualization Manager:
                   front_right_wheel_link:
                     {}
               zed_left_camera_frame:
-                {}
+                immediateTag0:
+                  {}
           bottle_truth:
             {}
+          course0:
+            {}
+          hammer:
+            {}
           hammer_truth:
+            {}
+          tag0:
             {}
           tag_0_truth:
             {}
@@ -233,7 +247,7 @@ Visualization Manager:
       Radius: 0.029999999329447746
       Shaft Diameter: 0.10000000149011612
       Shaft Length: 0.10000000149011612
-      Topic: /trajectory
+      Topic: /path
       Unreliable: false
       Value: true
     - Class: rviz/Group
@@ -342,7 +356,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 19.333332061767578
+      Distance: 16.05432891845703
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -358,9 +372,9 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.6652029156684875
+      Pitch: 1.1952024698257446
       Target Frame: <Fixed Frame>
-      Yaw: 1.958560824394226
+      Yaw: 2.118563413619995
     Saved: ~
 Window Geometry:
   Displays:

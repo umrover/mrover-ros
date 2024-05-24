@@ -725,7 +725,7 @@ class BNO08X:  # pylint: disable=too-many-instance-attributes, too-many-public-m
                 0,  # reserved
             ]
         )
-        return [self._magnetometer_accuracy, self._gyro_accuracy, self._acceleration_accuracy]
+        return self._magnetometer_accuracy, self._gyro_accuracy, self._acceleration_accuracy
 
     def _send_me_command(self, subcommand_params: Optional[List[int]]) -> None:
         start_time = time.monotonic()

@@ -60,8 +60,6 @@ class SearchTrajectory(Trajectory):
         # so we reshape x and y coordinates to be (n, 1) matricies then stack horizontally to get (n, 2) matrix
         vertices = np.hstack((xcoords.reshape(-1, 1), ycoords.reshape(-1, 1)))
         all_points = []
-        # print("VERTICES")
-        # print(repr(vertices))
         if insert_extra:
             for i in range(len(vertices) - 1):
                 all_points.append(vertices[i])
@@ -72,8 +70,6 @@ class SearchTrajectory(Trajectory):
                 while count < magnitude - 3.5:
                     all_points.append(all_points[-1] + (unit_vector * 2.5))  # TODO: figure out how far apart to insert
                     count += 2.5
-            # print("ALL POINTS:")
-            # print(repr(np.array(all_points)))
             return np.array(all_points)
 
         return vertices

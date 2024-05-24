@@ -23,6 +23,8 @@ water_bottle_search:
   segments_per_rotation: 8
   distance_between_spirals: 3
   traversable_cost: 0.2
+  update_delay: 2
+  safe_approach_distance: 1.5
 
 object_search:
   coverage_radius: 10

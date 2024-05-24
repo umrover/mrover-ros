@@ -38,7 +38,7 @@ if __name__ == "__main__":
                 # ),
                 (
                     Waypoint(tag_id=-1, type=WaypointType(val=WaypointType.WATER_BOTTLE)),
-                    SE3(position=np.array([4, 4, 0])),
+                    SE3(position=np.array([-4, 4, 0])),
                 ),
             ]
         ]
