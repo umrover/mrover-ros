@@ -18,45 +18,45 @@
 #include <string>
 
 namespace mjbots {
-namespace moteus {
-namespace detail {
+  namespace moteus {
+    namespace detail {
 
-class Tokenizer {
- public:
-  Tokenizer(const std::string& source, const char* delimiters)
-      : source_(source),
-        delimiters_(delimiters),
-        position_(source_.cbegin()) {}
+      class Tokenizer {
+      public:
+        Tokenizer(const std::string& source, const char* delimiters)
+            : source_(source),
+              delimiters_(delimiters),
+              position_(source_.cbegin()) {}
 
-  std::string next() {
-    if (position_ == source_.end()) { return std::string(); }
+        std::string next() {
+          if (position_ == source_.end()) { return std::string(); }
 
-    const auto start = position_;
-    auto my_next = position_;
-    bool found = false;
-    for (; my_next != source_.end(); ++my_next) {
-      if (std::strchr(delimiters_, *my_next) != nullptr) {
-        position_ = my_next;
-        ++position_;
-        found = true;
-        break;
-      }
-    }
-    if (!found) { position_ = my_next; }
-    return std::string(&*start, my_next - start);
-  }
+          const auto start = position_;
+          auto my_next = position_;
+          bool found = false;
+          for (; my_next != source_.end(); ++my_next) {
+            if (std::strchr(delimiters_, *my_next) != nullptr) {
+              position_ = my_next;
+              ++position_;
+              found = true;
+              break;
+            }
+          }
+          if (!found) { position_ = my_next; }
+          return std::string(&*start, my_next - start);
+        }
 
-  std::string remaining() const {
-    return std::string(&*position_, source_.end() - position_);
-  }
+        std::string remaining() const {
+          return std::string(&*position_, source_.end() - position_);
+        }
 
- private:
-  const std::string source_;
-  const char* const delimiters_;
-  std::string::const_iterator position_;
-};
+      private:
+        const std::string source_;
+        const char* const delimiters_;
+        std::string::const_iterator position_;
+      };
 
 
-}  // namespace detail
-}  // namespace moteus
+    }  // namespace detail
+  }  // namespace moteus
 }  // namespace mjbots

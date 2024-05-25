@@ -28,7 +28,7 @@ zed:
   depth_maximum_distance: 12.0
 
 stereo_object_detector:
-  model_score_threshold: 0.6
+  model_score_threshold: 0.9
 
 long_range_object_detector:
-  model_score_threshold: 0.6
+  model_score_threshold: 0.9
