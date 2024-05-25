@@ -11,7 +11,7 @@ namespace mrover {
 
     struct ChunkHeader {
         enum struct Resolution : std::uint8_t {
-            EGA, // 640x480
+            VGA, // 640x480
             HD,  // 1280x720
             FHD, // 1920x1080
         } resolution;
@@ -29,7 +29,8 @@ namespace mrover {
         // These device paths are not garunteed to stay the same between reboots
         // Prefer sys path for non-debugging purposes
         std::string mDeviceNode;
-        bool mDecodeJpegFromDevice{}; // Uses less USB hub bandwidth, which is limited since we are using 2.0
+        bool mDecodeJpegFromDevice{};    // Uses less USB hub bandwidth, which is limited since we are using 2.0
+        bool mDisableAutoWhiteBalance{}; // Useful for science, the UV LEDs can mess with the white balance
         std::string mImageTopic;
         // To find the sys path:
         // 1) Disconnect all cameras

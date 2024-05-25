@@ -48,6 +48,7 @@ namespace mrover {
             launch += "appsrc name=imageSource is-live=true ";
         } else {
             launch += std::format("v4l2src device={} ", mDeviceNode);
+            if (mDisableAutoWhiteBalance) launch += "extra-controls=\"c,white_balance_temperature_auto=0,white_balance_temperature=4000\" ";
         }
         // Source format
         std::string captureFormat = mDeviceNode.empty() ? "video/x-raw,format=BGRA" : mDecodeJpegFromDevice ? "image/jpeg"
@@ -154,7 +155,7 @@ namespace mrover {
     }
 
     auto widthAndHeightToResolution(std::uint32_t width, std::uint32_t height) -> ChunkHeader::Resolution {
-        if (width == 640 && height == 480) return ChunkHeader::Resolution::EGA;
+        if (width == 640 && height == 480) return ChunkHeader::Resolution::VGA;
         if (width == 1280 && height == 720) return ChunkHeader::Resolution::HD;
         if (width == 1920 && height == 1080) return ChunkHeader::Resolution::FHD;
         throw std::runtime_error{"Unsupported resolution"};
@@ -182,7 +183,7 @@ namespace mrover {
             std::string candidateDevicePath = udev_device_get_devpath(candidateDevice);
 
             if (!candidateDevicePath.starts_with(devicePath)) continue;
-            
+
             device = candidateDevice;
             break;
         }
@@ -205,6 +206,7 @@ namespace mrover {
             mDeviceNode = mPnh.param<std::string>("dev_node", "");
             mDevicePath = mPnh.param<std::string>("dev_path", "");
             mDecodeJpegFromDevice = mPnh.param<bool>("decode_jpeg_from_device", true);
+            mDisableAutoWhiteBalance = mPnh.param<bool>("disable_auto_white_balance", false);
             mImageTopic = mPnh.param<std::string>("image_topic", "image");
             mImageWidth = mPnh.param<int>("width", 640);
             mImageHeight = mPnh.param<int>("height", 480);
