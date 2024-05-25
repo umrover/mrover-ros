@@ -14,9 +14,9 @@ from adafruit_bno08x import (
     BNO_REPORT_GYROSCOPE,
 )
 from adafruit_bno08x.i2c import BNO08X_I2C
-from geometry_msgs.msg import Quaternion
+from geometry_msgs.msg import Quaternion, Vector3
 from mrover.msg import CalibrationStatus
-from sensor_msgs.msg import Imu
+from sensor_msgs.msg import Imu, MagneticField
 from std_msgs.msg import Header
 
 BN0085_I2C_ADDRESS = 0x4A
@@ -32,7 +32,7 @@ def main() -> None:
 
     calib_imu_pub = rospy.Publisher("/imu/data", Imu, queue_size=1)
     uncalib_pub = rospy.Publisher("/imu/data_raw", Imu, queue_size=1)
-    # mag_pub = rospy.Publisher("/imu/mag", MagneticField, queue_size=1)
+    mag_pub = rospy.Publisher("/imu/mag", MagneticField, queue_size=1)
     calib_pub = rospy.Publisher("/imu/calibration", CalibrationStatus, queue_size=1)
 
     rospy.loginfo("Initializing IMU I2C connection...")
@@ -70,8 +70,8 @@ def main() -> None:
                 Imu(
                     header=header,
                     orientation=Quaternion(*bno.quaternion),
-                    # angular_velocity=Vector3(*bno.gyro),
-                    # linear_acceleration=Vector3(*bno.acceleration),
+                    angular_velocity=Vector3(*bno.gyro),
+                    linear_acceleration=Vector3(*bno.acceleration),
                 ),
             )
 
@@ -82,13 +82,14 @@ def main() -> None:
                 )
             )
 
-            # mag_pub.publish(MagneticField(header=header, magnetic_field=Vector3(*bno.magnetic)))
+            mag_pub.publish(MagneticField(header=header, magnetic_field=Vector3(*bno.magnetic)))
 
             calib_pub.publish(CalibrationStatus(header, *bno.calibration_status))
         except Exception as e:
             rospy.logwarn(e)
             rospy.logwarn(traceback.format_exc())
-            while not rospy.is_shutdown():
+            start = rospy.Time.now()
+            while rospy.Time.now() - start < rospy.Duration(1):
                 try:
                     rospy.loginfo_throttle(1, "Attempting to re-enable readings...")
                     bno._readings.clear()
@@ -100,7 +101,11 @@ def main() -> None:
                     rospy.loginfo("Restarted!")
                     break
                 except:
+                    rospy.logwarn_throttle(2, "Re-enable failed...")
                     pass
+            else:
+                rospy.logfatal("Failed to restart IMU driver, exiting...")
+                break
 
         rate.sleep()
 
