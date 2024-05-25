@@ -449,12 +449,14 @@ class MultiplexParser {
   static constexpr int8_t kTime = 7;
   static constexpr int8_t kCurrent = 8;
   static constexpr int8_t kTheta = 9;
+  static constexpr int8_t kPower = 10;
+  static constexpr int8_t kAcceleration = 11;
 
   double ReadConcrete(Resolution res, int8_t concrete_type) {
 #ifndef ARDUINO
     static constexpr double kMappingValues[] = {
 #else
-    static constexpr double PROGMEM kMappingValues[] = {
+    static constexpr float PROGMEM kMappingValues[] = {
 #endif
       1.0, 1.0, 1.0,           // kInt
       0.01, 0.0001, 0.00001,   // kPosition
@@ -466,6 +468,8 @@ class MultiplexParser {
       0.01, 0.001, 0.000001,   // kTime
       1.0, 0.1, 0.001,         // kCurrent
       1.0 / 127.0 * M_PI, 1.0 / 32767.0 * M_PI, 1.0 / 2147483647.0 * M_PI, // kTheta
+      10.0, 0.05, 0.0001,      // kPower
+      0.05, 0.001, 0.00001,    // kAcceleration
     };
 
 #ifndef ARDUINO
@@ -473,9 +477,9 @@ class MultiplexParser {
     const double int16_scale = kMappingValues[concrete_type * 3 + 1];
     const double int32_scale = kMappingValues[concrete_type * 3 + 2];
 #else
-    const double int8_scale = pgm_read_float_near(kMappingValues + concrete_type * 3 + 0);
-    const double int16_scale = pgm_read_float_near(kMappingValues + concrete_type * 3 + 1);
-    const double int32_scale = pgm_read_float_near(kMappingValues + concrete_type * 3 + 2);
+    const float int8_scale = pgm_read_float_near(kMappingValues + concrete_type * 3 + 0);
+    const float int16_scale = pgm_read_float_near(kMappingValues + concrete_type * 3 + 1);
+    const float int32_scale = pgm_read_float_near(kMappingValues + concrete_type * 3 + 2);
 #endif
 
     switch (res) {
@@ -533,6 +537,10 @@ class MultiplexParser {
 
   double ReadCurrent(Resolution res) {
     return ReadConcrete(res, kCurrent);
+  }
+
+  double ReadPower(Resolution res) {
+    return ReadConcrete(res, kPower);
   }
 
   void Ignore(Resolution res) {

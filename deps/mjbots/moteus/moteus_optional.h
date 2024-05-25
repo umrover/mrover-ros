@@ -15,39 +15,39 @@
 #pragma once
 
 namespace mjbots {
-namespace moteus {
+  namespace moteus {
 
-// A stripped down optional class for C++11 environments.
-template <typename T>
-class Optional {
- public:
-  Optional() : dummy_(0), engaged_(false) {}
-  Optional(const T& t) : val_(t), engaged_(true) {}
+    // A stripped down optional class for C++11 environments.
+    template <typename T>
+    class Optional {
+    public:
+      Optional() : dummy_(0), engaged_(false) {}
+      Optional(const T& t) : val_(t), engaged_(true) {}
 
-  ~Optional() {
-    if (engaged_) { val_.~T(); }
-  }
+      ~Optional() {
+        if (engaged_) { val_.~T(); }
+      }
 
-  Optional& operator=(const T& val) {
-    engaged_ = true;
-    val_ = val;
-    return *this;
-  }
+      Optional& operator=(const T& val) {
+        engaged_ = true;
+        val_ = val;
+        return *this;
+      }
 
-  bool has_value() const { return engaged_; }
+      bool has_value() const { return engaged_; }
 
-  T& operator*() noexcept { return val_; }
-  T* operator->() noexcept { return &val_; }
-  const T& operator*() const noexcept { return val_; }
-  const T* operator->() const noexcept { return &val_; }
+      T& operator*() noexcept { return val_; }
+      T* operator->() noexcept { return &val_; }
+      const T& operator*() const noexcept { return val_; }
+      const T* operator->() const noexcept { return &val_; }
 
-  explicit operator bool() const noexcept { return engaged_; }
-  bool operator!() const noexcept { return !engaged_; }
+      explicit operator bool() const noexcept { return engaged_; }
+      bool operator!() const noexcept { return !engaged_; }
 
- private:
-  union { char dummy_; T val_; };
-  bool engaged_;
-};
+    private:
+      union { char dummy_; T val_; };
+      bool engaged_;
+    };
 
-}  // namespace moteus
+  }  // namespace moteus
 }  // namespace mjbots
