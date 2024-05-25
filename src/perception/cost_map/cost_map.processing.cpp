@@ -37,7 +37,7 @@ namespace mrover {
             // std::vector<Bin> bins;
             // bins.resize(mGlobalGridMsg.data.size());
 
-            std::vector<Eigen::MatrixX3f> bins;
+            std::vector<Eigen::Matrix3Xf> bins;
             bins.resize(mGlobalGridMsg.data.size());
 
             auto* points = reinterpret_cast<Point const*>(msg->data.data());
@@ -57,8 +57,8 @@ namespace mrover {
                     int index = mapToGrid(pointInMap, mGlobalGridMsg);
                     if (index < 0 || index >= static_cast<int>(mGlobalGridMsg.data.size())) continue;
 
-                    bins[index].resize(bins[index].size() + 1, 3);
-                    bins[index].row(bins[index].size() - 1) = pointInMap;
+                    bins[index].conservativeResize(Eigen::NoChange, bins[index].cols() + 1);
+                    bins[index].col(bins[index].cols() - 1) = pointInCamera;
 
                     // bins[index].emplace_back(BinEntry{pointInCamera, pointInMap});
                 }
@@ -73,13 +73,15 @@ namespace mrover {
                 // });
                 // double percent = static_cast<double>(pointsHigh) / static_cast<double>(bin.size());
 
-                Eigen::MatrixX3f const& points = bins[i];
-                Eigen::Vector3f centroid = points.colwise().mean();
-                Eigen::MatrixX3f centered = points.rowwise() - centroid.transpose();
+                Eigen::Matrix3Xf const& points = bins[i];
+                if (points.cols() < 16) continue;
+
+                Eigen::Vector3f centroid = points.rowwise().mean();
+                Eigen::Matrix3Xf centered = points.colwise() - centroid;
                 Eigen::JacobiSVD svd = centered.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV);
                 Eigen::Vector3f normal = svd.matrixU().rightCols<1>();
                 double angle = std::acos(std::abs(normal.z()));
-                auto cost = static_cast<std::int8_t>(remap(angle, 0, std::numbers::pi, 0, 100));
+                std::int8_t cost = angle > 30 * M_PI / 180 ? OCCUPIED_COST : FREE_COST;
 
                 // Update cell with EWMA acting as a low-pass filter
                 auto& cell = mGlobalGridMsg.data[i];

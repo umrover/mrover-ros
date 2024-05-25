@@ -197,6 +197,7 @@ namespace mrover {
 
         int x, y, w, h;
         glfwGetMonitorWorkarea(glfwGetPrimaryMonitor(), &x, &y, &w, &h);
+        w /= 2;
 #ifdef NDEBUG
         constexpr auto WINDOW_NAME = "MRover Simulator";
 #else
