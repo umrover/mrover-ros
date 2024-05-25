@@ -10,7 +10,8 @@ zed:
   # QUALITY     Computation mode designed for challenging areas with untextured surfaces.
   # ULTRA       Computation mode favoring edges and sharpness. Requires more GPU memory and computation power.
   # NEURAL      End to End Neural disparity estimation, requires AI module.
-  depth_mode: QUALITY
+  # NEURAL PLUS More accurate Neural disparity estimation, requires AI module.
+  depth_mode: ULTRA
   image_width: 1280
   image_height: 720
   # Threshold to reject depth values based on their confidence.
