@@ -1,14 +1,19 @@
 #!/usr/bin/env python3
 
+import traceback
+
 import board
 import busio
+
+import rospy
 from adafruit_bno08x import (
     BNO_REPORT_ROTATION_VECTOR,
     BNO_REPORT_GAME_ROTATION_VECTOR,
+    BNO_REPORT_MAGNETOMETER,
+    BNO_REPORT_ACCELEROMETER,
+    BNO_REPORT_GYROSCOPE,
 )
 from adafruit_bno08x.i2c import BNO08X_I2C
-
-import rospy
 from geometry_msgs.msg import Quaternion
 from mrover.msg import CalibrationStatus
 from sensor_msgs.msg import Imu
@@ -41,21 +46,18 @@ def main() -> None:
 
     rospy.loginfo("Configuring IMU reports...")
 
-    all_done = False
-
-    while not all_done and not rospy.is_shutdown():
-        try:
-            # bno.enable_feature(BNO_REPORT_ACCELEROMETER)
-            # bno.enable_feature(BNO_REPORT_GYROSCOPE)
-            # bno.enable_feature(BNO_REPORT_MAGNETOMETER)
-            bno.enable_feature(BNO_REPORT_ROTATION_VECTOR)
-            # Orientation with no reference heading
-            bno.enable_feature(BNO_REPORT_GAME_ROTATION_VECTOR)
-            all_done = True
-        except Exception as e:
-            # TODO: Toggle reset pin
-            rospy.logwarn(f"Failed to enable all features: {e}, retrying...")
-            rospy.sleep(1)
+    try:
+        bno.enable_feature(BNO_REPORT_ACCELEROMETER)
+        bno.enable_feature(BNO_REPORT_GYROSCOPE)
+        bno.enable_feature(BNO_REPORT_MAGNETOMETER)
+        bno.enable_feature(BNO_REPORT_ROTATION_VECTOR)
+        # Orientation with no reference heading
+        bno.enable_feature(BNO_REPORT_GAME_ROTATION_VECTOR)
+    except Exception as e:
+        # TODO: Toggle reset pin
+        rospy.logwarn(f"Failed to enable all features: {e}, retrying...")
+        rospy.logwarn(traceback.format_exc())
+        return
 
     rospy.loginfo("IMU armed")
 
@@ -63,25 +65,42 @@ def main() -> None:
     while not rospy.is_shutdown():
         header = Header(stamp=rospy.Time.now(), frame_id=frame_id)
 
-        calib_imu_pub.publish(
-            Imu(
-                header=header,
-                orientation=Quaternion(*bno.quaternion),
-                # angular_velocity=Vector3(*bno.gyro),
-                # linear_acceleration=Vector3(*bno.acceleration),
-            ),
-        )
-
-        uncalib_pub.publish(
-            Imu(
-                header=header,
-                orientation=Quaternion(*bno.game_quaternion),
+        try:
+            calib_imu_pub.publish(
+                Imu(
+                    header=header,
+                    orientation=Quaternion(*bno.quaternion),
+                    # angular_velocity=Vector3(*bno.gyro),
+                    # linear_acceleration=Vector3(*bno.acceleration),
+                ),
             )
-        )
 
-        # mag_pub.publish(MagneticField(header=header, magnetic_field=Vector3(*bno.magnetic)))
+            uncalib_pub.publish(
+                Imu(
+                    header=header,
+                    orientation=Quaternion(*bno.game_quaternion),
+                )
+            )
 
-        calib_pub.publish(CalibrationStatus(header, *bno.calibration_status))
+            # mag_pub.publish(MagneticField(header=header, magnetic_field=Vector3(*bno.magnetic)))
+
+            calib_pub.publish(CalibrationStatus(header, *bno.calibration_status))
+        except Exception as e:
+            rospy.logwarn(e)
+            rospy.logwarn(traceback.format_exc())
+            while not rospy.is_shutdown():
+                try:
+                    rospy.loginfo_throttle(1, "Attempting to re-enable readings...")
+                    bno._readings.clear()
+                    bno.enable_feature(BNO_REPORT_ACCELEROMETER)
+                    bno.enable_feature(BNO_REPORT_GYROSCOPE)
+                    bno.enable_feature(BNO_REPORT_MAGNETOMETER)
+                    bno.enable_feature(BNO_REPORT_ROTATION_VECTOR)
+                    bno.enable_feature(BNO_REPORT_GAME_ROTATION_VECTOR)
+                    rospy.loginfo("Restarted!")
+                    break
+                except:
+                    pass
 
         rate.sleep()
 

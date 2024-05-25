@@ -21,7 +21,7 @@ dependencies = [
     "scipy==1.13.0",
     "shapely==2.0.1",
     "pyserial==3.5",
-    "moteus==0.3.69",
+    "moteus==0.3.70",
     "pymap3d==3.0.1",
     "daphne==4.0.0",
     "channels==4.0.0",

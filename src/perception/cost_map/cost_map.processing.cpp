@@ -2,7 +2,7 @@
 
 namespace mrover {
 
-    constexpr static double IMU_WATCHDOG_TIMEOUT = 0.3;
+    constexpr static double IMU_WATCHDOG_TIMEOUT = 0.1;
 
     auto remap(double x, double inMin, double inMax, double outMin, double outMax) -> double {
         return (x - inMin) * (outMax - outMin) / (inMax - inMin) + outMin;
