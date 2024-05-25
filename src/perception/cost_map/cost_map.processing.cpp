@@ -28,13 +28,16 @@ namespace mrover {
         try {
             SE3f cameraToMap = SE3Conversions::fromTfTree(mTfBuffer, "zed_left_camera_frame", "map").cast<float>();
 
-            struct BinEntry {
-                R3f pointInCamera;
-                R3f pointInMap;
-            };
-            using Bin = std::vector<BinEntry>;
+            // struct BinEntry {
+            //     R3f pointInCamera;
+            //     R3f pointInMap;
+            // };
+            // using Bin = std::vector<BinEntry>;
+            //
+            // std::vector<Bin> bins;
+            // bins.resize(mGlobalGridMsg.data.size());
 
-            std::vector<Bin> bins;
+            std::vector<Eigen::MatrixX3f> bins;
             bins.resize(mGlobalGridMsg.data.size());
 
             auto* points = reinterpret_cast<Point const*>(msg->data.data());
@@ -54,20 +57,29 @@ namespace mrover {
                     int index = mapToGrid(pointInMap, mGlobalGridMsg);
                     if (index < 0 || index >= static_cast<int>(mGlobalGridMsg.data.size())) continue;
 
-                    bins[index].emplace_back(BinEntry{pointInCamera, pointInMap});
+                    bins[index].resize(bins[index].size() + 1, 3);
+                    bins[index].row(bins[index].size() - 1) = pointInMap;
+
+                    // bins[index].emplace_back(BinEntry{pointInCamera, pointInMap});
                 }
             }
 
             for (std::size_t i = 0; i < mGlobalGridMsg.data.size(); ++i) {
-                Bin& bin = bins[i];
-                if (bin.size() < 16) continue;
+                // Bin& bin = bins[i];
+                // if (bin.size() < 16) continue;
+                //
+                // std::size_t pointsHigh = std::ranges::count_if(bin, [this](BinEntry const& entry) {
+                //     return entry.pointInCamera.z() > mZThreshold;
+                // });
+                // double percent = static_cast<double>(pointsHigh) / static_cast<double>(bin.size());
 
-                std::size_t pointsHigh = std::ranges::count_if(bin, [this](BinEntry const& entry) {
-                    return entry.pointInCamera.z() > mZThreshold;
-                });
-                double percent = static_cast<double>(pointsHigh) / static_cast<double>(bin.size());
-
-                std::int8_t cost = percent > mZPercent ? OCCUPIED_COST : FREE_COST;
+                Eigen::MatrixX3f const& points = bins[i];
+                Eigen::Vector3f centroid = points.colwise().mean();
+                Eigen::MatrixX3f centered = points.rowwise() - centroid.transpose();
+                Eigen::JacobiSVD svd = centered.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV);
+                Eigen::Vector3f normal = svd.matrixU().rightCols<1>();
+                double angle = std::acos(std::abs(normal.z()));
+                auto cost = static_cast<std::int8_t>(remap(angle, 0, std::numbers::pi, 0, 100));
 
                 // Update cell with EWMA acting as a low-pass filter
                 auto& cell = mGlobalGridMsg.data[i];
