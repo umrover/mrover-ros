@@ -46,7 +46,8 @@ namespace mrover {
             mPnh.param("grab_resolution", grabResolutionString, std::string{sl::toString(sl::RESOLUTION::HD720)});
             std::string depthModeString{};
             mPnh.param("depth_mode", depthModeString, std::string{sl::toString(sl::DEPTH_MODE::PERFORMANCE)});
-            mPnh.param("grab_target_fps", mGrabTargetFps, 50);
+            mPnh.param("serial_number", mSerialNumber, -1);
+            mPnh.param("grab_target_fps", mGrabTargetFps, 60);
             int imageWidth{};
             int imageHeight{};
             mPnh.param("image_width", imageWidth, 1280);
@@ -81,7 +82,11 @@ namespace mrover {
             if (mSvoPath) {
                 initParameters.input.setFromSVOFile(mSvoPath);
             } else {
-                initParameters.input.setFromCameraID(-1, sl::BUS_TYPE::USB);
+                if (mSerialNumber == -1) {
+                    initParameters.input.setFromCameraID(-1, sl::BUS_TYPE::USB);
+                } else {
+                    initParameters.input.setFromSerialNumber(mSerialNumber, sl::BUS_TYPE::USB);
+                }
             }
             initParameters.depth_stabilization = mUseDepthStabilization;
             initParameters.camera_resolution = stringToZedEnum<sl::RESOLUTION>(grabResolutionString);
@@ -91,6 +96,8 @@ namespace mrover {
             initParameters.camera_fps = mGrabTargetFps;
             initParameters.coordinate_system = sl::COORDINATE_SYSTEM::RIGHT_HANDED_Z_UP_X_FWD; // Match ROS
             initParameters.depth_maximum_distance = mDepthMaximumDistance;
+
+            if (initParameters.depth_mode == sl::DEPTH_MODE::NONE) throw std::invalid_argument{"No depth capture is currently not supported"};
 
             if (mZed.open(initParameters) != sl::ERROR_CODE::SUCCESS) {
                 throw std::runtime_error("ZED failed to open");

@@ -17,10 +17,10 @@ namespace mrover {
             Measures() = default;
 
             Measures(Measures&) = delete;
-            Measures& operator=(Measures&) = delete;
+            auto operator=(Measures&) -> Measures& = delete;
 
             Measures(Measures&&) noexcept;
-            Measures& operator=(Measures&&) noexcept;
+            auto operator=(Measures&&) noexcept -> Measures&;
         };
 
         ros::NodeHandle mNh, mPnh;
@@ -34,6 +34,7 @@ namespace mrover {
 
         sl::Resolution mImageResolution, mPointResolution, mNormalsResolution;
         sl::String mSvoPath;
+        int mSerialNumber{};
         int mGrabTargetFps{};
         int mDepthConfidence{};
         int mTextureConfidence{};
