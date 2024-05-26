@@ -21,6 +21,7 @@ namespace mrover {
             auto cameraInfoTopicName = mPnh.param<std::string>("camera_info_topic", "/camera_info");
             auto watchdogTimeout = mPnh.param<double>("watchdog_timeout", 1.0);
             mRestartDelay = mPnh.param<double>("restart_delay", 2.0);
+            auto decodeJpegFromDevice = mPnh.param<bool>("decode_jpeg_from_device", true);
 
             mImgPub = mNh.advertise<sensor_msgs::Image>(imageTopicName, 1);
             mCamInfoPub = mNh.advertise<sensor_msgs::CameraInfo>(cameraInfoTopicName, 1);
@@ -29,9 +30,20 @@ namespace mrover {
 
             mMainLoop = gstCheck(g_main_loop_new(nullptr, FALSE));
 
-            std::string captureFormat = std::format("video/x-raw,format=YUY2,width={},height={},framerate={}/1", mWidth, mHeight, framerate);
-            std::string launch = std::format("v4l2src device={} ! {} ! appsink name=streamSink sync=false", device, captureFormat);
+            std::string launch = std::format("v4l2src device={} ", device);
+            if (decodeJpegFromDevice) {
+                launch += std::format("! image/jpeg,width={},height={},framerate={}/1 ", mWidth, mHeight, framerate);
+                if (gst_element_factory_find("nvv4l2decoder")) {
+                    launch += "! nvv4l2decoder mjpeg=1 ! nvvidconv ! video/x-raw,format=RGBA ! ";
+                } else {
+                    throw std::runtime_error{"Not supported yet!"};
+                }
+            } else {
+                launch += std::format("! video/x-raw,format=YUY2,width={},height={},framerate={}/1 ", mWidth, mHeight, framerate);
+            }
+            launch += "! appsink name=streamSink sync=false";
             NODELET_INFO_STREAM(std::format("GStreamer launch string: {}", launch));
+
             mPipeline = gstCheck(gst_parse_launch(launch.c_str(), nullptr));
 
             mStreamSink = gstCheck(gst_bin_get_by_name(GST_BIN(mPipeline), "streamSink"));
