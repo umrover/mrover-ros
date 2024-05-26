@@ -38,6 +38,7 @@
 
   <include file="$(find mrover)/launch/zed.launch">
     <arg name="zed_model" value="zedm"/>
+    <arg name="serial_number" value="12046231"/>
     <arg name="use_builtin_visual_odom" value="true"/>
   </include>
 

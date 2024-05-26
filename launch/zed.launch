@@ -1,6 +1,7 @@
 <launch>
   <!-- 'zed' (ZED 1) or 'zed2i' (ZED 2i) -->
   <arg name="zed_model" default="zed"/>
+  <arg name="serial_number" default="-1"/>
   <!-- Use ZED's built-in VO (called positional tracking) -->
   <arg name="use_builtin_visual_odom" default="false"/>
 
@@ -8,6 +9,7 @@
 
   <node pkg="nodelet" type="nodelet" name="zed" respawn="true"
         args="load mrover/ZedNodelet perception_nodelet_manager" output="screen">
+    <param name="serial_number" value="$(arg serial_number)"/>
     <param name="use_builtin_visual_odom" value="$(arg use_builtin_visual_odom)"/>
   </node>
 

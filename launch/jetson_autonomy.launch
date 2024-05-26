@@ -5,7 +5,10 @@
 
   <include file="$(find mrover)/launch/jetson_base.launch"/>
 
-  <include file="$(find mrover)/launch/zed.launch"/>
+  <include file="$(find mrover)/launch/zed.launch">
+    <arg name="zed_model" value="zed"/>
+    <arg name="serial_number" value="14458"/>
+  </include>
   <include file="$(find mrover)/launch/long_range_cam.launch"/>
 
   <include file="$(find mrover)/launch/perception.launch">
