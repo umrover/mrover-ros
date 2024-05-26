@@ -199,7 +199,6 @@ target_compile_definitions(websocket_server PUBLIC BOOST_ASIO_NO_DEPRECATED)
 
 mrover_add_nodelet(tag_detector src/perception/tag_detector/*.cpp src/perception/tag_detector src/perception/tag_detector/pch.hpp)
 mrover_nodelet_link_libraries(tag_detector opencv_core opencv_objdetect opencv_aruco opencv_imgproc lie)
-
 #mrover_add_nodelet(long_range_tag_detector src/perception/tag_detector/long_range_cam/*.cpp src/perception/tag_detector/long_range_cam src/perception/tag_detector/long_range_cam/pch.hpp)
 #mrover_nodelet_link_libraries(long_range_tag_detector opencv_core opencv_objdetect opencv_aruco opencv_imgproc lie)
 
@@ -231,6 +230,10 @@ if (ZED_FOUND)
             ALLOW_BUILD_DEBUG # Ignore ZED warnings about Debug mode
             __CUDA_INCLUDE_COMPILER_INTERNAL_HEADERS__ # Eigen includes some files it should not, ignore
     )
+
+    mrover_add_node(zed_imu src/perception/zed_imu.cpp)
+    target_include_directories(zed_imu PRIVATE ${ZED_INCLUDE_DIRS} ${CUDA_INCLUDE_DIRS})
+    target_link_libraries(zed_imu PRIVATE ${ZED_LIBRARIES} ${SPECIAL_OS_LIBS})
 endif ()
 
 ## Teleoperation
