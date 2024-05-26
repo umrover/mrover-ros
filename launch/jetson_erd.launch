@@ -2,5 +2,7 @@
   <include file="$(find mrover)/launch/jetson_base.launch"/>
   <include file="$(find mrover)/launch/jetson_arm.launch"/>
 
-  <include file="$(find mrover)/launch/zed.launch"/>
+  <include file="$(find mrover)/launch/zed.launch">
+    <arg name="zed_model" value="zedm"/>
+  </include>
 </launch>
