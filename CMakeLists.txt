@@ -231,7 +231,7 @@ if (ZED_FOUND)
             __CUDA_INCLUDE_COMPILER_INTERNAL_HEADERS__ # Eigen includes some files it should not, ignore
     )
 
-    mrover_add_node(zed_imu src/perception/zed_imu.cpp)
+    mrover_add_node(zed_imu src/localization/zed_imu.cpp)
     target_include_directories(zed_imu PRIVATE ${ZED_INCLUDE_DIRS} ${CUDA_INCLUDE_DIRS})
     target_link_libraries(zed_imu PRIVATE ${ZED_LIBRARIES} ${SPECIAL_OS_LIBS})
 endif ()
