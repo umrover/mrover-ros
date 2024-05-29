@@ -13,6 +13,7 @@
   <node pkg="mrover" type="zed" name="zed_mini_auton">
     <param name="zed_model" value="zedm"/>
     <param name="serial_number" value="12046231"/>
+    <remap from="/camera/left/image" to="/zed_mini/left/image"/>
   </node>
 
   <include file="$(find mrover)/launch/perception.launch">

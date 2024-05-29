@@ -3,7 +3,7 @@
         args="load mrover/UsbCameraNodelet perception_lr_nodelet_manager" output="screen">
     <param name="width" value="1280"/>
     <param name="height" value="720"/>
-    <param name="framerate" value="10"/>
+    <param name="framerate" value="15"/>
     <param name="device" value="/dev/arducam"/>
     <param name="image_topic" value="/long_range_camera/image"/>
     <param name="camera_info_topic" value="/long_range_camera/info"/>
