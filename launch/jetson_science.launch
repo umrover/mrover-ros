@@ -16,21 +16,21 @@
   <group if="$(arg cameras)">
     <node pkg="mrover" type="gst_websocket_streamer" name="ish_1_streamer"
           output="screen">
-      <param name="dev_path" value="/devices/platform/3610000.xhci/usb1/1-1/1-1.4/1-1.4.4"/>
+      <param name="dev_path" value="/devices/platform/3610000.xhci/usb1/1-1/1-1.1"/>
       <param name="port" value="8084"/>
       <param name="disable_auto_white_balance" value="true"/>
     </node>
 
     <node pkg="mrover" type="gst_websocket_streamer" name="ish_2_streamer"
           output="screen">
-      <param name="dev_path" value="/devices/platform/3610000.xhci/usb1/1-1/1-1.4/1-1.4.3"/>
+      <param name="dev_path" value="/devices/platform/3610000.xhci/usb1/1-1/1-1.2"/>
       <param name="port" value="8085"/>
       <param name="disable_auto_white_balance" value="true"/>
     </node>
 
     <node pkg="mrover" type="gst_websocket_streamer" name="ish_3_streamer"
           output="screen">
-      <param name="dev_path" value="/devices/platform/3610000.xhci/usb1/1-1/1-1.4/1-1.4.2"/>
+      <param name="dev_path" value="/devices/platform/3610000.xhci/usb1/1-1/1-1.3"/>
       <param name="port" value="8086"/>
       <param name="disable_auto_white_balance" value="true"/>
     </node>

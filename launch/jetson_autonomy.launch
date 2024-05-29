@@ -23,4 +23,31 @@
   <include file="$(find mrover)/launch/navigation.launch">
     <arg name="stuck_detection" value="$(arg stuck_detection)"/>
   </include>
+
+  <node pkg="nodelet" type="nodelet" name="zed_streamer"
+        args="load mrover/GstWebsocketStreamerNodelet perception_nodelet_manager"
+        output="screen">
+    <param name="image_topic" value="/camera/left/image"/>
+    <param name="port" value="8081"/>
+    <param name="width" value="1280"/>
+    <param name="height" value="720"/>
+  </node>
+
+  <node pkg="nodelet" type="nodelet" name="tag_detection_streamer"
+        args="load mrover/GstWebsocketStreamerNodelet perception_nodelet_manager"
+        output="screen">
+    <param name="image_topic" value="/tag_detection"/>
+    <param name="port" value="8084"/>
+    <param name="width" value="640"/>
+    <param name="height" value="480"/>
+  </node>
+
+  <node pkg="nodelet" type="nodelet" name="object_detection_streamer"
+        args="load mrover/GstWebsocketStreamerNodelet perception_nodelet_manager"
+        output="screen">
+    <param name="image_topic" value="/object_detection"/>
+    <param name="port" value="8085"/>
+    <param name="width" value="640"/>
+    <param name="height" value="480"/>
+  </node>
 </launch>
