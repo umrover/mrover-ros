@@ -1,7 +1,7 @@
 <template>
   <div class="wrap">
     <div class="grid-container">
-      <div v-for="i in 4" :key="i" :class="'feed' + i">
+      <div v-for="i in 9" :key="i" :class="'feed' + i">
         <div v-if="i <= numStreams">
           <CameraFeed :mission="mission" :id="getID(i)" :name="names[getID(i)]"></CameraFeed>
         </div>
