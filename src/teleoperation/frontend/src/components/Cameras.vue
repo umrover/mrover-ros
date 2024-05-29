@@ -83,8 +83,8 @@ export default {
       names: reactive(Array.from({ length: 9 }, (_, i) => 'Camera: ' + i)),
       cameraIdx: 0,
       cameraName: '',
-      capacity: 4,
-      streamOrder: [-1, -1, -1, -1],
+      capacity: 9,
+      streamOrder: [-1, -1, -1, -1, -1, -1, -1, -1, -1],
       percent: 0
     }
   },
