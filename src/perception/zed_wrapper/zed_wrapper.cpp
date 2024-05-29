@@ -34,8 +34,8 @@ namespace mrover {
             mPnh = getMTPrivateNodeHandle();
 
             mPcPub = mNh.advertise<sensor_msgs::PointCloud2>("camera/left/points", 1);
-            mImuPub = mNh.advertise<sensor_msgs::Imu>("imu", 1);
-            mMagPub = mNh.advertise<sensor_msgs::MagneticField>("mag", 1);
+            mImuPub = mNh.advertise<sensor_msgs::Imu>("zed_imu/data_raw", 1);
+            mMagPub = mNh.advertise<sensor_msgs::MagneticField>("zed_imu/mag", 1);
             mLeftCamInfoPub = mNh.advertise<sensor_msgs::CameraInfo>("camera/left/camera_info", 1);
             mRightCamInfoPub = mNh.advertise<sensor_msgs::CameraInfo>("camera/right/camera_info", 1);
             mLeftImgPub = mNh.advertise<sensor_msgs::Image>("camera/left/image", 1);
@@ -96,7 +96,7 @@ namespace mrover {
             initParameters.coordinate_system = sl::COORDINATE_SYSTEM::RIGHT_HANDED_Z_UP_X_FWD; // Match ROS
             initParameters.depth_maximum_distance = mDepthMaximumDistance;
 
-            if (initParameters.depth_mode == sl::DEPTH_MODE::NONE) throw std::invalid_argument{"No depth capture is currently not supported"};
+            mDepthEnabled = initParameters.depth_mode != sl::DEPTH_MODE::NONE;
 
             if (mZed.open(initParameters) != sl::ERROR_CODE::SUCCESS) {
                 throw std::runtime_error("ZED failed to open");
@@ -149,10 +149,12 @@ namespace mrover {
                     mIsSwapReady = false;
                     mPcThreadProfiler.measureEvent("Wait");
 
-                    fillPointCloudMessageFromGpu(mPcMeasures.leftPoints, mPcMeasures.leftImage, mPcMeasures.leftNormals, mPointCloudGpu, pointCloudMsg);
-                    pointCloudMsg->header.stamp = mPcMeasures.time;
-                    pointCloudMsg->header.frame_id = "zed_left_camera_frame";
-                    mPcThreadProfiler.measureEvent("Fill Message");
+                    if (mDepthEnabled) {
+                        fillPointCloudMessageFromGpu(mPcMeasures.leftPoints, mPcMeasures.leftImage, mPcMeasures.leftNormals, mPointCloudGpu, pointCloudMsg);
+                        pointCloudMsg->header.stamp = mPcMeasures.time;
+                        pointCloudMsg->header.frame_id = "zed_left_camera_frame";
+                        mPcThreadProfiler.measureEvent("Fill Message");
+                    }
 
                     if (mLeftImgPub.getNumSubscribers()) {
                         auto leftImgMsg = boost::make_shared<sensor_msgs::Image>();
@@ -171,7 +173,7 @@ namespace mrover {
                     mPcThreadProfiler.measureEvent("Publish Message");
                 }
 
-                if (mPcPub.getNumSubscribers()) {
+                if (mDepthEnabled) {
                     mPcPub.publish(pointCloudMsg);
                     mPcThreadProfiler.measureEvent("Point cloud publish");
                 }
@@ -226,15 +228,16 @@ namespace mrover {
                     if (mZed.retrieveImage(mGrabMeasures.rightImage, sl::VIEW::RIGHT, sl::MEM::GPU, mImageResolution) != sl::ERROR_CODE::SUCCESS)
                         throw std::runtime_error("ZED failed to retrieve right image");
                 // Only left set is used for processing
-                if (mZed.retrieveImage(mGrabMeasures.leftImage, sl::VIEW::LEFT, sl::MEM::GPU, mImageResolution) != sl::ERROR_CODE::SUCCESS)
-                    throw std::runtime_error("ZED failed to retrieve left image");
-                if (mZed.retrieveMeasure(mGrabMeasures.leftPoints, sl::MEASURE::XYZ, sl::MEM::GPU, mPointResolution) != sl::ERROR_CODE::SUCCESS)
-                    throw std::runtime_error("ZED failed to retrieve point cloud");
+                if (mDepthEnabled) {
+                    if (mZed.retrieveImage(mGrabMeasures.leftImage, sl::VIEW::LEFT, sl::MEM::GPU, mImageResolution) != sl::ERROR_CODE::SUCCESS)
+                        throw std::runtime_error("ZED failed to retrieve left image");
+                    if (mZed.retrieveMeasure(mGrabMeasures.leftPoints, sl::MEASURE::XYZ, sl::MEM::GPU, mPointResolution) != sl::ERROR_CODE::SUCCESS)
+                        throw std::runtime_error("ZED failed to retrieve point cloud");
+                }
                 // if (mZed.retrieveMeasure(mGrabMeasures.leftNormals, sl::MEASURE::NORMALS, sl::MEM::GPU, mNormalsResolution) != sl::ERROR_CODE::SUCCESS)
                 //     throw std::runtime_error("ZED failed to retrieve point cloud normals");
 
                 assert(mGrabMeasures.leftImage.timestamp == mGrabMeasures.leftPoints.timestamp);
-
 
                 mGrabMeasures.time = mSvoPath ? ros::Time::now() : slTime2Ros(mZed.getTimestamp(sl::TIME_REFERENCE::IMAGE));
                 mGrabThreadProfiler.measureEvent("Retrieve");
@@ -271,8 +274,7 @@ namespace mrover {
                     mGrabThreadProfiler.measureEvent("Positional tracking");
                 }
 
-                // Publish IMU and magnetometer data
-                if (mZedInfo.camera_model == sl::MODEL::ZED2i && mImuPub.getNumSubscribers()) {
+                if (mZedInfo.camera_model != sl::MODEL::ZED && mImuPub.getNumSubscribers()) {
                     sl::SensorsData sensorData;
                     mZed.getSensorsData(sensorData, sl::TIME_REFERENCE::CURRENT);
 
@@ -282,11 +284,14 @@ namespace mrover {
                     imuMsg.header.stamp = ros::Time::now();
                     mImuPub.publish(imuMsg);
 
-                    sensor_msgs::MagneticField magMsg;
-                    fillMagMessage(sensorData.magnetometer, magMsg);
-                    magMsg.header.frame_id = "zed_mag_frame";
-                    magMsg.header.stamp = ros::Time::now();
-                    mMagPub.publish(magMsg);
+                    if (mZedInfo.camera_model != sl::MODEL::ZED_M && mMagPub.getNumSubscribers()) {
+                        sensor_msgs::MagneticField magMsg;
+                        fillMagMessage(sensorData.magnetometer, magMsg);
+                        magMsg.header.frame_id = "zed_mag_frame";
+                        magMsg.header.stamp = ros::Time::now();
+                        mMagPub.publish(magMsg);
+                    }
+
                     mGrabThreadProfiler.measureEvent("Sensor data");
                 }
             }

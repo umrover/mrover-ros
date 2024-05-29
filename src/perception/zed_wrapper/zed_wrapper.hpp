@@ -43,6 +43,7 @@ namespace mrover {
         bool mUsePoseSmoothing{};
         bool mUseLoopProfiler{};
         bool mUseDepthStabilization{};
+        bool mDepthEnabled{};
         float mDepthMaximumDistance{};
 
         sl::Camera mZed;

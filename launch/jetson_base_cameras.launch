@@ -1,7 +1,7 @@
 <launch>
   <!-- These are always on the Rover in all configurations -->
   
-  <node pkg="nodelet" type="nodelet" name="streamer_nodelet_zed"
+  <node pkg="nodelet" type="nodelet" name="zed_streamer"
         args="load mrover/GstWebsocketStreamerNodelet perception_nodelet_manager"
         output="screen">
     <param name="image_topic" value="/camera/left/image"/>

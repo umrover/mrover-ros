@@ -10,6 +10,10 @@
     <arg name="serial_number" value="14458"/>
   </include>
   <include file="$(find mrover)/launch/long_range_cam.launch"/>
+  <node pkg="mrover" type="zed" name="zed_mini_auton">
+    <param name="zed_model" value="zedm"/>
+    <param name="serial_number" value="12046231"/>
+  </node>
 
   <include file="$(find mrover)/launch/perception.launch">
     <arg name="tag_detector" value="$(arg tag_detector)"/>
