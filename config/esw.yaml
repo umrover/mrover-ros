@@ -66,7 +66,7 @@ can:
       id: 0x26
     - name: "mast_gimbal_y"
       bus: 3
-      id: 0x27
+      id: 0x30
     - name: "mast_gimbal_z"
       bus: 3
       id: 0x28

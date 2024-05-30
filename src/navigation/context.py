@@ -35,6 +35,7 @@ MAX_HITS = rospy.get_param("long_range/max_hits")
 
 REF_LAT = rospy.get_param("gps_linearization/reference_point_latitude")
 REF_LON = rospy.get_param("gps_linearization/reference_point_longitude")
+REF_ALT = rospy.get_param("gps_linearization/reference_point_altitude")
 
 tf_broadcaster: tf2_ros.StaticTransformBroadcaster = tf2_ros.StaticTransformBroadcaster()
 
@@ -264,7 +265,7 @@ class Course:
             return approach_target.ApproachTargetState()
         # If we see the target in the long range camera, go to LongRangeState
         assert self.ctx.course is not None
-        if self.ctx.env.image_targets.query(self.ctx.course.image_target_name()) is not None:
+        if self.ctx.course.image_target_name() != "bottle" and self.ctx.env.image_targets.query(self.ctx.course.image_target_name()) is not None:
             return long_range.LongRangeState()
         return None
 
@@ -285,7 +286,7 @@ def convert_gps_to_cartesian(waypoint: GPSWaypoint) -> Tuple[Waypoint, SE3]:
     # Create a cartesian position based on GPS latitude and longitude
     position = np.array(
         pymap3d.geodetic2enu(
-            waypoint.latitude_degrees, waypoint.longitude_degrees, 0.0, REF_LAT, REF_LON, 0.0, deg=True
+            waypoint.latitude_degrees, waypoint.longitude_degrees, 0.0, REF_LAT, REF_LON, REF_ALT, deg=True
         )
     )
     # Zero the z-coordinate because even though the altitudes are set to zero,

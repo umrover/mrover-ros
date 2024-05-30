@@ -36,7 +36,12 @@ zed_mini_auton:
   image_height: 360
 
 stereo_object_detector:
-  model_score_threshold: 0.9
+  model_score_threshold: 0.8
+  # model_name: "urc_ver1"
 
 long_range_object_detector:
-  model_score_threshold: 0.9
+  model_score_threshold: 0.8
+  # model_name: "urc_ver1"
+
+# cost_map:
+#   z_threshold: 0
