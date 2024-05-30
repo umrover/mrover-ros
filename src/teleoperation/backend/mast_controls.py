@@ -7,7 +7,7 @@ rospy.init_node("teleoperation", disable_signals=True)
 
 throttle_publisher = rospy.Publisher("/mast_gimbal_throttle_cmd", Throttle, queue_size=1)
 
-Y_SCALE = 0.5
+Y_SCALE = -0.7
 Z_SCALE = -1.0
 
 
