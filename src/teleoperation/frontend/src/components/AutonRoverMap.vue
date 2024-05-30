@@ -1,7 +1,7 @@
 <template>
   <div class="wrap">
     <!-- Leaflet Map Definition-->
-    <l-map @ready="onMapReady" ref="map" class="map" :zoom="22" :center="center" @click="getClickedLatLon($event)">
+    <l-map @ready="onMapReady" ref="map" class="map" :zoom="16" :center="center" @click="getClickedLatLon($event)">
       <l-control-scale :imperial="false" />
       <!-- Tile Layer for map background -->
       <l-tile-layer ref="tileLayer" :url="online ? onlineUrl : offlineUrl" :attribution="attribution"
@@ -48,15 +48,15 @@ const MAX_ODOM_COUNT = 10
 const DRAW_FREQUENCY = 10
 // Options for the tilelayer object on the map
 const onlineUrl = 'http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}'
-const offlineUrl = 'map/{z}/{x}/{y}.png'
+const offlineUrl = 'map/urc/{z}/{x}/{y}.jpg'
 const onlineTileOptions = {
   maxNativeZoom: 22,
   maxZoom: 100,
   subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
 }
 const offlineTileOptions = {
-  maxNativeZoom: 16,
-  maxZoom: 100
+  minZoom: 16,
+  maxZoom: 20,
 }
 
 export default {

@@ -7,6 +7,7 @@ from channels.generic.websocket import JsonWebsocketConsumer
 
 import rospy
 import tf2_ros
+import numpy as np
 from backend.cache_controls import send_cache_controls
 from backend.drive_controls import send_controller_twist, send_joystick_twist
 from backend.input import DeviceInputs
@@ -262,6 +263,11 @@ class GUIConsumer(JsonWebsocketConsumer):
                     self.save_basic_waypoint_list(waypoints)
                 case {"type": "save_auton_waypoint_list", "data": waypoints}:
                     self.save_auton_waypoint_list(waypoints)
+                case {"type": "poly_fit", "temperatures": temperatures, "timestamps": timestamps}:
+                    y_log = np.log(temperatures)
+                    exponents = np.polyfit(timestamps, y_log, 1)
+                    exponents = list(exponents)
+                    self.send(text_data=json.dumps({"type": "poly_fit", "exponents": exponents}))
                 case _:
                     match message["type"]:
                         case "get_basic_waypoint_list":
