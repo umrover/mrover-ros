@@ -7,6 +7,7 @@ from channels.generic.websocket import JsonWebsocketConsumer
 
 import rospy
 import tf2_ros
+import numpy as np
 from backend.cache_controls import send_cache_controls
 from backend.drive_controls import send_controller_twist, send_joystick_twist
 from backend.input import DeviceInputs
@@ -15,7 +16,7 @@ from backend.models import BasicWaypoint, AutonWaypoint
 from backend.ra_controls import send_ra_controls
 from backend.sa_controls import send_sa_controls
 from geometry_msgs.msg import Twist
-from mrover.msg import CalibrationStatus, ControllerState, StateMachineStateUpdate, LED, GPSWaypoint, WaypointType
+from mrover.msg import CalibrationStatus, ControllerState, StateMachineStateUpdate, LED, GPSWaypoint, WaypointType, NetworkBandwidth
 from mrover.srv import EnableAuton
 from sensor_msgs.msg import JointState, NavSatFix, RelativeHumidity, Temperature
 from std_srvs.srv import SetBool
@@ -82,6 +83,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.forward_ros_topic("/sa_thermistor_data", Temperature, "soil_therm_temp")
         self.forward_ros_topic("/sa_joint_data", JointState, "sa_joint")
         self.forward_ros_topic("/corer_joint_data", JointState, "plunger")
+        self.forward_ros_topic("/network_bandwidth", NetworkBandwidth, "network")
 
         self.enable_auton = rospy.ServiceProxy("enable_auton", EnableAuton)
         self.enable_teleop = rospy.ServiceProxy("enable_teleop", SetBool)
@@ -262,6 +264,11 @@ class GUIConsumer(JsonWebsocketConsumer):
                     self.save_basic_waypoint_list(waypoints)
                 case {"type": "save_auton_waypoint_list", "data": waypoints}:
                     self.save_auton_waypoint_list(waypoints)
+                case {"type": "poly_fit", "temperatures": temperatures, "timestamps": timestamps}:
+                    y_log = np.log(temperatures)
+                    exponents = np.polyfit(timestamps, y_log, 1)
+                    exponents = list(exponents)
+                    self.send(text_data=json.dumps({"type": "poly_fit", "exponents": exponents}))
                 case _:
                     match message["type"]:
                         case "get_basic_waypoint_list":
