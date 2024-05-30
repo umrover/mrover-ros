@@ -12,11 +12,24 @@
     <arg name="zed_model" value="zed"/>
     <arg name="serial_number" value="14458"/>
   </include>
+  
   <include file="$(find mrover)/launch/long_range_cam.launch"/>
-  <node pkg="mrover" type="zed" name="zed_mini_auton"
-        output="screen">
+
+  <!-- Zed mini -->
+  <node pkg="nodelet" type="nodelet" name="zed_mini_nodelet_manager"
+        args="manager" output="screen"/>
+  <node pkg="nodelet" type="nodelet" name="zed_mini_auton"
+        args="load mrover/ZedNodelet zed_mini_nodelet_manager" output="screen">
     <param name="serial_number" value="12046231"/>
     <remap from="/camera/left/image" to="/zed_mini/left/image"/>
+  </node>
+  <node pkg="nodelet" type="nodelet" name="zed_mini_streamer"
+        args="load mrover/GstWebsocketStreamerNodelet zed_mini_nodelet_manager"
+        output="screen">
+    <param name="image_topic" value="/zed_mini/left/image"/>
+    <param name="port" value="8086"/>
+    <param name="width" value="640"/>
+    <param name="height" value="360"/>
   </node>
 
   <include file="$(find mrover)/launch/perception.launch">
