@@ -77,7 +77,7 @@ export default {
   },
   data() {
     return {
-      center: L.latLng(42.293195, -83.7096706),
+      center: L.latLng(38.4071654, -110.7923927),
       attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
       online: true,
       onlineUrl: onlineUrl,
