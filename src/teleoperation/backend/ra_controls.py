@@ -12,7 +12,7 @@ from sensor_msgs.msg import JointState
 
 TAU = 2 * pi
 
-rospy.init_node("teleoperation", disable_signals=True)
+rospy.init_node("teleoperation_base", disable_signals=True)
 
 throttle_publisher = rospy.Publisher("arm_throttle_cmd", Throttle, queue_size=1)
 position_publisher = rospy.Publisher("arm_position_cmd", Position, queue_size=1)

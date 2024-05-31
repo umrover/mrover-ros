@@ -8,7 +8,7 @@ from mrover.msg import Throttle
 
 TAU = 2 * pi
 
-rospy.init_node("teleoperation", disable_signals=True)
+rospy.init_node("teleoperation_base", disable_signals=True)
 
 throttle_publisher = rospy.Publisher("sa_throttle_cmd", Throttle, queue_size=1)
 

@@ -23,9 +23,9 @@ from sensor_msgs.msg import JointState, NavSatFix, RelativeHumidity, Temperature
 from std_srvs.srv import SetBool
 from util.SE3 import SE3
 
-LOCALIZATION_INFO_HZ = 10
+LOCALIZATION_INFO_HZ = 5
 
-rospy.init_node("teleoperation", disable_signals=True)
+rospy.init_node("teleoperation_base", disable_signals=True)
 
 tf2_buffer = tf2_ros.Buffer()
 tf2_ros.TransformListener(tf2_buffer)
@@ -70,14 +70,14 @@ class GUIConsumer(JsonWebsocketConsumer):
     def connect(self) -> None:
         self.accept()
 
-        self.forward_ros_topic("/imu/calibration", CalibrationStatus, "calibration")
+        # self.forward_ros_topic("/imu/calibration", CalibrationStatus, "calibration")
         self.forward_ros_topic("/gps/fix", NavSatFix, "gps_fix")
-        self.forward_ros_topic("/arm_joint_data", JointState, "fk")
-        self.forward_ros_topic("/arm_controller_data", ControllerState, "arm_state")
+        # self.forward_ros_topic("/arm_joint_data", JointState, "fk")
+        # self.forward_ros_topic("/arm_controller_data", ControllerState, "arm_state")
         self.forward_ros_topic("/drive_left_controller_data", ControllerState, "drive_left_state")
         self.forward_ros_topic("/drive_right_controller_data", ControllerState, "drive_right_state")
-        self.forward_ros_topic("/nav_state", StateMachineStateUpdate, "nav_state")
-        self.forward_ros_topic("/led", LED, "led")
+        # self.forward_ros_topic("/nav_state", StateMachineStateUpdate, "nav_state")
+        # self.forward_ros_topic("/led", LED, "led")
         self.forward_ros_topic("/cmd_vel", Twist, "cmd_vel")
         self.forward_ros_topic("/sa_humidity_data", RelativeHumidity, "soil_humidity")
         self.forward_ros_topic("/sa_temp_data", Temperature, "soil_temp")

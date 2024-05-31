@@ -3,7 +3,7 @@ from backend.input import DeviceInputs, filter_input, simulated_axis
 from backend.mappings import KeyboardButton
 from mrover.msg import Throttle
 
-rospy.init_node("teleoperation", disable_signals=True)
+rospy.init_node("teleoperation_base", disable_signals=True)
 
 throttle_publisher = rospy.Publisher("/cache_throttle_cmd", Throttle, queue_size=1)
 
