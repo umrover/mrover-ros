@@ -29,14 +29,19 @@ zed:
   depth_maximum_distance: 12.0
 
 zed_mini_auton:
-  grab_resolution: VGA
+  grab_resolution: HD720
   grab_target_fps: 15
   depth_mode: NONE
   image_width: 640
-  image_height: 360
+  image_height: 480
 
 stereo_object_detector:
-  model_score_threshold: 0.9
+  model_score_threshold: 0.8
+  # model_name: "urc_ver1"
 
 long_range_object_detector:
-  model_score_threshold: 0.9
+  model_score_threshold: 0.8
+  # model_name: "urc_ver1"
+
+# cost_map:
+#   z_threshold: 0

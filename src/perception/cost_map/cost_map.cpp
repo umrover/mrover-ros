@@ -6,14 +6,14 @@ namespace mrover {
         mNh = getMTNodeHandle();
         mPnh = getMTPrivateNodeHandle();
 
-        mResolution = mNh.param<float>("resolution", 0.5);
-        mSize = mNh.param<float>("size", 32);
-        mMapFrame = mNh.param<std::string>("map_frame", "map");
-        mNearClip = mNh.param<float>("near_clip", 0.7);
-        mFarClip = mNh.param<float>("far_clip", 3);
-        mZPercent = mNh.param<float>("z_percent", 0.1);
-        mAlpha = mNh.param<float>("alpha", 0.05);
-        mZThreshold = mNh.param<float>("z_threshold", -0.2);
+        mResolution = mPnh.param<float>("resolution", 0.5);
+        mSize = mPnh.param<float>("size", 32);
+        mMapFrame = mPnh.param<std::string>("map_frame", "map");
+        mNearClip = mPnh.param<float>("near_clip", 0.2);
+        mFarClip = mPnh.param<float>("far_clip", 3);
+        mZPercent = mPnh.param<float>("z_percent", 0.1);
+        mAlpha = mPnh.param<float>("alpha", 0.05);
+        mZThreshold = mPnh.param<float>("z_threshold", 0);
 
         mServer = mNh.advertiseService("move_cost_map", &CostMapNodelet::moveCostMapCallback, this);
 

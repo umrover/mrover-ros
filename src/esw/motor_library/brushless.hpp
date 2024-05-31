@@ -90,7 +90,7 @@ namespace mrover {
             mMaxPosition = OutputPosition{xmlRpcValueToTypeOrDefault<double>(brushlessMotorData, "max_position", 1.0)};
 
             mMaxTorque = xmlRpcValueToTypeOrDefault<double>(brushlessMotorData, "max_torque", 0.3);
-            mWatchdogTimeout = xmlRpcValueToTypeOrDefault<double>(brushlessMotorData, "watchdog_timeout", 0.1);
+            mWatchdogTimeout = xmlRpcValueToTypeOrDefault<double>(brushlessMotorData, "watchdog_timeout", 0.25);
 
             limitSwitch0Present = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "limit_0_present", false);
             limitSwitch1Present = xmlRpcValueToTypeOrDefault<bool>(brushlessMotorData, "limit_1_present", false);

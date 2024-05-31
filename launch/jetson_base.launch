@@ -25,7 +25,9 @@
         respawn="true" respawn_delay="2"
         output="screen"/>
 
-  <node name="gps_driver" pkg="mrover" type="rover_gps_driver.py" output="screen"/>
+  <node name="gps_driver" pkg="mrover" type="rover_gps_driver.py"
+        respawn="true" respawn_delay="2"
+        output="screen"/>
 
   <node name="arduino_led_hw_bridge" pkg="mrover" type="arduino_led_hw_bridge.py" output="screen"/>
 

@@ -25,7 +25,7 @@ class GPSLinearization:
             return
 
         x, y, _ = geodetic2enu(
-            msg.latitude, msg.longitude, msg.altitude, self.ref_lat, self.ref_lon, self.ref_alt, deg=True
+            msg.latitude, msg.longitude, 0.0, self.ref_lat, self.ref_lon, self.ref_alt, deg=True
         )
         self.position_publisher.publish(Vector3Stamped(msg.header, Vector3(x=x, y=y)))
 
