@@ -10,15 +10,15 @@
     <param name="height" value="720"/>
   </node>
 
-  <node pkg="mrover" type="gst_websocket_streamer" name="mobility_streamer"
+  <!-- <node pkg="mrover" type="gst_websocket_streamer" name="static_streamer"
         output="screen">
     <param name="dev_path" value="/devices/platform/3610000.xhci/usb1/1-2/1-2.4/1-2.4.3"/>
     <param name="port" value="8082"/>
-  </node>
+  </node> -->
 
-  <!-- <node pkg="mrover" type="gst_websocket_streamer" name="static_streamer"
+  <node pkg="mrover" type="gst_websocket_streamer" name="mobility_streamer"
         output="screen">
     <param name="dev_path" value="/devices/platform/3610000.xhci/usb1/1-2/1-2.4/1-2.4.4"/>
     <param name="port" value="8083"/>
-  </node> -->
+  </node>
 </launch>

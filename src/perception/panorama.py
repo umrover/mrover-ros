@@ -87,14 +87,14 @@ class Panorama:
         # TODO: Don't hardcode or parametrize this?
         current_angle = 0
         stitched_pc = np.empty((0, 8), dtype=np.float32)
-
+        goal.angle = 1.0
         while current_angle < goal.angle:
             # current_pos
             # calculate angle
             rospy.loginfo("rotating mast...")
             time_start = rospy.Time.now()
             while rospy.Time.now() - time_start < rospy.Duration(1.5):
-                self.mast_throttle.publish(Throttle(["mast_gimbal_z"], [1.0]))
+                # self.mast_throttle.publish(Throttle(["mast_gimbal_z"], [1.0]))
                 rospy.Rate(10).sleep()
 
             self.mast_throttle.publish(Throttle(["mast_gimbal_z"], [0.0]))
