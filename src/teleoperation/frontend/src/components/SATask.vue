@@ -2,6 +2,9 @@
   <div class='wrapper'>
     <div class='shadow p-3 mb-5 header'>
       <h1>SA Dashboard</h1>
+      <div class="network">
+      <NetworkMonitor />
+      </div>
     </div>
     <div class='shadow p-3 rounded map'>
       <BasicMap :odom='odom' />
@@ -78,6 +81,7 @@ import OdometryReading from './OdometryReading.vue'
 import ControllerDataTable from './ControllerDataTable.vue'
 import SAArmControls from './SAArmControls.vue'
 import JointStateDataTable from './JointStateDataTable.vue'
+import NetworkMonitor from "./NetworkMonitor.vue";
 import { quaternionToMapAngle } from '../utils'
 import { mapActions, mapState } from 'vuex'
 
@@ -92,7 +96,7 @@ export default {
     SAArmControls,
     LimitSwitch,
     CalibrationCheckbox,
-    //   CommReadout,
+    NetworkMonitor,
     //   MCUReset,
     OdometryReading,
     JointStateDataTable
@@ -161,8 +165,8 @@ export default {
   padding: 10px;
 }
 
-.comms {
-  margin-right: 5px;
+.network {
+  float: right;
 }
 
 .helpscreen {

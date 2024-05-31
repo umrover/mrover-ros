@@ -2,6 +2,9 @@
   <div class="wrapper">
     <div class="shadow p-3 mb-5 header">
       <h1>ISH Dashboard</h1>
+      <div class="network">
+        <NetworkMonitor/>
+      </div>
     </div>
     <div class="shadow p-3 rounded siteSelect">
       <SelectSite @site="onSiteChange" />
@@ -30,7 +33,7 @@ import Cache from './CacheControls.vue'
 import Chlorophyll from './Chlorophyll.vue'
 import AminoBenedict from './AminoBenedict.vue'
 import Cameras from './Cameras.vue'
-//   import CommReadout from "./CommReadout.vue";
+import NetworkMonitor from "./NetworkMonitor.vue";
 //   import MCUReset from "./MCUReset.vue"
 
 export default {
@@ -39,10 +42,11 @@ export default {
     Cache,
     Chlorophyll,
     AminoBenedict,
-    Cameras
-    //   CommReadout,
+    Cameras,
+    NetworkMonitor,
     //   MCUReset,
   },
+
   data() {
     return {
       site: 0 as number,
@@ -124,6 +128,10 @@ export default {
   justify-content: space-between;
   align-items: center;
   padding: 10px;
+}
+
+.network {
+  float: right;
 }
 
 .cameras {

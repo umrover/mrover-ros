@@ -16,7 +16,7 @@ from backend.models import BasicWaypoint, AutonWaypoint
 from backend.ra_controls import send_ra_controls
 from backend.sa_controls import send_sa_controls
 from geometry_msgs.msg import Twist
-from mrover.msg import CalibrationStatus, ControllerState, StateMachineStateUpdate, LED, GPSWaypoint, WaypointType
+from mrover.msg import CalibrationStatus, ControllerState, StateMachineStateUpdate, LED, GPSWaypoint, WaypointType, NetworkBandwidth
 from mrover.srv import EnableAuton
 from sensor_msgs.msg import JointState, NavSatFix, RelativeHumidity, Temperature
 from std_srvs.srv import SetBool
@@ -83,6 +83,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.forward_ros_topic("/sa_thermistor_data", Temperature, "soil_therm_temp")
         self.forward_ros_topic("/sa_joint_data", JointState, "sa_joint")
         self.forward_ros_topic("/corer_joint_data", JointState, "plunger")
+        self.forward_ros_topic("/network_bandwidth", NetworkBandwidth, "network")
 
         self.enable_auton = rospy.ServiceProxy("enable_auton", EnableAuton)
         self.enable_teleop = rospy.ServiceProxy("enable_teleop", SetBool)

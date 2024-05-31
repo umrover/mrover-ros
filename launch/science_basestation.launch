@@ -1,0 +1,7 @@
+<launch>
+    <include file="$(find mrover)/launch/basestation.launch">
+        <arg name="rtk" value="false"/>
+        <arg name="suffix" value="basestation_science"/>
+    </include>
+</launch>
+  

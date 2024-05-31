@@ -21,7 +21,7 @@
     <div class="controls-flex">
       <button class="btn btn-primary" @click="zero('sa_z', 0)">Zero Ground</button>
       <p>Corer Position: {{ corer_position }} inches</p>
-      <button class="btn btn-primary" @click="zero('sensor_actuator', corer_position+sensor_height)">Zero Sensor</button>
+      <button class="btn btn-primary" @click="zero('sa_z', corer_position+sensor_height)">Zero Sensor</button>
       <p>Plunger Position: {{ plunger_position-plunger_height }} inches</p>
       
       <!--      <MotorAdjust-->
@@ -52,7 +52,10 @@ export default defineComponent({
   data() {
     return {
       mode: 'disabled',
-      z_position: 0
+      corer_position: 0,
+      plunger_position: 0,
+      sensor_height: 5.36,
+      plunger_height: 5.5
     }
   },
 
@@ -86,8 +89,8 @@ export default defineComponent({
   methods: {
     ...mapActions('websocket', ['sendMessage']),
 
-    zero: function(name: string) {
-      this.sendMessage({type: "arm_adjust", name: name, value: 0})
+    zero: function(name: string, value: number) {
+      this.sendMessage({type: "arm_adjust", name: name, value: value})
     }
   }
 })

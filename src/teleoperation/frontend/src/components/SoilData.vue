@@ -18,7 +18,7 @@
       </table>
       <div>
         <p v-if="predictedTemp"> Predicted Temperature: {{ predictedTemp }}</p>
-        <Checkbox :index="'Read Temp Data'" @toggle="readData = $event"></Checkbox>
+        <Checkbox :name="'Read Temp Data'" @toggle="readData = $event"></Checkbox>
       </div>
     </div>
   </div>
