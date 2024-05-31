@@ -75,7 +75,7 @@ can:
       id: 0x29
     - name: "sa_y"
       bus: 1
-      id: 0x30
+      id: 0x27
     - name: "sa_z"
       bus: 1
       id: 0x31
