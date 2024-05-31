@@ -84,11 +84,10 @@ def main() -> None:
 
             mag_pub.publish(MagneticField(header=header, magnetic_field=Vector3(*bno.magnetic)))
 
-            _, c2, c3 = bno.calibration_status
-            # c1, c2, c3 = bno.calibration_status
-
+            c1, c2, c3 = bno.calibration_status
 
             calib_pub.publish(CalibrationStatus(header, 0, c2, c3))
+            # calib_pub.publish(CalibrationStatus(header, c1, c2, c3))
         except Exception as e:
             rospy.logwarn(e)
             rospy.logwarn(traceback.format_exc())

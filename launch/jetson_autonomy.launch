@@ -16,7 +16,7 @@
   <include file="$(find mrover)/launch/long_range_cam.launch"/>
 
   <!-- Zed mini -->
-  <node pkg="nodelet" type="nodelet" name="zed_mini_nodelet_manager"
+  <!-- <node pkg="nodelet" type="nodelet" name="zed_mini_nodelet_manager"
         args="manager" output="screen"/>
   <node pkg="nodelet" type="nodelet" name="zed_mini_auton"
         args="load mrover/ZedNodelet zed_mini_nodelet_manager" output="screen">
@@ -29,8 +29,8 @@
     <param name="image_topic" value="/zed_mini/left/image"/>
     <param name="port" value="8086"/>
     <param name="width" value="640"/>
-    <param name="height" value="360"/>
-  </node>
+    <param name="height" value="480"/>
+  </node> -->
 
   <include file="$(find mrover)/launch/perception.launch">
     <arg name="tag_detector" value="$(arg tag_detector)"/>
@@ -57,13 +57,5 @@
     <param name="port" value="8085"/>
     <param name="width" value="640"/>
     <param name="height" value="480"/>
-  </node>
-
-  <node pkg="mrover" type="gst_websocket_streamer" name="zed_mini_streamer"
-        output="screen">
-    <param name="image_topic" value="/zed_mini/left/image"/>
-    <param name="port" value="8086"/>
-    <param name="width" value="640"/>
-    <param name="height" value="360"/>
   </node>
 </launch>
