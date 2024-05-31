@@ -29,6 +29,12 @@
       <param name="disable_auto_white_balance" value="true"/>
     </node>
 
+    <node pkg="mrover" type="gst_websocket_streamer" name="sa_ee_streamer"
+          output="screen">
+      <param name="dev_path" value="/devices/platform/3610000.xhci/usb1/1-2/1-2.2/1-2.2"/>
+      <param name="port" value="8086"/>
+    </node>
+
   </group>
   
   <node name="serial_node" pkg="rosserial_python" type="serial_node.py">
