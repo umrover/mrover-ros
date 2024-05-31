@@ -35,12 +35,13 @@
       <param name="disable_auto_white_balance" value="true"/>
     </node>
 
-    <node name="serial_node" pkg="rosserial_python" type="serial_node.py">
-      <param name="port" type="string" value="/dev/ttyACM0" />
-      <param name="baud" type="int" value="57600" />
-    </node>
   </group>
-
+  
+  <node name="serial_node" pkg="rosserial_python" type="serial_node.py">
+    <param name="port" type="string" value="/dev/ttyACM0" />
+    <param name="baud" type="int" value="57600" />
+  </node>
+  
   <include file="$(find mrover)/launch/zed.launch">
     <arg name="zed_model" value="zedm"/>
     <arg name="serial_number" value="12046231"/>
