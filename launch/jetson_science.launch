@@ -42,10 +42,10 @@
     <param name="baud" type="int" value="57600" />
   </node>
   
+  <arg name="use_builtin_visual_odom" default="true"/>
+
   <include file="$(find mrover)/launch/zed.launch">
-    <arg name="zed_model" value="zedm"/>
-    <arg name="serial_number" value="12046231"/>
-    <arg name="use_builtin_visual_odom" value="true"/>
+    <arg name="use_builtin_visual_odom" value="$(arg use_builtin_visual_odom)"/>
   </include>
 
   <node name="panorama" pkg="mrover" type="panorama.py" output="screen"/>
