@@ -68,10 +68,6 @@ export default {
   },
 
   props: {
-    primary: {
-      type: Boolean,
-      required: true
-    },
     mission: {
       type: String, // {'ish', 'ik', 'sa', 'auton'}
       required: true
