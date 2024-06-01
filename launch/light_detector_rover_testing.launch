@@ -1,9 +1,18 @@
 <launch>
     <arg name="outside" default="false"/>
+    <arg name="cameras" default="false"/>
 
-    <!-- Launch the perception nodelet manager -->
-	<node pkg="nodelet" type="nodelet" name="perception_nodelet_manager" required="true"
-        args="manager" output="screen"/>
+    <include file="$(find mrover)/launch/jetson_base.launch">
+        <arg name="cameras" value="$(arg cameras)"/>
+        <arg name="localization" value="$(arg outside)"/>
+    </include>
+
+    <!-- Launch the ZED -->
+     <!-- This is after the percep nodelet manager which was created in the jetson base -->
+    <include file="$(find mrover)/launch/zed.launch">
+        <arg name="zed_model" value="zed"/>
+        <arg name="serial_number" value="14458"/>
+      </include>
 
     <!-- Launch Autonomy -->
     <include file="$(find mrover)/launch/autonomy.launch">
@@ -12,11 +21,6 @@
         <arg name="cost_map" value="false"/>
         <arg name="localization" value="true"/>
     </include>
-
-    <!-- Run the GPS Driver -->
-    <node if="$(arg outside)" name="gps_driver" pkg="mrover" type="rover_gps_driver.py"
-        respawn="true" respawn_delay="2"
-        output="screen"/>
 
     <!-- Run the IMU Driver -->
     <node name="imu_driver" pkg="mrover" type="imu_driver.py"

@@ -1,7 +1,9 @@
 <launch>
+  <arg name="localization" default="true"/>
+
   <rosparam command="load" file="$(find mrover)/config/esw.yaml"/>
 
-  <include file="$(find mrover)/launch/localization.launch"/>
+  <include if="$(arg localization)" file="$(find mrover)/launch/localization.launch"/>
 
   <node name="differential_drive_controller" pkg="mrover" type="differential_drive_controller" output="screen"/>
 
