@@ -101,19 +101,21 @@ export default {
         }
       }
       else if (msg.type == 'thermistor') {
+        if(this.site == 0) return;
         if (this.isAmino) {
-          this.heaters[this.site].temp = msg.temps[this.site*2+1];
+          this.heaters[this.site].temp = msg.temps[this.site*2+1].temperature;
         }
         else {
-          this.heaters[this.site].temp = msg.temps[this.site*2];
+          this.heaters[this.site].temp = msg.temps[this.site*2].temperature;
         }
       }
       else if(msg.type == 'heater_states') {
+        if(this.site == 0) return;
         if (this.isAmino) {
-          this.heaters[this.site].state = msg.states[this.site*2+1];
+          this.heaters[this.site].state = msg.state[this.site*2+1];
         }
         else {
-          this.heaters[this.site].state = msg.states[this.site*2];
+          this.heaters[this.site].state = msg.state[this.site*2];
         }
       }
     },

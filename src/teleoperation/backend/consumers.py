@@ -16,7 +16,8 @@ from backend.models import BasicWaypoint, AutonWaypoint
 from backend.ra_controls import send_ra_controls
 from backend.sa_controls import send_sa_controls
 from geometry_msgs.msg import Twist
-from mrover.msg import CalibrationStatus, ControllerState, StateMachineStateUpdate, LED, GPSWaypoint, WaypointType, NetworkBandwidth
+from mrover.msg import ( CalibrationStatus, ControllerState, StateMachineStateUpdate, LED, GPSWaypoint, WaypointType, 
+                        NetworkBandwidth, ScienceThermistors, Spectral, HeaterData )
 from mrover.srv import EnableAuton
 from sensor_msgs.msg import JointState, NavSatFix, RelativeHumidity, Temperature
 from std_srvs.srv import SetBool
@@ -84,6 +85,13 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.forward_ros_topic("/sa_joint_data", JointState, "sa_joint")
         self.forward_ros_topic("/corer_joint_data", JointState, "plunger")
         self.forward_ros_topic("/network_bandwidth", NetworkBandwidth, "network")
+        self.forward_ros_topic("/science_thermistors", ScienceThermistors, "thermistor")
+        self.forward_ros_topic("science_spectral", Spectral, "spectral_data")
+        self.forward_ros_topic("/science_heater_state", HeaterData, "heater_states")
+
+    #     eaterDataPublisher = std::make_unique<ros::Publisher>(nh.advertise<mrover::HeaterData>("science_heater_state", 1));
+    # spectralDataPublisher = std::make_unique<ros::Publisher>(nh.advertise<mrover::Spectral>("science_spectral", 1));
+    # thermistorDataPublisher = std::make_unique<ros::Publisher>(nh.advertise<mrover::ScienceThermistors>("science_thermistors", 1));
 
         self.enable_auton = rospy.ServiceProxy("enable_auton", EnableAuton)
         self.enable_teleop = rospy.ServiceProxy("enable_teleop", SetBool)
