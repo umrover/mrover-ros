@@ -1,5 +1,5 @@
 <launch>
-    <arg name="outside" default="false"/>
+    <arg name="outside" default="true"/>
     <arg name="cameras" default="false"/>
 
     <include file="$(find mrover)/launch/jetson_base.launch">
@@ -19,13 +19,18 @@
         <arg name="tag_detector" value="true"/>
         <arg name="object_detector" value="false"/>
         <arg name="cost_map" value="false"/>
-        <arg name="localization" value="true"/>
+        <arg name="localization" value="false"/>
     </include>
 
     <!-- Run the IMU Driver -->
     <node name="imu_driver" pkg="mrover" type="imu_driver.py"
         respawn="true" respawn_delay="2"
         output="screen"/>
+
+    <node name="gps_driver" pkg="mrover" type="rover_gps_driver.py"
+        respawn="true" respawn_delay="2"
+        output="screen"/>
+
 
     <!-- Launch the light detector -->
     <include file="$(find mrover)/launch/light_detector.launch">
