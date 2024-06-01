@@ -4,9 +4,6 @@
     <rosparam if="$(arg sim)" command="load" file="$(find mrover)/config/perception/light_detector/light_detector_sim.yaml"/>
     <rosparam unless="$(arg sim)" command="load" file="$(find mrover)/config/perception/light_detector/light_detector_irl.yaml"/>
 
-	<node pkg="nodelet" type="nodelet" name="perception_nodelet_manager" required="true"
-        args="manager" output="screen"/>
-
 	<node 
 			pkg="nodelet" 
 			type="nodelet" 

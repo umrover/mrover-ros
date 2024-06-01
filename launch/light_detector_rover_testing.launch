@@ -1,0 +1,25 @@
+<launch>
+    <!-- Launch the perception nodelet manager -->
+	<node pkg="nodelet" type="nodelet" name="perception_nodelet_manager" required="true"
+        args="manager" output="screen"/>
+
+    <!-- Launch Autonomy -->
+    <include file="$(find mrover)/launch/autonomy.launch">
+        <arg name="tag_detector" value="true"/>
+        <arg name="object_detector" value="false"/>
+        <arg name="cost_map" value="false"/>
+        <arg name="localization" value="true"/>
+    </include>
+
+    <!-- Run the GPS Driver -->
+
+    <node name="gps_driver" pkg="mrover" type="rover_gps_driver.py"
+        respawn="true" respawn_delay="2"
+        output="screen"/>
+
+    <!-- Launch the light detector -->
+    <include file="$(find mrover)/launch/light_detector.launch">
+        <arg name="sim" value="false"/>
+    </include>
+
+</launch>

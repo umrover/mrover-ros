@@ -2,6 +2,7 @@
   <arg name="tag_detector" default="true"/>
   <arg name="object_detector" default="false"/>
   <arg name="cost_map" default="true"/>
+  <arg name="localization" default="false"/>
 
   <include file="$(find mrover)/launch/perception.launch">
     <arg name="tag_detector" value="$(arg tag_detector)"/>
@@ -11,5 +12,5 @@
 
   <include file="$(find mrover)/launch/navigation.launch"/>
 
-  <!-- <include file="$(find mrover)/launch/localization.launch"/> -->
+  <include if="$(arg localization)" file="$(find mrover)/launch/localization.launch"/>
 </launch>
