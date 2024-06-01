@@ -22,6 +22,7 @@
   </group>
 
   <node if="$(arg rtk)" name="basestation_gps_driver" pkg="mrover" type="basestation_gps_driver.py"
+        respawn="true" respawn_delay="2"
         output="screen"/>
 
   <node if="$(arg network)" name="network_monitor" pkg="mrover" type="network_monitor.py"/>
