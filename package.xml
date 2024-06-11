@@ -89,5 +89,6 @@
     <nodelet plugin="${prefix}/plugins/can.xml"/>
     <nodelet plugin="${prefix}/plugins/simulator.xml"/>
     <nodelet plugin="${prefix}/plugins/gst_websocket_streamer.xml"/>
+	<nodelet plugin="${prefix}/plugins/light_detector_plugin.xml"/>
   </export>
 </package>

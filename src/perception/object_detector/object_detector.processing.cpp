@@ -14,6 +14,7 @@ namespace mrover {
             NODELET_INFO_STREAM(std::format("Image size changed from [{}, {}] to [{}, {}]", mRgbImage.cols, mRgbImage.rows, msg->width, msg->height));
             mRgbImage = cv::Mat{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC3, cv::Scalar{0, 0, 0, 0}};
         }
+        
         convertPointCloudToRGB(msg, mRgbImage);
 
         // TODO(quintin): Avoid hard coding blob size
