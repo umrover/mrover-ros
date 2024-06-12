@@ -5,15 +5,19 @@ namespace mrover {
 	auto LightDetector::imageCallback(sensor_msgs::PointCloud2ConstPtr const& msg) -> void{
 		if(mImg.rows != static_cast<int>(msg->height) || mImg.cols != static_cast<int>(msg->width)){
 			ROS_INFO_STREAM("Adjusting Image Size... " << msg->width << ", " << msg->height);
-			mImg = cv::Mat{cv::Size{static_cast<int>(msg->width), static_cast<int>(msg->height)}, CV_8UC3, cv::Scalar{0,0,0}};
-			mThresholdedImg = cv::Mat{cv::Size{static_cast<int>(msg->width), static_cast<int>(msg->height)}, CV_8UC3, cv::Scalar{0,0,0}};
+			mImg = cv::Mat{cv::Size{static_cast<int>(msg->width), static_cast<int>(msg->height)}, CV_8UC3, cv::Scalar::zeros()};
+			mThresholdedImg = cv::Mat{cv::Size{static_cast<int>(msg->width), static_cast<int>(msg->height)}, CV_8UC1, cv::Scalar::zeros()};
 		}
 
 		convertPointCloudToRGB(msg, mImg);
 
 		cv::inRange(mImg, mLowerBound, mUpperBound, mThresholdedImg);
 
-		publishDetectedObjects(mThresholdedImg);
+		cv::cvtColor(mThresholdedImg, mOutputImage, cv::COLOR_GRAY2BGRA);
+
+		cv::erode(mThresholdedImg, mErodedImg, cv::getStructuringElement(cv::MORPH_RECT, cv::Size(3,3), cv::Point(-1,-1)), cv::Point(-1,-1), cv::BORDER_REFLECT_101, 0);
+
+		publishDetectedObjects(mErodedImg);
 	}
 
 	// TODO: (john) break this out into a utility so we dont have to copy all of this code

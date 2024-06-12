@@ -219,81 +219,86 @@ namespace mrover {
                 runtimeParameters.confidence_threshold = mDepthConfidence;
                 runtimeParameters.texture_confidence_threshold = mTextureConfidence;
 
-                if (sl::ERROR_CODE error = mZed.grab(runtimeParameters); error != sl::ERROR_CODE::SUCCESS)
-                    throw std::runtime_error(std::format("ZED failed to grab {}", sl::toString(error).c_str()));
-                mGrabThreadProfiler.measureEvent("Grab");
+				try{
+					if (sl::ERROR_CODE error = mZed.grab(runtimeParameters); error != sl::ERROR_CODE::SUCCESS)
+						throw std::runtime_error(std::format("ZED failed to grab {}", sl::toString(error).c_str()));
+					mGrabThreadProfiler.measureEvent("Grab");
 
-                // Retrieval has to happen on the same thread as grab so that the image and point cloud are synced
-                if (mRightImgPub.getNumSubscribers())
-                    if (mZed.retrieveImage(mGrabMeasures.rightImage, sl::VIEW::RIGHT, sl::MEM::GPU, mImageResolution) != sl::ERROR_CODE::SUCCESS)
-                        throw std::runtime_error("ZED failed to retrieve right image");
-                // Only left set is used for processing
-                if (mDepthEnabled) {
-                    if (mZed.retrieveImage(mGrabMeasures.leftImage, sl::VIEW::LEFT, sl::MEM::GPU, mImageResolution) != sl::ERROR_CODE::SUCCESS)
-                        throw std::runtime_error("ZED failed to retrieve left image");
-                    if (mZed.retrieveMeasure(mGrabMeasures.leftPoints, sl::MEASURE::XYZ, sl::MEM::GPU, mPointResolution) != sl::ERROR_CODE::SUCCESS)
-                        throw std::runtime_error("ZED failed to retrieve point cloud");
-                }
-                // if (mZed.retrieveMeasure(mGrabMeasures.leftNormals, sl::MEASURE::NORMALS, sl::MEM::GPU, mNormalsResolution) != sl::ERROR_CODE::SUCCESS)
-                //     throw std::runtime_error("ZED failed to retrieve point cloud normals");
+					// Retrieval has to happen on the same thread as grab so that the image and point cloud are synced
+					if (mRightImgPub.getNumSubscribers())
+						if (mZed.retrieveImage(mGrabMeasures.rightImage, sl::VIEW::RIGHT, sl::MEM::GPU, mImageResolution) != sl::ERROR_CODE::SUCCESS)
+							throw std::runtime_error("ZED failed to retrieve right image");
+					// Only left set is used for processing
+					if (mDepthEnabled) {
+						if (mZed.retrieveImage(mGrabMeasures.leftImage, sl::VIEW::LEFT, sl::MEM::GPU, mImageResolution) != sl::ERROR_CODE::SUCCESS)
+							throw std::runtime_error("ZED failed to retrieve left image");
+						if (mZed.retrieveMeasure(mGrabMeasures.leftPoints, sl::MEASURE::XYZ, sl::MEM::GPU, mPointResolution) != sl::ERROR_CODE::SUCCESS)
+							throw std::runtime_error("ZED failed to retrieve point cloud");
+					}
+					// if (mZed.retrieveMeasure(mGrabMeasures.leftNormals, sl::MEASURE::NORMALS, sl::MEM::GPU, mNormalsResolution) != sl::ERROR_CODE::SUCCESS)
+					//     throw std::runtime_error("ZED failed to retrieve point cloud normals");
 
-                assert(mGrabMeasures.leftImage.timestamp == mGrabMeasures.leftPoints.timestamp);
+					assert(mGrabMeasures.leftImage.timestamp == mGrabMeasures.leftPoints.timestamp);
 
-                mGrabMeasures.time = mSvoPath ? ros::Time::now() : slTime2Ros(mZed.getTimestamp(sl::TIME_REFERENCE::IMAGE));
-                mGrabThreadProfiler.measureEvent("Retrieve");
+					mGrabMeasures.time = mSvoPath ? ros::Time::now() : slTime2Ros(mZed.getTimestamp(sl::TIME_REFERENCE::IMAGE));
+					mGrabThreadProfiler.measureEvent("Retrieve");
 
-                // If the processing thread is busy skip
-                // We want this thread to run as fast as possible for grab and positional tracking
-                if (mSwapMutex.try_lock()) {
-                    std::swap(mGrabMeasures, mPcMeasures);
-                    mIsSwapReady = true;
-                    mSwapMutex.unlock();
-                    mSwapCv.notify_one();
-                }
-                mGrabThreadProfiler.measureEvent("Try swap");
+					// If the processing thread is busy skip
+					// We want this thread to run as fast as possible for grab and positional tracking
+					if (mSwapMutex.try_lock()) {
+						std::swap(mGrabMeasures, mPcMeasures);
+						mIsSwapReady = true;
+						mSwapMutex.unlock();
+						mSwapCv.notify_one();
+					}
+					mGrabThreadProfiler.measureEvent("Try swap");
 
-                // Positional tracking module publishing
-                if (mUseBuiltinPosTracking) {
-                    sl::Pose pose;
-                    sl::POSITIONAL_TRACKING_STATE status = mZed.getPosition(pose);
-                    if (status == sl::POSITIONAL_TRACKING_STATE::OK) {
-                        sl::Translation const& translation = pose.getTranslation();
-                        sl::Orientation const& orientation = pose.getOrientation();
-                        try {
-                            SE3d leftCameraInOdom{{translation.x, translation.y, translation.z},
-                                                  Eigen::Quaterniond{orientation.w, orientation.x, orientation.y, orientation.z}.normalized()};
-                            SE3d baseLinkToLeftCamera = SE3Conversions::fromTfTree(mTfBuffer, "base_link", "zed_left_camera_frame");
-                            SE3d baseLinkInOdom = leftCameraInOdom * baseLinkToLeftCamera;
-                            SE3Conversions::pushToTfTree(mTfBroadcaster, "base_link", "odom", baseLinkInOdom);
-                        } catch (tf2::TransformException& e) {
-                            NODELET_WARN_STREAM("Failed to get transform: " << e.what());
-                        }
-                    } else {
-                        NODELET_WARN_STREAM("Positional tracking failed: " << status);
-                    }
-                    mGrabThreadProfiler.measureEvent("Positional tracking");
-                }
+					// Positional tracking module publishing
+					if (mUseBuiltinPosTracking) {
+						sl::Pose pose;
+						sl::POSITIONAL_TRACKING_STATE status = mZed.getPosition(pose);
+						if (status == sl::POSITIONAL_TRACKING_STATE::OK) {
+							sl::Translation const& translation = pose.getTranslation();
+							sl::Orientation const& orientation = pose.getOrientation();
+							try {
+								SE3d leftCameraInOdom{{translation.x, translation.y, translation.z},
+													  Eigen::Quaterniond{orientation.w, orientation.x, orientation.y, orientation.z}.normalized()};
+								SE3d baseLinkToLeftCamera = SE3Conversions::fromTfTree(mTfBuffer, "base_link", "zed_left_camera_frame");
+								SE3d baseLinkInOdom = leftCameraInOdom * baseLinkToLeftCamera;
+								SE3Conversions::pushToTfTree(mTfBroadcaster, "base_link", "odom", baseLinkInOdom);
+							} catch (tf2::TransformException& e) {
+								NODELET_WARN_STREAM("Failed to get transform: " << e.what());
+							}
+						} else {
+							NODELET_WARN_STREAM("Positional tracking failed: " << status);
+						}
+						mGrabThreadProfiler.measureEvent("Positional tracking");
+					}
 
-                if (mZedInfo.camera_model != sl::MODEL::ZED && mImuPub.getNumSubscribers()) {
-                    sl::SensorsData sensorData;
-                    mZed.getSensorsData(sensorData, sl::TIME_REFERENCE::CURRENT);
+					if (mZedInfo.camera_model != sl::MODEL::ZED && mImuPub.getNumSubscribers()) {
+						sl::SensorsData sensorData;
+						mZed.getSensorsData(sensorData, sl::TIME_REFERENCE::CURRENT);
 
-                    sensor_msgs::Imu imuMsg;
-                    fillImuMessage(sensorData.imu, imuMsg);
-                    imuMsg.header.frame_id = "zed_mag_frame";
-                    imuMsg.header.stamp = ros::Time::now();
-                    mImuPub.publish(imuMsg);
+						sensor_msgs::Imu imuMsg;
+						fillImuMessage(sensorData.imu, imuMsg);
+						imuMsg.header.frame_id = "zed_mag_frame";
+						imuMsg.header.stamp = ros::Time::now();
+						mImuPub.publish(imuMsg);
 
-                    if (mZedInfo.camera_model != sl::MODEL::ZED_M && mMagPub.getNumSubscribers()) {
-                        sensor_msgs::MagneticField magMsg;
-                        fillMagMessage(sensorData.magnetometer, magMsg);
-                        magMsg.header.frame_id = "zed_mag_frame";
-                        magMsg.header.stamp = ros::Time::now();
-                        mMagPub.publish(magMsg);
-                    }
+						if (mZedInfo.camera_model != sl::MODEL::ZED_M && mMagPub.getNumSubscribers()) {
+							sensor_msgs::MagneticField magMsg;
+							fillMagMessage(sensorData.magnetometer, magMsg);
+							magMsg.header.frame_id = "zed_mag_frame";
+							magMsg.header.stamp = ros::Time::now();
+							mMagPub.publish(magMsg);
+						}
 
-                    mGrabThreadProfiler.measureEvent("Sensor data");
-                }
+						mGrabThreadProfiler.measureEvent("Sensor data");
+					}
+				}catch(std::runtime_error& err){
+					err.what();
+				}
+
             }
 
             mZed.close();

@@ -8,10 +8,17 @@ namespace mrover {
 
 		cv::Mat mImg;
 
+		cv::Mat mOutputImage;
+
+
 		// Thresholding Variables
 		cv::Mat mThresholdedImg;
-		cv::Scalar mUpperBound{255, 60, 60};
-		cv::Scalar mLowerBound{125, 0, 0};
+		cv::Scalar mUpperBound{255, 70, 70};
+		cv::Scalar mLowerBound{80, 10, 10};
+
+		cv::Mat mErodedImg;
+
+		cv::Mat mDialtedImg;
 
 		// Pub Sub
 		ros::Subscriber imgSub;
