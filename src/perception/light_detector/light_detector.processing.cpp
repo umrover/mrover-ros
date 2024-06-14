@@ -1,23 +1,89 @@
 #include "light_detector.hpp"
 #include <opencv2/core/types.hpp>
+#include <opencv2/imgproc.hpp>
 
 namespace mrover {
+    auto LightDetector::rgb_to_hsv(cv::Vec3b const& rgb) -> cv::Vec3d{
+        double r = static_cast<double>(rgb[0]) / 255;
+        double g = static_cast<double>(rgb[1]) / 255;
+        double b = static_cast<double>(rgb[2]) / 255;
+        double maxc = std::max(r, std::max(g, b));
+        double minc = std::min(r, std::min(g, b));
+        double v = maxc;
+
+        if(minc == maxc)
+            return {0.0, 0.0, v};
+
+        double s = (maxc-minc) / maxc;
+        double rc = (maxc-r) / (maxc-minc);
+        double gc = (maxc-g) / (maxc-minc);
+        double bc = (maxc-b) / (maxc-minc);
+        double h = 0;
+
+        if(r == maxc){
+            h = 0.0+bc-gc;
+        }else if(g == maxc){
+            h = 2.0+rc-bc;
+        }else{
+            h = 4.0+gc-rc;
+        }
+
+        h = (h/6.0) - static_cast<int>(h/6.0); // get decimal
+
+        return {h * 360, s * 100, v * 100};
+    } 
 	auto LightDetector::imageCallback(sensor_msgs::PointCloud2ConstPtr const& msg) -> void{
-		if(mImg.rows != static_cast<int>(msg->height) || mImg.cols != static_cast<int>(msg->width)){
+		if(mImgRGB.rows != static_cast<int>(msg->height) || mImgRGB.cols != static_cast<int>(msg->width)){
 			ROS_INFO_STREAM("Adjusting Image Size... " << msg->width << ", " << msg->height);
-			mImg = cv::Mat{cv::Size{static_cast<int>(msg->width), static_cast<int>(msg->height)}, CV_8UC3, cv::Scalar::zeros()};
+			mImgRGB = cv::Mat{cv::Size{static_cast<int>(msg->width), static_cast<int>(msg->height)}, CV_8UC3, cv::Scalar::zeros()};
+			mImgHSV = cv::Mat{cv::Size{static_cast<int>(msg->width), static_cast<int>(msg->height)}, CV_8UC3, cv::Scalar::zeros()};
 			mThresholdedImg = cv::Mat{cv::Size{static_cast<int>(msg->width), static_cast<int>(msg->height)}, CV_8UC1, cv::Scalar::zeros()};
 		}
 
-		convertPointCloudToRGB(msg, mImg);
+		convertPointCloudToRGB(msg, mImgRGB);
 
-		cv::inRange(mImg, mLowerBound, mUpperBound, mThresholdedImg);
+        cv::Vec3d lowerBound1{0, 50, 50};
+        cv::Vec3d upperBound1{20, 100, 100};
 
-		cv::cvtColor(mThresholdedImg, mOutputImage, cv::COLOR_GRAY2BGRA);
+        cv::Vec3d lowerBound2{340, 50, 50};
+        cv::Vec3d upperBound2{360, 100, 100};
 
-		cv::erode(mThresholdedImg, mErodedImg, cv::getStructuringElement(cv::MORPH_RECT, cv::Size(3,3), cv::Point(-1,-1)), cv::Point(-1,-1), cv::BORDER_REFLECT_101, 0);
+        auto* first = reinterpret_cast<cv::Vec3b*>(mImgRGB.data);
+        auto* last = reinterpret_cast<cv::Vec3b*>(first + mImgRGB.total());
 
-		publishDetectedObjects(mErodedImg);
+        auto less = [](cv::Vec3d const& lhs, cv::Vec3d const& rhs){
+            return lhs[0] < rhs[0] && lhs[1] < rhs[1] && lhs[2] < rhs[2];
+        };
+
+        auto greater = [](cv::Vec3d const& lhs, cv::Vec3d const& rhs){
+            return lhs[0] > rhs[0] && lhs[1] > rhs[1] && lhs[2] > rhs[2];
+        };
+
+        std::for_each(std::execution::par_unseq, first, last, [&](cv::Vec3b& pixel){
+            std::size_t const i = &pixel - first;
+
+            cv::Vec3b pixelHSV = rgb_to_hsv(pixel);
+
+            if((less(lowerBound1, pixelHSV) && greater(upperBound1, pixelHSV)) || (less(lowerBound2, pixelHSV) && greater(upperBound2, pixelHSV))){
+                mThresholdedImg.data[i] = 255;
+            }else{
+                mThresholdedImg.data[i] = 0;
+            }
+        });
+        cv::Mat erode;
+
+        cv::dilate(mThresholdedImg, erode, cv::getStructuringElement(cv::MORPH_CROSS, cv::Size(2,2), cv::Point(-1,-1)), cv::Point(-1,-1), cv::BORDER_REFLECT_101, 0);
+
+        cv::erode(erode, mThresholdedImg, cv::getStructuringElement(cv::MORPH_RECT, cv::Size(2,2), cv::Point(-1,-1)), cv::Point(-1,-1), cv::BORDER_REFLECT_101, 0);
+
+        cv::dilate(mThresholdedImg, erode, cv::getStructuringElement(cv::MORPH_RECT, cv::Size(4,4), cv::Point(-1,-1)), cv::Point(-1,-1), cv::BORDER_REFLECT_101, 0);
+
+		
+        // cv::cvtColor(mImgHSV, mOutputImage, cv::COLOR_HSV2BGR_FULL);
+
+        cv::cvtColor(erode, mOutputImage, cv::COLOR_GRAY2BGRA);
+
+		publishDetectedObjects(mOutputImage);
 	}
 
 	// TODO: (john) break this out into a utility so we dont have to copy all of this code

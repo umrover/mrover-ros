@@ -23,6 +23,9 @@ namespace mrover {
             auto operator=(Measures&&) noexcept -> Measures&;
         };
 
+        sl::InitParameters mInitParameters;
+
+
         ros::NodeHandle mNh, mPnh;
 
         tf2_ros::Buffer mTfBuffer;

@@ -77,28 +77,27 @@ namespace mrover {
             NODELET_INFO_STREAM(std::format("Resolution: {} image: {}x{} points: {}x{}",
                                             grabResolutionString, mImageResolution.width, mImageResolution.height, mPointResolution.width, mPointResolution.height));
             NODELET_INFO_STREAM(std::format("Use builtin visual odometry: {}", mUseBuiltinPosTracking ? "true" : "false"));
-            sl::InitParameters initParameters;
             if (mSvoPath) {
-                initParameters.input.setFromSVOFile(mSvoPath);
+                mInitParameters.input.setFromSVOFile(mSvoPath);
             } else {
                 if (mSerialNumber == -1) {
-                    initParameters.input.setFromCameraID(-1, sl::BUS_TYPE::USB);
+                    mInitParameters.input.setFromCameraID(-1, sl::BUS_TYPE::USB);
                 } else {
-                    initParameters.input.setFromSerialNumber(mSerialNumber, sl::BUS_TYPE::USB);
+                    mInitParameters.input.setFromSerialNumber(mSerialNumber, sl::BUS_TYPE::USB);
                 }
             }
-            initParameters.depth_stabilization = mUseDepthStabilization;
-            initParameters.camera_resolution = stringToZedEnum<sl::RESOLUTION>(grabResolutionString);
-            initParameters.depth_mode = stringToZedEnum<sl::DEPTH_MODE>(depthModeString);
-            initParameters.coordinate_units = sl::UNIT::METER;
-            initParameters.sdk_verbose = true; // Log useful information
-            initParameters.camera_fps = mGrabTargetFps;
-            initParameters.coordinate_system = sl::COORDINATE_SYSTEM::RIGHT_HANDED_Z_UP_X_FWD; // Match ROS
-            initParameters.depth_maximum_distance = mDepthMaximumDistance;
+            mInitParameters.depth_stabilization = mUseDepthStabilization;
+            mInitParameters.camera_resolution = stringToZedEnum<sl::RESOLUTION>(grabResolutionString);
+            mInitParameters.depth_mode = stringToZedEnum<sl::DEPTH_MODE>(depthModeString);
+            mInitParameters.coordinate_units = sl::UNIT::METER;
+            mInitParameters.sdk_verbose = true; // Log useful information
+            mInitParameters.camera_fps = mGrabTargetFps;
+            mInitParameters.coordinate_system = sl::COORDINATE_SYSTEM::RIGHT_HANDED_Z_UP_X_FWD; // Match ROS
+            mInitParameters.depth_maximum_distance = mDepthMaximumDistance;
 
-            mDepthEnabled = initParameters.depth_mode != sl::DEPTH_MODE::NONE;
+            mDepthEnabled = mInitParameters.depth_mode != sl::DEPTH_MODE::NONE;
 
-            if (mZed.open(initParameters) != sl::ERROR_CODE::SUCCESS) {
+            if (mZed.open(mInitParameters) != sl::ERROR_CODE::SUCCESS) {
                 throw std::runtime_error("ZED failed to open");
             }
             mZedInfo = mZed.getCameraInformation();
@@ -297,6 +296,10 @@ namespace mrover {
 					}
 				}catch(std::runtime_error& err){
 					err.what();
+                    ROS_INFO_STREAM("Closing...");
+                    mZed.close();
+                    ROS_INFO_STREAM("Opening...");
+                    mZed.open(mInitParameters);
 				}
 
             }

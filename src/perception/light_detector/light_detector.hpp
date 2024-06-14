@@ -6,7 +6,8 @@ namespace mrover {
 	private:
 		ros::NodeHandle mNh, mPnh;
 
-		cv::Mat mImg;
+		cv::Mat mImgRGB;
+		cv::Mat mImgHSV;
 
 		cv::Mat mOutputImage;
 
@@ -29,6 +30,8 @@ namespace mrover {
 		auto static convertPointCloudToRGB(sensor_msgs::PointCloud2ConstPtr const& msg, cv::Mat const& image) -> void;
 
 		auto publishDetectedObjects(cv::InputArray image) -> void;
+
+		auto static rgb_to_hsv(cv::Vec3b const& rgb) -> cv::Vec3d;
 
 	public:
 		auto onInit() -> void override;
