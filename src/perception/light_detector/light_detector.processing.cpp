@@ -76,10 +76,14 @@ namespace mrover {
 
         cv::erode(erode, mThresholdedImg, cv::getStructuringElement(cv::MORPH_RECT, cv::Size(2,2), cv::Point(-1,-1)), cv::Point(-1,-1), cv::BORDER_REFLECT_101, 0);
 
-        cv::dilate(mThresholdedImg, erode, cv::getStructuringElement(cv::MORPH_RECT, cv::Size(4,4), cv::Point(-1,-1)), cv::Point(-1,-1), cv::BORDER_REFLECT_101, 0);
+        cv::dilate(mThresholdedImg, erode, cv::getStructuringElement(cv::MORPH_RECT, cv::Size(7,7), cv::Point(-1,-1)), cv::Point(-1,-1), cv::BORDER_REFLECT_101, 0);
 
 		
-        // cv::cvtColor(mImgHSV, mOutputImage, cv::COLOR_HSV2BGR_FULL);
+		std::vector<std::vector<cv::Point> > contours;
+		std::vector<cv::Vec4i> hierarchy;
+		cv::findContours( erode, contours, hierarchy, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
+
+		ROS_INFO_STREAM(contours.size());
 
         cv::cvtColor(erode, mOutputImage, cv::COLOR_GRAY2BGRA);
 

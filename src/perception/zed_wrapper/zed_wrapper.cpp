@@ -298,6 +298,8 @@ namespace mrover {
 					err.what();
                     ROS_INFO_STREAM("Closing...");
                     mZed.close();
+                    ROS_INFO_STREAM("Rebooting...");
+                    sl::Camera::reboot(0);
                     ROS_INFO_STREAM("Opening...");
                     mZed.open(mInitParameters);
 				}

@@ -8,8 +8,6 @@
 #include <ros/node_handle.h>
 #include <ros/this_node.h>
 #include <ros/subscriber.h>
-#include <algorithm>
-#include <execution>
 
 
 // Messages
@@ -26,3 +24,8 @@
 
 // MRover
 #include "point.hpp"
+
+// STL
+#include <algorithm>
+#include <execution>
+#include <vector>
