@@ -100,7 +100,8 @@ namespace mrover {
 			centroid.first /= static_cast<int>(vec.size());
 			centroid.second /= static_cast<int>(vec.size());
 
-			ROS_INFO_STREAM(std::format("centroid at (row, col) ({}, {})", centroid.first, centroid.second));
+			auto* pointPtr = reinterpret_cast<Point const*>(msg->data.data());
+			ROS_INFO_STREAM(std::format("centroid at (row, col) ({}, {}) in image space and at (x,y,z) ({}, {}, {})", centroid.first, centroid.second, pointPtr[centroid.first * msg->width + centroid.second].x, pointPtr[centroid.first * msg->width + centroid.second].y, pointPtr[centroid.first * msg->width + centroid.second].z));
 		}
 
 		ROS_INFO_STREAM(contours.size());
