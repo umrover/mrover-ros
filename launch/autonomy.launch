@@ -1,4 +1,6 @@
 <launch>
+  <rosparam command="load" file="$(find mrover)/config/esw.yaml"/>
+
   <arg name="tag_detector" default="true"/>
   <arg name="object_detector" default="false"/>
   <arg name="cost_map" default="true"/>

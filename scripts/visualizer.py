@@ -11,14 +11,14 @@ from PyQt5.QtSvg import QSvgRenderer  # type:ignore
 
 import rospy
 import sys
-from smach_msgs.msg import SmachContainerStatus, SmachContainerStructure
+from mrover.msg import StateMachineStructure, StateMachineStateUpdate
 from threading import Lock
 from dataclasses import dataclass
 from typing import Optional, List, Dict
 
 
-STRUCTURE_TOPIC = "/smach/container_structure"
-STATUS_TOPIC = "/smach/container_status"
+STRUCTURE_TOPIC = "nav_structure"
+STATUS_TOPIC = "nav_state"
 
 
 @dataclass
@@ -30,7 +30,7 @@ class State:
 class StateMachine:
     def __init__(self):
         self.states: Dict[str, State] = {}
-        self.structure: Optional[SmachContainerStructure] = None
+        self.structure: Optional[StateMachineStructure] = None
         self.mutex: Lock = Lock()
         self.cur_active: str = ""
         self.previous_state: str = ""
@@ -50,17 +50,18 @@ class StateMachine:
                     f"Current time: {now} Previous state: {self.previous_state} Current State: { self.cur_active}"
                 )
 
-    def _rebuild(self, structure: SmachContainerStructure):
+    def _rebuild(self, structure: StateMachineStructure):
         """
         rebuilds the state dictionary with a new structure message
         """
-        self.states = {child: State(child, []) for child in structure.children}
-        for start, end in zip(structure.outcomes_from, structure.outcomes_to):
-            if end != "None":
-                self.states[start].children.append(self.states[end])
+        self.states = {child.origin: State(child.origin, []) for child in structure.transitions}
+        for transition in structure.transitions:
+            origin = transition.origin
+            for to in transition.destinations:
+                self.states[origin].children.append(self.states[to])
         self.needs_redraw = True
 
-    def check_rebuild(self, structure: SmachContainerStructure):
+    def check_rebuild(self, structure: StateMachineStructure):
         """
         checks if the structure passed as input matches the structure already represented (thread safe)
         """
@@ -71,10 +72,10 @@ class StateMachine:
                 self._rebuild(structure)
                 self.structure = structure
 
-    def container_status_callback(self, status: SmachContainerStatus):
-        self.set_active_state(status.active_states[0])
+    def container_status_callback(self, status: StateMachineStateUpdate):
+        self.set_active_state(status.state)
 
-    def container_structure_callback(self, structure: SmachContainerStructure):
+    def container_structure_callback(self, structure: StateMachineStructure):
         self.check_rebuild(structure)
 
 
@@ -121,12 +122,12 @@ if __name__ == "__main__":
     rospy.init_node("smach_visualizer", anonymous=False, disable_signals=True, log_level=rospy.INFO)
     rospy.Subscriber(
         STRUCTURE_TOPIC,
-        SmachContainerStructure,
+        StateMachineStructure,
         state_machine.container_structure_callback,
     )
     rospy.Subscriber(
         STATUS_TOPIC,
-        SmachContainerStatus,
+        StateMachineStateUpdate,
         state_machine.container_status_callback,
     )
     app = QApplication([])  # type: ignore
