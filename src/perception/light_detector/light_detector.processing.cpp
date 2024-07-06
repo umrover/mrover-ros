@@ -105,7 +105,7 @@ namespace mrover {
 
 		ROS_INFO_STREAM(contours.size());
 
-		publishDetectedObjects(mOutputImage);
+		publishDetectedObjects(mOutputImage, centroids);
 	}
 
 	// TODO: (john) break this out into a utility so we dont have to copy all of this code
@@ -120,7 +120,7 @@ namespace mrover {
         });
     }
 
-    auto LightDetector::publishDetectedObjects(cv::InputArray image) -> void {
+    auto LightDetector::publishDetectedObjects(cv::InputArray image, std::vector<std::pair<int, int>> const& centroids) -> void {
         if (!imgPub.getNumSubscribers()) return;
 
 		sensor_msgs::Image imgMsg;
@@ -136,6 +136,13 @@ namespace mrover {
 		// Load the data into the message in the correct format
         cv::Mat debugImageWrapper{image.size(), CV_8UC4, imgMsg.data.data()};
         cv::cvtColor(image, debugImageWrapper, cv::COLOR_RGB2BGRA);
+
+		// Draw a marker where each centroid is in the image
+		constexpr int MARKER_RADIUS = 10;
+		cv::Scalar const MARKER_COLOR = {255, 0, 0, 0};
+		for(auto const& centroid : centroids){
+			cv::circle(debugImageWrapper, {centroid.second, centroid.first}, MARKER_RADIUS, MARKER_COLOR);
+		}
 
         imgPub.publish(imgMsg);
     }
