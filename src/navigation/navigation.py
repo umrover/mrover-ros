@@ -29,9 +29,21 @@ class Navigation(threading.Thread):
         self.state_machine = StateMachine[Context](OffState(), "NavStateMachine", context)
         self.state_machine.add_transitions(
             ApproachTargetState(),
-            [WaypointState(), SearchState(), WaterBottleSearchState(), RecoveryState(), DoneState()],
+            [
+                WaypointState(),
+                SearchState(), 
+                WaterBottleSearchState(), 
+                RecoveryState(), 
+                DoneState()
+                ],
         )
-        self.state_machine.add_transitions(PostBackupState(), [WaypointState(), RecoveryState()])
+        self.state_machine.add_transitions(
+            PostBackupState(),
+            [
+                WaypointState(),
+                RecoveryState()
+                ],
+        )
         self.state_machine.add_transitions(
             RecoveryState(),
             [
@@ -45,9 +57,19 @@ class Navigation(threading.Thread):
         )
         self.state_machine.add_transitions(
             SearchState(),
-            [ApproachTargetState(), LongRangeState(), WaypointState(), RecoveryState()],
+            [
+                ApproachTargetState(), 
+                LongRangeState(), 
+                WaypointState(), 
+                RecoveryState()
+            ],
         )
-        self.state_machine.add_transitions(DoneState(), [WaypointState()])
+        self.state_machine.add_transitions(
+            DoneState(), 
+            [
+                WaypointState()
+            ],
+        )
         self.state_machine.add_transitions(
             WaypointState(),
             [
@@ -62,11 +84,29 @@ class Navigation(threading.Thread):
         )
         self.state_machine.add_transitions(
             LongRangeState(),
-            [ApproachTargetState(), SearchState(), WaterBottleSearchState(), WaypointState(), RecoveryState()],
+            [
+                ApproachTargetState(), 
+                SearchState(), 
+                WaterBottleSearchState(), 
+                WaypointState(), 
+                RecoveryState()
+            ],
         )
-        self.state_machine.add_transitions(OffState(), [WaypointState(), DoneState()])
         self.state_machine.add_transitions(
-            WaterBottleSearchState(), [WaypointState(), RecoveryState(), ApproachTargetState(), LongRangeState()]
+            OffState(), 
+            [
+                WaypointState(), 
+                DoneState()
+            ],
+        )
+        self.state_machine.add_transitions(
+            WaterBottleSearchState(), 
+            [
+                WaypointState(), 
+                RecoveryState(), 
+                ApproachTargetState(), 
+                LongRangeState()
+            ],
         )
         self.state_machine.configure_off_switch(OffState(), off_check)
         self.state_machine_server = StatePublisher(self.state_machine, "nav_structure", 1, "nav_state", 10)
