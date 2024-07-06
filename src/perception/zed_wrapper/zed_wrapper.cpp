@@ -218,7 +218,7 @@ namespace mrover {
                 runtimeParameters.confidence_threshold = mDepthConfidence;
                 runtimeParameters.texture_confidence_threshold = mTextureConfidence;
 
-				try{
+				// try{
 					if (sl::ERROR_CODE error = mZed.grab(runtimeParameters); error != sl::ERROR_CODE::SUCCESS)
 						throw std::runtime_error(std::format("ZED failed to grab {}", sl::toString(error).c_str()));
 					mGrabThreadProfiler.measureEvent("Grab");
@@ -294,15 +294,15 @@ namespace mrover {
 
 						mGrabThreadProfiler.measureEvent("Sensor data");
 					}
-				}catch(std::runtime_error& err){
-					err.what();
-                    ROS_INFO_STREAM("Closing...");
-                    mZed.close();
-                    ROS_INFO_STREAM("Rebooting...");
-                    sl::Camera::reboot(0);
-                    ROS_INFO_STREAM("Opening...");
-                    mZed.open(mInitParameters);
-				}
+				// }catch(std::runtime_error& err){
+				// 	err.what();
+                //     ROS_INFO_STREAM("Closing...");
+                //     mZed.close();
+                //     ROS_INFO_STREAM("Rebooting...");
+                //     sl::Camera::reboot(0);
+                //     ROS_INFO_STREAM("Opening...");
+                //     mZed.open(mInitParameters);
+				// }
 
             }
 
