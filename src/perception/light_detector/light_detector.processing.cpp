@@ -77,15 +77,33 @@ namespace mrover {
         cv::erode(erode, mThresholdedImg, cv::getStructuringElement(cv::MORPH_RECT, cv::Size(2,2), cv::Point(-1,-1)), cv::Point(-1,-1), cv::BORDER_REFLECT_101, 0);
 
         cv::dilate(mThresholdedImg, erode, cv::getStructuringElement(cv::MORPH_RECT, cv::Size(7,7), cv::Point(-1,-1)), cv::Point(-1,-1), cv::BORDER_REFLECT_101, 0);
-
 		
-		std::vector<std::vector<cv::Point> > contours;
+        cv::cvtColor(erode, mOutputImage, cv::COLOR_GRAY2BGRA);
+
+		std::vector<std::vector<cv::Point>> contours;
 		std::vector<cv::Vec4i> hierarchy;
-		cv::findContours( erode, contours, hierarchy, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
+		cv::findContours(erode, contours, hierarchy, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
+
+		// Find the centroids for all of the different contours
+		std::vector<std::pair<int, int>> centroids; // These are in image space
+		centroids.resize(contours.size());
+		for(std::size_t i = 0; i < contours.size(); ++i){
+			auto const& vec = contours[i];
+			auto& centroid = centroids[i]; // first = row, second = col
+
+			for(auto const& point : vec){
+				centroid.first += point.y;
+				centroid.second += point.x;
+			}
+
+			// This is protected division since vec will only exist if it contains points
+			centroid.first /= static_cast<int>(vec.size());
+			centroid.second /= static_cast<int>(vec.size());
+
+			ROS_INFO_STREAM(std::format("centroid at (row, col) ({}, {})", centroid.first, centroid.second));
+		}
 
 		ROS_INFO_STREAM(contours.size());
-
-        cv::cvtColor(erode, mOutputImage, cv::COLOR_GRAY2BGRA);
 
 		publishDetectedObjects(mOutputImage);
 	}
@@ -114,6 +132,8 @@ namespace mrover {
         imgMsg.is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
         imgMsg.step = 4 * imgMsg.width;
         imgMsg.data.resize(imgMsg.step * imgMsg.height);
+
+		// Load the data into the message in the correct format
         cv::Mat debugImageWrapper{image.size(), CV_8UC4, imgMsg.data.data()};
         cv::cvtColor(image, debugImageWrapper, cv::COLOR_RGB2BGRA);
 
