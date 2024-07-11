@@ -49,5 +49,3 @@
 
 #include "point.hpp"
 #include <learning.hpp>
-
-#include <bitset>

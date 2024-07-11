@@ -5,7 +5,7 @@
   <node pkg="mrover" type="gst_websocket_streamer" name="static_streamer"
         output="screen">
     <param name="dev_path" value="/devices/platform/3610000.xhci/usb1/1-2/1-2.4/1-2.4.4"/>
-    <param name="port" value="8082"/>
+    <param name="port" value="8083"/>
   </node>
 
   <include file="$(find mrover)/launch/zed.launch">
