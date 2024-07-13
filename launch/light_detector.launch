@@ -1,6 +1,8 @@
 <launch>
+	<arg name="sim" default="false"/>
 
-    <rosparam command="load" file="$(find mrover)/config/light_detector.yaml"/>
+    <rosparam if="$(arg sim)" command="load" file="$(find mrover)/config/perception/light_detector/light_detector_sim.yaml"/>
+    <rosparam unless="$(arg sim)" command="load" file="$(find mrover)/config/perception/light_detector/light_detector_irl.yaml"/>
 
 	<node 
 			pkg="nodelet" 
