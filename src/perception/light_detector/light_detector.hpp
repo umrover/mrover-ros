@@ -14,8 +14,8 @@ namespace mrover {
 
 		// Thresholding Variables
 		cv::Mat mThresholdedImg;
-		cv::Scalar mUpperBound;
-		cv::Scalar mLowerBound;
+		cv::Vec3d mUpperBound;
+		cv::Vec3d mLowerBound;
 
 		cv::Mat mErodedImg;
 

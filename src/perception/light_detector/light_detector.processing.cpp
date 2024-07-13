@@ -4,6 +4,7 @@
 
 namespace mrover {
     auto LightDetector::rgb_to_hsv(cv::Vec3b const& rgb) -> cv::Vec3d{
+        // https://math.stackexchange.com/questions/556341/rgb-to-hsv-color-conversion-algorithm
         double r = static_cast<double>(rgb[0]) / 255;
         double g = static_cast<double>(rgb[1]) / 255;
         double b = static_cast<double>(rgb[2]) / 255;
@@ -40,13 +41,7 @@ namespace mrover {
 			mThresholdedImg = cv::Mat{cv::Size{static_cast<int>(msg->width), static_cast<int>(msg->height)}, CV_8UC1, cv::Scalar::zeros()};
 		}
 
-		convertPointCloudToRGB(msg, mImgRGB);
-
-        cv::Vec3d lowerBound1{0, 50, 50};
-        cv::Vec3d upperBound1{20, 100, 100};
-
-        cv::Vec3d lowerBound2{340, 50, 50};
-        cv::Vec3d upperBound2{360, 100, 100};
+		convertPointCloudToRGB(msg, mImgRGB);        
 
         auto* first = reinterpret_cast<cv::Vec3b*>(mImgRGB.data);
         auto* last = reinterpret_cast<cv::Vec3b*>(first + mImgRGB.total());
@@ -61,10 +56,12 @@ namespace mrover {
 
         std::for_each(std::execution::par_unseq, first, last, [&](cv::Vec3b& pixel){
             std::size_t const i = &pixel - first;
-
+            if(i == 479*640){
+                mThresholdedImg.data[i] = 0;
+            }
             cv::Vec3b pixelHSV = rgb_to_hsv(pixel);
 
-            if((less(lowerBound1, pixelHSV) && greater(upperBound1, pixelHSV)) || (less(lowerBound2, pixelHSV) && greater(upperBound2, pixelHSV))){
+            if((less(mLowerBound, pixelHSV) && greater(mUpperBound, pixelHSV))){
                 mThresholdedImg.data[i] = 255;
             }else{
                 mThresholdedImg.data[i] = 0;
@@ -141,6 +138,7 @@ namespace mrover {
 		// Draw a marker where each centroid is in the image
 		constexpr int MARKER_RADIUS = 10;
 		cv::Scalar const MARKER_COLOR = {255, 0, 0, 0};
+
 		for(auto const& centroid : centroids){
 			cv::circle(debugImageWrapper, {centroid.second, centroid.first}, MARKER_RADIUS, MARKER_COLOR);
 		}
