@@ -271,7 +271,6 @@ class Course:
             return approach_target.ApproachTargetState()
         # If we see the target in the long range camera, go to LongRangeState
         assert self.ctx.course is not None
-        print(f"**********{self.ctx.course.image_target_name()}******")
         if self.ctx.course.image_target_name() != "bottle" and self.ctx.env.image_targets.query(self.ctx.course.image_target_name()) is not None:
             return long_range.LongRangeState()
         return None
