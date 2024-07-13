@@ -245,6 +245,12 @@ class Course:
                 return "hammer"
             case Waypoint(type=WaypointType(val=WaypointType.WATER_BOTTLE)):
                 return "bottle"
+            case Waypoint(type=WaypointType(val=WaypointType.RED)):
+                return "red"
+            case Waypoint(type=WaypointType(val=WaypointType.BLUE)):
+                return "blue"
+            case Waypoint(type=WaypointType(val=WaypointType.INFRARED)):
+                return "infrared"
             case Waypoint(type=WaypointType(val=WaypointType.NO_SEARCH)):
                 return ""
             case _:
@@ -265,6 +271,7 @@ class Course:
             return approach_target.ApproachTargetState()
         # If we see the target in the long range camera, go to LongRangeState
         assert self.ctx.course is not None
+        print(f"**********{self.ctx.course.image_target_name()}******")
         if self.ctx.course.image_target_name() != "bottle" and self.ctx.env.image_targets.query(self.ctx.course.image_target_name()) is not None:
             return long_range.LongRangeState()
         return None
