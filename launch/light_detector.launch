@@ -1,11 +1,14 @@
 <launch>
 
+    <rosparam command="load" file="$(find mrover)/config/light_detector.yaml"/>
+
 	<node 
 			pkg="nodelet" 
 			type="nodelet" 
 			name="light_detector" 
 			respawn="true"
-			args="load mrover/LightDetector perception_nodelet_manager" output="screen"
+			args="load mrover/LightDetector perception_nodelet_manager" 
+			output="screen"
 	/>
 
 </launch>
