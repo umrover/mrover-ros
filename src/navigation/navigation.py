@@ -112,7 +112,8 @@ class Navigation(threading.Thread):
         self.state_machine.add_transitions(
             FollowLightsState(), 
             [
-                FollowLightsState()
+                FollowLightsState(),
+                DoneState()
             ],
         )
         self.state_machine.configure_off_switch(OffState(), off_check)

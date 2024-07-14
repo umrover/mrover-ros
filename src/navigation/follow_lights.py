@@ -32,7 +32,7 @@ class FollowLightsState(State):
     OBJECT_DISTANCE_BETWEEN_SPIRALS = rospy.get_param("object_search/distance_between_spirals")
 
     def on_enter(self, context: Context) -> None:
-        self.light_points: dict[tuple[int, int], SE3] = dict()
+        self.light_points: dict[tuple[int, int], tuple[SE3, bool]] = dict()
         pass
 
     def on_exit(self, context: Context) -> None:
@@ -56,7 +56,7 @@ class FollowLightsState(State):
 
                     # If the point is not in the map then add it as unvisited
                     if(not self.light_points.__contains__(light_tuple)):
-                        self.light_points[light_tuple] = light_in_map
+                        self.light_points[light_tuple] = (light_in_map, False)
 
                     print(self.light_points)
 
@@ -69,9 +69,9 @@ class FollowLightsState(State):
             # Find the closest point to the rover
             closestLight: SE3 = None
             closestDistance = np.inf
-            for _, light_location_value in self.light_points.items():
+            for _, (light_location_value, seen) in self.light_points.items():
                 current_distance: float = np.linalg.norm(np.subtract(light_location_value.position, rover_in_map.position))
-                if closestDistance > current_distance:
+                if closestDistance > current_distance and not seen:
                     closestLight = light_location_value
                     closestDistance = current_distance
             
@@ -86,11 +86,10 @@ class FollowLightsState(State):
                 )
 
                 if arrived:
-                    return DoneState()
+                    light_tuple = (int(closestLight.position[0]), int(closestLight.position[1]))
+                    self.light_points[light_tuple] = (self.light_points[light_tuple][0], True)
                 
                 context.rover.send_drive_command(cmd_vel)
-
-
             
         # This is important to be self and not FollowLightsState() because we need the dictionary to persist through iterations
         return self
