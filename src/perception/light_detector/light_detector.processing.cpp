@@ -1,6 +1,8 @@
 #include "light_detector.hpp"
+#include <manif/impl/se3/SE3.h>
 #include <opencv2/core/types.hpp>
 #include <opencv2/imgproc.hpp>
+#include <optional>
 
 namespace mrover {
     auto LightDetector::rgb_to_hsv(cv::Vec3b const& rgb) -> cv::Vec3d{
@@ -73,7 +75,7 @@ namespace mrover {
 
         cv::erode(erode, mThresholdedImg, cv::getStructuringElement(cv::MORPH_RECT, cv::Size(2,2), cv::Point(-1,-1)), cv::Point(-1,-1), cv::BORDER_REFLECT_101, 0);
 
-        cv::dilate(mThresholdedImg, erode, cv::getStructuringElement(cv::MORPH_RECT, cv::Size(7,7), cv::Point(-1,-1)), cv::Point(-1,-1), cv::BORDER_REFLECT_101, 0);
+        cv::dilate(mThresholdedImg, erode, cv::getStructuringElement(cv::MORPH_CROSS, cv::Size(3,3), cv::Point(-1,-1)), cv::Point(-1,-1), cv::BORDER_REFLECT_101, 0);
 		
         cv::cvtColor(erode, mOutputImage, cv::COLOR_GRAY2BGRA);
 
@@ -84,6 +86,10 @@ namespace mrover {
 		// Find the centroids for all of the different contours
 		std::vector<std::pair<int, int>> centroids; // These are in image space
 		centroids.resize(contours.size());
+
+        // The number of lights that we push into the TF
+        unsigned int numLightsSeen = 0;
+
 		for(std::size_t i = 0; i < contours.size(); ++i){
 			auto const& vec = contours[i];
 			auto& centroid = centroids[i]; // first = row, second = col
@@ -97,8 +103,13 @@ namespace mrover {
 			centroid.first /= static_cast<int>(vec.size());
 			centroid.second /= static_cast<int>(vec.size());
 
-			auto* pointPtr = reinterpret_cast<Point const*>(msg->data.data());
-			ROS_INFO_STREAM(std::format("centroid at (row, col) ({}, {}) in image space and at (x,y,z) ({}, {}, {})", centroid.first, centroid.second, pointPtr[centroid.first * msg->width + centroid.second].x, pointPtr[centroid.first * msg->width + centroid.second].y, pointPtr[centroid.first * msg->width + centroid.second].z));
+            // If the position of the light is defined, then push it into the TF tree
+            std::optional<SE3d> lightInCamera = spiralSearchForValidPoint(msg, centroid.second, centroid.first, SPIRAL_SEARCH_DIM, SPIRAL_SEARCH_DIM);
+            if(lightInCamera){
+                ++numLightsSeen;
+                std::string lightFrame = std::format("light{}", numLightsSeen);
+                SE3Conversions::pushToTfTree(mTfBroadcaster, lightFrame, mCameraFrame, lightInCamera.value());
+            }
 		}
 
 		ROS_INFO_STREAM(contours.size());
@@ -144,5 +155,40 @@ namespace mrover {
 		}
 
         imgPub.publish(imgMsg);
+    }
+
+    auto LightDetector::spiralSearchForValidPoint(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, std::size_t u, std::size_t v, std::size_t width, std::size_t height) const -> std::optional<SE3d> {
+        // See: https://stackoverflow.com/a/398302
+        auto xc = static_cast<int>(u), yc = static_cast<int>(v);
+        auto sw = static_cast<int>(width), sh = static_cast<int>(height);
+        auto ih = static_cast<int>(cloudPtr->height), iw = static_cast<int>(cloudPtr->width);
+        int sx = 0, sy = 0; // Spiral coordinates starting at (0, 0)
+        int dx = 0, dy = -1;
+        std::size_t bigger = std::max(width, height);
+        std::size_t maxIterations = bigger * bigger;
+        for (std::size_t i = 0; i < maxIterations; i++) {
+            if (-sw / 2 < sx && sx <= sw / 2 && -sh / 2 < sy && sy <= sh / 2) {
+                int ix = xc + sx, iy = yc + sy; // Image coordinates
+
+                if (ix < 0 || ix >= iw || iy < 0 || iy >= ih) {
+                    NODELET_WARN_STREAM(std::format("Spiral query is outside the image: [{}, {}]", ix, iy));
+                    continue;
+                }
+
+                Point const& point = reinterpret_cast<Point const*>(cloudPtr->data.data())[ix + iy * cloudPtr->width];
+                if (!std::isfinite(point.x) || !std::isfinite(point.y) || !std::isfinite(point.z)) continue;
+
+                return std::make_optional<SE3d>(R3d{point.x, point.y, point.z}, SO3d::Identity());
+            }
+
+            if (sx == sy || (sx < 0 && sx == -sy) || (sx > 0 && sx == 1 - sy)) {
+                dy = -dy;
+                std::swap(dx, dy);
+            }
+
+            sx += dx;
+            sy += dy;
+        }
+        return std::nullopt;
     }
 } //mrover

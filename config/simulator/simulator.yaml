@@ -41,6 +41,10 @@ objects:
     uri: package://mrover/urdf/world/rock.urdf.xacro
     translation: [ 9, -2, 0.2 ]
   - type: urdf
-    name: light
+    name: light1
     uri: package://mrover/urdf/world/light.urdf.xacro
-    translation: [ 10, 10, 10 ]
+    translation: [ 3.64, 0.81, 0.1 ]
+  - type: urdf
+    name: light2
+    uri: package://mrover/urdf/world/light.urdf.xacro
+    translation: [ 9.82, -1.30, 0.1 ]

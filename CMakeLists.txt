@@ -234,7 +234,7 @@ if (ZED_FOUND)
 
 	mrover_add_nodelet(light_detector src/perception/light_detector/*.c* src/perception/light_detector src/perception/light_detector/pch.hpp)
 	mrover_nodelet_include_directories(light_detector ${ZED_INCLUDE_DIRS} ${CUDA_INCLUDE_DIRS})
-	mrover_nodelet_link_libraries(light_detector opencv_core opencv_imgcodecs opencv_highgui)
+	mrover_nodelet_link_libraries(light_detector lie opencv_core opencv_imgcodecs opencv_highgui)
     mrover_nodelet_defines(light_detector
             ALLOW_BUILD_DEBUG # Ignore ZED warnings about Debug mode
             __CUDA_INCLUDE_COMPILER_INTERNAL_HEADERS__ # Eigen includes some files it should not, ignore

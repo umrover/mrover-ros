@@ -8,7 +8,9 @@
 #include <ros/node_handle.h>
 #include <ros/this_node.h>
 #include <ros/subscriber.h>
-
+#include <tf/exceptions.h>
+#include <tf2_ros/transform_broadcaster.h>
+#include <tf2_ros/transform_listener.h>
 
 // Messages
 #include <sensor_msgs/Image.h>
@@ -24,6 +26,7 @@
 
 // MRover
 #include "point.hpp"
+#include "lie.hpp"
 
 // STL
 #include <algorithm>

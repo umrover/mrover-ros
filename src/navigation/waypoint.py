@@ -56,7 +56,7 @@ class WaypointState(State):
             context.env.arrived_at_target = False
             return post_backup.PostBackupState()
 
-        # Returns either ApproachTargetState, LongRangeState, or None
+        # Returns either ApproachT  argetState, LongRangeState, or None
         approach_state = context.course.get_approach_state()
         if approach_state is not None:
             return approach_state

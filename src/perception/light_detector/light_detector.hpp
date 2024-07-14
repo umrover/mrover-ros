@@ -1,6 +1,8 @@
 #pragma once
 #include "pch.hpp"
 
+
+
 namespace mrover {
 	class LightDetector : public nodelet::Nodelet {
 	private:
@@ -11,6 +13,14 @@ namespace mrover {
 
 		cv::Mat mOutputImage;
 
+		int SPIRAL_SEARCH_DIM{};
+
+		// TF variables
+		tf2_ros::Buffer mTfBuffer;
+        tf2_ros::TransformListener mTfListener{mTfBuffer};
+        tf2_ros::TransformBroadcaster mTfBroadcaster;
+		std::string mCameraFrame;
+        std::string mWorldFrame;
 
 		// Thresholding Variables
 		cv::Mat mThresholdedImg;
@@ -32,6 +42,8 @@ namespace mrover {
 		auto publishDetectedObjects(cv::InputArray image, std::vector<std::pair<int, int>> const& centroids) -> void;
 
 		auto static rgb_to_hsv(cv::Vec3b const& rgb) -> cv::Vec3d;
+
+		auto spiralSearchForValidPoint(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, std::size_t u, std::size_t v, std::size_t width, std::size_t height) const -> std::optional<SE3d>;
 
 	public:
 		auto onInit() -> void override;

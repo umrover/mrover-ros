@@ -107,6 +107,8 @@ class Environment:
                 return self.get_target_position("hammer")
             case Waypoint(type=WaypointType(val=WaypointType.WATER_BOTTLE)):
                 return self.get_target_position("bottle")
+            case Waypoint(type=WaypointType(val=WaypointType.BLUE)):
+                return self.get_target_position("blue")
             case _:
                 return None
 

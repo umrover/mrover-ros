@@ -5,3 +5,4 @@ light_detector:
   lower_bound_h: 0
   lower_bound_s: 50
   lower_bound_v: 50
+  spiral_search_radius: 50
