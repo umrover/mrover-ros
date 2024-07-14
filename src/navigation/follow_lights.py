@@ -100,7 +100,7 @@ class FollowLightsState(State):
                         # waypoint that we are at to be a post with the id we just saw.
                         # Then we transition into approaching that post
                         context.course.current_waypoint().tag_id = i
-                        context.course.current_waypoint().type = WaypointType.POST
+                        context.course.current_waypoint().type.val = WaypointType.POST
                         return ApproachTargetState()
                 
                 context.rover.send_drive_command(cmd_vel)

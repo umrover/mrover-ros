@@ -89,11 +89,13 @@ class Environment:
         try:
             print(f'WORLD {self.ctx.world_frame}')
             print(f'CHILD {frame}')
+            print(f'TF BUFFER {self.ctx.tf_buffer}')
             target_pose, time = SE3.from_tf_tree_with_time(
                 self.ctx.tf_buffer, parent_frame=self.ctx.world_frame, child_frame=frame
             )
-        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
+        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as err:
             print('failes**************')
+            print(err)
             return None
 
         if rospy.Time.now() - time > TARGET_EXPIRATION_DURATION:

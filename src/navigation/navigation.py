@@ -60,6 +60,7 @@ class Navigation(threading.Thread):
             SearchState(),
             [
                 ApproachTargetState(), 
+                FollowLightsState(),
                 LongRangeState(), 
                 WaypointState(), 
                 RecoveryState()
@@ -77,6 +78,7 @@ class Navigation(threading.Thread):
                 PostBackupState(),
                 ApproachTargetState(),
                 WaterBottleSearchState(),
+                FollowLightsState(),
                 LongRangeState(),
                 SearchState(),
                 RecoveryState(),
