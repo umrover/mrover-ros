@@ -1,6 +1,6 @@
 <launch>
   <arg name="headless" default="false"/>
-  <arg name="rviz" default="true"/>
+  <arg name="rviz" default="false"/>
   <arg name="object_detector" default="false"/>
   <arg name="cost_map" default="true"/>
 

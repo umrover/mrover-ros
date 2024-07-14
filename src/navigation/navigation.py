@@ -27,7 +27,7 @@ class Navigation(threading.Thread):
     def __init__(self, context: Context):
         super().__init__()
         self.name = "NavigationThread"
-        self.state_machine = StateMachine[Context](FollowLightsState(), "NavStateMachine", context)
+        self.state_machine = StateMachine[Context](OffState(), "NavStateMachine", context)
         self.state_machine.add_transitions(
             ApproachTargetState(),
             [
@@ -113,7 +113,7 @@ class Navigation(threading.Thread):
             FollowLightsState(), 
             [
                 FollowLightsState(),
-                DoneState()
+                ApproachTargetState()
             ],
         )
         self.state_machine.configure_off_switch(OffState(), off_check)

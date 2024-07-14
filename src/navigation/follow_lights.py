@@ -8,6 +8,7 @@ from navigation import recovery, waypoint
 from navigation.context import convert_cartesian_to_gps, Context
 from util.state_lib.state import State
 from navigation.state import DoneState
+from navigation.approach_target import ApproachTargetState
 from util.SE3 import SE3
 
 
@@ -88,41 +89,21 @@ class FollowLightsState(State):
                 if arrived:
                     light_tuple = (int(closestLight.position[0]), int(closestLight.position[1]))
                     self.light_points[light_tuple] = (self.light_points[light_tuple][0], True)
+
+                # TODO: Fix (john) This is written quite poorly, but
+                # it doesnt fit into existing infrastructure because 
+                # we don't necessarily know which post we are searching for
+                # This searches to see if we have seen any of the 100 Aruco tags
+                for i in range(100):
+                    if context.env.get_target_position(f'tag{i}') is not None:
+                        # After seeing the tag, we change the current type of 
+                        # waypoint that we are at to be a post with the id we just saw.
+                        # Then we transition into approaching that post
+                        context.course.current_waypoint().tag_id = i
+                        context.course.current_waypoint().type = WaypointType.POST
+                        return ApproachTargetState()
                 
                 context.rover.send_drive_command(cmd_vel)
-            
+
         # This is important to be self and not FollowLightsState() because we need the dictionary to persist through iterations
-        return self
-
-        cmd_vel, arrived = context.rover.driver.get_drive_command(
-            target_position_in_map,
-            rover_in_map,
-            self.STOP_THRESH,
-            self.DRIVE_FORWARD_THRESHOLD,
-            path_start=self.prev_target_pos_in_map,
-        )
-        if arrived:
-            self.prev_target_pos_in_map = target_position_in_map
-            # If we finish the spiral without seeing the tag, move on with course
-            if FollowLightsState.trajectory.increment_point():
-                return waypoint.WaypointState()
-
-        if context.rover.stuck:
-            context.rover.previous_state = self
-            self.is_recovering = True
-            return recovery.RecoveryState()
-        else:
-            self.is_recovering = False
-
-        context.search_point_publisher.publish(
-            GPSPointList([convert_cartesian_to_gps(pt) for pt in FollowLightsState.trajectory.coordinates])
-        )
-        context.rover.send_drive_command(cmd_vel)
-
-        # Returns either ApproachTargetState, LongRangeState, or None
-        assert context.course is not None
-        approach_state = context.course.get_approach_state()
-        if approach_state is not None:
-            return approach_state
-
         return self

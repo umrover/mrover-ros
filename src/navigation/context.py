@@ -87,19 +87,23 @@ class Environment:
         :return:        Pose of the target in the world frame if it exists and is not too old, otherwise None
         """
         try:
+            print(f'WORLD {self.ctx.world_frame}')
+            print(f'CHILD {frame}')
             target_pose, time = SE3.from_tf_tree_with_time(
                 self.ctx.tf_buffer, parent_frame=self.ctx.world_frame, child_frame=frame
             )
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
+            print('failes**************')
             return None
 
         if rospy.Time.now() - time > TARGET_EXPIRATION_DURATION:
+            print('none##########################')
             return None
         return target_pose.position
 
     def current_target_pos(self) -> Optional[np.ndarray]:
         assert self.ctx.course is not None
-
+        print(f'COURSE IS {self.ctx.course}')
         match self.ctx.course.current_waypoint():
             case Waypoint(type=WaypointType(val=WaypointType.POST), tag_id=tag_id):
                 return self.get_target_position(f"tag{tag_id}")
@@ -107,8 +111,9 @@ class Environment:
                 return self.get_target_position("hammer")
             case Waypoint(type=WaypointType(val=WaypointType.WATER_BOTTLE)):
                 return self.get_target_position("bottle")
-            case Waypoint(type=WaypointType(val=WaypointType.BLUE)):
-                return self.get_target_position("blue")
+            case Waypoint(type=WaypointType(val=WaypointType.RED)):
+                return self.get_target_position("light1") # We only need to check to see if one is published, 
+                                                                # because if there are others there must be one
             case _:
                 return None
 
@@ -227,6 +232,13 @@ class Course:
         """
         current_waypoint = self.current_waypoint()
         return current_waypoint is not None and current_waypoint.type.val == WaypointType.POST
+    
+    def look_for_lights(self) -> bool:
+        """
+        :return: Whether the currently active waypoint is a post (if it exists)
+        """
+        current_waypoint = self.current_waypoint()
+        return current_waypoint is not None and current_waypoint.type.val == WaypointType.RED or current_waypoint.type.val == WaypointType.BLUE or current_waypoint.type.val == WaypointType.INFRARED
 
     def look_for_object(self) -> bool:
         """
@@ -266,11 +278,17 @@ class Course:
         :return: One of the approach states (ApproachTargetState or LongRangeState)
                  if we are looking for a post or object, and we see it in one of the cameras (ZED or long range)
         """
-        from navigation import long_range, approach_target
+        from navigation import long_range, approach_target, follow_lights
 
+        # If we see the target in the ZED and we are looking for lights, search for lights
+        print(self.ctx.env.current_target_pos())
+        print(self.ctx.course.look_for_lights())
+        if self.ctx.env.current_target_pos() is not None and self.ctx.course.look_for_lights():
+            return follow_lights.FollowLightsState()
         # If we see the target in the ZED, go to ApproachTargetState
-        if self.ctx.env.current_target_pos() is not None:
+        elif self.ctx.env.current_target_pos() is not None:
             return approach_target.ApproachTargetState()
+        
         # If we see the target in the long range camera, go to LongRangeState
         assert self.ctx.course is not None
         if self.ctx.course.image_target_name() != "bottle" and self.ctx.env.image_targets.query(self.ctx.course.image_target_name()) is not None:

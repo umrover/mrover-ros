@@ -76,7 +76,7 @@ class WaypointState(State):
         )
         if arrived:
             context.env.arrived_at_waypoint = True
-            if not context.course.look_for_post() and not context.course.look_for_object():
+            if not context.course.look_for_post() and not context.course.look_for_object() and not context.course.look_for_lights():
                 # We finished a regular waypoint, go onto the next one
                 context.course.increment_waypoint()
             elif current_waypoint.type.val == WaypointType.WATER_BOTTLE and self.USE_COSTMAP:

@@ -15,7 +15,7 @@ objects:
   - type: urdf
     name: tag_1
     uri: package://mrover/urdf/world/tag_1.urdf.xacro
-    translation: [ 15, -14, 2.4 ]
+    translation: [ 12.4, -2.76, 1.0 ]
   - type: urdf
     name: hammer
     uri: package://mrover/urdf/world/hammer.urdf.xacro
