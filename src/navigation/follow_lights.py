@@ -6,8 +6,8 @@ import rospy
 from mrover.msg import GPSPointList, WaypointType
 from navigation import recovery, waypoint
 from navigation.context import convert_cartesian_to_gps, Context
-from navigation.trajectory import SearchTrajectory
 from util.state_lib.state import State
+from navigation.state import DoneState
 from util.SE3 import SE3
 
 
@@ -19,7 +19,6 @@ class FollowLightsState(State):
         trajectories are used for well defined paths while this is still heavily reliant on the 
         perception currently avaiable
     """
-    trajectory: Optional[SearchTrajectory] = None
     prev_target_pos_in_map: Optional[np.ndarray] = None
     is_recovering: bool = False
 
@@ -42,32 +41,57 @@ class FollowLightsState(State):
     def on_loop(self, context: Context) -> State:
         rover_in_map = context.rover.get_pose_in_map()
 
-        #assert rover_in_map is not None
+        if rover_in_map is not None:
 
-        # Find all of the lights that exist inside of the TF tree
-        numLightsSeen = 1
-        hasSeenMax = False
-        while not hasSeenMax:
-            try:
-                light_frame = f'light{numLightsSeen}'
-                light_in_map = SE3.from_tf_tree(context.tf_buffer, parent_frame="map", child_frame=light_frame)
-                # rospy.loginfo(f'Found light {numLightsSeen}...')
-                # rospy.loginfo(light_in_map)
+            # Find all of the lights that exist inside of the TF tree
+            numLightsSeen = 1
+            hasSeenMax = False
+            while not hasSeenMax:
+                try:
+                    light_frame = f'light{numLightsSeen}'
+                    light_in_map = SE3.from_tf_tree(context.tf_buffer, parent_frame="map", child_frame=light_frame)
 
-                # Create the point tuple key
-                light_tuple = (int(light_in_map.position[0]), int(light_in_map.position[1]))
+                    # Create the point tuple key
+                    light_tuple = (int(light_in_map.position[0]), int(light_in_map.position[1]))
 
-                # If the point is not in the map then add it as unvisited
-                if(not self.light_points.__contains__(light_tuple)):
-                    self.light_points[light_tuple] = light_in_map
+                    # If the point is not in the map then add it as unvisited
+                    if(not self.light_points.__contains__(light_tuple)):
+                        self.light_points[light_tuple] = light_in_map
 
-                print(self.light_points)
+                    print(self.light_points)
+
+                    numLightsSeen += 1
+
+                except:
+                    # If the TF lookup fails, then we know that there are no more available light points to look at in the TF tree
+                    hasSeenMax = True
+
+            # Find the closest point to the rover
+            closestLight: SE3 = None
+            closestDistance = np.inf
+            for _, light_location_value in self.light_points.items():
+                current_distance: float = np.linalg.norm(np.subtract(light_location_value.position, rover_in_map.position))
+                if closestDistance > current_distance:
+                    closestLight = light_location_value
+                    closestDistance = current_distance
+            
+            # Drive towards the closest point
+            if closestLight is not None:
+                cmd_vel, arrived = context.rover.driver.get_drive_command(
+                    closestLight.position,
+                    rover_in_map,
+                    self.STOP_THRESH,
+                    self.DRIVE_FORWARD_THRESHOLD,
+                    path_start=self.prev_target_pos_in_map,
+                )
+
+                if arrived:
+                    return DoneState()
                 
-                numLightsSeen += 1
-            except:
-                # If the TF lookup fails, then we know that there are no more available light points to look at in the TF tree
-                hasSeenMax = True
-        
+                context.rover.send_drive_command(cmd_vel)
+
+
+            
         # This is important to be self and not FollowLightsState() because we need the dictionary to persist through iterations
         return self
 
