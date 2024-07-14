@@ -16,6 +16,7 @@ from navigation.search import SearchState
 from navigation.state import DoneState, OffState, off_check
 from navigation.water_bottle_search import WaterBottleSearchState
 from navigation.waypoint import WaypointState
+from navigation.follow_lights import FollowLightsState
 
 
 class Navigation(threading.Thread):
@@ -26,7 +27,7 @@ class Navigation(threading.Thread):
     def __init__(self, context: Context):
         super().__init__()
         self.name = "NavigationThread"
-        self.state_machine = StateMachine[Context](OffState(), "NavStateMachine", context)
+        self.state_machine = StateMachine[Context](FollowLightsState(), "NavStateMachine", context)
         self.state_machine.add_transitions(
             ApproachTargetState(),
             [
@@ -106,6 +107,12 @@ class Navigation(threading.Thread):
                 RecoveryState(), 
                 ApproachTargetState(), 
                 LongRangeState()
+            ],
+        )
+        self.state_machine.add_transitions(
+            FollowLightsState(), 
+            [
+                FollowLightsState()
             ],
         )
         self.state_machine.configure_off_switch(OffState(), off_check)

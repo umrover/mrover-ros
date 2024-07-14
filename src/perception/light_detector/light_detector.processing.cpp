@@ -112,8 +112,6 @@ namespace mrover {
             }
 		}
 
-		ROS_INFO_STREAM(contours.size());
-
 		publishDetectedObjects(mOutputImage, centroids);
 	}
 
