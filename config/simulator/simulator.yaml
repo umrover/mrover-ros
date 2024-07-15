@@ -15,7 +15,7 @@ objects:
   - type: urdf
     name: tag_1
     uri: package://mrover/urdf/world/tag_1.urdf.xacro
-    translation: [ 12.4, -2.76, 1.0 ]
+    translation: [ 0.88, 10.53, 1.0 ]
   - type: urdf
     name: hammer
     uri: package://mrover/urdf/world/hammer.urdf.xacro
@@ -41,10 +41,10 @@ objects:
     uri: package://mrover/urdf/world/rock.urdf.xacro
     translation: [ 9, -2, 0.2 ]
   - type: urdf
-    name: light1
-    uri: package://mrover/urdf/world/light.urdf.xacro
-    translation: [ 3.64, 0.81, 0.1 ]
-  - type: urdf
     name: light2
     uri: package://mrover/urdf/world/light.urdf.xacro
-    translation: [ 9.82, -1.30, 0.1 ]
+    translation: [ 5.50, 7.33, 0.1 ]
+  - type: urdf
+    name: light3
+    uri: package://mrover/urdf/world/light.urdf.xacro
+    translation: [ 3.28, 9.92, 0.4 ]

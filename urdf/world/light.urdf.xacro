@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="rover">
-  <xacro:property name="mass" value="1.36078"/>\
+  <xacro:property name="mass" value="0"/>\
 
   <link name="base_link">
     <inertial>

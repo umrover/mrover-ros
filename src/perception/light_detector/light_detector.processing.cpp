@@ -38,9 +38,9 @@ namespace mrover {
 	auto LightDetector::imageCallback(sensor_msgs::PointCloud2ConstPtr const& msg) -> void{
 		if(mImgRGB.rows != static_cast<int>(msg->height) || mImgRGB.cols != static_cast<int>(msg->width)){
 			ROS_INFO_STREAM("Adjusting Image Size... " << msg->width << ", " << msg->height);
-		mImgRGB = cv::Mat{cv::Size{static_cast<int>(msg->width), static_cast<int>(msg->height)}, CV_8UC3, {0, 0, 0}};
+		    mImgRGB = cv::Mat{cv::Size{static_cast<int>(msg->width), static_cast<int>(msg->height)}, CV_8UC3, {0, 0, 0}};
 			mImgHSV = cv::Mat{cv::Size{static_cast<int>(msg->width), static_cast<int>(msg->height)}, CV_8UC3, {0, 0, 0}};
-			mThresholdedImg = cv::Mat{cv::Size{static_cast<int>(msg->width), static_cast<int>(msg->height)}, CV_8UC1, {0}};
+			mThresholdedImg = cv::Mat{cv::Size{static_cast<int>(msg->width), static_cast<int>(msg->height)}, CV_8UC1, nullptr};
 		}
 
 		convertPointCloudToRGB(msg, mImgRGB);        
