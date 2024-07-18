@@ -1,7 +1,7 @@
 light_detector:
   upper_bound_h: 40
   upper_bound_s: 100
-  upper_bound_v: 100
+  upper_bound_v: 80
   lower_bound_h: 0
   lower_bound_s: 50
   lower_bound_v: 50

@@ -87,25 +87,20 @@ class Environment:
         :return:        Pose of the target in the world frame if it exists and is not too old, otherwise None
         """
         try:
-            print(f'WORLD {self.ctx.world_frame}')
-            print(f'CHILD {frame}')
-            print(f'TF BUFFER {self.ctx.tf_buffer}')
             target_pose, time = SE3.from_tf_tree_with_time(
                 self.ctx.tf_buffer, parent_frame=self.ctx.world_frame, child_frame=frame
             )
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as err:
-            print('failes**************')
-            print(err)
             return None
 
         if rospy.Time.now() - time > TARGET_EXPIRATION_DURATION:
-            print('none##########################')
             return None
+        
         return target_pose.position
 
     def current_target_pos(self) -> Optional[np.ndarray]:
         assert self.ctx.course is not None
-        print(f'COURSE IS {self.ctx.course}')
+
         match self.ctx.course.current_waypoint():
             case Waypoint(type=WaypointType(val=WaypointType.POST), tag_id=tag_id):
                 return self.get_target_position(f"tag{tag_id}")
