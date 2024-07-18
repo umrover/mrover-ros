@@ -50,9 +50,11 @@ class FollowLightsState(State):
         pass
 
     def on_loop(self, context: Context) -> State:
-        rover_in_map = context.rover.get_pose_in_map()
+        rover_in_map = SE3.from_tf_tree(context.tf_buffer, parent_frame="map", child_frame="map")
 
         print(self.light_points)
+        print(self.state)
+        print(self.current_closest_light)
 
         if rover_in_map is not None:
 
@@ -60,7 +62,6 @@ class FollowLightsState(State):
             numLightsSeen = 1
             hasSeenMax = False
             while not hasSeenMax:
-                print("LOOP")
                 try:
                     light_frame = f'light{numLightsSeen}'
                     light_in_map = SE3.from_tf_tree(context.tf_buffer, parent_frame="map", child_frame=light_frame)
