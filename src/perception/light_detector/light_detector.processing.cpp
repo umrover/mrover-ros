@@ -90,6 +90,8 @@ namespace mrover {
         // The number of lights that we push into the TF
         unsigned int numLightsSeen = 0;
 
+        ROS_INFO_STREAM("Number of contours " << contours.size());
+
 		for(std::size_t i = 0; i < contours.size(); ++i){
 			auto const& vec = contours[i];
 			auto& centroid = centroids[i]; // first = row, second = col
@@ -105,6 +107,9 @@ namespace mrover {
 
             // If the position of the light is defined, then push it into the TF tree
             std::optional<SE3d> lightInCamera = spiralSearchForValidPoint(msg, centroid.second, centroid.first, SPIRAL_SEARCH_DIM, SPIRAL_SEARCH_DIM);
+            
+            ROS_INFO_STREAM("Contour " << i << " has " << lightInCamera.has_value());
+            
             if(lightInCamera){
                 ++numLightsSeen;
                 std::string immediateLightFrame = std::format("immediateLight{}", numLightsSeen);
