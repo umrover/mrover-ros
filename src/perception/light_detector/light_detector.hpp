@@ -15,6 +15,8 @@ namespace mrover {
 
 		int SPIRAL_SEARCH_DIM{};
 
+		double mImmediateLightRange{};
+
 		// TF variables
 		tf2_ros::Buffer mTfBuffer;
         tf2_ros::TransformListener mTfListener{mTfBuffer};

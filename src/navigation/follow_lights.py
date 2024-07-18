@@ -1,4 +1,5 @@
 from typing import Optional
+from enum import Enum
 
 import numpy as np
 
@@ -11,6 +12,10 @@ from navigation.state import DoneState
 from navigation.approach_target import ApproachTargetState
 from util.SE3 import SE3
 
+class LightState(Enum):
+    IMMEDIATE = 0
+    FINAL = 1
+    IMMEDIATE_TO_FINAL = 2
 
 class FollowLightsState(State):
     """
@@ -20,6 +25,8 @@ class FollowLightsState(State):
         trajectories are used for well defined paths while this is still heavily reliant on the 
         perception currently avaiable
     """
+  
+
     prev_target_pos_in_map: Optional[np.ndarray] = None
     is_recovering: bool = False
 
@@ -36,6 +43,7 @@ class FollowLightsState(State):
         self.light_points: dict[tuple[int, int], tuple[SE3, bool]] = dict()
         self.current_closest_light: SE3 = None
         self.current_closest_distance = np.inf
+        self.state: LightState = LightState.IMMEDIATE
         pass
 
     def on_exit(self, context: Context) -> None:
@@ -66,17 +74,49 @@ class FollowLightsState(State):
                     
                     numLightsSeen += 1
 
+                    # Determine if we are in a transition state or final steady state
+                    if self.state == LightState.IMMEDIATE:
+                        self.state = LightState.IMMEDIATE_TO_FINAL
+                    else:
+                        self.state = LightState.FINAL
+
                 except:
                     # If the TF lookup fails, then we know that there are no more available light points to look at in the TF tree
                     hasSeenMax = True
 
-            # If the rover does not have a current target, find the closest point. Otherwise use the current target
-            if(self.current_closest_light is None):
-                for _, (light_location_value, seen) in self.light_points.items():
-                    current_distance: float = np.linalg.norm(np.subtract(light_location_value.position, rover_in_map.position))
-                    if self.current_closest_distance > current_distance and not seen:
-                        self.current_closest_light = light_location_value
-                        self.current_closest_distance = current_distance
+            # If there are no final lights in the tf tree the we should use an immediate light as guidance
+            if numLightsSeen == 1:
+                self.state = LightState.IMMEDIATE
+
+            # After we have determined which state we are in, we will either use 
+            # immediate lights or final lights as our target
+            if self.state == LightState.IMMEDIATE:
+                # Find the closest immediate light and make it the current target
+                numImmediatesSeen = 1
+                closest_distance: float = np.inf
+                while True:
+                    try:
+                        light_frame: str = f'immediateLight{numImmediatesSeen}'
+                        light_in_map: SE3 = SE3.from_tf_tree(context.tf_buffer, parent_frame="map", child_frame=light_frame)
+
+                        current_distance: float = np.linalg.norm(np.subtract(light_in_map.position, rover_in_map.position))
+                        
+                        if(current_distance < closest_distance):
+                            self.current_closest_light = light_in_map
+                            closest_distance = current_distance
+                        
+                        numImmediatesSeen += 1
+                    except:
+                        break
+
+            else:
+                # If the rover does not have a current target or we are transitioning, find the closest point. Otherwise use the current target
+                if(self.current_closest_light is None or self.state == LightState.IMMEDIATE_TO_FINAL):
+                    for _, (light_location_value, seen) in self.light_points.items():
+                        current_distance: float = np.linalg.norm(np.subtract(light_location_value.position, rover_in_map.position))
+                        if self.current_closest_distance > current_distance and not seen:
+                            self.current_closest_light = light_location_value
+                            self.current_closest_distance = current_distance
             
             # Drive towards the closest point
             if self.current_closest_light is not None:

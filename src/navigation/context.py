@@ -109,7 +109,7 @@ class Environment:
             case Waypoint(type=WaypointType(val=WaypointType.WATER_BOTTLE)):
                 return self.get_target_position("bottle")
             case Waypoint(type=WaypointType(val=WaypointType.RED)):
-                return self.get_target_position("light1") # We only need to check to see if one is published, 
+                return self.get_target_position("immediateLight1") # We only need to check to see if one is published, 
                                                                 # because if there are others there must be one
             case _:
                 return None

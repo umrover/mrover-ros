@@ -107,8 +107,12 @@ namespace mrover {
             std::optional<SE3d> lightInCamera = spiralSearchForValidPoint(msg, centroid.second, centroid.first, SPIRAL_SEARCH_DIM, SPIRAL_SEARCH_DIM);
             if(lightInCamera){
                 ++numLightsSeen;
-                std::string lightFrame = std::format("light{}", numLightsSeen);
-                SE3Conversions::pushToTfTree(mTfBroadcaster, lightFrame, mCameraFrame, lightInCamera.value());
+                std::string immediateLightFrame = std::format("immediateLight{}", numLightsSeen);
+                if(lightInCamera.value().translation().norm() < mImmediateLightRange){
+                    std::string lightFrame = std::format("light{}", numLightsSeen);
+                    SE3Conversions::pushToTfTree(mTfBroadcaster, lightFrame, mCameraFrame, lightInCamera.value());
+                }
+                SE3Conversions::pushToTfTree(mTfBroadcaster, immediateLightFrame, mCameraFrame, lightInCamera.value());
             }
 		}
 
