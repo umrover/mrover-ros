@@ -40,7 +40,8 @@ class FollowLightsState(State):
     OBJECT_DISTANCE_BETWEEN_SPIRALS = rospy.get_param("object_search/distance_between_spirals")
 
     def on_enter(self, context: Context) -> None:
-        self.light_points: dict[tuple[int, int], tuple[SE3, bool]] = dict()
+        self.final_light_points: dict[tuple[int, int], tuple[SE3, bool]] = dict()
+        self.immediate_light_points: dict[tuple[int, int], tuple[SE3, bool]] = dict()
         self.current_closest_light: SE3 = None
         self.current_closest_distance = np.inf
         self.state: LightState = LightState.IMMEDIATE
@@ -50,18 +51,17 @@ class FollowLightsState(State):
         pass
 
     def on_loop(self, context: Context) -> State:
-        rover_in_map = SE3.from_tf_tree(context.tf_buffer, parent_frame="map", child_frame="map")
+        rover_in_map = context.rover.get_pose_in_map()
 
-        print(self.light_points)
+        print(self.final_light_points)
         print(self.state)
         print(self.current_closest_light)
 
         if rover_in_map is not None:
 
-            # Find all of the lights that exist inside of the TF tree
+            # Find all of the final lights that exist inside of the TF tree
             numLightsSeen = 1
-            hasSeenMax = False
-            while not hasSeenMax:
+            while True:
                 try:
                     light_frame = f'light{numLightsSeen}'
                     light_in_map = SE3.from_tf_tree(context.tf_buffer, parent_frame="map", child_frame=light_frame)
@@ -70,50 +70,66 @@ class FollowLightsState(State):
                     light_tuple = (int(light_in_map.position[0]), int(light_in_map.position[1]))
 
                     # If the point is not in the map then add it as unvisited
-                    if(not self.light_points.__contains__(light_tuple)):
-                        self.light_points[light_tuple] = (light_in_map, False)
+                    if(not self.final_light_points.__contains__(light_tuple)):
+                        self.final_light_points[light_tuple] = (light_in_map, False)
                     
                     numLightsSeen += 1
 
-                    # Determine if we are in a transition state or final steady state
-                    if self.state == LightState.IMMEDIATE:
-                        self.state = LightState.IMMEDIATE_TO_FINAL
-                    else:
-                        self.state = LightState.FINAL
+                except:
+                    # If the TF lookup fails, then we know that there are no more available light points to look at in the TF tree
+                    break
+
+            # Find all of the immediate lights that exist inside of the TF tree
+            numLightsSeen = 1
+            while True:
+                try:
+                    light_frame = f'immediateLight{numLightsSeen}'
+                    light_in_map = SE3.from_tf_tree(context.tf_buffer, parent_frame="map", child_frame=light_frame)
+
+                    # Create the point tuple key
+                    light_tuple = (int(light_in_map.position[0]), int(light_in_map.position[1]))
+
+                    # If the point is not in the map then add it as unvisited
+                    if(not self.immediate_light_points.__contains__(light_tuple)):
+                        self.immediate_light_points[light_tuple] = (light_in_map, False)
+                    
+                    numLightsSeen += 1
 
                 except:
                     # If the TF lookup fails, then we know that there are no more available light points to look at in the TF tree
-                    hasSeenMax = True
+                    break
+
+            # Count the number of unvisited final lights in the map to see if we are in the final state
+            numUnvisited = 0
+            for _, (__, seen) in self.final_light_points.items():
+                if not seen:
+                    numUnvisited += 1
 
             # If there are no final lights in the tf tree the we should use an immediate light as guidance
-            if numLightsSeen == 1:
+            if numUnvisited == 0:
                 self.state = LightState.IMMEDIATE
+            else:
+                # Determine if we are in a transition state or final steady state
+                if self.state == LightState.IMMEDIATE:
+                    self.state = LightState.IMMEDIATE_TO_FINAL
+                else:
+                    self.state = LightState.FINAL
 
             # After we have determined which state we are in, we will either use 
             # immediate lights or final lights as our target
             if self.state == LightState.IMMEDIATE:
                 # Find the closest immediate light and make it the current target
-                numImmediatesSeen = 1
-                closest_distance: float = np.inf
-                while True:
-                    try:
-                        light_frame: str = f'immediateLight{numImmediatesSeen}'
-                        light_in_map: SE3 = SE3.from_tf_tree(context.tf_buffer, parent_frame="map", child_frame=light_frame)
-
-                        current_distance: float = np.linalg.norm(np.subtract(light_in_map.position, rover_in_map.position))
-                        
-                        if(current_distance < closest_distance):
-                            self.current_closest_light = light_in_map
-                            closest_distance = current_distance
-                        
-                        numImmediatesSeen += 1
-                    except:
-                        break
+                if(self.current_closest_light is None):
+                    for _, (light_location_value, seen) in self.immediate_light_points.items():
+                            current_distance: float = np.linalg.norm(np.subtract(light_location_value.position, rover_in_map.position))
+                            if self.current_closest_distance > current_distance and not seen:
+                                self.current_closest_light = light_location_value
+                                self.current_closest_distance = current_distance
 
             else:
                 # If the rover does not have a current target or we are transitioning, find the closest point. Otherwise use the current target
                 if(self.current_closest_light is None or self.state == LightState.IMMEDIATE_TO_FINAL):
-                    for _, (light_location_value, seen) in self.light_points.items():
+                    for _, (light_location_value, seen) in self.final_light_points.items():
                         current_distance: float = np.linalg.norm(np.subtract(light_location_value.position, rover_in_map.position))
                         if self.current_closest_distance > current_distance and not seen:
                             self.current_closest_light = light_location_value
@@ -132,7 +148,10 @@ class FollowLightsState(State):
                 if arrived:
                     # Upon arrival mark the current point as traveled to in the tf tree
                     light_tuple = (int(self.current_closest_light.position[0]), int(self.current_closest_light.position[1]))
-                    self.light_points[light_tuple] = (self.light_points[light_tuple][0], True)
+                    if self.state == LightState.IMMEDIATE:
+                        self.immediate_light_points[light_tuple] = (self.final_light_points[light_tuple][0], True)
+                    else:
+                        self.final_light_points[light_tuple] = (self.final_light_points[light_tuple][0], True)
 
                     # Remove the current target from being a target
                     # These values are ok to modify because they are not used in later in this loop, only in the next cycle

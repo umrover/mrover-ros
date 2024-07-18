@@ -108,16 +108,58 @@ namespace mrover {
             if(lightInCamera){
                 ++numLightsSeen;
                 std::string immediateLightFrame = std::format("immediateLight{}", numLightsSeen);
-                if(lightInCamera.value().translation().norm() < mImmediateLightRange){
+                if(lightInCamera.value().translation().norm() < mImmediateLightRange && getHitCount(lightInCamera) > mPublishThreshold){
                     std::string lightFrame = std::format("light{}", numLightsSeen);
                     SE3Conversions::pushToTfTree(mTfBroadcaster, lightFrame, mCameraFrame, lightInCamera.value());
                 }
+                increaseHitCount(lightInCamera);
                 SE3Conversions::pushToTfTree(mTfBroadcaster, immediateLightFrame, mCameraFrame, lightInCamera.value());
             }
 		}
 
+        decreaseHitCounts();
+
 		publishDetectedObjects(mOutputImage, centroids);
 	}
+
+    auto LightDetector::getHitCount(std::optional<SE3d> const& light) -> int{
+        if(light.has_value()){
+            SE3d cameraToMap = SE3Conversions::fromTfTree(mTfBuffer, mCameraFrame, mWorldFrame);
+
+            SE3d lightInMap = cameraToMap * light.value();
+
+            auto location = lightInMap.translation();
+            int x = static_cast<int>(location.x());
+            int y = static_cast<int>(location.x());
+
+            std::pair<int, int> key{x, y};
+
+            return mHitCounts[key];
+        }
+        return -1;
+    }
+
+    void LightDetector::increaseHitCount(std::optional<SE3d> const& light){
+        if(light.has_value()){
+            SE3d cameraToMap = SE3Conversions::fromTfTree(mTfBuffer, mCameraFrame, mWorldFrame);
+
+            SE3d lightInMap = cameraToMap * light.value();
+
+            auto location = lightInMap.translation();
+            int x = static_cast<int>(location.x());
+            int y = static_cast<int>(location.x());
+
+            std::pair<int, int> key{x, y};
+
+            mHitCounts[key] = std::min(mHitCounts[key] + mHitIncrease, mHitMax);
+        }
+    }
+
+    void LightDetector::decreaseHitCounts(){
+        for(auto& [_, hitCount] : mHitCounts){
+            hitCount = std::max(hitCount - mHitDecrease, 0);
+        }
+    }
 
 	// TODO: (john) break this out into a utility so we dont have to copy all of this code
 	auto LightDetector::convertPointCloudToRGB(sensor_msgs::PointCloud2ConstPtr const& msg, cv::Mat const& image) -> void {

@@ -7,3 +7,7 @@ light_detector:
   lower_bound_v: 50
   spiral_search_radius: 50
   immediate_light_range: 2.5
+  hit_increase: 5
+  hit_decrease: 2
+  hit_max: 100
+  pub_threshold: 50

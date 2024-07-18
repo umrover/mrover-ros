@@ -1,7 +1,13 @@
 #pragma once
 #include "pch.hpp"
+#include <unordered_map>
 
-
+class PairHash{
+	public:
+		auto operator()(std::pair<int, int> const& p) const -> int{
+			return p.first * 10000000 + p.second;
+		}
+};
 
 namespace mrover {
 	class LightDetector : public nodelet::Nodelet {
@@ -16,6 +22,13 @@ namespace mrover {
 		int SPIRAL_SEARCH_DIM{};
 
 		double mImmediateLightRange{};
+
+		std::unordered_map<std::pair<int, int>, int, PairHash> mHitCounts;
+
+		int mHitIncrease{};
+		int mHitDecrease{};
+		int mHitMax{};
+		int mPublishThreshold{};
 
 		// TF variables
 		tf2_ros::Buffer mTfBuffer;
@@ -46,6 +59,13 @@ namespace mrover {
 		auto static rgb_to_hsv(cv::Vec3b const& rgb) -> cv::Vec3d;
 
 		auto spiralSearchForValidPoint(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, std::size_t u, std::size_t v, std::size_t width, std::size_t height) const -> std::optional<SE3d>;
+
+		void increaseHitCount(std::optional<SE3d> const& light);
+
+		void decreaseHitCounts();
+
+		auto getHitCount(std::optional<SE3d> const& light) -> int;
+
 
 	public:
 		auto onInit() -> void override;

@@ -13,6 +13,10 @@ namespace mrover{
 		mNh.param<int>("light_detector/spiral_search_radius", SPIRAL_SEARCH_DIM, 50);
 		mNh.param<double>("light_detector/immediate_light_range", mImmediateLightRange, 5);
 
+		mNh.param<int>("light_detector/hit_increase", mHitIncrease, 5);
+		mNh.param<int>("light_detector/hit_decrease", mHitDecrease, 2);
+		mNh.param<int>("light_detector/hit_max", mHitMax, 100);
+		mNh.param<int>("light_detector/pub_threshold", mPublishThreshold, 50);
 
 		int upperBoundH = 0;
 		int upperBoundS = 0;
