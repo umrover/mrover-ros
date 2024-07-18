@@ -66,6 +66,7 @@ namespace mrover {
 
 		auto getHitCount(std::optional<SE3d> const& light) -> int;
 
+		void printHitCounts();
 
 	public:
 		auto onInit() -> void override;

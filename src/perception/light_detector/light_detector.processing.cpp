@@ -117,6 +117,8 @@ namespace mrover {
             }
 		}
 
+        printHitCounts();
+
         decreaseHitCounts();
 
 		publishDetectedObjects(mOutputImage, centroids);
@@ -130,7 +132,7 @@ namespace mrover {
 
             auto location = lightInMap.translation();
             int x = static_cast<int>(location.x());
-            int y = static_cast<int>(location.x());
+            int y = static_cast<int>(location.y());
 
             std::pair<int, int> key{x, y};
 
@@ -147,7 +149,7 @@ namespace mrover {
 
             auto location = lightInMap.translation();
             int x = static_cast<int>(location.x());
-            int y = static_cast<int>(location.x());
+            int y = static_cast<int>(location.y());
 
             std::pair<int, int> key{x, y};
 
@@ -158,6 +160,12 @@ namespace mrover {
     void LightDetector::decreaseHitCounts(){
         for(auto& [_, hitCount] : mHitCounts){
             hitCount = std::max(hitCount - mHitDecrease, 0);
+        }
+    }
+
+    void LightDetector::printHitCounts(){
+        for(auto const& [key, val] : mHitCounts){
+            ROS_INFO_STREAM("Key: (" << key.first << ", " << key.second << ") Val: " << val);
         }
     }
 

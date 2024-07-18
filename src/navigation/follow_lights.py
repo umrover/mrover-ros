@@ -53,10 +53,6 @@ class FollowLightsState(State):
     def on_loop(self, context: Context) -> State:
         rover_in_map = context.rover.get_pose_in_map()
 
-        print(self.final_light_points)
-        print(self.state)
-        print(self.current_closest_light)
-
         if rover_in_map is not None:
 
             # Find all of the final lights that exist inside of the TF tree

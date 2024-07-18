@@ -278,8 +278,6 @@ class Course:
         from navigation import long_range, approach_target, follow_lights
 
         # If we see the target in the ZED and we are looking for lights, search for lights
-        print(self.ctx.env.current_target_pos())
-        print(self.ctx.course.look_for_lights())
         if self.ctx.env.current_target_pos() is not None and self.ctx.course.look_for_lights():
             return follow_lights.FollowLightsState()
         # If we see the target in the ZED, go to ApproachTargetState
