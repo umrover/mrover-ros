@@ -115,7 +115,8 @@ class Navigation(threading.Thread):
             FollowLightsState(), 
             [
                 FollowLightsState(),
-                ApproachTargetState()
+                ApproachTargetState(),
+                SearchState()
             ],
         )
         self.state_machine.configure_off_switch(OffState(), off_check)

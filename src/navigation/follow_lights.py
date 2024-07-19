@@ -9,6 +9,7 @@ from navigation import recovery, waypoint
 from navigation.context import convert_cartesian_to_gps, Context
 from util.state_lib.state import State
 from navigation.state import DoneState
+from navigation.search import SearchState
 from navigation.approach_target import ApproachTargetState
 from util.SE3 import SE3
 
@@ -104,6 +105,12 @@ class FollowLightsState(State):
             # If there are no final lights in the tf tree the we should use an immediate light as guidance
             if numUnvisited == 0:
                 self.state = LightState.IMMEDIATE
+                # numUnvisited = 0
+                # for _, (__, seen) in self.final_light_points.items():
+                #     if not seen:
+                #         numUnvisited += 1
+                # if numUnvisited == 0:
+                #     return SearchState()
             else:
                 # Determine if we are in a transition state or final steady state
                 if self.state == LightState.IMMEDIATE:
