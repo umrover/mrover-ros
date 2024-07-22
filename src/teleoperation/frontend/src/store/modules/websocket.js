@@ -1,4 +1,6 @@
- import { BSON } from 'bson'
+import { BSON } from 'bson'
+
+let bson = new BSON();
 
 let globalCommit = null
 
@@ -48,7 +50,7 @@ const actions = {
   sendBSONMessage({ commit }, message) {
     if (webSocket.readyState !== WebSocket.OPEN) return
 
-    webSocket.send(BSON.serialize(message))
+    webSocket.send(bson.serialize(message))
   },
 
   setupWebSocket({ commit }) {
