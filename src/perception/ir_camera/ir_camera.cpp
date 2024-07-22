@@ -2,7 +2,7 @@
 
 namespace mrover{
     auto IRCamera::onInit() -> void {
-        std::string device = "/dev/video0";
+        std::string device = "/dev/video2";
         mWidth = 320;
         mHeight = 240;
         mFramerate = 30;

@@ -16,7 +16,7 @@ namespace mrover {
             mWidth = mPnh.param<int>("width", 640);
             mHeight = mPnh.param<int>("height", 480);
             auto framerate = mPnh.param<int>("framerate", 30);
-            auto device = mPnh.param<std::string>("device", "/dev/video0");
+            auto device = mPnh.param<std::string>("device", "/dev/video2");
             auto imageTopicName = mPnh.param<std::string>("image_topic", "/image");
             auto cameraInfoTopicName = mPnh.param<std::string>("camera_info_topic", "/camera_info");
             auto watchdogTimeout = mPnh.param<double>("watchdog_timeout", 1.0);
