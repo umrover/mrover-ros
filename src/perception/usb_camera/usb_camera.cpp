@@ -21,7 +21,7 @@ namespace mrover {
             auto cameraInfoTopicName = mPnh.param<std::string>("camera_info_topic", "/camera_info");
             auto watchdogTimeout = mPnh.param<double>("watchdog_timeout", 1.0);
             mRestartDelay = mPnh.param<double>("restart_delay", 2.0);
-            auto decodeJpegFromDevice = mPnh.param<bool>("decode_jpeg_from_device", true);
+            auto decodeJpegFromDevice = mPnh.param<bool>("decode_jpeg_from_device", false);
 
             mImgPub = mNh.advertise<sensor_msgs::Image>(imageTopicName, 1);
             mCamInfoPub = mNh.advertise<sensor_msgs::CameraInfo>(cameraInfoTopicName, 1);

@@ -1,0 +1,6 @@
+<library path="lib/libir_camera_nodelet">
+  <class name="mrover/IRCamera"
+         type="mrover::IRCamera"
+         base_class_type="nodelet::Nodelet">
+  </class>
+</library>

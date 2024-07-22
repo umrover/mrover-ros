@@ -206,6 +206,10 @@ if (Gst_FOUND AND GstApp_FOUND)
     mrover_add_nodelet(usb_camera src/perception/usb_camera/*.cpp src/perception/usb_camera src/perception/usb_camera/pch.hpp)
     mrover_nodelet_link_libraries(usb_camera PRIVATE opencv_core opencv_imgproc ${Gst_LIBRARIES} ${GstApp_LIBRARIES})
     mrover_nodelet_include_directories(usb_camera ${Gst_INCLUDE_DIRS} ${GstApp_INCLUDE_DIRS})
+
+    mrover_add_nodelet(ir_camera src/perception/ir_camera/*.c* src/perception/ir_camera src/perception/ir_camera/pch.hpp)
+    mrover_nodelet_link_libraries(ir_camera PRIVATE opencv_core opencv_imgproc ${Gst_LIBRARIES} ${GstApp_LIBRARIES})
+    mrover_nodelet_include_directories(ir_camera ${Gst_INCLUDE_DIRS} ${GstApp_INCLUDE_DIRS})
 endif ()
 
 if (Gst_FOUND AND GstApp_FOUND AND LibUsb_FOUND AND LibUdev_FOUND)
