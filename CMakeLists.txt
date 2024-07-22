@@ -206,6 +206,10 @@ if (Gst_FOUND AND GstApp_FOUND)
     mrover_add_nodelet(usb_camera src/perception/usb_camera/*.cpp src/perception/usb_camera src/perception/usb_camera/pch.hpp)
     mrover_nodelet_link_libraries(usb_camera PRIVATE opencv_core opencv_imgproc ${Gst_LIBRARIES} ${GstApp_LIBRARIES})
     mrover_nodelet_include_directories(usb_camera ${Gst_INCLUDE_DIRS} ${GstApp_INCLUDE_DIRS})
+
+    mrover_add_nodelet(ir_camera src/perception/ir_camera/*.cpp src/perception/ir_camera src/perception/ir_camera/pch.hpp)
+    mrover_nodelet_link_libraries(ir_camera PRIVATE opencv_core opencv_imgproc ${Gst_LIBRARIES} ${GstApp_LIBRARIES})
+    mrover_nodelet_include_directories(ir_camera ${Gst_INCLUDE_DIRS} ${GstApp_INCLUDE_DIRS})
 endif ()
 
 if (Gst_FOUND AND GstApp_FOUND AND LibUsb_FOUND AND LibUdev_FOUND)
@@ -215,14 +219,15 @@ if (Gst_FOUND AND GstApp_FOUND AND LibUsb_FOUND AND LibUdev_FOUND)
 endif ()
 
 if (ZED_FOUND)
+	# Object Detector
     mrover_add_nodelet(object_detector src/perception/object_detector/*.c* src/perception/object_detector src/perception/object_detector/pch.hpp)
-    mrover_nodelet_link_libraries(object_detector PRIVATE opencv_core opencv_dnn opencv_imgproc lie tbb learning)
+    mrover_nodelet_link_libraries(object_detector PRIVATE opencv_core opencv_imgcodecs opencv_highgui opencv_dnn opencv_imgproc lie tbb learning)
     mrover_nodelet_defines(object_detector
+            ALLOW_BUILD_DEBUG # Ignore ZED warnings about Debug mode
             __CUDA_INCLUDE_COMPILER_INTERNAL_HEADERS__ # Eigen includes some files it should not, ignore
     )
-    # Temporary
-    mrover_nodelet_link_libraries(object_detector PRIVATE opencv_imgcodecs opencv_highgui)
 
+	# ZED Wrapper
     mrover_add_nodelet(zed src/perception/zed_wrapper/*.c* src/perception/zed_wrapper src/perception/zed_wrapper/pch.hpp)
     mrover_nodelet_include_directories(zed ${ZED_INCLUDE_DIRS} ${CUDA_INCLUDE_DIRS})
     mrover_nodelet_link_libraries(zed ${ZED_LIBRARIES} ${SPECIAL_OS_LIBS} lie)
@@ -231,6 +236,7 @@ if (ZED_FOUND)
             __CUDA_INCLUDE_COMPILER_INTERNAL_HEADERS__ # Eigen includes some files it should not, ignore
     )
 
+	# ZED IMU
     mrover_add_node(zed_imu src/localization/zed_imu.cpp)
     target_include_directories(zed_imu PRIVATE ${ZED_INCLUDE_DIRS} ${CUDA_INCLUDE_DIRS})
     target_link_libraries(zed_imu PRIVATE ${ZED_LIBRARIES} ${SPECIAL_OS_LIBS})
