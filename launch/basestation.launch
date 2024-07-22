@@ -9,8 +9,8 @@
   <arg name="suffix" default="basestation"/>
 
   <rosparam command="load" file="$(find mrover)/config/esw.yaml"/>
-  <rosparam command="load" file="$(find mrover)/config/localization.yaml"/>
-
+ <!-- <rosparam command="load" file="$(find mrover)/config/localization.yaml"/>
+-->
   <node if="$(arg frontend)" name="gui_frontend_$(arg suffix)" pkg="mrover" type="gui_frontend.sh" cwd="node" required="true"/>
   <node if="$(arg backend)" name="gui_backend_$(arg suffix)" pkg="mrover" type="gui_backend.sh" cwd="node" required="true"/>
   <node if="$(arg browser)" name="gui_chromium_menu_$(arg suffix)" pkg="mrover" type="gui_chromium_menu.sh"/>

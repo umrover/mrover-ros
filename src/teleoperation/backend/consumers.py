@@ -1,4 +1,5 @@
 import json
+import bson
 import traceback
 from typing import Any, Type
 
@@ -200,15 +201,14 @@ class GUIConsumer(JsonWebsocketConsumer):
     def receive(self, text_data=None, bytes_data=None, **kwargs) -> None:
         global ra_mode, ra_timer, sa_mode, sa_timer, cache_mode, cache_timer
 
-        if text_data is None:
-            rospy.logwarn("Expecting text but received binary on GUI websocket...")
-            return
-
-        try:
-            message = json.loads(text_data)
-        except json.JSONDecodeError as e:
-            rospy.logwarn(f"Failed to decode JSON: {e}")
-            return
+        if text_data is not None:
+            try:
+                message = json.loads(text_data)
+            except json.JSONDecodeError as e:
+                rospy.logwarn(f"Failed to decode JSON: {e}")
+                return
+        elif bytes_data is not None:
+            message = bson.loads(bytes_data)
 
         try:
             match message:
