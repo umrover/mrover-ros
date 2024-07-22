@@ -19,7 +19,7 @@ import datetime
 
 # ROS message types we need to use
 from sensor_msgs.msg import Image
-
+ 
 
 def on_press(key):
     if key == keyboard.Key.enter:
