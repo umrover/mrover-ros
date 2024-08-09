@@ -47,7 +47,7 @@ namespace mrover {
         // See: https://github.com/Violin9906/STM32_AS5048B_HAL/blob/0dfcdd2377f332b6bff7dcd948d85de1571d7977/Src/as5048b.c#L28
         // And also the datasheet: https://ams.com/documents/20143/36005/AS5048_DS000298_4-00.pdf
         std::array<std::uint8_t, 2> raw_data = raw_data_optional.value();
-        std::uint16_t angle = raw_data[1] << 6 | raw_data[0] & 0x3F;
+        std::uint16_t angle = (raw_data[1] << 6) | (raw_data[0] & 0x3F);
         m_previous_raw_data = angle;
         return angle;
     }

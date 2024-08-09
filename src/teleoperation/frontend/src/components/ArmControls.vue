@@ -56,13 +56,13 @@ export default defineComponent({
       const gamepad = gamepads.find(gamepad => gamepad && gamepad.id.includes('Microsoft'))
       if (!gamepad) return
 
-      this.sendMessage({
+      this.sendBSONMessage({
         type: 'ra_controller',
         axes: gamepad.axes,
         buttons: gamepad.buttons.map(button => button.value)
       })
 
-      this.sendMessage({
+      this.sendBSONMessage({
         type: 'ra_mode',
         mode: this.mode
       })
@@ -75,7 +75,7 @@ export default defineComponent({
   },
 
   methods: {
-    ...mapActions('websocket', ['sendMessage']),
+    ...mapActions('websocket', ['sendBSONMessage']),
 
     keyDown: function(event: { key: string }) {
       // Use the space bar as an e-stop

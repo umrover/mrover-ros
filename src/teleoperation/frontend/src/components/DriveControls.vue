@@ -9,7 +9,7 @@ const UPDATE_HZ = 20
 
 export default {
   methods: {
-    ...mapActions('websocket', ['sendMessage'])
+    ...mapActions('websocket', ['sendBSONMessage'])
   },
 
   beforeUnmount: function() {
@@ -22,7 +22,7 @@ export default {
       const gamepad = gamepads.find(gamepad => gamepad && gamepad.id.includes('Thrustmaster'))
       if (!gamepad) return
 
-      this.sendMessage({
+      this.sendBSONMessage({
         type: 'joystick',
         axes: gamepad.axes,
         buttons: gamepad.buttons.map(button => button.value)
