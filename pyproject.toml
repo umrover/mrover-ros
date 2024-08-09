@@ -26,6 +26,7 @@ dependencies = [
     "daphne==4.0.0",
     "channels==4.0.0",
     "pyubx2==1.2.35",
+	"bson==0.5.10",
 ]
 
 [project.optional-dependencies]
