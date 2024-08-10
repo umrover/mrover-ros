@@ -7,6 +7,8 @@ import rospkg
 
 import os
 
+import sys
+
 # python linear algebra library
 import numpy as np
 
@@ -19,8 +21,10 @@ import datetime
 
 # ROS message types we need to use
 from sensor_msgs.msg import Image
- 
-isPano = True
+
+isPano = False
+if len(sys.argv) > 1:
+    isPano = True
 
 rospack = rospkg.RosPack()
 pkgPath = rospack.get_path("mrover")
@@ -28,7 +32,7 @@ pkgPath = rospack.get_path("mrover")
 if isPano:
     imagePath = pkgPath + f"/data/Images/pano/"
 else:
-    imagePath = pkgPath + f"/data/Images"
+    imagePath = pkgPath + f"/data/Images/scene/"
 
 def on_press(key):
     if key == keyboard.Key.enter:
