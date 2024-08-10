@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
 
-
-from pynput import keyboard
-
 import rospkg
 
 import os
 
 import sys
+from pathlib import Path
 
 # python linear algebra library
 import numpy as np
@@ -38,20 +36,20 @@ if isPano:
 else:
     imagePath = pkgPath + f"/data/Images/scene/"
 
-def on_press(key):
-    if key == keyboard.Key.enter:
-        msg = rospy.wait_for_message("/camera/left/image", Image, timeout=5)
-        data = np.empty(msg.height * msg.width * 4, dtype=np.uint8)
-        for x in range(msg.height * msg.width * 4):
-            data[x] = msg.data[x]
+def on_press():
+    msg = rospy.wait_for_message("/camera/left/image", Image, timeout=5)
+    data = np.empty(msg.height * msg.width * 4, dtype=np.uint8)
+    for x in range(msg.height * msg.width * 4):
+        data[x] = msg.data[x]
 
-        image = np.reshape(data, [msg.height, msg.width, 4])
-        unique_id = "{date:%Y-%m-%d_%H:%M:%S}".format(date=datetime.datetime.now())
+    image = np.reshape(data, [msg.height, msg.width, 4])
+    unique_id = "{date:%Y-%m-%d_%H:%M:%S}".format(date=datetime.datetime.now())
 
-        if not os.path.exists(imagePath):
-            os.mkdir(imagePath)
+    fpath = Path(imagePath)
+    if not fpath.exists():
+        fpath.mkdir(exist_ok=True, parents=True)
 
-        print(cv2.imwrite(imagePath + f"image_{unique_id}.jpg", image))
+    print(cv2.imwrite(imagePath + f"image_{unique_id}.jpg", image))
 
 
 def on_release(key):
@@ -78,17 +76,10 @@ def delete_files_in_directory(directory_path):
     
 
 def main():
-    delete_files_in_directory(imagePath)
-
-
     # initialize the node
     rospy.init_node("image_capturepy")
 
-    listener = keyboard.Listener(on_press=on_press, on_release=on_release)
-    listener.start()
-
-    # let the callback functions run asynchronously in the background
-    rospy.spin()
+    on_press()
 
 
 if __name__ == "__main__":
