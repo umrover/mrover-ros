@@ -22,15 +22,19 @@ import datetime
 # ROS message types we need to use
 from sensor_msgs.msg import Image
 
+pano_tag = None
+
 isPano = False
 if len(sys.argv) > 1:
     isPano = True
+
+    pano_tag = sys.argv[1]
 
 rospack = rospkg.RosPack()
 pkgPath = rospack.get_path("mrover")
 
 if isPano:
-    imagePath = pkgPath + f"/data/Images/pano/"
+    imagePath = pkgPath + f"/data/Images/pano/{pano_tag}/"
 else:
     imagePath = pkgPath + f"/data/Images/scene/"
 
@@ -61,12 +65,13 @@ class image_capturepy:
 
 def delete_files_in_directory(directory_path):
     try:
-        files = os.listdir(directory_path)
-        for file in files:
-            file_path = os.path.join(directory_path, file)
-            if os.path.isfile(file_path):
-                os.remove(file_path)
-            print("All files deleted successfully.")
+         if os.path.exists(imagePath):
+            files = os.listdir(directory_path)
+            for file in files:
+                file_path = os.path.join(directory_path, file)
+                if os.path.isfile(file_path):
+                    os.remove(file_path)
+                print("All files deleted successfully.")
     except OSError:
         print("Error occurred while deleting files.")
 
@@ -74,6 +79,7 @@ def delete_files_in_directory(directory_path):
 
 def main():
     delete_files_in_directory(imagePath)
+
 
     # initialize the node
     rospy.init_node("image_capturepy")
