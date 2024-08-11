@@ -109,7 +109,10 @@ class Environment:
                 return self.get_target_position("bottle")
             case _:
                 return None
-
+            
+    def ReturnApproachTargetState(self):
+        from navigation import approach_target
+        return approach_target.ApproachTargetState()
 
 class ImageTargetsStore:
     """

@@ -66,9 +66,11 @@ class SearchState(State):
 
         # Returns either ApproachTargetState, LongRangeState, or None
         assert context.course is not None
-        approach_state = context.course.get_approach_state()
-        if approach_state is not None:
-            return approach_state
+        for i in range(100):
+            if context.env.get_target_position(f"tag{i}") is not None:
+                context.course.current_waypoint().tag_id = i
+                context.course.current_waypoint().type.val = WaypointType.POST
+                return context.env.ReturnApproachTargetState()
 
         return self
 

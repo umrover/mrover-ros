@@ -7,12 +7,12 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://mrover/urdf/meshes/groundflat.fbx"/>
+        <mesh filename="package://mrover/urdf/meshes/ground.fbx"/>
       </geometry>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://mrover/urdf/meshes/groundflat.fbx"/>
+        <mesh filename="package://mrover/urdf/meshes/ground.fbx"/>
       </geometry>
     </collision>
   </link>
