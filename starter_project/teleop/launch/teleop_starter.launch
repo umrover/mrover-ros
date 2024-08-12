@@ -1,4 +1,0 @@
-<launch>
-    <node name="gui_frontend" pkg="mrover" type="gui_starter_frontend.sh" cwd="node"/>
-    <node name="gui_backend" pkg="mrover" type="gui_starter_backend.sh" cwd="node"/>
-</launch>
