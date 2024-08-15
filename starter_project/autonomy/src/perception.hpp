@@ -36,7 +36,6 @@ namespace mrover {
     private:
         ros::NodeHandle mNodeHandle;
         ros::Subscriber mImageSubscriber;
-        cv::Ptr<cv::aruco::DetectorParameters> mTagDetectorParams;
         cv::Ptr<cv::aruco::Dictionary> mTagDictionary;
         std::vector<std::vector<cv::Point2f>> mTagCorners;
         std::vector<int> mTagIds;
@@ -76,7 +75,7 @@ namespace mrover {
          * @param tagCorners    4-tuple of the tag pixel coordinates representing the corners
          * @return              Closeness metric from rover to the tag
          */
-        [[nodiscard]] float getClosenessMetricFromTagCorners(cv::Mat const& image, std::vector<cv::Point2f> const& tagCorners);
+        [[nodiscard]] auto getClosenessMetricFromTagCorners(cv::Mat const& image, std::vector<cv::Point2f> const& tagCorners) -> float;
 
         /**
          *  Given an ArUco tag in pixel space, find the approximate center in pixel space
@@ -84,7 +83,7 @@ namespace mrover {
          * @param tagCorners    4-tuple of tag pixel coordinates representing the corners
          * @return              2-tuple (x,y) approximate center in pixel space
          */
-        [[nodiscard]] std::pair<float, float> getCenterFromTagCorners(std::vector<cv::Point2f> const& tagCorners);
+        [[nodiscard]] auto getCenterFromTagCorners(std::vector<cv::Point2f> const& tagCorners) -> std::pair<float, float>;
 
         /**
          *  Select the tag closest to the center of the camera
@@ -92,7 +91,7 @@ namespace mrover {
          * @param tags          Vector of tags
          * @return              Center tag
          */
-        [[nodiscard]] StarterProjectTag selectTag(cv::Mat const& image, std::vector<StarterProjectTag> const& tags);
+        [[nodiscard]] auto selectTag(cv::Mat const& image, std::vector<StarterProjectTag> const& tags) -> StarterProjectTag;
     };
 
 } // namespace mrover
