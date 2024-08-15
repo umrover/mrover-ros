@@ -10,6 +10,8 @@
 #include <opencv2/core.hpp>
 #include <opencv2/core/mat.hpp>
 #include <opencv2/core/types.hpp>
+#include <opencv2/highgui.hpp>
+#include <opencv2/imgproc.hpp>
 #include <ros/init.h>
 
 auto main(int argc, char** argv) -> int {
@@ -44,8 +46,11 @@ namespace mrover {
         // Create a cv::Mat from the ROS image message
         // Note this does not copy the image data, it is basically a pointer
         // Be careful if you extend its lifetime beyond this function
-        cv::Mat image{static_cast<int>(imageMessage->height), static_cast<int>(imageMessage->width),
-                      CV_8UC3, const_cast<uint8_t*>(imageMessage->data.data())};
+        cv::Mat imageBGRA{static_cast<int>(imageMessage->height), static_cast<int>(imageMessage->width),
+                      CV_8UC4, const_cast<uint8_t*>(imageMessage->data.data())};
+        cv::Mat image;
+
+        cv::cvtColor(imageBGRA, image, cv::COLOR_BGRA2BGR);
 
         // TODO: implement me!
         // hint: think about the order in which these functions were implemented ;)
@@ -74,8 +79,14 @@ namespace mrover {
         for(unsigned int i  = 0; i < numTagsDetected; ++i){
             auto center = getCenterFromTagCorners(mTagCorners[i]);
             auto closeness = getClosenessMetricFromTagCorners(image, mTagCorners[i]);
+            
+            StarterProjectTag newTag;
+            newTag.tagId = mTagIds[i];
+            newTag.xTagCenterPixel = center.first;
+            newTag.yTagCenterPixel = center.second;
+            newTag.closenessMetric = closeness;
 
-            tags.emplace_back(mTagIds[i], center.first, center.second, closeness);
+            tags.push_back(newTag);
         }
     }
 
@@ -112,17 +123,12 @@ namespace mrover {
 
         // TODO: implement me!
 
-        // Area (Not perfect because it may not be parrallel with the iamge plane)
+        // Side length (Not perfect because it may not be parrallel with the image plane)
 
         // This works because the ordering os clockwise
-        cv::InputArray x{std::vector<float>{tagCorners[0].x - tagCorners[1].x, tagCorners[1].x - tagCorners[2].x}};
-        cv::InputArray y{std::vector<float>{tagCorners[0].y - tagCorners[1].y, tagCorners[1].y - tagCorners[2].y}};
+        auto length = static_cast<float>(std::sqrt(std::pow(tagCorners[0].x - tagCorners[3].x, 2) + std::pow(tagCorners[0].y - tagCorners[3].y, 2)));
 
-        cv::Mat mags{std::vector<float>{0, 0}};
-
-        cv::magnitude(tagCorners[0].x, tagCorners[0].y, mags);
-
-        return (mags.at<float>(0) * mags.at<float>(1)) / static_cast<float>(image.total());
+        return length / static_cast<float>(image.rows);
     }
 
     auto Perception::getCenterFromTagCorners(std::vector<cv::Point2f> const& tagCorners) -> std::pair<float, float> { // NOLINT(*-convert-member-functions-to-static)

@@ -1,6 +1,5 @@
 <launch>
   <arg name="gui" default="true"/>
-  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher"/>
 
   <include file="$(find mrover)/launch/simulator.launch"/>
 
@@ -9,7 +8,7 @@
     Perception
     ==========
   -->
-     <node name="starter_project_perception" pkg="mrover" type="starter_project_perception" />
+     <!-- <node name="starter_project_perception" pkg="mrover" type="starter_project_perception" /> -->
 
   <!--
     ===========
