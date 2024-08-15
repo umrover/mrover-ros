@@ -21,6 +21,7 @@
 #include <string>
 #include <type_traits>
 #include <unordered_map>
+#include <bitset>
 
 #include <opencv2/core.hpp>
 #include <opencv2/dnn.hpp>
