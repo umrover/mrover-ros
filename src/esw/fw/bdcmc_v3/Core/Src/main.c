@@ -504,7 +504,7 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, CAN_RX_LED_Pin|CAN_TX_LED_Pin|MOTOR_DIR_0_Pin|MOTOR_DIR_1_Pin
-                          |MOTOR_DIR_2_Pin|LIMIT_2_A_Pin|LIMIT_2_B_Pin, GPIO_PIN_RESET);
+                          |MOTOR_DIR_2_Pin|LIMIT_2_A_Pin|LIMIT_2_B_Pin|CAN_STANDBY_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pins : LIMIT_0_A_Pin LIMIT_0_B_Pin LIMIT_1_A_Pin */
   GPIO_InitStruct.Pin = LIMIT_0_A_Pin|LIMIT_0_B_Pin|LIMIT_1_A_Pin;
@@ -521,9 +521,9 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(LIMIT_1_B_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : CAN_RX_LED_Pin CAN_TX_LED_Pin MOTOR_DIR_0_Pin MOTOR_DIR_1_Pin
-                           MOTOR_DIR_2_Pin LIMIT_2_A_Pin LIMIT_2_B_Pin */
+                           MOTOR_DIR_2_Pin LIMIT_2_A_Pin LIMIT_2_B_Pin CAN_STANDBY_Pin */
   GPIO_InitStruct.Pin = CAN_RX_LED_Pin|CAN_TX_LED_Pin|MOTOR_DIR_0_Pin|MOTOR_DIR_1_Pin
-                          |MOTOR_DIR_2_Pin|LIMIT_2_A_Pin|LIMIT_2_B_Pin;
+                          |MOTOR_DIR_2_Pin|LIMIT_2_A_Pin|LIMIT_2_B_Pin|CAN_STANDBY_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;

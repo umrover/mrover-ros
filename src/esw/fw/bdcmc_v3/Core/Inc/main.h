@@ -95,6 +95,8 @@ void Error_Handler(void);
 #define LIMIT_2_A_GPIO_Port GPIOB
 #define LIMIT_2_B_Pin GPIO_PIN_4
 #define LIMIT_2_B_GPIO_Port GPIOB
+#define CAN_STANDBY_Pin GPIO_PIN_5
+#define CAN_STANDBY_GPIO_Port GPIOB
 #define QUAD_0_A_Pin GPIO_PIN_6
 #define QUAD_0_A_GPIO_Port GPIOB
 #define QUAD_0_B_Pin GPIO_PIN_7
