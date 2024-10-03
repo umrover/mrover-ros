@@ -89,8 +89,8 @@ void Error_Handler(void);
 #define MOTOR_PWM_0_GPIO_Port GPIOA
 #define MOTOR_PWM_1_Pin GPIO_PIN_9
 #define MOTOR_PWM_1_GPIO_Port GPIOA
-#define MOTOR_PWM_1A10_Pin GPIO_PIN_10
-#define MOTOR_PWM_1A10_GPIO_Port GPIOA
+#define MOTOR_PWM_2_Pin GPIO_PIN_10
+#define MOTOR_PWM_2_GPIO_Port GPIOA
 #define LIMIT_2_A_Pin GPIO_PIN_3
 #define LIMIT_2_A_GPIO_Port GPIOB
 #define LIMIT_2_B_Pin GPIO_PIN_4
