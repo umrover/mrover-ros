@@ -236,7 +236,8 @@ namespace mrover {
         tf2_ros::TransformBroadcaster mTfBroadcaster;
 
         bool mPublishIk = true;
-        Eigen::Vector3f mIkTarget{0.382, 0.01, -0.217};
+        Eigen::Vector3f mIkTarget{0.98, 0.01, -0.217};
+        float mIkPitch{0.0};
         ros::Publisher mIkTargetPub;
 
         R3d mGpsLinearizationReferencePoint{};

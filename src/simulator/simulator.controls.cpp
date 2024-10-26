@@ -124,6 +124,7 @@ namespace mrover {
             ik.target.pose.position.x = mIkTarget.x();
             ik.target.pose.position.y = mIkTarget.y();
             ik.target.pose.position.z = mIkTarget.z();
+            ik.target.pose.orientation.x = mIkPitch; // this is scuffed !!
             mIkTargetPub.publish(ik);
         }
 

@@ -1,4 +1,5 @@
 #include "simulator.hpp"
+#include <imgui.h>
 
 namespace mrover {
 
@@ -79,7 +80,13 @@ namespace mrover {
             // ImGui::SliderFloat("Float", &mFloat, 0.0f, 1000.0f);
 
             ImGui::Checkbox("Publish IK", &mPublishIk);
-            if (mPublishIk) ImGui::SliderFloat3("IK Target", mIkTarget.data(), -1.f, 1.f);
+            if (mPublishIk) {
+                // ImGui::SliderFloat3("IK Target", mIkTarget.data(), -1.f, 1.f);
+                ImGui::SliderFloat("IK Target X", &mIkTarget.x(), -1.f, 1.5f);
+                ImGui::SliderFloat("IK Target Y", &mIkTarget.y(), 0.f, 0.4f);
+                ImGui::SliderFloat("IK Target Z", &mIkTarget.z(), -1.f, 1.f);
+                ImGui::SliderFloat("IK Pitch", &mIkPitch, -3.14f, 1.5f);
+            }
 
             ImGui::InputDouble("Publish Hammer Distance Threshold", &mPublishHammerDistanceThreshold);
             ImGui::InputDouble("Publish Bottle Distance Threshold", &mPublishBottleDistanceThreshold);

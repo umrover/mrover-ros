@@ -25,14 +25,14 @@ namespace mrover {
         }
         SE3d endEffectorInTarget{{ik_target.target.pose.position.x, ik_target.target.pose.position.y, ik_target.target.pose.position.z}, SO3d::Identity()};
         SE3d endEffectorInArmBaseLink = targetFrameToArmBaseLink * endEffectorInTarget;
-        double x = endEffectorInArmBaseLink.translation().x() - END_EFFECTOR_LENGTH; // shift back by the length of the end effector
+        double x = endEffectorInArmBaseLink.translation().x();
         double y = endEffectorInArmBaseLink.translation().y();
         double z = endEffectorInArmBaseLink.translation().z();
         SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_target", "arm_base_link", endEffectorInArmBaseLink);
 
-        double gamma = 0;
-        double x3 = x - LINK_DE * std::cos(gamma);
-        double z3 = z - LINK_DE * std::sin(gamma);
+        double gamma = ik_target.target.pose.orientation.x; // this isn't actually right I don't think... (just want to get pitch of EE)
+        double x3 = x - (LINK_DE + END_EFFECTOR_LENGTH) * std::cos(gamma);
+        double z3 = z - (LINK_DE + END_EFFECTOR_LENGTH) * std::sin(gamma);
 
         double C = std::sqrt(x3 * x3 + z3 * z3);
         double alpha = std::acos((LINK_BC * LINK_BC + LINK_CD * LINK_CD - C * C) / (2 * LINK_BC * LINK_CD));
