@@ -8,7 +8,7 @@ from mrover.msg import IK
 from mrover.msg import Position
 
 LINK_CD_LEN = 0.5531735368
-JOINT_B_ANGLE = math.pi / 5
+JOINT_B_ANGLE = math.pi / 3
 LINK_BC_LEN = 0.5344417294
 EE_LENGTH = 0.13
 DE_LENGTH = 0.044886000454425812

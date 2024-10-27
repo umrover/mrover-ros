@@ -21,7 +21,7 @@ namespace mrover {
         static constexpr double LINK_DE = 0.044886000454425812;
         static constexpr double JOINT_A_MIN = 0;
         static constexpr double JOINT_A_MAX = 0.45;
-        static constexpr double JOINT_B_MIN = -0.25 * std::numbers::pi;
+        static constexpr double JOINT_B_MIN = -1 * std::numbers::pi / 3;
         static constexpr double JOINT_B_MAX = 0;
         static constexpr double JOINT_C_MIN = 1.35;
         static constexpr double JOINT_C_MAX = 3.19;
