@@ -8,7 +8,7 @@ from mrover.msg import IK
 from mrover.msg import Position
 
 LINK_CD_LEN = 0.5531735368
-JOINT_B_ANGLE = math.pi / 3
+JOINT_B_ANGLE = math.pi / 3 - 0.05
 LINK_BC_LEN = 0.5344417294
 EE_LENGTH = 0.13
 DE_LENGTH = 0.044886000454425812
@@ -44,9 +44,9 @@ def joint_data_callback(msg: Position):
 def main():
     rospy.init_node("test_ik")
     ik_pub = rospy.Publisher("arm_ik", IK, queue_size=1)
-    angle_sub = rospy.Subscriber("arm_joint_data", Position, joint_data_callback)
+    # angle_sub = rospy.Subscriber("arm_joint_data", Position, joint_data_callback)
 
-    t = math.pi / 2
+    t = math.pi / 2 + 1.2
 
     while True:
         y = (Y_MAX + Y_MIN) / 2 + (Y_MAX - Y_MIN) / 2 * math.sin(t)
@@ -75,7 +75,7 @@ def main():
         # actual_z = BC_POS_Y + LINK_CD_LEN * math.sin(JOINT_B_ANGLE - joint_angles["joint_c"] + 0.16084859151) + (DE_LENGTH + EE_LENGTH) * math.sin(JOINT_B_ANGLE - joint_angles["joint_c"] + 0.16084859151 - joint_angles["joint_de_pitch"])
         # print(f"Actual: {actual_x}, {actual_z}")
 
-        t += 0.1
+        # t += 0.1
 
 
 if __name__ == "__main__":
