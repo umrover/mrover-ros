@@ -50,6 +50,19 @@ namespace mrover {
                 motor->setMaxAppliedImpulse(0.5);
                 motor->setPositionTarget(0);
             }
+			// check if arm motor commands have expired
+			// TODO(quintin): fix hard-coded names?
+            for (auto const& name : {"arm_a_link", "arm_b_link", "arm_c_link", "arm_d_link", "arm_e_link"}) {
+                bool expired = std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now() - rover.linkNameToMeta.at(name).lastUpdate).count() > 20;
+                if (expired) {
+                    int linkIndex = rover.linkNameToMeta.at(name).index;
+                    auto* motor = std::bit_cast<btMultiBodyJointMotor*>(rover.physics->getLink(linkIndex).m_userPtr);
+                    assert(motor);
+                    motor->setVelocityTarget(0, 1);
+                    // set p gain to 0 to stop position control
+                    motor->setPositionTarget(0, 0);
+                }
+            }
         }
 
         float updateDuration = std::clamp(std::chrono::duration_cast<std::chrono::duration<float>>(dt).count(), 0.0f, 0.1f);

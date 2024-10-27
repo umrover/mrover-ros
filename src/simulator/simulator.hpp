@@ -85,6 +85,7 @@ namespace mrover {
             int index{};
             boost::container::static_vector<Uniform<ModelUniforms>, 2> visualUniforms;
             boost::container::static_vector<Uniform<ModelUniforms>, 2> collisionUniforms;
+			Clock::time_point lastUpdate = Clock::now();
         };
 
         std::string name;
@@ -373,7 +374,7 @@ namespace mrover {
             }
 
             if (auto it = mUrdfs.find("rover"); it != mUrdfs.end()) {
-                URDF const& rover = it->second;
+                URDF & rover = it->second;
 
                 for (auto const& combined: boost::combine(names, values)) {
                     std::string const& name = boost::get<0>(combined);
@@ -383,6 +384,7 @@ namespace mrover {
                         std::string const& urdfName = urdfNameOpt.value();
 
                         int linkIndex = rover.linkNameToMeta.at(urdfName).index;
+						rover.linkNameToMeta.at(name).lastUpdate = Clock::now();
 
                         auto* motor = std::bit_cast<btMultiBodyJointMotor*>(rover.physics->getLink(linkIndex).m_userPtr);
                         assert(motor);
