@@ -11,4 +11,6 @@
     <param name="dev_node" value="/dev/boomcam"/>
     <param name="port" value="8084"/>
   </node>
+
+  <node name="arm_controller" pkg="mrover" type="arm_controller" output="screen"/>
 </launch>
