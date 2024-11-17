@@ -7,12 +7,32 @@ namespace mrover {
     class ArmController {
 
         [[maybe_unused]] ros::Subscriber mIkSubscriber;
+        [[maybe_unused]] ros::Subscriber mVelSub;
+        [[maybe_unused]] ros::Subscriber mJointSub;
+
         ros::NodeHandle mNh;
         ros::Publisher mPositionPublisher;
         tf2_ros::TransformBroadcaster mTfBroadcaster;
         tf2_ros::Buffer mTfBuffer{};
         tf2_ros::TransformListener mTfListener{mTfBuffer};
+        ros::Timer mTimer;
+        ros::ServiceServer mModeServ;
 
+        auto ikCalc(SE3d target) -> std::optional<Position>;
+        auto timerCallback() -> void;
+        auto modeCallback(IkMode::Request& req, IkMode::Response& res) -> bool;
+
+        SE3d mArmPos;
+        SE3d mPosTarget;
+        R3d mVelTarget = {0, 0, 0};
+        ros::Time mLastUpdate;
+        
+        enum class ArmMode : bool {
+            VELOCITY_CONTROL,
+            POSITION_CONTROL
+        };
+        ArmMode mArmMode;
+        static const ros::Duration TIMEOUT;
     public:
         // From: rover.urdf.xacro
         // A is the prismatic joint, B is the first revolute joint, C is the second revolute joint
@@ -32,6 +52,8 @@ namespace mrover {
         ArmController();
 
         void ik_callback(IK const& new_ik_target);
+        void velCallback(geometry_msgs::Vector3 const& ik_vel);
+        void fkCallback(sensor_msgs::JointState const& joint_state);
     };
 
 } // namespace mrover

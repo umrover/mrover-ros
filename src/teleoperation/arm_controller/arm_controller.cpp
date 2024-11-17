@@ -1,10 +1,16 @@
 #include "arm_controller.hpp"
 
 namespace mrover {
-
+    const ros::Duration ArmController::TIMEOUT = ros::Duration(1);
+    
     ArmController::ArmController() {
-        mIkSubscriber = mNh.subscribe("arm_ik", 1, &ArmController::ik_callback, this);
+        mIkSubscriber = mNh.subscribe("ee_pos_cmd", 1, &ArmController::ik_callback, this);
         mPositionPublisher = mNh.advertise<Position>("arm_position_cmd", 1);
+        mVelSub = mNh.subscribe("ee_vel_cmd", 1, &ArmController::velCallback, this);
+        mJointSub = mNh.subscribe("arm_joint_data", 1, &ArmController::fkCallback, this);
+        mTimer = mNh.createTimer(ros::Duration(1.0 / 30.0), &ArmController::timerCallback, this);
+        mModeServ = mNh.advertiseService("ik_mode", &ArmController::modeCallback, this);
+        mLastUpdate = ros::Time::now();
     }
 
     auto yawSo3(double r) -> SO3d {
@@ -12,25 +18,12 @@ namespace mrover {
         return {q.normalized()};
     }
 
-    auto ArmController::ik_callback(IK const& ik_target) -> void {
-        Position positions;
-        positions.names = {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll"};
-        positions.positions.resize(positions.names.size());
-        SE3d targetFrameToArmBaseLink;
-        try {
-            targetFrameToArmBaseLink = SE3Conversions::fromTfTree(mTfBuffer, ik_target.target.header.frame_id, "arm_base_link");
-        } catch (tf2::TransformException const& exception) {
-            ROS_WARN_STREAM_THROTTLE(1, std::format("Failed to get transform from {} to arm_base_link: {}", ik_target.target.header.frame_id, exception.what()));
-            return;
-        }
-        SE3d endEffectorInTarget{{ik_target.target.pose.position.x, ik_target.target.pose.position.y, ik_target.target.pose.position.z}, SO3d::Identity()};
-        SE3d endEffectorInArmBaseLink = targetFrameToArmBaseLink * endEffectorInTarget;
-        double x = endEffectorInArmBaseLink.translation().x();
-        double y = endEffectorInArmBaseLink.translation().y();
-        double z = endEffectorInArmBaseLink.translation().z();
-        SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_target", "arm_base_link", endEffectorInArmBaseLink);
+    auto ArmController::ikCalc(SE3d target) -> std::optional<Position> {
+        double x = target.translation().x();
+        double y = target.translation().y();
+        double z = target.translation().z();
 
-        double gamma = ik_target.target.pose.orientation.x; // this isn't actually right I don't think... (just want to get pitch of EE)
+        double gamma = target.rotation().x(); // this isn't actually right I don't think... (just want to get pitch of EE)
         double x3 = x - (LINK_DE + END_EFFECTOR_LENGTH) * std::cos(gamma);
         double z3 = z - (LINK_DE + END_EFFECTOR_LENGTH) * std::sin(gamma);
 
@@ -45,30 +38,82 @@ namespace mrover {
         double q2 = -thetaB + 0.1608485915;
         double q3 = -thetaC - 0.1608485915;
 
-        if (std::isfinite(q1) && std::isfinite(q2) && std::isfinite(q3)) {
-            SE3d joint_b_pos{{0.034346, 0, 0.049024}, SO3d::Identity()};
-            SE3d joint_c_pos{{LINK_BC * cos(thetaA), 0, LINK_BC * sin(thetaA)}, yawSo3(-thetaA)};
-            SE3d joint_d_pos{{LINK_CD * cos(thetaB), 0, LINK_CD * sin(thetaB)}, yawSo3(-thetaB)};
-            SE3d joint_e_pos{{LINK_DE * cos(thetaC), 0, LINK_DE * sin(thetaC)}, yawSo3(-thetaC)};
-            SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_b_target", "arm_a_link", joint_b_pos);
-            SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_c_target", "arm_b_target", joint_c_pos);
-            SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_d_target", "arm_c_target", joint_d_pos);
-            SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_e_target", "arm_d_target", joint_e_pos);
+        if (std::isfinite(q1) && std::isfinite(q2) && std::isfinite(q3) &&
+            y >= JOINT_A_MIN && y <= JOINT_A_MAX &&
+            q1 >= JOINT_B_MIN && q1 <= JOINT_B_MAX &&
+            q2 >= JOINT_C_MIN && q2 <= JOINT_C_MAX &&
+            q3 >= JOINT_DE_PITCH_MIN && q3 <= JOINT_DE_PITCH_MAX) {
+            Position positions;
+            positions.names = {"joint_a", "joint_b", "joint_c", "joint_de_pitch"};
+            positions.positions = {
+                    static_cast<float>(y),
+                    static_cast<float>(q1),
+                    static_cast<float>(q2),
+                    static_cast<float>(q3),
+            };
+            return positions;
+        }
+        return std::nullopt;
 
-            if (y >= JOINT_A_MIN && y <= JOINT_A_MAX &&
-                q1 >= JOINT_B_MIN && q1 <= JOINT_B_MAX &&
-                q2 >= JOINT_C_MIN && q2 <= JOINT_C_MAX &&
-                q3 >= JOINT_DE_PITCH_MIN && q3 <= JOINT_DE_PITCH_MAX) {
-                positions.positions[0] = static_cast<float>(y);
-                positions.positions[1] = static_cast<float>(q1);
-                positions.positions[2] = static_cast<float>(q2);
-                positions.positions[3] = static_cast<float>(q3);
-                mPositionPublisher.publish(positions);
-            } else {
-                ROS_WARN_THROTTLE(1, "Can not reach target within arm limits!");
-            }
+    }
+
+    void ArmController::velCallback(geometry_msgs::Vector3 const& ik_vel) {
+        mVelTarget = {ik_vel.x, ik_vel.y, ik_vel.z};
+        mLastUpdate = ros::Time::now();
+    }
+
+    void ArmController::fkCallback(sensor_msgs::JointState const& joint_state) {
+        double y = joint_state.position[0];
+        // joint b position
+        double x = LINK_BC * std::cos(-joint_state.position[1]);
+        double z = LINK_BC * std::sin(-joint_state.position[1]);
+        // joint c position
+        x += LINK_CD * std::cos(-joint_state.position[1] - joint_state.position[2] + JOINT_C_OFFSET);
+        z += LINK_CD * std::sin(-joint_state.position[1] - joint_state.position[2] + JOINT_C_OFFSET);
+        // joint de position
+        x += (LINK_DE + END_EFFECTOR_LENGTH) * std::cos(-joint_state.position[1] - joint_state.position[2] - joint_state.position[3]);
+        z += (LINK_DE + END_EFFECTOR_LENGTH) * std::sin(-joint_state.position[1] - joint_state.position[2] - joint_state.position[3]);
+        mArmPos = SE3d{{x, y, z}, SO3d::Identity()};
+
+    }
+
+    auto ArmController::ik_callback(IK const& ik_target) -> void {
+        // Position positions;
+        // positions.names = {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll"};
+        // positions.positions.resize(positions.names.size());
+        SE3d targetFrameToArmBaseLink;
+        try {
+            targetFrameToArmBaseLink = SE3Conversions::fromTfTree(mTfBuffer, ik_target.target.header.frame_id, "arm_base_link");
+        } catch (tf2::TransformException const& exception) {
+            ROS_WARN_STREAM_THROTTLE(1, std::format("Failed to get transform from {} to arm_base_link: {}", ik_target.target.header.frame_id, exception.what()));
+            return;
+        }
+        SE3d endEffectorInTarget{{ik_target.target.pose.position.x, ik_target.target.pose.position.y, ik_target.target.pose.position.z}, SO3d::Identity()};
+        SE3d endEffectorInArmBaseLink = targetFrameToArmBaseLink * endEffectorInTarget;
+        endEffectorInArmBaseLink.rotation().x() = ik_target.target.pose.orientation.x;
+        SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_target", "arm_base_link", endEffectorInArmBaseLink);
+        mPosTarget = endEffectorInArmBaseLink;
+        mLastUpdate = ros::Time::now();
+    }
+
+    auto ArmController::timerCallback() -> void {
+        if (ros::Time::now() - mLastUpdate > TIMEOUT) {
+            ROS_WARN_STREAM_THROTTLE(1, "IK Timed Out");
+            return;
+        }
+        SE3d target;
+        if (mArmMode == ArmMode::POSITION_CONTROL) {
+            target = mPosTarget;
         } else {
-            ROS_WARN_THROTTLE(1, "Can not solve for arm target!");
+            target = SE3d{{mArmPos.translation().x() + mVelTarget.x() * 0.1,
+                           mArmPos.translation().y() + mVelTarget.y() * 0.1,
+                           mArmPos.translation().z() + mVelTarget.z() * 0.1}, SO3d::Identity()};
+        }
+        auto positions = ikCalc(target);
+        if (positions) {
+            mPositionPublisher.publish(positions.value());
+        } else {
+            ROS_WARN_STREAM_THROTTLE(1, "IK Failed");
         }
     }
 
