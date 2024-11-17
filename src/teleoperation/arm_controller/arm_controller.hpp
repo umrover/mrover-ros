@@ -48,6 +48,7 @@ namespace mrover {
         static constexpr double JOINT_DE_PITCH_MIN = -0.71;
         static constexpr double JOINT_DE_PITCH_MAX = 0.97;
         static constexpr double END_EFFECTOR_LENGTH = 0.13; // measured from blender
+        static constexpr double JOINT_C_OFFSET = 0.1608485915;
 
         ArmController();
 

@@ -83,7 +83,7 @@ namespace mrover {
             if (mPublishIk) {
                 if (ImGui::Checkbox("Arm Position Control", &mIkMode)) {
                     IkMode srv;
-                    srv.request.mode = mIkMode? IkMode.POSITION_CONTROL : IkMode.VELOCITY_CONTROL;
+                    srv.request.mode = mIkMode? IkMode::Request::POSITION_CONTROL : IkMode::Request::VELOCITY_CONTROL;
                     mIkModeClient.call(srv);
                 }
                 if (mIkMode) {

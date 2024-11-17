@@ -9,8 +9,10 @@
 #include <ros/init.h>
 #include <ros/node_handle.h>
 #include <tf2_ros/transform_listener.h>
+#include <sensor_msgs/JointState.h>
 
 #include <mrover/IK.h>
 #include <mrover/Position.h>
+#include <mrover/IkMode.h>
 
 #include <lie/lie.hpp>

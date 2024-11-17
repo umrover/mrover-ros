@@ -8,7 +8,7 @@ namespace mrover {
         mPositionPublisher = mNh.advertise<Position>("arm_position_cmd", 1);
         mVelSub = mNh.subscribe("ee_vel_cmd", 1, &ArmController::velCallback, this);
         mJointSub = mNh.subscribe("arm_joint_data", 1, &ArmController::fkCallback, this);
-        mTimer = mNh.createTimer(ros::Duration(1.0 / 30.0), &ArmController::timerCallback, this);
+        mTimer = mNh.createTimer(ros::Duration(1.0 / 30.0), std::bind(&ArmController::timerCallback, this));
         mModeServ = mNh.advertiseService("ik_mode", &ArmController::modeCallback, this);
         mLastUpdate = ros::Time::now();
     }
@@ -23,7 +23,7 @@ namespace mrover {
         double y = target.translation().y();
         double z = target.translation().z();
 
-        double gamma = target.rotation().x(); // this isn't actually right I don't think... (just want to get pitch of EE)
+        double gamma = target.rotation().eulerAngles(2, 1, 0)[1]; // double check this!
         double x3 = x - (LINK_DE + END_EFFECTOR_LENGTH) * std::cos(gamma);
         double z3 = z - (LINK_DE + END_EFFECTOR_LENGTH) * std::sin(gamma);
 
@@ -35,8 +35,8 @@ namespace mrover {
         double thetaC = gamma - thetaA - thetaB;
 
         double q1 = -thetaA;
-        double q2 = -thetaB + 0.1608485915;
-        double q3 = -thetaC - 0.1608485915;
+        double q2 = -thetaB + JOINT_C_OFFSET;
+        double q3 = -thetaC - JOINT_C_OFFSET;
 
         if (std::isfinite(q1) && std::isfinite(q2) && std::isfinite(q3) &&
             y >= JOINT_A_MIN && y <= JOINT_A_MAX &&
@@ -90,9 +90,8 @@ namespace mrover {
         }
         SE3d endEffectorInTarget{{ik_target.target.pose.position.x, ik_target.target.pose.position.y, ik_target.target.pose.position.z}, SO3d::Identity()};
         SE3d endEffectorInArmBaseLink = targetFrameToArmBaseLink * endEffectorInTarget;
-        endEffectorInArmBaseLink.rotation().x() = ik_target.target.pose.orientation.x;
         SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_target", "arm_base_link", endEffectorInArmBaseLink);
-        mPosTarget = endEffectorInArmBaseLink;
+        mPosTarget = SE3d{endEffectorInArmBaseLink.translation(), {0, ik_target.target.pose.orientation.x, 0,}};
         mLastUpdate = ros::Time::now();
     }
 
@@ -117,6 +116,16 @@ namespace mrover {
         }
     }
 
+    auto ArmController::modeCallback(IkMode::Request & req, IkMode::Response & resp) -> bool {
+        if (req.mode == IkMode::Request::POSITION_CONTROL) {
+            ROS_INFO("IK Position Control Mode");
+            mArmMode = ArmMode::POSITION_CONTROL;
+        } else {
+            ROS_INFO("IK Velocity Control Mode");
+            mArmMode = ArmMode::VELOCITY_CONTROL;
+        }
+        return resp.success = true;
+    }
 } // namespace mrover
 
 auto main(int argc, char** argv) -> int {

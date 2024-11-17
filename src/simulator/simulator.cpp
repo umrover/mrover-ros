@@ -19,7 +19,7 @@ namespace mrover {
 
         mIkVelPub = mNh.advertise<geometry_msgs::Vector3>("ee_vel_cmd", 1);
 
-        mIkModeClient = mNh.serviceClient<IKMode>("ik_mode");
+        mIkModeClient = mNh.serviceClient<IkMode>("ik_mode");
 
         mIsHeadless = mPnh.param<bool>("headless", false);
         mEnablePhysics = mIsHeadless;
