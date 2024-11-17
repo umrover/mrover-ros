@@ -1,0 +1,5 @@
+uint8 POSITION_CONTROL=0
+uint8 VELOCITY_CONTROL=1
+uint8 mode
+---
+bool success

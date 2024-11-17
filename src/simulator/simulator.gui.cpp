@@ -81,11 +81,19 @@ namespace mrover {
 
             ImGui::Checkbox("Publish IK", &mPublishIk);
             if (mPublishIk) {
-                // ImGui::SliderFloat3("IK Target", mIkTarget.data(), -1.f, 1.f);
-                ImGui::SliderFloat("IK Target X", &mIkTarget.x(), -1.f, 1.5f);
-                ImGui::SliderFloat("IK Target Y", &mIkTarget.y(), 0.f, 0.4f);
-                ImGui::SliderFloat("IK Target Z", &mIkTarget.z(), -1.f, 1.f);
-                ImGui::SliderFloat("IK Pitch", &mIkPitch, -3.14f, 1.5f);
+                if (ImGui::Checkbox("Arm Position Control", &mIkMode)) {
+                    IkMode srv;
+                    srv.request.mode = mIkMode? IkMode.POSITION_CONTROL : IkMode.VELOCITY_CONTROL;
+                    mIkModeClient.call(srv);
+                }
+                if (mIkMode) {
+                    // ImGui::SliderFloat3("IK Target", mIkTarget.data(), -1.f, 1.f);
+                    ImGui::SliderFloat("IK Target X", &mIkTarget.x(), -1.f, 1.5f);
+                    ImGui::SliderFloat("IK Target Y", &mIkTarget.y(), 0.f, 0.4f);
+                    ImGui::SliderFloat("IK Target Z", &mIkTarget.z(), -1.f, 1.f);
+                    ImGui::SliderFloat("IK Pitch", &mIkPitch, -3.14f, 1.5f);
+                } else
+                    ImGui::SliderFloat("Arm Speed", &mArmSpeed, 0, 1);
             }
 
             ImGui::InputDouble("Publish Hammer Distance Threshold", &mPublishHammerDistanceThreshold);

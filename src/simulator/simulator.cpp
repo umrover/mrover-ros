@@ -15,7 +15,11 @@ namespace mrover {
 
         mImageTargetsPub = mNh.advertise<ImageTargets>("/objects", 1);
 
-        mIkTargetPub = mNh.advertise<IK>("/arm_ik", 1);
+        mIkTargetPub = mNh.advertise<IK>("ee_pos_cmd", 1);
+
+        mIkVelPub = mNh.advertise<geometry_msgs::Vector3>("ee_vel_cmd", 1);
+
+        mIkModeClient = mNh.serviceClient<IKMode>("ik_mode");
 
         mIsHeadless = mPnh.param<bool>("headless", false);
         mEnablePhysics = mIsHeadless;

@@ -88,3 +88,4 @@
 #include <mrover/Position.h>
 #include <mrover/Throttle.h>
 #include <mrover/Velocity.h>
+#include <mrover/IkMode.h>

@@ -117,7 +117,7 @@ namespace mrover {
     }
 
     auto SimulatorNodelet::userControls(Clock::duration dt) -> void {
-        if (mPublishIk) {
+        if (mPublishIk && mIkMode) {
             IK ik;
             ik.target.header.stamp = ros::Time::now();
             ik.target.header.frame_id = "arm_base_link";
@@ -153,6 +153,35 @@ namespace mrover {
             twist.angular.z = 0;
         }
         mCmdVelPub.publish(twist);
+
+        mIkVel.setZero();
+        if (glfwGetKey(mWindow.get(), mArmForwardKey) == GLFW_PRESS) {
+            mIkVel.x() = 1;
+        }
+        if (glfwGetKey(mWindow.get(), mArmBackwardKey) == GLFW_PRESS) {
+            mIkVel.x() = -1;
+        }
+        if (glfwGetKey(mWindow.get(), mArmLeftKey) == GLFW_PRESS) {
+            mIkVel.y() = 1;
+        }
+        if (glfwGetKey(mWindow.get(), mArmRightKey) == GLFW_PRESS) {
+            mIkVel.y() = -1;
+        }
+        if (glfwGetKey(mWindow.get(), mArmUpKey) == GLFW_PRESS) {
+            mIkVel.z() = 1;
+        }
+        if (glfwGetKey(mWindow.get(), mArmDownKey) == GLFW_PRESS) {
+            mIkVel.z() = -1;
+        }
+        mIkVel.normalize();
+        mIkVel *= mArmSpeed;
+        if (mPublishIk && !mIkMode) {
+            geometry_msgs::Vector3 vel;
+            vel.x = mIkVel.x();
+            vel.y = mIkVel.y();
+            vel.z = mIkVel.z();
+            mIkVelPub.publish(vel);
+        }
     }
 
 } // namespace mrover
