@@ -395,7 +395,7 @@ namespace mrover {
                         std::string const& urdfName = urdfNameOpt.value();
 
                         int linkIndex = rover.linkNameToMeta.at(urdfName).index;
-						rover.linkNameToMeta.at(name).lastUpdate = Clock::now();
+						rover.linkNameToMeta.at(urdfName).lastUpdate = Clock::now();
 
                         auto* motor = std::bit_cast<btMultiBodyJointMotor*>(rover.physics->getLink(linkIndex).m_userPtr);
                         assert(motor);

@@ -31,7 +31,7 @@ namespace mrover {
             VELOCITY_CONTROL,
             POSITION_CONTROL
         };
-        ArmMode mArmMode;
+        ArmMode mArmMode = ArmMode::POSITION_CONTROL;
         static const ros::Duration TIMEOUT;
     public:
         // From: rover.urdf.xacro

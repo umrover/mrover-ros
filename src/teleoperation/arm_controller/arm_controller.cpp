@@ -23,7 +23,7 @@ namespace mrover {
         double y = target.translation().y();
         double z = target.translation().z();
 
-        double gamma = target.rotation().eulerAngles(2, 1, 0)[1]; // double check this!
+        double gamma = -target.rotation().eulerAngles(2, 1, 0)[1]; // lowk not sure why this - is here
         double x3 = x - (LINK_DE + END_EFFECTOR_LENGTH) * std::cos(gamma);
         double z3 = z - (LINK_DE + END_EFFECTOR_LENGTH) * std::sin(gamma);
 
@@ -88,10 +88,11 @@ namespace mrover {
             ROS_WARN_STREAM_THROTTLE(1, std::format("Failed to get transform from {} to arm_base_link: {}", ik_target.target.header.frame_id, exception.what()));
             return;
         }
-        SE3d endEffectorInTarget{{ik_target.target.pose.position.x, ik_target.target.pose.position.y, ik_target.target.pose.position.z}, SO3d::Identity()};
+        SE3d endEffectorInTarget{{ik_target.target.pose.position.x, ik_target.target.pose.position.y, ik_target.target.pose.position.z}, 
+                                 SO3d{ik_target.target.pose.orientation.x, ik_target.target.pose.orientation.y, ik_target.target.pose.orientation.z, ik_target.target.pose.orientation.w}};
         SE3d endEffectorInArmBaseLink = targetFrameToArmBaseLink * endEffectorInTarget;
         SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_target", "arm_base_link", endEffectorInArmBaseLink);
-        mPosTarget = SE3d{endEffectorInArmBaseLink.translation(), {0, ik_target.target.pose.orientation.x, 0,}};
+        mPosTarget = endEffectorInArmBaseLink;
         mLastUpdate = ros::Time::now();
     }
 

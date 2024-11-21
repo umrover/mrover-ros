@@ -124,7 +124,11 @@ namespace mrover {
             ik.target.pose.position.x = mIkTarget.x();
             ik.target.pose.position.y = mIkTarget.y();
             ik.target.pose.position.z = mIkTarget.z();
-            ik.target.pose.orientation.x = mIkPitch; // this is scuffed !!
+            auto orientation = Eigen::Quaterniond{Eigen::AngleAxisd{mIkPitch, -R3d::UnitY()}};
+            ik.target.pose.orientation.w = orientation.w();
+            ik.target.pose.orientation.x = orientation.x();
+            ik.target.pose.orientation.y = orientation.y();
+            ik.target.pose.orientation.z = orientation.z();
             mIkTargetPub.publish(ik);
         }
 
