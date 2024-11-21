@@ -110,7 +110,7 @@ namespace mrover {
         } else {
             target = SE3d{{mArmPos.translation().x() + mVelTarget.x() * 0.1,
                            mArmPos.translation().y() + mVelTarget.y() * 0.1,
-                           mArmPos.translation().z() + mVelTarget.z() * 0.1}, SO3d::Identity()};
+                           mArmPos.translation().z() + mVelTarget.z() * 0.1}, mArmPos.asSO3()};
         }
         auto positions = ikCalc(target);
         if (positions) {
