@@ -65,15 +65,18 @@ namespace mrover {
     void ArmController::fkCallback(sensor_msgs::JointState const& joint_state) {
         double y = joint_state.position[0];
         // joint b position
-        double x = LINK_BC * std::cos(-joint_state.position[1]);
-        double z = LINK_BC * std::sin(-joint_state.position[1]);
+        double angle = -joint_state.position[1];
+        double x = LINK_BC * std::cos(angle);
+        double z = LINK_BC * std::sin(angle);
         // joint c position
-        x += LINK_CD * std::cos(-joint_state.position[1] - joint_state.position[2] + JOINT_C_OFFSET);
-        z += LINK_CD * std::sin(-joint_state.position[1] - joint_state.position[2] + JOINT_C_OFFSET);
+        angle -= joint_state.position[2] - JOINT_C_OFFSET;
+        x += LINK_CD * std::cos(angle);
+        z += LINK_CD * std::sin(angle);
         // joint de position
-        x += (LINK_DE + END_EFFECTOR_LENGTH) * std::cos(-joint_state.position[1] - joint_state.position[2] - joint_state.position[3]);
-        z += (LINK_DE + END_EFFECTOR_LENGTH) * std::sin(-joint_state.position[1] - joint_state.position[2] - joint_state.position[3]);
-        mArmPos = SE3d{{x, y, z}, SO3d::Identity()};
+        angle -= joint_state.position[3] + JOINT_C_OFFSET;
+        x += (LINK_DE + END_EFFECTOR_LENGTH) * std::cos(angle);
+        z += (LINK_DE + END_EFFECTOR_LENGTH) * std::sin(angle);
+        mArmPos = SE3d{{x, y, z}, SO3d{Eigen::Quaterniond{Eigen::AngleAxisd{angle, -R3d::UnitY()}}}};
 
     }
 
